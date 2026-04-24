@@ -129,17 +129,33 @@ Delegate via the Task tool when a subagent's specialty matches the work.
 
 ### Branch & PR naming (Jira auto-link)
 
+**Rule:** Every Jira ticket gets its own feature branch. **Never commit
+directly to `staging` or `main`** — always branch first, even for
+single-file changes.
+
 The Jira ↔ GitHub integration links commits, branches, and PRs to FHS
 tickets when the ticket key appears in the name. Use:
 
-- **Branch:** `<type>/FHS-XXX-short-slug` — e.g., `feat/FHS-149-stack-scaffolding`
+- **Branch:** `<type>/FHS-XXX-short-slug` — short and identifiable, 2–4
+  kebab-case words. Examples:
+  - `feat/FHS-149-stack-scaffold`
+  - `fix/FHS-12-tenant-ctx-async`
+  - `docs/FHS-146-claude-md-rules`
 - **PR title:** `<type>(FHS-XXX): short summary` — e.g.,
   `feat(FHS-149): scaffold Hono API with /health and /hello`
+- **PR target:** `staging` (not `main`) for feature work.
 - **Commit footer:** include `Refs FHS-XXX` or `Closes FHS-XXX` to drive
   Jira workflow transitions (configured per-project).
 
 Types follow Conventional Commits: `feat`, `fix`, `chore`, `docs`, `test`,
 `refactor`, `perf`.
+
+**First action when starting a ticket:**
+
+```bash
+git checkout main && git pull
+git checkout -b <type>/FHS-XXX-short-slug
+```
 
 ### Code style
 
