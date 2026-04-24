@@ -161,9 +161,22 @@ Types follow Conventional Commits: `feat`, `fix`, `chore`, `docs`, `test`,
 ```bash
 git checkout staging && git pull   # branch from staging during bootstrap
 git checkout -b <type>/FHS-XXX-short-slug
+
+# Immediately move the ticket to In Progress (transition id 21 in FHS):
+curl -s -u "$EMAIL:$JIRA_API_TOKEN" -X POST \
+  "$URL/rest/api/3/issue/FHS-XXX/transitions" \
+  -H "Content-Type: application/json" \
+  -d '{"transition":{"id":"21"}}'
 ```
 
 (Branch from `main` once the staging-only policy is lifted.)
+
+> **Trigger rule:** creating the feature branch is the signal that work
+> has started — transition the matching ticket from **To Do → In
+> Progress** before the first commit. If the ticket is already In
+> Progress (resumed work), skip. Long-term we should replace this manual
+> step with a Jira Automation rule listening on the GitHub
+> "branch-created" webhook.
 
 ### Closing tickets (post-merge)
 
