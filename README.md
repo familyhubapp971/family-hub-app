@@ -26,6 +26,23 @@ pnpm test         # run unit tests
 pnpm test:e2e     # run Playwright E2E
 ```
 
+## Working with Claude Code
+
+This repo ships [`.claude/`](.claude/README.md) with a curated set of
+specialist subagents and skills, plus a conservative permission
+allowlist. After cloning, Claude Code picks them up automatically.
+
+Useful slash commands (via `~/.claude/skills/commands/`):
+
+- `/plan` · `/write-plan` · `/execute-plan` — planning lifecycle
+- `/brainstorm` — feature exploration before code
+- `/start` — surface relevant skills at session start
+- `/status` — check progress on the current effort
+
+See [`.claude/README.md`](.claude/README.md) for the full list of
+shipped agents and skills, and [`CLAUDE.md`](CLAUDE.md) for project
+conventions and the skill-routing map.
+
 ## Repository Layout
 
 ```text
