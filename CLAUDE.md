@@ -266,6 +266,68 @@ criteria. Template:
 
 ---
 
+## Testing
+
+Four test tiers, each with a clear scope. Don't let one tier swallow
+another's job.
+
+### Unit — Vitest
+
+- **Where:** colocated `*.test.ts` next to the source file (e.g.,
+  `apps/api/src/users/users.service.test.ts`).
+- **Scope:** pure functions, single class/module, no I/O. Mock external
+  collaborators, but **never mock the thing under test**.
+- **Run:** `pnpm test` (watches) · `pnpm test:run` (one-shot, used in CI).
+- **Bar:** every public function in `packages/shared/` and every service
+  method in `apps/api/src/**/*.service.ts` has direct unit coverage.
+
+### Integration — Vitest + real Postgres
+
+- **Where:** `apps/api/src/**/*.integration.test.ts`.
+- **Scope:** API route → service → real Postgres (per-test transaction,
+  rolled back at end). Exercises Drizzle queries and RLS policies for
+  real. **Do not mock the database** — mocked DBs hide migration breakage.
+- **Run:** `pnpm test:integration` (spins up local Postgres via
+  docker-compose or uses the dev DB with a `_test` schema).
+- **Bar:** every endpoint has an integration test for happy path + at
+  least one tenant-isolation scenario (request as tenant A must not
+  see tenant B's data).
+
+### E2E — Playwright
+
+- **Where:** `tests/e2e/**/*.spec.ts` at the repo root (or `apps/web/e2e/`
+  if scoped to a single app).
+- **Scope:** full browser → web → API → DB stack. One test per Gherkin
+  scenario in the corresponding `docs/product/features/<slug>.md`. Test
+  name **must** mirror scenario name for traceability.
+- **Run:** `pnpm test:e2e` locally; runs against `staging` in CI on PRs
+  targeting `main`.
+- **Bar:** every user-facing acceptance criterion in a shipped feature
+  has a passing Playwright scenario.
+
+### Performance — k6
+
+- **Where:** `tests/perf/**/*.js`.
+- **Scope:** load + soak tests for performance-critical endpoints (auth,
+  feed/timeline reads, write hot paths). Define SLOs in the script
+  (e.g., p95 < 250 ms at 100 RPS for 5 min).
+- **Run:** `pnpm test:perf` against staging; not in PR CI — run on
+  release candidates and weekly.
+- **Bar:** any endpoint added to the SLO list (in
+  `docs/technical/slos.md`) has a k6 script that asserts its target.
+
+### Cross-tier rules
+
+- **No mocking the DB in integration or E2E.** Mocked DBs caused a prod
+  migration failure historically — real Postgres is mandatory for those
+  tiers.
+- **Test names mirror Gherkin scenario names** so traceability between
+  `docs/product/features/<slug>.md` and the test file is automatic.
+- **A feature is not "done" until its tier-appropriate tests pass green
+  in CI** — the pre-merge checklist enforces this.
+
+---
+
 ## API contracts (OpenAPI)
 
 - The Hono API publishes its OpenAPI 3.1 spec at `apps/api/openapi.yaml`
