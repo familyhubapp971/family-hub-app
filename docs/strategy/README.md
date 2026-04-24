@@ -39,4 +39,4 @@ SWOT, OKRs, etc.). Include at minimum:
 
 _Seeded by FHS-175 — populate as docs land:_
 
-- `saas-transformation.md` — TBD (FHS-175)
+- [`saas-transformation.md`](saas-transformation.md) — published (FHS-175)

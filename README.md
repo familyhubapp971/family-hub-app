@@ -62,7 +62,7 @@ Both `main` and `staging` require PR reviews and passing CI.
   - [ADR 0006 — Branching strategy](docs/decisions/0006-branching-strategy.md)
 - [Technical docs](docs/technical/)
 - [Feature specs](docs/features/)
-- [Strategy docs](docs/strategy/)
+- [Strategy docs](docs/strategy/) — incl. [SaaS Transformation Strategy](docs/strategy/saas-transformation.md)
 
 ## License
 
