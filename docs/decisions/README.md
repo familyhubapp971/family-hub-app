@@ -55,5 +55,5 @@ _Seeded by FHS-172 / FHS-173 / FHS-174 — populate as ADRs land:_
 - [`0002-subdomain-tenant-routing.md`](0002-subdomain-tenant-routing.md) — accepted (FHS-173)
 - [`0003-auth-library.md`](0003-auth-library.md) — accepted: Supabase Auth (FHS-173)
 - [`0004-stripe-billing.md`](0004-stripe-billing.md) — accepted (FHS-173)
-- `0005-monorepo-structure.md` — TBD (FHS-174)
-- `0006-branching-strategy.md` — TBD (FHS-174)
+- [`0005-monorepo-structure.md`](0005-monorepo-structure.md) — accepted (FHS-174)
+- [`0006-branching-strategy.md`](0006-branching-strategy.md) — accepted (FHS-174)
