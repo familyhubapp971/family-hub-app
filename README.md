@@ -28,7 +28,7 @@ pnpm test:e2e     # run Playwright E2E
 
 ## Repository Layout
 
-```
+```text
 apps/
   api/      # Hono API server
   web/      # React + Vite frontend
@@ -52,9 +52,17 @@ Both `main` and `staging` require PR reviews and passing CI.
 
 ## Documentation
 
-- [Architecture Decision Records](docs/decisions/)
+- [Documentation index](docs/README.md)
+- [Architecture Decision Records](docs/decisions/) — durable choices
+  - [ADR 0001 — Multi-tenancy strategy](docs/decisions/0001-multi-tenancy.md)
+  - [ADR 0002 — Subdomain tenant routing](docs/decisions/0002-subdomain-tenant-routing.md)
+  - [ADR 0003 — Auth library: Supabase Auth](docs/decisions/0003-auth-library.md)
+  - [ADR 0004 — Billing provider: Stripe](docs/decisions/0004-stripe-billing.md)
+  - [ADR 0005 — Monorepo structure](docs/decisions/0005-monorepo-structure.md)
+  - [ADR 0006 — Branching strategy](docs/decisions/0006-branching-strategy.md)
 - [Technical docs](docs/technical/)
 - [Feature specs](docs/features/)
+- [Strategy docs](docs/strategy/)
 
 ## License
 
