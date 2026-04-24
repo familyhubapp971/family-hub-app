@@ -266,9 +266,99 @@ criteria. Template:
 
 ---
 
+## API contracts (OpenAPI)
+
+- The Hono API publishes its OpenAPI 3.1 spec at `apps/api/openapi.yaml`
+  (generated from Zod schemas via `@hono/zod-openapi`).
+- Every new endpoint must have a Zod schema for request + response and be
+  registered with the OpenAPI app — no untyped routes.
+- Run `pnpm -F api openapi:generate` after changing schemas; commit the
+  resulting `openapi.yaml` so consumers (frontend, docs, mobile) get a
+  reviewable diff.
+- Breaking changes (removed fields, changed types, removed endpoints) bump
+  the API version in the spec and trigger a "breaking" label on the PR.
+
+This section will grow as the API matures — auth schemes, pagination
+convention, error envelope, rate-limit headers, etc.
+
+---
+
+## Architecture Decision Records (ADRs)
+
+ADRs live in `docs/technical/decisions/` (also linked from
+`docs/decisions/` if used). One file per decision: `NNNN-short-title.md`.
+
+Write an ADR whenever you make a decision that:
+
+- changes the shape of the system in a way someone might later question,
+- chooses one viable option over another (e.g., Postgres vs DynamoDB),
+- locks in a constraint future contributors need to respect.
+
+Don't write an ADR for routine implementation choices — only for the
+ones future-you would want context on.
+
+Template (Nygard / MADR-lite):
+
+```markdown
+# NNNN — <decision title>
+
+**Status:** proposed | accepted | superseded by NNNN
+**Date:** YYYY-MM-DD
+**Jira:** FHS-XXX (optional)
+
+## Context
+
+<What forces are at play? What problem are we solving?>
+
+## Decision
+
+<What did we decide?>
+
+## Consequences
+
+<What becomes easier? What becomes harder? What follow-ups does this create?>
+
+## Alternatives considered
+
+- **<option A>** — why rejected
+- **<option B>** — why rejected
+```
+
+Initial seed ADRs are tracked in FHS-171, FHS-172, FHS-174.
+
+---
+
+## Pre-merge checklist
+
+Every PR author confirms (the [PR template](.github/pull_request_template.md)
+mirrors this list):
+
+- [ ] **Jira:** ticket key in branch name + PR title + commit footer
+- [ ] **Tests:** unit (Vitest) + E2E (Playwright) added/updated; `pnpm test` green
+- [ ] **Acceptance criteria:** every Gherkin scenario from the ticket maps to a passing test
+- [ ] **Types:** TypeScript strict, no new `any`, schemas validate at boundaries
+- [ ] **Multi-tenancy:** queries respect `tenant_id` / RLS; no `bypassrls`
+- [ ] **Secrets:** nothing in git that should be in `.env.local` or Railway env
+- [ ] **OpenAPI:** spec regenerated and committed if API surface changed
+- [ ] **Docs:** `docs/product/` or `docs/technical/` updated; ADR added if a decision was made
+- [ ] **Migrations:** Drizzle migration committed; rollback path noted in PR body
+- [ ] **Observability:** new failure modes have logs/metrics; alerts updated if SLO-relevant
+- [ ] **Manual verification:** described in the PR body — what was actually exercised in a browser / curl
+
+---
+
 ## Useful slash commands
 
 - `/plan`, `/write-plan`, `/execute-plan` — planning lifecycle
 - `/brainstorm` — feature exploration
 - `/start` — surface relevant skills at session start
 - `/status` — check progress
+
+---
+
+## Living document
+
+This file is **expected to evolve**. When we encounter a recurring decision,
+a footgun, or a convention worth codifying, add it here in the relevant
+section. Drift between code reality and CLAUDE.md is a bug — fix in the
+same PR that introduced the drift.
