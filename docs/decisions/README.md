@@ -51,7 +51,7 @@ sections:
 
 _Seeded by FHS-172 / FHS-173 / FHS-174 — populate as ADRs land:_
 
-- `0001-multi-tenancy-strategy.md` — TBD (FHS-172)
+- [`0001-multi-tenancy.md`](0001-multi-tenancy.md) — accepted (FHS-172)
 - `0002-subdomain-tenant-routing.md` — TBD (FHS-173)
 - `0003-auth-library.md` — TBD (FHS-173)
 - `0004-stripe-billing.md` — TBD (FHS-173)
