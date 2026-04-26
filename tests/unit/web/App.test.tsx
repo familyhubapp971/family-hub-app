@@ -1,17 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { App } from './App';
+import { App } from '../../../apps/web/src/App';
 
 describe('<App />', () => {
   const originalFetch = global.fetch;
 
-  beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-  });
-
   afterEach(() => {
     global.fetch = originalFetch;
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
