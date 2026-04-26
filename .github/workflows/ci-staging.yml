@@ -31,7 +31,7 @@ env:
 
 jobs:
   e2e-full:
-    name: e2e (${{ matrix.browser }})
+    name: Browser tests — ${{ matrix.browser }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -91,7 +91,7 @@ jobs:
           retention-days: 14
 
   perf-smoke:
-    name: perf smoke
+    name: Performance smoke (k6, 30s)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     services:

@@ -27,7 +27,7 @@ env:
 
 jobs:
   post-deploy-smoke:
-    name: post-deploy k6 smoke
+    name: Post-deploy smoke (verify production)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # vars.PROD_API_URL set in repo settings once Railway prod is live

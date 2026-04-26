@@ -39,7 +39,7 @@ env:
 
 jobs:
   load-nightly:
-    name: load (nightly)
+    name: Nightly load test (50 users / 5 min)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: ${{ github.event_name == 'schedule' && github.event.schedule == '0 2 * * *' }}
@@ -60,7 +60,7 @@ jobs:
         with: { name: perf-load-nightly, path: tests/performance/reports/, retention-days: 30 }
 
   soak-weekly:
-    name: soak (weekly Sunday)
+    name: Weekly soak test (30 users / 2 hours, Sunday)
     runs-on: ubuntu-latest
     timeout-minutes: 150 # 2h scenario + headroom
     if: ${{ github.event_name == 'schedule' && github.event.schedule == '0 3 * * 0' }}
@@ -81,7 +81,7 @@ jobs:
         with: { name: perf-soak-weekly, path: tests/performance/reports/, retention-days: 30 }
 
   manual:
-    name: ${{ github.event.inputs.scenario }} (manual)
+    name: Manual performance run — ${{ github.event.inputs.scenario }}
     runs-on: ubuntu-latest
     # Soak runs 2h; bump well above so manual choice doesn't kill it.
     timeout-minutes: 150

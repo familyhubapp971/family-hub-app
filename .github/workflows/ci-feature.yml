@@ -28,7 +28,7 @@ env:
 
 jobs:
   typecheck-and-unit:
-    name: typecheck + unit
+    name: Type check & unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
