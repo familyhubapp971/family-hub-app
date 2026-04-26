@@ -85,7 +85,7 @@ jobs:
       - run: pnpm exec vitest run --config tests/integration/vitest.config.ts
 
   e2e-critical:
-    name: Browser smoke (critical user journeys)
+    name: Smoke test (Critical Journeys)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
@@ -131,7 +131,7 @@ jobs:
           retention-days: 7
 
   build:
-    name: Production build (informational)
+    name: Compile check — does it build? (informational)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
