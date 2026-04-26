@@ -57,3 +57,4 @@ _Seeded by FHS-172 / FHS-173 / FHS-174 — populate as ADRs land:_
 - [`0004-stripe-billing.md`](0004-stripe-billing.md) — accepted (FHS-173)
 - [`0005-monorepo-structure.md`](0005-monorepo-structure.md) — accepted (FHS-174)
 - [`0006-branching-strategy.md`](0006-branching-strategy.md) — accepted (FHS-174)
+- [`0007-stack-reuse.md`](0007-stack-reuse.md) — accepted (FHS-154)

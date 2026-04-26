@@ -4,11 +4,28 @@ A multi-tenant SaaS platform for families to coordinate schedules, tasks, and sh
 
 ## Stack
 
-- **API:** [Hono](https://hono.dev/) + [Drizzle ORM](https://orm.drizzle.team/) + [Zod](https://zod.dev/)
-- **Frontend:** [React](https://react.dev/) + [Vite](https://vitejs.dev/) + [Tailwind CSS](https://tailwindcss.com/)
-- **Database:** Postgres (with Row-Level Security for tenant isolation)
+- **API:** [Hono](https://hono.dev/) + [Drizzle ORM](https://orm.drizzle.team/) + [Zod](https://zod.dev/) + [pino](https://getpino.io/)
+- **Frontend:** [React 18](https://react.dev/) + [Vite](https://vitejs.dev/) + [Tailwind CSS 3](https://tailwindcss.com/)
+- **Database:** Postgres (with Row-Level Security for tenant isolation, [ADR 0001](docs/decisions/0001-multi-tenancy.md))
 - **Hosting:** Railway (staging + production)
-- **Testing:** Vitest (unit), Playwright (E2E), k6 (perf)
+- **Auth:** Supabase Auth ([ADR 0003](docs/decisions/0003-auth-library.md))
+- **Billing:** Stripe ([ADR 0004](docs/decisions/0004-stripe-billing.md))
+- **Testing:** Vitest (unit + integration), Playwright + playwright-bdd (E2E), k6 (perf)
+- **Package manager:** pnpm 10 workspaces
+
+### Stack Reuse Rationale
+
+This stack is **deliberately reused verbatim** from the legacy
+`family-hub` codebase rather than re-evaluated greenfield. The
+trade-offs and the criteria for revisiting any single library are
+captured in [ADR 0007 — Reuse the family-hub stack](docs/decisions/0007-stack-reuse.md).
+
+In short: Sprint 0's job is to ship a tenant vertical slice, not to
+bikeshed library choices. The two surfaces that **do** diverge from
+family-hub get their own ADRs ([0001](docs/decisions/0001-multi-tenancy.md)
+multi-tenancy, [0002](docs/decisions/0002-subdomain-tenant-routing.md)
+subdomain routing). Swap a single library when a specific metric
+forces it; don't re-litigate the whole stack at once.
 
 ## Quick Start
 
@@ -77,6 +94,7 @@ Both `main` and `staging` require PR reviews and passing CI.
   - [ADR 0004 — Billing provider: Stripe](docs/decisions/0004-stripe-billing.md)
   - [ADR 0005 — Monorepo structure](docs/decisions/0005-monorepo-structure.md)
   - [ADR 0006 — Branching strategy](docs/decisions/0006-branching-strategy.md)
+  - [ADR 0007 — Reuse the family-hub stack](docs/decisions/0007-stack-reuse.md)
 - [Technical docs](docs/technical/)
 - [Feature specs](docs/features/)
 - [Strategy docs](docs/strategy/) — incl. [SaaS Transformation Strategy](docs/strategy/saas-transformation.md)

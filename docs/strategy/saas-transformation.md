@@ -103,6 +103,7 @@ Scale, Enterprise — with metered usage on Scale and Enterprise.
 | Billing | Stripe (Checkout + Customer Portal + webhooks + metered usage) | [0004](../decisions/0004-stripe-billing.md) |
 | Codebase | pnpm monorepo: `apps/{api,web}`, `packages/{shared,ui,test-utils}` | [0005](../decisions/0005-monorepo-structure.md) |
 | Branching | `feature/*` → `staging` → `main`, conditional squash / merge-commit | [0006](../decisions/0006-branching-strategy.md) |
+| Stack reuse | Reuse the proven family-hub stack verbatim; swap individual libraries via superseding ADRs only when a concrete metric forces it | [0007](../decisions/0007-stack-reuse.md) |
 
 Module toggling per tenant means each family / organization activates
 only the pillars they need — Family Admin Hub may be on for one
@@ -175,6 +176,6 @@ Each epic links back to its child stories in the Confluence overview.
 
 ## References
 
-- [Architecture Decision Records](../decisions/) (0001–0006)
+- [Architecture Decision Records](../decisions/) (0001–0007)
 - [docs/README.md](../README.md) — full documentation index
 - Legacy strategy HTML (source material): `~/Documents/Toonday/Business/FamilyHub/family-hub/docs/enterprise/family-hub-saas-strategy.html`
