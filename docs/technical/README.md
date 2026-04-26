@@ -39,10 +39,10 @@ should be linked in a "References" section at the bottom.
 
 ## Index
 
-_Initial seed — populate as docs are added:_
+*Initial seed — populate as docs are added:*
 
 - `architecture.md` — TBD (high-level system overview)
-- `deployment.md` — TBD (Railway topology, env vars, CI/CD flow)
+- [`deployment.md`](deployment.md) — Railway topology, env-var matrix, deploy flow, trial-plan constraints
 - `slos.md` — TBD (SLI/SLO definitions per service)
 - `api/` — TBD (conventions, error envelope, pagination, auth)
 - `data-model/` — TBD (per-domain ERDs and schema rationale)
