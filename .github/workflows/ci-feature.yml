@@ -28,7 +28,7 @@ env:
 
 jobs:
   typecheck-and-unit:
-    name: Type check & unit tests
+    name: Type check & unit tests — frontend + backend + shared
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
