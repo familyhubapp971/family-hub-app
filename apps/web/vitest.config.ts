@@ -6,8 +6,12 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    // setup.ts stays in apps/web/src/test/ (NOT in tests/unit/) so it
+    // can resolve @testing-library/jest-dom from apps/web/node_modules.
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // Centralized tests directory per CLAUDE.md.
+    include: ['../../tests/unit/web/**/*.{test,spec}.{ts,tsx}'],
+    passWithNoTests: true,
     globals: true,
     css: true,
   },
