@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { helloResponseSchema, type HelloResponse } from '@familyhub/shared';
+import { Button, Card, Badge } from '@familyhub/ui';
 
 type FetchState =
   | { status: 'idle' }
@@ -41,17 +42,34 @@ export function App() {
 
   return (
     <main className="flex min-h-full items-center justify-center px-4 py-10">
-      <section className="w-full max-w-xl rounded-2xl border-4 border-white bg-white p-8 text-gray-900 shadow-neo-lg">
-        <h1 className="font-display text-4xl text-kingdom-bg">Family Hub</h1>
+      <Card className="w-full max-w-xl border-4 border-white p-8 text-gray-900 shadow-neo-lg">
+        <div className="flex items-center justify-between">
+          <h1 className="font-display text-4xl text-kingdom-bg">Family Hub</h1>
+          <Badge variant="info">FHS-199</Badge>
+        </div>
         <p className="mt-2 font-body text-sm text-gray-600">
-          SaaS scaffold · FHS-151 · proving the end-to-end pipe.
+          SaaS scaffold · proving the end-to-end pipe with the ported design system.
         </p>
 
-        <div className="mt-6 rounded-xl border-2 border-black p-4 shadow-neo-sm">
+        <Card className="mt-6 border-2 border-black p-4 shadow-neo-sm">
           <h2 className="font-display text-lg">/api/hello response</h2>
           <StateView state={state} />
+        </Card>
+
+        <div className="mt-6 flex gap-3">
+          <Button
+            testId="refetch"
+            onClick={() => window.location.reload()}
+            variant="primary"
+            size="sm"
+          >
+            Refetch
+          </Button>
+          <Button variant="secondary" size="sm">
+            Secondary
+          </Button>
         </div>
-      </section>
+      </Card>
     </main>
   );
 }
