@@ -130,6 +130,35 @@ def progress(children: list[dict]) -> str:
     return f"{done}/{total}"
 
 
+def adf_to_text(node) -> str:
+    """Flatten Atlassian Document Format (issue description) to plain text.
+
+    Walks the tree, joining text nodes. Inserts spaces between block-level
+    boundaries so paragraphs / list items don't run together. Returns "" for
+    missing descriptions (acceptable — surfaces as 'no description' in render).
+    """
+    if node is None:
+        return ""
+    if isinstance(node, str):
+        return node
+    if isinstance(node, list):
+        return " ".join(filter(None, (adf_to_text(c) for c in node)))
+    if isinstance(node, dict):
+        t = node.get("type")
+        if t == "text":
+            return node.get("text", "")
+        if t == "hardBreak":
+            return " "
+        children = adf_to_text(node.get("content", []))
+        if t in {
+            "paragraph", "heading", "listItem",
+            "bulletList", "orderedList", "codeBlock", "blockquote",
+        }:
+            return children + " "
+        return children
+    return ""
+
+
 def render_body(epics: list[dict], epic_children: dict[str, list[dict]]) -> str:
     groups: dict[str, list[dict]] = {}
     for e in epics:
@@ -144,50 +173,85 @@ def render_body(epics: list[dict], epic_children: dict[str, list[dict]]) -> str:
         "<p>Auto-generated from Jira by "
         '<code>scripts/refresh-confluence-epics-page.py</code>. '
         "Refreshes after every ticket close per the CLAUDE.md "
-        '"Closing tickets (post-merge)" rule. Children rolled up under '
-        "each epic with status lozenges.</p>",
-        "<h2>Epics</h2>",
+        '"Closing tickets (post-merge)" rule. Top section is the Sprint-cluster '
+        "overview; per-epic detail follows with each child's scope.</p>",
+        "<h2>Overview</h2>",
     ]
 
-    # Narrow columns get explicit widths so they don't stretch; Summary +
-    # Children share the rest. The Jira macro auto-renders title + status
-    # lozenge as a smart link, so we don't repeat them in plain text.
-    colgroup = (
+    overview_colgroup = (
         "<colgroup>"
-        '<col style="width: 130.0px;" />'  # Epic — just the key macro
-        '<col style="width: 110.0px;" />'  # Status — just the lozenge
-        '<col style="width: 90.0px;" />'   # Progress — "X/Y"
-        "<col />"                            # Summary — auto
-        "<col />"                            # Children — auto
+        '<col style="width: 360.0px;" />'
+        '<col style="width: 120.0px;" />'
+        '<col style="width: 110.0px;" />'
         "</colgroup>"
     )
 
     for fv in ordered:
         parts.append(f"<h3>{esc(fv)}</h3>")
         parts.append("<table>")
-        parts.append(colgroup)
+        parts.append(overview_colgroup)
         parts.append("<tbody>")
         parts.append(
-            "<tr><th>Epic</th><th>Status</th><th>Progress</th>"
-            "<th>Summary</th><th>Children</th></tr>"
+            "<tr><th>Epic</th><th>Status</th><th>Progress</th></tr>"
         )
         for e in groups[fv]:
             children = epic_children[e["key"]]
-            children_html = (
-                "<ul>"
-                + "".join(f"<li>{jira_macro(c['key'])}</li>" for c in children)
-                + "</ul>"
-            ) if children else "<em>no children</em>"
             parts.append(
                 "<tr>"
-                f"<td>{jira_macro(e['key'])}</td>"
+                f"<td>{jira_macro(e['key'])} {esc(e['fields']['summary'])}</td>"
                 f"<td>{status_lozenge(e['fields']['status']['name'])}</td>"
                 f"<td>{progress(children)}</td>"
-                f"<td>{esc(e['fields']['summary'])}</td>"
-                f"<td>{children_html}</td>"
                 "</tr>"
             )
         parts.append("</tbody></table>")
+
+    parts.append("<h2>Epic detail</h2>")
+
+    detail_colgroup = (
+        "<colgroup>"
+        '<col style="width: 320.0px;" />'
+        "<col />"
+        "</colgroup>"
+    )
+
+    for fv in ordered:
+        for e in groups[fv]:
+            children = epic_children[e["key"]]
+            total = len(children)
+            done = sum(
+                1 for c in children
+                if c["fields"]["status"]["name"] in {"Done", "Cancelled", "Won't Do"}
+            )
+            parts.append(
+                f"<h3>{esc(e['key'])} — {esc(e['fields']['summary'])}</h3>"
+            )
+            parts.append(
+                "<p>"
+                f"{jira_macro(e['key'])} "
+                f"{status_lozenge(e['fields']['status']['name'])} "
+                f"— {total} child stor{'y' if total == 1 else 'ies'} "
+                f"({done} done). Scope summarized in each child's Comments column."
+                "</p>"
+            )
+            if not children:
+                parts.append("<p><em>no children</em></p>")
+                continue
+            parts.append("<table>")
+            parts.append(detail_colgroup)
+            parts.append("<tbody>")
+            parts.append("<tr><th>Ticket</th><th>Comments</th></tr>")
+            for c in children:
+                desc = adf_to_text(c["fields"].get("description")).strip()
+                desc_html = esc(desc) if desc else "<em>no description</em>"
+                parts.append(
+                    "<tr>"
+                    f"<td>{jira_macro(c['key'])} "
+                    f"{esc(c['fields']['summary'])} "
+                    f"{status_lozenge(c['fields']['status']['name'])}</td>"
+                    f"<td>{desc_html}</td>"
+                    "</tr>"
+                )
+            parts.append("</tbody></table>")
 
     return "\n".join(parts)
 
@@ -246,10 +310,13 @@ def main() -> None:
     if not epics:
         sys.exit("error: Jira returned 0 epics — refusing to overwrite the page with an empty body")
 
-    print("Fetching children per epic...")
+    print("Fetching children per epic (with descriptions)...")
     epic_children: dict[str, list[dict]] = {}
     for e in epics:
-        children = jql(f'parent = {e["key"]} ORDER BY Rank ASC', fields="summary,status")
+        children = jql(
+            f'parent = {e["key"]} ORDER BY Rank ASC',
+            fields="summary,status,description",
+        )
         epic_children[e["key"]] = children
 
     body = render_body(epics, epic_children)
