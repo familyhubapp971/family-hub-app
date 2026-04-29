@@ -29,20 +29,34 @@ forces it; don't re-litigate the whole stack at once.
 
 ## Quick Start
 
+Requires Docker (Compose v2), Node 20+, pnpm 10+.
+
 ```bash
 # Install
 pnpm install
 
-# Configure
-cp .env.example .env.local
-# Then fill in only what you need locally — see "Environment" below for
-# where each value comes from.
+# One-command dev: Postgres + migrations + api (:3001) + web (:5173)
+# (creates .env.local from .env.example automatically if missing)
+./scripts/dev
 
-# Develop
-pnpm dev          # runs api + web concurrently
-pnpm test         # run unit tests
-pnpm test:e2e     # run Playwright E2E
+# In another shell — populate the dev DB with fake tenants + users
+./scripts/seed       # or: pnpm seed
+
+# Tests
+pnpm test            # unit
+pnpm test:integration # integration (separate :5433 Postgres, auto-managed)
+pnpm test:e2e        # Playwright E2E
+
+# DB lifecycle
+pnpm dev:up          # just start Postgres
+pnpm dev:down        # stop Postgres (data persists)
+pnpm dev:reset       # stop AND drop the volume (fresh DB)
 ```
+
+> **Schema status:** `apps/api/src/db/schema.ts` is intentionally empty
+> until Sprint 1 — `tenants` and `users` land with `tenant_id` + RLS
+> per [ADR 0001](docs/decisions/0001-multi-tenancy.md). Until then,
+> `./scripts/seed` runs as a no-op that warns the schema isn't ready.
 
 ## Environment
 
