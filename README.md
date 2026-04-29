@@ -35,13 +35,40 @@ pnpm install
 
 # Configure
 cp .env.example .env.local
-# Fill in DATABASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY, etc.
+# Then fill in only what you need locally — see "Environment" below for
+# where each value comes from.
 
 # Develop
 pnpm dev          # runs api + web concurrently
 pnpm test         # run unit tests
 pnpm test:e2e     # run Playwright E2E
 ```
+
+## Environment
+
+[`.env.example`](.env.example) is the canonical list of every variable
+the api, web, and tooling read. Copy it to `.env.local` (gitignored)
+and fill in the values you need.
+
+Minimum vars needed to boot api + web locally: `DATABASE_URL` (and that
+alone — everything else is optional until the dependent feature is wired).
+
+Source of truth for real values:
+
+| Group | Where the value comes from |
+| --- | --- |
+| Postgres | Local: docker-compose (FHS-168) or your own Postgres. Hosted: Railway dashboard injects `DATABASE_URL` automatically. |
+| Runtime (`NODE_ENV`, `PORT`, `LOG_LEVEL`, `BASE_DOMAIN`, `VITE_API_URL`) | No external source — set per environment. Defaults in `.env.example` are dev-safe. |
+| Supabase auth | Supabase dashboard → Project Settings → API |
+| Stripe billing | Stripe dashboard → Developers → API keys (test mode for dev) |
+| Sentry | Sentry dashboard → Project Settings → Client Keys (DSN) — separate projects for api + web |
+| Jira tooling | [id.atlassian.com — API tokens](https://id.atlassian.com/manage-profile/security/api-tokens) |
+| Railway MCP | [railway.com/account/tokens](https://railway.com/account/tokens) (Account Tokens, not Project) |
+
+`.env.example` itself **never** holds real secrets. Production /
+staging values live in the Railway dashboard; local dev values live
+only in your `.env.local`. When the team grows past one person we'll
+move to a shared vault — tracked as a follow-up.
 
 ## Working with Claude Code
 
