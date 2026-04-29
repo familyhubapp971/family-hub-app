@@ -36,14 +36,21 @@ export function Dialog({
 
   if (!isOpen) return null;
 
+  // Backdrop click-to-close is one route; Escape (wired in the useEffect
+  // above) is the keyboard equivalent. Escape lives at document level so
+  // it works regardless of focus location, which the jsx-a11y rules can't
+  // see — disable the two click-handler-without-key-handler rules
+  // explicitly with that justification. role=dialog + aria-modal already
+  // mark this region for assistive tech.
+  /* eslint-disable jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-static-element-interactions */
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabelledBy ? undefined : ariaLabel}
       aria-labelledby={ariaLabelledBy}
-      // Use Tailwind utilities for backdrop so a strict CSP without
-      // 'unsafe-inline' style-src still works (FHS-170 will add CSP).
+      // Tailwind utilities for backdrop so strict CSP (no 'unsafe-inline'
+      // style-src) still works (FHS-170 will add CSP).
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
       onClick={closeOnBackdrop ? onClose : undefined}
       data-testid={testId}
@@ -56,4 +63,5 @@ export function Dialog({
       </div>
     </div>
   );
+  /* eslint-enable jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-static-element-interactions */
 }

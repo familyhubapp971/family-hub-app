@@ -8,8 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc --noEmit",
-    "lint": "echo 'lint — wired in FHS-169'"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@familyhub/shared": "workspace:*",

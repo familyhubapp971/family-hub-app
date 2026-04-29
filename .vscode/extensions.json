@@ -1,0 +1,11 @@
+{
+  "// reason": "VS Code prompts contributors to install these on first repo open. Keep the list tight — every extra extension is a UX cost. Add only what's load-bearing for our actual stack: TS lint/format + Tailwind classes + Vitest test runs + Playwright UI mode.",
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "vitest.explorer",
+    "ms-playwright.playwright",
+    "editorconfig.editorconfig"
+  ]
+}
