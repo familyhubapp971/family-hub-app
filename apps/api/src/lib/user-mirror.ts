@@ -1,20 +1,18 @@
 import type { Database } from '../db/client.js';
 import { users, type User } from '../db/schema.js';
 
-// Users mirror sync (FHS-192).
+// Users mirror sync (FHS-192) — wired into authMiddleware in FHS-193.
 //
 // Supabase owns `auth.users`; our app needs a row in `public.users` so
 // app tables can FK to a stable user id. On the first authenticated
 // request, we INSERT a mirror row from the verified JWT claims; on
 // subsequent requests the row already exists.
 //
-// This module is intentionally _not_ wired into the auth middleware in
-// FHS-192 — that wiring is deferred to a follow-up commit on this
-// branch (or a small follow-on PR) once FHS-191's middleware lands on
-// staging. The integration point is one line inside `authMiddleware`,
-// after token verification and before tenant resolution:
-//
-//   await getOrCreateUser(getDb(), { id: sub, email });
+// Wiring point lives in `apps/api/src/middleware/auth.ts` — after JWT
+// verification, before tenant-context resolution. The middleware exposes
+// a `mirror` DI hook so unit tests can stub the upsert; the integration
+// spec at `tests/integration/specs/auth-flow.spec.ts` exercises the real
+// Postgres path.
 //
 // Concurrency safety comes from the `id` PRIMARY KEY constraint plus
 // `ON CONFLICT (id) DO UPDATE ... RETURNING *`: two simultaneous

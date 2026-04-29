@@ -84,6 +84,20 @@ afterAll(async () => {
   );
 });
 
+// Stub mirror — this spec is about the JWT verification path over the
+// network. The mirror-DB integration is covered end-to-end in
+// auth-flow.spec.ts. We also pass `requireEmailForMirror: false` so
+// tokens minted without an email claim still hit the verifier (these
+// tests pre-date the FHS-193 mirror wiring and assert on JWT shape only).
+function stubMirror(claims: { id: string; email: string }) {
+  return Promise.resolve({
+    id: claims.id,
+    email: claims.email,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  });
+}
+
 function buildApp(supabaseUrlOverride?: string) {
   // Use the real authMiddleware with the issuer pointing at our test
   // JWKS server — `createRemoteJWKSet` inside the middleware will hit
@@ -99,7 +113,7 @@ function buildApp(supabaseUrlOverride?: string) {
       cooldownDuration: 5_000,
     },
   );
-  app.use('*', authMiddleware({ jwks, issuer }));
+  app.use('*', authMiddleware({ jwks, issuer, mirror: stubMirror, requireEmailForMirror: false }));
   app.get('/health', (c) => c.json({ status: 'ok' }));
   app.get('/me', (c) => {
     const user = getAuthenticatedUser(c);

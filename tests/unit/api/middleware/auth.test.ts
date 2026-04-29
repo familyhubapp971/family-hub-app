@@ -32,14 +32,18 @@ async function mintToken(
   opts: {
     kid?: string;
     sub?: string;
-    email?: string;
+    email?: string | null;
     expSecondsFromNow?: number;
     issuer?: string;
   } = {},
 ): Promise<string> {
   const sub = opts.sub ?? '00000000-0000-4000-8000-000000000001';
   const exp = Math.floor(Date.now() / 1000) + (opts.expSecondsFromNow ?? 3600);
-  return new SignJWT({ email: opts.email })
+  // Default to a real email so the mirror-by-default path is exercised.
+  // Pass `email: null` explicitly to mint a no-email token (used by the
+  // requireEmailForMirror tests).
+  const email = opts.email === null ? undefined : (opts.email ?? `${sub}@example.com`);
+  return new SignJWT(email !== undefined ? { email } : {})
     .setProtectedHeader({ alg: ALG, kid: opts.kid ?? KID })
     .setSubject(sub)
     .setIssuer(opts.issuer ?? ISSUER)
@@ -80,8 +84,29 @@ afterEach(() => {
   _resetJwksCacheForTests();
 });
 
+/**
+ * Stub mirror — returns a deterministic row keyed off the JWT claims.
+ * Unit tests don't have a Postgres connection, so we replace the real
+ * `getOrCreateUser` call with this. Real-DB coverage lives in
+ * tests/integration/specs/auth-flow.spec.ts.
+ */
+function stubMirror(claims: { id: string; email: string }) {
+  return Promise.resolve({
+    id: claims.id,
+    email: claims.email,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  });
+}
+
 function buildAppWithProtectedRoute(
   jwksImpl: (header: { kid?: string; alg?: string }) => Promise<KeyLike>,
+  mirror: (claims: { id: string; email: string }) => Promise<{
+    id: string;
+    email: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }> = stubMirror,
 ) {
   const app = new Hono();
   app.use(
@@ -89,6 +114,7 @@ function buildAppWithProtectedRoute(
     authMiddleware({
       issuer: ISSUER,
       jwks: async (header) => jwksImpl({ kid: header.kid, alg: header.alg }),
+      mirror,
     }),
   );
   app.get('/health', (c) => c.json({ status: 'ok' }));
@@ -262,6 +288,69 @@ describe('FHS-191 — auth middleware', () => {
         get: vi.fn(() => undefined),
       } as unknown as Parameters<typeof getAuthenticatedUser>[0];
       expect(() => getAuthenticatedUser(fakeContext)).toThrow(/did not pass authMiddleware/);
+    });
+  });
+
+  // FHS-193 — mirror-row sync wired into the middleware.
+  describe('mirror upsert (FHS-192/193 integration point)', () => {
+    it('calls the mirror function with the verified sub + email', async () => {
+      const key = await generateEs256Key();
+      const { resolve } = makeJwksResolver([key.publicJwk]);
+      const calls: Array<{ id: string; email: string }> = [];
+      const mirror = (claims: { id: string; email: string }) => {
+        calls.push(claims);
+        return Promise.resolve({
+          id: claims.id,
+          email: claims.email,
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        });
+      };
+      const app = buildAppWithProtectedRoute(resolve, mirror);
+
+      const token = await mintToken(key.privateKey, { sub: 'u-mirror-1', email: 'm@example.com' });
+      const res = await app.request('/me', { headers: { Authorization: `Bearer ${token}` } });
+
+      expect(res.status).toBe(200);
+      expect(calls).toEqual([{ id: 'u-mirror-1', email: 'm@example.com' }]);
+    });
+
+    it('rejects tokens without an email claim by default (mirror requires email)', async () => {
+      const key = await generateEs256Key();
+      const { resolve } = makeJwksResolver([key.publicJwk]);
+      const mirror = vi.fn(stubMirror);
+      const app = buildAppWithProtectedRoute(resolve, mirror);
+
+      const token = await mintToken(key.privateKey, { email: null });
+      const res = await app.request('/me', { headers: { Authorization: `Bearer ${token}` } });
+
+      expect(res.status).toBe(401);
+      // Mirror MUST NOT be called when the email claim is missing.
+      expect(mirror).not.toHaveBeenCalled();
+    });
+
+    it('propagates mirror errors as 500 (DB down → not silently auth)', async () => {
+      const key = await generateEs256Key();
+      const { resolve } = makeJwksResolver([key.publicJwk]);
+      const failingMirror = () => Promise.reject(new Error('connection refused'));
+      const app = new Hono();
+      app.use(
+        '*',
+        authMiddleware({
+          issuer: ISSUER,
+          jwks: async (header) => resolve({ kid: header.kid, alg: header.alg }),
+          mirror: failingMirror,
+        }),
+      );
+      app.get('/me', (c) => c.json({ ok: true }));
+      app.onError((_err, c) => c.json({ error: 'internal server error' }, 500));
+
+      const token = await mintToken(key.privateKey, { email: 'fail@example.com' });
+      const res = await app.request('/me', { headers: { Authorization: `Bearer ${token}` } });
+
+      // 500, not 401 — auth verified successfully; the mirror is the
+      // server-side failure. Treating it as 401 would mask DB outages.
+      expect(res.status).toBe(500);
     });
   });
 });

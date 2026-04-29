@@ -2,18 +2,27 @@ import type { Context, MiddlewareHandler } from 'hono';
 import { createRemoteJWKSet, jwtVerify, errors as joseErrors } from 'jose';
 import type { JWTPayload, JWTVerifyGetKey } from 'jose';
 import { config } from '../config.js';
+import { getDb } from '../db/client.js';
+import type { Database } from '../db/client.js';
+import type { User as MirrorUser } from '../db/schema.js';
+import { getOrCreateUser } from '../lib/user-mirror.js';
 import { createLogger } from '../logger.js';
 
-// JWT verification middleware (FHS-191).
+// JWT verification middleware (FHS-191) + mirror-row sync (FHS-192/193).
 //
 // Modern Supabase signs session JWTs with ES256 and exposes the public
 // keys at <SUPABASE_URL>/auth/v1/.well-known/jwks.json. The middleware
 // fetches that JWKS once, caches it, and refreshes on key-id miss. We
 // never trust the legacy HS256 / shared-secret path — see ADR 0008.
 //
+// Once a token verifies, the middleware ensures a `public.users` mirror
+// row exists for the JWT `sub` (FHS-192). The upsert is idempotent;
+// every authenticated request runs through it so app tables can FK to
+// `public.users` knowing the row will be there.
+//
 // Order in app.ts: cors → request-context → rate-limit → AUTH → tenant
-// resolution. Tenant context (FHS-192) keys off the authenticated user,
-// so auth must run first.
+// resolution. Tenant context keys off the authenticated user, so auth
+// must run first.
 
 const log = createLogger('auth');
 
@@ -30,6 +39,10 @@ export interface AuthenticatedUser {
   email?: string;
   /** Raw verified payload — handlers may need claims we don't surface explicitly. */
   claims: JWTPayload;
+  /** Mirror row from `public.users`. Present once FHS-192's getOrCreateUser
+   *  has succeeded; absent if the verified JWT had no email claim and the
+   *  middleware is configured with `requireEmailForMirror: false`. */
+  mirror?: MirrorUser;
 }
 
 export interface AuthMiddlewareOptions {
@@ -50,6 +63,25 @@ export interface AuthMiddlewareOptions {
    * addition to the built-in /health and /hello.
    */
   publicPathPrefixes?: readonly string[];
+  /**
+   * Override the user-mirror upsert. Production leaves this undefined
+   * and the middleware calls `getOrCreateUser(getDb(), claims)`. Unit
+   * tests inject a stub so they don't need a real Postgres connection;
+   * the integration spec exercises the real DB path.
+   *
+   * Returning `undefined` skips attaching a mirror row; the middleware
+   * still attaches `claims` so downstream code that doesn't need the row
+   * keeps working.
+   */
+  mirror?: (claims: { id: string; email: string }) => Promise<MirrorUser | undefined>;
+  /**
+   * If true (default), reject tokens that lack an email claim. The
+   * mirror row's `email` column is NOT NULL UNIQUE so we can't insert
+   * without one. Setting false skips the mirror call when email is
+   * missing — useful for tokens minted by service-role flows that
+   * legitimately have no email (none today; future-proofing).
+   */
+  requireEmailForMirror?: boolean;
 }
 
 let cachedDefaultJwks: JWTVerifyGetKey | undefined;
@@ -98,6 +130,11 @@ function unauthorized(c: Context, reason: string, requestId?: string) {
   return c.json({ error: 'unauthorized' }, 401);
 }
 
+function defaultMirror(db: Database) {
+  return async (claims: { id: string; email: string }): Promise<MirrorUser> =>
+    getOrCreateUser(db, claims);
+}
+
 /**
  * Hono middleware that verifies the `Authorization: Bearer <token>` header
  * against the Supabase JWKS, attaches the user to context on success, and
@@ -108,6 +145,11 @@ export function authMiddleware(opts: AuthMiddlewareOptions = {}): MiddlewareHand
   const issuer =
     opts.issuer ?? (config.SUPABASE_URL ? `${config.SUPABASE_URL}/auth/v1` : undefined);
   const publicExtras = opts.publicPathPrefixes ?? [];
+  const requireEmailForMirror = opts.requireEmailForMirror ?? true;
+  // Resolve the mirror function lazily on the first call so unit tests
+  // that pass `mirror: undefined` and never authenticate don't trigger
+  // a real Postgres pool init.
+  let mirror = opts.mirror;
 
   return async (c, next) => {
     const requestId = c.get('requestId');
@@ -152,8 +194,36 @@ export function authMiddleware(opts: AuthMiddlewareOptions = {}): MiddlewareHand
     if (!sub) return unauthorized(c, 'token-missing-sub-claim', requestId);
 
     const email = typeof payload['email'] === 'string' ? (payload['email'] as string) : undefined;
-    const user: AuthenticatedUser =
-      email !== undefined ? { id: sub, email, claims: payload } : { id: sub, claims: payload };
+
+    // Mirror upsert. Skip when email is missing AND
+    // `requireEmailForMirror` is false; otherwise reject — we need an
+    // email to satisfy the NOT NULL UNIQUE column on `public.users`.
+    let mirrorRow: MirrorUser | undefined;
+    if (email !== undefined) {
+      if (!mirror) mirror = defaultMirror(getDb());
+      try {
+        mirrorRow = await mirror({ id: sub, email });
+      } catch (err) {
+        // Mirror failures are server-side bugs (DB down, schema drift).
+        // Logging at error level surfaces them in Sentry without leaking
+        // detail to the client; the request gets a 500 from the global
+        // onError handler in app.ts.
+        log.error(
+          { err: err instanceof Error ? err.message : String(err), request_id: requestId, sub },
+          'auth: mirror upsert failed',
+        );
+        throw err;
+      }
+    } else if (requireEmailForMirror) {
+      return unauthorized(c, 'token-missing-email-claim', requestId);
+    }
+
+    const user: AuthenticatedUser = {
+      id: sub,
+      claims: payload,
+      ...(email !== undefined ? { email } : {}),
+      ...(mirrorRow !== undefined ? { mirror: mirrorRow } : {}),
+    };
     c.set('user', user);
 
     await next();
