@@ -13,26 +13,31 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Don't throw at module init when env vars are missing: a hard throw here
+// crashes the entire React tree, breaking unrelated pages (landing, /hello)
+// in CI environments that build the bundle without auth secrets. Instead,
+// log a warning and fall back to placeholder values; the actual auth.* calls
+// will fail with a clear network error if invoked, which is the correct
+// behaviour for a misconfigured deploy. Real auth flows in CI need
+// VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY set as GH Actions secrets.
 if (!url || !anonKey) {
-  // Fail loudly at import time. The web bundle cannot function without
-  // these; missing values almost always mean Railway env vars weren't
-  // propagated to the build (see FHS-189). Throwing here surfaces the
-  // problem on first page load instead of a confusing "auth doesn't
-  // work" symptom three pages deep.
-  throw new Error(
-    '[supabase] missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY — ' +
-      'check apps/web build env (Vite reads VITE_* at build time, not runtime).',
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY missing — ' +
+      'auth calls will fail. Set both at build time (Vite reads VITE_* env at build).',
   );
 }
 
-export const supabase: SupabaseClient = createClient(url, anonKey, {
-  auth: {
-    // detectSessionInUrl is needed so /auth/callback can extract the
-    // session from the OAuth fragment Supabase appends to redirectTo.
-    // persistSession + autoRefreshToken use Supabase defaults
-    // (localStorage + auto-refresh) per the FHS-190 ticket description.
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+export const supabase: SupabaseClient = createClient(
+  url || 'https://placeholder.invalid',
+  anonKey || 'placeholder-anon-key',
+  {
+    auth: {
+      // detectSessionInUrl is needed so /auth/callback can extract the
+      // session from the OAuth fragment Supabase appends to redirectTo.
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
   },
-});
+);
