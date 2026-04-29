@@ -13,12 +13,14 @@
   "dependencies": {
     "@familyhub/shared": "workspace:*",
     "@familyhub/ui": "workspace:*",
+    "@sentry/react": "^8.55.2",
     "lucide-react": "0.460.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "zod": "3.23.8"
   },
   "devDependencies": {
+    "@sentry/vite-plugin": "^2.23.1",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.0.1",
     "@types/react": "18.3.11",
