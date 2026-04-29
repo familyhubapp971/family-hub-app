@@ -149,9 +149,23 @@ def render_body(epics: list[dict], epic_children: dict[str, list[dict]]) -> str:
         "<h2>Epics</h2>",
     ]
 
+    # Column widths tuned so Status/Progress are condensed and Summary/Children
+    # get the slack — long ticket titles in Children should wrap less aggressively.
+    colgroup = (
+        "<colgroup>"
+        '<col style="width: 180.0px;" />'  # Epic
+        '<col style="width: 90.0px;" />'   # Status
+        '<col style="width: 80.0px;" />'   # Progress
+        '<col style="width: 280.0px;" />'  # Summary
+        '<col style="width: 570.0px;" />'  # Children
+        "</colgroup>"
+    )
+
     for fv in ordered:
         parts.append(f"<h3>{esc(fv)}</h3>")
-        parts.append("<table><tbody>")
+        parts.append("<table>")
+        parts.append(colgroup)
+        parts.append("<tbody>")
         parts.append(
             "<tr><th>Epic</th><th>Status</th><th>Progress</th>"
             "<th>Summary</th><th>Children</th></tr>"
