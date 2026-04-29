@@ -70,6 +70,17 @@ staging values live in the Railway dashboard; local dev values live
 only in your `.env.local`. When the team grows past one person we'll
 move to a shared vault — tracked as a follow-up.
 
+## Tooling
+
+[`scripts/refresh-confluence-epics-page.py`](scripts/refresh-confluence-epics-page.py)
+refreshes the Confluence "FHS — Epics & Tickets" page from live Jira.
+Runs after every ticket close per the CLAUDE.md post-merge rule:
+
+```bash
+set -a; source .env.local; set +a
+python3 scripts/refresh-confluence-epics-page.py --reason "FHS-XXX close"
+```
+
 ## Working with Claude Code
 
 This repo ships [`.claude/`](.claude/README.md) with a curated set of
