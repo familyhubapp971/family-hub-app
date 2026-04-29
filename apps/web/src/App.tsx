@@ -1,96 +1,36 @@
-import { useEffect, useState } from 'react';
-import { helloResponseSchema, type HelloResponse } from '@familyhub/shared';
-import { Button, Card, Badge } from '@familyhub/ui';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './lib/auth-context';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { LandingPage } from './pages/LandingPage';
+import { LoginPage } from './pages/auth/LoginPage';
+import { SignupPage } from './pages/auth/SignupPage';
+import { ResetPasswordRequestPage } from './pages/auth/ResetPasswordRequestPage';
+import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
+import { DashboardPage } from './pages/DashboardPage';
 
-type FetchState =
-  | { status: 'idle' }
-  | { status: 'loading' }
-  | { status: 'success'; data: HelloResponse }
-  | { status: 'error'; message: string };
-
-async function fetchHello(signal: AbortSignal): Promise<HelloResponse> {
-  const response = await fetch('/api/hello', {
-    signal,
-    headers: { Accept: 'application/json' },
-  });
-  if (!response.ok) {
-    throw new Error(`/api/hello returned ${response.status}`);
-  }
-  const data: unknown = await response.json();
-  const parsed = helloResponseSchema.safeParse(data);
-  if (!parsed.success) {
-    throw new Error('invalid /hello response shape');
-  }
-  return parsed.data;
-}
-
+// Top-level routing. AuthProvider wraps every route so useAuth() is
+// available everywhere — including the OAuth callback page that needs
+// to react to the session flip mid-render.
 export function App() {
-  const [state, setState] = useState<FetchState>({ status: 'idle' });
-
-  useEffect(() => {
-    const ctrl = new AbortController();
-    setState({ status: 'loading' });
-    fetchHello(ctrl.signal)
-      .then((data) => setState({ status: 'success', data }))
-      .catch((err: unknown) => {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        const message = err instanceof Error ? err.message : String(err);
-        setState({ status: 'error', message });
-      });
-    return () => ctrl.abort();
-  }, []);
-
   return (
-    <main className="flex min-h-full items-center justify-center px-4 py-10">
-      <Card className="w-full max-w-xl border-4 border-white p-8 text-gray-900 shadow-neo-lg">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-4xl text-kingdom-bg">Family Hub</h1>
-          <Badge variant="info">FHS-199</Badge>
-        </div>
-        <p className="mt-2 font-body text-sm text-gray-600">
-          SaaS scaffold · proving the end-to-end pipe with the ported design system.
-        </p>
-
-        <Card className="mt-6 border-2 border-black p-4 shadow-neo-sm">
-          <h2 className="font-display text-lg">/api/hello response</h2>
-          <StateView state={state} />
-        </Card>
-
-        <div className="mt-6 flex gap-3">
-          <Button
-            testId="refetch"
-            onClick={() => window.location.reload()}
-            variant="primary"
-            size="sm"
-          >
-            Refetch
-          </Button>
-          <Button variant="secondary" size="sm">
-            Secondary
-          </Button>
-        </div>
-      </Card>
-    </main>
-  );
-}
-
-function StateView({ state }: { state: FetchState }) {
-  if (state.status === 'idle' || state.status === 'loading') {
-    return <p className="mt-2 font-body text-gray-600">Fetching…</p>;
-  }
-  if (state.status === 'error') {
-    return (
-      <p className="mt-2 font-body text-red-600" data-testid="hello-error">
-        Error: {state.message}
-      </p>
-    );
-  }
-  return (
-    <dl className="mt-2 grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 font-body text-sm">
-      <dt className="font-semibold">message</dt>
-      <dd data-testid="hello-message">{state.data.message}</dd>
-      <dt className="font-semibold">timestamp</dt>
-      <dd data-testid="hello-timestamp">{state.data.timestamp}</dd>
-    </dl>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/auth/reset-request" element={<ResetPasswordRequestPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
