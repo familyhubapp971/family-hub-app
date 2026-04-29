@@ -14,8 +14,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc --noEmit",
-    "lint": "echo 'lint — wired in FHS-169'"
+    "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
     "lucide-react": "^0.460.0",
