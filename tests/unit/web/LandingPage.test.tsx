@@ -1,14 +1,31 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { App } from '../../../apps/web/src/App';
+import { MemoryRouter } from 'react-router-dom';
+import { LandingPage } from '../../../apps/web/src/pages/LandingPage';
 
-describe('<App />', () => {
+// Stub supabase + AuthProvider — the landing page only needs
+// `session` to decide which CTA buttons to render. Mocking the module
+// avoids pulling the real Supabase client (and its localStorage
+// hydration race) into the unit test.
+vi.mock('../../../apps/web/src/lib/auth-context', () => ({
+  useAuth: () => ({ session: null, user: null, loading: false }),
+}));
+
+describe('<LandingPage />', () => {
   const originalFetch = global.fetch;
 
   afterEach(() => {
     global.fetch = originalFetch;
     vi.restoreAllMocks();
   });
+
+  function renderPage() {
+    return render(
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>,
+    );
+  }
 
   it('renders the fetched /hello payload', async () => {
     global.fetch = vi.fn().mockResolvedValue(
@@ -21,7 +38,7 @@ describe('<App />', () => {
       ),
     ) as unknown as typeof global.fetch;
 
-    render(<App />);
+    renderPage();
 
     expect(screen.getByRole('heading', { name: /family hub/i })).toBeInTheDocument();
 
@@ -39,7 +56,7 @@ describe('<App />', () => {
       }),
     ) as unknown as typeof global.fetch;
 
-    render(<App />);
+    renderPage();
 
     await waitFor(() => {
       expect(screen.getByTestId('hello-error')).toHaveTextContent(/invalid/i);
@@ -47,11 +64,11 @@ describe('<App />', () => {
   });
 
   it('shows an error card on non-2xx response', async () => {
-    global.fetch = vi.fn().mockResolvedValue(
-      new Response('boom', { status: 500 }),
-    ) as unknown as typeof global.fetch;
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response('boom', { status: 500 })) as unknown as typeof global.fetch;
 
-    render(<App />);
+    renderPage();
 
     await waitFor(() => {
       expect(screen.getByTestId('hello-error')).toHaveTextContent(/500/);
