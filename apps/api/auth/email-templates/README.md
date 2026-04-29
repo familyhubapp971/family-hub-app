@@ -38,3 +38,11 @@ the email body.
 Reviewable diffs. A copy change shows up as a few-line HTML diff in the
 PR; the applier script stays stable. Future maintainers (or Supabase
 SMTP migration) can re-use these without grepping Python.
+
+## Note on Prettier
+
+The repo's `lint-staged` config runs Prettier on `*.html` at commit
+time, which will rewrap long lines in these templates. That's fine —
+re-run the applier after committing to push the reformatted HTML to
+Supabase, and the next `--check` will report 0 diffs. Don't try to
+escape Prettier; just accept its formatting as the source of truth.
