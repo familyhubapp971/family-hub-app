@@ -229,6 +229,9 @@ re-derived each time.
     not be inlined in the MCP call (transcript exposure); set those via
     the Railway dashboard "Generate" affordance or, if necessary, via
     `mcp__railway__variable_set` accepting the transcript trade-off.
+    The full inventory of every variable api / web / tooling read lives
+    in [`.env.example`](../../.env.example); `.env.example` is the
+    contract, Railway dashboard holds the real values per environment.
 5. **Trigger the first deploy** via `mcp__railway__deployment_trigger`
     with the staging branch HEAD SHA, or push to `staging` and let the
     trigger fire automatically. Verify with `mcp__railway__deployment_status`
