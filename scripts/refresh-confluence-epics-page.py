@@ -149,21 +149,35 @@ def render_body(epics: list[dict], epic_children: dict[str, list[dict]]) -> str:
         "<h2>Epics</h2>",
     ]
 
+    # Narrow columns get explicit widths so they don't stretch; Summary +
+    # Children share the rest. The Jira macro auto-renders title + status
+    # lozenge as a smart link, so we don't repeat them in plain text.
+    colgroup = (
+        "<colgroup>"
+        '<col style="width: 130.0px;" />'  # Epic — just the key macro
+        '<col style="width: 110.0px;" />'  # Status — just the lozenge
+        '<col style="width: 90.0px;" />'   # Progress — "X/Y"
+        "<col />"                            # Summary — auto
+        "<col />"                            # Children — auto
+        "</colgroup>"
+    )
+
     for fv in ordered:
         parts.append(f"<h3>{esc(fv)}</h3>")
-        parts.append("<table><tbody>")
+        parts.append("<table>")
+        parts.append(colgroup)
+        parts.append("<tbody>")
         parts.append(
             "<tr><th>Epic</th><th>Status</th><th>Progress</th>"
             "<th>Summary</th><th>Children</th></tr>"
         )
         for e in groups[fv]:
             children = epic_children[e["key"]]
-            children_html = "<br/>".join(
-                f'{jira_macro(c["key"])} '
-                f'{status_lozenge(c["fields"]["status"]["name"])} '
-                f'{esc(c["fields"]["summary"])}'
-                for c in children
-            ) or "<em>no children</em>"
+            children_html = (
+                "<ul>"
+                + "".join(f"<li>{jira_macro(c['key'])}</li>" for c in children)
+                + "</ul>"
+            ) if children else "<em>no children</em>"
             parts.append(
                 "<tr>"
                 f"<td>{jira_macro(e['key'])}</td>"

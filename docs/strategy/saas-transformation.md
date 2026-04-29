@@ -22,12 +22,12 @@ organization — can spin up at `<slug>.familyhub.app` in minutes.
 
 ## What we're building
 
-| Pillar | Description |
-| --- | --- |
-| **Family Admin Hub** | Calendars, meals, announcements, assignments, journal — one dashboard replaces five apps. |
+| Pillar                     | Description                                                                                                |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Family Admin Hub**       | Calendars, meals, announcements, assignments, journal — one dashboard replaces five apps.                  |
 | **Beneficial Screen Time** | Maths, world flags, logic games — children earn stickers by learning. Screen time parents feel good about. |
-| **Sticker Economy** | Earn, save, invest, spend in a rewards shop. Children learn economics through real consequence. |
-| **Cultural Flexibility** | Ramadan journal, mosque / church integration, extended-family roles. Built for how real families work. |
+| **Sticker Economy**        | Earn, save, invest, spend in a rewards shop. Children learn economics through real consequence.            |
+| **Cultural Flexibility**   | Ramadan journal, mosque / church integration, extended-family roles. Built for how real families work.     |
 
 ## How it works
 
@@ -42,12 +42,12 @@ The four-way intersection — **family admin + children's education +
 reward economy + cultural flexibility** — is uncontested. Existing
 players occupy at most two corners:
 
-| Competitor | Family admin | Education | Reward economy | Cultural flex |
-| --- | --- | --- | --- | --- |
-| Cozi, FamilyWall | ✅ | ❌ | ❌ | ❌ |
-| Khan Academy, Prodigy | ❌ | ✅ | partial | ❌ |
-| GoHenry, RoosterMoney | partial | ❌ | ✅ (money only) | ❌ |
-| Muslim-tech apps (Muslim Pro etc.) | ❌ | ❌ | ❌ | partial |
+| Competitor                         | Family admin | Education | Reward economy  | Cultural flex |
+| ---------------------------------- | ------------ | --------- | --------------- | ------------- |
+| Cozi, FamilyWall                   | ✅           | ❌        | ❌              | ❌            |
+| Khan Academy, Prodigy              | ❌           | ✅        | partial         | ❌            |
+| GoHenry, RoosterMoney              | partial      | ❌        | ✅ (money only) | ❌            |
+| Muslim-tech apps (Muslim Pro etc.) | ❌           | ❌        | ❌              | partial       |
 
 **The whitespace:** no product combines all four pillars. Family Hub
 sits dead-centre.
@@ -71,23 +71,23 @@ sits dead-centre.
 
 ### Consumer tiers
 
-| Tier | Price | Notes |
-| --- | --- | --- |
-| **Household (Free)** | $0 | Up to 3 members, limited features, no sticker economy |
-| **Family** | $7.99/mo or $69/yr | Unlimited members, all core features, maths module |
-| **Family Pro** | $12.99/mo or $109/yr | Adds World Flags, Logic, custom subdomain |
+| Tier                 | Price                | Notes                                                 |
+| -------------------- | -------------------- | ----------------------------------------------------- |
+| **Household (Free)** | $0                   | Up to 3 members, limited features, no sticker economy |
+| **Family**           | $7.99/mo or $69/yr   | Unlimited members, all core features, maths module    |
+| **Family Pro**       | $12.99/mo or $109/yr | Adds World Flags, Logic, custom subdomain             |
 
 ### Enterprise / white-label tiers
 
 For Islamic schools, madrasahs, mosques, churches, homeschool co-ops,
 community centres, NGOs.
 
-| Org size | Annual price | Includes |
-| --- | --- | --- |
-| Up to 20 families | $299 | Branded subdomain, custom logo |
-| 21–100 families | $999 | + admin tools, member roles |
-| 101–500 families | $1,999 | + reporting, bulk invites |
-| 501+ families | $3,499 | + dedicated support, SSO |
+| Org size          | Annual price | Includes                       |
+| ----------------- | ------------ | ------------------------------ |
+| Up to 20 families | $299         | Branded subdomain, custom logo |
+| 21–100 families   | $999         | + admin tools, member roles    |
+| 101–500 families  | $1,999       | + reporting, bulk invites      |
+| 501+ families     | $3,499       | + dedicated support, SSO       |
 
 The four base products map 1-to-1 to the Stripe billing model defined
 in [ADR 0004](../decisions/0004-stripe-billing.md): Starter, Growth,
@@ -95,15 +95,16 @@ Scale, Enterprise — with metered usage on Scale and Enterprise.
 
 ## Architecture
 
-| Concern | Decision | ADR |
-| --- | --- | --- |
-| Tenant isolation | Shared DB, shared schema, `tenant_id` + Postgres RLS | [0001](../decisions/0001-multi-tenancy.md) |
-| Tenant routing | Subdomain (`<slug>.familyhub.app`) resolved by middleware + AsyncLocalStorage | [0002](../decisions/0002-subdomain-tenant-routing.md) |
-| Auth | Supabase Auth (email + Google OAuth, JWT, magic links, templates) | [0003](../decisions/0003-auth-library.md) |
-| Billing | Stripe (Checkout + Customer Portal + webhooks + metered usage) | [0004](../decisions/0004-stripe-billing.md) |
-| Codebase | pnpm monorepo: `apps/{api,web}`, `packages/{shared,ui,test-utils}` | [0005](../decisions/0005-monorepo-structure.md) |
-| Branching | `feature/*` → `staging` → `main`, conditional squash / merge-commit | [0006](../decisions/0006-branching-strategy.md) |
-| Stack reuse | Reuse the proven family-hub stack verbatim; swap individual libraries via superseding ADRs only when a concrete metric forces it | [0007](../decisions/0007-stack-reuse.md) |
+| Concern           | Decision                                                                                                                         | ADR                                                   |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Tenant isolation  | Shared DB, shared schema, `tenant_id` + Postgres RLS                                                                             | [0001](../decisions/0001-multi-tenancy.md)            |
+| Tenant routing    | Subdomain (`<slug>.familyhub.app`) resolved by middleware + AsyncLocalStorage                                                    | [0002](../decisions/0002-subdomain-tenant-routing.md) |
+| Auth              | Supabase Auth (email + Google OAuth, JWT, magic links, templates)                                                                | [0003](../decisions/0003-auth-library.md)             |
+| Auth environments | Two Supabase projects (staging + production) on Free; migrate to one-project + `staging` branch when org upgrades to Pro         | [0008](../decisions/0008-supabase-environments.md)    |
+| Billing           | Stripe (Checkout + Customer Portal + webhooks + metered usage)                                                                   | [0004](../decisions/0004-stripe-billing.md)           |
+| Codebase          | pnpm monorepo: `apps/{api,web}`, `packages/{shared,ui,test-utils}`                                                               | [0005](../decisions/0005-monorepo-structure.md)       |
+| Branching         | `feature/*` → `staging` → `main`, conditional squash / merge-commit                                                              | [0006](../decisions/0006-branching-strategy.md)       |
+| Stack reuse       | Reuse the proven family-hub stack verbatim; swap individual libraries via superseding ADRs only when a concrete metric forces it | [0007](../decisions/0007-stack-reuse.md)              |
 
 Module toggling per tenant means each family / organization activates
 only the pillars they need — Family Admin Hub may be on for one
@@ -117,7 +118,7 @@ The defensibility flywheel:
    problem patterns, time-of-day performance, error fingerprints).
 2. The maths / logic / world-flags engines personalize lessons per
    child using that data — not generic placement, but the next problem
-   *this specific child* needs to grow.
+   _this specific child_ needs to grow.
 3. Outcomes (mastery rate, streak retention, sticker earn rate)
    compound over months. A child six months in has a personalized
    curriculum no competitor can clone overnight.
@@ -131,14 +132,14 @@ business KPIs.
 
 ## 24-month milestones
 
-| Quarter | Milestone | KPI target |
-| --- | --- | --- |
-| Q1 (Sprint 0–4) | Foundations + first paying tenants | Production live; 100 paid families |
-| Q2 | Enterprise pilot | 5 paid org tenants; first $1k MRR enterprise deal |
-| Q3 | Module marketplace + AI-personalized maths v2 | 1,000 paid families; 15 enterprise tenants |
-| Q4 | Geography expansion (UAE / Saudi launch) | 2,500 paid families; 25 enterprise tenants |
-| Q5 | UK / US / Canada launch + scale ops | 4,000 paid families |
-| Q6 | Indonesia / Pakistan; mature retention loops | 5,000+ paid families; 30+ enterprise tenants; **$720k+ ARR** |
+| Quarter         | Milestone                                     | KPI target                                                   |
+| --------------- | --------------------------------------------- | ------------------------------------------------------------ |
+| Q1 (Sprint 0–4) | Foundations + first paying tenants            | Production live; 100 paid families                           |
+| Q2              | Enterprise pilot                              | 5 paid org tenants; first $1k MRR enterprise deal            |
+| Q3              | Module marketplace + AI-personalized maths v2 | 1,000 paid families; 15 enterprise tenants                   |
+| Q4              | Geography expansion (UAE / Saudi launch)      | 2,500 paid families; 25 enterprise tenants                   |
+| Q5              | UK / US / Canada launch + scale ops           | 4,000 paid families                                          |
+| Q6              | Indonesia / Pakistan; mature retention loops  | 5,000+ paid families; 30+ enterprise tenants; **$720k+ ARR** |
 
 At target ARR, an 8–12× multiple range puts the business in the
 **$5.7M–$8.6M acquisition** band. Operate the business with this
@@ -152,15 +153,15 @@ Authoritative live view: the
 [FHS — Epics & Tickets](https://qualicion2.atlassian.net/spaces/FA/pages/3079340034/FHS+Epics+Tickets)
 Confluence page.
 
-| Sprint cluster | Epics | Milestone served |
-| --- | --- | --- |
-| **Sprint 0 — Bootstrap** | FHS-143, 149, 155, 160, 165, 171, 177 | Foundations: repo, monorepo, infra, CI, observability, ADRs |
-| **Sprint 1 — Tenant Foundation** | FHS-1, 7, 12, 18 | Multi-tenant data layer (RLS, context middleware, migration) |
-| **Sprint 2 — Signup & Custom URL** | FHS-23, 29, 35, 42 | Public signup, subdomain routing, onboarding wizard |
-| **Sprint 3 — Modules & Gating** | FHS-47, 53, 58, 64 | Module toggle UI, customization settings, feature gating |
-| **Sprint 4 — Stripe Billing** | FHS-68, 73, 78, 84 | Subscriptions, checkout, portal, webhooks, metered usage |
-| **Sprint 5 — Invites & Roles** | FHS-90, 97, 104, 110 | Invitation system, role hierarchy, member management, audit |
-| **Sprint 6 — White-Label & Launch** | FHS-116, 123, 129, 136 | Org-of-tenants, white-label branding, launch hardening, marketing |
+| Sprint cluster                      | Epics                                 | Milestone served                                                  |
+| ----------------------------------- | ------------------------------------- | ----------------------------------------------------------------- |
+| **Sprint 0 — Bootstrap**            | FHS-143, 149, 155, 160, 165, 171, 177 | Foundations: repo, monorepo, infra, CI, observability, ADRs       |
+| **Sprint 1 — Tenant Foundation**    | FHS-1, 7, 12, 18                      | Multi-tenant data layer (RLS, context middleware, migration)      |
+| **Sprint 2 — Signup & Custom URL**  | FHS-23, 29, 35, 42                    | Public signup, subdomain routing, onboarding wizard               |
+| **Sprint 3 — Modules & Gating**     | FHS-47, 53, 58, 64                    | Module toggle UI, customization settings, feature gating          |
+| **Sprint 4 — Stripe Billing**       | FHS-68, 73, 78, 84                    | Subscriptions, checkout, portal, webhooks, metered usage          |
+| **Sprint 5 — Invites & Roles**      | FHS-90, 97, 104, 110                  | Invitation system, role hierarchy, member management, audit       |
+| **Sprint 6 — White-Label & Launch** | FHS-116, 123, 129, 136                | Org-of-tenants, white-label branding, launch hardening, marketing |
 
 Each epic links back to its child stories in the Confluence overview.
 
