@@ -5,10 +5,11 @@ the running infrastructure, env-var matrix, deploy flow, and known
 constraints. Update whenever topology changes (add a service, rotate a
 secret format, change a branch tracking rule, upgrade plan).
 
-> **Status as of 2026-04-26:** Sprint 0 bootstrap. Trial plan ($5 / 28-day
-> cap). Staging-only provisioning. Production environment exists but is
-> intentionally unconfigured pending Hobby-plan upgrade — see
-> [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202).
+> **Status as of 2026-04-29:** Sprint 0 bootstrap. Trial plan ($5 / 28-day
+> cap). Staging-only provisioning — both `api` and `frontend` deploy
+> cleanly from the `staging` branch and serve traffic. Production
+> environment exists but is intentionally unconfigured pending Hobby-plan
+> upgrade — see [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202).
 
 ## Project
 
@@ -43,6 +44,31 @@ Railway's model: services are project-scoped; per-environment runtime
 config (region, build/start commands, vars, source) lives on the
 service instance.
 
+```mermaid
+flowchart TB
+  subgraph staging["staging environment (branch: staging)"]
+    direction LR
+    fe_s["frontend<br/>vite preview<br/>:8080"]
+    api_s["api<br/>Hono / Node 20<br/>:PORT"]
+    pg_s["postgres<br/>postgres:16-alpine<br/>+ volume"]
+    fe_s -- "fetch /api/*" --> api_s
+    api_s -- "DATABASE_URL<br/>(internal :5432)" --> pg_s
+  end
+  subgraph production["production environment (branch: main, blocked on FHS-202)"]
+    direction LR
+    fe_p["frontend<br/>(unconfigured)"]
+    api_p["api<br/>(unconfigured)"]
+    pg_p["postgres<br/>(CRASHED + sleep)"]
+    fe_p -.-> api_p
+    api_p -.-> pg_p
+  end
+  user["UAE visitor"] -- "TLS @ Singapore edge" --> fe_s
+  staging:::live
+  production:::dormant
+  classDef live fill:#dcfce7,stroke:#16a34a,color:#14532d
+  classDef dormant fill:#f3f4f6,stroke:#9ca3af,color:#6b7280,stroke-dasharray: 5 5
+```
+
 | Service | ID | Source | Image |
 | --- | --- | --- | --- |
 | `postgres` | `e2a7c43f-46db-44e8-bc06-a934fe290699` | — | `postgres:16-alpine` |
@@ -64,11 +90,10 @@ Hono server (Node 20+, ESM). pnpm workspace — depends on
 `@familyhub/shared` via `workspace:*`. Build/start config lives at the
 service-instance level so per-env overrides are possible later.
 
-> **Known issue:** the staging deploy currently fails at runtime because
-> tsc emits to `apps/api/dist/apps/api/src/index.js` instead of
-> `apps/api/dist/index.js` — workspace cross-imports widen the rootDir.
-> Tracked as [FHS-201](https://qualicion2.atlassian.net/browse/FHS-201).
-> Bundling with esbuild/tsup is the recommended fix.
+The build step bundles via [`apps/api/build.mjs`](../../apps/api/build.mjs)
+(esbuild) into a single `apps/api/dist/index.js` so workspace cross-
+imports resolve at runtime without exporting unnecessary `dist/` from
+`packages/shared`. See [FHS-201](https://qualicion2.atlassian.net/browse/FHS-201).
 
 ### frontend
 
@@ -163,6 +188,87 @@ Manual deploys can be triggered via the Railway MCP
 (`mcp__railway__deployment_trigger` with a commit SHA) or by pushing
 the staging branch.
 
+### Branch → environment mapping
+
+| Branch | Environment | Trigger | Notes |
+| --- | --- | --- | --- |
+| `feature/*`, `fix/*`, `docs/*`, `chore/*`, `test/*` | none (no preview) | — | Verified by CI workflows + local dev. Railway preview environments require a paid plan; we don't use them. |
+| `staging` | staging | auto-deploy on push (per-service triggers above) | All bootstrap work merges here per [ADR 0006](../decisions/0006-branching-strategy.md). |
+| `main` | production | auto-deploy on push (planned, configured during [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202)) | `main` is held at its current commit until the W1 vertical slice ([FHS-198](https://qualicion2.atlassian.net/browse/FHS-198)) is verified, then promoted as one tested batch. |
+
+Feature branches deliberately get no Railway environment. The full
+verification matrix is: `pnpm test` (unit + integration locally) → CI
+([`.github/workflows/ci-feature.yml`](../../.github/workflows/ci-feature.yml))
+on push → CI ([`.github/workflows/ci-pr-staging.yml`](../../.github/workflows/ci-pr-staging.yml))
+on PR → manual review → merge to `staging` → first observation in the
+real env.
+
+## Rollback
+
+Railway keeps every successful build in the deployment history per
+service. The fast path is a **no-rebuild redeploy of the cached image**
+(seconds, no CI). The scripted path **rebuilds from source** at an
+older commit (slower but works if the cached image was evicted or you
+want a fresh build of older code).
+
+### Fast path (Railway dashboard, ~30 seconds)
+
+1. Open [the project dashboard](https://railway.com/project/bc7e539b-fc8b-4f56-99e2-daffee70138f).
+2. Pick the broken service (`api` or `frontend`) in the affected
+   environment (likely `staging`).
+3. **Deployments** tab → find the last known-good deploy
+   (status `SUCCESS`, recent timestamp before the regression).
+4. Three-dot menu → **Redeploy**. Railway pulls the cached image and
+   swaps it in over the bad one. No rebuild.
+5. Verify: hit the public domain or `curl <domain>/health` for api.
+
+### Scripted path (Claude / Railway MCP)
+
+The Railway tools below are MCP calls invoked by Claude, not shell
+commands. Ask Claude to run them in this order, or call them directly
+if you have an MCP-aware client:
+
+| Step | MCP tool | Args (JSON) |
+| --- | --- | --- |
+| 1. List recent deploys for the broken service | `mcp__railway__deployment_list` | `{ "serviceId": "<svc>", "environmentId": "<env>", "limit": 10 }` |
+| 2. Trigger a fresh deploy at the last-good SHA (rebuild) | `mcp__railway__deployment_trigger` | `{ "serviceId": "<svc>", "environmentId": "<env>", "commitSha": "<good-sha>" }` |
+| 3. Watch the new deploy | `mcp__railway__deployment_logs` | `{ "deploymentId": "<returned-id>" }` |
+
+Service / env IDs are listed in the [Services](#services) and
+[Environments](#environments) tables above.
+
+For non-MCP environments, the equivalent shell call hits the GraphQL
+endpoint directly — see [Operational handles](#operational-handles).
+
+### Git-side rollback (worst case — bad code already on `staging`)
+
+If `staging` itself is poisoned and a future merge would re-break:
+
+1. Identify the bad commit on `staging` (`git log staging`).
+2. Open a PR that **reverts** the bad commit — never `git push --force`,
+   never `git reset --hard`. Title: `revert: <original commit subject>
+   (FHS-XXX)`. CI runs as normal.
+3. Squash-merge to `staging`. Railway auto-deploys the revert.
+4. File a follow-up ticket to fix the underlying bug; the revert is
+   not a fix, only a stop-gap.
+
+The same flow applies to `main` once it's live, with `production` as
+the deploy target.
+
+### Database rollback
+
+Schema migrations are forward-only. If a migration is broken:
+
+1. Don't reach for a `down` migration — write a **new forward migration**
+   that undoes the bad change.
+2. If data has been corrupted, restore from Railway's automated Postgres
+   backup (Hobby+ plan — not yet available; documented for FHS-202).
+3. Until backups are configured, the recovery path is: re-bootstrap the
+   staging Postgres volume from the Drizzle schema at
+   [`apps/api/src/db/schema.ts`](../../apps/api/src/db/schema.ts).
+   Seed scripts to be added under [FHS-168](https://qualicion2.atlassian.net/browse/FHS-168);
+   until then, recovery is schema-only and any test data is lost.
+
 ## Region constraints
 
 The Railway trial plan does **not** allow region selection. Setting
@@ -189,11 +295,29 @@ The $5 trial cap is the upper bound until upgrade. Burn rate so far
 (2026-04-26 provisioning session): negligible — most credit was
 consumed by image pulls and the Postgres staging instance running.
 
+## Logs & monitoring
+
+- **Live logs (per service):** dashboard → service → **Deployments**
+  → click latest → **View Logs**. Streams stdout/stderr in real time.
+- **Historical logs (scripted):** `mcp__railway__deployment_logs --deploymentId <id>`.
+- **api healthcheck:** `GET https://api-staging-5500.up.railway.app/health`
+  returns `{ "status": "ok" }`. Use as an uptime probe target.
+- **frontend healthcheck:** none beyond TCP — fetch the root URL
+  ([frontend-staging-409d.up.railway.app](https://frontend-staging-409d.up.railway.app))
+  and assert HTTP 200 with the expected document title.
+- **Sentry / structured logging:** wired in [FHS-166](https://qualicion2.atlassian.net/browse/FHS-166)
+  and [FHS-167](https://qualicion2.atlassian.net/browse/FHS-167) — until
+  those land, Railway's deployment-log view is the only signal.
+- **Uptime alerts:** none configured yet. Add an external pinger
+  (Better Uptime, UptimeRobot) pointed at `/health` once the api
+  rotation is stable post-FHS-202.
+
 ## Operational handles
 
 - **Dashboard:** [railway.com/project/bc7e539b-...](https://railway.com/project/bc7e539b-fc8b-4f56-99e2-daffee70138f)
 - **Frontend staging:** [frontend-staging-409d.up.railway.app](https://frontend-staging-409d.up.railway.app)
-- **Railway MCP:** configured in `.mcp.json` (gitignored). Set `RAILWAY_API_TOKEN` in `.env.local`, then `claude mcp add railway --scope local --env RAILWAY_API_TOKEN=$RAILWAY_API_TOKEN -- npx -y @jasontanswe/railway-mcp`. Verify with `claude mcp list` (expect `railway: ✓ Connected`).
+- **api staging:** [api-staging-5500.up.railway.app](https://api-staging-5500.up.railway.app)
+- **Railway MCP:** configured in `.mcp.json` (gitignored). Set `RAILWAY_API_TOKEN` in `.env.local`, then `claude mcp add railway --scope local --env RAILWAY_API_TOKEN=$RAILWAY_API_TOKEN -- npx -y @jasontanswe/railway-mcp`. Verify with `claude mcp list` (expect `railway: connected`).
 - **Direct GraphQL:** `https://backboard.railway.com/graphql/v2` with `Authorization: Bearer $RAILWAY_API_TOKEN`. Use for anything the MCP doesn't expose (e.g., `deploymentTriggerCreate`, `serviceInstanceUpdate.region`).
 
 ## Runbook: add a new service to staging
