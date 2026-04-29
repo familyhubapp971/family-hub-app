@@ -13,13 +13,13 @@ secret format, change a branch tracking rule, upgrade plan).
 
 ## Project
 
-| Field | Value |
-| --- | --- |
-| Name | `family-hub-saas` |
-| ID | `bc7e539b-fc8b-4f56-99e2-daffee70138f` |
-| Workspace | Trial workspace (1 contributor) |
-| Plan | Trial ($5 cap) |
-| Region | us-east4 (forced on trial — see [Region constraints](#region-constraints)) |
+| Field     | Value                                                                      |
+| --------- | -------------------------------------------------------------------------- |
+| Name      | `family-hub-saas`                                                          |
+| ID        | `bc7e539b-fc8b-4f56-99e2-daffee70138f`                                     |
+| Workspace | Trial workspace (1 contributor)                                            |
+| Plan      | Trial ($5 cap)                                                             |
+| Region    | us-east4 (forced on trial — see [Region constraints](#region-constraints)) |
 
 Created via the Railway MCP server (`@jasontanswe/railway-mcp`)
 configured in `.mcp.json` (gitignored — see [`.env.example`](../../.env.example)
@@ -27,10 +27,10 @@ for variable names).
 
 ## Environments
 
-| Name | ID | Purpose | Branch |
-| --- | --- | --- | --- |
-| `staging` | `3fb76a04-e926-4bdf-ae03-659966366dfb` | Pre-prod, all bootstrap work lands here | `staging` |
-| `production` | `4d84223a-86d3-49ef-a66c-acefe2100158` | GA target — currently unconfigured | `main` (planned) |
+| Name         | ID                                     | Purpose                                 | Branch           |
+| ------------ | -------------------------------------- | --------------------------------------- | ---------------- |
+| `staging`    | `3fb76a04-e926-4bdf-ae03-659966366dfb` | Pre-prod, all bootstrap work lands here | `staging`        |
+| `production` | `4d84223a-86d3-49ef-a66c-acefe2100158` | GA target — currently unconfigured      | `main` (planned) |
 
 The branching strategy is documented in
 [ADR 0006](../decisions/0006-branching-strategy.md): merges land on
@@ -69,11 +69,11 @@ flowchart TB
   classDef dormant fill:#f3f4f6,stroke:#9ca3af,color:#6b7280,stroke-dasharray: 5 5
 ```
 
-| Service | ID | Source | Image |
-| --- | --- | --- | --- |
-| `postgres` | `e2a7c43f-46db-44e8-bc06-a934fe290699` | — | `postgres:16-alpine` |
-| `api` | `7a93c040-1220-4afb-a564-f4cf98901948` | `familyhubapp971/family-hub-app` | — |
-| `frontend` | `f3048c9c-195b-4141-8cca-daf0f213d6a9` | `familyhubapp971/family-hub-app` | — |
+| Service    | ID                                     | Source                           | Image                |
+| ---------- | -------------------------------------- | -------------------------------- | -------------------- |
+| `postgres` | `e2a7c43f-46db-44e8-bc06-a934fe290699` | —                                | `postgres:16-alpine` |
+| `api`      | `7a93c040-1220-4afb-a564-f4cf98901948` | `familyhubapp971/family-hub-app` | —                    |
+| `frontend` | `f3048c9c-195b-4141-8cca-daf0f213d6a9` | `familyhubapp971/family-hub-app` | —                    |
 
 ### Postgres
 
@@ -108,11 +108,11 @@ switch to a static-file server (Caddy/nginx) or Railway Edge.
 
 ## Build & start commands (staging)
 
-| Service | Build | Start |
-| --- | --- | --- |
-| `api` | `corepack enable && pnpm install --frozen-lockfile && pnpm -F @familyhub/api build` | `pnpm -F @familyhub/api start` |
+| Service    | Build                                                                               | Start                                                                        |
+| ---------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `api`      | `corepack enable && pnpm install --frozen-lockfile && pnpm -F @familyhub/api build` | `pnpm -F @familyhub/api start`                                               |
 | `frontend` | `corepack enable && pnpm install --frozen-lockfile && pnpm -F @familyhub/web build` | `pnpm --filter @familyhub/web exec vite preview --host 0.0.0.0 --port $PORT` |
-| `postgres` | — (image) | — (image entrypoint) |
+| `postgres` | — (image)                                                                           | — (image entrypoint)                                                         |
 
 `rootDirectory` is left at the default (`/` — repo root) on every
 instance because rootDirectory: `apps/api`/`apps/web` would break
@@ -126,21 +126,21 @@ Frontend has no healthcheck — Railway falls back to TCP-level checks.
 
 ### postgres vars
 
-| Variable | Source | Value |
-| --- | --- | --- |
-| `POSTGRES_USER` | MCP `variable_bulk_set` | `familyhub` |
-| `POSTGRES_DB` | MCP `variable_bulk_set` | `familyhub_staging` |
-| `PGDATA` | MCP `variable_bulk_set` | `/var/lib/postgresql/data/pgdata` |
-| `POSTGRES_PASSWORD` | MCP `variable_set` | (32-char URL-safe random; rotate via dashboard if exposure suspected) |
+| Variable            | Source                  | Value                                                                 |
+| ------------------- | ----------------------- | --------------------------------------------------------------------- |
+| `POSTGRES_USER`     | MCP `variable_bulk_set` | `familyhub`                                                           |
+| `POSTGRES_DB`       | MCP `variable_bulk_set` | `familyhub_staging`                                                   |
+| `PGDATA`            | MCP `variable_bulk_set` | `/var/lib/postgresql/data/pgdata`                                     |
+| `POSTGRES_PASSWORD` | MCP `variable_set`      | (32-char URL-safe random; rotate via dashboard if exposure suspected) |
 
 ### api vars
 
-| Variable | Source | Value |
-| --- | --- | --- |
-| `NODE_ENV` | MCP | `production` (the api config schema only accepts `development`/`test`/`production`; staging is treated as production-like for strictness) |
-| `LOG_LEVEL` | MCP | `info` |
+| Variable       | Source                           | Value                                                                                                                                                                                                      |
+| -------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`     | MCP                              | `production` (the api config schema only accepts `development`/`test`/`production`; staging is treated as production-like for strictness)                                                                  |
+| `LOG_LEVEL`    | MCP                              | `info`                                                                                                                                                                                                     |
 | `DATABASE_URL` | MCP (Railway-resolved at deploy) | `postgresql://${{postgres.POSTGRES_USER}}:${{postgres.POSTGRES_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{postgres.POSTGRES_DB}}` (see [cross-service references](#cross-service-references)) |
-| `PORT` | Railway-injected | (assigned by Railway, read by [`apps/api/src/config.ts`](../../apps/api/src/config.ts)) |
+| `PORT`         | Railway-injected                 | (assigned by Railway, read by [`apps/api/src/config.ts`](../../apps/api/src/config.ts))                                                                                                                    |
 
 ### frontend vars
 
@@ -154,12 +154,12 @@ and matches what was passed as `name` on `service_create_*`. Empirically
 verified at the api service in staging via `list_service_variables`,
 where the resolved `DATABASE_URL` showed:
 
-| Token | Resolves to |
-| --- | --- |
-| `${{postgres.POSTGRES_USER}}` | `familyhub` ✓ |
-| `${{postgres.POSTGRES_DB}}` | `familyhub_staging` ✓ |
-| `${{postgres.RAILWAY_PRIVATE_DOMAIN}}` | `postgres.railway.internal` ✓ |
-| `${{postgres.POSTGRES_PASSWORD}}` | (empty in `list_service_variables` output — Railway appears to strip `*PASSWORD*`-suffixed values from cross-service ref displays for safety; deploy-time injection still expected to work but **unverified end-to-end** until [FHS-201](https://qualicion2.atlassian.net/browse/FHS-201) lands and the api boots) |
+| Token                                  | Resolves to                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `${{postgres.POSTGRES_USER}}`          | `familyhub` ✓                                                                                                                                                                                                                                                                                                      |
+| `${{postgres.POSTGRES_DB}}`            | `familyhub_staging` ✓                                                                                                                                                                                                                                                                                              |
+| `${{postgres.RAILWAY_PRIVATE_DOMAIN}}` | `postgres.railway.internal` ✓                                                                                                                                                                                                                                                                                      |
+| `${{postgres.POSTGRES_PASSWORD}}`      | (empty in `list_service_variables` output — Railway appears to strip `*PASSWORD*`-suffixed values from cross-service ref displays for safety; deploy-time injection still expected to work but **unverified end-to-end** until [FHS-201](https://qualicion2.atlassian.net/browse/FHS-201) lands and the api boots) |
 
 ## Deploy flow
 
@@ -179,9 +179,9 @@ public domain serves traffic
 
 Deployment triggers (one per service, per env):
 
-| Trigger ID | Service | Branch | Repo |
-| --- | --- | --- | --- |
-| `a97c3872-4e12-46ac-9883-aeb03e1bd15e` | api | `staging` | `familyhubapp971/family-hub-app` |
+| Trigger ID                             | Service  | Branch    | Repo                             |
+| -------------------------------------- | -------- | --------- | -------------------------------- |
+| `a97c3872-4e12-46ac-9883-aeb03e1bd15e` | api      | `staging` | `familyhubapp971/family-hub-app` |
 | `f3456b7a-d1a6-461c-a222-c3fa6e011550` | frontend | `staging` | `familyhubapp971/family-hub-app` |
 
 Manual deploys can be triggered via the Railway MCP
@@ -190,11 +190,11 @@ the staging branch.
 
 ### Branch → environment mapping
 
-| Branch | Environment | Trigger | Notes |
-| --- | --- | --- | --- |
-| `feature/*`, `fix/*`, `docs/*`, `chore/*`, `test/*` | none (no preview) | — | Verified by CI workflows + local dev. Railway preview environments require a paid plan; we don't use them. |
-| `staging` | staging | auto-deploy on push (per-service triggers above) | All bootstrap work merges here per [ADR 0006](../decisions/0006-branching-strategy.md). |
-| `main` | production | auto-deploy on push (planned, configured during [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202)) | `main` is held at its current commit until the W1 vertical slice ([FHS-198](https://qualicion2.atlassian.net/browse/FHS-198)) is verified, then promoted as one tested batch. |
+| Branch                                              | Environment       | Trigger                                                                                                     | Notes                                                                                                                                                                         |
+| --------------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `feature/*`, `fix/*`, `docs/*`, `chore/*`, `test/*` | none (no preview) | —                                                                                                           | Verified by CI workflows + local dev. Railway preview environments require a paid plan; we don't use them.                                                                    |
+| `staging`                                           | staging           | auto-deploy on push (per-service triggers above)                                                            | All bootstrap work merges here per [ADR 0006](../decisions/0006-branching-strategy.md).                                                                                       |
+| `main`                                              | production        | auto-deploy on push (planned, configured during [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202)) | `main` is held at its current commit until the W1 vertical slice ([FHS-198](https://qualicion2.atlassian.net/browse/FHS-198)) is verified, then promoted as one tested batch. |
 
 Feature branches deliberately get no Railway environment. The full
 verification matrix is: `pnpm test` (unit + integration locally) → CI
@@ -228,11 +228,11 @@ The Railway tools below are MCP calls invoked by Claude, not shell
 commands. Ask Claude to run them in this order, or call them directly
 if you have an MCP-aware client:
 
-| Step | MCP tool | Args (JSON) |
-| --- | --- | --- |
-| 1. List recent deploys for the broken service | `mcp__railway__deployment_list` | `{ "serviceId": "<svc>", "environmentId": "<env>", "limit": 10 }` |
+| Step                                                     | MCP tool                           | Args (JSON)                                                                     |
+| -------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------- |
+| 1. List recent deploys for the broken service            | `mcp__railway__deployment_list`    | `{ "serviceId": "<svc>", "environmentId": "<env>", "limit": 10 }`               |
 | 2. Trigger a fresh deploy at the last-good SHA (rebuild) | `mcp__railway__deployment_trigger` | `{ "serviceId": "<svc>", "environmentId": "<env>", "commitSha": "<good-sha>" }` |
-| 3. Watch the new deploy | `mcp__railway__deployment_logs` | `{ "deploymentId": "<returned-id>" }` |
+| 3. Watch the new deploy                                  | `mcp__railway__deployment_logs`    | `{ "deploymentId": "<returned-id>" }`                                           |
 
 Service / env IDs are listed in the [Services](#services) and
 [Environments](#environments) tables above.
@@ -247,7 +247,7 @@ If `staging` itself is poisoned and a future merge would re-break:
 1. Identify the bad commit on `staging` (`git log staging`).
 2. Open a PR that **reverts** the bad commit — never `git push --force`,
    never `git reset --hard`. Title: `revert: <original commit subject>
-   (FHS-XXX)`. CI runs as normal.
+(FHS-XXX)`. CI runs as normal.
 3. Squash-merge to `staging`. Railway auto-deploys the revert.
 4. File a follow-up ticket to fix the underlying bug; the revert is
    not a fix, only a stop-gap.
@@ -308,9 +308,16 @@ consumed by image pulls and the Postgres staging instance running.
 - **Sentry / structured logging:** wired in [FHS-166](https://qualicion2.atlassian.net/browse/FHS-166)
   and [FHS-167](https://qualicion2.atlassian.net/browse/FHS-167) — until
   those land, Railway's deployment-log view is the only signal.
-- **Uptime alerts:** none configured yet. Add an external pinger
-  (Better Uptime, UptimeRobot) pointed at `/health` once the api
-  rotation is stable post-FHS-202.
+- **Uptime alerts (FHS-167):** Better Stack / UptimeRobot pings every
+  60s on:
+
+  - `https://api-staging-5500.up.railway.app/health` (staging)
+  - `https://<api-prod-domain>/health` (production — wires once FHS-202 lands)
+
+  Alert channels: Slack `#family-hub-alerts` + email `oduniyi@gmail.com`.
+  Two consecutive failures (~120s) → page; recovery on next OK.
+  Configure via the SaaS dashboard; no code or env var needed. Track
+  the configured monitor URLs here when set up.
 
 ## Operational handles
 
@@ -327,39 +334,43 @@ service setup is a 5-step workflow. Capturing it here so it's not
 re-derived each time.
 
 1. **Create the service** at the project level:
-    - Repo-based: `mcp__railway__service_create_from_repo({ projectId, repo: "familyhubapp971/family-hub-app", name: "<svc-name>" })`
-    - Image-based: `mcp__railway__service_create_from_image({ projectId, image: "<image>:<tag>", name: "<svc-name>" })`
-    - Capture the returned `serviceId`.
+   - Repo-based: `mcp__railway__service_create_from_repo({ projectId, repo: "familyhubapp971/family-hub-app", name: "<svc-name>" })`
+   - Image-based: `mcp__railway__service_create_from_image({ projectId, image: "<image>:<tag>", name: "<svc-name>" })`
+   - Capture the returned `serviceId`.
 2. **Configure the staging instance** via `mcp__railway__service_update`:
-    - Always: `region` (no-op on trial — see [Region constraints](#region-constraints)), `buildCommand`, `startCommand`, `healthcheckPath` if applicable.
-    - **Don't** set `rootDirectory` to `apps/<svc>` — it breaks pnpm workspace resolution. Leave at the default `/`.
+   - Always: `region` (no-op on trial — see [Region constraints](#region-constraints)), `buildCommand`, `startCommand`, `healthcheckPath` if applicable.
+   - **Don't** set `rootDirectory` to `apps/<svc>` — it breaks pnpm workspace resolution. Leave at the default `/`.
 3. **Wire branch-based deploys** via direct GraphQL (the MCP doesn't expose `deploymentTriggerCreate`):
 
-    ```graphql
-    mutation {
-      deploymentTriggerCreate(input: {
-        projectId: "bc7e539b-fc8b-4f56-99e2-daffee70138f"
-        environmentId: "3fb76a04-e926-4bdf-ae03-659966366dfb"
-        serviceId: "<svc-id>"
-        provider: "github"
-        repository: "familyhubapp971/family-hub-app"
-        branch: "staging"
-        checkSuites: false
-      }) { id }
-    }
-    ```
+   ```graphql
+   mutation {
+     deploymentTriggerCreate(
+       input: {
+         projectId: "bc7e539b-fc8b-4f56-99e2-daffee70138f"
+         environmentId: "3fb76a04-e926-4bdf-ae03-659966366dfb"
+         serviceId: "<svc-id>"
+         provider: "github"
+         repository: "familyhubapp971/family-hub-app"
+         branch: "staging"
+         checkSuites: false
+       }
+     ) {
+       id
+     }
+   }
+   ```
 
 4. **Set env vars** via `mcp__railway__variable_bulk_set` — secrets must
-    not be inlined in the MCP call (transcript exposure); set those via
-    the Railway dashboard "Generate" affordance or, if necessary, via
-    `mcp__railway__variable_set` accepting the transcript trade-off.
-    The full inventory of every variable api / web / tooling read lives
-    in [`.env.example`](../../.env.example); `.env.example` is the
-    contract, Railway dashboard holds the real values per environment.
+   not be inlined in the MCP call (transcript exposure); set those via
+   the Railway dashboard "Generate" affordance or, if necessary, via
+   `mcp__railway__variable_set` accepting the transcript trade-off.
+   The full inventory of every variable api / web / tooling read lives
+   in [`.env.example`](../../.env.example); `.env.example` is the
+   contract, Railway dashboard holds the real values per environment.
 5. **Trigger the first deploy** via `mcp__railway__deployment_trigger`
-    with the staging branch HEAD SHA, or push to `staging` and let the
-    trigger fire automatically. Verify with `mcp__railway__deployment_status`
-    and `deployment_logs`.
+   with the staging branch HEAD SHA, or push to `staging` and let the
+   trigger fire automatically. Verify with `mcp__railway__deployment_status`
+   and `deployment_logs`.
 
 For image-based services that can't be allowed to also auto-deploy in
 the production env (cost reasons during trial), immediately call
