@@ -2,12 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext x='0' y='52' font-size='56'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext x='0' y='52' font-size='56'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Family Hub</title>
+    <!--
+      Content Security Policy (FHS-170). Meta tag is the Sprint-0 path
+      because vite preview doesn't emit response headers. Production
+      should ALSO set this as a real Content-Security-Policy response
+      header at the edge (Caddy/nginx/Railway Edge) — meta covers
+      script-src/style-src/img-src/connect-src/etc but cannot set
+      frame-ancestors (header-only). FHS-202 / Railway prod provisioning
+      owns the response-header path. style-src includes 'unsafe-inline'
+      because Tailwind JIT inserts <style> tags; revisit when CSS shape
+      stabilises.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.ingest.sentry.io https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
     <!-- Preconnect for the font hosts; the actual stylesheet @import
          lives in @familyhub/ui/styles/globals.css so font swap stays
-         consistent across apps. FHS-170 will self-host. -->
+         consistent across apps. Self-host follow-up tracked separately. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>
