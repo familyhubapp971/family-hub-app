@@ -135,16 +135,45 @@ Frontend has no healthcheck — Railway falls back to TCP-level checks.
 
 ### api vars
 
-| Variable       | Source                           | Value                                                                                                                                                                                                      |
-| -------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV`     | MCP                              | `production` (the api config schema only accepts `development`/`test`/`production`; staging is treated as production-like for strictness)                                                                  |
-| `LOG_LEVEL`    | MCP                              | `info`                                                                                                                                                                                                     |
-| `DATABASE_URL` | MCP (Railway-resolved at deploy) | `postgresql://${{postgres.POSTGRES_USER}}:${{postgres.POSTGRES_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{postgres.POSTGRES_DB}}` (see [cross-service references](#cross-service-references)) |
-| `PORT`         | Railway-injected                 | (assigned by Railway, read by [`apps/api/src/config.ts`](../../apps/api/src/config.ts))                                                                                                                    |
+| Variable                    | Source                           | Value                                                                                                                                                                                                      |
+| --------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                  | MCP                              | `production` (the api config schema only accepts `development`/`test`/`production`; staging is treated as production-like for strictness)                                                                  |
+| `LOG_LEVEL`                 | MCP                              | `info`                                                                                                                                                                                                     |
+| `DATABASE_URL`              | MCP (Railway-resolved at deploy) | `postgresql://${{postgres.POSTGRES_USER}}:${{postgres.POSTGRES_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{postgres.POSTGRES_DB}}` (see [cross-service references](#cross-service-references)) |
+| `PORT`                      | Railway-injected                 | (assigned by Railway, read by [`apps/api/src/config.ts`](../../apps/api/src/config.ts))                                                                                                                    |
+| `SUPABASE_URL`              | MCP (FHS-189)                    | `https://maolytpqazmykjzdybtj.supabase.co` (staging Supabase project per [ADR 0008](../decisions/0008-supabase-environments.md))                                                                           |
+| `SUPABASE_ANON_KEY`         | MCP (FHS-189)                    | legacy HS256 anon JWT — client-safe role, used for the public-API client                                                                                                                                   |
+| `SUPABASE_SERVICE_ROLE_KEY` | MCP (FHS-189)                    | legacy HS256 admin JWT — server-side only, bypasses RLS; **never** mirror onto the frontend service                                                                                                        |
+| `SUPABASE_PUBLISHABLE_KEY`  | MCP (FHS-189)                    | modern asymmetric `sb_publishable_…` — client-safe, complement to anon key                                                                                                                                 |
+| `SUPABASE_SECRET_KEY`       | MCP (FHS-189)                    | modern asymmetric `sb_secret_…` — server-side only                                                                                                                                                         |
+
+JWT verification is via Supabase's JWKS endpoint at
+`$SUPABASE_URL/auth/v1/.well-known/jwks.json` (ES256), not a shared HMAC
+secret — `SUPABASE_JWT_SECRET` is therefore not used. See FHS-191 for the
+JWKS-cached middleware that lands once auth wiring begins.
 
 ### frontend vars
 
-No app-level vars yet. Railway injects standard `RAILWAY_*` and `PORT`.
+| Variable                        | Source        | Value                                                                 |
+| ------------------------------- | ------------- | --------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | MCP (FHS-189) | `https://maolytpqazmykjzdybtj.supabase.co` (staging Supabase project) |
+| `VITE_SUPABASE_ANON_KEY`        | MCP (FHS-189) | legacy HS256 anon JWT — baked into the browser bundle, safe by design |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | MCP (FHS-189) | modern asymmetric `sb_publishable_…` — baked into the browser bundle  |
+
+The frontend service deliberately gets **only** publishable / anon
+client-safe variants. `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_SECRET_KEY`
+must never be set behind a `VITE_` prefix — Vite inlines `VITE_*` into the
+client bundle at build time and exposes them to every browser.
+
+### Production env
+
+Mirrors the staging layout above with the production Supabase project ref
+(`bqghmbkoxjompuxixexn`) substituted in for `SUPABASE_URL` /
+`VITE_SUPABASE_URL` and the matching `_PRODUCTION` keys for everything
+else. Variables are pre-set on the paused production services so the env
+is ready when [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202)
+unblocks the Hobby-plan upgrade — no separate provisioning step at
+unblock time.
 
 ### Cross-service references
 
