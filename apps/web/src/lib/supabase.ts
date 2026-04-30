@@ -21,7 +21,6 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // behaviour for a misconfigured deploy. Real auth flows in CI need
 // VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY set as GH Actions secrets.
 if (!url || !anonKey) {
-  // eslint-disable-next-line no-console
   console.warn(
     '[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY missing — ' +
       'auth calls will fail. Set both at build time (Vite reads VITE_* env at build).',
