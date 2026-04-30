@@ -137,6 +137,21 @@ verification on the api (FHS-191) and the user-mirror sync
 - **When** I navigate to `/dashboard`
 - **Then** I see my email and a logout button
 
+### Story 7: See my name on /me
+
+**As a** signed-in Family Hub user
+**I want** the `/me` page to greet me by email
+**so that** I know the api recognises my session and the user-mirror sync worked end-to-end.
+
+#### Acceptance criteria
+
+**Scenario: Signed-in user sees their email greeting on /me**
+
+- **Given** I am signed in with the e2e test account
+- **When** I navigate to `/me`
+- **Then** I see "Hello, {my email}"
+- **And** my user id and account-creation timestamp are visible
+
 ## Out of scope
 
 - JWT verification on the api side — FHS-191.
