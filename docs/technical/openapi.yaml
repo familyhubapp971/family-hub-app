@@ -1,0 +1,126 @@
+openapi: 3.1.0
+info:
+  title: Family Hub API
+  version: 0.0.0
+  description: |
+    Internal API for the Family Hub web app. Hand-maintained until
+    `@hono/zod-openapi` auto-generation lands; the route handlers'
+    Zod schemas are the source of truth — keep this file in sync
+    when those change.
+
+servers:
+  - url: https://api-staging-5500.up.railway.app
+    description: Staging
+  # Production URL added by FHS-202 once the prod env is provisioned.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Supabase-issued ES256 JWT in the `Authorization: Bearer <token>`
+        header. Verified via JWKS at `<SUPABASE_URL>/auth/v1/.well-known/jwks.json`.
+        See [`apps/api/src/middleware/auth.ts`](../../apps/api/src/middleware/auth.ts).
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: unauthorized
+
+    Health:
+      type: object
+      required: [status, version, uptime]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+          example: "0.0.0"
+        uptime:
+          type: number
+          description: Seconds since the api process started.
+
+    Hello:
+      type: object
+      required: [message, timestamp]
+      properties:
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    Me:
+      type: object
+      required: [id, email, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Supabase auth user id (also the `sub` JWT claim).
+        email:
+          type: string
+          format: email
+        createdAt:
+          type: string
+          format: date-time
+          description: When the mirror row was first created in `public.users`.
+
+paths:
+  /health:
+    get:
+      summary: Liveness check.
+      description: |
+        Public; no auth, no rate limit. Used by Railway's internal probe
+        and any external uptime monitor.
+      responses:
+        '200':
+          description: Service responding.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+
+  /hello:
+    get:
+      summary: Smoke endpoint.
+      description: Public; returns a greeting + ISO timestamp.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Hello' }
+
+  /api/me:
+    get:
+      summary: The current user.
+      description: |
+        Returns the mirror row from `public.users` for the authenticated
+        caller. The mirror row is upserted from the verified JWT claims
+        on first authenticated request — see FHS-192/194 and
+        [`apps/api/src/lib/user-mirror.ts`](../../apps/api/src/lib/user-mirror.ts).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The current user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '401':
+          description: Missing, malformed, or invalid bearer token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Mirror upsert failed — DB unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
