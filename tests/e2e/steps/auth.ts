@@ -70,7 +70,8 @@ Given('I am signed in with the e2e test account', async ({ page }) => {
   await login.loginAndWaitForRedirect(email, password);
 });
 
-When('I navigate to /me', async ({ page }) => {
+// Slash escaped — Cucumber Expressions treat `/` as alternation.
+When('I navigate to \\/me', async ({ page }) => {
   const me = new MePage(page);
   await me.open();
 });
