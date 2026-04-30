@@ -19,3 +19,12 @@ Feature: Auth
     When I enter a valid email and password
     And I submit the signup form
     Then I see a check-your-inbox confirmation message
+
+  # FHS-196 — Vertical-slice check. Signs in with the dedicated
+  # synthetic e2e@familyhub.test account, then visits /me and asserts
+  # the api-rendered greeting matches the signed-in email.
+  Scenario: Signed-in user sees their email greeting on /me
+    Given I am signed in with the e2e test account
+    When I navigate to /me
+    Then I see a greeting with my email
+    And my user id and account-creation timestamp are visible

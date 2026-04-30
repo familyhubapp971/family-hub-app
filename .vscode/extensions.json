@@ -6,6 +6,7 @@
     "bradlc.vscode-tailwindcss",
     "vitest.explorer",
     "ms-playwright.playwright",
-    "editorconfig.editorconfig"
+    "editorconfig.editorconfig",
+    "cucumberopen.cucumber-official"
   ]
 }
