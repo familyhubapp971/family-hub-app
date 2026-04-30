@@ -5,11 +5,15 @@ the running infrastructure, env-var matrix, deploy flow, and known
 constraints. Update whenever topology changes (add a service, rotate a
 secret format, change a branch tracking rule, upgrade plan).
 
-> **Status as of 2026-04-29:** Sprint 0 bootstrap. Trial plan ($5 / 28-day
-> cap). Staging-only provisioning — both `api` and `frontend` deploy
-> cleanly from the `staging` branch and serve traffic. Production
-> environment exists but is intentionally unconfigured pending Hobby-plan
-> upgrade — see [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202).
+> **Status as of 2026-04-30:** Sprint 0 bootstrap **complete on
+> staging**. Trial plan ($5 / 28-day cap). Both `api` and `frontend`
+> deploy cleanly from the `staging` branch; the W1 vertical slice
+> (Supabase login → JWT-protected `/api/me` → frontend greeting) is
+> live and verified — see
+> [W1 vertical slice — staging verification](#w1-vertical-slice--staging-verification-fhs-198).
+> Production environment exists but is intentionally unconfigured
+> pending Hobby-plan upgrade — see
+> [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202).
 
 ## Project
 
@@ -412,6 +416,41 @@ consumed by image pulls and the Postgres staging instance running.
   Two consecutive failures (~120s) → page; recovery on next OK.
   Configure via the SaaS dashboard; no code or env var needed. Track
   the configured monitor URLs here when set up.
+
+## W1 vertical slice — staging verification (FHS-198)
+
+The Sprint 0 vertical slice (Supabase login → mirror sync → protected
+`GET /api/me` → frontend `/me` greeting) is live on staging. Public URLs:
+
+- **Frontend:** [frontend-staging-409d.up.railway.app](https://frontend-staging-409d.up.railway.app)
+- **API:** [api-staging-5500.up.railway.app](https://api-staging-5500.up.railway.app)
+- **Auth:** Supabase Staging (`maolytpqazmykjzdybtj`)
+
+End-to-end check, last verified 2026-04-30:
+
+| #   | Check                                                                               | Result                                                                                             |
+| --- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1   | `GET /` on frontend returns the React shell                                         | 200, root mount present                                                                            |
+| 2   | `GET /health` on api returns `{status: ok, version, uptime}`                        | 200                                                                                                |
+| 3   | `GET /api/me` without `Authorization` header                                        | 401                                                                                                |
+| 4   | Supabase password-grant login for `e2e@familyhub.test`                              | `access_token` returned                                                                            |
+| 5   | `GET /api/me` with bearer token returns `{id, email, createdAt}`                    | 200, matching email                                                                                |
+| 6   | Same call repeated 5x returns identical id + `createdAt` (mirror upsert idempotent) | All identical                                                                                      |
+| 7   | CORS rejects unknown origin (`https://evil.example.com`)                            | No `Access-Control-Allow-Origin` echo                                                              |
+| 8   | Security headers on every response                                                  | `X-Frame-Options: DENY`, HSTS, CSP, `X-Content-Type-Options: nosniff`, Referrer-Policy all present |
+| 9   | k6 auth-smoke (FHS-197)                                                             | 51/51 checks green; p95 = 858 ms (geography-bound on Trial; FHS-202 unlocks europe-west4)          |
+
+Manual UI walkthrough (clickable):
+
+1. Open the frontend URL above.
+2. Click **Log in** (or visit `/login` directly).
+3. Sign in with the e2e user (or your own confirmed Supabase account).
+4. Land on `/dashboard`; navigate to `/me`.
+5. See "Hello, &lt;email&gt;" + your user id and account-creation timestamp.
+
+If any of the above fails, follow the
+[Rollback fast path](#rollback) to redeploy the prior good build, then
+diagnose with [`mcp__railway__deployment_logs`](#logs--monitoring).
 
 ## Operational handles
 
