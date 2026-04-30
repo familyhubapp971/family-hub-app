@@ -7,6 +7,7 @@ import { SignupPage } from './pages/auth/SignupPage';
 import { ResetPasswordRequestPage } from './pages/auth/ResetPasswordRequestPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { MePage } from './pages/MePage';
 
 // Top-level routing. AuthProvider wraps every route so useAuth() is
 // available everywhere — including the OAuth callback page that needs
@@ -26,6 +27,14 @@ export function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/me"
+            element={
+              <ProtectedRoute>
+                <MePage />
               </ProtectedRoute>
             }
           />
