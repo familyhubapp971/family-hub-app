@@ -77,12 +77,25 @@ flowchart TB
 
 ### Postgres
 
-Persistent volume `postgres-volume`
-(ID `5d88b9b5-28e6-4db5-b252-0836214162cf`) mounted at
+Persistent volume `postgres-volume-lbGE`
+(ID `0531fd3b-5390-4c40-9a59-36988741cc42`) mounted at
 `/var/lib/postgresql/data` in the staging instance. Production instance
 has no volume and is set to `sleepApplication: true` (deploys CRASHED on
 boot due to missing `POSTGRES_PASSWORD` — intentional, prevents trial
 credit drain until [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202)).
+
+> **2026-04-30 password recovery.** Original volume
+> `5d88b9b5-28e6-4db5-b252-0836214162cf` was wiped + recreated as
+> `0531fd3b-...` after `/api/me` returned 500s tracing back to a
+> `SASL: client password must be a string` error: the api's
+> `DATABASE_URL` had been stored as a literal with an empty password
+> (the cross-service `${{postgres.POSTGRES_PASSWORD}}` reference never
+> actually resolved). The fix: set a fresh `POSTGRES_PASSWORD` on the
+> postgres service, recreate the volume so the postgres image
+> re-initialises with that password, and set `DATABASE_URL` on the api
+> as a literal string (not a cross-service reference) including the new
+> password. The recipe for any future password rotation is the same —
+> see "Rotating postgres credentials" below.
 
 ### api
 
@@ -213,12 +226,34 @@ and matches what was passed as `name` on `service_create_*`. Empirically
 verified at the api service in staging via `list_service_variables`,
 where the resolved `DATABASE_URL` showed:
 
-| Token                                  | Resolves to                                                                                                                                                                                                                                                                                                        |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `${{postgres.POSTGRES_USER}}`          | `familyhub` ✓                                                                                                                                                                                                                                                                                                      |
-| `${{postgres.POSTGRES_DB}}`            | `familyhub_staging` ✓                                                                                                                                                                                                                                                                                              |
-| `${{postgres.RAILWAY_PRIVATE_DOMAIN}}` | `postgres.railway.internal` ✓                                                                                                                                                                                                                                                                                      |
-| `${{postgres.POSTGRES_PASSWORD}}`      | (empty in `list_service_variables` output — Railway appears to strip `*PASSWORD*`-suffixed values from cross-service ref displays for safety; deploy-time injection still expected to work but **unverified end-to-end** until [FHS-201](https://qualicion2.atlassian.net/browse/FHS-201) lands and the api boots) |
+| Token                                  | Resolves to                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `${{postgres.POSTGRES_USER}}`          | `familyhub` ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `${{postgres.POSTGRES_DB}}`            | `familyhub_staging` ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `${{postgres.RAILWAY_PRIVATE_DOMAIN}}` | `postgres.railway.internal` ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `${{postgres.POSTGRES_PASSWORD}}`      | **Empirically did NOT resolve** — `DATABASE_URL` was stored as a literal with an empty password slot, and end-to-end auth requests returned 500 with `SASL: client password must be a string`. The fix (2026-04-30) is to store `DATABASE_URL` on the api as a complete literal string with the password embedded directly, NOT as a cross-service reference. Whether this is a Railway display artefact or a real resolution failure isn't worth chasing further; the literal-string approach works and rotates cleanly. |
+
+### Rotating postgres credentials
+
+When the staging Postgres password needs to change (suspected
+exposure, contributor rotation, or after a recovery like the one
+that landed alongside FHS-197):
+
+1. Pick a new password (`python3 -c "import secrets; print(secrets.token_urlsafe(32))"`).
+2. `mcp__railway__variable_set` `POSTGRES_PASSWORD` on the postgres service to the new value.
+3. `mcp__railway__volume_delete` the postgres volume — wipes the on-disk
+   user/role with the old password. Acceptable only when staging has
+   no irreplaceable data; capture a `pg_dump` first if not.
+4. `mcp__railway__volume_create` a fresh volume mounted at `/var/lib/postgresql/data`.
+5. `mcp__railway__service_restart` the postgres service — image init
+   uses the new `POSTGRES_PASSWORD`.
+6. `mcp__railway__variable_set` `DATABASE_URL` on the api service to a
+   literal `postgresql://familyhub:<new-password>@postgres.railway.internal:5432/familyhub_staging`.
+7. `mcp__railway__service_restart` the api so its connection pool picks
+   up the new URL. The auto-migrate-on-start (FHS-197) creates the
+   schema on first connect.
+8. Verify: `curl https://api-staging-5500.up.railway.app/health` returns 200,
+   then a JWT-authenticated `GET /api/me` returns the mirror row.
 
 ## Deploy flow
 
