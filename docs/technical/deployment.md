@@ -122,6 +122,36 @@ Healthcheck: api uses `/health`
 ([`apps/api/src/routes/health.ts`](../../apps/api/src/routes/health.ts)).
 Frontend has no healthcheck — Railway falls back to TCP-level checks.
 
+### Schema migration on api start
+
+The api `start` script runs `drizzle-kit push --force` _before_
+booting the server. Every deploy reconciles the live Postgres schema
+against `apps/api/src/db/schema.ts` automatically — no separate
+"apply migrations" step, no opportunity for code-vs-database drift to
+ship.
+
+This matters because Railway-managed Postgres has no externally
+reachable DBA path: the master password is hidden from the dashboard
+and there's no proxy enabled by default, so manual `psql` operations
+require setting up a TCP proxy + ALTER USER round-trip every time.
+Auto-migrate on start avoids the operational tax.
+
+Trade-offs we accepted:
+
+- **`--force` skips destructive-change confirmation prompts.** With
+  Sprint 0 schema (one `users` table, no production data), this is
+  safe. Pre-launch we move to `drizzle-kit migrate` with explicit
+  migration files generated at PR time and applied at deploy time —
+  proper change review, no surprises. Tracked as a follow-up.
+- **drizzle-kit must remain installed in the runtime image.** Today
+  Railway's build runs `pnpm install --frozen-lockfile` (no `--prod`),
+  so devDependencies including `drizzle-kit` ship to the container. If
+  we ever switch to a prod-only install, drizzle-kit promotes to a
+  runtime dependency.
+- **First-startup latency adds ~1 s** for the schema reconciliation
+  call. Cold starts already take 5–10 s on Railway; the marginal cost
+  is invisible.
+
 ## Environment variable matrix (staging)
 
 ### postgres vars
