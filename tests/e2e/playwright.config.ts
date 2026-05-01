@@ -3,7 +3,7 @@ import { defineBddConfig } from 'playwright-bdd';
 
 // Generates Playwright spec files from .feature files into .features-gen/.
 // Scenario names in features/ MUST mirror Gherkin scenarios in
-// docs/features/<slug>.md character-for-character (Jira AC traceability).
+// documents/features/<slug>.md character-for-character (Jira AC traceability).
 // Paths in defineBddConfig are resolved relative to THIS config file's
 // directory (tests/e2e/), NOT the CWD where bddgen was invoked.
 const testDir = defineBddConfig({

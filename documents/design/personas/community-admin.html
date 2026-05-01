@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Family Hub — Persona 2: Community Administrator Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['"Fredoka One"', 'cursive'],
+        body: ['Nunito', 'sans-serif'],
+      },
+      boxShadow: {
+        'neo-xs': '1px 1px 0px 0px rgba(0,0,0,1)',
+        'neo-sm': '2px 2px 0px 0px rgba(0,0,0,1)',
+        'neo':    '3px 3px 0px 0px rgba(0,0,0,1)',
+        'neo-md': '4px 4px 0px 0px rgba(0,0,0,1)',
+        'neo-lg': '6px 6px 0px 0px rgba(0,0,0,1)',
+      },
+      colors: {
+        kingdom: { bg: '#3d1065' },
+      },
+    },
+  },
+};
+</script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Nunito', sans-serif; background: #3d1065; margin: 0; padding: 0; }
+  h1,h2,h3,h4,h5,h6 { font-family: 'Fredoka One', cursive; }
+
+  /* Arrow connector */
+  .arrow-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 0; }
+  .arrow-label { font-family: 'Nunito', sans-serif; font-size: 9px; font-weight: 800; color: #fff; background: #000; border: 1.5px solid #fff; border-radius: 4px; padding: 1px 5px; text-align: center; max-width: 100px; white-space: nowrap; }
+  .arrow-shaft { width: 3px; background: #fff; height: 28px; }
+  .arrow-head { width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 11px solid #fff; }
+
+  /* Horizontal arrow */
+  .arrow-h { display: flex; flex-direction: row; align-items: center; gap: 2px; padding: 0 4px; }
+  .arrow-h .arrow-label { max-width: 80px; white-space: nowrap; }
+  .arrow-h .arrow-shaft { height: 3px; width: 36px; }
+  .arrow-h .arrow-head { border-left: 11px solid #fff; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: none; border-right-width: 0; }
+
+  /* Screen sticker */
+  .sticker { display: inline-block; font-family: 'Nunito', sans-serif; font-size: 9px; font-weight: 900; padding: 2px 7px; border: 1.5px solid #000; border-radius: 4px; margin-bottom: 5px; }
+  .sticker-green  { background: #bbf7d0; color: #14532d; }
+  .sticker-red    { background: #fecaca; color: #7f1d1d; }
+  .sticker-amber  { background: #fef08a; color: #713f12; }
+  .sticker-purple { background: #e9d5ff; color: #3b0764; }
+
+  /* Laptop frame */
+  .laptop-frame { background: #1e1e1e; border-radius: 10px 10px 6px 6px; border: 2px solid #000; padding: 10px 10px 6px 10px; width: 420px; flex-shrink: 0; }
+  .laptop-bar { background: #2d2d2d; border-radius: 6px 6px 0 0; border-bottom: 2px solid #000; padding: 5px 10px; display: flex; align-items: center; gap: 6px; margin-bottom: 0; }
+  .laptop-dot { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.4); }
+  .laptop-addr { flex: 1; background: #3d3d3d; border-radius: 4px; height: 14px; margin-left: 6px; display: flex; align-items: center; padding: 0 6px; }
+  .laptop-addr span { font-size: 8px; color: #aaa; font-family: monospace; }
+  .laptop-screen { background: #f8f9fa; border: 2px solid #000; overflow: hidden; height: 300px; position: relative; }
+  .laptop-base { background: #2d2d2d; height: 8px; border-radius: 0 0 6px 6px; border: 2px solid #000; border-top: none; }
+
+  /* Screen content helpers */
+  .scr { height: 300px; overflow: hidden; display: flex; flex-direction: column; font-size: 11px; }
+  .scr-header { background: #fff; border-bottom: 2px solid #000; padding: 5px 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .scr-logo { font-family: 'Fredoka One', cursive; font-size: 13px; }
+  .scr-nav-item { font-size: 9px; font-weight: 700; color: #555; padding: 2px 5px; border-radius: 3px; }
+  .scr-nav-item.active { background: #fef08a; color: #000; border: 1px solid #000; }
+  .scr-body { flex: 1; overflow: hidden; background: #f3f4f6; padding: 8px; }
+  .scr-btn { display: inline-block; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 10px; padding: 4px 10px; border: 1.5px solid #000; border-radius: 6px; cursor: pointer; box-shadow: 2px 2px 0 #000; }
+  .scr-btn-y { background: #facc15; color: #000; }
+  .scr-btn-w { background: #fff; color: #000; }
+  .scr-btn-r { background: #ef4444; color: #fff; }
+  .scr-btn-g { background: #a3e635; color: #000; }
+  .scr-card { background: #fff; border: 1.5px solid #000; border-radius: 6px; padding: 6px 8px; margin-bottom: 5px; box-shadow: 2px 2px 0 #000; }
+  .scr-input { background: #fff; border: 1.5px solid #000; border-radius: 4px; padding: 4px 7px; font-size: 10px; font-family: 'Nunito', sans-serif; width: 100%; margin-bottom: 4px; }
+  .scr-badge { display: inline-block; font-size: 8px; font-weight: 900; padding: 1px 5px; border-radius: 99px; }
+  .scr-badge-g { background: #d1fae5; color: #065f46; }
+  .scr-badge-y { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+  .scr-badge-r { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .scr-badge-b { background: #dbeafe; color: #1e40af; }
+  .scr-label { font-size: 9px; font-weight: 800; color: #555; margin-bottom: 2px; display: block; }
+  .scr-section { font-family: 'Fredoka One', cursive; font-size: 11px; margin-bottom: 4px; color: #1f2937; }
+  .row { display: flex; gap: 6px; margin-bottom: 5px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 0; }
+  .gap-bar { background: #e5e7eb; height: 8px; border-radius: 2px; }
+  .mini-chart-bar { display: inline-flex; align-items: flex-end; gap: 2px; height: 32px; }
+  .mini-chart-bar span { width: 8px; background: #facc15; border: 1px solid #000; border-radius: 1px 1px 0 0; }
+</style>
+</head>
+<body class="min-h-screen" style="background:#3d1065;">
+
+<!-- ═══════════════════════════════════════════════ PERSONA CARD -->
+<div class="max-w-7xl mx-auto px-6 pt-10 pb-4">
+  <div class="flex items-start gap-5">
+    <!-- Persona 2 label -->
+    <div style="background:#facc15;border:2px solid #000;border-radius:8px;box-shadow:4px 4px 0 #000;padding:12px 20px;min-width:64px;text-align:center;">
+      <div style="font-family:'Fredoka One',cursive;font-size:28px;line-height:1;color:#000;">P2</div>
+      <div style="font-size:9px;font-weight:900;color:#000;">PERSONA</div>
+    </div>
+
+    <!-- Persona detail -->
+    <div style="background:#fff;border:2px solid #000;border-radius:8px;box-shadow:4px 4px 0 #000;padding:14px 20px;flex:1;">
+      <div style="font-family:'Fredoka One',cursive;font-size:22px;color:#3d1065;margin-bottom:2px;">The Community Administrator</div>
+      <div style="font-size:11px;font-weight:700;color:#555;margin-bottom:8px;">Runs a mosque youth programme, homeschool co-op, church family ministry, or NGO. Manages 20–500 families on behalf of an organisation. Buys the white-label tier ($299–$3,499/yr).</div>
+      <div class="flex gap-3 flex-wrap">
+        <div style="background:#d1fae5;border:1.5px solid #000;border-radius:5px;padding:5px 10px;flex:1;min-width:160px;">
+          <div style="font-size:8px;font-weight:900;color:#065f46;margin-bottom:2px;">KEY MOTIVATION</div>
+          <div style="font-size:10px;font-weight:700;color:#000;">"My families deserve better than a WhatsApp broadcast and a Google Form. I want a branded digital home for our community."</div>
+        </div>
+        <div style="background:#fee2e2;border:1.5px solid #000;border-radius:5px;padding:5px 10px;flex:1;min-width:160px;">
+          <div style="font-size:8px;font-weight:900;color:#991b1b;margin-bottom:2px;">KEY OBJECTION</div>
+          <div style="font-size:10px;font-weight:700;color:#000;">"I need to take this to our board. Can I see a demo and get a one-pager? We also need to know about data privacy for our children."</div>
+        </div>
+        <div style="background:#e9d5ff;border:1.5px solid #000;border-radius:5px;padding:5px 10px;flex:1;min-width:160px;">
+          <div style="font-size:8px;font-weight:900;color:#3b0764;margin-bottom:2px;">BUYING CYCLE</div>
+          <div style="font-size:10px;font-weight:700;color:#000;">4–8 weeks. Board approval. Needs demo + reference customer + one-pager. PO/invoice billing path required.</div>
+        </div>
+        <div style="background:#fef9c3;border:1.5px solid #000;border-radius:5px;padding:5px 10px;flex:1;min-width:160px;">
+          <div style="font-size:8px;font-weight:900;color:#854d0e;margin-bottom:2px;">REAL EXAMPLES</div>
+          <div style="font-size:10px;font-weight:700;color:#000;">Al-Noor Youth Programme (London) · Lighthouse Homeschool Co-op (Texas) · St. Bridget's Family Ministry (Dublin)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flow title -->
+  <div class="mt-8 mb-2 flex items-center gap-3">
+    <div style="font-family:'Fredoka One',cursive;font-size:28px;color:#facc15;letter-spacing:0.5px;">Community Admin Journey</div>
+    <div style="font-size:11px;font-weight:800;color:#e9d5ff;border:1.5px solid #a855f7;border-radius:4px;padding:2px 8px;">10 Screens · Web (laptop frames)</div>
+  </div>
+  <div style="font-size:10px;color:#c4b5fd;font-weight:600;margin-bottom:24px;">Read left → right. Each arrow shows the user action that drives the transition.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ FLOW BOARD -->
+<div class="max-w-7xl mx-auto px-6 pb-16">
+
+  <!-- ROW 1: Screens 1 → 2 → 3 -->
+  <div class="flex items-start gap-0 flex-wrap" style="gap:0;">
+
+    <!-- SCREEN 1 -->
+    <div class="flex flex-col items-center" style="margin-right:0;">
+      <div class="sticker sticker-green">S1 · Marketing Landing — Community Variant &nbsp;<span style="font-weight:900;letter-spacing:0.3px;">BACKLOG GAP</span></div>
+      <div class="laptop-frame">
+        <div class="laptop-bar">
+          <div class="laptop-dot" style="background:#ff5f57;"></div>
+          <div class="laptop-dot" style="background:#febc2e;"></div>
+          <div class="laptop-dot" style="background:#28c840;"></div>
+          <div class="laptop-addr"><span>familyhub.app/community</span></div>
+        </div>
+        <div class="laptop-screen">
+          <div class="scr">
+            <!-- Nav -->
+            <div class="scr-header">
+              <div class="scr-logo" style="color:#3d1065;">Family<span style="color:#a855f7;">Hub</span></div>
+              <div style="flex:1;display:flex;gap:5px;justify-content:flex-end;align-items:center;">
+                <span class="scr-nav-item">Features</span>
+                <span class="scr-nav-item">Pricing</span>
+                <span class="scr-nav-item active">Communities</span>
+                <span class="scr-btn scr-btn-y" style="font-size:9px;">Talk to Sales</span>
+              </div>
+            </div>
+            <!-- Hero -->
+            <div class="scr-body" style="background:linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%);display:flex;flex-direction:column;padding:12px 14px;gap:6px;">
+              <div style="font-family:'Fredoka One',cursive;font-size:17px;color:#3d1065;line-height:1.2;">Manage your community's families<br/>in one place.</div>
+              <div style="font-size:9px;font-weight:700;color:#555;max-width:240px;">Brand your platform. Invite families. Track engagement. No spreadsheets, no WhatsApp chaos.</div>
+              <div style="display:flex;gap:5px;margin-top:4px;">
+                <span class="scr-btn scr-btn-y">Book a Demo</span>
+                <span class="scr-btn scr-btn-w">See Plans</span>
+              </div>
+              <!-- Testimonial -->
+              <div style="background:#fff;border:1.5px solid #000;border-radius:6px;padding:7px 9px;box-shadow:2px 2px 0 #000;margin-top:8px;">
+                <div style="font-size:9px;font-weight:700;color:#1f2937;font-style:italic;">"We went from a WhatsApp group of 200 to a branded platform in one week. Every family now has their own dashboard. Our youth programme coordinator actually sleeps."</div>
+                <div style="font-size:8px;font-weight:900;color:#7c3aed;margin-top:4px;">— Imam Hassan A., Al-Noor Youth Programme, East London</div>
+              </div>
+              <!-- Stats row -->
+              <div style="display:flex;gap:6px;margin-top:6px;">
+                <div style="background:#fef9c3;border:1.5px solid #000;border-radius:5px;padding:5px 8px;flex:1;text-align:center;box-shadow:1px 1px 0 #000;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:14px;color:#3d1065;">500+</div>
+                  <div style="font-size:7px;font-weight:800;color:#555;">families managed</div>
+                </div>
+                <div style="background:#d1fae5;border:1.5px solid #000;border-radius:5px;padding:5px 8px;flex:1;text-align:center;box-shadow:1px 1px 0 #000;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:14px;color:#3d1065;">60+</div>
+                  <div style="font-size:7px;font-weight:800;color:#555;">orgs trusted us</div>
+                </div>
+                <div style="background:#fce7f3;border:1.5px solid #000;border-radius:5px;padding:5px 8px;flex:1;text-align:center;box-shadow:1px 1px 0 #000;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:14px;color:#3d1065;">$299</div>
+                  <div style="font-size:7px;font-weight:800;color:#555;">starts at / yr</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+
+    <!-- Arrow 1→2 -->
+    <div class="arrow-h flex items-center" style="margin-top:160px;padding:0 6px;">
+      <div style="height:3px;width:20px;background:#fff;"></div>
+      <div style="background:#000;border:1.5px solid #fff;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:900;color:#fff;white-space:nowrap;">clicks "Talk to Sales"</div>
+      <div style="width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:11px solid #fff;"></div>
+    </div>
+
+    <!-- SCREEN 2 -->
+    <div class="flex flex-col items-center">
+      <div class="sticker sticker-red">S2 · Talk-to-Sales Lead Form &nbsp;<span style="font-weight:900;">BACKLOG GAP</span></div>
+      <div class="laptop-frame">
+        <div class="laptop-bar">
+          <div class="laptop-dot" style="background:#ff5f57;"></div>
+          <div class="laptop-dot" style="background:#febc2e;"></div>
+          <div class="laptop-dot" style="background:#28c840;"></div>
+          <div class="laptop-addr"><span>familyhub.app/demo</span></div>
+        </div>
+        <div class="laptop-screen">
+          <div class="scr">
+            <div class="scr-header">
+              <div class="scr-logo" style="color:#3d1065;">Family<span style="color:#a855f7;">Hub</span></div>
+              <span class="scr-nav-item">← Back to site</span>
+            </div>
+            <div class="scr-body" style="background:#fff;padding:10px 14px;overflow-y:auto;">
+              <div style="font-family:'Fredoka One',cursive;font-size:14px;color:#3d1065;margin-bottom:6px;">Book a Demo</div>
+              <div style="font-size:8px;font-weight:700;color:#555;margin-bottom:8px;">We'll set up a 30-min call and walk you through exactly how your community fits.</div>
+
+              <span class="scr-label">Organisation name *</span>
+              <div class="scr-input">Al-Noor Youth Programme</div>
+
+              <div class="row">
+                <div style="flex:1;">
+                  <span class="scr-label">Est. families *</span>
+                  <div class="scr-input">140–160</div>
+                </div>
+                <div style="flex:1;">
+                  <span class="scr-label">Org type *</span>
+                  <div style="background:#fff;border:1.5px solid #000;border-radius:4px;padding:3px 7px;font-size:10px;display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span style="color:#555;">Mosque / Islamic Centre</span>
+                    <span>▾</span>
+                  </div>
+                </div>
+              </div>
+
+              <span class="scr-label">Your role</span>
+              <div class="scr-input">Youth Programme Director</div>
+
+              <div class="row">
+                <div style="flex:1;">
+                  <span class="scr-label">Name *</span>
+                  <div class="scr-input">Hassan Abdullahi</div>
+                </div>
+                <div style="flex:1;">
+                  <span class="scr-label">Work email *</span>
+                  <div class="scr-input">h.abdullahi@alnoor.org</div>
+                </div>
+              </div>
+
+              <span class="scr-label">What's your biggest pain right now?</span>
+              <div style="background:#fff;border:1.5px solid #000;border-radius:4px;padding:5px 7px;font-size:10px;color:#888;margin-bottom:8px;height:36px;">WhatsApp chaos + no way to track which families have...</div>
+
+              <!-- Tier hint -->
+              <div style="background:#fef9c3;border:1.5px solid #000;border-radius:5px;padding:5px 8px;margin-bottom:8px;box-shadow:1px 1px 0 #000;">
+                <div style="font-size:8px;font-weight:900;color:#854d0e;">SUGGESTED PLAN · 101–500 families</div>
+                <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#3d1065;">Scale — $1,999/yr</div>
+                <div style="font-size:8px;color:#555;">Branded subdomain · Bulk invites · Reporting</div>
+              </div>
+
+              <span class="scr-btn scr-btn-y" style="width:100%;display:block;text-align:center;font-size:11px;padding:7px;">Book My Demo</span>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+
+    <!-- Arrow 2→3 -->
+    <div class="arrow-h flex items-center" style="margin-top:160px;padding:0 6px;">
+      <div style="height:3px;width:20px;background:#fff;"></div>
+      <div style="background:#000;border:1.5px solid #fff;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:900;color:#fff;white-space:nowrap;">submits form</div>
+      <div style="width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:11px solid #fff;"></div>
+    </div>
+
+    <!-- SCREEN 3 -->
+    <div class="flex flex-col items-center">
+      <div class="sticker sticker-red">S3 · Sales-Led Onboarding Intake &nbsp;<span style="font-weight:900;">BACKLOG GAP</span></div>
+      <div class="laptop-frame">
+        <div class="laptop-bar">
+          <div class="laptop-dot" style="background:#ff5f57;"></div>
+          <div class="laptop-dot" style="background:#febc2e;"></div>
+          <div class="laptop-dot" style="background:#28c840;"></div>
+          <div class="laptop-addr"><span>onboard.familyhub.app/setup</span></div>
+        </div>
+        <div class="laptop-screen">
+          <div class="scr">
+            <div class="scr-header" style="justify-content:space-between;">
+              <div class="scr-logo" style="color:#3d1065;">Family<span style="color:#a855f7;">Hub</span></div>
+              <div style="display:flex;gap:4px;align-items:center;">
+                <span style="font-size:9px;font-weight:800;color:#7c3aed;">Step 2 of 3</span>
+                <div style="display:flex;gap:2px;">
+                  <div style="width:28px;height:4px;background:#a855f7;border-radius:2px;border:1px solid #000;"></div>
+                  <div style="width:28px;height:4px;background:#a855f7;border-radius:2px;border:1px solid #000;"></div>
+                  <div style="width:28px;height:4px;background:#e5e7eb;border-radius:2px;border:1px solid #000;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="scr-body" style="background:#fff;padding:10px 14px;">
+              <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#3d1065;margin-bottom:6px;">Brand your platform</div>
+
+              <!-- Logo upload -->
+              <span class="scr-label">Organisation logo</span>
+              <div style="background:#f9fafb;border:1.5px dashed #000;border-radius:5px;padding:8px;text-align:center;margin-bottom:6px;">
+                <div style="font-size:9px;font-weight:700;color:#555;">Drop your logo here or <span style="color:#7c3aed;font-weight:900;">browse</span></div>
+                <div style="font-size:8px;color:#aaa;">PNG / SVG · max 2 MB</div>
+                <!-- mock logo -->
+                <div style="margin-top:4px;background:#7c3aed;border-radius:4px;display:inline-block;padding:3px 10px;border:1.5px solid #000;">
+                  <span style="font-family:'Fredoka One',cursive;font-size:10px;color:#fff;">Al-Noor</span>
+                </div>
+              </div>
+
+              <!-- Colour picker -->
+              <span class="scr-label">Brand colour</span>
+              <div style="display:flex;gap:4px;align-items:center;margin-bottom:6px;">
+                <div style="width:20px;height:20px;background:#7c3aed;border:1.5px solid #000;border-radius:3px;box-shadow:1px 1px 0 #000;"></div>
+                <div style="font-size:10px;color:#555;font-family:monospace;">#7c3aed</div>
+                <div style="margin-left:4px;display:flex;gap:3px;">
+                  <div style="width:14px;height:14px;background:#3d1065;border:1px solid #000;border-radius:2px;"></div>
+                  <div style="width:14px;height:14px;background:#0ea5e9;border:1px solid #000;border-radius:2px;"></div>
+                  <div style="width:14px;height:14px;background:#16a34a;border:1px solid #000;border-radius:2px;"></div>
+                  <div style="width:14px;height:14px;background:#ea580c;border:1px solid #000;border-radius:2px;"></div>
+                  <div style="width:14px;height:14px;background:#db2777;border:1px solid #000;border-radius:2px;"></div>
+                </div>
+              </div>
+
+              <!-- Subdomain -->
+              <span class="scr-label">Your subdomain</span>
+              <div style="display:flex;align-items:center;gap:3px;margin-bottom:6px;">
+                <div style="background:#fff;border:1.5px solid #000;border-radius:4px 0 0 4px;padding:4px 7px;font-size:10px;flex:1;">al-noor</div>
+                <div style="background:#f3f4f6;border:1.5px solid #000;border-left:none;border-radius:0 4px 4px 0;padding:4px 7px;font-size:9px;color:#555;white-space:nowrap;">.familyhub.app</div>
+                <span class="scr-badge scr-badge-g" style="margin-left:3px;">Available</span>
+              </div>
+
+              <!-- Billing contact -->
+              <span class="scr-label">Billing contact email</span>
+              <div class="scr-input">treasurer@alnoor.org</div>
+
+              <div class="row" style="margin-top:6px;">
+                <span class="scr-btn scr-btn-w" style="font-size:9px;">← Back</span>
+                <span class="scr-btn scr-btn-y" style="flex:1;text-align:center;font-size:9px;">Continue to Plan →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+
+  </div><!-- end row 1 -->
+
+  <!-- Down arrow row 1 → row 2, centred under screen 3 -->
+  <div style="display:flex;justify-content:flex-end;margin-right:0;width:100%;">
+    <div style="margin-right:170px;" class="arrow-wrap">
+      <div class="arrow-shaft"></div>
+      <div style="background:#000;border:1.5px solid #fff;border-radius:3px;padding:1px 7px;font-size:8px;font-weight:900;color:#fff;">completes intake</div>
+      <div class="arrow-shaft"></div>
+      <div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Screens 4 → 5 → 6 (right to left visual, but rendered left-to-right) -->
+  <div class="flex items-start flex-wrap" style="flex-direction:row-reverse;gap:0;margin-top:0;">
+
+    <!-- SCREEN 6 -->
+    <div class="flex flex-col items-center">
+      <div class="sticker sticker-red">S6 · Org Member Bulk-Invite (CSV) &nbsp;<span style="font-weight:900;">BACKLOG GAP</span></div>
+      <div class="laptop-frame">
+        <div class="laptop-bar">
+          <div class="laptop-dot" style="background:#ff5f57;"></div>
+          <div class="laptop-dot" style="background:#febc2e;"></div>
+          <div class="laptop-dot" style="background:#28c840;"></div>
+          <div class="laptop-addr"><span>al-noor.familyhub.app/admin/invite</span></div>
+        </div>
+        <div class="laptop-screen">
+          <div class="scr">
+            <div class="scr-header">
+              <div style="width:10px;height:10px;background:#7c3aed;border-radius:2px;border:1px solid #000;"></div>
+              <div class="scr-logo" style="color:#7c3aed;font-size:12px;">Al-Noor Admin</div>
+              <span class="scr-nav-item active">Invite</span>
+            </div>
+            <div class="scr-body" style="background:#f9fafb;padding:8px 10px;">
+              <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#1f2937;margin-bottom:5px;">Bulk Invite Families</div>
+
+              <!-- Drop zone -->
+              <div style="background:#fff;border:2px dashed #000;border-radius:6px;padding:10px;text-align:center;margin-bottom:6px;box-shadow:2px 2px 0 #000;">
+                <div style="font-size:18px;">📄</div>
+                <div style="font-size:9px;font-weight:800;color:#555;">Drop families.csv here or <span style="color:#7c3aed;">browse</span></div>
+                <div style="font-size:8px;color:#aaa;margin-top:2px;">Columns: email, family_name, role</div>
+              </div>
+
+              <!-- Preview table -->
+              <div style="font-size:8px;font-weight:900;color:#555;margin-bottom:3px;">PREVIEW — 142 rows detected</div>
+              <div style="background:#fff;border:1.5px solid #000;border-radius:5px;overflow:hidden;box-shadow:2px 2px 0 #000;">
+                <!-- Table header -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 60px 50px;background:#fef9c3;border-bottom:1.5px solid #000;padding:3px 6px;gap:6px;">
+                  <span style="font-size:8px;font-weight:900;">EMAIL</span>
+                  <span style="font-size:8px;font-weight:900;">FAMILY NAME</span>
+                  <span style="font-size:8px;font-weight:900;">ROLE</span>
+                  <span style="font-size:8px;font-weight:900;">STATUS</span>
+                </div>
+                <!-- Rows -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 60px 50px;padding:3px 6px;gap:6px;border-bottom:1px solid #f3f4f6;">
+                  <span style="font-size:8px;">f.hussain@mail.com</span>
+                  <span style="font-size:8px;">Hussain</span>
+                  <span style="font-size:8px;">parent</span>
+                  <span class="scr-badge scr-badge-g" style="font-size:7px;">OK</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 60px 50px;padding:3px 6px;gap:6px;border-bottom:1px solid #f3f4f6;">
+                  <span style="font-size:8px;">a.malik@mail.com</span>
+                  <span style="font-size:8px;">Malik</span>
+                  <span style="font-size:8px;">parent</span>
+                  <span class="scr-badge scr-badge-g" style="font-size:7px;">OK</span>
+                </div>
+                <!-- Error row -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 60px 50px;padding:3px 6px;gap:6px;border-bottom:1px solid #f3f4f6;background:#fff5f5;">
+                  <span style="font-size:8px;color:#dc2626;">not-an-email</span>
+                  <span style="font-size:8px;">Omar</span>
+                  <span style="font-size:8px;">admin</span>
+                  <span class="scr-badge scr-badge-r" style="font-size:7px;">Bad email</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 60px 50px;padding:3px 6px;gap:6px;">
+                  <span style="font-size:8px;">z.ali@mail.com</span>
+                  <span style="font-size:8px;">Ali</span>
+                  <span style="font-size:8px;">parent</span>
+                  <span class="scr-badge scr-badge-g" style="font-size:7px;">OK</span>
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+                <span style="font-size:8px;font-weight:800;color:#dc2626;">1 row has errors — fix before sending</span>
+                <span class="scr-btn scr-btn-y" style="font-size:9px;">Send 141 Invites →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+
+    <!-- Arrow 5→6 -->
+    <div class="arrow-h flex items-center" style="margin-top:160px;padding:0 6px;flex-direction:row-reverse;">
+      <div style="height:3px;width:20px;background:#fff;"></div>
+      <div style="background:#000;border:1.5px solid #fff;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:900;color:#fff;white-space:nowrap;">clicks "Bulk Invite"</div>
+      <div style="width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-right:11px solid #fff;"></div>
+    </div>
+
+    <!-- SCREEN 5 -->
+    <div class="flex flex-col items-center">
+      <div class="sticker sticker-red">S5 · White-Label Theme Picker &nbsp;<span style="font-weight:900;">BACKLOG GAP</span></div>
+      <div class="laptop-frame">
+        <div class="laptop-bar">
+          <div class="laptop-dot" style="background:#ff5f57;"></div>
+          <div class="laptop-dot" style="background:#febc2e;"></div>
+          <div class="laptop-dot" style="background:#28c840;"></div>
+          <div class="laptop-addr"><span>al-noor.familyhub.app/admin/theme</span></div>
+        </div>
+        <div class="laptop-screen">
+          <div class="scr">
+            <div class="scr-header">
+              <div style="width:10px;height:10px;background:#7c3aed;border-radius:2px;border:1px solid #000;"></div>
+              <div class="scr-logo" style="color:#7c3aed;font-size:12px;">Al-Noor Admin</div>
+              <span class="scr-nav-item active">Theme</span>
+            </div>
+            <div class="scr-body" style="background:#f3f4f6;padding:8px 10px;">
+              <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#1f2937;margin-bottom:5px;">Brand Theme</div>
+              <div class="row" style="align-items:flex-start;gap:6px;">
+                <!-- Controls -->
+                <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+                  <span class="scr-label">Primary colour</span>
+                  <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px;">
+                    <div style="width:16px;height:16px;background:#7c3aed;border:2px solid #000;border-radius:2px;"></div>
+                    <div style="width:16px;height:16px;background:#0ea5e9;border:1px solid #ccc;border-radius:2px;"></div>
+                    <div style="width:16px;height:16px;background:#16a34a;border:1px solid #ccc;border-radius:2px;"></div>
+                    <div style="width:16px;height:16px;background:#dc2626;border:1px solid #ccc;border-radius:2px;"></div>
+                    <div style="width:16px;height:16px;background:#d97706;border:1px solid #ccc;border-radius:2px;"></div>
+                  </div>
+                  <span class="scr-label">Accent colour</span>
+                  <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px;">
+                    <div style="width:16px;height:16px;background:#facc15;border:2px solid #000;border-radius:2px;"></div>
+                    <div style="width:16px;height:16px;background:#f0abfc;border:1px solid #ccc;border-radius:2px;"></div>
+                    <div style="width:16px;height:16px;background:#6ee7b7;border:1px solid #ccc;border-radius:2px;"></div>
+                    <div style="width:16px;height:16px;background:#fca5a5;border:1px solid #ccc;border-radius:2px;"></div>
+                  </div>
+                  <span class="scr-label">Font</span>
+                  <div style="background:#fff;border:1.5px solid #000;border-radius:3px;padding:3px 6px;font-size:9px;display:flex;justify-content:space-between;">
+                    <span>Fredoka One</span><span>▾</span>
+                  </div>
+                  <div style="margin-top:4px;">
+                    <span class="scr-btn scr-btn-y" style="font-size:9px;width:100%;text-align:center;display:block;">Save Theme</span>
+                  </div>
+                </div>
+                <!-- Preview pane -->
+                <div style="flex:1.4;background:#fff;border:1.5px solid #000;border-radius:6px;box-shadow:2px 2px 0 #000;overflow:hidden;">
+                  <div style="background:#7c3aed;padding:5px 8px;display:flex;align-items:center;gap:5px;">
+                    <div style="width:12px;height:12px;background:#fff;border-radius:2px;border:1px solid rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;">
+                      <span style="font-size:7px;font-family:'Fredoka One',cursive;color:#7c3aed;">A</span>
+                    </div>
+                    <span style="font-family:'Fredoka One',cursive;font-size:10px;color:#fff;">Al-Noor Community</span>
+                  </div>
+                  <div style="padding:5px 7px;border-bottom:1px solid #f3f4f6;display:flex;gap:4px;">
+                    <span style="font-size:8px;font-weight:800;background:#7c3aed;color:#fff;padding:1px 5px;border-radius:3px;">Dashboard</span>
+                    <span style="font-size:8px;font-weight:700;color:#555;">Families</span>
+                    <span style="font-size:8px;font-weight:700;color:#555;">Events</span>
+                  </div>
+                  <div style="padding:5px 7px;">
+                    <div style="font-family:'Fredoka One',cursive;font-size:10px;color:#7c3aed;margin-bottom:3px;">Welcome back, Hassan</div>
+                    <div style="background:#f5f3ff;border:1px solid #7c3aed;border-radius:4px;padding:4px 6px;margin-bottom:3px;">
+                      <div style="font-size:8px;font-weight:800;">142 families enrolled</div>
+                      <div style="font-size:7px;color:#555;">87% active this week</div>
+                    </div>
+                    <div style="background:#facc15;border:1.5px solid #000;border-radius:3px;padding:2px 6px;display:inline-block;font-size:8px;font-weight:900;box-shadow:1px 1px 0 #000;">Invite Families</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+
+    <!-- Arrow 4→5 -->
+    <div class="arrow-h flex items-center" style="margin-top:160px;padding:0 6px;flex-direction:row-reverse;">
+      <div style="height:3px;width:20px;background:#fff;"></div>
+      <div style="background:#000;border:1.5px solid #fff;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:900;color:#fff;white-space:nowrap;">clicks "Customise Theme"</div>
+      <div style="width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-right:11px solid #fff;"></div>
+    </div>
+
+    <!-- SCREEN 4 -->
+    <div class="flex flex-col items-center">
+      <div class="sticker sticker-green">S4 · Multi-Tenant Admin Dashboard &nbsp;<span style="font-weight:600;color:#555;">FHS-TBD</span></div>
+      <div class="laptop-frame">
+        <div class="laptop-bar">
+          <div class="laptop-dot" style="background:#ff5f57;"></div>
+          <div class="laptop-dot" style="background:#febc2e;"></div>
+          <div class="laptop-dot" style="background:#28c840;"></div>
+          <div class="laptop-addr"><span>al-noor.familyhub.app/admin</span></div>
+        </div>
+        <div class="laptop-screen">
+          <div class="scr">
+            <div class="scr-header">
+              <div style="width:10px;height:10px;background:#7c3aed;border-radius:2px;border:1px solid #000;"></div>
+              <div class="scr-logo" style="color:#7c3aed;font-size:12px;">Al-Noor Admin</div>
+              <div style="flex:1;display:flex;gap:4px;justify-content:flex-end;">
+                <span class="scr-nav-item active">Families</span>
+                <span class="scr-nav-item">Events</span>
+                <span class="scr-nav-item">Analytics</span>
+                <span class="scr-nav-item">Settings</span>
+              </div>
+            </div>
+            <div class="scr-body" style="background:#f9fafb;padding:8px 10px;">
+              <!-- Stats row -->
+              <div style="display:flex;gap:4px;margin-bottom:6px;">
+                <div style="background:#fff;border:1.5px solid #000;border-radius:5px;padding:5px 8px;flex:1;box-shadow:1px 1px 0 #000;text-align:center;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:14px;color:#7c3aed;">142</div>
+                  <div style="font-size:7px;font-weight:800;color:#555;">Total Families</div>
+                </div>
+                <div style="background:#d1fae5;border:1.5px solid #000;border-radius:5px;padding:5px 8px;flex:1;box-shadow:1px 1px 0 #000;text-align:center;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:14px;color:#059669;">124</div>
+                  <div style="font-size:7px;font-weight:800;color:#555;">Active</div>
+                </div>
+                <div style="background:#fef9c3;border:1.5px solid #000;border-radius:5px;padding:5px 8px;flex:1;box-shadow:1px 1px 0 #000;text-align:center;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:14px;color:#b45309;">14</div>
+                  <div style="font-size:7px;font-weight:800;color:#555;">Pending</div>
+                </div>
+                <div style="background:#fee2e2;border:1.5px solid #000;border-radius:5px;padding:5px 8px;flex:1;box-shadow:1px 1px 0 #000;text-align:center;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:14px;color:#dc2626;">4</div>
+                  <div style="font-size:7px;font-weight:800;color:#555;">Suspended</div>
+                </div>
+              </div>
+              <!-- Search row -->
+              <div style="display:flex;gap:4px;margin-bottom:5px;">
+                <div style="flex:1;background:#fff;border:1.5px solid #000;border-radius:4px;padding:4px 8px;font-size:9px;color:#aaa;">Search families…</div>
+                <div style="background:#fff;border:1.5px solid #000;border-radius:4px;padding:4px 8px;font-size:9px;display:flex;align-items:center;gap:3px;">Status <span>▾</span></div>
+              </div>
+              <!-- Table rows -->
+              <div style="background:#fff;border:1.5px solid #000;border-radius:5px;overflow:hidden;box-shadow:2px 2px 0 #000;">
+                <div style="display:grid;grid-template-columns:1fr 60px 70px 60px 40px;background:#fef9c3;border-bottom:1.5px solid #000;padding:3px 6px;gap:4px;">
+                  <span style="font-size:7px;font-weight:900;">FAMILY</span>
+                  <span style="font-size:7px;font-weight:900;">STATUS</span>
+                  <span style="font-size:7px;font-weight:900;">JOINED</span>
+                  <span style="font-size:7px;font-weight:900;">LAST ACTIVE</span>
+                  <span style="font-size:7px;font-weight:900;"></span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 60px 70px 60px 40px;padding:3px 6px;gap:4px;border-bottom:1px solid #f3f4f6;align-items:center;">
+                  <span style="font-size:8px;font-weight:700;">Hussain family</span>
+                  <span class="scr-badge scr-badge-g" style="font-size:7px;">Active</span>
+                  <span style="font-size:7px;color:#555;">Jan 2026</span>
+                  <span style="font-size:7px;color:#555;">2h ago</span>
+                  <span style="font-size:7px;font-weight:800;color:#7c3aed;cursor:pointer;">View</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 60px 70px 60px 40px;padding:3px 6px;gap:4px;border-bottom:1px solid #f3f4f6;align-items:center;">
+                  <span style="font-size:8px;font-weight:700;">Al-Rashid family</span>
+                  <span class="scr-badge scr-badge-g" style="font-size:7px;">Active</span>
+                  <span style="font-size:7px;color:#555;">Feb 2026</span>
+                  <span style="font-size:7px;color:#555;">1d ago</span>
+                  <span style="font-size:7px;font-weight:800;color:#7c3aed;cursor:pointer;">View</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 60px 70px 60px 40px;padding:3px 6px;gap:4px;border-bottom:1px solid #f3f4f6;align-items:center;">
+                  <span style="font-size:8px;font-weight:700;">Malik family</span>
+                  <span class="scr-badge scr-badge-y" style="font-size:7px;">Pending</span>
+                  <span style="font-size:7px;color:#555;">Apr 2026</span>
+                  <span style="font-size:7px;color:#999;">—</span>
+                  <span style="font-size:7px;font-weight:800;color:#7c3aed;cursor:pointer;">Remind</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 60px 70px 60px 40px;padding:3px 6px;gap:4px;align-items:center;">
+                  <span style="font-size:8px;font-weight:700;">Farooq family</span>
+                  <span class="scr-badge scr-badge-r" style="font-size:7px;">Suspended</span>
+                  <span style="font-size:7px;color:#555;">Oct 2025</span>
+                  <span style="font-size:7px;color:#999;">14d ago</span>
+                  <span style="font-size:7px;font-weight:800;color:#dc2626;cursor:pointer;">Reinstate</span>
+                </div>
+              </div>
+              <div style="text-align:right;margin-top:4px;font-size:8px;color:#7c3aed;font-weight:800;cursor:pointer;">Showing 4 of 142 →</div>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+
+  </div><!-- end row 2 -->
+
+  <!-- Vertical down arrow (left side, under screen 4) -->
+  <div style="display:flex;justify-content:flex-start;margin-left:0;width:100%;">
+    <div style="margin-left:170px;" class="arrow-wrap">
+      <div class="arrow-shaft"></div>
+      <div style="background:#000;border:1.5px solid #fff;border-radius:3px;padding:1px 7px;font-size:8px;font-weight:900;color:#fff;white-space:nowrap;">uploads CSV → sends invites</div>
+      <div class="arrow-shaft"></div>
+      <div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ROW 3: Screens 7 → 8 → 9 -->
+  <div class="flex items-start flex-wrap" style="gap:0;margin-top:0;">
+
+    <!-- SCREEN 7 -->
+    <div class="flex flex-col items-center" style="margin-right:0;">
+      <div class="sticker sticker-red">S7 · Org Analytics Dashboard &nbsp;<span style="font-weight:900;">BACKLOG GAP</span></div>
+      <div class="laptop-frame">
+        <div class="laptop-bar">
+          <div class="laptop-dot" style="background:#ff5f57;"></div>
+          <div class="laptop-dot" style="background:#febc2e;"></div>
+          <div class="laptop-dot" style="background:#28c840;"></div>
+          <div class="laptop-addr"><span>al-noor.familyhub.app/admin/analytics</span></div>
+        </div>
+        <div class="laptop-screen">
+          <div class="scr">
+            <div class="scr-header">
+              <div style="width:10px;height:10px;background:#7c3aed;border-radius:2px;border:1px solid #000;"></div>
+              <div class="scr-logo" style="color:#7c3aed;font-size:12px;">Al-Noor Admin</div>
+              <div style="flex:1;display:flex;gap:4px;justify-content:flex-end;">
+                <span class="scr-nav-item">Families</span>
+                <span class="scr-nav-item active">Analytics</span>
+                <span class="scr-nav-item">Settings</span>
+              </div>
+            </div>
+            <div class="scr-body" style="padding:7px 10px;background:#f9fafb;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#1f2937;">Analytics</div>
+                <div style="background:#fff;border:1.5px solid #000;border-radius:3px;padding:2px 7px;font-size:8px;display:flex;align-items:center;gap:3px;">Last 30 days <span>▾</span></div>
+              </div>
+              <!-- Metric cards -->
+              <div style="display:flex;gap:4px;margin-bottom:5px;">
+                <div style="background:#fff;border:1.5px solid #000;border-radius:5px;padding:5px 7px;flex:1;box-shadow:1px 1px 0 #000;">
+                  <div style="font-size:7px;font-weight:900;color:#555;margin-bottom:1px;">ACTIVE FAMILIES</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#7c3aed;">124<span style="font-size:9px;color:#059669;margin-left:3px;">+8</span></div>
+                </div>
+                <div style="background:#fff;border:1.5px solid #000;border-radius:5px;padding:5px 7px;flex:1;box-shadow:1px 1px 0 #000;">
+                  <div style="font-size:7px;font-weight:900;color:#555;margin-bottom:1px;">WEEKLY ENGAGEMENT</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#7c3aed;">87%<span style="font-size:9px;color:#059669;margin-left:3px;">+3%</span></div>
+                </div>
+                <div style="background:#fee2e2;border:1.5px solid #000;border-radius:5px;padding:5px 7px;flex:1;box-shadow:1px 1px 0 #000;">
+                  <div style="font-size:7px;font-weight:900;color:#991b1b;margin-bottom:1px;">CHURN (30D)</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#dc2626;">2.1%</div>
+                </div>
+              </div>
+              <!-- Bar chart mock -->
+              <div style="background:#fff;border:1.5px solid #000;border-radius:5px;padding:7px;box-shadow:2px 2px 0 #000;margin-bottom:5px;">
+                <div style="font-size:8px;font-weight:900;color:#555;margin-bottom:4px;">WEEKLY ACTIVE FAMILIES — APR 2026</div>
+                <div style="display:flex;align-items:flex-end;gap:4px;height:36px;">
+                  <div style="flex:1;background:#a855f7;border:1px solid #000;border-radius:1px 1px 0 0;height:65%;"></div>
+                  <div style="flex:1;background:#a855f7;border:1px solid #000;border-radius:1px 1px 0 0;height:72%;"></div>
+                  <div style="flex:1;background:#a855f7;border:1px solid #000;border-radius:1px 1px 0 0;height:80%;"></div>
+                  <div style="flex:1;background:#facc15;border:1.5px solid #000;border-radius:1px 1px 0 0;height:100%;"></div>
+                </div>
+                <div style="display:flex;gap:4px;margin-top:2px;">
+                  <div style="flex:1;text-align:center;font-size:7px;color:#555;">W1</div>
+                  <div style="flex:1;text-align:center;font-size:7px;color:#555;">W2</div>
+                  <div style="flex:1;text-align:center;font-size:7px;color:#555;">W3</div>
+                  <div style="flex:1;text-align:center;font-size:7px;color:#555;">W4</div>
+                </div>
+              </div>
+              <!-- Feature usage -->
+              <div style="background:#fff;border:1.5px solid #000;border-radius:5px;padding:6px 7px;box-shadow:2px 2px 0 #000;">
+                <div style="font-size:8px;font-weight:900;color:#555;margin-bottom:4px;">FEATURE USAGE</div>
+                <div style="display:flex;flex-direction:column;gap:3px;">
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <div style="font-size:8px;font-weight:700;width:50px;">Calendar</div>
+                    <div style="flex:1;background:#f3f4f6;border-radius:2px;height:6px;border:1px solid #000;overflow:hidden;"><div style="background:#7c3aed;height:100%;width:88%;"></div></div>
+                    <span style="font-size:7px;font-weight:800;color:#555;">88%</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <div style="font-size:8px;font-weight:700;width:50px;">Tasks</div>
+                    <div style="flex:1;background:#f3f4f6;border-radius:2px;height:6px;border:1px solid #000;overflow:hidden;"><div style="background:#7c3aed;height:100%;width:62%;"></div></div>
+                    <span style="font-size:7px;font-weight:800;color:#555;">62%</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <div style="font-size:8px;font-weight:700;width:50px;">Stickers</div>
+                    <div style="flex:1;background:#f3f4f6;border-radius:2px;height:6px;border:1px solid #000;overflow:hidden;"><div style="background:#facc15;height:100%;width:44%;"></div></div>
+                    <span style="font-size:7px;font-weight:800;color:#555;">44%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+
+    <!-- Arrow 7→8 -->
+    <div class="arrow-h flex items-center" style="margin-top:160px;padding:0 6px;">
+      <div style="height:3px;width:20px;background:#fff;"></div>
+      <div style="background:#000;border:1.5px solid #fff;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:900;color:#fff;white-space:nowrap;">goes to Settings → Admins</div>
+      <div style="width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:11px solid #fff;"></div>
+    </div>
+
+    <!-- SCREEN 8 -->
+    <div class="flex flex-col items-center">
+      <div class="sticker sticker-red">S8 · Multi-Admin Handover &nbsp;<span style="font-weight:900;">BACKLOG GAP</span></div>
+      <div class="laptop-frame">
+        <div class="laptop-bar">
+          <div class="laptop-dot" style="background:#ff5f57;"></div>
+          <div class="laptop-dot" style="background:#febc2e;"></div>
+          <div class="laptop-dot" style="background:#28c840;"></div>
+          <div class="laptop-addr"><span>al-noor.familyhub.app/admin/settings/admins</span></div>
+        </div>
+        <div class="laptop-screen">
+          <div class="scr">
+            <div class="scr-header">
+              <div style="width:10px;height:10px;background:#7c3aed;border-radius:2px;border:1px solid #000;"></div>
+              <div class="scr-logo" style="color:#7c3aed;font-size:12px;">Al-Noor Admin</div>
+              <span class="scr-nav-item active">Settings → Admins</span>
+            </div>
+            <div class="scr-body" style="background:#f9fafb;padding:8px 10px;">
+              <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#1f2937;margin-bottom:5px;">Admin Team</div>
+
+              <!-- Admin list -->
+              <div style="background:#fff;border:1.5px solid #000;border-radius:5px;overflow:hidden;box-shadow:2px 2px 0 #000;margin-bottom:5px;">
+                <div style="display:grid;grid-template-columns:1fr 70px 60px 50px;background:#fef9c3;border-bottom:1.5px solid #000;padding:3px 6px;gap:4px;">
+                  <span style="font-size:7px;font-weight:900;">ADMIN</span>
+                  <span style="font-size:7px;font-weight:900;">ROLE</span>
+                  <span style="font-size:7px;font-weight:900;">SINCE</span>
+                  <span style="font-size:7px;font-weight:900;"></span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 70px 60px 50px;padding:3px 6px;gap:4px;border-bottom:1px solid #f3f4f6;align-items:center;">
+                  <div>
+                    <div style="font-size:8px;font-weight:800;">Hassan Abdullahi</div>
+                    <div style="font-size:7px;color:#555;">h.abdullahi@alnoor.org</div>
+                  </div>
+                  <span class="scr-badge" style="background:#e9d5ff;color:#3b0764;font-size:7px;">Owner</span>
+                  <span style="font-size:7px;color:#555;">Jan 2026</span>
+                  <span style="font-size:7px;color:#aaa;">—</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 70px 60px 50px;padding:3px 6px;gap:4px;border-bottom:1px solid #f3f4f6;align-items:center;">
+                  <div>
+                    <div style="font-size:8px;font-weight:800;">Fatima Osman</div>
+                    <div style="font-size:7px;color:#555;">f.osman@alnoor.org</div>
+                  </div>
+                  <span class="scr-badge scr-badge-b" style="font-size:7px;">Co-admin</span>
+                  <span style="font-size:7px;color:#555;">Feb 2026</span>
+                  <span style="font-size:7px;font-weight:800;color:#dc2626;cursor:pointer;">Remove</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 70px 60px 50px;padding:3px 6px;gap:4px;align-items:center;">
+                  <div>
+                    <div style="font-size:8px;font-weight:800;">Ibrahim Suleiman</div>
+                    <div style="font-size:7px;color:#555;">i.suleiman@alnoor.org</div>
+                  </div>
+                  <span class="scr-badge scr-badge-b" style="font-size:7px;">Co-admin</span>
+                  <span style="font-size:7px;color:#555;">Mar 2026</span>
+                  <span style="font-size:7px;font-weight:800;color:#dc2626;cursor:pointer;">Remove</span>
+                </div>
+              </div>
+
+              <!-- Permission matrix -->
+              <div style="background:#fff;border:1.5px solid #000;border-radius:5px;overflow:hidden;box-shadow:2px 2px 0 #000;margin-bottom:5px;">
+                <div style="background:#f3f4f6;border-bottom:1.5px solid #000;padding:3px 6px;">
+                  <span style="font-size:8px;font-weight:900;color:#555;">PERMISSION MATRIX</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 50px 50px;padding:2px 6px;gap:4px;border-bottom:1px solid #f3f4f6;">
+                  <span style="font-size:7px;font-weight:700;">Invite families</span>
+                  <div style="text-align:center;font-size:9px;">✅</div>
+                  <div style="text-align:center;font-size:9px;">✅</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 50px 50px;padding:2px 6px;gap:4px;border-bottom:1px solid #f3f4f6;">
+                  <span style="font-size:7px;font-weight:700;">View analytics</span>
+                  <div style="text-align:center;font-size:9px;">✅</div>
+                  <div style="text-align:center;font-size:9px;">✅</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 50px 50px;padding:2px 6px;gap:4px;border-bottom:1px solid #f3f4f6;">
+                  <span style="font-size:7px;font-weight:700;">Manage billing</span>
+                  <div style="text-align:center;font-size:9px;">✅</div>
+                  <div style="text-align:center;font-size:9px;">🚫</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 50px 50px;padding:2px 6px;gap:4px;">
+                  <span style="font-size:7px;font-weight:700;">Transfer ownership</span>
+                  <div style="text-align:center;font-size:9px;">✅</div>
+                  <div style="text-align:center;font-size:9px;">🚫</div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:4px;">
+                <span class="scr-btn scr-btn-w" style="font-size:9px;flex:1;text-align:center;">+ Invite Co-admin</span>
+                <span class="scr-btn scr-btn-r" style="font-size:9px;">Transfer Ownership</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+
+    <!-- Arrow 8→9 -->
+    <div class="arrow-h flex items-center" style="margin-top:160px;padding:0 6px;">
+      <div style="height:3px;width:20px;background:#fff;"></div>
+      <div style="background:#000;border:1.5px solid #fff;border-radius:3px;padding:1px 5px;font-size:8px;font-weight:900;color:#fff;white-space:nowrap;">goes to Billing</div>
+      <div style="width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:11px solid #fff;"></div>
+    </div>
+
+    <!-- SCREEN 9 -->
+    <div class="flex flex-col items-center">
+      <div class="sticker sticker-amber">S9 · Billing — Invoice + PO Path &nbsp;<span style="font-weight:600;">FHS-TBD (ADR-0004)</span></div>
+      <div class="laptop-frame">
+        <div class="laptop-bar">
+          <div class="laptop-dot" style="background:#ff5f57;"></div>
+          <div class="laptop-dot" style="background:#febc2e;"></div>
+          <div class="laptop-dot" style="background:#28c840;"></div>
+          <div class="laptop-addr"><span>al-noor.familyhub.app/admin/billing</span></div>
+        </div>
+        <div class="laptop-screen">
+          <div class="scr">
+            <div class="scr-header">
+              <div style="width:10px;height:10px;background:#7c3aed;border-radius:2px;border:1px solid #000;"></div>
+              <div class="scr-logo" style="color:#7c3aed;font-size:12px;">Al-Noor Admin</div>
+              <span class="scr-nav-item active">Billing</span>
+            </div>
+            <div class="scr-body" style="background:#f9fafb;padding:8px 10px;">
+              <!-- Plan summary -->
+              <div style="background:#e9d5ff;border:1.5px solid #000;border-radius:5px;padding:7px 9px;box-shadow:2px 2px 0 #000;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <div style="font-size:8px;font-weight:900;color:#3b0764;">CURRENT PLAN</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#3d1065;">Scale — 101–500 families</div>
+                  <div style="font-size:8px;color:#555;">£1,999/yr · Renews 15 Jan 2027</div>
+                </div>
+                <span class="scr-badge scr-badge-g">Active</span>
+              </div>
+
+              <!-- Invoice list -->
+              <div style="font-size:8px;font-weight:900;color:#555;margin-bottom:3px;">INVOICES</div>
+              <div style="background:#fff;border:1.5px solid #000;border-radius:5px;overflow:hidden;box-shadow:2px 2px 0 #000;margin-bottom:5px;">
+                <div style="display:grid;grid-template-columns:1fr 60px 50px 70px;background:#fef9c3;border-bottom:1.5px solid #000;padding:3px 6px;gap:4px;">
+                  <span style="font-size:7px;font-weight:900;">INVOICE</span>
+                  <span style="font-size:7px;font-weight:900;">AMOUNT</span>
+                  <span style="font-size:7px;font-weight:900;">STATUS</span>
+                  <span style="font-size:7px;font-weight:900;"></span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 60px 50px 70px;padding:3px 6px;gap:4px;border-bottom:1px solid #f3f4f6;align-items:center;">
+                  <span style="font-size:8px;">INV-2026-001 · Jan 2026</span>
+                  <span style="font-size:8px;font-weight:700;">£1,999</span>
+                  <span class="scr-badge scr-badge-g" style="font-size:7px;">Paid</span>
+                  <span class="scr-btn scr-btn-w" style="font-size:7px;padding:2px 5px;">Download PDF</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 60px 50px 70px;padding:3px 6px;gap:4px;align-items:center;">
+                  <span style="font-size:8px;">INV-2025-001 · Jan 2025</span>
+                  <span style="font-size:8px;font-weight:700;">£999</span>
+                  <span class="scr-badge scr-badge-g" style="font-size:7px;">Paid</span>
+                  <span class="scr-btn scr-btn-w" style="font-size:7px;padding:2px 5px;">Download PDF</span>
+                </div>
+              </div>
+
+              <!-- PO path -->
+              <div style="background:#fef9c3;border:1.5px solid #000;border-radius:5px;padding:7px 9px;box-shadow:1px 1px 0 #000;margin-bottom:5px;">
+                <div style="font-size:8px;font-weight:900;color:#854d0e;margin-bottom:3px;">PAY VIA PURCHASE ORDER</div>
+                <div style="font-size:8px;color:#555;margin-bottom:4px;">Need to raise a PO for your finance team? We'll send a proforma invoice to your billing contact and hold your renewal for 30 days.</div>
+                <span class="scr-btn scr-btn-y" style="font-size:9px;">Request PO Invoice</span>
+              </div>
+
+              <div style="font-size:8px;color:#555;font-weight:700;">Billing contact: <span style="color:#000;">treasurer@alnoor.org</span> · <span style="color:#7c3aed;cursor:pointer;">Change</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+
+  </div><!-- end row 3 -->
+
+  <!-- Down arrow under screen 9 → screen 10 -->
+  <div style="display:flex;justify-content:flex-end;width:100%;">
+    <div style="margin-right:170px;" class="arrow-wrap">
+      <div class="arrow-shaft"></div>
+      <div style="background:#dc2626;border:1.5px solid #fff;border-radius:3px;padding:1px 7px;font-size:8px;font-weight:900;color:#fff;white-space:nowrap;">subscription lapses</div>
+      <div class="arrow-shaft"></div>
+      <div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ROW 4: Screen 10 (centred right) -->
+  <div class="flex items-start flex-wrap justify-end" style="gap:0;margin-top:0;">
+    <div class="flex flex-col items-center">
+      <div class="sticker sticker-red">S10 · Suspended Org State &nbsp;<span style="font-weight:900;">BACKLOG GAP</span></div>
+      <div class="laptop-frame">
+        <div class="laptop-bar">
+          <div class="laptop-dot" style="background:#ff5f57;"></div>
+          <div class="laptop-dot" style="background:#febc2e;"></div>
+          <div class="laptop-dot" style="background:#28c840;"></div>
+          <div class="laptop-addr"><span>al-noor.familyhub.app/admin</span></div>
+        </div>
+        <div class="laptop-screen">
+          <div class="scr">
+            <div class="scr-header" style="background:#fff5f5;border-bottom-color:#fca5a5;">
+              <div style="width:10px;height:10px;background:#9ca3af;border-radius:2px;border:1px solid #000;"></div>
+              <div class="scr-logo" style="color:#9ca3af;font-size:12px;">Al-Noor Admin</div>
+              <span class="scr-badge scr-badge-r" style="margin-left:auto;">Subscription expired</span>
+            </div>
+            <!-- Suspension banner -->
+            <div style="background:#fee2e2;border-bottom:2px solid #000;padding:7px 12px;display:flex;align-items:center;gap:8px;">
+              <div style="font-size:16px;">🔒</div>
+              <div style="flex:1;">
+                <div style="font-family:'Fredoka One',cursive;font-size:11px;color:#7f1d1d;">Your subscription has expired — admin actions disabled</div>
+                <div style="font-size:8px;color:#991b1b;font-weight:700;">Family dashboards remain accessible to your members for 14 more days. Admin tools are locked.</div>
+              </div>
+              <span class="scr-btn scr-btn-r" style="font-size:9px;white-space:nowrap;">Renew Now</span>
+            </div>
+            <div class="scr-body" style="background:#f9fafb;padding:8px 10px;opacity:0.5;pointer-events:none;position:relative;">
+              <!-- Greyed-out dashboard -->
+              <div style="display:flex;gap:4px;margin-bottom:5px;">
+                <div style="background:#e5e7eb;border:1.5px solid #000;border-radius:5px;padding:5px 8px;flex:1;text-align:center;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#9ca3af;">142</div>
+                  <div style="font-size:7px;font-weight:800;color:#9ca3af;">Total Families</div>
+                </div>
+                <div style="background:#e5e7eb;border:1.5px solid #000;border-radius:5px;padding:5px 8px;flex:1;text-align:center;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#9ca3af;">—</div>
+                  <div style="font-size:7px;font-weight:800;color:#9ca3af;">Bulk Invite</div>
+                </div>
+                <div style="background:#e5e7eb;border:1.5px solid #000;border-radius:5px;padding:5px 8px;flex:1;text-align:center;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#9ca3af;">—</div>
+                  <div style="font-size:7px;font-weight:800;color:#9ca3af;">Analytics</div>
+                </div>
+              </div>
+              <div style="background:#e5e7eb;border:1.5px solid #000;border-radius:5px;height:80px;display:flex;align-items:center;justify-content:center;">
+                <span style="font-size:9px;font-weight:700;color:#9ca3af;">Admin actions locked</span>
+              </div>
+            </div>
+            <!-- Contact billing CTA below body -->
+            <div style="background:#fff;border-top:2px solid #000;padding:6px 10px;display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:8px;font-weight:700;color:#555;">Questions? <span style="color:#000;font-weight:900;">billing@familyhub.app</span></div>
+              <span class="scr-btn scr-btn-y" style="font-size:9px;">Contact Billing</span>
+            </div>
+          </div>
+        </div>
+        <div class="laptop-base"></div>
+      </div>
+    </div>
+  </div><!-- end row 4 -->
+
+  <!-- ═══════════════════════════════════════════════ GAPS CALLOUT -->
+  <div style="margin-top:48px;background:#fef2f2;border:2px solid #dc2626;border-radius:8px;box-shadow:4px 4px 0 #000;padding:18px 22px;">
+    <div style="font-family:'Fredoka One',cursive;font-size:18px;color:#7f1d1d;margin-bottom:8px;">Gaps &amp; Open Questions — Persona 2 has the most backlog gaps</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+
+      <div style="background:#fff;border:1.5px solid #dc2626;border-radius:5px;padding:8px 12px;min-width:260px;flex:1;">
+        <div style="font-size:9px;font-weight:900;color:#dc2626;margin-bottom:3px;">S1 · COMMUNITY LANDING PAGE</div>
+        <div style="font-size:9px;font-weight:700;color:#374151;">No Jira ticket. No feature doc. No design. The community/org marketing page is entirely absent — the current <code>familyhub.app</code> landing targets individual families only. Needs a dedicated route (/community) with org-specific messaging, testimonials, and pricing table.</div>
+      </div>
+
+      <div style="background:#fff;border:1.5px solid #dc2626;border-radius:5px;padding:8px 12px;min-width:260px;flex:1;">
+        <div style="font-size:9px;font-weight:900;color:#dc2626;margin-bottom:3px;">S2 · TALK-TO-SALES LEAD FORM + CRM HANDOFF</div>
+        <div style="font-size:9px;font-weight:700;color:#374151;">No ticket. No spec. Lead capture form doesn't exist. Also undefined: where does the lead land? Which CRM? Who owns the follow-up? No sales pipeline tooling scoped yet. Required before any community org can enter the funnel.</div>
+      </div>
+
+      <div style="background:#fff;border:1.5px solid #dc2626;border-radius:5px;padding:8px 12px;min-width:260px;flex:1;">
+        <div style="font-size:9px;font-weight:900;color:#dc2626;margin-bottom:3px;">S3 · SALES-LED ONBOARDING INTAKE (MULTI-STEP)</div>
+        <div style="font-size:9px;font-weight:700;color:#374151;">No ticket. White-label onboarding flow (logo + colour + subdomain + billing contact) has no spec, no Jira story, no AC. The existing tenant-creation path (FHS-150s) is self-serve consumer only — it does not accommodate org-level setup with branding.</div>
+      </div>
+
+      <div style="background:#fff;border:1.5px solid #dc2626;border-radius:5px;padding:8px 12px;min-width:260px;flex:1;">
+        <div style="font-size:9px;font-weight:900;color:#dc2626;margin-bottom:3px;">S5 · WHITE-LABEL THEME PICKER</div>
+        <div style="font-size:9px;font-weight:700;color:#374151;">No ticket. Brand colour injection, logo upload, and font selection are not implemented or specced. Custom subdomain exists in concept (ADR-0002) but no per-tenant colour token system is designed. Needs ADR covering CSS variable injection strategy.</div>
+      </div>
+
+      <div style="background:#fff;border:1.5px solid #dc2626;border-radius:5px;padding:8px 12px;min-width:260px;flex:1;">
+        <div style="font-size:9px;font-weight:900;color:#dc2626;margin-bottom:3px;">S6 · BULK CSV INVITE</div>
+        <div style="font-size:9px;font-weight:700;color:#374151;">No ticket. Bulk family invite via CSV upload is not specced. Current invite path (FHS-193 area) is one-at-a-time. Needs: CSV parser, validation UI, preview table, row-level error display, and batch invite job. Pricing tiers reference this as included in 101–500 families plan.</div>
+      </div>
+
+      <div style="background:#fff;border:1.5px solid #dc2626;border-radius:5px;padding:8px 12px;min-width:260px;flex:1;">
+        <div style="font-size:9px;font-weight:900;color:#dc2626;margin-bottom:3px;">S7 · ORG ANALYTICS DASHBOARD</div>
+        <div style="font-size:9px;font-weight:700;color:#374151;">No ticket. No data model. No metrics defined. Org-level aggregate analytics (active families, engagement %, churn, feature usage) require: event pipeline, metrics aggregation job, and admin-only API surface. None of these are in the current backlog.</div>
+      </div>
+
+      <div style="background:#fff;border:1.5px solid #dc2626;border-radius:5px;padding:8px 12px;min-width:260px;flex:1;">
+        <div style="font-size:9px;font-weight:900;color:#dc2626;margin-bottom:3px;">S8 · MULTI-ADMIN + OWNERSHIP TRANSFER</div>
+        <div style="font-size:9px;font-weight:700;color:#374151;">No ticket. Current role model supports family-level roles only (per ADR-0009). Org-level co-admin roles, permission matrices, and ownership transfer require a separate roles layer. No ADR exists for org-level RBAC. Risk: org admins leave, no succession path.</div>
+      </div>
+
+      <div style="background:#fff;border:1.5px solid #dc2626;border-radius:5px;padding:8px 12px;min-width:260px;flex:1;">
+        <div style="font-size:9px;font-weight:900;color:#dc2626;margin-bottom:3px;">S9 · PO / PURCHASE-ORDER BILLING PATH</div>
+        <div style="font-size:9px;font-weight:700;color:#374151;">ADR-0004 (Stripe) exists but does not address PO/invoice billing. Many religious orgs and NGOs can only pay via purchase order with 30-day net terms. Stripe supports this via manual invoices — but the flow (request → proforma → PO upload → payment confirmation) is unspecced.</div>
+      </div>
+
+      <div style="background:#fff;border:1.5px solid #dc2626;border-radius:5px;padding:8px 12px;min-width:260px;flex:1;">
+        <div style="font-size:9px;font-weight:900;color:#dc2626;margin-bottom:3px;">S10 · SUSPENDED ORG / GRACE PERIOD STATE</div>
+        <div style="font-size:9px;font-weight:700;color:#374151;">No ticket. What happens when an org's subscription lapses? No grace period policy defined. No locked-state UI. No member communication flow. Risk: 142 families lose access silently. Needs: grace period duration policy, warning emails, progressive feature lockout, data export window.</div>
+      </div>
+
+      <div style="background:#fef9c3;border:1.5px solid #000;border-radius:5px;padding:8px 12px;min-width:260px;flex:1;">
+        <div style="font-size:9px;font-weight:900;color:#854d0e;margin-bottom:3px;">OPEN QUESTION — MULTI-TENANT ADMIN DASHBOARD (S4)</div>
+        <div style="font-size:9px;font-weight:700;color:#374151;">S4 is partially implied by existing multi-tenancy work (FHS-150s, ADR-0001/0002) but no dedicated admin dashboard feature doc exists. Who sees the family list? Can an org admin see inside a family's private data? RLS boundary and admin data-access policy undefined.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ FOOTER -->
+  <div style="margin-top:24px;padding:12px 0;border-top:1.5px solid rgba(255,255,255,0.15);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <div style="font-size:9px;color:#c4b5fd;font-weight:700;">
+      Source: <code style="background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:2px;">documents/strategy/positioning.md</code>
+      &nbsp;·&nbsp;<code style="background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:2px;">documents/strategy/saas-transformation.md</code>
+      &nbsp;·&nbsp;<code style="background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:2px;">documents/decisions/0001-multi-tenancy.md</code>
+      &nbsp;·&nbsp;<code style="background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:2px;">documents/decisions/0004-stripe-billing.md</code>
+    </div>
+    <div style="font-size:9px;color:#a78bfa;font-weight:700;">Family Hub Design System · Persona 2 of 4 · community-admin.html</div>
+  </div>
+
+</div><!-- /max-w-7xl -->
+</body>
+</html>

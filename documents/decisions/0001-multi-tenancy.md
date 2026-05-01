@@ -160,7 +160,7 @@ don't wait for two.
 ## References
 
 - [`/CLAUDE.md` Multi-tenancy section](../../CLAUDE.md#multi-tenancy)
-- [PostgreSQL Row Security Policies](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
+- [PostgreSQL Row Security Policies](https://www.postgresql.org/documents/current/ddl-rowsecurity.html)
 - Source codebase: [family-hub](https://github.com/familyhubapp971/family-hub-app)
   (single-tenant precursor — schema has no `tenant_id` today; the
   SaaS port adds it everywhere)

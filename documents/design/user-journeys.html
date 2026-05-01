@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Family Hub — User Journey Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Fredoka One"', 'cursive'],
+            body: ['Nunito', 'sans-serif'],
+          },
+          boxShadow: {
+            'neo-xs': '1px 1px 0px 0px rgba(0,0,0,1)',
+            'neo-sm': '2px 2px 0px 0px rgba(0,0,0,1)',
+            'neo':    '3px 3px 0px 0px rgba(0,0,0,1)',
+            'neo-md': '4px 4px 0px 0px rgba(0,0,0,1)',
+            'neo-lg': '6px 6px 0px 0px rgba(0,0,0,1)',
+          },
+          colors: {
+            kingdom: { bg: '#3d1065' },
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Base typography — mirrors globals.css */
+    body {
+      font-family: 'Nunito', sans-serif;
+      background-color: #3d1065;
+      color: #1e293b; /* slate-800 */
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Fredoka One', cursive;
+    }
+
+    /* ---- Neo-brutalist shadow tokens (inline, no JIT needed) ---- */
+    .shadow-neo-xs { box-shadow: 1px 1px 0px 0px rgba(0,0,0,1); }
+    .shadow-neo-sm { box-shadow: 2px 2px 0px 0px rgba(0,0,0,1); }
+    .shadow-neo    { box-shadow: 3px 3px 0px 0px rgba(0,0,0,1); }
+    .shadow-neo-md { box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); }
+    .shadow-neo-lg { box-shadow: 6px 6px 0px 0px rgba(0,0,0,1); }
+
+    /* Card base — mirrors Card.tsx */
+    .card {
+      background: #ffffff;
+      border: 2px solid black;
+      border-radius: 1rem; /* rounded-2xl from Card.tsx */
+      box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+      padding: 1.25rem;
+    }
+    .card-yellow  { background: #fef9c3; } /* yellow-100 */
+    .card-pink    { background: #fce7f3; } /* pink-100   */
+    .card-cyan    { background: #cffafe; } /* cyan-100   */
+    .card-lime    { background: #ecfccb; } /* lime-100   */
+    .card-purple  { background: #f3e8ff; } /* purple-100 — derived: kingdom-bg lightened */
+
+    /* Badge variants — mirrors Badge.tsx */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 900;
+      padding: 0.1rem 0.5rem;
+      border-radius: 9999px;
+    }
+    .badge-default  { background: #f1f5f9; color: #475569; }
+    .badge-success  { background: #d1fae5; color: #065f46; }
+    .badge-warning  { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .badge-danger   { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+    .badge-info     { background: #dbeafe; color: #1d4ed8; }
+    .badge-ticket   { background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; font-family: monospace; }
+    .badge-gap      { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+
+    /* Section heading pill */
+    .stage-pill {
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      padding: 0.15rem 0.6rem;
+      border-radius: 0.375rem;
+      border: 2px solid black;
+      display: inline-block;
+    }
+
+    /* Arrow connector */
+    .arrow-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 2rem;
+    }
+    .arrow-connector svg { display: block; }
+
+    /* Gap callout */
+    .gap-callout {
+      border: 2px solid black;
+      border-radius: 0.5rem;
+      background: #fff7ed;
+      box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
+      padding: 1rem 1.25rem;
+    }
+
+    /* Persona strip */
+    .persona-strip {
+      border: 2px solid black;
+      border-radius: 1rem;
+      box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+      padding: 1.25rem 1.5rem;
+    }
+
+    /* Stage card */
+    .stage-card {
+      border: 2px solid black;
+      border-radius: 0.75rem;
+      box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
+      padding: 0.875rem 1rem;
+      min-width: 0;
+      flex: 1 1 0;
+    }
+
+    /* Cross-risk card */
+    .risk-card {
+      border: 2px solid black;
+      border-radius: 0.75rem;
+      box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+      padding: 1rem;
+    }
+
+    /* Print tweaks */
+    @media print {
+      body { background: #fff; }
+      .no-print { display: none; }
+      .stage-card, .card, .persona-strip, .risk-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+
+    /* Scrollbar — neo style */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border: 2px solid transparent; background-clip: padding-box; border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.5); background-clip: padding-box; }
+
+    /* Journey row — horizontal scroll on small screens */
+    .journey-row {
+      display: flex;
+      flex-direction: row;
+      gap: 0;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+    .journey-row-inner {
+      display: flex;
+      flex-direction: row;
+      gap: 0;
+      min-width: max-content;
+    }
+
+    /* Emotion badge colours */
+    .emo-delight  { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .emo-curious  { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+    .emo-hopeful  { background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; }
+    .emo-friction { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+    .emo-anxious  { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+    .emo-neutral  { background: #f1f5f9; color: #475569; }
+    .emo-satisfied{ background: #ecfccb; color: #3f6212; border: 1px solid #a3e635; }
+    .emo-proud    { background: #fce7f3; color: #9d174d; border: 1px solid #f9a8d4; }
+    .emo-risk     { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
+  </style>
+</head>
+<body>
+
+<!-- ====================================================
+     HERO BLOCK
+     ==================================================== -->
+<div style="background:#3d1065;" class="px-6 py-10 md:px-16 md:py-14">
+  <div class="max-w-6xl mx-auto">
+
+    <!-- Title row -->
+    <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div>
+        <div class="inline-block px-3 py-1 rounded-md text-xs font-black text-white border-2 border-yellow-400 mb-3" style="background:rgba(255,255,255,0.08);">
+          INTERNAL REVIEW DOCUMENT
+        </div>
+        <h1 class="text-5xl md:text-6xl text-yellow-400 leading-none mb-2">
+          User Journey Map
+        </h1>
+        <p class="text-lg md:text-xl font-bold text-purple-200">
+          Family Hub — Multi-Tenant SaaS Platform
+        </p>
+      </div>
+      <div class="card card-yellow text-right" style="min-width:200px;">
+        <div class="text-xs font-black text-slate-500 mb-1">LAST UPDATED</div>
+        <div class="text-lg font-black">2026-05-01</div>
+        <div class="text-xs font-bold text-slate-500 mt-2">4 personas &nbsp;·&nbsp; 10 stages each</div>
+      </div>
+    </div>
+
+    <!-- Framing statement -->
+    <div class="card" style="max-width:900px;">
+      <p class="text-base font-semibold text-slate-700 leading-relaxed">
+        This map traces how each of Family Hub's four primary personas moves from first awareness through paid retention — and where they might leave. Each stage card shows the trigger, user action, system response, emotional state, and the Jira ticket(s) that build it. Stages without a ticket are flagged as <span class="badge badge-gap">backlog gap</span> — these are the planning holes that need sprint assignment before that persona's journey is fully covered by working software.
+      </p>
+    </div>
+
+    <!-- Legend -->
+    <div class="mt-6 flex flex-wrap gap-3 items-center">
+      <span class="text-purple-200 text-xs font-bold">LEGEND:</span>
+      <span class="badge badge-ticket">FHS-00</span><span class="text-purple-300 text-xs font-bold">Linked ticket</span>
+      <span class="badge badge-gap">backlog gap</span><span class="text-purple-300 text-xs font-bold">No ticket yet</span>
+      <span class="badge badge-success">Delight</span>
+      <span class="badge badge-warning">Friction</span>
+      <span class="badge badge-danger">Risk</span>
+      <span class="badge badge-info">Neutral</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- Stage colour key strip -->
+<div style="background:#2d0a4e;" class="px-6 py-3 md:px-16 border-b-2 border-black">
+  <div class="max-w-6xl mx-auto flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold text-purple-200">
+    <span>STAGE COLOURS:</span>
+    <span style="background:#fef9c3;color:#713f12;border:1px solid black;padding:1px 6px;border-radius:4px;">Discover</span>
+    <span style="background:#cffafe;color:#155e75;border:1px solid black;padding:1px 6px;border-radius:4px;">Evaluate</span>
+    <span style="background:#fce7f3;color:#9d174d;border:1px solid black;padding:1px 6px;border-radius:4px;">Sign up</span>
+    <span style="background:#ecfccb;color:#3f6212;border:1px solid black;padding:1px 6px;border-radius:4px;">Onboard</span>
+    <span style="background:#dbeafe;color:#1e40af;border:1px solid black;padding:1px 6px;border-radius:4px;">First value</span>
+    <span style="background:#f3e8ff;color:#5b21b6;border:1px solid black;padding:1px 6px;border-radius:4px;">Daily use</span>
+    <span style="background:#fff7ed;color:#c2410c;border:1px solid black;padding:1px 6px;border-radius:4px;">Invite</span>
+    <span style="background:#fef3c7;color:#92400e;border:1px solid black;padding:1px 6px;border-radius:4px;">Pay</span>
+    <span style="background:#d1fae5;color:#065f46;border:1px solid black;padding:1px 6px;border-radius:4px;">Advocacy</span>
+    <span style="background:#fff1f2;color:#be123c;border:1px solid black;padding:1px 6px;border-radius:4px;">Churn risk</span>
+  </div>
+</div>
+
+<div class="px-4 py-10 md:px-12 max-w-7xl mx-auto space-y-20">
+
+
+<!-- ====================================================
+     PERSONA 1 — THE COORDINATING PARENT
+     ==================================================== -->
+<section>
+  <!-- Persona card -->
+  <div class="persona-strip card-pink mb-8">
+    <div class="flex flex-wrap items-start gap-6">
+      <!-- Avatar -->
+      <div class="flex-shrink-0">
+        <div class="w-16 h-16 rounded-full border-2 border-black flex items-center justify-center text-2xl font-black" style="background:#fbcfe8;box-shadow:3px 3px 0 black;">
+          CP
+        </div>
+      </div>
+      <!-- Info -->
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-3 mb-1">
+          <h2 class="text-3xl text-slate-900">Persona 1 — The Coordinating Parent</h2>
+          <span class="badge badge-info">PRIMARY BUYER</span>
+        </div>
+        <p class="text-base font-bold text-slate-600 mb-3">Typically the mother in a 2–6 child household; owns the family's entire mental load.</p>
+        <div class="flex flex-wrap gap-8">
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">KEY MOTIVATION</div>
+            <div class="text-sm font-bold">"Replace five apps with one that actually understands a big family."</div>
+          </div>
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">KEY OBJECTION</div>
+            <div class="text-sm font-bold">"Will this actually get my partner to engage, or will it be another app I'm alone on?"</div>
+          </div>
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">PAYS FOR</div>
+            <div class="text-sm font-bold">Family ($7.99/mo) or Family Pro ($12.99/mo)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Journey swim-lane -->
+  <div class="journey-row">
+    <div class="journey-row-inner">
+
+      <!-- 1. DISCOVER -->
+      <div class="stage-card" style="background:#fef9c3;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fef08a;color:#713f12;">1. Discover</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">New baby, school-year start, or Ramadan prep breaks the current improvised system.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Googles "family scheduling app big families" or sees word-of-mouth post in WhatsApp parenting group.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">SEO landing page / App Store listing. No auth required.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-friction">Overwhelmed</span>
+          <span class="badge badge-gap">backlog gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">No marketing / SEO ticket yet</div>
+      </div>
+
+      <!-- arrow -->
+      <div class="arrow-connector">
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+
+      <!-- 2. EVALUATE -->
+      <div class="stage-card" style="background:#cffafe;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#a5f3fc;color:#155e75;">2. Evaluate</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Lands on <code class="text-pink-600 font-black">/</code> (LandingPage.tsx). Sees "operating system for family life" headline.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Scans pricing tiers (Free → Family → Pro). Checks if twins / blended families are mentioned. Compares to Cozi.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Landing page shows cultural differentiators + pricing. CTA → /signup.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-curious">Curious + skeptical</span>
+          <span class="badge badge-gap">backlog gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">LandingPage.tsx exists but no dedicated landing-copy ticket</div>
+      </div>
+
+      <!-- arrow -->
+      <div class="arrow-connector">
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+
+      <!-- 3. SIGN UP -->
+      <div class="stage-card" style="background:#fce7f3;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fbcfe8;color:#9d174d;">3. Sign Up</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Clicks "Get started free" on landing page.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Goes to <code class="text-pink-600 font-black">/signup</code>. Enters email + password, or uses Google OAuth.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Supabase Auth creates account. Sends branded confirm email. Redirects to /auth/callback → /dashboard. Users mirror upserted.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-hopeful">Hopeful</span>
+          <span class="badge badge-ticket">FHS-178</span>
+          <span class="badge badge-ticket">FHS-190</span>
+          <span class="badge badge-ticket">FHS-192</span>
+        </div>
+      </div>
+
+      <!-- arrow -->
+      <div class="arrow-connector">
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+
+      <!-- 4. ONBOARD -->
+      <div class="stage-card" style="background:#ecfccb;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#bef264;color:#3f6212;">4. Onboard</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">First login after email confirmation. Blank dashboard state.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Claims family subdomain (e.g. <em>smith-family</em>.familyhub.app). Sets timezone, adds 2+ kids, invites partner.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Tenant provisioned. Onboarding wizard seeds default content. Invite email queued for partner.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-anxious">Anxious — will this stick?</span>
+          <span class="badge badge-ticket">FHS-1</span>
+          <span class="badge badge-ticket">FHS-7</span>
+          <span class="badge badge-gap">wizard gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">No onboarding wizard ticket yet (Sprint 2 FHS-35)</div>
+      </div>
+
+      <!-- arrow -->
+      <div class="arrow-connector">
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+
+      <!-- 5. FIRST VALUE -->
+      <div class="stage-card" style="background:#dbeafe;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#bfdbfe;color:#1e40af;">5. First Value</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Partner accepts invite and completes their first shared task.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Creates a family task assigned to partner. Partner ticks it off. Both see it update live.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Task created in tenant. RLS ensures only family members see it. Real-time update via Supabase.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-delight">Delight</span>
+          <span class="badge badge-ticket">FHS-12</span>
+          <span class="badge badge-gap">tasks feature gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Tasks feature not yet ticketed</div>
+      </div>
+
+      <!-- arrow -->
+      <div class="arrow-connector">
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+
+      <!-- 6. DAILY USE -->
+      <div class="stage-card" style="background:#f3e8ff;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#e9d5ff;color:#5b21b6;">6. Daily Use</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Morning family routine — checking today's calendar, meals, kid assignments.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Opens dashboard, scans the family hub, assigns chores, adds a calendar event, checks maths progress for one child.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Tenant-scoped dashboard renders family data. Module toggles control which pillars appear.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-satisfied">Satisfied</span>
+          <span class="badge badge-ticket">FHS-47</span>
+          <span class="badge badge-ticket">FHS-53</span>
+          <span class="badge badge-gap">modules gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Module toggle UI in Sprint 3</div>
+      </div>
+
+      <!-- arrow -->
+      <div class="arrow-connector">
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+
+      <!-- 7. INVITE & EXPAND -->
+      <div class="stage-card" style="background:#fff7ed;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fed7aa;color:#c2410c;">7. Invite</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Wants to add a grandparent or older child to the family space.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Opens family roster, enters email for grandparent, assigns role "guardian". Invite sent.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Invite email queued. family_members row created with auth_user_id = NULL until claimed. RLS: invite scoped to tenant.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-hopeful">Hopeful</span>
+          <span class="badge badge-ticket">FHS-90</span>
+          <span class="badge badge-ticket">FHS-97</span>
+        </div>
+      </div>
+
+      <!-- arrow -->
+      <div class="arrow-connector">
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+
+      <!-- 8. PAY -->
+      <div class="stage-card" style="background:#fef3c7;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fde68a;color:#92400e;">8. Pay</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Hits 3-member free-tier cap after inviting partner + grandparent.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Clicks upgrade prompt. Chooses Family ($7.99/mo). Completes Stripe Checkout.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Stripe Checkout session created. Webhook updates tenant tier. Feature gates lift immediately.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-anxious">Hesitant — worth it?</span>
+          <span class="badge badge-ticket">FHS-68</span>
+          <span class="badge badge-ticket">FHS-73</span>
+          <span class="badge badge-gap">webhook gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Billing webhooks in Sprint 4</div>
+      </div>
+
+      <!-- arrow -->
+      <div class="arrow-connector">
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+
+      <!-- 9. ADVOCACY -->
+      <div class="stage-card" style="background:#d1fae5;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#a7f3d0;color:#065f46;">9. Advocacy</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Three-month anniversary + partner habit formed. Notices other parents in their WhatsApp group struggling with the same problems.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Shares Family Hub referral link in parenting groups. Posts an App Store review.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Referral attribution tracked. Review acknowledged. (Referral program not yet built.)</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-proud">Proud advocate</span>
+          <span class="badge badge-gap">referral gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Referral programme not ticketed</div>
+      </div>
+
+      <!-- arrow -->
+      <div class="arrow-connector">
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+
+      <!-- 10. CHURN RISK -->
+      <div class="stage-card" style="background:#fff1f2;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fecdd3;color:#be123c;">10. Churn Risk</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Partner stops engaging (app becomes solo again). Or: billing fails silently.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Goes back to WhatsApp group. Stops logging tasks. Cancels via Stripe portal.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Stripe cancellation webhook downgrades tenant. Re-engagement email triggered (not yet built). Data retained 90 days.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-risk">Disengaged</span>
+          <span class="badge badge-ticket">FHS-78</span>
+          <span class="badge badge-gap">re-engagement gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Retention emails not ticketed</div>
+      </div>
+
+    </div><!-- journey-row-inner -->
+  </div><!-- journey-row -->
+
+  <!-- GAPS callout — Persona 1 -->
+  <div class="gap-callout mt-6">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-lg">&#9888;</span>
+      <h3 class="text-base font-black text-orange-800">Persona 1 — Gaps &amp; Open Questions</h3>
+    </div>
+    <ul class="text-sm font-semibold text-orange-900 space-y-1 list-none">
+      <li>&#x25B6; <strong>Stages 1–2 (Discover / Evaluate):</strong> No marketing / SEO / landing-copy ticket. LandingPage.tsx exists but content is placeholder.</li>
+      <li>&#x25B6; <strong>Stage 4 (Onboard):</strong> Onboarding wizard not yet scoped. Sprint 2 epics (FHS-35, FHS-42) suggest it lands there — no child ticket confirmed.</li>
+      <li>&#x25B6; <strong>Stage 5 (First Value):</strong> Tasks feature itself has no ticket. The value moment depends on it — high-priority gap.</li>
+      <li>&#x25B6; <strong>Stage 8 (Pay):</strong> Stripe billing lives in Sprint 4 (FHS-68–84). Until then free-tier conversion is manual. Webhook downgrade on cancellation not explicitly scoped.</li>
+      <li>&#x25B6; <strong>Stage 9 (Advocacy):</strong> No referral programme or review-prompt flow ticketed.</li>
+      <li>&#x25B6; <strong>Stage 10 (Churn Recovery):</strong> Re-engagement email sequence not ticketed. Stripe cancellation webhook in FHS-78 but behavioural trigger is missing.</li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- ====================================================
+     PERSONA 2 — THE COMMUNITY ADMINISTRATOR
+     ==================================================== -->
+<section>
+  <!-- Persona card -->
+  <div class="persona-strip card-cyan mb-8">
+    <div class="flex flex-wrap items-start gap-6">
+      <div class="flex-shrink-0">
+        <div class="w-16 h-16 rounded-full border-2 border-black flex items-center justify-center text-2xl font-black" style="background:#a5f3fc;box-shadow:3px 3px 0 black;">
+          CA
+        </div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-3 mb-1">
+          <h2 class="text-3xl text-slate-900">Persona 2 — The Community Administrator</h2>
+          <span class="badge badge-success">ENTERPRISE BUYER</span>
+        </div>
+        <p class="text-base font-bold text-slate-600 mb-3">Runs a mosque youth programme, homeschool co-op, or NGO serving 20–500 families. Long sales cycle (4–8 weeks), high LTV.</p>
+        <div class="flex flex-wrap gap-8">
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">KEY MOTIVATION</div>
+            <div class="text-sm font-bold">"Give each family their own branded surface without rebuilding infrastructure from scratch."</div>
+          </div>
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">KEY OBJECTION</div>
+            <div class="text-sm font-bold">"Is this stable enough for 200 families? Will our board approve a $999/yr line item?"</div>
+          </div>
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">PAYS FOR</div>
+            <div class="text-sm font-bold">Enterprise white-label ($299–$3,499/yr)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Journey swim-lane -->
+  <div class="journey-row">
+    <div class="journey-row-inner">
+
+      <!-- 1. DISCOVER -->
+      <div class="stage-card" style="background:#fef9c3;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fef08a;color:#713f12;">1. Discover</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">WhatsApp group hits 1024-member cap. Google Forms quota exhausted. Sister mosque in Dubai already using Family Hub.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Hears about it via network; Googles "white-label family platform mosque"; visits landing page.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Enterprise landing section + case study (not yet built). Contact/demo form.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-curious">Curious</span>
+          <span class="badge badge-gap">enterprise landing gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">No enterprise marketing page ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 2. EVALUATE -->
+      <div class="stage-card" style="background:#cffafe;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#a5f3fc;color:#155e75;">2. Evaluate</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Board asks for a demo + one-pager before approving spend.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Attends a product demo call. Reviews pricing page. Asks about data residency, branding options, GDPR. Shares with treasurer.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Sales deck + one-pager (not built). Demo environment provisioned manually. Legal FAQs on site.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-anxious">Risk-aware</span>
+          <span class="badge badge-gap">demo env gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Demo tenant provisioning not ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 3. SIGN UP -->
+      <div class="stage-card" style="background:#fce7f3;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fbcfe8;color:#9d174d;">3. Sign Up</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Board approves. Sales closes deal via Stripe invoice or direct bank transfer.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Account created (assisted by sales). Org-level tenant provisioned. Admin user added.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Org-of-tenants created. Admin role granted. Enterprise tier unlocked on Stripe. White-label subdomain claimed.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-hopeful">Relieved</span>
+          <span class="badge badge-ticket">FHS-116</span>
+          <span class="badge badge-ticket">FHS-123</span>
+          <span class="badge badge-gap">org provisioning gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">White-label provisioning in Sprint 6</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 4. ONBOARD -->
+      <div class="stage-card" style="background:#ecfccb;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#bef264;color:#3f6212;">4. Onboard</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Admin logs in to their org dashboard for the first time.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Uploads logo, sets org name, configures branding colours. Bulk-imports 40 family emails via CSV. Assigns sub-admins.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Branding applied org-wide. Bulk invite emails dispatched. Per-family tenant sub-rows created.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-anxious">High stakes</span>
+          <span class="badge badge-ticket">FHS-129</span>
+          <span class="badge badge-gap">bulk invite gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Bulk invite UI not yet ticketed as child</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 5. FIRST VALUE -->
+      <div class="stage-card" style="background:#dbeafe;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#bfdbfe;color:#1e40af;">5. First Value</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">First 10 families accept invites and post their children's prayer schedules on the shared calendar.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Admin sees the org-wide activity feed — families logging in, using their own spaces.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Org-level dashboard shows adoption metrics. Per-family tenants isolated; admin sees aggregated view only.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-delight">Validates purchase</span>
+          <span class="badge badge-ticket">FHS-136</span>
+          <span class="badge badge-gap">org analytics gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Org-level analytics / reporting not ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 6. DAILY USE -->
+      <div class="stage-card" style="background:#f3e8ff;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#e9d5ff;color:#5b21b6;">6. Daily Use</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Weekly programme cycle — announce events, track attendance, send notices.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Posts org-wide announcement (e.g. Ramadan schedule). Monitors RSVP rates. Manages member additions.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Announcements sent org-wide. RSVP data aggregated. Admin role enforced via RLS.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-satisfied">Efficient</span>
+          <span class="badge badge-ticket">FHS-104</span>
+          <span class="badge badge-gap">announcements gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Org announcements not ticketed as separate feature</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 7. INVITE -->
+      <div class="stage-card" style="background:#fff7ed;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fed7aa;color:#c2410c;">7. Invite</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">New cohort of 15 families joins the programme after Ramadan.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Admin uploads new family CSV. Each family gets an invite to their own tenant subdomain.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Bulk invite job runs. Family tenant rows created. Org-tier member count incremented (billing check).</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-neutral">Routine</span>
+          <span class="badge badge-ticket">FHS-110</span>
+          <span class="badge badge-gap">billing tier check gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Metered billing guard for org size not ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 8. PAY -->
+      <div class="stage-card" style="background:#fef3c7;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fde68a;color:#92400e;">8. Pay</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Annual renewal. Or: org grows past 100 families, triggering tier upgrade.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Receives renewal invoice. Treasurer approves via Stripe Customer Portal. Or: admin receives upgrade notice + approves.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Stripe Customer Portal for self-serve upgrade. Enterprise invoicing for large orgs. Webhook updates tier limit.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-neutral">Bureaucratic</span>
+          <span class="badge badge-ticket">FHS-84</span>
+          <span class="badge badge-gap">enterprise invoice gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Enterprise invoice / PO flow not ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 9. ADVOCACY -->
+      <div class="stage-card" style="background:#d1fae5;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#a7f3d0;color:#065f46;">9. Advocacy</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">A partnering mosque asks at the annual conference: "What tool do you use for family coordination?"</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Admin shares a referral link + personal recommendation. Acts as reference customer for a new sales call.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Referral tracked. Admin earns account credit (not yet built). New org lead created in CRM (not yet built).</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-proud">Proud</span>
+          <span class="badge badge-gap">referral gap</span>
+          <span class="badge badge-gap">CRM gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">No CRM or referral programme ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 10. CHURN RISK -->
+      <div class="stage-card" style="background:#fff1f2;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fecdd3;color:#be123c;">10. Churn Risk</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">New committee takes over. They don't know Family Hub exists. Admin login is lost. Or: org size drops below the tier minimum.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Renewal comes up; new treasurer doesn't recognise the line item and lets it lapse.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Stripe sends failed-payment webhook. Org suspended. Recovery window: 30 days (configurable).</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-risk">Preventable churn</span>
+          <span class="badge badge-ticket">FHS-78</span>
+          <span class="badge badge-gap">multi-admin gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Multi-admin handover + churn-prevention email not ticketed</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GAPS callout — Persona 2 -->
+  <div class="gap-callout mt-6">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-lg">&#9888;</span>
+      <h3 class="text-base font-black text-orange-800">Persona 2 — Gaps &amp; Open Questions</h3>
+    </div>
+    <ul class="text-sm font-semibold text-orange-900 space-y-1">
+      <li>&#x25B6; <strong>Stages 1–2 (Discover / Evaluate):</strong> No enterprise marketing page, no demo environment provisioning flow.</li>
+      <li>&#x25B6; <strong>Stages 3–4 (Sign Up / Onboard):</strong> White-label provisioning is Sprint 6 (FHS-116–136) — very late in the roadmap. Bulk invite UI is missing as an explicit child ticket.</li>
+      <li>&#x25B6; <strong>Stage 5 (First Value):</strong> Org-level analytics / aggregated reporting not ticketed. This is the key proof point for the admin's board.</li>
+      <li>&#x25B6; <strong>Stage 7 (Invite):</strong> No metered billing guard checking whether new family additions push the org over their tier limit.</li>
+      <li>&#x25B6; <strong>Stage 8 (Pay):</strong> Enterprise invoice / PO flow (non-Stripe-portal) not ticketed. Critical for mosque / school procurement processes.</li>
+      <li>&#x25B6; <strong>Stage 10 (Churn):</strong> Multi-admin handover is the single biggest enterprise churn risk. Not ticketed.</li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- ====================================================
+     PERSONA 3 — THE EARLY-ADOPTER DAD
+     ==================================================== -->
+<section>
+  <!-- Persona card -->
+  <div class="persona-strip card-lime mb-8">
+    <div class="flex flex-wrap items-start gap-6">
+      <div class="flex-shrink-0">
+        <div class="w-16 h-16 rounded-full border-2 border-black flex items-center justify-center text-2xl font-black" style="background:#d9f99d;box-shadow:3px 3px 0 black;">
+          ED
+        </div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-3 mb-1">
+          <h2 class="text-3xl text-slate-900">Persona 3 — The Early-Adopter Dad</h2>
+          <span class="badge badge-warning">CHAMPION USER</span>
+        </div>
+        <p class="text-base font-bold text-slate-600 mb-3">Tech-fluent father in tech/finance, 1–4 kids, household "tech lead". Has abandoned 3 family apps before. High influence per dollar.</p>
+        <div class="flex flex-wrap gap-8">
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">KEY MOTIVATION</div>
+            <div class="text-sm font-bold">"I want an app that doesn't treat my kids like calendar entries. And I want to see the roadmap is real."</div>
+          </div>
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">KEY OBJECTION</div>
+            <div class="text-sm font-bold">"I've been burned before. Show me something different in the first 5 minutes or I'm gone."</div>
+          </div>
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">PAYS FOR</div>
+            <div class="text-sm font-bold">Family Pro ($12.99/mo) — wants custom subdomain + "the good stuff"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Journey swim-lane -->
+  <div class="journey-row">
+    <div class="journey-row-inner">
+
+      <!-- 1. DISCOVER -->
+      <div class="stage-card" style="background:#fef9c3;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fef08a;color:#713f12;">1. Discover</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Sees a tweet / X thread or Substack post. Someone mentions it "actually handles twins."</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Clicks link. Reads thread skeptically. Goes to familyhub.app to poke around. Checks GitHub / Indie Hackers post.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Landing page + possibly public changelog / roadmap link.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-curious">Skeptically curious</span>
+          <span class="badge badge-gap">backlog gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Public changelog / roadmap not ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 2. EVALUATE -->
+      <div class="stage-card" style="background:#cffafe;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#a5f3fc;color:#155e75;">2. Evaluate</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Lands on landing page. Immediately scans for: twin support, cultural features, custom subdomain, pricing.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Reads the entire pricing page in 90 seconds. Checks Free tier limits. Signs up to test before deciding.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Pricing page is clear. Feature-comparison table shows twin/blended family differentiators. Free-to-Pro upgrade path visible.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-curious">Rapid evaluator</span>
+          <span class="badge badge-gap">pricing page gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Pricing / feature comparison page not ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 3. SIGN UP -->
+      <div class="stage-card" style="background:#fce7f3;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fbcfe8;color:#9d174d;">3. Sign Up</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Clicks "Try free" at 11pm on a Sunday. Zero tolerance for friction.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Goes to /signup. Uses Google OAuth (no new password). Confirms email quickly.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Google OAuth → /auth/callback → /dashboard. Fast path. No lengthy onboarding wizard shown on first login.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-hopeful">Impatient optimism</span>
+          <span class="badge badge-ticket">FHS-178</span>
+          <span class="badge badge-ticket">FHS-190</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 4. ONBOARD -->
+      <div class="stage-card" style="background:#ecfccb;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#bef264;color:#3f6212;">4. Onboard</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Empty dashboard. Immediately tries to add two kids born the same day (twins).</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Adds two children with same birthday. Expects no duplicate error. Claims a family subdomain. Skips wizard steps he doesn't care about.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">family_members allows same-DOB children (design per ADR-0009). Wizard is skippable. Subdomain claimed (Sprint 2).</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-friction">Will abandon if blocked</span>
+          <span class="badge badge-ticket">FHS-1</span>
+          <span class="badge badge-ticket">FHS-29</span>
+          <span class="badge badge-gap">wizard skip gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Skippable wizard not explicitly scoped</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 5. FIRST VALUE -->
+      <div class="stage-card" style="background:#dbeafe;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#bfdbfe;color:#1e40af;">5. First Value</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Within 5 minutes: successfully adds twins as distinct rows. No error. Names displayed separately in roster.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Explores module toggles. Enables the maths module for the older child. Checks if Hijri date support is there. Satisfied.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Roster renders both twins. Module toggles work (Sprint 3). Hijri date surface present if enabled.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-delight">"This actually works"</span>
+          <span class="badge badge-ticket">FHS-47</span>
+          <span class="badge badge-gap">Hijri date gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Hijri date display not ticketed yet</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 6. DAILY USE -->
+      <div class="stage-card" style="background:#f3e8ff;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#e9d5ff;color:#5b21b6;">6. Daily Use</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Morning coffee scroll. Checks which child has a maths session due. Assigns a chore to the older kid.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Uses dashboard as family command centre. Checks sticker economy balances. Reviews AI-personalized maths progress chart.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Per-child maths module session data rendered. Sticker economy tallied. Calendar events shown. All scoped to tenant.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-satisfied">In flow</span>
+          <span class="badge badge-ticket">FHS-53</span>
+          <span class="badge badge-ticket">FHS-58</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 7. INVITE -->
+      <div class="stage-card" style="background:#fff7ed;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fed7aa;color:#c2410c;">7. Invite</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Decides to tell his partner about it after 2 weeks. Partner is skeptical but open.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Invites partner via email from family roster. Sends her the family URL. Shows her the kids' progress on the maths module to hook her.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Invite email sent with branded link. Partner lands on /signup with tenant pre-selected. Partner role: "parent".</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-hopeful">Converting a skeptic</span>
+          <span class="badge badge-ticket">FHS-90</span>
+          <span class="badge badge-ticket">FHS-97</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 8. PAY -->
+      <div class="stage-card" style="background:#fef3c7;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fde68a;color:#92400e;">8. Pay</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Free tier: 3-member cap hit after partner joins. Wants custom subdomain anyway.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Upgrades directly to Family Pro ($12.99/mo). Does it in one click from the upgrade prompt. Annual option taken ("two months free").</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Stripe Checkout → Pro tier unlocked. Custom subdomain provisioned. Confirmation email sent.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-delight">No hesitation</span>
+          <span class="badge badge-ticket">FHS-68</span>
+          <span class="badge badge-ticket">FHS-73</span>
+          <span class="badge badge-ticket">FHS-42</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 9. ADVOCACY -->
+      <div class="stage-card" style="background:#d1fae5;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#a7f3d0;color:#065f46;">9. Advocacy</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Posts a 12-tweet thread "I found the first family app that doesn't make me want to throw my phone." Gets 400 likes.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Thread includes screenshots. Tags Family Hub. Becomes an informal ambassador. DMs founders with feature ideas.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Referral link in his profile tracked. (Changelog / public roadmap where he can point his followers: not built.)</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-proud">Loudest advocate</span>
+          <span class="badge badge-gap">public roadmap gap</span>
+          <span class="badge badge-gap">referral gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Public changelog + referral not ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 10. CHURN RISK -->
+      <div class="stage-card" style="background:#fff1f2;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fecdd3;color:#be123c;">10. Churn Risk</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Roadmap stalls. Three requested features ("Hijri prayer times", "chore streaks", "dark mode") still not shipped after 4 months.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Tweets a mild complaint. Posts in Indie Hackers. Starts evaluating a competitor. Cancels annual plan at renewal.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Cancellation webhook. Data retained. Win-back email at day 30 (not built). Roadmap visibility could have prevented this.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-risk">Roadmap-driven churn</span>
+          <span class="badge badge-gap">roadmap comms gap</span>
+          <span class="badge badge-gap">win-back gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">No win-back / roadmap comms flow ticketed</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GAPS callout — Persona 3 -->
+  <div class="gap-callout mt-6">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-lg">&#9888;</span>
+      <h3 class="text-base font-black text-orange-800">Persona 3 — Gaps &amp; Open Questions</h3>
+    </div>
+    <ul class="text-sm font-semibold text-orange-900 space-y-1">
+      <li>&#x25B6; <strong>Stage 1 (Discover):</strong> Public changelog / roadmap is the most important trust signal for this persona. Not ticketed.</li>
+      <li>&#x25B6; <strong>Stage 4 (Onboard):</strong> Onboarding wizard must be skippable for this persona. Not explicitly designed.</li>
+      <li>&#x25B6; <strong>Stage 5 (First Value):</strong> Hijri date display is the fastest "aha" for Gulf / Muslim tech dads. Not ticketed despite being in the differentiation pitch.</li>
+      <li>&#x25B6; <strong>Stage 10 (Churn):</strong> This persona's churn is driven by roadmap stagnation, not product failure. A public roadmap and changelog are both recovery tools and retention tools. Neither is ticketed.</li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- ====================================================
+     PERSONA 4 — THE INVITEE / FAMILY MEMBER
+     ==================================================== -->
+<section>
+  <!-- Persona card -->
+  <div class="persona-strip" style="background:#ede9fe;border:2px solid black;box-shadow:6px 6px 0 black;" class="mb-8">
+    <div class="flex flex-wrap items-start gap-6">
+      <div class="flex-shrink-0">
+        <div class="w-16 h-16 rounded-full border-2 border-black flex items-center justify-center text-2xl font-black" style="background:#ddd6fe;box-shadow:3px 3px 0 black;">
+          FM
+        </div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-3 mb-1">
+          <h2 class="text-3xl text-slate-900">Persona 4 — The Invitee / Family Member</h2>
+          <span class="badge badge-info">SECONDARY USER</span>
+        </div>
+        <p class="text-base font-bold text-slate-600 mb-3">The person who didn't sign up — a spouse, grandparent, older child, or co-parent. Their first touch is an invite email, not the marketing site.</p>
+        <div class="flex flex-wrap gap-8">
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">KEY MOTIVATION</div>
+            <div class="text-sm font-bold">"My partner/parent said I need to use this. I'll give it 2 minutes — if it's confusing, I'm going back to WhatsApp."</div>
+          </div>
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">KEY OBJECTION</div>
+            <div class="text-sm font-bold">"Another app I didn't ask for. Is my data going somewhere? Do I have to remember another password?"</div>
+          </div>
+          <div>
+            <div class="text-xs font-black text-slate-400 mb-1">ROLE</div>
+            <div class="text-sm font-bold">Does not pay. Retention driver for the primary paying user — if the invitee doesn't stick, the payer churns.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Journey swim-lane -->
+  <div class="journey-row">
+    <div class="journey-row-inner">
+
+      <!-- 1. DISCOVER -->
+      <div class="stage-card" style="background:#fef9c3;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fef08a;color:#713f12;">1. Discover</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Receives an email: "You've been invited to join the [Family Name] family on Family Hub."</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Opens email on mobile. Reads invite. Wonders if it's spam. Clicks "Join family".</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Supabase branded invite email sent. Invite token in URL. Landing: /signup?invite=[token].</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-neutral">Cautious</span>
+          <span class="badge badge-ticket">FHS-188</span>
+          <span class="badge badge-ticket">FHS-90</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 2. EVALUATE -->
+      <div class="stage-card" style="background:#cffafe;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#a5f3fc;color:#155e75;">2. Evaluate</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Lands on the invite signup page. No marketing context — straight to "create your account to join."</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Scans the page in 10 seconds. If it looks legitimate and simple, they proceed. If it looks complex, they close the tab.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Invite-aware signup page: shows inviter's name + family name ("Join Amara's family space"). Pre-fills email from invite token.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-anxious">Low patience</span>
+          <span class="badge badge-gap">invite page gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Invite-aware signup page (personalised) not designed/ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 3. SIGN UP -->
+      <div class="stage-card" style="background:#fce7f3;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fbcfe8;color:#9d174d;">3. Sign Up</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Clicks "Join family" button. Uses Google OAuth to avoid a new password.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Authenticates. Invite token consumed. family_members row gets auth_user_id populated.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Supabase OAuth callback. Invite token validated. Users mirror upserted. family_members.auth_user_id set. Redirect to family dashboard (not homepage).</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-hopeful">Relieved — it worked</span>
+          <span class="badge badge-ticket">FHS-190</span>
+          <span class="badge badge-ticket">FHS-192</span>
+          <span class="badge badge-gap">invite token gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Invite token → family_members linkage not explicitly ticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 4. ONBOARD -->
+      <div class="stage-card" style="background:#ecfccb;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#bef264;color:#3f6212;">4. Onboard</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">First time in the family dashboard. Everything is unfamiliar. Primary user has already set it up.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Sees existing family roster (kids already listed). Looks at the calendar. Maybe ticks off a task assigned to them.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Dashboard renders tenant data scoped to this family. RLS: invitee sees only their family's data. Role limits write access per assigned role.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-curious">Confused but curious</span>
+          <span class="badge badge-ticket">FHS-12</span>
+          <span class="badge badge-gap">invitee onboarding gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">No invitee-specific "first login" experience designed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 5. FIRST VALUE -->
+      <div class="stage-card" style="background:#dbeafe;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#bfdbfe;color:#1e40af;">5. First Value</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Primary user assigns a task to the invitee. They get a push/email notification.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Opens notification. Sees the task. Completes it. Primary user sees it checked off. The feedback loop closes.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Task notification delivered (email or push — push not yet built). Task status updated in tenant. Dashboard reflects completion for all family members.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-delight">Clicked. It worked.</span>
+          <span class="badge badge-gap">notifications gap</span>
+          <span class="badge badge-gap">tasks gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Push notifications + tasks feature both unticketed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 6. DAILY USE -->
+      <div class="stage-card" style="background:#f3e8ff;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#e9d5ff;color:#5b21b6;">6. Daily Use</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Partner (primary user) starts routing family coordination through the app. Invitee is pulled into the habit.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Checks the app in the morning to see what tasks are assigned. Adds a calendar event for a school pickup.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Role-based access: invitee can edit calendar if role allows. Read-only on billing, admin settings. Tenant RLS keeps data scoped.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-neutral">Habit forming</span>
+          <span class="badge badge-ticket">FHS-104</span>
+          <span class="badge badge-ticket">FHS-110</span>
+        </div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 7. INVITE -->
+      <div class="stage-card" style="background:#fff7ed;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fed7aa;color:#c2410c;">7. Invite</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Invitee wants to add their own parent (the grandparent) to help with after-school pickups.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Tries to send an invite from the family roster — but their role may not allow it. Asks primary user to send it instead.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Invite permission gated by role. If "parent" role: can invite. If "guardian": read-only. Role hierarchy enforced (Sprint 5).</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-friction">Permission confusion</span>
+          <span class="badge badge-ticket">FHS-97</span>
+          <span class="badge badge-ticket">FHS-104</span>
+          <span class="badge badge-gap">role UX gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Role permission UX (clear error messages) not designed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 8. PAY -->
+      <div class="stage-card" style="background:#fef3c7;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fde68a;color:#92400e;">8. Pay</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Does not pay. But: convinces the primary user to upgrade by saying "I want the maths module for the kids."</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Is not in the billing flow. May see an upgrade prompt when accessing a gated feature (maths, custom subdomain).</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Gated feature wall shown with friendly upgrade CTA directed at admin user. Not the invitee's decision to make.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-neutral">Not their call</span>
+          <span class="badge badge-ticket">FHS-68</span>
+          <span class="badge badge-gap">gating UX gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Feature gate UX for non-admin members not designed</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 9. ADVOCACY -->
+      <div class="stage-card" style="background:#d1fae5;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#a7f3d0;color:#065f46;">9. Advocacy</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Their sister asks how they're managing three kids' schedules. Invitee mentions Family Hub unprompted.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Shares the app by describing it in conversation. Their sister signs up, starts with a new family (a fresh tenant).</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">Word-of-mouth acquisition. No formal referral tracked because the invitee has no referral link. Attribution is lost.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-proud">Organic advocate</span>
+          <span class="badge badge-gap">member referral gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">Family members (non-admin) can't refer. Attribution lost.</div>
+      </div>
+
+      <div class="arrow-connector"><svg width="28" height="16" viewBox="0 0 28 16" fill="none"><line x1="0" y1="8" x2="22" y2="8" stroke="black" stroke-width="2.5"/><polyline points="16,2 22,8 16,14" stroke="black" stroke-width="2.5" stroke-linejoin="round" fill="none"/></svg></div>
+
+      <!-- 10. CHURN RISK -->
+      <div class="stage-card" style="background:#fff1f2;min-width:200px;max-width:220px;">
+        <div class="stage-pill mb-2" style="background:#fecdd3;color:#be123c;">10. Churn Risk</div>
+        <div class="text-xs font-black text-slate-500 mb-1">TRIGGER</div>
+        <p class="text-xs font-bold mb-2">Primary user stops using the app actively. No new tasks assigned. Invitee stops checking in. App becomes invisible.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">ACTION</div>
+        <p class="text-xs font-semibold mb-2">Uninstalls app (if mobile). Their row stays in family_members. Primary user's retention collapses without the shared habit.</p>
+        <div class="text-xs font-black text-slate-500 mb-1">SYSTEM</div>
+        <p class="text-xs font-semibold mb-2">No inactivity detection for family members. No "your partner hasn't logged in for 14 days" nudge to primary user. Silent churn.</p>
+        <div class="flex flex-wrap gap-1 mt-2">
+          <span class="badge emo-risk">Silent exit</span>
+          <span class="badge badge-gap">inactivity nudge gap</span>
+          <span class="badge badge-gap">engagement gap</span>
+        </div>
+        <div class="text-xs text-slate-400 font-bold mt-2">No inactivity detection or family re-engagement flow ticketed</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GAPS callout — Persona 4 -->
+  <div class="gap-callout mt-6">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-lg">&#9888;</span>
+      <h3 class="text-base font-black text-orange-800">Persona 4 — Gaps &amp; Open Questions</h3>
+    </div>
+    <ul class="text-sm font-semibold text-orange-900 space-y-1">
+      <li>&#x25B6; <strong>Stage 2 (Evaluate):</strong> The invite-aware signup page is the most important first impression for this persona. It must show the inviter's name and family context. Not designed or ticketed.</li>
+      <li>&#x25B6; <strong>Stage 3 (Sign Up):</strong> Invite token → family_members.auth_user_id linkage is architecturally critical. Not confirmed as an explicit child ticket under FHS-90.</li>
+      <li>&#x25B6; <strong>Stage 4 (Onboard):</strong> There is no invitee-specific first-login experience. The primary user's setup wizard is irrelevant to someone joining an existing family.</li>
+      <li>&#x25B6; <strong>Stage 5 (First Value):</strong> Both push notifications and the tasks feature are unticketed. This stage cannot happen without them.</li>
+      <li>&#x25B6; <strong>Stage 7 (Invite):</strong> Role permission errors need a clear UX path ("ask your family admin"). Currently undefined.</li>
+      <li>&#x25B6; <strong>Stage 10 (Churn):</strong> Family-member inactivity is a silent churn signal for the payer. No detection or nudge flow exists.</li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- ====================================================
+     CROSS-CUTTING RISKS
+     ==================================================== -->
+<section>
+  <div class="card mb-6">
+    <h2 class="text-3xl text-slate-900 mb-1">Cross-Cutting Risks</h2>
+    <p class="text-sm font-semibold text-slate-500">System-level risks that cut across all personas and journey stages. Each is tagged with the epic or ADR that governs it.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;">
+
+    <!-- Risk 1 -->
+    <div class="risk-card" style="background:#fff1f2;">
+      <div class="flex items-center gap-2 mb-3">
+        <span style="font-size:1.25rem;">&#128274;</span>
+        <h3 class="text-base font-black text-red-900">Auth session expiry in mid-flow</h3>
+      </div>
+      <p class="text-xs font-semibold text-slate-700 mb-3">A Supabase JWT expires while the user is mid-onboarding wizard or mid-checkout. They lose context, land on /login, and see a blank state. No restore point.</p>
+      <div class="flex flex-wrap gap-1">
+        <span class="badge badge-ticket">FHS-178</span>
+        <span class="badge badge-ticket">FHS-191</span>
+        <span class="badge badge-danger">Session recovery gap</span>
+      </div>
+    </div>
+
+    <!-- Risk 2 -->
+    <div class="risk-card" style="background:#fff1f2;">
+      <div class="flex items-center gap-2 mb-3">
+        <span style="font-size:1.25rem;">&#128272;</span>
+        <h3 class="text-base font-black text-red-900">Tenant data cross-contamination</h3>
+      </div>
+      <p class="text-xs font-semibold text-slate-700 mb-3">A bug in RLS policy or tenant middleware serves Family A's data to Family B. Catastrophic trust failure. Only one family affected in a breach, but all families churn from perception.</p>
+      <div class="flex flex-wrap gap-1">
+        <span class="badge badge-ticket">FHS-1</span>
+        <span class="badge badge-ticket">FHS-12</span>
+        <span class="badge badge-ticket">FHS-218</span>
+        <span class="badge badge-info">ADR-0001</span>
+      </div>
+    </div>
+
+    <!-- Risk 3 -->
+    <div class="risk-card" style="background:#fff7ed;">
+      <div class="flex items-center gap-2 mb-3">
+        <span style="font-size:1.25rem;">&#128179;</span>
+        <h3 class="text-base font-black text-orange-900">Stripe webhook delivery failure</h3>
+      </div>
+      <p class="text-xs font-semibold text-slate-700 mb-3">User pays via Stripe Checkout but the webhook fails. Tenant remains on free tier. User sees "upgrade" prompts on a feature they just paid for. High-urgency support ticket guaranteed.</p>
+      <div class="flex flex-wrap gap-1">
+        <span class="badge badge-ticket">FHS-73</span>
+        <span class="badge badge-ticket">FHS-78</span>
+        <span class="badge badge-info">ADR-0004</span>
+        <span class="badge badge-gap">idempotency gap</span>
+      </div>
+    </div>
+
+    <!-- Risk 4 -->
+    <div class="risk-card" style="background:#fff7ed;">
+      <div class="flex items-center gap-2 mb-3">
+        <span style="font-size:1.25rem;">&#128231;</span>
+        <h3 class="text-base font-black text-orange-900">Invite race condition</h3>
+      </div>
+      <p class="text-xs font-semibold text-slate-700 mb-3">Two family members accept the same invite link concurrently (e.g. a shared email thread). Two auth_user_id values attempt to populate the same family_members row. Unique constraint race on family_members.</p>
+      <div class="flex flex-wrap gap-1">
+        <span class="badge badge-ticket">FHS-90</span>
+        <span class="badge badge-ticket">FHS-97</span>
+        <span class="badge badge-gap">invite idempotency gap</span>
+      </div>
+    </div>
+
+    <!-- Risk 5 -->
+    <div class="risk-card" style="background:#fef9c3;">
+      <div class="flex items-center gap-2 mb-3">
+        <span style="font-size:1.25rem;">&#127760;</span>
+        <h3 class="text-base font-black text-yellow-900">Subdomain slug collision</h3>
+      </div>
+      <p class="text-xs font-semibold text-slate-700 mb-3">Two families claim the same slug concurrently (e.g. "smith-family"). First write wins, second gets a cryptic error. Onboarding abandonment spike.</p>
+      <div class="flex flex-wrap gap-1">
+        <span class="badge badge-ticket">FHS-23</span>
+        <span class="badge badge-ticket">FHS-29</span>
+        <span class="badge badge-info">ADR-0002</span>
+        <span class="badge badge-gap">collision UX gap</span>
+      </div>
+    </div>
+
+    <!-- Risk 6 -->
+    <div class="risk-card" style="background:#fef9c3;">
+      <div class="flex items-center gap-2 mb-3">
+        <span style="font-size:1.25rem;">&#9888;</span>
+        <h3 class="text-base font-black text-yellow-900">Schema drift (API vs DB)</h3>
+      </div>
+      <p class="text-xs font-semibold text-slate-700 mb-3">A migration ships without updating the Drizzle schema, or vice versa. API returns 500s for a tenant-scoped query. Silent data corruption possible before detection.</p>
+      <div class="flex flex-wrap gap-1">
+        <span class="badge badge-ticket">FHS-194</span>
+        <span class="badge badge-ticket">FHS-197</span>
+        <span class="badge badge-info">ADR-0005</span>
+      </div>
+    </div>
+
+    <!-- Risk 7 -->
+    <div class="risk-card" style="background:#dbeafe;">
+      <div class="flex items-center gap-2 mb-3">
+        <span style="font-size:1.25rem;">&#128100;</span>
+        <h3 class="text-base font-black text-blue-900">Child data privacy (COPPA / GDPR-K)</h3>
+      </div>
+      <p class="text-xs font-semibold text-slate-700 mb-3">Children under the local age minimum may not have their own logins, but their data (maths performance, calendar events, photos) is stored. Parental consent, data ownership, and deletion rights are not yet formally designed.</p>
+      <div class="flex flex-wrap gap-1">
+        <span class="badge badge-ticket">FHS-1</span>
+        <span class="badge badge-gap">compliance gap</span>
+        <span class="badge badge-gap">no COPPA ticket</span>
+      </div>
+    </div>
+
+    <!-- Risk 8 -->
+    <div class="risk-card" style="background:#dbeafe;">
+      <div class="flex items-center gap-2 mb-3">
+        <span style="font-size:1.25rem;">&#128241;</span>
+        <h3 class="text-base font-black text-blue-900">Mobile-first invitees on a web-only app</h3>
+      </div>
+      <p class="text-xs font-semibold text-slate-700 mb-3">Persona 4 (invitees) receive invite emails on mobile. The web app is responsive but not a native app yet. Invite-to-first-use friction on iOS Safari (no push, no home-screen install prompt) may cause immediate abandonment.</p>
+      <div class="flex flex-wrap gap-1">
+        <span class="badge badge-gap">PWA gap</span>
+        <span class="badge badge-gap">native app gap</span>
+        <span class="badge badge-gap">no ticket</span>
+      </div>
+    </div>
+
+    <!-- Risk 9 -->
+    <div class="risk-card" style="background:#ecfccb;">
+      <div class="flex items-center gap-2 mb-3">
+        <span style="font-size:1.25rem;">&#129497;</span>
+        <h3 class="text-base font-black" style="color:#3f6212;">White-label branding breaks accessibility</h3>
+      </div>
+      <p class="text-xs font-semibold text-slate-700 mb-3">A community admin uploads their org's brand colours (e.g. a mosque with dark green on black). The system applies them site-wide, violating WCAG 4.5:1 contrast ratios. Accessibility regression for their entire member base.</p>
+      <div class="flex flex-wrap gap-1">
+        <span class="badge badge-ticket">FHS-123</span>
+        <span class="badge badge-gap">brand validation gap</span>
+        <span class="badge badge-gap">no contrast check ticket</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ====================================================
+     FOOTER
+     ==================================================== -->
+<footer class="border-t-2 border-white/20 pt-8 mt-8">
+  <div class="card">
+    <h3 class="text-xl text-slate-700 mb-3">Source provenance</h3>
+    <p class="text-xs font-semibold text-slate-500 mb-3">This document was generated from the following source files. Verify accuracy against them.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0.5rem;">
+      <div class="flex items-center gap-2">
+        <span class="badge badge-info">STRATEGY</span>
+        <code class="text-xs font-bold text-slate-700">documents/strategy/positioning.md</code>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-info">STRATEGY</span>
+        <code class="text-xs font-bold text-slate-700">documents/strategy/saas-transformation.md</code>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-success">FEATURE</span>
+        <code class="text-xs font-bold text-slate-700">documents/features/auth.md</code>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-warning">PLACEHOLDER</span>
+        <code class="text-xs font-bold text-slate-700">documents/features/tenants.md</code>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-success">FEATURE</span>
+        <code class="text-xs font-bold text-slate-700">documents/features/family-members.md</code>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-warning">PLACEHOLDER</span>
+        <code class="text-xs font-bold text-slate-700">documents/features/billing.md</code>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-default">UI TOKENS</span>
+        <code class="text-xs font-bold text-slate-700">packages/ui/tailwind.preset.js</code>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-default">UI TOKENS</span>
+        <code class="text-xs font-bold text-slate-700">packages/ui/src/Card.tsx, Button.tsx, Badge.tsx</code>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-default">ROUTES</span>
+        <code class="text-xs font-bold text-slate-700">apps/web/src/pages/ (DashboardPage, LandingPage, auth/*)</code>
+      </div>
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-200">
+      <p class="text-xs font-bold text-slate-400">
+        Family Hub · User Journey Map · Generated 2026-05-01 · Internal review only · Not for distribution
+      </p>
+      <p class="text-xs font-semibold text-slate-400 mt-1">
+        Note: documents/features/tenants.md and documents/features/billing.md are placeholders — their journey stages are mapped from sprint epics in saas-transformation.md only.
+      </p>
+    </div>
+  </div>
+</footer>
+
+</div><!-- max-w-7xl -->
+
+</body>
+</html>

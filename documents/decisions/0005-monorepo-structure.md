@@ -20,7 +20,7 @@ utilities. We need a code layout that:
 ## Decision
 
 **Single repo, pnpm workspaces, two top-level workspace types:
-`apps/*` and `packages/*`. Plus `tests/`, `docs/`, `deploy/` as
+`apps/*` and `packages/*`. Plus `tests/`, `documents/`, `deploy/` as
 non-workspace folders.**
 
 Layout:
@@ -37,18 +37,18 @@ packages/
 tests/
   e2e/         # Playwright (cross-app, mirrors Gherkin per CLAUDE.md)
   perf/        # k6 scripts
-docs/          # see docs/README.md
+documents/          # see documents/README.md
 deploy/        # Railway configs, Dockerfiles, infra scripts
 .github/       # workflows + PR template
 ```
 
 ### Import rules
 
-| From | May import | Must not import |
-| --- | --- | --- |
-| `apps/*` | other `packages/*`, third-party | another `apps/*`, `tests/*` |
-| `packages/*` | other `packages/*` (no cycles), third-party | any `apps/*`, `tests/*` |
-| `tests/*` | `apps/*`, `packages/*`, third-party | nothing forbidden |
+| From         | May import                                  | Must not import             |
+| ------------ | ------------------------------------------- | --------------------------- |
+| `apps/*`     | other `packages/*`, third-party             | another `apps/*`, `tests/*` |
+| `packages/*` | other `packages/*` (no cycles), third-party | any `apps/*`, `tests/*`     |
+| `tests/*`    | `apps/*`, `packages/*`, third-party         | nothing forbidden           |
 
 The cardinal rule: **direction of dependency is `apps → packages`,
 never the reverse.** A `packages/*` library that needs to know about

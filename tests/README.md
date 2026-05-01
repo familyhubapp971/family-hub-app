@@ -7,7 +7,7 @@ single workspace.
 
 ```text
 tests/
-  e2e/        # Playwright (BDD-style, mirrors Gherkin in docs/features/)
+  e2e/        # Playwright (BDD-style, mirrors Gherkin in documents/features/)
   perf/       # k6 scenarios (smoke / load / stress / soak)
 ```
 
@@ -16,7 +16,7 @@ and [FHS-182](https://qualicion2.atlassian.net/browse/FHS-182).
 `perf/` is wired in [FHS-153](https://qualicion2.atlassian.net/browse/FHS-153)
 and [FHS-183](https://qualicion2.atlassian.net/browse/FHS-183).
 
-Per [ADR 0005](../docs/decisions/0005-monorepo-structure.md), `tests/`
+Per [ADR 0005](../documents/decisions/0005-monorepo-structure.md), `tests/`
 is **not** a pnpm workspace — each tier brings its own runner config
 and dependencies are installed at the root.
 

@@ -144,7 +144,7 @@ Three angles. Pick the one that fits the conversation.
 > the first line of feature code."
 
 Backed by [ADR 0009](../decisions/0009-family-membership-model.md)
-and [`docs/features/family-members.md`](../features/family-members.md).
+and [`documents/features/family-members.md`](../features/family-members.md).
 Receives instant credibility from anyone who's been failed by Cozi /
 FamCal / Picniic on a multi-child family.
 
@@ -290,7 +290,7 @@ These are sometimes asked for. Saying no is the positioning.
 ## References
 
 - [`saas-transformation.md`](saas-transformation.md) — strategy + roadmap
-- [`docs/features/family-members.md`](../features/family-members.md) — the data model that backs the "we model real families" claim
-- [`docs/decisions/0009-family-membership-model.md`](../decisions/0009-family-membership-model.md) — engineering contract
-- [`docs/decisions/0001-multi-tenancy.md`](../decisions/0001-multi-tenancy.md) — per-family isolation
-- [`docs/decisions/0004-stripe-billing.md`](../decisions/0004-stripe-billing.md) — billing model
+- [`documents/features/family-members.md`](../features/family-members.md) — the data model that backs the "we model real families" claim
+- [`documents/decisions/0009-family-membership-model.md`](../decisions/0009-family-membership-model.md) — engineering contract
+- [`documents/decisions/0001-multi-tenancy.md`](../decisions/0001-multi-tenancy.md) — per-family isolation
+- [`documents/decisions/0004-stripe-billing.md`](../decisions/0004-stripe-billing.md) — billing model

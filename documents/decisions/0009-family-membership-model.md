@@ -34,7 +34,7 @@ family_members SET auth_user_id = ? WHERE id = ?`.
   step-siblings sharing a name). Uniqueness on `(family_id,
 first_name)` rejects them.
 
-[`docs/features/family-members.md`](../features/family-members.md)
+[`documents/features/family-members.md`](../features/family-members.md)
 captures the user-facing scenarios this decision has to support.
 
 Forces in play:

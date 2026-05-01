@@ -1,7 +1,7 @@
 # Technical docs
 
-Implementation specs derived from feature requirements. This is *how*
-the system is built; the *what* and *why* live in
+Implementation specs derived from feature requirements. This is _how_
+the system is built; the _what_ and _why_ live in
 [`../features/`](../features/) and [`../decisions/`](../decisions/).
 
 ## When to add a doc
@@ -39,7 +39,7 @@ should be linked in a "References" section at the bottom.
 
 ## Index
 
-*Initial seed — populate as docs are added:*
+_Initial seed — populate as docs are added:_
 
 - `architecture.md` — TBD (high-level system overview)
 - [`deployment.md`](deployment.md) — Railway topology, env-var matrix, deploy flow, trial-plan constraints
