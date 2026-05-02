@@ -4,12 +4,16 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Calendar, CheckSquare, Home } from 'lucide-react';
 import { Button, Card } from '@familyhub/ui';
 
-// Hero copy rotates between two persona pitches every 5 seconds:
-//   - Sarah (the coordinating parent who buys/onboards)
-//   - Yusuf-shaped slide (the secondary parent invited via a link). The
-//     name in this slide cycles every 1.6s through a culturally diverse
-//     set so the message reads as "your wife / partner / co-parent
-//     just sent you a link" regardless of who's looking.
+// Hero copy rotates between two ad pitches every 5 seconds, each
+// targeting a different persona:
+//   - Slide 1 — pitch to the COORDINATING parent (Sarah persona):
+//     someone evaluating Family Hub to fix the mental load of running
+//     a household.
+//   - Slide 2 — pitch to the INVITED parent (Yusuf persona): someone
+//     receiving the link from their partner. The inviter's name cycles
+//     every 0.9s through a culturally diverse set so this slide reads
+//     as "your partner just sent you a link" regardless of who's
+//     looking — Sarah / Aisha / Maria / Priya / etc.
 // Source design: Magic Patterns kudjspxd3xxroueg5jw11o pages/Welcome.tsx.
 
 const inviterNames = [
@@ -34,13 +38,16 @@ const slides = [
     cta: 'Start free — no card needed',
   },
   {
-    id: 'yusuf',
-    // headline is built dynamically from inviterNames so the partner
-    // name flashes through several options while this slide is up.
+    // 'invited-parent' = the secondary-parent ad slide (Yusuf-style
+    // persona). Internal id; never shown to the user. Headline is
+    // built dynamically from inviterNames so the partner name flashes
+    // through several options while this slide is up — depicting a
+    // wife inviting her husband to share the family's mental load.
+    id: 'invited-parent',
     headline: null,
     subtitle:
-      'No signup wizard. No preferences screen. Just tap the link, see your tasks, check the family calendar, and get on with your day.',
-    cta: 'See how it works',
+      "She's done being the only one who remembers the dentist, the swim kit, and the bin day. Tap the link — you're on the team now.",
+    cta: 'Join the family team',
   },
 ] as const;
 
@@ -104,12 +111,12 @@ export function WelcomePage() {
     return () => clearInterval(id);
   }, [reduceMotion]);
 
-  // Fast-cycle the partner name on the invite slide so the headline
-  // reads as "your wife / partner / co-parent just sent you a link"
-  // across many cultures. Only ticks while the invite slide is visible.
+  // Fast-cycle the partner name on the invited-parent slide so the
+  // headline reads as "your partner just sent you a link" across many
+  // cultures. Only ticks while that slide is visible.
   useEffect(() => {
     if (reduceMotion) return;
-    if (slides[currentSlide]?.id !== 'yusuf') return;
+    if (slides[currentSlide]?.id !== 'invited-parent') return;
     const id = setInterval(() => {
       setInviterIdx((prev) => (prev + 1) % inviterNames.length);
     }, 900);
@@ -186,7 +193,7 @@ export function WelcomePage() {
               className="absolute inset-0 flex flex-col items-center justify-center"
             >
               <h1 className="mb-3 font-heading text-3xl leading-tight text-yellow-300 md:text-5xl lg:text-6xl">
-                {slide.id === 'yusuf' ? (
+                {slide.id === 'invited-parent' ? (
                   <>
                     <AnimatePresence mode="wait">
                       <motion.span
@@ -200,7 +207,7 @@ export function WelcomePage() {
                         {inviterName}
                       </motion.span>
                     </AnimatePresence>{' '}
-                    sent you a link. Click it. You&apos;re in.
+                    just invited you to run the family together.
                   </>
                 ) : (
                   slide.headline
