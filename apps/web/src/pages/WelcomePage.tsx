@@ -123,7 +123,7 @@ export function WelcomePage() {
     if (reduceMotion) return;
     const id = setInterval(() => {
       setInviterIdx((prev) => (prev + 1) % inviterNames.length);
-    }, 900);
+    }, 1500);
     return () => clearInterval(id);
   }, [currentSlide, reduceMotion]);
 
