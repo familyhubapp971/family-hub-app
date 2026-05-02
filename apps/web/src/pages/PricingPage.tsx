@@ -101,7 +101,7 @@ export function PricingPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center px-6 pb-6 pt-2">
-        <div className="mb-4 text-center">
+        <div className="mb-8 text-center md:mb-10">
           <h1 className="mb-1 font-heading text-2xl md:text-3xl lg:text-4xl">
             Simple, honest pricing
           </h1>
