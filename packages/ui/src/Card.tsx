@@ -6,6 +6,14 @@ interface CardProps {
   onClick?: () => void;
   hover?: boolean;
   variant?: 'default' | 'yellow' | 'pink' | 'cyan' | 'lime';
+  /**
+   * Border radius. Default `'xl'` matches the Magic Patterns design
+   * (FHS-220 marketing pages and onwards). The legacy `'2xl'` value is
+   * preserved as an opt-in for surfaces that want the softer corner —
+   * see `documents/design/personas.html` mockups that pre-date the MP
+   * refresh.
+   */
+  radius?: 'md' | 'xl' | '2xl';
   testId?: string;
 }
 
@@ -15,6 +23,7 @@ export function Card({
   onClick,
   hover = false,
   variant = 'default',
+  radius = 'xl',
   testId,
 }: CardProps) {
   const variants = {
@@ -23,6 +32,11 @@ export function Card({
     pink: 'bg-pink-100',
     cyan: 'bg-cyan-100',
     lime: 'bg-lime-100',
+  };
+  const radii = {
+    md: 'rounded-md',
+    xl: 'rounded-xl',
+    '2xl': 'rounded-2xl',
   };
 
   // Keyboard a11y: when onClick is set, the card becomes interactive —
@@ -46,7 +60,8 @@ export function Card({
       data-testid={testId}
       className={[
         variants[variant],
-        'border-2 border-black rounded-2xl shadow-neo-md p-3 sm:p-4 md:p-5',
+        radii[radius],
+        'border-2 border-black shadow-neo-md p-3 sm:p-4 md:p-5',
         hover
           ? 'transition-all duration-200 hover:-translate-y-1 hover:shadow-neo-lg cursor-pointer'
           : '',
