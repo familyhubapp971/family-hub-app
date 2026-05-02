@@ -1,7 +1,8 @@
-import type { Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
-// Page object for /signup. All step files MUST go through these
-// methods, not raw page.locator() — see CLAUDE.md "E2E" rule.
+// Page object for the public Signup page (`/signup`). MP redesign per
+// FHS-26: split-screen, magic-link only, no password. Step files MUST
+// go through these methods — no raw page.locator() per CLAUDE.md.
 export class SignupPage {
   constructor(private readonly page: Page) {}
 
@@ -9,32 +10,39 @@ export class SignupPage {
     await this.page.goto('/signup');
   }
 
+  heading() {
+    return this.page.getByRole('heading', { name: /create your family/i });
+  }
+
+  socialProofHeading() {
+    return this.page.getByRole('heading', { name: /2,400\+ families/i });
+  }
+
+  familyNameInput() {
+    return this.page.getByTestId('signup-family-name');
+  }
+
+  displayNameInput() {
+    return this.page.getByTestId('signup-display-name');
+  }
+
   emailInput() {
     return this.page.getByTestId('signup-email');
   }
 
-  passwordInput() {
-    return this.page.getByTestId('signup-password');
+  slugPreview() {
+    return this.page.getByTestId('signup-slug-preview');
   }
 
   submitButton() {
     return this.page.getByTestId('signup-submit');
   }
 
-  successMessage() {
-    return this.page.getByTestId('signup-success');
+  googleButton() {
+    return this.page.getByTestId('signup-google');
   }
 
-  errorMessage() {
-    return this.page.getByTestId('signup-error');
-  }
-
-  async fillCredentials(email: string, password: string) {
-    await this.emailInput().fill(email);
-    await this.passwordInput().fill(password);
-  }
-
-  async submit() {
-    await this.submitButton().click();
+  loginLink() {
+    return this.page.getByRole('link', { name: /log in/i });
   }
 }
