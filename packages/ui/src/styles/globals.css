@@ -18,8 +18,45 @@
   body {
     @apply font-body bg-kingdom-bg text-slate-800 antialiased;
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display;
+  }
+}
+
+/* Kingdom starfield background. Cannot live as a pure Tailwind utility
+   because it stacks three radial gradients with offset positions and
+   animates them as one. Pages opt in via `<div class="space-bg">`.
+   Ported from family-hub/frontend/index.css (legacy reference). */
+.space-bg {
+  /* kingdom.900 — kept literal so this rule resolves without depending on
+     the Tailwind preset being active in the build pipeline. */
+  background-color: #3d1065;
+  background-image: radial-gradient(
+      rgba(244, 114, 182, 0.8),
+      rgba(244, 114, 182, 0.3) 2px,
+      transparent 3px
+    ),
+    radial-gradient(rgba(232, 121, 249, 0.6), rgba(232, 121, 249, 0.2) 1px, transparent 2px),
+    radial-gradient(white, rgba(255, 255, 255, 0.15) 2px, transparent 3px);
+  background-size:
+    550px 550px,
+    350px 350px,
+    250px 250px;
+  background-position:
+    0 0,
+    40px 60px,
+    130px 270px;
+  animation: space-move 60s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-bg {
+    animation: none;
   }
 }
 
