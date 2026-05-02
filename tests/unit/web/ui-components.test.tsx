@@ -1,6 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Button, Card, Input, TopNav, AvatarGrid } from '../../../packages/ui/src';
+import {
+  Button,
+  Card,
+  Input,
+  TopNav,
+  AvatarGrid,
+  PinInput,
+  StepperHeader,
+} from '../../../packages/ui/src';
 
 // Sanity tests for the FHS-242 design-system extensions:
 //   - Button.fullWidth → adds `w-full`
@@ -146,5 +154,79 @@ describe('AvatarGrid', () => {
     render(<AvatarGrid avatars={avatars} onSelect={onSelect} />);
     fireEvent.click(screen.getByRole('button', { name: 'Sarah, Mum' }));
     expect(onSelect).toHaveBeenCalledWith('sarah');
+  });
+});
+
+describe('PinInput', () => {
+  it('renders 4 cells by default with correct aria labels', () => {
+    render(<PinInput autoFocus={false} />);
+    for (let i = 1; i <= 4; i++) {
+      expect(
+        screen.getByLabelText(`Enter PIN digit ${i} of 4`, { exact: false }),
+      ).toBeInTheDocument();
+    }
+  });
+
+  it('respects custom length prop', () => {
+    render(<PinInput length={6} autoFocus={false} />);
+    expect(screen.getByLabelText('Enter PIN digit 6 of 6', { exact: false })).toBeInTheDocument();
+  });
+
+  it('fires onChange on each keystroke and onComplete when full', () => {
+    const onChange = vi.fn();
+    const onComplete = vi.fn();
+    render(<PinInput length={3} autoFocus={false} onChange={onChange} onComplete={onComplete} />);
+    const inputs = [1, 2, 3].map(
+      (i) =>
+        screen.getByLabelText(`Enter PIN digit ${i} of 3`, { exact: false }) as HTMLInputElement,
+    );
+    fireEvent.change(inputs[0]!, { target: { value: '1' } });
+    fireEvent.change(inputs[1]!, { target: { value: '2' } });
+    fireEvent.change(inputs[2]!, { target: { value: '3' } });
+    expect(onChange).toHaveBeenLastCalledWith('123');
+    expect(onComplete).toHaveBeenCalledWith('123');
+  });
+
+  it('drops non-digit characters', () => {
+    const onChange = vi.fn();
+    render(<PinInput length={2} autoFocus={false} onChange={onChange} />);
+    const cell = screen.getByLabelText('Enter PIN digit 1 of 2', {
+      exact: false,
+    }) as HTMLInputElement;
+    fireEvent.change(cell, { target: { value: 'a' } });
+    expect(onChange).toHaveBeenLastCalledWith('');
+  });
+});
+
+describe('StepperHeader', () => {
+  it('renders the right number of steps', () => {
+    render(<StepperHeader steps={4} current={2} testId="stepper" />);
+    const stepper = screen.getByTestId('stepper');
+    // 4 circles: 1 done (✓), current (2), and 3 future numbered
+    expect(stepper.textContent).toContain('✓');
+    expect(stepper.textContent).toContain('2');
+    expect(stepper.textContent).toContain('3');
+    expect(stepper.textContent).toContain('4');
+  });
+
+  it('marks the active step with aria-current="step"', () => {
+    render(<StepperHeader steps={3} current={2} testId="stepper" />);
+    const active = screen.getByTestId('stepper').querySelector('[aria-current="step"]');
+    expect(active).not.toBeNull();
+    expect(active?.textContent).toContain('2');
+  });
+
+  it('renders labels under each step on sm+ when provided', () => {
+    render(
+      <StepperHeader
+        steps={3}
+        current={1}
+        labels={['Family', 'Members', 'Done']}
+        testId="stepper"
+      />,
+    );
+    expect(screen.getByText('Family')).toBeInTheDocument();
+    expect(screen.getByText('Members')).toBeInTheDocument();
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 });
