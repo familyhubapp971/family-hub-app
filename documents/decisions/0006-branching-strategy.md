@@ -32,10 +32,10 @@ protection enforces it.
 
 ### Merge policy (conditional)
 
-| Team size | Merge style | Rationale |
-| --- | --- | --- |
+| Team size                                 | Merge style                                                     | Rationale                                                                                                                                        |
+| ----------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Solo / 1 active contributor** (current) | **squash-merge** feature → staging; merge-commit staging → main | WIP intermediate commits in features collapse to one canonical commit per ticket. PR title becomes the history entry. Linear, scannable history. |
-| **≥2 active contributors** (future) | **merge-commit (`--no-ff`)** at every level | Preserves individual commit attribution and makes bisect-within-a-feature feasible when concurrent feature branches start interleaving. |
+| **≥2 active contributors** (future)       | **merge-commit (`--no-ff`)** at every level                     | Preserves individual commit attribution and makes bisect-within-a-feature feasible when concurrent feature branches start interleaving.          |
 
 **Trigger to switch:** the second active contributor opens their first
 PR. Switching is a one-line policy change in CLAUDE.md and a
@@ -57,7 +57,7 @@ Commit messages follow the Conventional Commits + Jira-key convention
 documented in [`/CLAUDE.md` "Commits"](../../CLAUDE.md#commits):
 
 - subject: `<type>(FHS-XXX): short summary`
-- body: free-form description of the *why*
+- body: free-form description of the _why_
 - footer: `Refs FHS-XXX` or `Closes FHS-XXX` to drive the
   `branch created → In Progress` and post-merge close workflow rules.
 

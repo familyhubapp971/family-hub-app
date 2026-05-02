@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Hub — Coordinating Parent Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['"Fredoka One"', 'cursive'],
+        body: ['Nunito', 'sans-serif'],
+      },
+      boxShadow: {
+        'neo-xs': '1px 1px 0px 0px rgba(0,0,0,1)',
+        'neo-sm': '2px 2px 0px 0px rgba(0,0,0,1)',
+        'neo':    '3px 3px 0px 0px rgba(0,0,0,1)',
+        'neo-md': '4px 4px 0px 0px rgba(0,0,0,1)',
+        'neo-lg': '6px 6px 0px 0px rgba(0,0,0,1)',
+      },
+      colors: {
+        kingdom: { bg: '#3d1065' },
+      },
+    },
+  },
+};
+</script>
+<style>
+  body { font-family: 'Nunito', sans-serif; background: #3d1065; color: #1e1e1e; }
+  h1,h2,h3,h4,h5,h6 { font-family: 'Fredoka One', cursive; }
+
+  /* ── Device frames ── */
+  .laptop-frame {
+    width: 560px; min-width: 560px;
+    background: #1a1a1a; border-radius: 12px;
+    border: 2px solid #000; padding: 8px 8px 14px;
+    box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+  }
+  .laptop-chrome {
+    background: #2d2d2d; border-radius: 6px 6px 0 0;
+    padding: 6px 8px; display: flex; align-items: center; gap: 5px;
+    border-bottom: 1px solid #444;
+  }
+  .dot { width:8px;height:8px;border-radius:50%;display:inline-block; }
+  .dot-r{background:#ff5f57;} .dot-y{background:#febc2e;} .dot-g{background:#28c840;}
+  .url-bar {
+    flex:1; background:#3a3a3a; border-radius:4px;
+    padding:2px 8px; font-size:10px; color:#aaa; font-family:'Nunito',sans-serif;
+    border:1px solid #555; margin-left:6px;
+  }
+  .laptop-screen {
+    background:#fff; border-radius:0 0 4px 4px;
+    overflow:hidden; height:340px; overflow-y:auto;
+  }
+
+  .phone-frame {
+    width: 220px; min-width:220px;
+    background: #1a1a1a; border-radius: 28px;
+    border: 2px solid #000; padding: 10px 6px 14px;
+    box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+    position:relative;
+  }
+  .phone-notch {
+    width:60px; height:14px; background:#1a1a1a;
+    border-radius:0 0 10px 10px; margin:0 auto 4px;
+    border:1px solid #333;
+  }
+  .phone-screen {
+    background:#fff; border-radius:18px;
+    overflow:hidden; height:380px; overflow-y:auto;
+  }
+
+  /* ── Neo-brutalist atoms ── */
+  .neo-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family:'Fredoka One',cursive; font-size:13px;
+    background:#facc15; color:#000;
+    border:2px solid #000; border-radius:10px;
+    padding:7px 16px; box-shadow:3px 3px 0 #000;
+    cursor:pointer; white-space:nowrap;
+  }
+  .neo-btn-sm {
+    font-size:11px; padding:4px 10px;
+    border-radius:8px; box-shadow:2px 2px 0 #000;
+  }
+  .neo-btn-sec {
+    background:#fff;
+  }
+  .neo-btn-lime { background:#d9f99d; }
+  .neo-btn-pink { background:#fce7f3; }
+  .neo-btn-danger { background:#fca5a5; }
+
+  .neo-card {
+    border:2px solid #000; border-radius:12px;
+    box-shadow:4px 4px 0 #000; background:#fff;
+  }
+  .neo-input {
+    width:100%; border:2px solid #d1d5db; border-radius:10px;
+    padding:6px 10px; font-family:'Nunito',sans-serif;
+    font-size:11px; font-weight:700; background:#f9fafb;
+    outline:none;
+  }
+  .neo-input:focus { border-color:#f472b6; }
+  .neo-badge {
+    display:inline-flex; align-items:center;
+    font-size:9px; font-weight:900; padding:1px 7px;
+    border-radius:9999px; border:1px solid #000;
+  }
+  .badge-yellow { background:#fef9c3; color:#854d0e; }
+  .badge-green  { background:#d1fae5; color:#065f46; }
+  .badge-blue   { background:#dbeafe; color:#1e40af; }
+  .badge-purple { background:#ede9fe; color:#5b21b6; }
+  .badge-red    { background:#fee2e2; color:#991b1b; }
+  .badge-pink   { background:#fce7f3; color:#9d174d; }
+
+  /* ── Screen label sticker ── */
+  .screen-label {
+    font-family:'Fredoka One',cursive; font-size:11px;
+    background:#fef08a; border:2px solid #000;
+    border-radius:6px; padding:3px 8px;
+    box-shadow:2px 2px 0 #000; display:inline-block;
+    margin-bottom:8px; line-height:1.3;
+  }
+  .screen-label.backlog {
+    background:#fee2e2; color:#991b1b;
+  }
+
+  /* ── Arrow connectors ── */
+  .flow-arrow {
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:2px; min-width:64px;
+    padding:0 4px;
+  }
+  .arrow-label {
+    font-family:'Nunito',sans-serif; font-size:9px; font-weight:800;
+    color:#fef08a; text-align:center; line-height:1.2;
+    max-width:72px; background:rgba(0,0,0,0.35);
+    border-radius:4px; padding:2px 4px;
+  }
+  .arrow-shaft {
+    width:2px; background:#000; flex:1; min-height:20px;
+    position:relative;
+  }
+  .arrow-h {
+    display:flex; align-items:center; gap:0;
+  }
+  .arrow-h-shaft {
+    height:3px; background:#000; flex:1;
+  }
+  .arrow-h-head {
+    width:0; height:0;
+    border-top:7px solid transparent;
+    border-bottom:7px solid transparent;
+    border-left:10px solid #000;
+  }
+  .arrow-h-wrap {
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding: 0 6px;
+  }
+
+  /* ── Flow row ── */
+  .flow-row {
+    display:flex; align-items:center; flex-wrap:nowrap;
+    gap:0; padding:16px 0;
+  }
+  .flow-col {
+    display:flex; flex-direction:column; align-items:center; gap:0;
+  }
+  .screen-wrap {
+    display:flex; flex-direction:column; align-items:center;
+  }
+
+  /* nav mock */
+  .mock-nav {
+    background:#3d1065; padding:8px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .mock-nav-logo {
+    font-family:'Fredoka One',cursive; color:#facc15; font-size:15px;
+  }
+  .mock-nav-links {
+    display:flex; gap:10px;
+  }
+  .mock-nav-link {
+    color:#e9d5ff; font-size:10px; font-weight:700;
+    font-family:'Nunito',sans-serif;
+  }
+
+  /* section headers on screens */
+  .screen-section-title {
+    font-family:'Fredoka One',cursive; font-size:13px; color:#3d1065;
+  }
+  .screen-body-text {
+    font-family:'Nunito',sans-serif; font-size:10px; color:#374151;
+  }
+
+  /* Down arrow between rows */
+  .row-down-arrow {
+    display:flex; flex-direction:column; align-items:center;
+    margin:4px 0;
+  }
+  .row-down-shaft { width:3px; height:32px; background:#000; }
+  .row-down-head {
+    width:0; height:0;
+    border-left:8px solid transparent;
+    border-right:8px solid transparent;
+    border-top:12px solid #000;
+  }
+  .row-down-label {
+    font-family:'Nunito',sans-serif; font-size:9px; font-weight:800;
+    color:#fef08a; background:rgba(0,0,0,0.35);
+    border-radius:4px; padding:2px 5px; margin-top:3px; text-align:center;
+  }
+
+  /* persona card */
+  .persona-card {
+    border:3px solid #000; border-radius:16px;
+    background:#fef9c3; box-shadow:6px 6px 0 #000;
+    padding:20px 24px; display:flex; gap:20px; align-items:flex-start;
+    max-width:860px; margin:0 auto 32px;
+  }
+  .persona-avatar {
+    width:72px; height:72px; min-width:72px;
+    border:3px solid #000; border-radius:12px;
+    background:#3d1065; display:flex; align-items:center;
+    justify-content:center; box-shadow:3px 3px 0 #000;
+  }
+  .persona-avatar span {
+    font-family:'Fredoka One',cursive; font-size:28px; color:#facc15;
+  }
+
+  /* gaps callout */
+  .gaps-card {
+    border:3px solid #000; border-radius:14px;
+    background:#fee2e2; box-shadow:6px 6px 0 #000;
+    padding:20px 24px; max-width:860px; margin:32px auto 0;
+  }
+</style>
+</head>
+<body class="min-h-screen p-8">
+
+<!-- ═══════════════════════════════════════════
+     PAGE TITLE
+═══════════════════════════════════════════ -->
+<div class="text-center mb-8">
+  <h1 class="text-4xl text-yellow-300 mb-1">Coordinating Parent</h1>
+  <p class="font-body text-purple-200 text-sm font-700">Persona 1 — Journey Flow Board · Family Hub Design System</p>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PERSONA CARD
+═══════════════════════════════════════════ -->
+<div class="persona-card">
+  <div class="persona-avatar"><span>S</span></div>
+  <div class="flex-1">
+    <div class="flex items-center gap-3 mb-1">
+      <h2 class="text-2xl text-purple-900 mb-0">Sara M.</h2>
+      <span class="neo-badge badge-purple">Primary paying user</span>
+      <span class="neo-badge badge-yellow">Persona 1</span>
+    </div>
+    <p class="screen-body-text font-bold text-gray-700 mb-2">Mother of 4 (incl. twins, age 7) · Dubai · Dual-income household · Returns from mat leave in 6 weeks</p>
+    <div class="grid grid-cols-3 gap-3 mt-2">
+      <div class="neo-card p-2 bg-yellow-100">
+        <p class="text-xs font-900 text-yellow-800 mb-0.5">Key motivation</p>
+        <p class="screen-body-text">"I need one place that actually knows I have four kids with four different schedules."</p>
+      </div>
+      <div class="neo-card p-2 bg-pink-100">
+        <p class="text-xs font-900 text-pink-800 mb-0.5">Pain point</p>
+        <p class="screen-body-text">5 apps, 3 calendars, a WhatsApp group, a paper notebook — and things still fall through.</p>
+      </div>
+      <div class="neo-card p-2 bg-cyan-100">
+        <p class="text-xs font-900 text-cyan-800 mb-0.5">Key objection</p>
+        <p class="screen-body-text">"We've tried these apps before. They don't stick." Trial must prove value in days.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FLOW BOARD
+═══════════════════════════════════════════ -->
+
+<!-- ROW 1: screens 1–3 -->
+<div style="overflow-x:auto; padding-bottom:8px;">
+<div class="flow-row" style="min-width:1860px; align-items:flex-start; padding:16px 0;">
+
+  <!-- ── Screen 1: Landing page ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S1 · Marketing Landing<br><span style="font-weight:700;font-size:9px;">FHS-23 (Sprint 2)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">familyhub.app</span>
+      </div>
+      <div class="laptop-screen">
+        <div class="mock-nav">
+          <span class="mock-nav-logo">FamilyHub</span>
+          <div class="mock-nav-links">
+            <span class="mock-nav-link">Features</span>
+            <span class="mock-nav-link">Pricing</span>
+            <span class="mock-nav-link">Blog</span>
+          </div>
+          <div class="neo-btn neo-btn-sm">Start free</div>
+        </div>
+        <!-- Hero -->
+        <div style="background:linear-gradient(135deg,#3d1065 0%,#6d28d9 100%);padding:28px 20px 20px;text-align:center;">
+          <h1 style="font-family:'Fredoka One',cursive;font-size:22px;color:#facc15;line-height:1.2;margin-bottom:6px;">Stop juggling five apps<br>for one family.</h1>
+          <p style="font-family:'Nunito',sans-serif;font-size:11px;color:#e9d5ff;margin-bottom:14px;">Family Hub is the operating system for family life — one place for schedules, tasks, meals, learning, and the mental load your family generates every single day.</p>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <div class="neo-btn" style="font-size:12px;">Start free — no card needed</div>
+            <div class="neo-btn neo-btn-sec" style="font-size:12px;">Watch 90s demo</div>
+          </div>
+          <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#c4b5fd;margin-top:8px;">Trusted by 2,400+ families in UAE, UK &amp; US</p>
+        </div>
+        <!-- Feature strip -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 12px 0;">
+          <div class="neo-card p-2 bg-yellow-100">
+            <div style="font-size:16px;margin-bottom:3px;">📅</div>
+            <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#3d1065;">One calendar,<br>every child</p>
+            <p class="screen-body-text" style="font-size:9px;">No more cross-referencing three apps to figure out who has football on Tuesday.</p>
+          </div>
+          <div class="neo-card p-2 bg-pink-100">
+            <div style="font-size:16px;margin-bottom:3px;">✅</div>
+            <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#3d1065;">Tasks that<br>actually stick</p>
+            <p class="screen-body-text" style="font-size:9px;">Chores, homework, habits — each child sees their own list. Sticker rewards keep them moving.</p>
+          </div>
+          <div class="neo-card p-2 bg-cyan-100">
+            <div style="font-size:16px;margin-bottom:3px;">🕌</div>
+            <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#3d1065;">Built for<br>your culture</p>
+            <p class="screen-body-text" style="font-size:9px;">Ramadan journaling, Hijri dates, prayer times. Not an afterthought — shipped by default.</p>
+          </div>
+        </div>
+        <!-- Pricing peek -->
+        <div style="background:#f9fafb;margin:10px;border-radius:10px;border:2px solid #000;padding:10px;">
+          <p style="font-family:'Fredoka One',cursive;font-size:12px;text-align:center;color:#3d1065;margin-bottom:6px;">Plans from $0 — upgrade when you're ready</p>
+          <div style="display:flex;justify-content:space-around;font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;">
+            <div style="text-align:center;"><div style="font-size:14px;font-family:'Fredoka One',cursive;">Free</div><div style="color:#6b7280;">3 members</div></div>
+            <div style="text-align:center;"><div style="font-size:14px;font-family:'Fredoka One',cursive;color:#7c3aed;">$7.99<span style="font-size:9px;">/mo</span></div><div style="color:#6b7280;">Family</div></div>
+            <div style="text-align:center;"><div style="font-size:14px;font-family:'Fredoka One',cursive;color:#db2777;">$12.99<span style="font-size:9px;">/mo</span></div><div style="color:#6b7280;">Family Pro</div></div>
+          </div>
+        </div>
+        <div style="text-align:center;padding:8px 12px 14px;">
+          <div class="neo-btn" style="width:100%;font-size:13px;">Start free — takes 2 minutes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 1→2 -->
+  <div class="arrow-h-wrap" style="padding-top:80px;">
+    <div class="arrow-label">clicks "Pricing"</div>
+    <div class="arrow-h" style="width:56px;">
+      <div class="arrow-h-shaft"></div>
+      <div class="arrow-h-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen 2: Pricing page ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S2 · Pricing Page<br><span style="font-weight:700;font-size:9px;">FHS-23 (Sprint 2)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">familyhub.app/pricing</span>
+      </div>
+      <div class="laptop-screen">
+        <div class="mock-nav">
+          <span class="mock-nav-logo">FamilyHub</span>
+          <div class="mock-nav-links"><span class="mock-nav-link">Features</span><span class="mock-nav-link" style="color:#facc15;">Pricing</span></div>
+          <div class="neo-btn neo-btn-sm">Start free</div>
+        </div>
+        <div style="padding:14px 12px;">
+          <h2 style="font-family:'Fredoka One',cursive;font-size:18px;color:#3d1065;text-align:center;margin-bottom:4px;">Simple, honest pricing</h2>
+          <p style="font-family:'Nunito',sans-serif;font-size:10px;color:#6b7280;text-align:center;margin-bottom:12px;">No per-seat surprises. Cancel any time. Two months free on annual plans.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <!-- Free -->
+            <div class="neo-card p-3 bg-white" style="border-radius:12px;">
+              <p style="font-family:'Fredoka One',cursive;font-size:14px;color:#374151;margin-bottom:2px;">Household</p>
+              <p style="font-family:'Fredoka One',cursive;font-size:22px;color:#000;margin-bottom:4px;">Free</p>
+              <div class="neo-btn neo-btn-sm neo-btn-sec" style="width:100%;margin-bottom:8px;font-size:10px;">Get started</div>
+              <div style="font-family:'Nunito',sans-serif;font-size:9px;line-height:1.6;color:#374151;">
+                <div>✓ Up to 3 members</div>
+                <div>✓ Shared calendar</div>
+                <div>✓ Basic task lists</div>
+                <div style="color:#9ca3af;">✗ Unlimited members</div>
+                <div style="color:#9ca3af;">✗ Sticker economy</div>
+                <div style="color:#9ca3af;">✗ Maths module</div>
+              </div>
+            </div>
+            <!-- Family -->
+            <div class="neo-card p-3 bg-yellow-100" style="border-radius:12px;border-width:3px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <p style="font-family:'Fredoka One',cursive;font-size:14px;color:#3d1065;margin:0;">Family</p>
+                <span class="neo-badge badge-purple" style="font-size:8px;">Most popular</span>
+              </div>
+              <p style="font-family:'Fredoka One',cursive;font-size:22px;color:#7c3aed;margin:4px 0;">$7.99<span style="font-size:12px;color:#6b7280;">/mo</span></p>
+              <div class="neo-btn neo-btn-sm" style="width:100%;margin-bottom:8px;font-size:10px;">Start free trial</div>
+              <div style="font-family:'Nunito',sans-serif;font-size:9px;line-height:1.6;color:#374151;">
+                <div>✓ Unlimited members</div>
+                <div>✓ All calendar features</div>
+                <div>✓ Chores + habits</div>
+                <div>✓ Sticker economy</div>
+                <div>✓ Maths module</div>
+                <div>✓ Ramadan / Hijri</div>
+                <div style="color:#9ca3af;">✗ Custom subdomain</div>
+              </div>
+            </div>
+            <!-- Pro -->
+            <div class="neo-card p-3 bg-pink-100" style="border-radius:12px;">
+              <p style="font-family:'Fredoka One',cursive;font-size:14px;color:#3d1065;margin-bottom:2px;">Family Pro</p>
+              <p style="font-family:'Fredoka One',cursive;font-size:22px;color:#db2777;margin-bottom:4px;">$12.99<span style="font-size:12px;color:#6b7280;">/mo</span></p>
+              <div class="neo-btn neo-btn-sm neo-btn-pink" style="width:100%;margin-bottom:8px;font-size:10px;">Start free trial</div>
+              <div style="font-family:'Nunito',sans-serif;font-size:9px;line-height:1.6;color:#374151;">
+                <div>✓ Everything in Family</div>
+                <div>✓ Custom subdomain</div>
+                <div>✓ World Flags module</div>
+                <div>✓ Logic games</div>
+                <div>✓ Priority support</div>
+                <div>✓ Annual = 2 months free</div>
+              </div>
+            </div>
+          </div>
+          <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#9ca3af;text-align:center;margin-top:10px;">All plans include 14-day free trial. No credit card to start. Data export any time.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 2→3 -->
+  <div class="arrow-h-wrap" style="padding-top:80px;">
+    <div class="arrow-label">clicks "Start free trial"</div>
+    <div class="arrow-h" style="width:56px;">
+      <div class="arrow-h-shaft"></div>
+      <div class="arrow-h-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen 3: Sign-up ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S3 · Sign-up Form<br><span style="font-weight:700;font-size:9px;">FHS-23 (Sprint 2)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">familyhub.app/signup</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="display:flex;height:100%;">
+          <!-- Left brand panel -->
+          <div style="background:#3d1065;width:42%;padding:20px 14px;display:flex;flex-direction:column;justify-content:center;">
+            <p style="font-family:'Fredoka One',cursive;font-size:16px;color:#facc15;margin-bottom:6px;">Join 2,400+ families already coordinated.</p>
+            <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#e9d5ff;line-height:1.5;">"I cancelled four subscriptions on day three." — Fatima A., Dubai</p>
+            <div style="margin-top:12px;display:flex;flex-direction:column;gap:4px;">
+              <div style="font-family:'Nunito',sans-serif;font-size:9px;color:#c4b5fd;">✓ 14-day free trial</div>
+              <div style="font-family:'Nunito',sans-serif;font-size:9px;color:#c4b5fd;">✓ No credit card needed</div>
+              <div style="font-family:'Nunito',sans-serif;font-size:9px;color:#c4b5fd;">✓ Cancel any time</div>
+            </div>
+          </div>
+          <!-- Right form -->
+          <div style="flex:1;padding:16px 14px;display:flex;flex-direction:column;justify-content:center;">
+            <h2 style="font-family:'Fredoka One',cursive;font-size:16px;color:#3d1065;margin-bottom:12px;">Create your family hub</h2>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div>
+                <label style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#374151;display:block;margin-bottom:3px;">Your name</label>
+                <input class="neo-input" placeholder="Sara Mahmoud" value="Sara Mahmoud" style="font-size:11px;">
+              </div>
+              <div>
+                <label style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#374151;display:block;margin-bottom:3px;">Email address</label>
+                <input class="neo-input" placeholder="sara@family.com" value="sara@mahmoud.ae" style="font-size:11px;">
+              </div>
+              <div>
+                <label style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#374151;display:block;margin-bottom:3px;">Password</label>
+                <input class="neo-input" type="password" placeholder="Min 8 characters" value="••••••••••" style="font-size:11px;">
+              </div>
+              <div class="neo-btn" style="width:100%;margin-top:4px;font-size:12px;">Create my family hub →</div>
+              <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#9ca3af;text-align:center;">Or <span style="color:#7c3aed;font-weight:800;">continue with Google</span></p>
+              <p style="font-family:'Nunito',sans-serif;font-size:8px;color:#9ca3af;text-align:center;">By signing up you agree to our <span style="color:#7c3aed;">Terms</span> &amp; <span style="color:#7c3aed;">Privacy Policy</span>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end flow-row 1 -->
+</div>
+
+<!-- Down arrow: row 1 → row 2 -->
+<div style="display:flex;justify-content:center;margin:0 0 4px;">
+  <div class="row-down-arrow">
+    <div class="row-down-shaft"></div>
+    <div class="row-down-head"></div>
+    <div class="row-down-label">submits sign-up form</div>
+  </div>
+</div>
+
+<!-- ROW 2: screens 4–6 -->
+<div style="overflow-x:auto;padding-bottom:8px;">
+<div class="flow-row" style="min-width:1860px;align-items:flex-start;padding:0;">
+
+  <!-- ── Screen 4: Email verification ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S4 · Email Verification<br><span style="font-weight:700;font-size:9px;">FHS-23 (Sprint 2)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">familyhub.app/verify-email</span>
+      </div>
+      <div class="laptop-screen" style="display:flex;align-items:center;justify-content:center;background:#f5f3ff;">
+        <div style="text-align:center;padding:24px 20px;max-width:320px;">
+          <div style="font-size:42px;margin-bottom:10px;">📬</div>
+          <h2 style="font-family:'Fredoka One',cursive;font-size:18px;color:#3d1065;margin-bottom:6px;">Check your inbox</h2>
+          <p style="font-family:'Nunito',sans-serif;font-size:11px;color:#374151;margin-bottom:4px;">We sent a confirmation link to</p>
+          <div class="neo-card" style="background:#fef9c3;padding:6px 12px;margin:6px auto;display:inline-block;">
+            <p style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#3d1065;margin:0;">sara@mahmoud.ae</p>
+          </div>
+          <p style="font-family:'Nunito',sans-serif;font-size:10px;color:#6b7280;margin:10px 0;">Click the link in the email to activate your account. It expires in 24 hours.</p>
+          <div style="border-top:2px dashed #d1d5db;padding-top:10px;margin-top:10px;">
+            <p style="font-family:'Nunito',sans-serif;font-size:10px;color:#9ca3af;margin-bottom:6px;">Didn't get it? Check spam, or</p>
+            <div class="neo-btn neo-btn-sec neo-btn-sm" style="margin:0 auto;display:inline-flex;">Resend verification email</div>
+          </div>
+          <!-- Error branch hint -->
+          <div style="margin-top:10px;border:2px dashed #fca5a5;border-radius:8px;padding:6px 10px;background:#fff5f5;">
+            <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#991b1b;font-weight:700;">Wrong email? <span style="color:#7c3aed;text-decoration:underline;">Go back and correct it</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 4→5 -->
+  <div class="arrow-h-wrap" style="padding-top:80px;">
+    <div class="arrow-label">clicks email link</div>
+    <div class="arrow-h" style="width:56px;">
+      <div class="arrow-h-shaft"></div>
+      <div class="arrow-h-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen 5: Onboarding step 1 — family name + slug ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S5 · Onboarding 1: Family Name<br><span style="font-weight:700;font-size:9px;">FHS-29 (Sprint 2)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">familyhub.app/onboarding/family</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="background:#3d1065;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-family:'Fredoka One',cursive;color:#facc15;font-size:14px;">FamilyHub</span>
+          <span style="font-family:'Nunito',sans-serif;font-size:9px;color:#c4b5fd;">Step 1 of 4</span>
+        </div>
+        <!-- Progress bar -->
+        <div style="height:5px;background:#e9d5ff;">
+          <div style="height:100%;width:25%;background:#facc15;"></div>
+        </div>
+        <div style="padding:16px 18px;">
+          <h2 style="font-family:'Fredoka One',cursive;font-size:16px;color:#3d1065;margin-bottom:4px;">Name your family hub</h2>
+          <p style="font-family:'Nunito',sans-serif;font-size:10px;color:#6b7280;margin-bottom:14px;">This is how your family will find your private space. You can change it later.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <label style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#374151;display:block;margin-bottom:3px;">Family name</label>
+              <input class="neo-input" value="The Mahmoud Family" style="font-size:12px;">
+            </div>
+            <div>
+              <label style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#374151;display:block;margin-bottom:3px;">Your family's URL</label>
+              <input class="neo-input" value="mahmoud-family" style="font-size:12px;">
+              <!-- Availability preview -->
+              <div style="margin-top:5px;display:flex;align-items:center;gap:6px;">
+                <div style="background:#d1fae5;border:1.5px solid #000;border-radius:8px;padding:4px 10px;display:flex;align-items:center;gap:4px;box-shadow:2px 2px 0 #000;">
+                  <span style="font-size:12px;">✓</span>
+                  <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#065f46;">mahmoud-family.familyhub.app is available!</span>
+                </div>
+              </div>
+              <!-- Error state shown as alt -->
+              <div style="margin-top:4px;background:#fee2e2;border:1.5px dashed #fca5a5;border-radius:6px;padding:3px 8px;">
+                <span style="font-family:'Nunito',sans-serif;font-size:9px;color:#991b1b;">If taken: "the-mahmoud-family" or "mahmoud-fam" suggested</span>
+              </div>
+            </div>
+          </div>
+          <div class="neo-btn" style="width:100%;margin-top:16px;font-size:12px;">Continue →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 5→6 -->
+  <div class="arrow-h-wrap" style="padding-top:80px;">
+    <div class="arrow-label">continues</div>
+    <div class="arrow-h" style="width:56px;">
+      <div class="arrow-h-shaft"></div>
+      <div class="arrow-h-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen 6: Onboarding step 2 — timezone + currency ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S6 · Onboarding 2: Timezone &amp; Currency<br><span style="font-weight:700;font-size:9px;">FHS-29 (Sprint 2)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">familyhub.app/onboarding/locale</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="background:#3d1065;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-family:'Fredoka One',cursive;color:#facc15;font-size:14px;">FamilyHub</span>
+          <span style="font-family:'Nunito',sans-serif;font-size:9px;color:#c4b5fd;">Step 2 of 4</span>
+        </div>
+        <div style="height:5px;background:#e9d5ff;"><div style="height:100%;width:50%;background:#facc15;"></div></div>
+        <div style="padding:16px 18px;">
+          <h2 style="font-family:'Fredoka One',cursive;font-size:16px;color:#3d1065;margin-bottom:4px;">Where does your family live?</h2>
+          <p style="font-family:'Nunito',sans-serif;font-size:10px;color:#6b7280;margin-bottom:14px;">We use this for notifications, calendar display, and the sticker economy currency.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <label style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#374151;display:block;margin-bottom:3px;">Timezone <span style="color:#7c3aed;font-size:9px;">(auto-detected)</span></label>
+              <select class="neo-input" style="appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 20 20%22><path stroke=%22%236b7280%22 stroke-width=%221.5%22 d=%22M6 8l4 4 4-4%22/></svg>');background-repeat:no-repeat;background-position:right 8px center;background-size:16px;">
+                <option selected>Asia/Dubai (GMT +4)</option>
+                <option>Europe/London (GMT +0)</option>
+                <option>America/New_York (GMT -5)</option>
+                <option>America/Los_Angeles (GMT -8)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#374151;display:block;margin-bottom:3px;">Currency for sticker economy</label>
+              <select class="neo-input" style="appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 20 20%22><path stroke=%22%236b7280%22 stroke-width=%221.5%22 d=%22M6 8l4 4 4-4%22/></svg>');background-repeat:no-repeat;background-position:right 8px center;background-size:16px;">
+                <option selected>AED — UAE Dirham (د.إ)</option>
+                <option>USD — US Dollar ($)</option>
+                <option>GBP — British Pound (£)</option>
+                <option>SAR — Saudi Riyal (﷼)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#374151;display:block;margin-bottom:3px;">Calendar preference</label>
+              <div style="display:flex;gap:6px;">
+                <div style="flex:1;border:2px solid #000;border-radius:8px;padding:6px;background:#fef9c3;box-shadow:2px 2px 0 #000;text-align:center;font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;">
+                  Gregorian<br><span style="font-size:8px;color:#6b7280;">Default</span>
+                </div>
+                <div style="flex:1;border:2px solid #d1d5db;border-radius:8px;padding:6px;text-align:center;font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;color:#6b7280;">
+                  Hijri alongside<br><span style="font-size:8px;">+Ramadan support</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="neo-btn" style="width:100%;margin-top:16px;font-size:12px;">Continue →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Down arrow row 2 → row 3 -->
+<div style="display:flex;justify-content:center;margin:0 0 4px;">
+  <div class="row-down-arrow">
+    <div class="row-down-shaft"></div>
+    <div class="row-down-head"></div>
+    <div class="row-down-label">continues</div>
+  </div>
+</div>
+
+<!-- ROW 3: screens 7–9 -->
+<div style="overflow-x:auto;padding-bottom:8px;">
+<div class="flow-row" style="min-width:1860px;align-items:flex-start;padding:0;">
+
+  <!-- ── Screen 7: Onboarding step 3 — invite members ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S7 · Onboarding 3: Invite Members<br><span style="font-weight:700;font-size:9px;">FHS-35 (Sprint 2)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">familyhub.app/onboarding/invite</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="background:#3d1065;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-family:'Fredoka One',cursive;color:#facc15;font-size:14px;">FamilyHub</span>
+          <span style="font-family:'Nunito',sans-serif;font-size:9px;color:#c4b5fd;">Step 3 of 4</span>
+        </div>
+        <div style="height:5px;background:#e9d5ff;"><div style="height:100%;width:75%;background:#facc15;"></div></div>
+        <div style="padding:14px 16px;">
+          <h2 style="font-family:'Fredoka One',cursive;font-size:15px;color:#3d1065;margin-bottom:3px;">Invite your family</h2>
+          <p style="font-family:'Nunito',sans-serif;font-size:10px;color:#6b7280;margin-bottom:10px;">They'll get a link to join The Mahmoud Family hub. You can add more later.</p>
+          <!-- Invite rows -->
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;gap:5px;align-items:center;">
+              <input class="neo-input" value="ahmed@mahmoud.ae" style="flex:1;font-size:10px;">
+              <select class="neo-input" style="width:90px;font-size:10px;padding:6px 6px;">
+                <option>Parent</option><option>Child</option><option>Guardian</option>
+              </select>
+              <span style="color:#9ca3af;font-size:16px;cursor:pointer;">×</span>
+            </div>
+            <div style="display:flex;gap:5px;align-items:center;">
+              <input class="neo-input" placeholder="Email address" style="flex:1;font-size:10px;border-color:#d1d5db;">
+              <select class="neo-input" style="width:90px;font-size:10px;padding:6px 6px;">
+                <option>Child</option><option>Parent</option><option>Guardian</option>
+              </select>
+              <span style="color:#9ca3af;font-size:16px;cursor:pointer;">×</span>
+            </div>
+          </div>
+          <button style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#7c3aed;background:none;border:none;margin-top:6px;cursor:pointer;">+ Add another member</button>
+          <!-- invite link -->
+          <div style="margin-top:10px;background:#f5f3ff;border:2px dashed #a78bfa;border-radius:8px;padding:8px 10px;">
+            <p style="font-family:'Nunito',sans-serif;font-size:9px;font-weight:800;color:#6d28d9;margin-bottom:4px;">Or share this invite link</p>
+            <div style="display:flex;gap:4px;">
+              <input class="neo-input" value="familyhub.app/join/mhm-k93p" style="font-size:9px;flex:1;background:#fff;">
+              <div class="neo-btn neo-btn-sm" style="font-size:9px;white-space:nowrap;">Copy</div>
+            </div>
+          </div>
+          <div class="neo-btn" style="width:100%;margin-top:12px;font-size:12px;">Continue →</div>
+          <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#9ca3af;text-align:center;margin-top:6px;">Skip for now — you can invite from Settings any time.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 7→8 -->
+  <div class="arrow-h-wrap" style="padding-top:80px;">
+    <div class="arrow-label">continues</div>
+    <div class="arrow-h" style="width:56px;">
+      <div class="arrow-h-shaft"></div>
+      <div class="arrow-h-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen 8: Onboarding step 4 — starter content ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S8 · Onboarding 4: Starter Content<br><span style="font-weight:700;font-size:9px;">FHS-42 (Sprint 2)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">familyhub.app/onboarding/setup</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="background:#3d1065;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-family:'Fredoka One',cursive;color:#facc15;font-size:14px;">FamilyHub</span>
+          <span style="font-family:'Nunito',sans-serif;font-size:9px;color:#c4b5fd;">Step 4 of 4</span>
+        </div>
+        <div style="height:5px;background:#e9d5ff;"><div style="height:100%;width:100%;background:#facc15;"></div></div>
+        <div style="padding:14px 16px;">
+          <h2 style="font-family:'Fredoka One',cursive;font-size:15px;color:#3d1065;margin-bottom:3px;">What does your family need?</h2>
+          <p style="font-family:'Nunito',sans-serif;font-size:10px;color:#6b7280;margin-bottom:10px;">We'll pre-load examples so you hit the ground running. Toggle what fits.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <!-- toggled ON cards -->
+            <div class="neo-card" style="background:#d1fae5;padding:8px 10px;display:flex;align-items:flex-start;gap:6px;">
+              <span style="font-size:14px;">✅</span>
+              <div>
+                <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#065f46;margin:0;">Morning habits</p>
+                <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#374151;">Brush teeth, make bed, Fajr — daily template for each child.</p>
+              </div>
+            </div>
+            <div class="neo-card" style="background:#d1fae5;padding:8px 10px;display:flex;align-items:flex-start;gap:6px;">
+              <span style="font-size:14px;">✅</span>
+              <div>
+                <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#065f46;margin:0;">Weekly chores</p>
+                <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#374151;">Tidy room, help with laundry — rotating by age.</p>
+              </div>
+            </div>
+            <div class="neo-card" style="padding:8px 10px;display:flex;align-items:flex-start;gap:6px;opacity:0.7;">
+              <span style="font-size:14px;">☐</span>
+              <div>
+                <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#374151;margin:0;">Meal planner</p>
+                <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#374151;">Suggest weekly dinners, generate shopping list.</p>
+              </div>
+            </div>
+            <div class="neo-card" style="padding:8px 10px;display:flex;align-items:flex-start;gap:6px;opacity:0.7;">
+              <span style="font-size:14px;">☐</span>
+              <div>
+                <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#374151;margin:0;">Ramadan journal</p>
+                <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#374151;">Daily reflection prompts + Iftar countdown.</p>
+              </div>
+            </div>
+            <div class="neo-card" style="background:#d1fae5;padding:8px 10px;display:flex;align-items:flex-start;gap:6px;">
+              <span style="font-size:14px;">✅</span>
+              <div>
+                <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#065f46;margin:0;">Maths module</p>
+                <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#374151;">AI-personalised lessons. Kids earn stickers.</p>
+              </div>
+            </div>
+            <div class="neo-card" style="padding:8px 10px;display:flex;align-items:flex-start;gap:6px;opacity:0.7;">
+              <span style="font-size:14px;">☐</span>
+              <div>
+                <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#374151;margin:0;">World Flags</p>
+                <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#374151;">Geography game. Family Pro only.</p>
+                <span class="neo-badge badge-purple" style="font-size:8px;margin-top:2px;">Pro</span>
+              </div>
+            </div>
+          </div>
+          <div class="neo-btn" style="width:100%;margin-top:12px;font-size:12px;">Take me to my hub →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 8→9 -->
+  <div class="arrow-h-wrap" style="padding-top:80px;">
+    <div class="arrow-label">completes onboarding</div>
+    <div class="arrow-h" style="width:56px;">
+      <div class="arrow-h-shaft"></div>
+      <div class="arrow-h-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen 9: Dashboard empty state ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S9 · Dashboard — Empty State<br><span style="font-weight:700;font-size:9px;">FHS-47 (Sprint 3)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">mahmoud-family.familyhub.app</span>
+      </div>
+      <div class="laptop-screen">
+        <!-- App shell -->
+        <div style="display:flex;height:100%;">
+          <!-- Sidebar -->
+          <div style="width:48px;background:#3d1065;display:flex;flex-direction:column;align-items:center;gap:12px;padding:10px 0;">
+            <div style="font-size:14px;cursor:pointer;" title="Dashboard">🏠</div>
+            <div style="font-size:14px;cursor:pointer;" title="Calendar">📅</div>
+            <div style="font-size:14px;cursor:pointer;" title="Tasks">✅</div>
+            <div style="font-size:14px;cursor:pointer;" title="Members">👨‍👩‍👧‍👦</div>
+            <div style="font-size:14px;cursor:pointer;" title="Settings">⚙️</div>
+          </div>
+          <!-- Main -->
+          <div style="flex:1;overflow-y:auto;">
+            <div style="background:#fafafa;padding:10px 12px;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
+              <p style="font-family:'Fredoka One',cursive;font-size:14px;color:#3d1065;">Good morning, Sara ☀️</p>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span class="neo-badge badge-yellow">Free plan</span>
+                <div style="width:28px;height:28px;border-radius:50%;background:#3d1065;border:2px solid #000;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Fredoka One',cursive;color:#facc15;font-size:11px;">S</span></div>
+              </div>
+            </div>
+            <!-- Empty state -->
+            <div style="padding:24px 16px;text-align:center;">
+              <div style="font-size:44px;margin-bottom:8px;">🪄</div>
+              <h3 style="font-family:'Fredoka One',cursive;font-size:16px;color:#3d1065;margin-bottom:4px;">Welcome to The Mahmoud Family hub!</h3>
+              <p style="font-family:'Nunito',sans-serif;font-size:11px;color:#6b7280;margin-bottom:16px;">Your private family space is ready. Add your first task to get started.</p>
+              <!-- Hand-drawn arrow effect -->
+              <div style="position:relative;display:inline-block;">
+                <div class="neo-btn" style="font-size:12px;">+ Add your first task</div>
+                <div style="position:absolute;top:-26px;right:-18px;font-family:'Fredoka One',cursive;font-size:10px;color:#db2777;transform:rotate(15deg);">← Start here!</div>
+              </div>
+              <!-- Quick start cards -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:16px;text-align:left;">
+                <div class="neo-card" style="padding:8px;background:#fef9c3;">
+                  <p style="font-family:'Fredoka One',cursive;font-size:10px;color:#3d1065;">Invite Ahmed</p>
+                  <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#6b7280;">Pending invite sent</p>
+                  <span class="neo-badge badge-yellow" style="margin-top:4px;">Pending</span>
+                </div>
+                <div class="neo-card" style="padding:8px;background:#fce7f3;">
+                  <p style="font-family:'Fredoka One',cursive;font-size:10px;color:#3d1065;">Set up Maths</p>
+                  <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#6b7280;">Add your children's ages</p>
+                </div>
+                <div class="neo-card" style="padding:8px;background:#dbeafe;">
+                  <p style="font-family:'Fredoka One',cursive;font-size:10px;color:#3d1065;">Explore Calendar</p>
+                  <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#6b7280;">Add your first event</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Down arrow row 3 → row 4 -->
+<div style="display:flex;justify-content:center;margin:0 0 4px;">
+  <div class="row-down-arrow">
+    <div class="row-down-shaft"></div>
+    <div class="row-down-head"></div>
+    <div class="row-down-label">adds first task</div>
+  </div>
+</div>
+
+<!-- ROW 4: screens 10–12 -->
+<div style="overflow-x:auto;padding-bottom:8px;">
+<div class="flow-row" style="min-width:1860px;align-items:flex-start;padding:0;">
+
+  <!-- ── Screen 10: Dashboard with task ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S10 · Dashboard — First Task Added<br><span style="font-weight:700;font-size:9px;">FHS-47 (Sprint 3)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">mahmoud-family.familyhub.app</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="display:flex;height:100%;">
+          <div style="width:48px;background:#3d1065;display:flex;flex-direction:column;align-items:center;gap:12px;padding:10px 0;">
+            <div style="font-size:14px;">🏠</div><div style="font-size:14px;">📅</div><div style="font-size:14px;">✅</div><div style="font-size:14px;">👨‍👩‍👧‍👦</div><div style="font-size:14px;">⚙️</div>
+          </div>
+          <div style="flex:1;overflow-y:auto;">
+            <div style="background:#fafafa;padding:8px 12px;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
+              <p style="font-family:'Fredoka One',cursive;font-size:13px;color:#3d1065;margin:0;">The Mahmoud Family</p>
+              <div style="display:flex;gap:5px;align-items:center;">
+                <!-- Member avatars -->
+                <div style="display:flex;gap:-2px;">
+                  <div style="width:22px;height:22px;border-radius:50%;background:#7c3aed;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Fredoka One',cursive;color:#fff;">S</div>
+                  <div style="width:22px;height:22px;border-radius:50%;background:#0891b2;border:2px solid #fff;margin-left:-6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Fredoka One',cursive;color:#fff;">A</div>
+                </div>
+                <span class="neo-badge badge-yellow">Free</span>
+              </div>
+            </div>
+            <div style="padding:10px 12px;">
+              <!-- This-week calendar strip -->
+              <p style="font-family:'Fredoka One',cursive;font-size:12px;color:#3d1065;margin-bottom:6px;">This week</p>
+              <div style="display:flex;gap:4px;margin-bottom:10px;">
+                {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map ? '' : ''}
+                <div style="flex:1;border:2px solid #000;border-radius:8px;padding:4px 2px;text-align:center;background:#fef9c3;box-shadow:2px 2px 0 #000;">
+                  <div style="font-family:'Nunito',sans-serif;font-size:8px;font-weight:800;color:#6b7280;">MON</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#3d1065;">28</div>
+                  <div style="width:6px;height:6px;border-radius:50%;background:#7c3aed;margin:0 auto;"></div>
+                </div>
+                <div style="flex:1;border:2px solid #000;border-radius:8px;padding:4px 2px;text-align:center;background:#fff;box-shadow:2px 2px 0 #000;">
+                  <div style="font-family:'Nunito',sans-serif;font-size:8px;font-weight:800;color:#6b7280;">TUE</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#374151;">29</div>
+                </div>
+                <div style="flex:1;border:2px solid #000;border-radius:8px;padding:4px 2px;text-align:center;background:#d1fae5;box-shadow:2px 2px 0 #000;">
+                  <div style="font-family:'Nunito',sans-serif;font-size:8px;font-weight:800;color:#6b7280;">WED</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#065f46;">30</div>
+                  <div style="width:6px;height:6px;border-radius:50%;background:#059669;margin:0 auto;"></div>
+                </div>
+                <div style="flex:1;border:2px solid #e5e7eb;border-radius:8px;padding:4px 2px;text-align:center;">
+                  <div style="font-family:'Nunito',sans-serif;font-size:8px;font-weight:800;color:#9ca3af;">THU</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#9ca3af;">1</div>
+                </div>
+                <div style="flex:1;border:2px solid #e5e7eb;border-radius:8px;padding:4px 2px;text-align:center;">
+                  <div style="font-family:'Nunito',sans-serif;font-size:8px;font-weight:800;color:#9ca3af;">FRI</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#9ca3af;">2</div>
+                </div>
+                <div style="flex:1;border:2px solid #e5e7eb;border-radius:8px;padding:4px 2px;text-align:center;">
+                  <div style="font-family:'Nunito',sans-serif;font-size:8px;font-weight:800;color:#9ca3af;">SAT</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#9ca3af;">3</div>
+                </div>
+                <div style="flex:1;border:2px solid #e5e7eb;border-radius:8px;padding:4px 2px;text-align:center;">
+                  <div style="font-family:'Nunito',sans-serif;font-size:8px;font-weight:800;color:#9ca3af;">SUN</div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#9ca3af;">4</div>
+                </div>
+              </div>
+              <!-- Task list -->
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <p style="font-family:'Fredoka One',cursive;font-size:12px;color:#3d1065;margin:0;">Today's tasks</p>
+                <div class="neo-btn neo-btn-sm" style="font-size:9px;">+ Add task</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <div class="neo-card" style="padding:6px 10px;display:flex;align-items:center;gap:8px;background:#d1fae5;">
+                  <input type="checkbox" checked style="width:14px;height:14px;accent-color:#059669;">
+                  <span style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;text-decoration:line-through;color:#6b7280;">School run — drop twins at 7:30am</span>
+                  <span class="neo-badge badge-green" style="margin-left:auto;">Done</span>
+                </div>
+                <div class="neo-card" style="padding:6px 10px;display:flex;align-items:center;gap:8px;">
+                  <input type="checkbox" style="width:14px;height:14px;">
+                  <div style="flex:1;">
+                    <span style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#374151;">Book Yusuf's dental check-up</span>
+                    <div style="display:flex;gap:4px;margin-top:2px;">
+                      <span class="neo-badge badge-yellow">Sara</span>
+                      <span class="neo-badge badge-blue">Due today</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="neo-card" style="padding:6px 10px;display:flex;align-items:center;gap:8px;">
+                  <input type="checkbox" style="width:14px;height:14px;">
+                  <div style="flex:1;">
+                    <span style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#374151;">Confirm twins' birthday party venue</span>
+                    <div style="display:flex;gap:4px;margin-top:2px;">
+                      <span class="neo-badge badge-pink">Sara</span>
+                      <span class="neo-badge badge-yellow">Fri</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 10→11 -->
+  <div class="arrow-h-wrap" style="padding-top:80px;">
+    <div class="arrow-label">opens Members settings</div>
+    <div class="arrow-h" style="width:56px;">
+      <div class="arrow-h-shaft"></div>
+      <div class="arrow-h-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen 11: Member list ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S11 · Member List / Settings<br><span style="font-weight:700;font-size:9px;">FHS-97 (Sprint 5)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">mahmoud-family.familyhub.app/settings/members</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="display:flex;height:100%;">
+          <div style="width:48px;background:#3d1065;display:flex;flex-direction:column;align-items:center;gap:12px;padding:10px 0;">
+            <div style="font-size:14px;">🏠</div><div style="font-size:14px;">📅</div><div style="font-size:14px;">✅</div><div style="font-size:14px;background:#6d28d9;border-radius:6px;padding:2px;">👨‍👩‍👧‍👦</div><div style="font-size:14px;">⚙️</div>
+          </div>
+          <div style="flex:1;padding:10px 12px;overflow-y:auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <h2 style="font-family:'Fredoka One',cursive;font-size:15px;color:#3d1065;margin:0;">Family members</h2>
+              <div class="neo-btn neo-btn-sm" style="font-size:10px;">+ Invite member</div>
+            </div>
+            <!-- Table header -->
+            <div style="display:grid;grid-template-columns:1fr 70px 80px 70px;gap:4px;background:#f3f4f6;border-radius:8px;padding:5px 8px;font-family:'Nunito',sans-serif;font-size:9px;font-weight:900;color:#6b7280;text-transform:uppercase;margin-bottom:4px;">
+              <span>Member</span><span>Role</span><span>Last active</span><span></span>
+            </div>
+            <!-- Rows -->
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="display:grid;grid-template-columns:1fr 70px 80px 70px;gap:4px;padding:6px 8px;border:2px solid #000;border-radius:10px;background:#fef9c3;box-shadow:2px 2px 0 #000;align-items:center;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <div style="width:22px;height:22px;border-radius:50%;background:#7c3aed;border:2px solid #000;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Fredoka One',cursive;color:#fff;">S</div>
+                  <div><p style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;margin:0;">Sara Mahmoud</p><p style="font-family:'Nunito',sans-serif;font-size:8px;color:#6b7280;margin:0;">sara@mahmoud.ae</p></div>
+                </div>
+                <span class="neo-badge badge-purple">Admin</span>
+                <span style="font-family:'Nunito',sans-serif;font-size:9px;color:#6b7280;">Just now</span>
+                <span style="font-family:'Nunito',sans-serif;font-size:9px;color:#9ca3af;">You</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 70px 80px 70px;gap:4px;padding:6px 8px;border:2px solid #000;border-radius:10px;box-shadow:2px 2px 0 #000;align-items:center;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <div style="width:22px;height:22px;border-radius:50%;background:#0891b2;border:2px solid #000;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Fredoka One',cursive;color:#fff;">A</div>
+                  <div><p style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;margin:0;">Ahmed Mahmoud</p><p style="font-family:'Nunito',sans-serif;font-size:8px;color:#6b7280;margin:0;">ahmed@mahmoud.ae</p></div>
+                </div>
+                <span class="neo-badge badge-blue">Parent</span>
+                <span style="font-family:'Nunito',sans-serif;font-size:9px;color:#6b7280;">2h ago</span>
+                <div class="neo-btn neo-btn-sm neo-btn-sec" style="font-size:8px;padding:2px 6px;">Edit</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 70px 80px 70px;gap:4px;padding:6px 8px;border:2px dashed #d1d5db;border-radius:10px;background:#f9fafb;align-items:center;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <div style="width:22px;height:22px;border-radius:50%;background:#d1d5db;border:2px solid #9ca3af;display:flex;align-items:center;justify-content:center;font-size:9px;">?</div>
+                  <div><p style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;margin:0;color:#9ca3af;">Invited member</p><p style="font-family:'Nunito',sans-serif;font-size:8px;color:#9ca3af;margin:0;">grandma@example.com</p></div>
+                </div>
+                <span class="neo-badge badge-yellow">Pending</span>
+                <span style="font-family:'Nunito',sans-serif;font-size:9px;color:#9ca3af;">—</span>
+                <div class="neo-btn neo-btn-sm neo-btn-sec" style="font-size:8px;padding:2px 6px;">Resend</div>
+              </div>
+              <!-- Free tier limit notice -->
+              <div style="background:#fef3c7;border:2px solid #000;border-radius:8px;padding:6px 10px;box-shadow:2px 2px 0 #000;margin-top:4px;">
+                <p style="font-family:'Nunito',sans-serif;font-size:9px;font-weight:800;color:#92400e;margin:0;">Free plan: 3 member limit. <span style="color:#7c3aed;text-decoration:underline;cursor:pointer;">Upgrade to add more →</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 11→12 -->
+  <div class="arrow-h-wrap" style="padding-top:80px;">
+    <div class="arrow-label">opens notification settings on phone</div>
+    <div class="arrow-h" style="width:56px;">
+      <div class="arrow-h-shaft"></div>
+      <div class="arrow-h-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen 12: Notification settings (mobile) ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S12 · Notification Settings (mobile)<br><span style="font-weight:700;font-size:9px;color:#991b1b;" class="backlog">BACKLOG GAP — no ticket yet</span></div>
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <!-- Status bar -->
+        <div style="display:flex;justify-content:space-between;padding:4px 10px 2px;font-family:'Nunito',sans-serif;font-size:8px;font-weight:800;color:#374151;background:#f9fafb;">
+          <span>9:41</span><span>●●● WiFi 🔋</span>
+        </div>
+        <!-- Header -->
+        <div style="background:#3d1065;padding:8px 10px;display:flex;align-items:center;gap:6px;">
+          <span style="color:#e9d5ff;font-size:14px;">←</span>
+          <span style="font-family:'Fredoka One',cursive;color:#facc15;font-size:14px;">Notifications</span>
+        </div>
+        <div style="padding:10px 10px;overflow-y:auto;">
+          <!-- Toggle rows -->
+          <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#3d1065;margin-bottom:6px;">Push notifications</p>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;border:2px solid #000;border-radius:10px;padding:6px 8px;background:#d1fae5;box-shadow:2px 2px 0 #000;">
+              <div><p style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;margin:0;">Task reminders</p><p style="font-family:'Nunito',sans-serif;font-size:8px;color:#6b7280;margin:0;">30 min before due</p></div>
+              <div style="width:32px;height:18px;background:#059669;border-radius:9px;border:2px solid #000;position:relative;"><div style="position:absolute;right:2px;top:1px;width:12px;height:12px;background:#fff;border-radius:50%;border:1.5px solid #000;"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;border:2px solid #000;border-radius:10px;padding:6px 8px;background:#d1fae5;box-shadow:2px 2px 0 #000;">
+              <div><p style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;margin:0;">Member check-ins</p><p style="font-family:'Nunito',sans-serif;font-size:8px;color:#6b7280;margin:0;">When Ahmed completes a task</p></div>
+              <div style="width:32px;height:18px;background:#059669;border-radius:9px;border:2px solid #000;position:relative;"><div style="position:absolute;right:2px;top:1px;width:12px;height:12px;background:#fff;border-radius:50%;border:1.5px solid #000;"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;border:2px solid #000;border-radius:10px;padding:6px 8px;box-shadow:2px 2px 0 #000;">
+              <div><p style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;margin:0;">Sticker earned</p><p style="font-family:'Nunito',sans-serif;font-size:8px;color:#6b7280;margin:0;">Children's achievements</p></div>
+              <div style="width:32px;height:18px;background:#d1d5db;border-radius:9px;border:2px solid #000;position:relative;"><div style="position:absolute;left:2px;top:1px;width:12px;height:12px;background:#fff;border-radius:50%;border:1.5px solid #000;"></div></div>
+            </div>
+          </div>
+          <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#3d1065;margin-bottom:6px;">Email notifications</p>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;border:2px solid #000;border-radius:10px;padding:6px 8px;background:#d1fae5;box-shadow:2px 2px 0 #000;">
+              <div><p style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;margin:0;">Weekly digest</p><p style="font-family:'Nunito',sans-serif;font-size:8px;color:#6b7280;margin:0;">Sunday evenings</p></div>
+              <div style="width:32px;height:18px;background:#059669;border-radius:9px;border:2px solid #000;position:relative;"><div style="position:absolute;right:2px;top:1px;width:12px;height:12px;background:#fff;border-radius:50%;border:1.5px solid #000;"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;border:2px solid #000;border-radius:10px;padding:6px 8px;box-shadow:2px 2px 0 #000;">
+              <div><p style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;margin:0;">Billing alerts</p><p style="font-family:'Nunito',sans-serif;font-size:8px;color:#6b7280;margin:0;">Renewal, upgrade, card fail</p></div>
+              <div style="width:32px;height:18px;background:#d1d5db;border-radius:9px;border:2px solid #000;position:relative;"><div style="position:absolute;left:2px;top:1px;width:12px;height:12px;background:#fff;border-radius:50%;border:1.5px solid #000;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Down arrow row 4 → row 5 -->
+<div style="display:flex;justify-content:center;margin:0 0 4px;">
+  <div class="row-down-arrow">
+    <div class="row-down-shaft"></div>
+    <div class="row-down-head"></div>
+    <div class="row-down-label">hits free-tier member limit</div>
+  </div>
+</div>
+
+<!-- ROW 5: screens 13–15 -->
+<div style="overflow-x:auto;padding-bottom:8px;">
+<div class="flow-row" style="min-width:1860px;align-items:flex-start;padding:0;">
+
+  <!-- ── Screen 13: Billing upgrade modal ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S13 · Billing Upgrade Modal<br><span style="font-weight:700;font-size:9px;">FHS-73 (Sprint 4)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">mahmoud-family.familyhub.app</span>
+      </div>
+      <div class="laptop-screen" style="position:relative;">
+        <!-- Dimmed background -->
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:1;backdrop-filter:blur(1px);"></div>
+        <!-- Modal -->
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:88%;background:#fff;border:3px solid #000;border-radius:14px;box-shadow:6px 6px 0 #000;padding:18px 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <h3 style="font-family:'Fredoka One',cursive;font-size:15px;color:#3d1065;margin:0;">Unlock your full family hub</h3>
+            <span style="color:#9ca3af;cursor:pointer;font-size:16px;">×</span>
+          </div>
+          <div style="background:#fef3c7;border:2px solid #000;border-radius:10px;padding:8px 10px;margin-bottom:10px;box-shadow:2px 2px 0 #000;">
+            <p style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#92400e;margin:0;">You've hit the 3-member limit on the Free plan. Upgrade to add Ahmed's mum and your nanny.</p>
+          </div>
+          <!-- Feature unlock list -->
+          <p style="font-family:'Fredoka One',cursive;font-size:12px;color:#374151;margin-bottom:6px;">Family plan unlocks:</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:4px;font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;"><span>✓</span> Unlimited members</div>
+            <div style="display:flex;align-items:center;gap:4px;font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;"><span>✓</span> Sticker economy</div>
+            <div style="display:flex;align-items:center;gap:4px;font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;"><span>✓</span> Maths AI module</div>
+            <div style="display:flex;align-items:center;gap:4px;font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;"><span>✓</span> Ramadan journal</div>
+            <div style="display:flex;align-items:center;gap:4px;font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;"><span>✓</span> All calendar features</div>
+            <div style="display:flex;align-items:center;gap:4px;font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;"><span>✓</span> Priority support</div>
+          </div>
+          <!-- Price -->
+          <div style="text-align:center;margin-bottom:10px;">
+            <span style="font-family:'Fredoka One',cursive;font-size:24px;color:#7c3aed;">$7.99</span>
+            <span style="font-family:'Nunito',sans-serif;font-size:11px;color:#6b7280;"> /month · or $69/year (save $26)</span>
+          </div>
+          <div class="neo-btn" style="width:100%;font-size:13px;background:#7c3aed;color:#fff;">Upgrade to Family →</div>
+          <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#9ca3af;text-align:center;margin-top:6px;">14-day free trial included. Cancel any time.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 13→14 -->
+  <div class="arrow-h-wrap" style="padding-top:80px;">
+    <div class="arrow-label">clicks "Upgrade"</div>
+    <div class="arrow-h" style="width:56px;">
+      <div class="arrow-h-shaft"></div>
+      <div class="arrow-h-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen 14: Stripe checkout ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S14 · Stripe Checkout (mock)<br><span style="font-weight:700;font-size:9px;">FHS-78 (Sprint 4)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">checkout.stripe.com/pay/cs_live_••••</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="display:flex;height:100%;">
+          <!-- Left: form -->
+          <div style="flex:1;padding:14px 14px;border-right:2px solid #e5e7eb;overflow-y:auto;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+              <div style="font-family:'Fredoka One',cursive;font-size:16px;color:#3d1065;">FamilyHub</div>
+              <span style="font-family:'Nunito',sans-serif;font-size:10px;color:#6b7280;">× Stripe</span>
+            </div>
+            <p style="font-family:'Fredoka One',cursive;font-size:13px;color:#374151;margin-bottom:10px;">Pay with card</p>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <div>
+                <label style="font-family:'Nunito',sans-serif;font-size:9px;font-weight:800;color:#374151;display:block;margin-bottom:2px;">Email</label>
+                <input class="neo-input" value="sara@mahmoud.ae" style="font-size:10px;">
+              </div>
+              <div>
+                <label style="font-family:'Nunito',sans-serif;font-size:9px;font-weight:800;color:#374151;display:block;margin-bottom:2px;">Card number</label>
+                <input class="neo-input" value="4242 4242 4242 4242" style="font-size:10px;">
+              </div>
+              <div style="display:flex;gap:6px;">
+                <div style="flex:1;">
+                  <label style="font-family:'Nunito',sans-serif;font-size:9px;font-weight:800;color:#374151;display:block;margin-bottom:2px;">Expiry</label>
+                  <input class="neo-input" value="08 / 28" style="font-size:10px;">
+                </div>
+                <div style="flex:1;">
+                  <label style="font-family:'Nunito',sans-serif;font-size:9px;font-weight:800;color:#374151;display:block;margin-bottom:2px;">CVC</label>
+                  <input class="neo-input" value="•••" style="font-size:10px;">
+                </div>
+              </div>
+              <div>
+                <label style="font-family:'Nunito',sans-serif;font-size:9px;font-weight:800;color:#374151;display:block;margin-bottom:2px;">Name on card</label>
+                <input class="neo-input" value="Sara Mahmoud" style="font-size:10px;">
+              </div>
+            </div>
+            <div class="neo-btn" style="width:100%;margin-top:12px;font-size:12px;background:#7c3aed;color:#fff;">Subscribe — $7.99/month</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:8px;justify-content:center;">
+              <span style="font-size:10px;">🔒</span>
+              <span style="font-family:'Nunito',sans-serif;font-size:9px;color:#9ca3af;">Secured by Stripe · Cancel any time</span>
+            </div>
+          </div>
+          <!-- Right: summary -->
+          <div style="width:38%;background:#f9fafb;padding:14px 12px;display:flex;flex-direction:column;gap:8px;">
+            <p style="font-family:'Fredoka One',cursive;font-size:13px;color:#3d1065;">Order summary</p>
+            <div class="neo-card" style="padding:8px 10px;background:#fef9c3;">
+              <p style="font-family:'Fredoka One',cursive;font-size:12px;color:#3d1065;margin-bottom:2px;">Family Plan</p>
+              <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#6b7280;">Billed monthly · The Mahmoud Family</p>
+            </div>
+            <div style="border-top:2px dashed #d1d5db;padding-top:8px;">
+              <div style="display:flex;justify-content:space-between;font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;margin-bottom:4px;">
+                <span>Family Plan × 1</span><span>$7.99</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-family:'Nunito',sans-serif;font-size:10px;color:#6b7280;margin-bottom:4px;">
+                <span>Tax (0% UAE)</span><span>$0.00</span>
+              </div>
+            </div>
+            <div style="border-top:2px solid #000;padding-top:8px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-family:'Fredoka One',cursive;font-size:13px;color:#374151;">Total today</span>
+              <span style="font-family:'Fredoka One',cursive;font-size:18px;color:#7c3aed;">$7.99</span>
+            </div>
+            <p style="font-family:'Nunito',sans-serif;font-size:8px;color:#9ca3af;">Renews 1 June 2026. Cancel before then for no charge.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 14→15 -->
+  <div class="arrow-h-wrap" style="padding-top:80px;">
+    <div class="arrow-label">payment succeeds</div>
+    <div class="arrow-h" style="width:56px;">
+      <div class="arrow-h-shaft"></div>
+      <div class="arrow-h-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Screen 15: Post-upgrade dashboard ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">S15 · Post-upgrade Dashboard<br><span style="font-weight:700;font-size:9px;">FHS-73 + FHS-47 (Sprint 4)</span></div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">mahmoud-family.familyhub.app</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="display:flex;height:100%;">
+          <div style="width:48px;background:#3d1065;display:flex;flex-direction:column;align-items:center;gap:12px;padding:10px 0;">
+            <div style="font-size:14px;">🏠</div><div style="font-size:14px;">📅</div><div style="font-size:14px;">✅</div><div style="font-size:14px;">👨‍👩‍👧‍👦</div><div style="font-size:14px;">⚙️</div>
+          </div>
+          <div style="flex:1;overflow-y:auto;">
+            <div style="background:#fafafa;padding:8px 12px;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
+              <p style="font-family:'Fredoka One',cursive;font-size:13px;color:#3d1065;margin:0;">The Mahmoud Family</p>
+              <div style="display:flex;gap:5px;align-items:center;">
+                <!-- Upgraded badge -->
+                <div style="background:#7c3aed;border:2px solid #000;border-radius:8px;padding:2px 8px;box-shadow:2px 2px 0 #000;">
+                  <span style="font-family:'Fredoka One',cursive;font-size:9px;color:#facc15;">Family Plan ✓</span>
+                </div>
+                <div style="display:flex;gap:-2px;">
+                  <div style="width:22px;height:22px;border-radius:50%;background:#7c3aed;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Fredoka One',cursive;color:#fff;">S</div>
+                  <div style="width:22px;height:22px;border-radius:50%;background:#0891b2;border:2px solid #fff;margin-left:-6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Fredoka One',cursive;color:#fff;">A</div>
+                </div>
+              </div>
+            </div>
+            <!-- Upgrade success toast -->
+            <div style="margin:8px 10px;background:#d1fae5;border:2px solid #000;border-radius:10px;padding:7px 10px;box-shadow:3px 3px 0 #000;display:flex;align-items:center;gap:6px;">
+              <span style="font-size:14px;">🎉</span>
+              <p style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#065f46;margin:0;">Welcome to Family! You can now invite unlimited members.</p>
+            </div>
+            <!-- Task list (richer) -->
+            <div style="padding:6px 12px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <p style="font-family:'Fredoka One',cursive;font-size:12px;color:#3d1065;margin:0;">Today's tasks</p>
+                <div class="neo-btn neo-btn-sm" style="font-size:9px;">+ Add task</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div class="neo-card" style="padding:5px 8px;display:flex;align-items:center;gap:6px;background:#d1fae5;">
+                  <input type="checkbox" checked style="width:13px;height:13px;accent-color:#059669;">
+                  <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;text-decoration:line-through;color:#6b7280;">School run — drop twins</span>
+                  <span class="neo-badge badge-green" style="margin-left:auto;">Done</span>
+                </div>
+                <div class="neo-card" style="padding:5px 8px;display:flex;align-items:center;gap:6px;">
+                  <input type="checkbox" style="width:13px;height:13px;">
+                  <div style="flex:1;"><span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#374151;">Book dental check-up — Yusuf</span>
+                  <div style="display:flex;gap:3px;margin-top:2px;"><span class="neo-badge badge-yellow">Sara</span><span class="neo-badge badge-blue">Today</span></div></div>
+                </div>
+                <div class="neo-card" style="padding:5px 8px;display:flex;align-items:center;gap:6px;background:#fce7f3;">
+                  <span style="font-size:12px;">⭐</span>
+                  <div style="flex:1;"><span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;color:#9d174d;">Hana completed Maths lesson!</span>
+                  <span class="neo-badge badge-pink" style="margin-top:2px;">+5 stickers earned</span></div>
+                </div>
+              </div>
+              <!-- Sticker economy unlocked callout -->
+              <div style="margin-top:8px;background:#fef9c3;border:2px solid #000;border-radius:10px;padding:7px 10px;box-shadow:2px 2px 0 #000;">
+                <p style="font-family:'Fredoka One',cursive;font-size:11px;color:#3d1065;margin-bottom:3px;">Sticker economy is now live!</p>
+                <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#374151;margin:0;">Set up rewards for your children — they earn stickers by completing habits and maths lessons. <span style="color:#7c3aed;font-weight:800;">Set up now →</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     GAPS & OPEN QUESTIONS
+═══════════════════════════════════════════ -->
+<div class="gaps-card" style="margin-top:40px;">
+  <h2 style="font-family:'Fredoka One',cursive;font-size:18px;color:#991b1b;margin-bottom:10px;">Gaps &amp; open questions</h2>
+  <div style="display:flex;flex-direction:column;gap:6px;">
+    <div style="display:flex;gap:8px;align-items:flex-start;">
+      <span class="neo-badge badge-red" style="margin-top:2px;white-space:nowrap;">BACKLOG GAP</span>
+      <p style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#374151;margin:0;"><strong>S12 — Notification settings</strong>: No FHS ticket exists for granular notification preferences (per-event-type push/email toggles on mobile). Needs a Sprint 3 or 5 ticket under the FHS-47 epic or a new one.</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-start;">
+      <span class="neo-badge badge-yellow" style="margin-top:2px;white-space:nowrap;">OPEN Q</span>
+      <p style="font-family:'Nunito',sans-serif;font-size:11px;color:#374151;margin:0;"><strong>Slug uniqueness UX</strong> (S5): what happens if the user's preferred slug is taken mid-onboarding? Design shows suggestions — but the suggestion algorithm (prefix / suffix / number?) is not yet specced. Needs a decision before FHS-29 implementation.</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-start;">
+      <span class="neo-badge badge-yellow" style="margin-top:2px;white-space:nowrap;">OPEN Q</span>
+      <p style="font-family:'Nunito',sans-serif;font-size:11px;color:#374151;margin:0;"><strong>Upgrade flow redirect</strong> (S13 → S14): Does Stripe Checkout open in a new tab or replace the current route? ADR 0004 defers to Stripe Checkout (hosted page), which means a tab-replace. Confirm UX impact — a new tab risks the parent losing their dashboard state.</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-start;">
+      <span class="neo-badge badge-yellow" style="margin-top:2px;white-space:nowrap;">OPEN Q</span>
+      <p style="font-family:'Nunito',sans-serif;font-size:11px;color:#374151;margin:0;"><strong>Mobile app screens</strong>: Screens 1–11 and 13–15 are web (laptop). Only S12 is mobile. No native iOS/Android sprint is currently scheduled in the Sprint 0–6 plan — all surfaces are mobile-web responsive. Flag if a native app changes the notification settings interaction model significantly.</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-start;">
+      <span class="neo-badge badge-blue" style="margin-top:2px;white-space:nowrap;">DESIGN NOTE</span>
+      <p style="font-family:'Nunito',sans-serif;font-size:11px;color:#374151;margin:0;"><strong>Error branches</strong>: S5 shows a dashed error hint for slug collision. S4 shows a wrong-email recovery note. Full error-state screens (form validation shake, server error) are annotated inline rather than as separate mockup frames to stay within token budget. Expand in the component-level spec.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════ -->
+<div style="text-align:center;margin-top:32px;padding-bottom:32px;">
+  <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#c4b5fd;opacity:0.7;">Source: positioning.md · saas-transformation.md · features/family-members.md · decisions/0004-stripe-billing.md · decisions/0001-multi-tenancy.md</p>
+  <p style="font-family:'Nunito',sans-serif;font-size:9px;color:#c4b5fd;opacity:0.5;margin-top:2px;">Family Hub Design System · Persona 1 of 4 · Coordinating Parent Journey</p>
+</div>
+
+</body>
+</html>

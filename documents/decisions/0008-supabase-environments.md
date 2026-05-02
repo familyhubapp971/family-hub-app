@@ -91,7 +91,7 @@ Steps:
    - `.env.local`, `.env.example` — collapse `_STAGING` and `_PRODUCTION`
      pairs back to a single set if we reorganise; otherwise rewrite
      `_STAGING` values to point at the branch.
-   - `docs/technical/deployment.md` — record the branch model.
+   - `documents/technical/deployment.md` — record the branch model.
    - This ADR — flip `Status:` to `superseded by NNNN` and write the
      superseding ADR documenting the branch-based topology.
    - Memory + Confluence "Architecture & multi-tenancy" page.

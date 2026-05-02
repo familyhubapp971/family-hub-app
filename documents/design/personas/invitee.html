@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Persona 4 — Invitee / Family Member · Family Hub Flow Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['"Fredoka One"', 'cursive'],
+        body: ['Nunito', 'sans-serif'],
+      },
+      boxShadow: {
+        'neo-xs': '1px 1px 0px 0px rgba(0,0,0,1)',
+        'neo-sm': '2px 2px 0px 0px rgba(0,0,0,1)',
+        'neo':    '3px 3px 0px 0px rgba(0,0,0,1)',
+        'neo-md': '4px 4px 0px 0px rgba(0,0,0,1)',
+        'neo-lg': '6px 6px 0px 0px rgba(0,0,0,1)',
+      },
+      colors: {
+        kingdom: { bg: '#3d1065' },
+      },
+    },
+  },
+};
+</script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Nunito', sans-serif; background-color: #3d1065; margin: 0; padding: 0; }
+  h1,h2,h3,h4,h5,h6 { font-family: 'Fredoka One', cursive; }
+
+  /* Phone frame */
+  .phone-frame {
+    width: 280px;
+    min-height: 540px;
+    background: #1a1a1a;
+    border-radius: 36px;
+    border: 3px solid #000;
+    box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-notch {
+    background: #1a1a1a;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .phone-notch-pill {
+    width: 80px;
+    height: 12px;
+    background: #000;
+    border-radius: 999px;
+  }
+  .phone-status {
+    background: #000;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+  .phone-screen {
+    flex: 1;
+    background: #fff;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-home-bar {
+    background: #fff;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .phone-home-pill {
+    width: 60px;
+    height: 4px;
+    background: #1a1a1a;
+    border-radius: 999px;
+  }
+
+  /* Neo-brutalist card */
+  .card {
+    background: #fff;
+    border: 2px solid #000;
+    border-radius: 12px;
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+  }
+  .card-yellow { background: #fef9c3; }
+  .card-pink   { background: #fce7f3; }
+  .card-cyan   { background: #cffafe; }
+  .card-lime   { background: #ecfccb; }
+
+  /* Button */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    border: 2px solid #000;
+    border-radius: 10px;
+    cursor: default;
+    font-family: 'Nunito', sans-serif;
+  }
+  .btn-primary   { background: #facc15; color: #000; box-shadow: 3px 3px 0px 0px rgba(0,0,0,1); }
+  .btn-secondary { background: #fff;    color: #000; box-shadow: 3px 3px 0px 0px rgba(0,0,0,1); }
+  .btn-danger    { background: #ef4444; color: #fff; box-shadow: 3px 3px 0px 0px rgba(0,0,0,1); }
+  .btn-success   { background: #a3e635; color: #000; box-shadow: 3px 3px 0px 0px rgba(0,0,0,1); }
+  .btn-google    { background: #fff; color: #000; box-shadow: 3px 3px 0px 0px rgba(0,0,0,1); }
+  .btn-apple     { background: #000; color: #fff; box-shadow: 3px 3px 0px 0px rgba(0,0,0,1); border-color: #000; }
+  .btn-sm  { padding: 4px 10px;  font-size: 10px; }
+  .btn-md  { padding: 8px 14px;  font-size: 12px; }
+  .btn-lg  { padding: 10px 16px; font-size: 13px; width: 100%; }
+  .btn-full { width: 100%; }
+
+  /* Badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 9px;
+    font-weight: 900;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-family: 'Nunito', sans-serif;
+    letter-spacing: 0.03em;
+  }
+  .badge-success  { background: #d1fae5; color: #065f46; }
+  .badge-warning  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .badge-danger   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .badge-info     { background: #dbeafe; color: #1e40af; }
+  .badge-default  { background: #f3f4f6; color: #374151; }
+
+  /* Input */
+  .input {
+    width: 100%;
+    font-size: 11px;
+    font-weight: 700;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 7px 10px;
+    background: #f9fafb;
+    font-family: 'Nunito', sans-serif;
+    color: #1f2937;
+    outline: none;
+  }
+  .input:focus { border-color: #f472b6; }
+
+  /* Ticket sticker */
+  .ticket-sticker {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #dbeafe;
+    color: #1e40af;
+    border: 2px solid #1e40af;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 900;
+    padding: 2px 7px;
+    font-family: 'Nunito', sans-serif;
+    letter-spacing: 0.04em;
+    box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+  }
+  .gap-sticker {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #dc2626;
+    box-shadow: 2px 2px 0px 0px rgba(220,38,38,0.6);
+    animation: pulse-border 2s infinite;
+  }
+  @keyframes pulse-border {
+    0%,100% { box-shadow: 2px 2px 0px 0px rgba(220,38,38,0.6); }
+    50%      { box-shadow: 2px 2px 0px 0px rgba(220,38,38,1), 0 0 0 3px rgba(220,38,38,0.15); }
+  }
+
+  /* Arrow */
+  .arrow-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    min-width: 80px;
+  }
+  .arrow-shaft {
+    width: 2px;
+    background: #000;
+    flex: 1;
+    min-height: 20px;
+  }
+  .arrow-h-shaft {
+    height: 3px;
+    background: #000;
+    flex: 1;
+    min-width: 24px;
+  }
+  .arrow-label {
+    font-size: 9px;
+    font-weight: 800;
+    color: #fff;
+    text-align: center;
+    background: #000;
+    border-radius: 4px;
+    padding: 2px 6px;
+    white-space: nowrap;
+    font-family: 'Nunito', sans-serif;
+    margin: 4px 0;
+    line-height: 1.3;
+    max-width: 90px;
+  }
+
+  /* Screen label */
+  .screen-label {
+    font-family: 'Fredoka One', cursive;
+    font-size: 13px;
+    color: #fef9c3;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  /* Family colour swatch */
+  .family-color { background: #7c3aed; }
+
+  /* Divider */
+  .section-divider {
+    border: none;
+    border-top: 3px solid rgba(255,255,255,0.12);
+    margin: 32px 0;
+  }
+
+  /* Lock screen */
+  .lockscreen-bg {
+    background: linear-gradient(160deg, #1e3a5f 0%, #0f172a 100%);
+  }
+
+  /* Avatar */
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: 2px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+
+  /* Row arrow (horizontal) */
+  .h-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    gap: 0;
+    min-width: 60px;
+    padding-top: 120px;
+  }
+
+  /* Tour dot indicators */
+  .tour-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    border: 2px solid #000;
+  }
+
+  /* Churn callout */
+  .churn-callout {
+    background: #fef2f2;
+    border: 3px solid #dc2626;
+    border-radius: 12px;
+    box-shadow: 4px 4px 0px 0px rgba(220,38,38,1);
+  }
+</style>
+</head>
+<body class="min-h-screen p-6 md:p-10">
+
+<!-- ============================================================ -->
+<!-- PERSONA CARD                                                  -->
+<!-- ============================================================ -->
+<div class="max-w-6xl mx-auto mb-8">
+  <div class="card card-yellow p-5" style="max-width:760px; margin: 0 auto;">
+    <div class="flex items-start gap-4 flex-wrap">
+      <div class="avatar" style="background:#fde68a; width:52px; height:52px; font-size:24px;">👤</div>
+      <div class="flex-1 min-w-[200px]">
+        <h1 style="font-size:22px; margin:0 0 2px; color:#1f2937;">Persona 4 — The Invitee / Family Member</h1>
+        <p style="font-size:12px; font-weight:700; color:#6b7280; margin:0 0 8px;">The spouse, kid, or grandparent who got pulled in by someone else's invite</p>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+          <span class="badge badge-info">Motivation: stay connected without extra effort</span>
+          <span class="badge badge-warning">Friction: "I didn't sign up — why should I care?"</span>
+        </div>
+        <p style="font-size:11px; color:#374151; margin:0; line-height:1.5;">
+          Examples: <strong>Yusuf (12, kid)</strong>, <strong>Amira (spouse, always busy)</strong>, <strong>Grandma Fatima (not tech-savvy)</strong>.
+          They range from a 12-year-old to a grandparent — the flow must work for all of them.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- CRITICAL CHURN CALLOUT                                        -->
+<!-- ============================================================ -->
+<div class="max-w-6xl mx-auto mb-10">
+  <div class="churn-callout p-5" style="max-width:760px; margin: 0 auto;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+      <span style="font-size:20px;">🚨</span>
+      <h2 style="font-size:16px; margin:0; color:#991b1b; font-family:'Fredoka One',cursive;">This persona's first 60 seconds determines Persona 1's retention.</h2>
+    </div>
+    <p style="font-size:11px; font-weight:700; color:#7f1d1d; margin:0; line-height:1.6;">
+      Every paying parent (Persona 1) needs to onboard 2–5 family members for Family Hub to deliver value.
+      If the invite-to-active-member flow is broken, confusing, or has gaps — the parent churns.
+      <strong>Every BACKLOG GAP below is a direct churn risk for paying customers.</strong>
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- FLOW BOARD                                                     -->
+<!-- ============================================================ -->
+<div class="max-w-6xl mx-auto">
+
+  <!-- ROW 1: Screens 1 → 2 → 3 -->
+  <div style="display:flex; align-items:flex-start; gap:0; flex-wrap:wrap; justify-content:center; margin-bottom:32px;">
+
+    <!-- SCREEN 1: Email Invite -->
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="screen-label">1. Email Invite</div>
+      <div style="display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; justify-content:center;">
+        <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+        <span class="ticket-sticker">FHS-90 (Sprint 5)</span>
+      </div>
+      <div class="phone-frame" style="min-height:580px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="phone-status">
+          <span>9:41</span><span>📶 🔋</span>
+        </div>
+        <!-- Gmail-style inbox -->
+        <div class="phone-screen" style="background:#f1f3f4;">
+          <!-- Gmail header -->
+          <div style="background:#fff; padding:8px 10px; border-bottom:1px solid #e0e0e0; display:flex; align-items:center; gap:6px;">
+            <div style="font-size:18px; color:#ea4335; font-family:'Fredoka One',cursive;">M</div>
+            <div style="flex:1; background:#e8eaed; border-radius:20px; padding:4px 10px; font-size:9px; color:#5f6368; font-weight:700;">Search in mail</div>
+          </div>
+          <!-- Inbox label -->
+          <div style="padding:6px 10px 3px; font-size:9px; font-weight:900; color:#3c4043;">Primary</div>
+          <!-- Inbox row — highlighted -->
+          <div style="background:#fff; border-left:3px solid #7c3aed; padding:8px 10px; border-bottom:1px solid #e0e0e0;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+              <div class="avatar" style="background:#7c3aed; color:#fff; font-size:11px; width:24px; height:24px;">FH</div>
+              <span style="font-size:10px; font-weight:900; color:#202124; flex:1;">Family Hub</span>
+              <span style="font-size:8px; color:#5f6368;">now</span>
+            </div>
+            <div style="font-size:10px; font-weight:800; color:#202124; margin-bottom:1px;">Sarah invited you to The Khan Family Hub 🏠</div>
+            <div style="font-size:9px; color:#5f6368;">Hi Yusuf! Your family is waiting — tap to join your family's</div>
+          </div>
+          <!-- Other inbox rows (dimmed) -->
+          <div style="padding:7px 10px; border-bottom:1px solid #e0e0e0; opacity:0.4;">
+            <div style="font-size:9px; font-weight:700; color:#5f6368;">Promotions · 3</div>
+          </div>
+          <div style="padding:7px 10px; border-bottom:1px solid #e0e0e0; opacity:0.4;">
+            <div style="font-size:9px; font-weight:700; color:#5f6368;">Updates</div>
+          </div>
+
+          <!-- Opened email below -->
+          <div style="flex:1; background:#fff; padding:10px; overflow:hidden;">
+            <div style="text-align:center; margin-bottom:8px;">
+              <!-- Family Hub logo banner -->
+              <div style="background:#7c3aed; border:2px solid #000; border-radius:10px; padding:8px; margin-bottom:8px; box-shadow:3px 3px 0 #000;">
+                <div style="font-family:'Fredoka One',cursive; font-size:16px; color:#fef9c3; margin-bottom:2px;">Family Hub</div>
+                <div style="font-size:8px; color:#e9d5ff; font-weight:700;">Your family, connected.</div>
+              </div>
+              <!-- Family avatar -->
+              <div style="display:flex; justify-content:center; gap:-6px; margin-bottom:6px;">
+                <div class="avatar" style="background:#fde68a; font-size:13px; z-index:3;">👩</div>
+                <div class="avatar" style="background:#bfdbfe; font-size:13px; margin-left:-8px; z-index:2;">👦</div>
+                <div class="avatar" style="background:#fce7f3; font-size:13px; margin-left:-8px; z-index:1;">👴</div>
+              </div>
+              <div style="font-family:'Fredoka One',cursive; font-size:13px; color:#1f2937; margin-bottom:3px;">Sarah invited you!</div>
+              <div style="font-size:9px; color:#6b7280; font-weight:700; margin-bottom:8px; line-height:1.4;">
+                Join <strong>The Khan Family Hub</strong> to see your shared tasks, calendar, and messages.
+              </div>
+              <button class="btn btn-primary btn-lg" style="font-size:12px; padding:9px 14px; border-radius:10px;">✉ Accept Invite</button>
+              <div style="margin-top:6px;">
+                <span style="font-size:8px; color:#9ca3af; font-weight:700; text-decoration:underline; cursor:default;">Decline invite</span>
+              </div>
+              <div style="margin-top:8px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:6px; text-align:left;">
+                <div style="font-size:8px; font-weight:900; color:#374151; margin-bottom:3px;">What you'll see:</div>
+                <div style="font-size:8px; color:#6b7280; font-weight:700; line-height:1.6;">📅 Family calendar &nbsp; ✅ Shared tasks<br/>💬 Family messages &nbsp; 📸 Memories</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="phone-home-pill"></div></div>
+      </div>
+    </div>
+
+    <!-- ARROW 1→2 -->
+    <div class="h-arrow">
+      <div class="arrow-h-shaft"></div>
+      <div style="font-size:18px; line-height:1;">▶</div>
+      <div class="arrow-label" style="position:absolute; transform:translateY(-28px);">taps "Accept Invite"</div>
+    </div>
+
+    <!-- SCREEN 2: Invite-aware landing -->
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="screen-label">2. Invite Landing Page</div>
+      <div style="display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; justify-content:center;">
+        <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+        <span class="ticket-sticker">FHS-90 (Sprint 5)</span>
+      </div>
+      <div class="phone-frame" style="min-height:580px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="phone-status"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="phone-screen" style="background:#7c3aed; display:flex; flex-direction:column; align-items:center; padding:14px 12px;">
+          <!-- Family branding -->
+          <div style="font-family:'Fredoka One',cursive; font-size:11px; color:#e9d5ff; margin-bottom:10px; letter-spacing:0.05em;">FAMILY HUB</div>
+          <!-- Family name hero -->
+          <div style="background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.4); border-radius:14px; padding:12px 10px; text-align:center; width:100%; margin-bottom:10px;">
+            <div style="display:flex; justify-content:center; margin-bottom:8px;">
+              <div style="background:#fde68a; border:2px solid #000; border-radius:999px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:3px 3px 0 #000;">🏠</div>
+            </div>
+            <div style="font-family:'Fredoka One',cursive; font-size:18px; color:#fff; margin-bottom:3px;">The Khan Family Hub</div>
+            <div style="font-size:10px; color:#e9d5ff; font-weight:700;">Sarah is inviting you to join</div>
+          </div>
+          <!-- Member avatars -->
+          <div style="display:flex; gap:4px; margin-bottom:10px;">
+            <div style="text-align:center;">
+              <div class="avatar" style="background:#fde68a; font-size:16px; margin:0 auto 3px;">👩</div>
+              <div style="font-size:8px; font-weight:800; color:#e9d5ff;">Sarah</div>
+            </div>
+            <div style="text-align:center; opacity:0.6;">
+              <div class="avatar" style="background:#bfdbfe; font-size:16px; margin:0 auto 3px;">👦</div>
+              <div style="font-size:8px; font-weight:800; color:#e9d5ff;">Omar</div>
+            </div>
+            <div style="text-align:center; opacity:0.6;">
+              <div class="avatar" style="background:#fce7f3; font-size:16px; margin:0 auto 3px;">👴</div>
+              <div style="font-size:8px; font-weight:800; color:#e9d5ff;">Baba</div>
+            </div>
+          </div>
+          <!-- Preview cards -->
+          <div style="width:100%; margin-bottom:10px;">
+            <div style="font-size:8px; font-weight:900; color:#e9d5ff; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.06em;">You'll be able to see</div>
+            <div style="display:flex; gap:5px;">
+              <div style="flex:1; background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:6px; text-align:center;">
+                <div style="font-size:16px; margin-bottom:2px;">📅</div>
+                <div style="font-size:8px; font-weight:800; color:#fff;">Calendar</div>
+              </div>
+              <div style="flex:1; background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:6px; text-align:center;">
+                <div style="font-size:16px; margin-bottom:2px;">✅</div>
+                <div style="font-size:8px; font-weight:800; color:#fff;">Tasks</div>
+              </div>
+              <div style="flex:1; background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:6px; text-align:center;">
+                <div style="font-size:16px; margin-bottom:2px;">💬</div>
+                <div style="font-size:8px; font-weight:800; color:#fff;">Chat</div>
+              </div>
+            </div>
+          </div>
+          <!-- CTAs -->
+          <button class="btn btn-primary btn-lg" style="margin-bottom:7px; font-size:13px;">Join The Khan Family Hub</button>
+          <button class="btn btn-secondary btn-lg" style="font-size:11px; box-shadow:2px 2px 0 #000;">No thanks, decline</button>
+          <div style="margin-top:8px; font-size:8px; color:#c4b5fd; font-weight:700; text-align:center; line-height:1.4;">
+            Invited by Sarah Khan · This link expires in 7 days
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="phone-home-pill"></div></div>
+      </div>
+    </div>
+
+    <!-- ARROW 2→3 -->
+    <div class="h-arrow">
+      <div class="arrow-h-shaft"></div>
+      <div style="font-size:18px; line-height:1;">▶</div>
+      <div class="arrow-label" style="position:absolute; transform:translateY(-28px);">taps "Join"</div>
+    </div>
+
+    <!-- SCREEN 3: Account create -->
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="screen-label">3. Create Account</div>
+      <div style="display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; justify-content:center;">
+        <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+        <span class="ticket-sticker">FHS-90 (Sprint 5)</span>
+        <span class="ticket-sticker">FHS-29 (Sprint 2)</span>
+      </div>
+      <div class="phone-frame" style="min-height:580px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="phone-status"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="phone-screen" style="padding:14px 12px;">
+          <!-- Header -->
+          <div style="text-align:center; margin-bottom:14px;">
+            <div style="font-family:'Fredoka One',cursive; font-size:17px; color:#1f2937; margin-bottom:2px;">Create your account</div>
+            <div style="font-size:9px; color:#6b7280; font-weight:700;">Joining <strong style="color:#7c3aed;">The Khan Family Hub</strong></div>
+          </div>
+          <!-- Form -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+            <div>
+              <label style="font-size:9px; font-weight:900; color:#374151; display:block; margin-bottom:3px;">Full name</label>
+              <div class="input" style="display:flex; align-items:center; color:#1f2937; background:#f3f4f6; border-color:#d1d5db;">Yusuf Khan</div>
+              <div style="font-size:8px; color:#9ca3af; font-weight:700; margin-top:2px;">Pre-filled from invite</div>
+            </div>
+            <div>
+              <label style="font-size:9px; font-weight:900; color:#374151; display:block; margin-bottom:3px;">Email address</label>
+              <div class="input" style="color:#1f2937; background:#f3f4f6; border-color:#d1d5db;">yusuf@gmail.com</div>
+              <div style="font-size:8px; color:#9ca3af; font-weight:700; margin-top:2px;">Pre-filled from invite</div>
+            </div>
+            <div>
+              <label style="font-size:9px; font-weight:900; color:#374151; display:block; margin-bottom:3px;">Choose a password</label>
+              <div class="input" style="letter-spacing:4px; color:#374151;">••••••••</div>
+              <div style="font-size:8px; color:#9ca3af; font-weight:700; margin-top:2px;">Min. 8 characters</div>
+            </div>
+          </div>
+          <!-- No subdomain/family name fields — joining, not creating -->
+          <div style="background:#ecfccb; border:2px solid #000; border-radius:8px; padding:7px 9px; margin-bottom:12px; box-shadow:2px 2px 0 #000;">
+            <div style="font-size:8px; font-weight:900; color:#365314; line-height:1.4;">
+              ✅ No need to set up a family space — you're joining Sarah's.
+            </div>
+          </div>
+          <button class="btn btn-primary btn-lg" style="font-size:13px; margin-bottom:7px;">Create your account</button>
+          <div style="text-align:center; font-size:9px; color:#9ca3af; font-weight:700;">
+            Already have an account? <span style="color:#7c3aed; font-weight:900; text-decoration:underline;">Sign in</span>
+          </div>
+          <div style="margin-top:10px; text-align:center;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+              <div style="flex:1; height:1px; background:#e5e7eb;"></div>
+              <span style="font-size:8px; font-weight:700; color:#9ca3af;">or</span>
+              <div style="flex:1; height:1px; background:#e5e7eb;"></div>
+            </div>
+            <button class="btn btn-google btn-lg" style="font-size:11px; gap:6px; margin-bottom:5px;">
+              <span style="font-size:13px;">G</span> Continue with Google
+            </button>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="phone-home-pill"></div></div>
+      </div>
+    </div>
+
+  </div><!-- END ROW 1 -->
+
+  <!-- ROW 1→2 CONNECTOR ARROW (vertical) -->
+  <div style="display:flex; justify-content:center; margin-bottom:8px;">
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div style="width:2px; height:20px; background:#facc15;"></div>
+      <div style="font-size:18px; line-height:1; color:#facc15; transform:rotate(90deg);">▶</div>
+      <div class="arrow-label">submits form</div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Screens 4 → 5 → 6 → 7 -->
+  <div style="display:flex; align-items:flex-start; gap:0; flex-wrap:wrap; justify-content:center; margin-bottom:32px;">
+
+    <!-- SCREEN 4: Auth choice -->
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="screen-label">4. Auth Choice</div>
+      <div style="display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; justify-content:center;">
+        <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+        <span class="ticket-sticker">FHS-97 (Sprint 5)</span>
+        <span class="ticket-sticker">FHS-191</span>
+      </div>
+      <div class="phone-frame" style="min-height:560px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="phone-status"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="phone-screen" style="padding:18px 14px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <!-- Logo -->
+          <div style="background:#7c3aed; border:2px solid #000; border-radius:12px; padding:10px 16px; margin-bottom:16px; box-shadow:3px 3px 0 #000; text-align:center;">
+            <div style="font-family:'Fredoka One',cursive; font-size:18px; color:#fef9c3;">Family Hub</div>
+          </div>
+          <div style="font-family:'Fredoka One',cursive; font-size:16px; color:#1f2937; margin-bottom:4px; text-align:center;">How do you want to sign in?</div>
+          <div style="font-size:9px; color:#6b7280; font-weight:700; margin-bottom:18px; text-align:center;">Joining The Khan Family Hub</div>
+
+          <!-- Auth options -->
+          <div style="width:100%; display:flex; flex-direction:column; gap:8px;">
+            <button class="btn btn-google btn-lg" style="font-size:12px; display:flex; align-items:center; gap:8px; justify-content:center;">
+              <div style="width:18px; height:18px; background:#ea4335; border-radius:999px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:900;">G</div>
+              Continue with Google
+            </button>
+            <button class="btn btn-apple btn-lg" style="font-size:12px; display:flex; align-items:center; gap:8px; justify-content:center;">
+              <span style="font-size:14px;"></span> Continue with Apple
+            </button>
+            <div style="display:flex; align-items:center; gap:6px; margin:2px 0;">
+              <div style="flex:1; height:1px; background:#e5e7eb;"></div>
+              <span style="font-size:8px; font-weight:700; color:#9ca3af;">or</span>
+              <div style="flex:1; height:1px; background:#e5e7eb;"></div>
+            </div>
+            <button class="btn btn-secondary btn-lg" style="font-size:12px;">✉ Use email + password</button>
+          </div>
+
+          <div style="margin-top:14px; background:#fef9c3; border:2px solid #000; border-radius:8px; padding:8px 10px; box-shadow:2px 2px 0 #000; text-align:center; width:100%;">
+            <div style="font-size:8px; font-weight:900; color:#78350f; line-height:1.4;">
+              👴 Grandma Fatima? Google sign-in takes 2 taps — no password to remember.
+            </div>
+          </div>
+
+          <div style="margin-top:10px; font-size:8px; color:#9ca3af; font-weight:700; text-align:center; line-height:1.4;">
+            By continuing you agree to our Terms & Privacy Policy
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="phone-home-pill"></div></div>
+      </div>
+    </div>
+
+    <!-- ARROW 4→5 -->
+    <div class="h-arrow">
+      <div class="arrow-h-shaft"></div>
+      <div style="font-size:18px; line-height:1;">▶</div>
+      <div class="arrow-label" style="position:absolute; transform:translateY(-28px);">auth succeeds</div>
+    </div>
+
+    <!-- SCREEN 5: Tour slide 1 -->
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="screen-label">5. Tour — Slide 1 / 3</div>
+      <div style="display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; justify-content:center;">
+        <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+        <span class="ticket-sticker">FHS-23 (Sprint 2)</span>
+      </div>
+      <div class="phone-frame" style="min-height:560px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="phone-status"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="phone-screen" style="background:#7c3aed; padding:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between;">
+          <!-- Illustration area -->
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px 16px 10px;">
+            <!-- Rolling avatars illustration -->
+            <div style="display:flex; align-items:flex-end; gap:-4px; margin-bottom:14px; animation: none;">
+              <div class="avatar" style="background:#fde68a; font-size:20px; width:44px; height:44px; border-color:#fff;">👩</div>
+              <div class="avatar" style="background:#bfdbfe; font-size:20px; width:44px; height:44px; border-color:#fff; margin-left:-6px;">👧</div>
+              <div class="avatar" style="background:#fce7f3; font-size:20px; width:44px; height:44px; border-color:#fff; margin-left:-6px;">👦</div>
+              <div class="avatar" style="background:#ecfccb; font-size:20px; width:44px; height:44px; border-color:#fff; margin-left:-6px;">👴</div>
+            </div>
+            <div style="font-family:'Fredoka One',cursive; font-size:22px; color:#fff; text-align:center; margin-bottom:8px; line-height:1.2;">
+              Welcome to your family hub, Yusuf!
+            </div>
+            <div style="font-size:11px; color:#e9d5ff; font-weight:700; text-align:center; line-height:1.5;">
+              You've joined <strong style="color:#fef9c3;">The Khan Family Hub</strong>.<br/>
+              Here's a quick look at what's inside.
+            </div>
+          </div>
+          <!-- Bottom controls -->
+          <div style="padding:14px 16px; width:100%;">
+            <!-- Dot indicators -->
+            <div style="display:flex; justify-content:center; gap:6px; margin-bottom:12px;">
+              <div class="tour-dot" style="background:#fff;"></div>
+              <div class="tour-dot" style="background:rgba(255,255,255,0.35);"></div>
+              <div class="tour-dot" style="background:rgba(255,255,255,0.35);"></div>
+            </div>
+            <button class="btn btn-primary btn-lg" style="font-size:13px;">Next →</button>
+            <div style="text-align:center; margin-top:7px;">
+              <span style="font-size:9px; color:#c4b5fd; font-weight:700; text-decoration:underline; cursor:default;">Skip tour</span>
+            </div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="phone-home-pill" style="background:#c4b5fd;"></div></div>
+      </div>
+    </div>
+
+    <!-- ARROW 5→6 -->
+    <div class="h-arrow">
+      <div class="arrow-h-shaft"></div>
+      <div style="font-size:18px; line-height:1;">▶</div>
+      <div class="arrow-label" style="position:absolute; transform:translateY(-28px);">taps "Next →"</div>
+    </div>
+
+    <!-- SCREEN 6: Tour slide 2 -->
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="screen-label">6. Tour — Slide 2 / 3</div>
+      <div style="display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; justify-content:center;">
+        <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+        <span class="ticket-sticker">FHS-23 (Sprint 2)</span>
+      </div>
+      <div class="phone-frame" style="min-height:560px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="phone-status"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="phone-screen" style="background:#fce7f3; padding:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between;">
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px 14px 10px;">
+            <!-- Calendar peek illustration -->
+            <div style="background:#fff; border:2px solid #000; border-radius:12px; box-shadow:4px 4px 0 #000; padding:10px; width:100%; margin-bottom:12px;">
+              <div style="font-family:'Fredoka One',cursive; font-size:12px; color:#1f2937; margin-bottom:6px;">This week</div>
+              <!-- Mini calendar rows -->
+              <div style="display:flex; gap:3px; margin-bottom:5px;">
+                <div style="flex:1; background:#fde68a; border:1px solid #000; border-radius:6px; padding:4px; text-align:center; font-size:8px; font-weight:900; box-shadow:1px 1px 0 #000;">
+                  <div style="color:#6b7280; font-size:7px;">MON</div>
+                  <div>Football</div>
+                </div>
+                <div style="flex:1; background:#bfdbfe; border:1px solid #000; border-radius:6px; padding:4px; text-align:center; font-size:8px; font-weight:900; box-shadow:1px 1px 0 #000;">
+                  <div style="color:#6b7280; font-size:7px;">WED</div>
+                  <div>Doctor</div>
+                </div>
+                <div style="flex:1; background:#ecfccb; border:1px solid #000; border-radius:6px; padding:4px; text-align:center; font-size:8px; font-weight:900; box-shadow:1px 1px 0 #000;">
+                  <div style="color:#6b7280; font-size:7px;">FRI</div>
+                  <div>Dinner</div>
+                </div>
+              </div>
+              <div style="background:#fce7f3; border:2px solid #000; border-radius:8px; padding:5px 7px; box-shadow:2px 2px 0 #000;">
+                <div style="font-size:8px; font-weight:900; color:#9d174d;">📌 Today: Pick up Yusuf from school — 3pm</div>
+              </div>
+            </div>
+            <div style="font-family:'Fredoka One',cursive; font-size:20px; color:#1f2937; text-align:center; margin-bottom:6px; line-height:1.2;">
+              Here's what's coming up this week
+            </div>
+            <div style="font-size:10px; color:#6b7280; font-weight:700; text-align:center; line-height:1.5;">
+              The family calendar keeps everyone on the same page — no more missed pickups or forgotten appointments.
+            </div>
+          </div>
+          <div style="padding:14px 16px; width:100%;">
+            <div style="display:flex; justify-content:center; gap:6px; margin-bottom:12px;">
+              <div class="tour-dot" style="background:rgba(0,0,0,0.2);"></div>
+              <div class="tour-dot" style="background:#000;"></div>
+              <div class="tour-dot" style="background:rgba(0,0,0,0.2);"></div>
+            </div>
+            <button class="btn btn-primary btn-lg" style="font-size:13px;">Next →</button>
+            <div style="text-align:center; margin-top:7px;">
+              <span style="font-size:9px; color:#9ca3af; font-weight:700; text-decoration:underline; cursor:default;">Skip tour</span>
+            </div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="phone-home-pill"></div></div>
+      </div>
+    </div>
+
+    <!-- ARROW 6→7 -->
+    <div class="h-arrow">
+      <div class="arrow-h-shaft"></div>
+      <div style="font-size:18px; line-height:1;">▶</div>
+      <div class="arrow-label" style="position:absolute; transform:translateY(-28px);">taps "Next →"</div>
+    </div>
+
+    <!-- SCREEN 7: Tour slide 3 -->
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="screen-label">7. Tour — Slide 3 / 3</div>
+      <div style="display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; justify-content:center;">
+        <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+        <span class="ticket-sticker">FHS-23 (Sprint 2)</span>
+      </div>
+      <div class="phone-frame" style="min-height:560px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="phone-status"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="phone-screen" style="background:#ecfccb; padding:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between;">
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px 14px 10px;">
+            <!-- Arrow pointing to + button illustration -->
+            <div style="position:relative; width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:12px;">
+              <!-- Mock bottom bar with + button highlighted -->
+              <div style="background:#fff; border:2px solid #000; border-radius:12px; box-shadow:3px 3px 0 #000; padding:10px 14px; width:100%; display:flex; align-items:center; justify-content:space-around; margin-bottom:8px;">
+                <div style="font-size:16px; opacity:0.4;">🏠</div>
+                <div style="font-size:16px; opacity:0.4;">📅</div>
+                <div style="background:#facc15; border:2px solid #000; border-radius:999px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; box-shadow:3px 3px 0 #000; animation: bounce-hint 1.5s infinite;">+</div>
+                <div style="font-size:16px; opacity:0.4;">✅</div>
+                <div style="font-size:16px; opacity:0.4;">💬</div>
+              </div>
+              <!-- Arrow pointing up -->
+              <div style="display:flex; flex-direction:column; align-items:center; margin-top:-4px;">
+                <div style="width:2px; height:24px; background:#000;"></div>
+                <div style="font-size:14px; margin-top:-6px; transform:rotate(-90deg);">◀</div>
+              </div>
+              <div style="background:#000; color:#fef9c3; font-family:'Fredoka One',cursive; font-size:11px; border-radius:8px; padding:4px 10px; margin-top:4px;">Tap here to add your first thing</div>
+            </div>
+            <div style="font-family:'Fredoka One',cursive; font-size:20px; color:#1f2937; text-align:center; margin-bottom:6px; line-height:1.2;">
+              You're all set!
+            </div>
+            <div style="font-size:10px; color:#6b7280; font-weight:700; text-align:center; line-height:1.5;">
+              Add tasks, check the calendar, or send a message to your family. Hit the <strong>+</strong> to get started.
+            </div>
+          </div>
+          <div style="padding:14px 16px; width:100%;">
+            <div style="display:flex; justify-content:center; gap:6px; margin-bottom:12px;">
+              <div class="tour-dot" style="background:rgba(0,0,0,0.2);"></div>
+              <div class="tour-dot" style="background:rgba(0,0,0,0.2);"></div>
+              <div class="tour-dot" style="background:#000;"></div>
+            </div>
+            <button class="btn btn-success btn-lg" style="font-size:13px; border:2px solid #000;">Get started!</button>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="phone-home-pill"></div></div>
+      </div>
+    </div>
+
+  </div><!-- END ROW 2 -->
+
+  <!-- ROW 2→3 CONNECTOR -->
+  <div style="display:flex; justify-content:center; margin-bottom:8px;">
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div style="width:2px; height:20px; background:#facc15;"></div>
+      <div style="font-size:18px; line-height:1; color:#facc15; transform:rotate(90deg);">▶</div>
+      <div class="arrow-label">taps "Get started!"</div>
+    </div>
+  </div>
+
+  <!-- ROW 3: Screens 8 → 9 → 10 -->
+  <div style="display:flex; align-items:flex-start; gap:0; flex-wrap:wrap; justify-content:center; margin-bottom:40px;">
+
+    <!-- SCREEN 8: Dashboard with first shared task -->
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="screen-label">8. Dashboard — First Task</div>
+      <div style="display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; justify-content:center;">
+        <span class="ticket-sticker">FHS-1 (Sprint 1)</span>
+        <span class="ticket-sticker">FHS-12</span>
+      </div>
+      <div class="phone-frame" style="min-height:580px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="phone-status"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="phone-screen" style="background:#f9fafb; display:flex; flex-direction:column;">
+          <!-- App header -->
+          <div style="background:#7c3aed; padding:10px 12px 8px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-family:'Fredoka One',cursive; font-size:14px; color:#fff; line-height:1;">The Khan Family Hub</div>
+              <div style="font-size:8px; color:#e9d5ff; font-weight:700;">Hi Yusuf! 👋</div>
+            </div>
+            <div style="display:flex; gap:-4px;">
+              <div class="avatar" style="background:#fde68a; font-size:11px; width:24px; height:24px;">Y</div>
+            </div>
+          </div>
+          <!-- Content -->
+          <div style="flex:1; padding:10px; overflow:hidden; display:flex; flex-direction:column; gap:8px;">
+            <!-- Quick summary -->
+            <div style="display:flex; gap:5px;">
+              <div style="flex:1; background:#fff; border:2px solid #000; border-radius:10px; padding:7px; box-shadow:3px 3px 0 #000; text-align:center;">
+                <div style="font-family:'Fredoka One',cursive; font-size:18px; color:#7c3aed;">1</div>
+                <div style="font-size:7px; font-weight:800; color:#6b7280;">Task for you</div>
+              </div>
+              <div style="flex:1; background:#fff; border:2px solid #000; border-radius:10px; padding:7px; box-shadow:3px 3px 0 #000; text-align:center;">
+                <div style="font-family:'Fredoka One',cursive; font-size:18px; color:#16a34a;">3</div>
+                <div style="font-size:7px; font-weight:800; color:#6b7280;">Events this week</div>
+              </div>
+              <div style="flex:1; background:#fff; border:2px solid #000; border-radius:10px; padding:7px; box-shadow:3px 3px 0 #000; text-align:center;">
+                <div style="font-family:'Fredoka One',cursive; font-size:18px; color:#ea580c;">2</div>
+                <div style="font-size:7px; font-weight:800; color:#6b7280;">New messages</div>
+              </div>
+            </div>
+            <!-- Tasks section -->
+            <div>
+              <div style="font-family:'Fredoka One',cursive; font-size:13px; color:#1f2937; margin-bottom:5px;">Your tasks</div>
+              <!-- FIRST assigned task — highlighted -->
+              <div style="background:#fef9c3; border:2px solid #000; border-radius:10px; padding:9px 10px; box-shadow:4px 4px 0 #000; margin-bottom:5px; position:relative;">
+                <div style="display:flex; align-items:center; gap:7px; margin-bottom:4px;">
+                  <div style="width:18px; height:18px; border:2px solid #000; border-radius:5px; background:#fff; flex-shrink:0;"></div>
+                  <div style="font-size:11px; font-weight:900; color:#1f2937; flex:1;">Pick up groceries 🛒</div>
+                  <span class="badge badge-warning" style="font-size:8px;">Today</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; margin-left:25px;">
+                  <div class="avatar" style="background:#fde68a; font-size:8px; width:16px; height:16px;">👩</div>
+                  <div style="font-size:8px; color:#6b7280; font-weight:700;">Assigned by Sarah</div>
+                </div>
+                <!-- Tooltip arrow -->
+                <div style="position:absolute; top:-22px; right:10px; background:#000; color:#fef9c3; font-size:8px; font-weight:900; padding:3px 7px; border-radius:5px; font-family:'Nunito',sans-serif; white-space:nowrap;">Tap to mark done ↓</div>
+              </div>
+              <!-- Empty state hint -->
+              <div style="background:#fff; border:2px dashed #d1d5db; border-radius:10px; padding:7px 10px; text-align:center;">
+                <div style="font-size:9px; color:#9ca3af; font-weight:700;">+ Add a task for yourself</div>
+              </div>
+            </div>
+            <!-- Calendar peek -->
+            <div>
+              <div style="font-family:'Fredoka One',cursive; font-size:13px; color:#1f2937; margin-bottom:5px;">This week</div>
+              <div style="background:#fff; border:2px solid #000; border-radius:10px; padding:7px; box-shadow:2px 2px 0 #000;">
+                <div style="display:flex; gap:3px;">
+                  <div style="flex:1; background:#bfdbfe; border:1px solid #000; border-radius:5px; padding:3px; text-align:center; font-size:7px; font-weight:900;">
+                    <div style="color:#6b7280;">MON</div>Football
+                  </div>
+                  <div style="flex:1; background:#fce7f3; border:1px solid #000; border-radius:5px; padding:3px; text-align:center; font-size:7px; font-weight:900;">
+                    <div style="color:#6b7280;">WED</div>Doctor
+                  </div>
+                  <div style="flex:1; background:#ecfccb; border:1px solid #000; border-radius:5px; padding:3px; text-align:center; font-size:7px; font-weight:900;">
+                    <div style="color:#6b7280;">FRI</div>Family Dinner
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Bottom nav -->
+          <div style="background:#fff; border-top:2px solid #000; padding:6px 0; display:flex; justify-content:space-around; align-items:center; flex-shrink:0;">
+            <div style="text-align:center; opacity:0.5; font-size:16px;">🏠</div>
+            <div style="text-align:center; opacity:0.5; font-size:16px;">📅</div>
+            <div style="background:#facc15; border:2px solid #000; border-radius:999px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; box-shadow:2px 2px 0 #000;">+</div>
+            <div style="text-align:center; opacity:0.5; font-size:16px;">✅</div>
+            <div style="text-align:center; opacity:0.5; font-size:16px;">💬</div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="phone-home-pill"></div></div>
+      </div>
+    </div>
+
+    <!-- ARROW 8→9 -->
+    <div class="h-arrow">
+      <div class="arrow-h-shaft"></div>
+      <div style="font-size:18px; line-height:1;">▶</div>
+      <div class="arrow-label" style="position:absolute; transform:translateY(-28px);">background — push sent</div>
+    </div>
+
+    <!-- SCREEN 9: Push notification lock screen -->
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="screen-label">9. Push Notification</div>
+      <div style="display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; justify-content:center;">
+        <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+        <span style="font-size:9px; font-weight:900; color:#fff; font-family:'Nunito',sans-serif;">No ticket — push infra not scoped</span>
+      </div>
+      <div class="phone-frame" style="min-height:580px;">
+        <div class="phone-notch"><div class="phone-notch-pill" style="background:#555;"></div></div>
+        <div class="phone-status" style="background:#1e3a5f;"><span>11:23</span><span>📶 🔋</span></div>
+        <div class="phone-screen lockscreen-bg" style="display:flex; flex-direction:column; padding:0; overflow:hidden;">
+          <!-- Lock screen header -->
+          <div style="text-align:center; padding:20px 16px 10px; flex-shrink:0;">
+            <div style="font-size:32px; font-weight:200; color:#fff; font-family:'Nunito',sans-serif; line-height:1;">11:23</div>
+            <div style="font-size:11px; color:rgba(255,255,255,0.6); font-weight:700; font-family:'Nunito',sans-serif;">Thursday, 1 May</div>
+          </div>
+          <!-- Notification cards -->
+          <div style="padding:0 12px; flex:1;">
+            <!-- Family Hub notification -->
+            <div style="background:rgba(255,255,255,0.18); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.3); border-radius:14px; padding:10px 12px; margin-bottom:8px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <div style="background:#7c3aed; border-radius:7px; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:12px;">🏠</div>
+                <div style="flex:1;">
+                  <span style="font-size:9px; font-weight:900; color:rgba(255,255,255,0.9); font-family:'Nunito',sans-serif; text-transform:uppercase; letter-spacing:0.04em;">Family Hub</span>
+                </div>
+                <span style="font-size:8px; color:rgba(255,255,255,0.5); font-family:'Nunito',sans-serif;">now</span>
+              </div>
+              <div style="font-size:11px; font-weight:900; color:#fff; font-family:'Nunito',sans-serif; margin-bottom:2px;">Sarah added 'Pick up groceries' for you</div>
+              <div style="font-size:9px; color:rgba(255,255,255,0.7); font-weight:700; font-family:'Nunito',sans-serif;">The Khan Family Hub · Due today</div>
+            </div>
+            <!-- Second older notification (dimmed) -->
+            <div style="background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.15); border-radius:14px; padding:9px 12px; opacity:0.7;">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <div style="background:#7c3aed; border-radius:7px; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:10px;">🏠</div>
+                <span style="font-size:8px; font-weight:900; color:rgba(255,255,255,0.7); font-family:'Nunito',sans-serif; text-transform:uppercase;">Family Hub</span>
+                <span style="font-size:8px; color:rgba(255,255,255,0.4); font-family:'Nunito',sans-serif; margin-left:auto;">2m ago</span>
+              </div>
+              <div style="font-size:10px; font-weight:800; color:rgba(255,255,255,0.8); font-family:'Nunito',sans-serif;">Family dinner confirmed for Friday 7pm</div>
+            </div>
+          </div>
+          <!-- Lock screen bottom -->
+          <div style="padding:16px; text-align:center; flex-shrink:0;">
+            <div style="font-size:9px; color:rgba(255,255,255,0.4); font-weight:700; font-family:'Nunito',sans-serif;">Swipe up to open</div>
+          </div>
+        </div>
+        <div class="phone-home-bar" style="background:#0f172a;"><div class="phone-home-pill" style="background:rgba(255,255,255,0.3);"></div></div>
+      </div>
+    </div>
+
+    <!-- ARROW 9→10 -->
+    <div class="h-arrow">
+      <div class="arrow-h-shaft"></div>
+      <div style="font-size:18px; line-height:1;">▶</div>
+      <div class="arrow-label" style="position:absolute; transform:translateY(-28px);">opens app → settings</div>
+    </div>
+
+    <!-- SCREEN 10: Profile / Settings -->
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="screen-label">10. Profile &amp; Settings</div>
+      <div style="display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; justify-content:center;">
+        <span class="ticket-sticker">FHS-104 (Sprint 5)</span>
+        <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP — notif prefs</span>
+      </div>
+      <div class="phone-frame" style="min-height:580px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="phone-status"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="phone-screen" style="background:#f9fafb; display:flex; flex-direction:column;">
+          <!-- Header -->
+          <div style="background:#7c3aed; padding:10px 12px 8px;">
+            <div style="font-family:'Fredoka One',cursive; font-size:14px; color:#fff;">My Profile</div>
+          </div>
+          <!-- Profile card -->
+          <div style="padding:10px; display:flex; flex-direction:column; gap:8px; flex:1; overflow:hidden;">
+            <div style="background:#fff; border:2px solid #000; border-radius:12px; padding:10px; box-shadow:3px 3px 0 #000; display:flex; align-items:center; gap:10px;">
+              <div class="avatar" style="background:#bfdbfe; font-size:24px; width:44px; height:44px;">👦</div>
+              <div style="flex:1;">
+                <div style="font-family:'Fredoka One',cursive; font-size:15px; color:#1f2937;">Yusuf Khan</div>
+                <div style="font-size:9px; color:#6b7280; font-weight:700;">yusuf@gmail.com</div>
+                <span class="badge badge-info" style="margin-top:2px;">Member</span>
+              </div>
+              <button class="btn btn-secondary btn-sm">Edit</button>
+            </div>
+
+            <!-- Notifications section -->
+            <div>
+              <div style="font-family:'Fredoka One',cursive; font-size:12px; color:#1f2937; margin-bottom:5px;">Notifications</div>
+              <div style="background:#fff; border:2px solid #000; border-radius:10px; box-shadow:2px 2px 0 #000; overflow:hidden;">
+                <!-- Toggle rows -->
+                <div style="padding:8px 10px; border-bottom:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between;">
+                  <div>
+                    <div style="font-size:10px; font-weight:900; color:#1f2937;">Task assigned to me</div>
+                    <div style="font-size:8px; color:#9ca3af; font-weight:700;">When someone gives you a task</div>
+                  </div>
+                  <div style="width:30px; height:17px; background:#16a34a; border:2px solid #000; border-radius:999px; position:relative; box-shadow:1px 1px 0 #000;">
+                    <div style="width:11px; height:11px; background:#fff; border-radius:999px; position:absolute; right:2px; top:1px;"></div>
+                  </div>
+                </div>
+                <div style="padding:8px 10px; border-bottom:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between;">
+                  <div>
+                    <div style="font-size:10px; font-weight:900; color:#1f2937;">Family messages</div>
+                    <div style="font-size:8px; color:#9ca3af; font-weight:700;">New messages in family chat</div>
+                  </div>
+                  <div style="width:30px; height:17px; background:#16a34a; border:2px solid #000; border-radius:999px; position:relative; box-shadow:1px 1px 0 #000;">
+                    <div style="width:11px; height:11px; background:#fff; border-radius:999px; position:absolute; right:2px; top:1px;"></div>
+                  </div>
+                </div>
+                <div style="padding:8px 10px; display:flex; align-items:center; justify-content:space-between;">
+                  <div>
+                    <div style="font-size:10px; font-weight:900; color:#1f2937;">Reminders</div>
+                    <div style="font-size:8px; color:#9ca3af; font-weight:700;">Upcoming events &amp; deadlines</div>
+                  </div>
+                  <div style="width:30px; height:17px; background:#d1d5db; border:2px solid #000; border-radius:999px; position:relative; box-shadow:1px 1px 0 #000;">
+                    <div style="width:11px; height:11px; background:#fff; border-radius:999px; position:absolute; left:2px; top:1px;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Family membership -->
+            <div>
+              <div style="font-family:'Fredoka One',cursive; font-size:12px; color:#1f2937; margin-bottom:5px;">Family Membership</div>
+              <div style="background:#fff; border:2px solid #000; border-radius:10px; padding:8px 10px; box-shadow:2px 2px 0 #000; display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <div style="background:#7c3aed; border-radius:6px; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:11px;">🏠</div>
+                  <div>
+                    <div style="font-size:10px; font-weight:900; color:#1f2937;">The Khan Family Hub</div>
+                    <div style="font-size:8px; color:#9ca3af; font-weight:700;">Joined today · 4 members</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Leave family — scary action -->
+              <button class="btn btn-danger btn-full" style="font-size:10px; padding:7px 10px; border-radius:8px;">
+                Leave The Khan Family Hub
+              </button>
+              <div style="font-size:8px; color:#9ca3af; font-weight:700; text-align:center; margin-top:3px;">
+                You'll lose access to all shared content
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="phone-home-pill"></div></div>
+      </div>
+    </div>
+
+  </div><!-- END ROW 3 -->
+
+  <!-- ============================================================ -->
+  <!-- GAPS & OPEN QUESTIONS                                         -->
+  <!-- ============================================================ -->
+  <hr class="section-divider" />
+
+  <div style="max-width:760px; margin:0 auto 40px;">
+    <div style="background:#fff; border:3px solid #dc2626; border-radius:14px; box-shadow:6px 6px 0px 0px rgba(220,38,38,1); overflow:hidden;">
+      <!-- Header -->
+      <div style="background:#dc2626; padding:10px 16px; display:flex; align-items:center; gap:8px;">
+        <span style="font-size:20px;">🚨</span>
+        <h2 style="font-family:'Fredoka One',cursive; font-size:18px; color:#fff; margin:0;">Gaps &amp; Open Questions — Persona 4 is the most consequential backlog</h2>
+      </div>
+      <div style="padding:16px;">
+        <p style="font-size:11px; font-weight:700; color:#7f1d1d; margin:0 0 14px; line-height:1.5;">
+          Every gap below blocks a family member from completing their first session. That blocks the paying parent from seeing value. That causes churn.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+
+          <div style="border:2px solid #dc2626; border-radius:10px; padding:10px 12px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+              <span style="font-family:'Fredoka One',cursive; font-size:13px; color:#1f2937;">Invite-aware signup flow (Screens 1–3)</span>
+            </div>
+            <div style="font-size:10px; color:#374151; font-weight:700; line-height:1.5;">
+              No ticket scoped for branded invite email, invite-token landing page with family colour/name, or pre-filled account creation form. FHS-90 (Sprint 5) covers invite <em>sending</em> but not the invitee-side experience. <strong>Risk: invitees land on a generic signup page with no family context — they won't know why they're signing up.</strong>
+            </div>
+            <div style="margin-top:5px;"><span style="font-size:9px; font-weight:900; color:#dc2626;">Nearest refs: FHS-90, FHS-97 (Sprint 5)</span></div>
+          </div>
+
+          <div style="border:2px solid #dc2626; border-radius:10px; padding:10px 12px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+              <span style="font-family:'Fredoka One',cursive; font-size:13px; color:#1f2937;">First-launch tour (Screens 5–7)</span>
+            </div>
+            <div style="font-size:10px; color:#374151; font-weight:700; line-height:1.5;">
+              No onboarding tour is scoped. Invitees who join via invite (especially grandparents or young kids) hit a blank dashboard with no guidance. FHS-23 (Sprint 2) covers the admin onboarding wizard — no equivalent for invitees. <strong>Risk: cold-start confusion → app abandonment in first 2 minutes.</strong>
+            </div>
+            <div style="margin-top:5px;"><span style="font-size:9px; font-weight:900; color:#dc2626;">Nearest refs: FHS-23, FHS-29 (Sprint 2)</span></div>
+          </div>
+
+          <div style="border:2px solid #dc2626; border-radius:10px; padding:10px 12px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <span class="ticket-sticker gap-sticker">⚠ BACKLOG GAP</span>
+              <span style="font-family:'Fredoka One',cursive; font-size:13px; color:#1f2937;">Push notifications infrastructure (Screen 9)</span>
+            </div>
+            <div style="font-size:10px; color:#374151; font-weight:700; line-height:1.5;">
+              No ticket exists for push notification delivery (APNs / FCM). Invitees won't know they've been assigned tasks without checking the app manually — defeats the ambient-awareness value prop. Email-only fallback insufficient for engagement. <strong>Risk: assigned tasks go unseen → parent frustration → churn.</strong>
+            </div>
+            <div style="margin-top:5px;"><span style="font-size:9px; font-weight:900; color:#dc2626;">No ticket — raise against FHS-205 (Tech Debt epic) or new epic</span></div>
+          </div>
+
+          <div style="border:2px solid #f59e0b; border-radius:10px; padding:10px 12px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <span class="ticket-sticker" style="background:#fef3c7; color:#92400e; border-color:#f59e0b;">OPEN QUESTION</span>
+              <span style="font-family:'Fredoka One',cursive; font-size:13px; color:#1f2937;">Auth choice for minors / grandparents (Screen 4)</span>
+            </div>
+            <div style="font-size:10px; color:#374151; font-weight:700; line-height:1.5;">
+              Under-13 users cannot have a Google account (COPPA). Does Family Hub need a "kid mode" login (parent-controlled)? FHS-191 covers JWT middleware but not age-gating or parental-consent flows. Needs a decision before Sprint 5 invite work ships.
+            </div>
+          </div>
+
+          <div style="border:2px solid #f59e0b; border-radius:10px; padding:10px 12px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <span class="ticket-sticker" style="background:#fef3c7; color:#92400e; border-color:#f59e0b;">OPEN QUESTION</span>
+              <span style="font-family:'Fredoka One',cursive; font-size:13px; color:#1f2937;">"Leave family" confirmation + data retention</span>
+            </div>
+            <div style="font-size:10px; color:#374151; font-weight:700; line-height:1.5;">
+              Screen 10 shows "Leave family" as a destructive action. No ticket defines what happens to content the member created, whether there's a grace period, or whether the admin (Persona 1) is notified. FHS-104 covers member management admin-side — invitee-side leave UX is unspecced.
+            </div>
+          </div>
+
+          <div style="border:2px solid #f59e0b; border-radius:10px; padding:10px 12px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <span class="ticket-sticker" style="background:#fef3c7; color:#92400e; border-color:#f59e0b;">OPEN QUESTION</span>
+              <span style="font-family:'Fredoka One',cursive; font-size:13px; color:#1f2937;">Invite link expiry &amp; re-invite</span>
+            </div>
+            <div style="font-size:10px; color:#374151; font-weight:700; line-height:1.5;">
+              Screen 1 shows "expires in 7 days" — no ticket defines the expiry window, re-invite mechanics, or error state when a link has expired. FHS-90 scopes the invite sending; the edge-case states are unspecced.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FOOTER                                                        -->
+  <!-- ============================================================ -->
+  <div style="text-align:center; padding-bottom:32px;">
+    <p style="font-size:9px; color:rgba(255,255,255,0.35); font-weight:700; font-family:'Nunito',sans-serif; margin:0;">
+      Source: documents/strategy/positioning.md · documents/strategy/saas-transformation.md · documents/features/family-members.md · documents/features/auth.md
+      &nbsp;|&nbsp; Persona 4 — Invitee / Family Member &nbsp;|&nbsp; Family Hub Design System v0.0-bootstrap
+    </p>
+  </div>
+
+</div><!-- END max-w-6xl -->
+</body>
+</html>

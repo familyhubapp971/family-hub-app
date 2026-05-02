@@ -178,5 +178,5 @@ Each epic links back to its child stories in the Confluence overview.
 ## References
 
 - [Architecture Decision Records](../decisions/) (0001–0007)
-- [docs/README.md](../README.md) — full documentation index
-- Legacy strategy HTML (source material): `~/Documents/Toonday/Business/FamilyHub/family-hub/docs/enterprise/family-hub-saas-strategy.html`
+- [documents/README.md](../README.md) — full documentation index
+- Legacy strategy HTML (source material): `~/Documents/Toonday/Business/FamilyHub/family-hub/documents/enterprise/family-hub-saas-strategy.html`

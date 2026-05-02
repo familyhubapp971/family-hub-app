@@ -29,8 +29,8 @@ Middleware runs before any route handler:
 ```ts
 // apps/api/src/middleware/tenant.ts
 export async function tenantFromSubdomain(c, next) {
-  const host = c.req.header('host') ?? '';           // e.g. "acme.familyhub.app"
-  const slug = host.split('.')[0];                   // "acme"
+  const host = c.req.header('host') ?? ''; // e.g. "acme.familyhub.app"
+  const slug = host.split('.')[0]; // "acme"
 
   if (!slug || RESERVED.has(slug)) {
     throw new HTTPException(400, { message: 'missing tenant' });
@@ -42,7 +42,7 @@ export async function tenantFromSubdomain(c, next) {
   });
   if (!tenant) throw new HTTPException(404, { message: 'unknown tenant' });
 
-  return runWithTenant(tenant.id, () => next());     // AsyncLocalStorage scope
+  return runWithTenant(tenant.id, () => next()); // AsyncLocalStorage scope
 }
 ```
 

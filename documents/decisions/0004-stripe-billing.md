@@ -35,11 +35,11 @@ Specifics:
 
 Four base products, each with monthly + annual prices:
 
-| Product | Notes |
-| --- | --- |
-| **Starter** | seat-capped entry tier, no metered overage |
-| **Growth** | typical paid tier, seat-capped |
-| **Scale** | higher seat cap + metered overage above included quota |
+| Product        | Notes                                                           |
+| -------------- | --------------------------------------------------------------- |
+| **Starter**    | seat-capped entry tier, no metered overage                      |
+| **Growth**     | typical paid tier, seat-capped                                  |
+| **Scale**      | higher seat cap + metered overage above included quota          |
 | **Enterprise** | usage-priced, custom flags, sales-led (not self-serve checkout) |
 
 Plus metered prices attached to Scale / Enterprise for overage
