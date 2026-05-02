@@ -73,7 +73,7 @@ export function PricingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-white">
+    <div className="flex h-screen flex-col bg-kingdom-bg font-body text-white">
       {/* Header — slim, mirrors Welcome page so cross-page nav feels stable */}
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
         <Link
@@ -100,44 +100,44 @@ export function PricingPage() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-6 pb-10 pt-4">
-        <div className="mb-6 text-center">
-          <h1 className="mb-2 font-heading text-3xl md:text-4xl lg:text-5xl">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center px-6 pb-6 pt-2">
+        <div className="mb-4 text-center">
+          <h1 className="mb-1 font-heading text-2xl md:text-3xl lg:text-4xl">
             Simple, honest pricing
           </h1>
-          <p className="text-base text-purple-200 md:text-lg">
+          <p className="text-sm text-purple-200 md:text-base">
             No per-seat surprises. Cancel any time. Two months free on annual plans.
           </p>
         </div>
 
-        <div className="grid w-full max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid w-full max-w-5xl grid-cols-1 gap-4 md:grid-cols-3">
           {tiers.map((tier) => {
             const cardClass = tier.featured
-              ? 'flex h-full flex-col bg-white !p-6 text-black border-4 !border-yellow-400'
-              : 'flex h-full flex-col bg-white !p-6 text-black';
+              ? 'flex h-full flex-col bg-white !p-4 text-black border-4 !border-yellow-400'
+              : 'flex h-full flex-col bg-white !p-4 text-black';
 
             return (
-              <div key={tier.name} className="relative pt-3">
+              <div key={tier.name} className="relative pt-2">
                 {tier.featured && (
                   <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2">
                     <Badge
                       variant="warning"
-                      className="border-2 border-black px-4 py-1 text-xs font-bold shadow-neo-sm"
+                      className="border-2 border-black px-3 py-0.5 text-[10px] font-bold shadow-neo-sm"
                     >
                       Most popular
                     </Badge>
                   </div>
                 )}
                 <Card className={cardClass}>
-                  <h2 className="mb-1 font-heading text-xl">{tier.name}</h2>
-                  <div className="mb-4 font-heading text-3xl text-pink-600">
+                  <h2 className="mb-0.5 font-heading text-lg">{tier.name}</h2>
+                  <div className="mb-3 font-heading text-2xl text-pink-600">
                     {tier.price === 'Free' ? (
                       <span className="text-black">Free</span>
                     ) : (
                       <>
                         {tier.price}
                         {tier.priceSuffix && (
-                          <span className="text-base text-black">{tier.priceSuffix}</span>
+                          <span className="text-sm text-black">{tier.priceSuffix}</span>
                         )}
                       </>
                     )}
@@ -145,22 +145,23 @@ export function PricingPage() {
                   <Button
                     onClick={() => navigate('/signup')}
                     variant={tier.ctaVariant}
-                    className="mb-5 w-full"
+                    size="sm"
+                    className="mb-3 w-full"
                   >
                     {tier.ctaLabel}
                   </Button>
-                  <ul className="flex-1 space-y-2.5">
+                  <ul className="flex-1 space-y-1.5">
                     {tier.features.map((row) => (
                       <li
                         key={row.label}
-                        className={`flex items-center gap-2 text-sm ${
+                        className={`flex items-center gap-2 text-xs md:text-sm ${
                           row.included ? '' : 'text-gray-400'
                         }`}
                       >
                         {row.included ? (
-                          <Check className="text-green-600" size={18} />
+                          <Check className="text-green-600 shrink-0" size={16} />
                         ) : (
-                          <X size={18} />
+                          <X size={16} className="shrink-0" />
                         )}
                         <span className={row.included ? 'font-bold' : ''}>{row.label}</span>
                       </li>
