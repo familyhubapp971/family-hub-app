@@ -349,8 +349,8 @@
           <div>
             <h1 class="text-3xl text-black mb-1">Family Hub — What's Shipped</h1>
             <p class="text-xs font-bold text-slate-500 mb-3">
-              Last updated: 2026-05-02 &nbsp;·&nbsp; Sprint 1 CLOSED &nbsp;·&nbsp; Source: git log +
-              Jira FHS
+              Last updated: 2026-05-02 &nbsp;·&nbsp; Slice 1 in flight (FHS-241 merged)
+              &nbsp;·&nbsp; Source: git log + Jira FHS
             </p>
             <p class="text-sm text-slate-700 max-w-2xl leading-relaxed">
               Cumulative log of capabilities landed sprint over sprint. Each row is one numbered
@@ -1114,6 +1114,283 @@
               </td>
               <!-- EXTERNAL -->
               <td class="col-ext empty"></td>
+            </tr>
+
+            <!-- ════════════════════════════════
+           PHASE 4 — DESIGN SYSTEM UNIFICATION
+      ════════════════════════════════ -->
+            <tr class="phase-row">
+              <td colspan="6">
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span class="phase-number">4</span>
+                  <div>
+                    <div class="phase-title">Design System Unification</div>
+                    <div class="phase-subtitle">
+                      Slice 1 — packages/ui aligned to Magic Patterns design + legacy
+                      family-hub/frontend visual language. Foundation for marketing pages
+                      (FHS-220/221/222).
+                    </div>
+                  </div>
+                  <div class="ml-auto flex gap-2 flex-wrap">
+                    <span class="phase-badge" style="background: #fef3c7; color: #92400e"
+                      >IN FLIGHT</span
+                    >
+                    <span class="phase-badge" style="background: #dbeafe; color: #1d4ed8"
+                      >SPRINT 1</span
+                    >
+                    <span class="phase-badge" style="background: #f3e8ff; color: #5b21b6"
+                      >EPIC FHS-240</span
+                    >
+                    <span class="phase-badge" style="background: #fce7f3; color: #9d174d"
+                      >ADR 0010 · 0011</span
+                    >
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- STEP 15 — Tailwind preset extension -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">15</div>
+                <div class="step-label">Tailwind<br />preset</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user empty"></td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">
+                    font-heading alias + kingdom 50→950 scale + space-bg animation
+                  </div>
+                  <div class="card-code">
+                    packages/ui/tailwind.preset.js · 5 sanity tests · all preserves
+                  </div>
+                  <span class="badge badge-ticket">FHS-241</span>
+                  <span class="badge badge-tech">TAILWIND</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api empty"></td>
+              <!-- DATA -->
+              <td class="col-data empty"></td>
+              <!-- EXTERNAL -->
+              <td class="col-ext empty"></td>
+            </tr>
+
+            <!-- STEP 16 — space-bg starfield CSS -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">16</div>
+                <div class="step-label">Starfield<br />.space-bg</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user">
+                <div class="card card-yellow">
+                  <div class="card-title">
+                    Animated starfield matches legacy family-hub kingdom-purple feel
+                  </div>
+                  <div class="card-code">Sarah / Yusuf opt-in via &lt;div class="space-bg"&gt;</div>
+                  <span class="badge badge-ticket">FHS-241</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">
+                    .space-bg utility ported from legacy + prefers-reduced-motion guard
+                  </div>
+                  <div class="card-code">
+                    packages/ui/src/styles/globals.css · 3-layer radial gradient
+                  </div>
+                  <span class="badge badge-ticket">FHS-241</span>
+                  <span class="badge badge-tech">CSS</span>
+                  <span class="badge badge-tech">A11Y</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api empty"></td>
+              <!-- DATA -->
+              <td class="col-data empty"></td>
+              <!-- EXTERNAL -->
+              <td class="col-ext empty"></td>
+            </tr>
+
+            <!-- STEP 17 — ADRs ratified -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">17</div>
+                <div class="step-label">ADRs<br />0010 + 0011</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user empty"></td>
+              <!-- WEB -->
+              <td class="col-web empty"></td>
+              <!-- API -->
+              <td class="col-api empty"></td>
+              <!-- DATA -->
+              <td class="col-data empty"></td>
+              <!-- EXTERNAL -->
+              <td class="col-ext">
+                <div class="card card-pink">
+                  <div class="card-title">
+                    Two architectural decisions ratified in same conversation
+                  </div>
+                  <div class="card-code">
+                    documents/decisions/0010-frontend-animation-library.md ·
+                    0011-magic-link-only-parent-auth.md
+                  </div>
+                  <span class="badge badge-ticket">FHS-241</span>
+                  <span class="badge badge-tech">ADR</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+            </tr>
+
+            <!-- STEP 18 — Components extension (next) -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">18</div>
+                <div class="step-label">Component<br />extensions</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user empty"></td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">Button.fullWidth + Card.radius + Input.dark variant</div>
+                  <div class="card-code">packages/ui/src/{Button,Card,Input}.tsx · next PR</div>
+                  <span class="badge badge-ticket">FHS-242</span>
+                  <span class="badge badge-pending">NEXT</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api empty"></td>
+              <!-- DATA -->
+              <td class="col-data empty"></td>
+              <!-- EXTERNAL -->
+              <td class="col-ext empty"></td>
+            </tr>
+
+            <!-- STEP 19 — New components (next) -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">19</div>
+                <div class="step-label">New<br />components</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user">
+                <div class="card card-yellow">
+                  <div class="card-title">
+                    Sarah → AvatarGrid + StepperHeader; Amina + Ibrahim → PinInput
+                  </div>
+                  <div class="card-code">Each persona's MP page composes these primitives</div>
+                  <span class="badge badge-ticket">FHS-243</span>
+                  <span class="badge badge-ticket">FHS-244</span>
+                  <span class="badge badge-ticket">FHS-245</span>
+                  <span class="badge badge-pending">SPRINT 1</span>
+                </div>
+              </td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">
+                    7 new primitives: TopNav + AvatarGrid + PinInput + StepperHeader + FeatureCard +
+                    PricingCard + FloatingDecorations
+                  </div>
+                  <div class="card-code">packages/ui/src/*.tsx · domain components stay out</div>
+                  <span class="badge badge-ticket">FHS-243-245</span>
+                  <span class="badge badge-tech">FRAMER-MOTION</span>
+                  <span class="badge badge-pending">SPRINT 1</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api empty"></td>
+              <!-- DATA -->
+              <td class="col-data empty"></td>
+              <!-- EXTERNAL -->
+              <td class="col-ext empty"></td>
+            </tr>
+
+            <!-- STEP 20 — Storybook -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">20</div>
+                <div class="step-label">Storybook<br />catalogue</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user empty"></td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">
+                    Living component catalogue + a11y addon for design-system QA
+                  </div>
+                  <div class="card-code">pnpm -F ui storybook · Vite builder · Tailwind preset</div>
+                  <span class="badge badge-ticket">FHS-247</span>
+                  <span class="badge badge-tech">STORYBOOK 8</span>
+                  <span class="badge badge-pending">SPRINT 1</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api empty"></td>
+              <!-- DATA -->
+              <td class="col-data empty"></td>
+              <!-- EXTERNAL -->
+              <td class="col-ext empty"></td>
+            </tr>
+
+            <!-- STEP 21 — Welcome + Pricing pages on top -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">21</div>
+                <div class="step-label">Welcome<br />+ Pricing</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user">
+                <div class="card card-yellow">
+                  <div class="card-title">
+                    Sarah lands on / and sees the kingdom hero; clicks /pricing for 3 tiers
+                  </div>
+                  <div class="card-code">
+                    Free · Family $7.99 · Family Pro $12.99 · CTAs route to /register
+                  </div>
+                  <span class="badge badge-ticket">FHS-221</span>
+                  <span class="badge badge-ticket">FHS-222</span>
+                  <span class="badge badge-pending">SPRINT 1</span>
+                </div>
+              </td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">
+                    Welcome + Pricing ported from MP design using unified design system
+                  </div>
+                  <div class="card-code">
+                    apps/web/src/pages/{WelcomePage,PricingPage}.tsx · / and /pricing
+                  </div>
+                  <span class="badge badge-ticket">FHS-220</span>
+                  <span class="badge badge-tech">MP DESIGN</span>
+                  <span class="badge badge-pending">SPRINT 1</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api empty"></td>
+              <!-- DATA -->
+              <td class="col-data empty"></td>
+              <!-- EXTERNAL -->
+              <td class="col-ext">
+                <div class="card card-pink">
+                  <div class="card-title">PostHog wired from day 1 for conversion baseline</div>
+                  <div class="card-code">apps/web · POSTHOG_KEY env</div>
+                  <span class="badge badge-ticket">FHS-141</span>
+                  <span class="badge badge-tech">POSTHOG</span>
+                  <span class="badge badge-pending">SPRINT 1</span>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
