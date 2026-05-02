@@ -349,7 +349,7 @@
           <div>
             <h1 class="text-3xl text-black mb-1">Family Hub — What's Shipped</h1>
             <p class="text-xs font-bold text-slate-500 mb-3">
-              Last updated: 2026-05-02 &nbsp;·&nbsp; Sprint 1 active &nbsp;·&nbsp; Source: git log +
+              Last updated: 2026-05-02 &nbsp;·&nbsp; Sprint 1 CLOSED &nbsp;·&nbsp; Source: git log +
               Jira FHS
             </p>
             <p class="text-sm text-slate-700 max-w-2xl leading-relaxed">
@@ -383,10 +383,12 @@
         class="bg-slate-800 border-2 border-black rounded-md shadow-neo-sm px-5 py-3 mb-5 flex flex-wrap gap-6 items-center"
       >
         <div>
-          <div class="font-display text-yellow-300 text-sm">Sprint 1 — Tenant Foundation</div>
+          <div class="font-display text-yellow-300 text-sm">
+            Sprint 1 — Tenant Foundation ✓ CLOSED
+          </div>
           <div class="text-xs text-slate-400 font-semibold">
-            Started 2026-05-01 &nbsp;·&nbsp; 5 work items &nbsp;·&nbsp; 2 done / 1 in flight / 2
-            pending
+            2026-05-01 → 2026-05-02 &nbsp;·&nbsp; 5 work items &nbsp;·&nbsp; 4 merged · 1 deferred
+            (FHS-5 → feature PRs) &nbsp;·&nbsp; epic FHS-1 closed
           </div>
         </div>
         <div class="flex gap-3 flex-wrap">
@@ -904,12 +906,12 @@
                   <div>
                     <div class="phase-title">Tenant Foundation</div>
                     <div class="phase-subtitle">
-                      Sprint 1 — in flight. 2 merged · 1 in flight · 2 pending.
+                      Sprint 1 — CLOSED. Epic FHS-1 done. 4 merged · 1 deferred (FHS-5).
                     </div>
                   </div>
                   <div class="ml-auto flex gap-2 flex-wrap">
-                    <span class="phase-badge" style="background: #fef3c7; color: #92400e"
-                      >IN FLIGHT</span
+                    <span class="phase-badge" style="background: #d1fae5; color: #065f46"
+                      >CLOSED</span
                     >
                     <span class="phase-badge" style="background: #dbeafe; color: #1d4ed8"
                       >SPRINT 1</span
@@ -1015,12 +1017,12 @@
               <!-- API -->
               <td class="col-api">
                 <div class="card card-pink">
-                  <div class="card-title">app_settings + activity_logs schema drafted</div>
+                  <div class="card-title">app_settings + activity_logs schema</div>
                   <div class="card-code">
                     apps/api/src/db/schema.ts · 0003_tenants_content migration
                   </div>
                   <span class="badge badge-ticket">FHS-4</span>
-                  <span class="badge badge-flight">IN FLIGHT</span>
+                  <span class="badge badge-merged">MERGED</span>
                 </div>
               </td>
               <!-- DATA -->
@@ -1029,10 +1031,12 @@
                   <div class="card-title">
                     app_settings (composite PK) + activity_logs audit trail
                   </div>
-                  <div class="card-code">MIGRATION 0003 — in flight branch</div>
+                  <div class="card-code">
+                    MIGRATION 0003 · 10 feature tables deferred to feature PRs
+                  </div>
                   <span class="badge badge-ticket">FHS-4</span>
                   <span class="badge badge-tech">MIGRATION 0003</span>
-                  <span class="badge badge-flight">IN FLIGHT</span>
+                  <span class="badge badge-merged">MERGED</span>
                 </div>
               </td>
               <!-- EXTERNAL -->
@@ -1053,25 +1057,28 @@
               <td class="col-api">
                 <div class="card card-pink">
                   <div class="card-title">
-                    Unit tests: tenant A query returns zero rows for tenant B
+                    Registry-driven leak audit + cross-tenant isolation tests
                   </div>
-                  <div class="card-code">tests/unit/api/ · cross-tenant isolation assertions</div>
+                  <div class="card-code">
+                    tests/integration/features/tenant-isolation.feature · TENANT_SCOPED_TABLES
+                    registry
+                  </div>
                   <span class="badge badge-ticket">FHS-6</span>
-                  <span class="badge badge-pending">PENDING</span>
+                  <span class="badge badge-merged">MERGED</span>
                 </div>
               </td>
               <!-- DATA -->
               <td class="col-data">
                 <div class="card card-lime">
                   <div class="card-title">
-                    Integration: tenant isolation scenario mandatory per feature
+                    3 scenarios x 9 tables — auto-extends as new tables land
                   </div>
                   <div class="card-code">
-                    tests/integration/features/*.feature · Background: per ADR 0001
+                    schema audit + cross-tenant query · ~150ms · 262 tests green
                   </div>
                   <span class="badge badge-ticket">FHS-6</span>
                   <span class="badge badge-tech">VITEST-CUCUMBER</span>
-                  <span class="badge badge-pending">PENDING</span>
+                  <span class="badge badge-merged">MERGED</span>
                 </div>
               </td>
               <!-- EXTERNAL -->

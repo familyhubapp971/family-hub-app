@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Hub — Habit Tracker (Coordinating Parent)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['"Fredoka One"', 'cursive'],
+        body: ['Nunito', 'sans-serif'],
+      },
+      boxShadow: {
+        'neo-xs': '1px 1px 0px 0px rgba(0,0,0,1)',
+        'neo-sm': '2px 2px 0px 0px rgba(0,0,0,1)',
+        'neo':    '3px 3px 0px 0px rgba(0,0,0,1)',
+        'neo-md': '4px 4px 0px 0px rgba(0,0,0,1)',
+        'neo-lg': '6px 6px 0px 0px rgba(0,0,0,1)',
+      },
+      colors: {
+        kingdom: { bg: '#3d1065' },
+      },
+    },
+  },
+};
+</script>
+<style>
+  body { font-family: 'Nunito', sans-serif; background: #3d1065; color: #1e1e1e; }
+  h1,h2,h3,h4,h5,h6 { font-family: 'Fredoka One', cursive; }
+
+  /* ── Device frames ── */
+  .laptop-frame {
+    width: 580px; min-width: 580px;
+    background: #1a1a1a; border-radius: 12px;
+    border: 2px solid #000; padding: 8px 8px 14px;
+    box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+  }
+  .laptop-chrome {
+    background: #2d2d2d; border-radius: 6px 6px 0 0;
+    padding: 6px 8px; display: flex; align-items: center; gap: 5px;
+    border-bottom: 1px solid #444;
+  }
+  .dot { width:8px;height:8px;border-radius:50%;display:inline-block; }
+  .dot-r{background:#ff5f57;} .dot-y{background:#febc2e;} .dot-g{background:#28c840;}
+  .url-bar {
+    flex:1; background:#3a3a3a; border-radius:4px;
+    padding:2px 8px; font-size:10px; color:#aaa; font-family:'Nunito',sans-serif;
+    border:1px solid #555; margin-left:6px;
+  }
+  .laptop-screen {
+    background:#fff; border-radius:0 0 4px 4px;
+    overflow:hidden; height:360px; overflow-y:auto;
+  }
+
+  .phone-frame {
+    width: 225px; min-width:225px;
+    background: #1a1a1a; border-radius: 28px;
+    border: 2px solid #000; padding: 10px 6px 14px;
+    box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+    position:relative;
+  }
+  .phone-notch {
+    width:60px; height:14px; background:#1a1a1a;
+    border-radius:0 0 10px 10px; margin:0 auto 4px;
+    border:1px solid #333;
+  }
+  .phone-screen {
+    background:#fff; border-radius:18px;
+    overflow:hidden; height:400px; overflow-y:auto;
+  }
+
+  /* ── Neo-brutalist atoms ── */
+  .neo-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family:'Fredoka One',cursive; font-size:12px;
+    background:#facc15; color:#000;
+    border:2px solid #000; border-radius:10px;
+    padding:6px 14px; box-shadow:3px 3px 0 #000;
+    cursor:pointer; white-space:nowrap; line-height:1.2;
+  }
+  .neo-btn-sm { font-size:10px; padding:3px 9px; border-radius:8px; box-shadow:2px 2px 0 #000; }
+  .neo-btn-sec { background:#fff; }
+  .neo-btn-pink { background:#fbcfe8; }
+  .neo-btn-lime { background:#d9f99d; }
+  .neo-btn-cyan { background:#cffafe; }
+  .neo-btn-purple { background:#ede9fe; }
+  .neo-btn-danger { background:#fca5a5; }
+
+  .neo-card {
+    border:2px solid #000; border-radius:12px;
+    box-shadow:4px 4px 0 #000; background:#fff;
+  }
+  .neo-card-sm { border-radius:8px; box-shadow:2px 2px 0 #000; }
+  .neo-input {
+    width:100%; border:2px solid #d1d5db; border-radius:8px;
+    padding:5px 9px; font-family:'Nunito',sans-serif;
+    font-size:11px; font-weight:700; background:#f9fafb; outline:none;
+  }
+  .neo-input:focus { border-color:#f472b6; }
+  .neo-badge {
+    display:inline-flex; align-items:center; gap:3px;
+    font-size:9px; font-weight:900; padding:1px 7px;
+    border-radius:9999px; border:1px solid #000;
+  }
+  .badge-yellow { background:#fef9c3; color:#854d0e; }
+  .badge-green  { background:#d1fae5; color:#065f46; }
+  .badge-blue   { background:#dbeafe; color:#1e40af; }
+  .badge-purple { background:#ede9fe; color:#5b21b6; }
+  .badge-red    { background:#fee2e2; color:#991b1b; }
+  .badge-pink   { background:#fce7f3; color:#9d174d; }
+  .badge-amber  { background:#fef3c7; color:#92400e; }
+  .badge-cyan   { background:#cffafe; color:#164e63; }
+
+  /* ── Screen label sticker ── */
+  .screen-label {
+    font-family:'Fredoka One',cursive; font-size:11px;
+    background:#fef08a; border:2px solid #000;
+    border-radius:6px; padding:3px 8px;
+    box-shadow:2px 2px 0 #000; display:inline-block;
+    margin-bottom:8px; line-height:1.4;
+  }
+  .screen-label.backlog { background:#fee2e2; color:#991b1b; }
+
+  /* ── Flow arrows ── */
+  .flow-arrow {
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:2px; min-width:48px; padding:0 4px;
+  }
+  .arrow-line {
+    width:2px; height:28px; background:#fff; border-radius:1px; opacity:.5;
+  }
+  .arrow-head {
+    width:0; height:0;
+    border-left:6px solid transparent; border-right:6px solid transparent;
+    border-top:8px solid rgba(255,255,255,.5);
+  }
+  .arrow-label {
+    font-family:'Nunito',sans-serif; font-size:9px; font-weight:800;
+    color:rgba(255,255,255,.6); text-align:center; white-space:nowrap;
+  }
+  .horiz-arrow {
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:3px; padding:0 8px;
+  }
+  .h-arrow-line {
+    width:36px; height:2px; background:rgba(255,255,255,.4); border-radius:1px;
+  }
+  .h-arrow-head {
+    width:0; height:0;
+    border-top:5px solid transparent; border-bottom:5px solid transparent;
+    border-left:7px solid rgba(255,255,255,.4);
+  }
+  .h-arrow-wrap { display:flex; align-items:center; }
+
+  /* ── Habit day grid cell ── */
+  .day-cell {
+    width:28px; height:28px; border-radius:6px;
+    border:2px solid #000; display:flex; align-items:center;
+    justify-content:center; font-size:11px; font-weight:900;
+  }
+  .day-cell-done { background:#86efac; box-shadow:1px 1px 0 #000; }
+  .day-cell-today { background:#fde68a; box-shadow:1px 1px 0 #000; }
+  .day-cell-miss  { background:#f3f4f6; }
+  .day-cell-star  { background:#fbbf24; box-shadow:1px 1px 0 #000; }
+  .day-cell-future{ background:#f3f4f6; border-color:#e5e7eb; opacity:.5; }
+
+  /* ── Heat-map cells ── */
+  .heat-0 { background:#f3f4f6; }
+  .heat-1 { background:#bbf7d0; }
+  .heat-2 { background:#4ade80; }
+  .heat-3 { background:#16a34a; }
+
+  /* ── Swimlane ── */
+  .swimlane-row { border-bottom:1px solid rgba(255,255,255,.08); }
+  .swimlane-row:last-child { border-bottom:none; }
+  .lane-cell { padding:8px 12px; font-size:11px; vertical-align:top; }
+  .lane-head { font-family:'Fredoka One',cursive; font-size:12px; color:#a78bfa; }
+
+  /* ── Progress bar ── */
+  .prog-bar { width:100%; background:#e5e7eb; border-radius:999px; height:6px; border:1px solid #d1d5db; overflow:hidden; }
+  .prog-fill { height:100%; border-radius:999px; }
+
+  /* ── Streak badge ── */
+  .streak-flame { font-size:18px; line-height:1; }
+</style>
+</head>
+<body class="min-h-screen p-6 md:p-10">
+
+<!-- ════════════════════════════════════════════════════════════════
+     SECTION 1: HERO
+═══════════════════════════════════════════════════════════════════ -->
+<div class="max-w-5xl mx-auto mb-12">
+  <!-- Back link -->
+  <a href="../parent.html" class="inline-flex items-center gap-2 text-purple-300 hover:text-white text-sm font-bold mb-6 transition-colors">
+    ← Back to parent persona overview
+  </a>
+
+  <!-- Hero card -->
+  <div class="neo-card bg-gradient-to-br from-purple-900 to-indigo-900 p-8 mb-6" style="background:linear-gradient(135deg,#2d0d5c,#1e1b4b);border-color:#7c3aed;">
+    <div class="flex flex-wrap items-start gap-6">
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-3 mb-3">
+          <span class="neo-badge badge-purple" style="font-size:10px;">DESIGN DOC</span>
+          <span class="neo-badge badge-amber">Coordinating Parent</span>
+          <span class="neo-badge badge-green">FHS-3 (schema) · FHS-backlog (UI + API)</span>
+        </div>
+        <h1 style="font-family:'Fredoka One',cursive;font-size:2rem;color:#fff;line-height:1.15;margin-bottom:8px;">
+          Habit Tracker
+        </h1>
+        <p style="font-size:13px;color:#c4b5fd;font-weight:700;margin-bottom:16px;">
+          Under the new SaaS architecture — how the coordinating parent uses it day-to-day
+        </p>
+        <p style="font-size:12px;color:#a78bfa;line-height:1.6;">
+          The Habit Tracker gives the coordinating parent a single weekly grid view across every family
+          member's habits. Streaks, sticker rewards, and a week-close ritual make progress visible and
+          intrinsically motivating for children while keeping the parent's management overhead near zero.
+        </p>
+      </div>
+
+      <!-- Persona card -->
+      <div class="neo-card bg-yellow-50 p-4 flex-shrink-0" style="min-width:200px;">
+        <!-- Monogram -->
+        <div style="width:48px;height:48px;background:#7c3aed;border:2px solid #000;border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;
+                    font-family:'Fredoka One',cursive;font-size:20px;color:#fff;
+                    box-shadow:3px 3px 0 #000;margin-bottom:10px;">
+          FP
+        </div>
+        <div style="font-family:'Fredoka One',cursive;font-size:14px;color:#1e1e1e;margin-bottom:2px;">
+          Family Parent
+        </div>
+        <div style="font-size:10px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">
+          Coordinating Parent
+        </div>
+        <div style="font-size:10px;font-weight:700;color:#4b5563;line-height:1.5;">
+          <strong>Goal:</strong> Build consistent daily habits in children with minimal friction. Reward effort, not perfection.
+        </div>
+        <div style="margin-top:8px;" class="flex flex-wrap gap-1">
+          <span class="neo-badge badge-purple">Admin</span>
+          <span class="neo-badge badge-blue">Multi-child</span>
+          <span class="neo-badge badge-green">Week owner</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ticket status strip -->
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(124,58,237,.3);">
+      <div style="font-size:10px;font-weight:800;color:#a78bfa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">
+        Jira backing
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span class="neo-badge badge-green">FHS-3 — habits + weeks + week_actions schema (shipped)</span>
+        <span class="neo-badge badge-amber">FHS-backlog — Habit CRUD API</span>
+        <span class="neo-badge badge-amber">FHS-backlog — Habit Tracker UI</span>
+        <span class="neo-badge badge-red">FHS-backlog — Push nudges + week-close ritual</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SECTION 2: LEGACY REFERENCE
+═══════════════════════════════════════════════════════════════════ -->
+<div class="max-w-5xl mx-auto mb-12">
+  <div class="neo-card bg-gray-50 p-5" style="border-color:#9ca3af;">
+    <div class="flex items-center gap-3 mb-3">
+      <div style="width:28px;height:28px;background:#e5e7eb;border:2px solid #000;border-radius:6px;
+                  display:flex;align-items:center;justify-content:center;font-size:14px;">
+        🗄️
+      </div>
+      <h2 style="font-family:'Fredoka One',cursive;font-size:1rem;color:#374151;margin:0;">
+        How it works in the legacy family-hub today
+      </h2>
+      <span class="neo-badge" style="background:#e5e7eb;color:#6b7280;border-color:#9ca3af;">Reference only</span>
+    </div>
+    <ul style="font-size:11px;font-weight:700;color:#4b5563;line-height:1.9;margin:0;padding-left:16px;">
+      <li><strong>Single-family, single-tenant</strong> — one Postgres instance; no tenant_id on any table. All members share one namespace.</li>
+      <li><strong>Week model</strong> — the <code>weeks</code> table tracks ISO week-number + year + start-date + finalization state; stickers earned carry over as cash via <code>carried_over_stickers</code>.</li>
+      <li><strong>Habit × day grid</strong> — habits are global (not per-member); completion is recorded in <code>habit_stickers</code> keyed by <code>(habit_id, week_id, day)</code>; sticker type (gold-star / heart / sparkles / trophy) is stored as a string.</li>
+      <li><strong>Week-close ritual</strong> — admin finalizes the week via <code>is_finalized = true</code>; <code>week_actions</code> records the disposition: claim reward, cash out, save to piggy bank, or invest in a bonus habit. Results in AED are computed at 0.5 AED per sticker.</li>
+      <li><strong>HabitTracker.tsx</strong> — React component with lazy-loaded AnalyticsView tab, optimistic day-cell updates, role-based day-lock (non-admin can only mark today), and an edit/delete dialog for admin. Icons and colors are stored as strings (star / heart / sparkles / award / zap / checkcircle) mapped to Lucide elements at render time.</li>
+      <li><strong>Gaps vs new SaaS</strong> — no tenant_id, no per-member habit ownership, no REST API layer (component calls <code>api.*</code> helpers directly), no push notifications, no multi-tenant RLS, no Supabase auth integration.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SECTION 3: SCREEN MOCKUPS
+═══════════════════════════════════════════════════════════════════ -->
+<div class="max-w-5xl mx-auto mb-4">
+  <h2 style="font-family:'Fredoka One',cursive;font-size:1.5rem;color:#fff;margin-bottom:4px;">
+    UI Screen Mockups — New SaaS Architecture
+  </h2>
+  <p style="font-size:12px;color:#c4b5fd;font-weight:700;margin-bottom:24px;">
+    6 screens · parent web (580 px frame) + mobile quick-mark (225 px frame) · connected by user flow arrows
+  </p>
+</div>
+
+<!-- ── FLOW ROW 1: Dashboard + Arrow + Add Habit ── -->
+<div class="max-w-5xl mx-auto mb-6 flex items-start justify-center gap-4 flex-wrap">
+
+  <!-- SCREEN 1: Family Dashboard Habit Grid -->
+  <div>
+    <div class="screen-label">Screen 1 — Family Dashboard: This Week's Habit Grid &nbsp;·&nbsp; FHS-backlog (Habit UI)</div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">app.familyhub.io/habits</span>
+      </div>
+      <div class="laptop-screen">
+        <!-- App shell header -->
+        <div style="background:#3d1065;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-family:'Fredoka One',cursive;font-size:15px;color:#fff;display:flex;align-items:center;gap:8px;">
+            <span style="background:#7c3aed;border-radius:8px;padding:2px 8px;font-size:12px;border:1px solid #a78bfa;">FH</span>
+            Family Hub
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:#c4b5fd;font-weight:700;">The Oniyis</span>
+            <div style="width:24px;height:24px;background:#7c3aed;border-radius:50%;border:1px solid #a78bfa;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-family:'Fredoka One',cursive;">FP</div>
+          </div>
+        </div>
+
+        <!-- Page content -->
+        <div style="padding:12px 14px;background:#f9fafb;">
+          <!-- Page title + week nav -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div>
+              <div style="font-family:'Fredoka One',cursive;font-size:15px;color:#1e1e1e;">Habit Tracker</div>
+              <div style="font-size:10px;font-weight:800;color:#6b7280;">Week 18, 2026 &nbsp;·&nbsp; Apr 28 – May 4</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <button class="neo-btn neo-btn-sm neo-btn-sec" style="padding:3px 8px;">&lt;</button>
+              <span class="neo-badge badge-blue" style="font-size:9px;">Current week</span>
+              <button class="neo-btn neo-btn-sm neo-btn-sec" style="padding:3px 8px;opacity:.4;">&gt;</button>
+              <button class="neo-btn neo-btn-sm" style="margin-left:6px;background:#f0abfc;">+ Add Habit</button>
+            </div>
+          </div>
+
+          <!-- Overall progress -->
+          <div style="background:#ede9fe;border:2px solid #000;border-radius:10px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:12px;box-shadow:3px 3px 0 #000;">
+            <div style="flex:1;">
+              <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#5b21b6;margin-bottom:3px;">Family Progress This Week</div>
+              <div class="prog-bar"><div class="prog-fill" style="width:64%;background:#7c3aed;"></div></div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:#5b21b6;">64%</div>
+              <div style="font-size:9px;font-weight:800;color:#7c3aed;">36/56 done</div>
+            </div>
+          </div>
+
+          <!-- Grid header: days -->
+          <div style="display:grid;grid-template-columns:130px repeat(7,1fr) 40px;gap:3px;margin-bottom:4px;align-items:center;">
+            <div style="font-size:9px;font-weight:800;color:#6b7280;">HABIT</div>
+            <div style="font-size:9px;font-weight:800;color:#6b7280;text-align:center;">Mon</div>
+            <div style="font-size:9px;font-weight:800;color:#6b7280;text-align:center;">Tue</div>
+            <div style="font-size:9px;font-weight:800;color:#6b7280;text-align:center;">Wed</div>
+            <div style="font-size:9px;font-weight:800;color:#6b7280;text-align:center;background:#fef9c3;border-radius:4px;padding:1px 0;border:1px solid #fbbf24;">Thu</div>
+            <div style="font-size:9px;font-weight:800;color:#6b7280;text-align:center;">Fri</div>
+            <div style="font-size:9px;font-weight:800;color:#6b7280;text-align:center;opacity:.4;">Sat</div>
+            <div style="font-size:9px;font-weight:800;color:#6b7280;text-align:center;opacity:.4;">Sun</div>
+            <div style="font-size:9px;font-weight:800;color:#6b7280;text-align:center;">7d</div>
+          </div>
+
+          <!-- Member: Yusuf -->
+          <div style="margin-bottom:6px;">
+            <div style="font-size:9px;font-weight:900;color:#7c3aed;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;display:flex;align-items:center;gap:5px;">
+              <span style="width:16px;height:16px;background:#7c3aed;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px;color:#fff;">Y</span>
+              Yusuf (8)
+            </div>
+            <!-- Habit row: Pray Fajr -->
+            <div style="display:grid;grid-template-columns:130px repeat(7,1fr) 40px;gap:3px;align-items:center;margin-bottom:3px;">
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div style="width:16px;height:16px;background:#fde68a;border:1px solid #000;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">★</div>
+                <span style="font-size:10px;font-weight:800;color:#1e1e1e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Pray Fajr on time</span>
+              </div>
+              <div class="day-cell day-cell-done" style="justify-self:center;">✓</div>
+              <div class="day-cell day-cell-done" style="justify-self:center;">✓</div>
+              <div class="day-cell day-cell-done" style="justify-self:center;">✓</div>
+              <div class="day-cell day-cell-today" style="justify-self:center;">★</div>
+              <div class="day-cell day-cell-miss" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-future" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-future" style="justify-self:center;"></div>
+              <div style="font-size:10px;font-weight:900;color:#374151;text-align:center;">4/7</div>
+            </div>
+            <!-- Habit row: Read 30 min -->
+            <div style="display:grid;grid-template-columns:130px repeat(7,1fr) 40px;gap:3px;align-items:center;margin-bottom:3px;">
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div style="width:16px;height:16px;background:#bfdbfe;border:1px solid #000;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">♡</div>
+                <span style="font-size:10px;font-weight:800;color:#1e1e1e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Read 30 minutes</span>
+              </div>
+              <div class="day-cell day-cell-done" style="justify-self:center;">✓</div>
+              <div class="day-cell day-cell-miss" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-done" style="justify-self:center;">✓</div>
+              <div class="day-cell day-cell-miss" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-miss" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-future" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-future" style="justify-self:center;"></div>
+              <div style="font-size:10px;font-weight:900;color:#374151;text-align:center;">2/7</div>
+            </div>
+          </div>
+
+          <!-- Member: Maryam -->
+          <div>
+            <div style="font-size:9px;font-weight:900;color:#ec4899;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;display:flex;align-items:center;gap:5px;">
+              <span style="width:16px;height:16px;background:#ec4899;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px;color:#fff;">M</span>
+              Maryam (11)
+            </div>
+            <!-- Habit row: Drink water -->
+            <div style="display:grid;grid-template-columns:130px repeat(7,1fr) 40px;gap:3px;align-items:center;margin-bottom:3px;">
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div style="width:16px;height:16px;background:#cffafe;border:1px solid #000;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">💧</div>
+                <span style="font-size:10px;font-weight:800;color:#1e1e1e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Drink water (8 cups)</span>
+              </div>
+              <div class="day-cell day-cell-done" style="justify-self:center;">✓</div>
+              <div class="day-cell day-cell-done" style="justify-self:center;">✓</div>
+              <div class="day-cell day-cell-done" style="justify-self:center;">✓</div>
+              <div class="day-cell day-cell-today" style="justify-self:center;">★</div>
+              <div class="day-cell day-cell-miss" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-future" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-future" style="justify-self:center;"></div>
+              <div style="font-size:10px;font-weight:900;color:#374151;text-align:center;">4/7</div>
+            </div>
+            <!-- Habit row: Tidy room -->
+            <div style="display:grid;grid-template-columns:130px repeat(7,1fr) 40px;gap:3px;align-items:center;">
+              <div style="display:flex;align-items:center;gap:4px;">
+                <div style="width:16px;height:16px;background:#d9f99d;border:1px solid #000;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">🏠</div>
+                <span style="font-size:10px;font-weight:800;color:#1e1e1e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Tidy room before bed</span>
+              </div>
+              <div class="day-cell day-cell-done" style="justify-self:center;">✓</div>
+              <div class="day-cell day-cell-done" style="justify-self:center;">✓</div>
+              <div class="day-cell day-cell-miss" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-miss" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-miss" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-future" style="justify-self:center;"></div>
+              <div class="day-cell day-cell-future" style="justify-self:center;"></div>
+              <div style="font-size:10px;font-weight:900;color:#374151;text-align:center;">2/7</div>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <span style="font-size:9px;font-weight:700;color:#6b7280;">Legend:</span>
+            <div style="display:flex;align-items:center;gap:3px;"><div class="day-cell day-cell-done" style="width:14px;height:14px;font-size:8px;">✓</div><span style="font-size:9px;font-weight:700;color:#374151;">Done</span></div>
+            <div style="display:flex;align-items:center;gap:3px;"><div class="day-cell day-cell-today" style="width:14px;height:14px;font-size:8px;">★</div><span style="font-size:9px;font-weight:700;color:#374151;">Today (sticker)</span></div>
+            <div style="display:flex;align-items:center;gap:3px;"><div class="day-cell day-cell-miss" style="width:14px;height:14px;"></div><span style="font-size:9px;font-weight:700;color:#374151;">Missed</span></div>
+            <div style="display:flex;align-items:center;gap:3px;"><div class="day-cell day-cell-future" style="width:14px;height:14px;"></div><span style="font-size:9px;font-weight:700;color:#374151;">Future</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 1→2 -->
+  <div class="flow-arrow" style="margin-top:80px;">
+    <div class="arrow-label">parent clicks<br>"+ Add Habit"</div>
+    <div class="h-arrow-wrap">
+      <div class="h-arrow-line"></div>
+      <div class="h-arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: Add Habit Modal -->
+  <div>
+    <div class="screen-label">Screen 2 — Add Habit Modal &nbsp;·&nbsp; FHS-backlog (Habit CRUD API + UI)</div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">app.familyhub.io/habits</span>
+      </div>
+      <div class="laptop-screen">
+        <!-- Dimmed background -->
+        <div style="background:rgba(0,0,0,.55);position:relative;height:100%;display:flex;align-items:center;justify-content:center;padding:12px;">
+          <!-- Modal -->
+          <div class="neo-card" style="width:100%;max-width:340px;background:#fff;">
+            <!-- Modal header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:2px solid #f3f4f6;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:28px;height:28px;background:#f0abfc;border:2px solid #000;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:2px 2px 0 #000;">+</div>
+                <div style="font-family:'Fredoka One',cursive;font-size:14px;">Add New Habit</div>
+              </div>
+              <div style="width:22px;height:22px;background:#f3f4f6;border:2px solid #000;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;">✕</div>
+            </div>
+            <!-- Form body -->
+            <div style="padding:12px 14px;">
+              <!-- Name -->
+              <label style="font-size:9px;font-weight:900;color:#374151;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;">Habit Name</label>
+              <div class="neo-input" style="margin-bottom:10px;background:#fff;color:#1e1e1e;border-color:#7c3aed;">No screen time after 8 pm</div>
+
+              <!-- Description -->
+              <label style="font-size:9px;font-weight:900;color:#374151;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;">Description <span style="font-weight:600;text-transform:none;">(optional)</span></label>
+              <div class="neo-input" style="margin-bottom:10px;color:#9ca3af;">Applies to Yusuf and Maryam...</div>
+
+              <!-- Applies to -->
+              <label style="font-size:9px;font-weight:900;color:#374151;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;">Applies to</label>
+              <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
+                <div style="border:2px solid #7c3aed;border-radius:8px;padding:3px 9px;font-size:10px;font-weight:800;background:#ede9fe;box-shadow:2px 2px 0 #000;">Yusuf</div>
+                <div style="border:2px solid #ec4899;border-radius:8px;padding:3px 9px;font-size:10px;font-weight:800;background:#fce7f3;box-shadow:2px 2px 0 #000;">Maryam</div>
+                <div style="border:2px solid #d1d5db;border-radius:8px;padding:3px 9px;font-size:10px;font-weight:800;color:#9ca3af;">Everyone</div>
+              </div>
+
+              <!-- Cadence -->
+              <label style="font-size:9px;font-weight:900;color:#374151;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;">Cadence</label>
+              <div style="display:flex;gap:4px;margin-bottom:10px;">
+                <div style="border:2px solid #000;border-radius:7px;padding:3px 9px;font-size:10px;font-weight:800;background:#facc15;box-shadow:2px 2px 0 #000;">Daily</div>
+                <div style="border:2px solid #d1d5db;border-radius:7px;padding:3px 9px;font-size:10px;font-weight:800;color:#6b7280;">Weekdays</div>
+                <div style="border:2px solid #d1d5db;border-radius:7px;padding:3px 9px;font-size:10px;font-weight:800;color:#6b7280;">Custom</div>
+              </div>
+
+              <!-- Color + Icon row -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                <div>
+                  <label style="font-size:9px;font-weight:900;color:#374151;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;">Color</label>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <div style="width:18px;height:18px;background:#fbbf24;border:2px solid #000;border-radius:4px;"></div>
+                    <div style="width:18px;height:18px;background:#f472b6;border:2px solid #d1d5db;border-radius:4px;"></div>
+                    <div style="width:18px;height:18px;background:#86efac;border:2px solid #d1d5db;border-radius:4px;"></div>
+                    <div style="width:18px;height:18px;background:#67e8f9;border:2px solid #d1d5db;border-radius:4px;"></div>
+                    <div style="width:18px;height:18px;background:#c084fc;border:2px solid #d1d5db;border-radius:4px;"></div>
+                    <div style="width:18px;height:18px;background:#fb923c;border:2px solid #d1d5db;border-radius:4px;"></div>
+                  </div>
+                </div>
+                <div>
+                  <label style="font-size:9px;font-weight:900;color:#374151;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;">Icon</label>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <div style="width:18px;height:18px;background:#fef9c3;border:2px solid #000;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">★</div>
+                    <div style="width:18px;height:18px;background:#fce7f3;border:2px solid #d1d5db;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">♡</div>
+                    <div style="width:18px;height:18px;background:#ede9fe;border:2px solid #d1d5db;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">✦</div>
+                    <div style="width:18px;height:18px;background:#dbeafe;border:2px solid #d1d5db;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">⚡</div>
+                    <div style="width:18px;height:18px;background:#d1fae5;border:2px solid #d1d5db;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">🏆</div>
+                    <div style="width:18px;height:18px;background:#f3f4f6;border:2px solid #d1d5db;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">✓</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bonus toggle -->
+              <div style="border:2px solid #fbbf24;border-radius:8px;padding:7px 10px;background:#fef3c7;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <div style="width:28px;height:16px;background:#fbbf24;border-radius:999px;border:1px solid #000;position:relative;flex-shrink:0;">
+                  <div style="width:12px;height:12px;background:#fff;border-radius:50%;border:1px solid #000;position:absolute;top:1px;left:14px;"></div>
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:900;">Bonus Habit</div>
+                  <div style="font-size:9px;color:#6b7280;">Earns 5× stickers per day</div>
+                </div>
+                <span class="neo-badge badge-amber" style="margin-left:auto;">5×</span>
+              </div>
+
+              <!-- Buttons -->
+              <div style="display:flex;gap:6px;">
+                <button class="neo-btn" style="flex:1;background:#f0abfc;">Save Habit</button>
+                <button class="neo-btn neo-btn-sec" style="padding:6px 12px;">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FLOW ROW 2: Habit Detail + Arrow + Mobile ── -->
+<div class="max-w-5xl mx-auto mb-6 flex items-start justify-center gap-4 flex-wrap">
+
+  <!-- SCREEN 3: Habit Detail / Streak View -->
+  <div>
+    <div class="screen-label">Screen 3 — Habit Detail + Streak View &nbsp;·&nbsp; FHS-backlog (Habit API)</div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">app.familyhub.io/habits/12/detail</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="padding:12px 14px;background:#f9fafb;">
+          <!-- Breadcrumb -->
+          <div style="font-size:9px;font-weight:700;color:#9ca3af;margin-bottom:8px;">
+            ← Habits &nbsp;/&nbsp; <span style="color:#7c3aed;">Pray Fajr on time</span>
+          </div>
+          <!-- Habit header -->
+          <div class="neo-card" style="padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:#fde68a;border:2px solid #000;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:3px 3px 0 #000;flex-shrink:0;">★</div>
+            <div style="flex:1;">
+              <div style="font-family:'Fredoka One',cursive;font-size:14px;">Pray Fajr on time</div>
+              <div style="font-size:9px;font-weight:700;color:#6b7280;">Daily · Applies to Yusuf &amp; Maryam</div>
+            </div>
+            <button class="neo-btn neo-btn-sm neo-btn-sec">Edit</button>
+            <button class="neo-btn neo-btn-sm neo-btn-danger" style="background:#fca5a5;">Archive</button>
+          </div>
+
+          <!-- Streak stats -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
+            <div class="neo-card" style="padding:8px 10px;text-align:center;">
+              <div class="streak-flame">🔥</div>
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:#ea580c;">9</div>
+              <div style="font-size:9px;font-weight:800;color:#6b7280;">Day streak</div>
+            </div>
+            <div class="neo-card" style="padding:8px 10px;text-align:center;">
+              <div style="font-size:16px;">⭐</div>
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:#7c3aed;">27</div>
+              <div style="font-size:9px;font-weight:800;color:#6b7280;">Stickers (4 wk)</div>
+            </div>
+            <div class="neo-card" style="padding:8px 10px;text-align:center;">
+              <div style="font-size:16px;">📅</div>
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:#0891b2;">82%</div>
+              <div style="font-size:9px;font-weight:800;color:#6b7280;">All-time rate</div>
+            </div>
+          </div>
+
+          <!-- Completion calendar heatmap (4 weeks) -->
+          <div class="neo-card" style="padding:10px 12px;margin-bottom:10px;">
+            <div style="font-family:'Fredoka One',cursive;font-size:12px;margin-bottom:6px;">Completion Heatmap — Last 4 Weeks</div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px;">
+              <div style="font-size:8px;font-weight:800;color:#9ca3af;text-align:center;">M</div>
+              <div style="font-size:8px;font-weight:800;color:#9ca3af;text-align:center;">T</div>
+              <div style="font-size:8px;font-weight:800;color:#9ca3af;text-align:center;">W</div>
+              <div style="font-size:8px;font-weight:800;color:#9ca3af;text-align:center;">T</div>
+              <div style="font-size:8px;font-weight:800;color:#9ca3af;text-align:center;">F</div>
+              <div style="font-size:8px;font-weight:800;color:#9ca3af;text-align:center;">S</div>
+              <div style="font-size:8px;font-weight:800;color:#9ca3af;text-align:center;">S</div>
+            </div>
+            <!-- Week rows: heat cells -->
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:2px;">
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-2"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-2"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-0"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-1"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-0"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:2px;">
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-2"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-2"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-0"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-1"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:2px;">
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-2"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-0"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-1"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-0"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;">
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-3"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;background:#fef9c3;border:1px solid #fbbf24;"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-0"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-0"></div>
+              <div style="width:100%;aspect-ratio:1;border-radius:3px;" class="heat-0"></div>
+            </div>
+          </div>
+
+          <!-- Member breakdown -->
+          <div class="neo-card" style="padding:10px 12px;">
+            <div style="font-family:'Fredoka One',cursive;font-size:12px;margin-bottom:6px;">Member Breakdown — This Week</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:20px;height:20px;background:#7c3aed;border:2px solid #000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:900;">Y</div>
+                <span style="font-size:10px;font-weight:800;flex:1;">Yusuf</span>
+                <div class="prog-bar" style="flex:2;"><div class="prog-fill" style="width:57%;background:#7c3aed;"></div></div>
+                <span style="font-size:10px;font-weight:900;color:#374151;min-width:28px;text-align:right;">4/7</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:20px;height:20px;background:#ec4899;border:2px solid #000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:900;">M</div>
+                <span style="font-size:10px;font-weight:800;flex:1;">Maryam</span>
+                <div class="prog-bar" style="flex:2;"><div class="prog-fill" style="width:71%;background:#ec4899;"></div></div>
+                <span style="font-size:10px;font-weight:900;color:#374151;min-width:28px;text-align:right;">5/7</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 3→4 -->
+  <div class="flow-arrow" style="margin-top:80px;">
+    <div class="arrow-label">parent views<br>Yusuf profile</div>
+    <div class="h-arrow-wrap">
+      <div class="h-arrow-line"></div>
+      <div class="h-arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: Mobile Quick-Mark -->
+  <div>
+    <div class="screen-label">Screen 4 — Mobile Quick-Mark &nbsp;·&nbsp; FHS-backlog (Push nudge + PWA)</div>
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <!-- Status bar -->
+        <div style="background:#3d1065;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:8px;color:#c4b5fd;font-weight:700;">9:14</span>
+          <span style="font-size:8px;color:#c4b5fd;font-weight:700;">●●● WiFi</span>
+        </div>
+
+        <!-- Push notification banner (pull-down) -->
+        <div style="background:#1e1e1e;margin:6px;border-radius:12px;padding:8px 10px;border:2px solid #333;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <div style="width:18px;height:18px;background:#7c3aed;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;">FH</div>
+            <span style="font-size:10px;font-weight:800;color:#fff;">Family Hub</span>
+            <span style="font-size:8px;color:#9ca3af;margin-left:auto;">now</span>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:3px;">
+            Yusuf — did you pray Fajr today?
+          </div>
+          <div style="font-size:9px;color:#9ca3af;">Tap to mark done and earn a sticker ⭐</div>
+          <!-- Quick-action buttons -->
+          <div style="display:flex;gap:5px;margin-top:8px;">
+            <div style="flex:1;background:#22c55e;border:2px solid #000;border-radius:8px;padding:5px 6px;text-align:center;font-size:10px;font-weight:900;color:#fff;box-shadow:2px 2px 0 #000;">Done ✓</div>
+            <div style="flex:1;background:#f3f4f6;border:2px solid #9ca3af;border-radius:8px;padding:5px 6px;text-align:center;font-size:10px;font-weight:900;color:#6b7280;">Not yet</div>
+          </div>
+        </div>
+
+        <!-- Full screen after tap -->
+        <div style="background:#f9fafb;padding:10px;">
+          <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#1e1e1e;margin-bottom:8px;">Quick Mark</div>
+
+          <!-- Habit card -->
+          <div class="neo-card" style="padding:8px 10px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <div style="width:28px;height:28px;background:#fde68a;border:2px solid #000;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:2px 2px 0 #000;">★</div>
+              <div>
+                <div style="font-family:'Fredoka One',cursive;font-size:12px;">Pray Fajr on time</div>
+                <div style="font-size:9px;font-weight:700;color:#6b7280;">Thursday, 1 May</div>
+              </div>
+            </div>
+            <!-- Sticker picker -->
+            <div style="font-size:9px;font-weight:800;color:#374151;margin-bottom:5px;">Pick your sticker:</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px;">
+              <div style="background:#fbbf24;border:2px solid #000;border-radius:8px;padding:5px;text-align:center;box-shadow:2px 2px 0 #000;font-size:12px;">★</div>
+              <div style="background:#f472b6;border:2px solid #d1d5db;border-radius:8px;padding:5px;text-align:center;font-size:12px;">♡</div>
+              <div style="background:#c084fc;border:2px solid #d1d5db;border-radius:8px;padding:5px;text-align:center;font-size:12px;">✦</div>
+              <div style="background:#86efac;border:2px solid #d1d5db;border-radius:8px;padding:5px;text-align:center;font-size:12px;">🏆</div>
+            </div>
+            <button class="neo-btn" style="width:100%;background:#22c55e;color:#fff;font-size:11px;padding:7px;">Mark Complete!</button>
+          </div>
+
+          <!-- Success state -->
+          <div style="background:#d1fae5;border:2px solid #000;border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;box-shadow:3px 3px 0 #000;">
+            <div style="font-size:22px;">🌟</div>
+            <div>
+              <div style="font-family:'Fredoka One',cursive;font-size:11px;color:#065f46;">Awesome, Yusuf!</div>
+              <div style="font-size:9px;font-weight:700;color:#047857;">+1 sticker earned · 9 day streak!</div>
+            </div>
+          </div>
+
+          <!-- Today's habits mini-list -->
+          <div style="margin-top:8px;">
+            <div style="font-size:9px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">All habits today</div>
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:6px;padding:4px 0;">
+                <div style="width:16px;height:16px;background:#86efac;border:2px solid #000;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;box-shadow:1px 1px 0 #000;">✓</div>
+                <span style="font-size:10px;font-weight:700;color:#374151;flex:1;">Pray Fajr on time</span>
+                <span class="neo-badge badge-green">Done</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:4px 0;">
+                <div style="width:16px;height:16px;background:#f3f4f6;border:2px solid #d1d5db;border-radius:4px;"></div>
+                <span style="font-size:10px;font-weight:700;color:#374151;flex:1;">Read 30 minutes</span>
+                <span class="neo-badge" style="background:#f3f4f6;color:#9ca3af;border-color:#d1d5db;">Pending</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FLOW ROW 3: Member Profile + Arrow + Week Close ── -->
+<div class="max-w-5xl mx-auto mb-6 flex items-start justify-center gap-4 flex-wrap">
+
+  <!-- SCREEN 5: Member Profile Habit Page -->
+  <div>
+    <div class="screen-label">Screen 5 — Member Habit Profile &nbsp;·&nbsp; FHS-backlog (per-member habit query)</div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">app.familyhub.io/members/yusuf/habits</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="padding:12px 14px;background:#f9fafb;">
+          <!-- Member header -->
+          <div class="neo-card" style="padding:10px 12px;margin-bottom:10px;background:#ede9fe;display:flex;align-items:center;gap:10px;">
+            <div style="width:44px;height:44px;background:#7c3aed;border:2px solid #000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:18px;color:#fff;box-shadow:3px 3px 0 #000;flex-shrink:0;">Y</div>
+            <div>
+              <div style="font-family:'Fredoka One',cursive;font-size:15px;color:#5b21b6;">Yusuf's Habits</div>
+              <div style="font-size:9px;font-weight:700;color:#7c3aed;">Age 8 · Week 18, 2026 &nbsp;·&nbsp; 🔥 9-day streak</div>
+            </div>
+            <div style="margin-left:auto;text-align:right;">
+              <div style="font-family:'Fredoka One',cursive;font-size:18px;color:#5b21b6;">57%</div>
+              <div style="font-size:9px;font-weight:800;color:#7c3aed;">8/14 done</div>
+            </div>
+          </div>
+
+          <!-- Habit list - child friendly -->
+          <div style="display:flex;flex-direction:column;gap:6px;">
+
+            <!-- Habit 1 -->
+            <div class="neo-card" style="padding:8px 10px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                <div style="width:24px;height:24px;background:#fde68a;border:2px solid #000;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:2px 2px 0 #000;flex-shrink:0;">★</div>
+                <div style="flex:1;">
+                  <div style="font-size:11px;font-weight:900;">Pray Fajr on time</div>
+                  <div style="font-size:9px;font-weight:700;color:#6b7280;">Daily · Target: 7/7</div>
+                </div>
+                <span class="neo-badge badge-amber">🔥 9 streak</span>
+              </div>
+              <!-- Day strip -->
+              <div style="display:flex;gap:3px;align-items:center;">
+                <div class="day-cell day-cell-done" style="width:24px;height:24px;font-size:9px;">✓</div>
+                <div class="day-cell day-cell-done" style="width:24px;height:24px;font-size:9px;">✓</div>
+                <div class="day-cell day-cell-done" style="width:24px;height:24px;font-size:9px;">✓</div>
+                <div class="day-cell day-cell-today" style="width:24px;height:24px;font-size:9px;">★</div>
+                <div class="day-cell day-cell-miss" style="width:24px;height:24px;"></div>
+                <div class="day-cell day-cell-future" style="width:24px;height:24px;"></div>
+                <div class="day-cell day-cell-future" style="width:24px;height:24px;"></div>
+                <div class="prog-bar" style="flex:1;margin-left:6px;"><div class="prog-fill" style="width:57%;background:#7c3aed;"></div></div>
+                <span style="font-size:10px;font-weight:900;color:#374151;min-width:26px;text-align:right;">4/7</span>
+              </div>
+            </div>
+
+            <!-- Habit 2 -->
+            <div class="neo-card" style="padding:8px 10px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                <div style="width:24px;height:24px;background:#bfdbfe;border:2px solid #000;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:2px 2px 0 #000;flex-shrink:0;">♡</div>
+                <div style="flex:1;">
+                  <div style="font-size:11px;font-weight:900;">Read 30 minutes</div>
+                  <div style="font-size:9px;font-weight:700;color:#6b7280;">Daily · Target: 5/7</div>
+                </div>
+                <span class="neo-badge badge-blue">📚 2 this wk</span>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;">
+                <div class="day-cell day-cell-done" style="width:24px;height:24px;font-size:9px;">✓</div>
+                <div class="day-cell day-cell-miss" style="width:24px;height:24px;"></div>
+                <div class="day-cell day-cell-done" style="width:24px;height:24px;font-size:9px;">✓</div>
+                <div class="day-cell day-cell-miss" style="width:24px;height:24px;"></div>
+                <div class="day-cell day-cell-miss" style="width:24px;height:24px;"></div>
+                <div class="day-cell day-cell-future" style="width:24px;height:24px;"></div>
+                <div class="day-cell day-cell-future" style="width:24px;height:24px;"></div>
+                <div class="prog-bar" style="flex:1;margin-left:6px;"><div class="prog-fill" style="width:29%;background:#3b82f6;"></div></div>
+                <span style="font-size:10px;font-weight:900;color:#374151;min-width:26px;text-align:right;">2/7</span>
+              </div>
+            </div>
+
+            <!-- Habit 3: bonus -->
+            <div class="neo-card" style="padding:8px 10px;background:#fefce8;border-color:#fbbf24;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                <div style="width:24px;height:24px;background:#fbbf24;border:2px solid #000;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:2px 2px 0 #000;flex-shrink:0;">⚡</div>
+                <div style="flex:1;">
+                  <div style="font-size:11px;font-weight:900;">Memorise 1 ayah</div>
+                  <div style="font-size:9px;font-weight:700;color:#6b7280;">Daily · Bonus 5×</div>
+                </div>
+                <span class="neo-badge badge-amber">5× BONUS</span>
+              </div>
+              <div style="display:flex;gap:3px;align-items:center;">
+                <div class="day-cell day-cell-star" style="width:24px;height:24px;font-size:9px;">★</div>
+                <div class="day-cell day-cell-star" style="width:24px;height:24px;font-size:9px;">★</div>
+                <div class="day-cell day-cell-miss" style="width:24px;height:24px;"></div>
+                <div class="day-cell day-cell-star" style="width:24px;height:24px;font-size:9px;">★</div>
+                <div class="day-cell day-cell-miss" style="width:24px;height:24px;"></div>
+                <div class="day-cell day-cell-future" style="width:24px;height:24px;"></div>
+                <div class="day-cell day-cell-future" style="width:24px;height:24px;"></div>
+                <div class="prog-bar" style="flex:1;margin-left:6px;"><div class="prog-fill" style="width:43%;background:#fbbf24;"></div></div>
+                <span style="font-size:10px;font-weight:900;color:#374151;min-width:26px;text-align:right;">3/7</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Sticker total -->
+          <div style="margin-top:10px;background:#d1fae5;border:2px solid #000;border-radius:10px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;box-shadow:3px 3px 0 #000;">
+            <div>
+              <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#065f46;">Stickers Earned (this week)</div>
+              <div style="font-size:10px;font-weight:700;color:#047857;">9 regular + 15 bonus = 24 total ≈ AED 12.00</div>
+            </div>
+            <div style="font-size:28px;">🌟</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow 5→6 -->
+  <div class="flow-arrow" style="margin-top:80px;">
+    <div class="arrow-label">Sunday —<br>week ends</div>
+    <div class="h-arrow-wrap">
+      <div class="h-arrow-line"></div>
+      <div class="h-arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN 6: Week Close Summary Modal -->
+  <div>
+    <div class="screen-label backlog">Screen 6 — Week Close Summary &nbsp;·&nbsp; FHS-backlog (week-close ritual UI)</div>
+    <div class="laptop-frame">
+      <div class="laptop-chrome">
+        <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+        <span class="url-bar">app.familyhub.io/habits</span>
+      </div>
+      <div class="laptop-screen">
+        <div style="background:rgba(0,0,0,.6);position:relative;height:100%;display:flex;align-items:center;justify-content:center;padding:10px;">
+          <!-- Close modal -->
+          <div class="neo-card" style="width:100%;max-width:360px;background:#fff;">
+            <!-- Header -->
+            <div style="background:linear-gradient(135deg,#7c3aed,#ec4899);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-family:'Fredoka One',cursive;font-size:15px;color:#fff;">Week 18 Complete!</div>
+                <div style="font-size:9px;font-weight:700;color:#fce7f3;">Apr 28 – May 4, 2026</div>
+              </div>
+              <div style="font-size:28px;">🎉</div>
+            </div>
+            <!-- Stats -->
+            <div style="padding:10px 12px;">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;">
+                <div style="background:#f9fafb;border:2px solid #000;border-radius:8px;padding:6px 8px;text-align:center;box-shadow:2px 2px 0 #000;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:16px;color:#7c3aed;">68%</div>
+                  <div style="font-size:8px;font-weight:800;color:#6b7280;">Completion</div>
+                </div>
+                <div style="background:#f9fafb;border:2px solid #000;border-radius:8px;padding:6px 8px;text-align:center;box-shadow:2px 2px 0 #000;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:16px;color:#ea580c;">🔥9</div>
+                  <div style="font-size:8px;font-weight:800;color:#6b7280;">Best streak</div>
+                </div>
+                <div style="background:#f9fafb;border:2px solid #000;border-radius:8px;padding:6px 8px;text-align:center;box-shadow:2px 2px 0 #000;">
+                  <div style="font-family:'Fredoka One',cursive;font-size:16px;color:#0891b2;">48</div>
+                  <div style="font-size:8px;font-weight:800;color:#6b7280;">Stickers</div>
+                </div>
+              </div>
+
+              <!-- Top performer -->
+              <div style="background:#fef9c3;border:2px solid #000;border-radius:8px;padding:7px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;box-shadow:3px 3px 0 #000;">
+                <span style="font-size:20px;">🏆</span>
+                <div>
+                  <div style="font-family:'Fredoka One',cursive;font-size:12px;color:#854d0e;">Top performer: Yusuf</div>
+                  <div style="font-size:9px;font-weight:700;color:#92400e;">9-day streak on Fajr · 24 stickers this week</div>
+                </div>
+              </div>
+
+              <!-- Milestones -->
+              <div style="background:#ede9fe;border:2px solid #000;border-radius:8px;padding:7px 10px;margin-bottom:10px;display:flex;flex-direction:column;gap:3px;box-shadow:2px 2px 0 #000;">
+                <div style="font-size:9px;font-weight:900;color:#5b21b6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Milestone unlocked</div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#4c1d95;">
+                  <span style="font-size:14px;">🌙</span> Yusuf: 10-day Fajr streak (4 more days!)
+                </div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#4c1d95;">
+                  <span style="font-size:14px;">📚</span> Maryam: 5 reading days this week — personal best!
+                </div>
+              </div>
+
+              <!-- Sticker economy -->
+              <div style="font-size:9px;font-weight:900;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Sticker earnings — AED 24.00</div>
+              <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#fce7f3;border:1px solid #f9a8d4;border-radius:7px;">
+                  <span style="font-size:12px;">🎁</span>
+                  <div style="flex:1;font-size:10px;font-weight:800;">Claim a reward</div>
+                  <input type="radio" style="accent-color:#ec4899;" checked>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:7px;">
+                  <span style="font-size:12px;">🐷</span>
+                  <div style="flex:1;font-size:10px;font-weight:800;">Save to piggy bank</div>
+                  <input type="radio" style="accent-color:#10b981;">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#fef9c3;border:1px solid #fcd34d;border-radius:7px;">
+                  <span style="font-size:12px;">📈</span>
+                  <div style="flex:1;font-size:10px;font-weight:800;">Invest in a bonus habit</div>
+                  <input type="radio" style="accent-color:#f59e0b;">
+                </div>
+              </div>
+
+              <!-- Lock week button -->
+              <button class="neo-btn" style="width:100%;background:#7c3aed;color:#fff;font-size:12px;padding:9px;">🔒 Lock Week &amp; Apply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SECTION 4: ARCHITECTURE SWIMLANE
+═══════════════════════════════════════════════════════════════════ -->
+<div class="max-w-5xl mx-auto mb-12">
+  <h2 style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:#fff;margin-bottom:4px;">
+    Architecture Mapping — Key User Actions
+  </h2>
+  <p style="font-size:12px;color:#c4b5fd;font-weight:700;margin-bottom:16px;">
+    Where each action lands in the new SaaS stack · tenant_id propagates on every write
+  </p>
+
+  <div class="neo-card" style="background:#1a0d2e;border-color:#7c3aed;padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#2d0d5c;">
+          <th class="lane-cell lane-head" style="width:22%;border-right:1px solid rgba(124,58,237,.3);">User Action</th>
+          <th class="lane-cell lane-head" style="width:25%;border-right:1px solid rgba(124,58,237,.3);">WEB (React + Vite)</th>
+          <th class="lane-cell lane-head" style="width:27%;border-right:1px solid rgba(124,58,237,.3);">API (Hono + Zod)</th>
+          <th class="lane-cell lane-head" style="width:26%;">DATA (Postgres + RLS)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="swimlane-row">
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-weight:800;font-size:11px;color:#f0e6ff;margin-bottom:2px;">Mark habit done</div>
+            <span class="neo-badge badge-green" style="font-size:8px;">FHS-3 (schema)</span>
+          </td>
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>DayCell</code> component → <code>onToggle(habitId, dayIdx)</code> → optimistic update in <code>useHabits()</code> hook</div>
+          </td>
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>POST /api/habits/:id/actions</code> · Zod body: <code>{day, sticker, weekId}</code> · tenant middleware sets <code>req.tenantId</code></div>
+          </td>
+          <td class="lane-cell">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>INSERT INTO habit_stickers (tenant_id, habit_id, week_id, day, sticker)</code> · RLS enforces tenant isolation</div>
+          </td>
+        </tr>
+        <tr class="swimlane-row">
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-weight:800;font-size:11px;color:#f0e6ff;margin-bottom:2px;">Create habit</div>
+            <span class="neo-badge badge-amber" style="font-size:8px;">FHS-backlog (CRUD API)</span>
+          </td>
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>HabitForm</code> modal → <code>createHabit()</code> mutation (React Query / SWR) · optimistic insert to local list</div>
+          </td>
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>POST /api/habits</code> · Zod body: <code>{name, cadence, targetCount, color, icon, memberIds[]}</code></div>
+          </td>
+          <td class="lane-cell">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>INSERT INTO habits (tenant_id, name, cadence, target_count, color, icon)</code> + <code>habit_members</code> junction rows</div>
+          </td>
+        </tr>
+        <tr class="swimlane-row">
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-weight:800;font-size:11px;color:#f0e6ff;margin-bottom:2px;">View member habits</div>
+            <span class="neo-badge badge-amber" style="font-size:8px;">FHS-backlog (member filter)</span>
+          </td>
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>MemberHabitsPage</code> → <code>useHabits({memberId})</code> → renders <code>HabitRow</code> list with avatar</div>
+          </td>
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>GET /api/members/:id/habits?weekId=18</code> · returns habits + sticker progress array per day</div>
+          </td>
+          <td class="lane-cell">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>SELECT … FROM habits JOIN habit_members … JOIN habit_stickers … WHERE tenant_id = $1 AND member_id = $2</code></div>
+          </td>
+        </tr>
+        <tr class="swimlane-row">
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-weight:800;font-size:11px;color:#f0e6ff;margin-bottom:2px;">Lock / close week</div>
+            <span class="neo-badge badge-red" style="font-size:8px;">FHS-backlog (week-close)</span>
+          </td>
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>WeekCloseSummary</code> modal → admin selects disposition (claim/save/invest) → <code>closeWeek()</code> mutation</div>
+          </td>
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>POST /api/weeks/:id/close</code> · body: <code>{action, rewardName?}</code> · idempotent — 409 if already finalized</div>
+          </td>
+          <td class="lane-cell">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>UPDATE weeks SET is_finalized=true, closure_snapshot=…</code> + <code>INSERT INTO week_actions (tenant_id, …)</code></div>
+          </td>
+        </tr>
+        <tr class="swimlane-row">
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-weight:800;font-size:11px;color:#f0e6ff;margin-bottom:2px;">Push nudge (mobile)</div>
+            <span class="neo-badge badge-red" style="font-size:8px;">FHS-backlog (notifications)</span>
+          </td>
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;">PWA service worker receives push → renders system notification with quick-action buttons (Done / Not yet)</div>
+          </td>
+          <td class="lane-cell" style="border-right:1px solid rgba(255,255,255,.06);">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;">Scheduled job (Railway CRON) calls Supabase push endpoint per member per pending habit after Fajr time</div>
+          </td>
+          <td class="lane-cell">
+            <div style="font-size:10px;color:#c4b5fd;font-weight:700;"><code>SELECT habits … WHERE NOT EXISTS (sticker today)</code> scoped by <code>tenant_id</code>; result drives notification payload</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SECTION 5: WHAT'S BUILT vs GAP
+═══════════════════════════════════════════════════════════════════ -->
+<div class="max-w-5xl mx-auto mb-12">
+  <div class="neo-card" style="padding:0;overflow:hidden;">
+    <!-- Header -->
+    <div style="background:#1e1e1e;padding:10px 16px;display:flex;align-items:center;gap:10px;">
+      <div style="font-family:'Fredoka One',cursive;font-size:14px;color:#fff;">What's Already Built vs Backlog Gap</div>
+    </div>
+    <!-- Two columns -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;padding:16px;gap:16px;">
+      <!-- Shipped -->
+      <div>
+        <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#065f46;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+          <span style="font-size:16px;">✅</span> Already Shipped
+        </div>
+        <ul style="font-size:11px;font-weight:700;color:#374151;line-height:2;margin:0;padding-left:16px;">
+          <li><code>habits</code>, <code>weeks</code>, <code>habit_stickers</code>, <code>week_actions</code> schema with <code>tenant_id</code> cascade — <strong>FHS-3</strong></li>
+          <li>Drizzle migration committed; schema pushed to staging Postgres</li>
+          <li>RLS policies on all four tables — tenant isolation enforced at DB layer</li>
+          <li>Integration tests (Cucumber + Vitest) covering habit CRUD and tenant isolation scenarios — <strong>FHS-218</strong></li>
+          <li>Week finalization model (<code>is_finalized</code>, <code>closure_snapshot</code>, <code>carried_over_stickers</code>)</li>
+          <li>Sticker economy fields (<code>sticker_value</code>, <code>is_allocated</code>) and <code>savings</code> / <code>investments</code> tables</li>
+        </ul>
+      </div>
+      <!-- Gap -->
+      <div>
+        <div style="font-family:'Fredoka One',cursive;font-size:13px;color:#991b1b;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+          <span style="font-size:16px;">🚧</span> Backlog Gap
+        </div>
+        <ul style="font-size:11px;font-weight:700;color:#374151;line-height:2;margin:0;padding-left:16px;">
+          <li>Habit CRUD endpoints (<code>POST/PATCH/DELETE /api/habits</code>) — not yet built</li>
+          <li><code>habit_members</code> junction table (per-member habit assignment) — schema extension needed</li>
+          <li>Habit Tracker UI components (<code>DayCell</code>, <code>HabitForm</code>, <code>WeekNav</code>, <code>MemberHabitsPage</code>)</li>
+          <li>Week-close ritual UI (summary modal + disposition picker)</li>
+          <li>PWA push notifications (daily Fajr / habit nudge via Railway CRON + Supabase)</li>
+          <li>Sticker animation on quick-mark (CSS keyframe — no JS required)</li>
+          <li>Streak computation query and API endpoint</li>
+          <li>Heatmap / analytics view for habit completion history</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════════════════ -->
+<div class="max-w-5xl mx-auto mb-8 flex items-center justify-between flex-wrap gap-4">
+  <a href="../parent.html" style="font-size:11px;font-weight:800;color:#a78bfa;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+    ← Back to parent persona overview
+  </a>
+  <div style="font-size:10px;font-weight:700;color:#6b7280;">
+    Family Hub · Design System · Habit Tracker · Coordinating Parent persona
+  </div>
+</div>
+
+</body>
+</html>
