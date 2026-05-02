@@ -6,3 +6,5 @@ export { Badge } from './Badge';
 export { Dialog } from './Dialog';
 export { Label } from './Label';
 export { ToastProvider, useToast } from './Toast';
+export { TopNav, type TopNavTab } from './TopNav';
+export { AvatarGrid, type AvatarTile } from './AvatarGrid';
