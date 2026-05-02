@@ -17,7 +17,7 @@ import { Button, Card } from '@familyhub/ui';
 // Source design: Magic Patterns kudjspxd3xxroueg5jw11o pages/Welcome.tsx.
 
 const inviterNames = [
-  'Sarah',
+  'Jumi',
   'Aisha',
   'Maria',
   'Priya',
@@ -26,6 +26,7 @@ const inviterNames = [
   'Sofia',
   'Yara',
   'Olivia',
+  'Sarah',
   'Mei',
 ] as const;
 
