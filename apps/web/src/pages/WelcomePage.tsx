@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Calendar, CheckSquare, Home } from 'lucide-react';
+import { Calendar, CheckSquare, BookOpen, NotebookPen } from 'lucide-react';
 import { Button, Card } from '@familyhub/ui';
 
 // Hero copy rotates between two ad pitches every 5 seconds, each
@@ -87,13 +87,22 @@ const featureCards = [
     body: 'Assign chores, track habits, reward effort. No more nagging — the app does it for you.',
   },
   {
-    accentBar: 'border-l-orange-400',
+    accentBar: 'border-l-blue-500',
     headerBg: 'bg-cyan-200',
     cardBg: 'bg-cyan-50',
+    iconColor: 'text-blue-600',
+    Icon: BookOpen,
+    title: 'Curious minds, every day',
+    body: 'Quran, math, languages, world flags — culturally aware defaults baked in. Bite-sized, kid-friendly, parent-tracked.',
+  },
+  {
+    accentBar: 'border-l-orange-400',
+    headerBg: 'bg-pink-200',
+    cardBg: 'bg-pink-50',
     iconColor: 'text-orange-500',
-    Icon: Home,
-    title: 'Built for your culture',
-    body: 'Hijri calendar, Ramadan routines, culturally aware defaults. Family Hub fits your life, not the other way around.',
+    Icon: NotebookPen,
+    title: 'Memories that last',
+    body: "A shared family journal — milestones, gratitude, the funny things the kids said. Your family's story, safe in one place.",
   },
 ] as const;
 
@@ -251,8 +260,9 @@ export function WelcomePage() {
           Trusted by 2,400+ families in UAE, UK &amp; US
         </p>
 
-        {/* Feature cards — compact row sits above the fold. */}
-        <div className="grid w-full grid-cols-1 gap-4 text-left md:grid-cols-3">
+        {/* Feature cards — 4 pillars: Calendar, Tasks, Learn, Journal.
+            Cultural angle woven into the Learn card description. */}
+        <div className="grid w-full grid-cols-1 gap-4 text-left sm:grid-cols-2 lg:grid-cols-4">
           {featureCards.map(
             ({ accentBar, headerBg, cardBg, iconColor, Icon, title, body }, idx) => (
               <motion.div
@@ -260,10 +270,15 @@ export function WelcomePage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 * (idx + 1), duration: 0.4 }}
+                {...(reduceMotion
+                  ? {}
+                  : { whileHover: { y: -6, rotate: -1, transition: { duration: 0.15 } } })}
               >
-                <Card className={`h-full !p-0 ${cardBg} text-black border-l-[6px] ${accentBar}`}>
+                <Card
+                  className={`h-full !p-0 !shadow-neo-lg hover:!shadow-[8px_8px_0_0_rgba(0,0,0,1)] transition-shadow duration-150 ${cardBg} text-black border-l-[6px] ${accentBar}`}
+                >
                   <div className={`flex items-center justify-center p-3 ${headerBg}`}>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-md border-2 border-black bg-white shadow-neo-sm">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-md border-2 border-black bg-white shadow-neo">
                       <Icon className={iconColor} size={26} />
                     </div>
                   </div>
