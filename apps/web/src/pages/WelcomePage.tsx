@@ -17,7 +17,7 @@ import { Button, Card } from '@familyhub/ui';
 // Source design: Magic Patterns kudjspxd3xxroueg5jw11o pages/Welcome.tsx.
 
 const inviterNames = [
-  'Sarah',
+  'Jumi',
   'Aisha',
   'Maria',
   'Priya',
@@ -26,6 +26,7 @@ const inviterNames = [
   'Sofia',
   'Yara',
   'Olivia',
+  'Sarah',
   'Mei',
 ] as const;
 
@@ -113,13 +114,16 @@ export function WelcomePage() {
 
   // Fast-cycle the partner name on the invited-parent slide so the
   // headline reads as "your partner just sent you a link" across many
-  // cultures. Only ticks while that slide is visible.
+  // cultures. Only ticks while that slide is visible. Resets to index
+  // 0 (Jumi) every time the slide becomes visible so the cycle always
+  // STARTS with Jumi rather than whatever value it left off on.
   useEffect(() => {
-    if (reduceMotion) return;
     if (slides[currentSlide]?.id !== 'invited-parent') return;
+    setInviterIdx(0);
+    if (reduceMotion) return;
     const id = setInterval(() => {
       setInviterIdx((prev) => (prev + 1) % inviterNames.length);
-    }, 900);
+    }, 1500);
     return () => clearInterval(id);
   }, [currentSlide, reduceMotion]);
 
