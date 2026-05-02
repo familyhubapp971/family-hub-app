@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
     },
     server: {
-      port: 5173,
+      port: 5273,
       strictPort: true,
       proxy: {
         // Forward /api/* to the Hono API during dev so the browser sees
@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     preview: {
-      port: 5173,
+      port: 5273,
       strictPort: true,
     },
   };

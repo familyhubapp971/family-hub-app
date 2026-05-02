@@ -25,7 +25,7 @@ export default defineConfig({
     ? [['github'], ['html', { outputFolder: './playwright-report-critical', open: 'never' }]]
     : [['list'], ['html', { outputFolder: './playwright-report-critical', open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5273',
     testIdAttribute: 'data-testid',
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
@@ -42,7 +42,7 @@ export default defineConfig({
     },
     {
       command: 'pnpm --filter @familyhub/web dev',
-      url: 'http://localhost:5173',
+      url: 'http://localhost:5273',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },

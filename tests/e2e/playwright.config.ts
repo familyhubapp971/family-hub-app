@@ -25,7 +25,7 @@ export default defineConfig({
     ? [['github'], ['html', { outputFolder: './playwright-report', open: 'never' }]]
     : [['list'], ['html', { outputFolder: './playwright-report', open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5273',
     testIdAttribute: 'data-testid',
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
@@ -41,7 +41,7 @@ export default defineConfig({
       use: { ...devices['Pixel 5'] },
     },
   ],
-  // Boot BOTH the api (port 3001) and the web (port 5173). Web's Vite
+  // Boot BOTH the api (port 3001) and the web (port 5273). Web's Vite
   // dev server proxies /api → api. CI has no manually-started servers;
   // locally we reuse if already running. Bumped timeout to 120s for
   // cold pnpm + tsx + vite startup on a fresh CI runner.
@@ -55,7 +55,7 @@ export default defineConfig({
     },
     {
       command: 'pnpm --filter @familyhub/web dev',
-      url: 'http://localhost:5173',
+      url: 'http://localhost:5273',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
