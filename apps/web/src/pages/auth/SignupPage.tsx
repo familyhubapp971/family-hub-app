@@ -125,7 +125,15 @@ export function SignupPage() {
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body md:flex-row md:bg-white">
       {/* Left panel — social proof. Hidden on mobile to save vertical space. */}
-      <aside className="hidden flex-col justify-center bg-kingdom-bg p-12 text-white md:flex md:w-1/2 lg:p-16">
+      <aside className="relative hidden flex-col justify-center bg-kingdom-bg p-12 text-white md:flex md:w-1/2 lg:p-16">
+        {/* Brand link (md+) — top-left of the kingdom-purple panel.
+            Mobile gets its own brand on the form panel below. */}
+        <Link
+          to="/"
+          className="absolute left-12 top-8 font-heading text-2xl text-white transition-opacity hover:opacity-90 lg:left-16"
+        >
+          FamilyHub
+        </Link>
         <h1 className="mb-10 font-heading text-4xl leading-tight text-yellow-300 lg:text-5xl">
           Join 2,400+ families already coordinated.
         </h1>
@@ -149,6 +157,15 @@ export function SignupPage() {
       {/* Right panel — form. Full-width on mobile, half on md+. */}
       <main className="flex w-full flex-col justify-center bg-white p-6 text-black md:w-1/2 md:p-12 lg:p-16">
         <div className="mx-auto w-full max-w-md">
+          {/* Brand link (mobile only) — md+ shows the brand on the
+              left kingdom-purple panel instead, so hide it here to
+              avoid duplication. */}
+          <Link
+            to="/"
+            className="mb-6 inline-block font-heading text-2xl text-kingdom-bg transition-opacity hover:opacity-90 md:hidden"
+          >
+            FamilyHub
+          </Link>
           <h2 className="mb-2 font-heading text-3xl">Create your family</h2>
           <p className="mb-6 font-bold text-gray-600">
             We&rsquo;ll email you a one-time link to log in. No password to remember.
