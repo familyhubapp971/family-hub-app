@@ -13,42 +13,48 @@ Magic Patterns text-box character limit is ~2000 chars; prompt below is
 ## Copy this into the Magic Patterns prompt box
 
 ```
-Family Hub — multi-tenant SaaS for families to coordinate habits, tasks, meals, school, savings, and rewards. One subdomain per family (<slug>.familyhub.app). Each family has multiple members (admin/adult/teen/child/guest). Primary persona: the coordinating parent (mum or dad) who owns the family mental load.
+Family Hub — multi-tenant SaaS for families to coordinate habits, tasks, meals, school, savings, rewards. One subdomain per family (<slug>.familyhub.app). Members: admin/adult/teen/child/guest. Primary user: coordinating parent who owns the family mental load.
 
-Stack: React 18 + Vite + Tailwind. Hono API. Postgres with row-level security per tenant. Supabase auth.
+Stack: React 18 + Vite + Tailwind. Hono API. Postgres + RLS per tenant. Supabase auth.
 
 DESIGN SYSTEM (mandatory):
-- Style: NEO-BRUTALIST. Hard 0px-radius offset shadows (1-6px black). 2px solid black borders on all cards/buttons/inputs. Sharp or rounded-md corners only — never rounded-2xl/3xl. Bold weights everywhere.
-- Page background: kingdom purple #3d1065. Cards sit on top: white or pastel (yellow-100 #fef9c3, pink-100 #fce7f3, cyan-100 #cffafe, lime-100 #ecfccb).
-- Headings: "Fredoka One" (Google Fonts). Body: "Nunito" weights 400/600/700/800/900.
-- Shadow tokens: shadow-neo-xs (1px), shadow-neo-sm (2px), shadow-neo (3px), shadow-neo-md (4px), shadow-neo-lg (6px) — all "Npx Npx 0 0 rgba(0,0,0,1)".
-- Components to mirror: Button (yellow-300 primary, black border, neo shadow, hover lift), Card (white or pastel, black border, neo shadow), Badge (small pill, black border), Input (white, black border, focus ring kingdom).
-- Allowed accent palette: Tailwind slate, purple, pink, lime, cyan, yellow scales 100-700 only as accents — never as primary surfaces.
+- NEO-BRUTALIST. Hard 0px offset shadows (1-6px black). 2px solid black borders on all cards/buttons/inputs. Sharp or rounded-md only — never rounded-2xl/3xl. Bold weights.
+- Page bg: kingdom purple #3d1065. Cards: white or pastel (yellow-100 #fef9c3, pink-100 #fce7f3, cyan-100 #cffafe, lime-100 #ecfccb).
+- Headings "Fredoka One". Body "Nunito" 400/600/700/800/900.
+- Shadows: shadow-neo-xs/sm/md/lg = "Npx Npx 0 0 rgba(0,0,0,1)".
+- Button: yellow-300 primary, black border, neo shadow, hover lifts. Card: white/pastel + black border + neo. Badge: small pill + black border. Input: white + black border + kingdom focus ring.
+- Accents only from Tailwind slate/purple/pink/lime/cyan/yellow 100-700 — never as primary surfaces.
 
-OUTPUT REQUIREMENTS:
-- Realistic copy for a Muslim/global family. Real names (Yusuf, Sarah, Khan family). Real habit/meal names. Bilingual-friendly (English + Arabic comfortable).
-- Mobile-first when the surface is parent-or-kid daily use. Web-first for admin and analytics surfaces.
-- Every interactive element shows hover/active state.
-- Empty states are designed, not blank.
+OUTPUT — DESIGN THE FULL END-TO-END FLOW (not a single screen):
+- Output every screen in the user's journey from entry → success/exit, in order, connected by labelled arrows showing the user action that triggers each transition.
+- Include the obvious branches: error states, empty states, loading skeletons, validation rejection, "no permission" fallback. Don't draw only the happy path.
+- Mark each screen with the device frame it lives on (mobile 375w / tablet 768w / web 1024w+) and the persona seeing it.
+- Realistic copy: Khan family, kids Yusuf + Aisha, real habits/meals/dates. English-first, Arabic-friendly.
+- Every interactive element shows hover + active. Empty states are designed, not blank.
 
-WHAT I'M DESIGNING NOW: [REPLACE WITH SPECIFIC SCREEN — e.g. "the family member onboarding wizard step 3: invite members"]
+E2E FLOW TO DESIGN: [REPLACE — e.g. "family signup → onboarding wizard → first habit added → first week-close ritual"]
 ```
 
 ---
 
 ## How to use
 
-1. Copy the block above (paste into Magic Patterns prompt box).
-2. Replace the **WHAT I'M DESIGNING NOW** placeholder with a specific
-   screen request (e.g. "the family member onboarding wizard step 3:
-   invite members" or "habit tracker week-grid mobile view").
-3. Generate.
-4. Review the output against the
-   [persona screen mockups](personas/) for visual consistency.
-5. To pull design back into the codebase: use the Magic Patterns MCP
-   (`mcp__claude_ai_Magic_Patterns__create_design`) which can
-   round-trip to a code artifact you commit under `documents/design/`
-   or directly into `apps/web/src/components/`.
+1. Copy the block above and paste into the Magic Patterns prompt box.
+2. Replace the **E2E FLOW TO DESIGN** line with a specific user journey.
+   Pick a real flow with a clear start and end — e.g.:
+   - `"family signup → email verify → onboarding wizard (4 steps) → empty dashboard → invite first member"`
+   - `"habit tracker: kid opens app → marks habit done → earns sticker → checks wallet → redeems reward → parent approval push"`
+   - `"meal planning: open this week → drag meals into slots → generate shopping list → check off items at store"`
+   - `"school start of term: parent imports school iCal → conflict warning fires → resolve → child sees their term calendar"`
+3. Generate. The output should be **multiple screens connected with
+   arrows**, not a single screen.
+4. Review against the existing [persona screen mockups](personas/) for
+   visual consistency.
+5. To pull the design back into the codebase: use the Magic Patterns MCP
+   (`mcp__claude_ai_Magic_Patterns__create_design` →
+   `mcp__claude_ai_Magic_Patterns__read_artifact_files`) and commit each
+   screen as a React component under `apps/web/src/components/<feature>/`
+   OR as an HTML mockup under `documents/design/personas/parent/features/`.
 
 ## Per-persona starter prompts
 
