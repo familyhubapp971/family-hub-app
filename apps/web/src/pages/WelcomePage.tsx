@@ -32,9 +32,9 @@ const inviterNames = [
 const slides = [
   {
     id: 'sarah',
-    headline: 'Stop juggling five apps for one family.',
+    headline: 'Your whole family, finally in sync.',
     subtitle:
-      'Family Hub is the operating system for family life — one place for schedules, tasks, meals, learning, and the mental load your family generates every single day.',
+      "One beautifully calm place for the schedules, tasks, meals, and learning that make family life hum — so everyone wakes up knowing what's on.",
     cta: 'Start free — no card needed',
   },
   {
@@ -46,7 +46,7 @@ const slides = [
     id: 'invited-parent',
     headline: null,
     subtitle:
-      "She's done being the only one who remembers the dentist, the swim kit, and the bin day. Tap the link — you're on the team now.",
+      "From this week's meals to the kids' assignments, you'll both be looking at the same plan. Tap the link — let's run the week together.",
     cta: 'Join the family team',
   },
 ] as const;
@@ -207,7 +207,7 @@ export function WelcomePage() {
                         {inviterName}
                       </motion.span>
                     </AnimatePresence>{' '}
-                    just invited you to run the family together.
+                    just teamed up with you on family life.
                   </>
                 ) : (
                   slide.headline
