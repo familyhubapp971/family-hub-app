@@ -9,7 +9,7 @@ Feature: Landing page
   so that I can see the API is alive end-to-end
 
   @critical
-  Scenario: Landing page renders the /hello payload
+  Scenario: Health page renders the /hello payload
     Given I open the landing page
     Then I see the Family Hub heading
     And the hello message is shown
