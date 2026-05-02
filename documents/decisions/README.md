@@ -60,3 +60,5 @@ _Seeded by FHS-172 / FHS-173 / FHS-174 — populate as ADRs land:_
 - [`0007-stack-reuse.md`](0007-stack-reuse.md) — accepted (FHS-154)
 - [`0008-supabase-environments.md`](0008-supabase-environments.md) — accepted (FHS-187): two projects on Free, branches when on Pro
 - [`0009-family-membership-model.md`](0009-family-membership-model.md) — accepted: single `family_members` table for everyone in a family (parents, children, guardians)
+- [`0010-frontend-animation-library.md`](0010-frontend-animation-library.md) — accepted: framer-motion v11 for web animations (FHS-220)
+- [`0011-magic-link-only-parent-auth.md`](0011-magic-link-only-parent-auth.md) — accepted: parent auth is magic-link + Google OAuth, no passwords (FHS-224, FHS-248)
