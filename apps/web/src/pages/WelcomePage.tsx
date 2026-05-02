@@ -266,10 +266,15 @@ export function WelcomePage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 * (idx + 1), duration: 0.4 }}
+                whileHover={
+                  reduceMotion ? undefined : { y: -6, rotate: -1, transition: { duration: 0.15 } }
+                }
               >
-                <Card className={`h-full !p-0 ${cardBg} text-black border-l-[6px] ${accentBar}`}>
+                <Card
+                  className={`h-full !p-0 !shadow-neo-lg hover:!shadow-[8px_8px_0_0_rgba(0,0,0,1)] transition-shadow duration-150 ${cardBg} text-black border-l-[6px] ${accentBar}`}
+                >
                   <div className={`flex items-center justify-center p-3 ${headerBg}`}>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-md border-2 border-black bg-white shadow-neo-sm">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-md border-2 border-black bg-white shadow-neo">
                       <Icon className={iconColor} size={26} />
                     </div>
                   </div>
