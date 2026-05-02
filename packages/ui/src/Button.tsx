@@ -19,12 +19,23 @@ export function Button({
 }: ButtonProps) {
   // focus-visible ring keeps keyboard users oriented (WCAG 2.4.7) — must
   // not drop the ring when removing the default outline.
-  const baseStyles =
-    'inline-flex items-center justify-center font-black rounded-xl border-2 border-black transition-all duration-150 active:translate-y-1 active:shadow-none focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2';
+  // Hover: lift -2px (pointer devices only) + grow shadow → 5px. Press:
+  // sink back down + drop shadow. The motion-safe variant gates the
+  // transform behind prefers-reduced-motion so vestibular-sensitive
+  // users see colour changes only.
+  const baseStyles = [
+    'inline-flex items-center justify-center font-black rounded-xl border-2 border-black',
+    'transition-all duration-150',
+    'motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-neo-md',
+    'active:translate-y-1 active:shadow-none',
+    'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
+  ].join(' ');
+  // Hover bg-* shifts (variant overrides shadow only on the ghost/borderless variant).
   const variants = {
     primary: 'bg-yellow-400 text-black shadow-neo hover:bg-yellow-300',
     secondary: 'bg-white text-black shadow-neo hover:bg-gray-50',
-    ghost: 'bg-transparent border-transparent shadow-none text-white hover:bg-white/10',
+    ghost:
+      'bg-transparent border-transparent shadow-none text-white hover:bg-white/10 motion-safe:hover:translate-y-0 motion-safe:hover:shadow-none',
     danger: 'bg-red-500 text-white shadow-neo hover:bg-red-400',
     success: 'bg-lime-400 text-black shadow-neo hover:bg-lime-300',
   };
