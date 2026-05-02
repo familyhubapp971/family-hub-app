@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assignments + Family Admin Panel — Family Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Nunito', sans-serif; background: #3d1065; }
+    .font-display { font-family: 'Fredoka One', cursive; }
+    .shadow-neo    { box-shadow: 3px 3px 0 0 #000; }
+    .shadow-neo-sm { box-shadow: 2px 2px 0 0 #000; }
+    .shadow-neo-md { box-shadow: 4px 4px 0 0 #000; }
+    .shadow-neo-lg { box-shadow: 6px 6px 0 0 #000; }
+    .shadow-neo-xs { box-shadow: 1px 1px 0 0 #000; }
+    .border-b-l-4  { border-left-width: 4px; }
+    /* mobile phone frame */
+    .phone-frame {
+      width: 320px; min-height: 580px;
+      border: 3px solid #000; border-radius: 32px;
+      box-shadow: 6px 6px 0 0 #000;
+      overflow: hidden; position: relative; background: #f9fafb;
+    }
+    .phone-notch {
+      width: 90px; height: 18px;
+      background: #000; border-radius: 0 0 12px 12px;
+      margin: 0 auto;
+    }
+    /* browser frame */
+    .browser-frame {
+      border: 2px solid #000; border-radius: 12px;
+      box-shadow: 4px 4px 0 0 #000; overflow: hidden;
+    }
+    .browser-bar {
+      background: #e5e7eb; border-bottom: 2px solid #000;
+      padding: 8px 12px; display: flex; align-items: center; gap: 6px;
+    }
+    .browser-dot { width:10px;height:10px;border-radius:50%;border:1.5px solid #000; }
+    /* swimlane */
+    .swim-cell { border: 1.5px solid #000; padding: 8px 10px; font-size: 12px; font-weight: 700; }
+    .swim-head { background:#1e1e2e; color:#fff; border:1.5px solid #000; padding:8px 10px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; }
+    /* arrow */
+    .arrow-r::after { content:'→'; margin-left:4px; color:#6b21a8; font-weight:900; }
+  </style>
+</head>
+<body class="min-h-screen px-4 py-12">
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION 1 · HERO                                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="max-w-5xl mx-auto mb-16">
+
+  <!-- page title -->
+  <div class="text-center mb-10">
+    <p class="text-purple-300 text-sm font-bold uppercase tracking-widest mb-2">Parent Persona · Feature Design</p>
+    <h1 class="font-display text-5xl text-white mb-3">Assignments + Family Admin</h1>
+    <p class="text-purple-200 text-lg max-w-2xl mx-auto">
+      Assign chores and homework to any family member, review photo proof, and manage the full family roster — all from one parent-facing control panel.
+    </p>
+  </div>
+
+  <!-- persona card + ticket notice -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- persona -->
+    <div class="bg-yellow-100 border-2 border-black rounded-2xl shadow-neo-md p-6">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-16 h-16 bg-yellow-400 border-2 border-black rounded-2xl shadow-neo-sm flex items-center justify-center text-3xl">👩‍💼</div>
+        <div>
+          <p class="text-xs font-black text-gray-500 uppercase tracking-widest">Primary Persona</p>
+          <h2 class="font-display text-2xl text-gray-900">The Coordinating Parent</h2>
+        </div>
+      </div>
+      <ul class="space-y-1.5 text-sm font-semibold text-gray-700">
+        <li class="flex gap-2"><span class="text-yellow-600 font-black">Goal</span> Keep every child on track without being their alarm clock</li>
+        <li class="flex gap-2"><span class="text-yellow-600 font-black">Pain</span> Tasks forgotten, responsibilities unclear, no visibility</li>
+        <li class="flex gap-2"><span class="text-yellow-600 font-black">Context</span> Manages 2–4 children aged 6–16, uses web on desktop</li>
+        <li class="flex gap-2"><span class="text-yellow-600 font-black">Role</span> Admin-level access: creates tasks, invites members, sets roles</li>
+      </ul>
+    </div>
+
+    <!-- ticket notice -->
+    <div class="bg-amber-50 border-2 border-amber-400 rounded-2xl shadow-neo-md p-6">
+      <div class="flex items-start gap-3 mb-4">
+        <div class="w-10 h-10 bg-amber-400 border-2 border-black rounded-xl shadow-neo-xs flex items-center justify-center text-xl flex-shrink-0">⚠️</div>
+        <div>
+          <p class="font-black text-amber-900 text-base">No Jira ticket yet</p>
+          <p class="text-sm text-amber-800 mt-1">These features are backlog gaps — no FHS ticket exists. Tickets must be created before implementation begins.</p>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <div class="flex items-center gap-2 bg-white border border-amber-300 rounded-xl px-3 py-2">
+          <span class="text-xs font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">NEEDS TICKET</span>
+          <span class="text-sm font-bold text-gray-700">Assignments / Tasks CRUD</span>
+        </div>
+        <div class="flex items-center gap-2 bg-white border border-amber-300 rounded-xl px-3 py-2">
+          <span class="text-xs font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">NEEDS TICKET</span>
+          <span class="text-sm font-bold text-gray-700">Photo Proof verification flow</span>
+        </div>
+        <div class="flex items-center gap-2 bg-white border border-amber-300 rounded-xl px-3 py-2">
+          <span class="text-xs font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">NEEDS TICKET</span>
+          <span class="text-sm font-bold text-gray-700">Member invite + role management</span>
+        </div>
+        <div class="flex items-center gap-2 bg-white border border-amber-300 rounded-xl px-3 py-2">
+          <span class="text-xs font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">NEEDS TICKET</span>
+          <span class="text-sm font-bold text-gray-700">Family settings (slug, timezone, currency)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION 2 · LEGACY REFERENCE                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="max-w-5xl mx-auto mb-16">
+  <div class="bg-white/10 border border-white/20 rounded-2xl p-6">
+    <p class="text-xs font-black text-purple-300 uppercase tracking-widest mb-4">Legacy Reference — family-hub v1</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-purple-100 font-semibold">
+      <div>
+        <p class="font-black text-white mb-2">Assignments / Tasks</p>
+        <ul class="space-y-1 list-disc list-inside">
+          <li><code class="text-pink-300">Assignments.tsx</code> — per-subject cards (Math/English/Science/Art/General), toggle completion, inline edit, file attachments, Claude Vision AI extraction from uploaded images/PDFs</li>
+          <li><code class="text-pink-300">MyTasks.tsx</code> — unified task feed pulling from assignments, announcements, and standalone tasks; priority inferred from due-date proximity; kid-facing "today" view</li>
+          <li>No recurring tasks; no photo-proof gating; single member-per-assignment only</li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-black text-white mb-2">Admin Panel / Roles</p>
+        <ul class="space-y-1 list-disc list-inside">
+          <li><code class="text-pink-300">AdminPanel.tsx</code> — 5 tabs: Balance, Savings, History, Users, App Info; Users tab has per-member permission toggles (16 flags), inline role edit, add-user form</li>
+          <li><code class="text-pink-300">ProfileSelector.tsx</code> — emoji + magical-phrase auth; no JWT; Child members excluded from login</li>
+          <li>Single-family, no tenant isolation; roles stored as plain text; no email/magic-link invites</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION 3 · SCREEN MOCKUPS                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- Cluster A header -->
+<section class="max-w-5xl mx-auto mb-6">
+  <div class="flex items-center gap-4">
+    <div class="w-10 h-10 bg-pink-400 border-2 border-black rounded-xl shadow-neo-xs flex items-center justify-center text-xl">📋</div>
+    <div>
+      <h2 class="font-display text-3xl text-white">Cluster A — Assignments &amp; Tasks</h2>
+      <p class="text-pink-300 text-sm font-bold">4 screens: kid view, assign modal, parent overview, photo proof</p>
+    </div>
+  </div>
+  <div class="h-0.5 bg-pink-400/30 mt-4"></div>
+</section>
+
+<!-- A1 + A2 row -->
+<section class="max-w-5xl mx-auto mb-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+
+  <!-- A1 · My Tasks — kid view (mobile) -->
+  <div>
+    <p class="text-pink-300 font-black text-xs uppercase tracking-widest mb-3">A1 · My Tasks — Kid View (mobile)</p>
+    <div class="flex justify-center">
+      <div class="phone-frame">
+        <!-- notch -->
+        <div class="bg-black pt-2 pb-0">
+          <div class="phone-notch"></div>
+        </div>
+        <!-- status bar -->
+        <div class="bg-purple-900 px-4 py-1.5 flex justify-between text-white text-xs font-bold">
+          <span>9:41</span><span>●●●</span>
+        </div>
+        <!-- nav bar -->
+        <div class="bg-purple-800 border-b-2 border-black px-4 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-yellow-400 border-2 border-black rounded-full flex items-center justify-center text-xs">🧒</div>
+            <span class="font-display text-white text-lg">Hi, Zara!</span>
+          </div>
+          <span class="text-yellow-300 font-black text-sm">12 ⭐</span>
+        </div>
+        <!-- overdue banner -->
+        <div class="bg-red-100 border-b-2 border-red-300 px-3 py-2 flex items-center gap-2">
+          <span class="text-red-600 text-xs">⚠️</span>
+          <span class="text-red-700 font-black text-xs">1 task overdue — finish first!</span>
+        </div>
+        <!-- tasks -->
+        <div class="p-3 space-y-2 bg-gray-50 flex-1">
+
+          <!-- overdue task -->
+          <div class="bg-white border-2 border-red-400 border-l-4 rounded-xl p-3 shadow-neo-xs" style="border-left-color:#ef4444">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="w-5 h-5 rounded-full border-2 border-black bg-white flex-shrink-0"></div>
+              <span class="font-black text-gray-800 text-sm leading-tight">Clean bedroom</span>
+              <span class="ml-auto text-xs font-black text-white bg-red-500 border border-red-600 px-1.5 py-0.5 rounded-full">Overdue</span>
+            </div>
+            <p class="text-xs text-gray-500 ml-7">Due Apr 29 · 0 ⭐</p>
+          </div>
+
+          <!-- today task - chore -->
+          <div class="bg-white border-2 border-black border-l-4 rounded-xl p-3 shadow-neo-xs" style="border-left-color:#f59e0b">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="w-5 h-5 rounded-full border-2 border-black bg-white flex-shrink-0"></div>
+              <span class="font-black text-gray-800 text-sm leading-tight">Wash the dishes</span>
+              <span class="ml-auto text-xs font-black text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-full">Today</span>
+            </div>
+            <div class="flex items-center gap-2 ml-7">
+              <p class="text-xs text-gray-500">Due Today · </p>
+              <span class="text-xs font-black text-yellow-600">+3 ⭐ reward</span>
+            </div>
+            <div class="ml-7 mt-1">
+              <span class="text-xs bg-amber-100 text-amber-700 border border-amber-300 font-black px-1.5 py-0.5 rounded-full">Photo required</span>
+            </div>
+          </div>
+
+          <!-- upcoming assignment -->
+          <div class="bg-white border-2 border-black border-l-4 rounded-xl p-3 shadow-neo-xs" style="border-left-color:#3b82f6">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="w-5 h-5 rounded-full border-2 border-black bg-white flex-shrink-0"></div>
+              <span class="font-black text-gray-800 text-sm leading-tight">Maths worksheet p.42</span>
+              <span class="ml-auto text-xs font-black text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded-full">3 days</span>
+            </div>
+            <div class="flex items-center gap-2 ml-7">
+              <p class="text-xs text-gray-500">Due May 4 · </p>
+              <span class="text-xs font-black text-yellow-600">+5 ⭐ reward</span>
+              <span class="ml-1 text-xs bg-blue-100 text-blue-700 font-black px-1 py-0.5 rounded-full">Math</span>
+            </div>
+          </div>
+
+          <!-- completed task -->
+          <div class="bg-white border-2 border-black border-l-4 rounded-xl p-3 shadow-neo-xs opacity-60" style="border-left-color:#22c55e">
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full border-2 border-emerald-500 bg-emerald-400 flex-shrink-0 flex items-center justify-center">
+                <span class="text-white text-xs font-black">✓</span>
+              </div>
+              <span class="font-black text-gray-400 text-sm line-through">Read for 20 mins</span>
+              <span class="ml-auto text-xs font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">Done ⭐+2</span>
+            </div>
+          </div>
+
+          <!-- sticker earned toast -->
+          <div class="bg-yellow-400 border-2 border-black rounded-xl px-3 py-2 shadow-neo-xs flex items-center gap-2">
+            <span class="text-lg">⭐</span>
+            <span class="text-xs font-black text-black">+2 stickers earned for reading! Keep it up!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A2 · Assign New Task (web modal) -->
+  <div>
+    <p class="text-pink-300 font-black text-xs uppercase tracking-widest mb-3">A2 · Assign New Task (web modal)</p>
+    <div class="browser-frame">
+      <div class="browser-bar">
+        <div class="browser-dot bg-red-400"></div>
+        <div class="browser-dot bg-yellow-400"></div>
+        <div class="browser-dot bg-green-400"></div>
+        <span class="ml-2 text-xs font-bold text-gray-600">app.familyhub.app/tasks/new</span>
+      </div>
+      <!-- modal overlay -->
+      <div class="bg-gray-200 p-4" style="min-height:520px">
+        <div class="bg-white border-2 border-black rounded-2xl shadow-neo-md overflow-hidden">
+          <!-- modal header -->
+          <div class="bg-pink-400 border-b-2 border-black px-5 py-3 flex items-center justify-between">
+            <span class="font-display text-xl text-black">Assign New Task</span>
+            <button class="w-7 h-7 bg-black/20 border border-black/30 rounded-lg text-black font-black text-sm flex items-center justify-center">✕</button>
+          </div>
+          <div class="p-5 space-y-4">
+
+            <!-- title -->
+            <div>
+              <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Task Title <span class="text-red-500">*</span></label>
+              <div class="border-2 border-black rounded-xl px-3 py-2.5 bg-gray-50 text-sm font-bold text-gray-700">Clean your bedroom thoroughly</div>
+            </div>
+
+            <!-- description -->
+            <div>
+              <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Description</label>
+              <div class="border-2 border-gray-300 rounded-xl px-3 py-2 bg-gray-50 text-xs text-gray-600 h-14">Vacuum, tidy shelves, and put all toys in the box before 6pm.</div>
+            </div>
+
+            <!-- due date + recurring -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Due Date</label>
+                <div class="border-2 border-gray-300 rounded-xl px-3 py-2 bg-gray-50 text-sm font-bold text-gray-700">May 1, 2026 · 6:00 PM</div>
+              </div>
+              <div>
+                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Recurring</label>
+                <div class="flex gap-1.5 mt-1">
+                  <span class="text-xs font-black bg-gray-100 border border-gray-300 px-2 py-1 rounded-lg text-gray-500">No</span>
+                  <span class="text-xs font-black bg-yellow-400 border-2 border-black px-2 py-1 rounded-lg shadow-neo-xs">Weekly</span>
+                  <span class="text-xs font-black bg-gray-100 border border-gray-300 px-2 py-1 rounded-lg text-gray-500">Daily</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- assignees multi-select -->
+            <div>
+              <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Assign To</label>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="flex items-center gap-1 bg-pink-100 border-2 border-pink-400 text-pink-700 font-black text-xs px-2 py-1 rounded-full">🧒 Zara ✕</span>
+                <span class="flex items-center gap-1 bg-gray-100 border-2 border-gray-300 text-gray-500 font-black text-xs px-2 py-1 rounded-full">+ Omar</span>
+                <span class="flex items-center gap-1 bg-gray-100 border-2 border-gray-300 text-gray-500 font-black text-xs px-2 py-1 rounded-full">+ Lina</span>
+              </div>
+            </div>
+
+            <!-- reward + photo proof -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Reward Stickers</label>
+                <div class="flex items-center gap-2 border-2 border-gray-300 rounded-xl px-3 py-2 bg-gray-50">
+                  <span class="text-lg">⭐</span>
+                  <span class="font-black text-gray-800">3</span>
+                  <div class="flex gap-1 ml-auto">
+                    <button class="w-6 h-6 bg-gray-200 border border-black rounded-lg font-black text-xs">−</button>
+                    <button class="w-6 h-6 bg-yellow-400 border-2 border-black rounded-lg font-black text-xs shadow-neo-xs">+</button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Photo Proof</label>
+                <div class="flex items-center gap-2 border-2 border-black bg-lime-400 rounded-xl px-3 py-2 shadow-neo-xs">
+                  <span class="font-black text-black text-xs">Required</span>
+                  <div class="ml-auto w-9 h-5 bg-black rounded-full relative">
+                    <div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- actions -->
+            <div class="flex gap-3 pt-1">
+              <button class="bg-pink-400 border-2 border-black text-black font-black text-sm px-5 py-2.5 rounded-xl shadow-neo-sm">Assign Task</button>
+              <button class="bg-white border-2 border-black text-gray-700 font-black text-sm px-4 py-2.5 rounded-xl">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- A3 + A4 row -->
+<section class="max-w-5xl mx-auto mb-16 grid grid-cols-1 gap-8">
+
+  <!-- A3 · Parent Task Overview (web, full width) -->
+  <div>
+    <p class="text-pink-300 font-black text-xs uppercase tracking-widest mb-3">A3 · Parent Task Overview (web)</p>
+    <div class="browser-frame">
+      <div class="browser-bar">
+        <div class="browser-dot bg-red-400"></div>
+        <div class="browser-dot bg-yellow-400"></div>
+        <div class="browser-dot bg-green-400"></div>
+        <span class="ml-2 text-xs font-bold text-gray-600">app.familyhub.app/tasks</span>
+        <div class="ml-auto flex gap-2">
+          <button class="bg-pink-400 border-2 border-black text-black font-black text-xs px-3 py-1 rounded-lg shadow-neo-xs">+ Assign Task</button>
+        </div>
+      </div>
+      <div class="bg-white p-5">
+
+        <!-- stats row -->
+        <div class="grid grid-cols-4 gap-3 mb-5">
+          <div class="bg-yellow-100 border-2 border-black rounded-xl p-3 shadow-neo-xs text-center">
+            <p class="font-display text-2xl text-gray-900">12</p>
+            <p class="text-xs font-black text-gray-500">Total Tasks</p>
+          </div>
+          <div class="bg-red-100 border-2 border-black rounded-xl p-3 shadow-neo-xs text-center">
+            <p class="font-display text-2xl text-red-600">2</p>
+            <p class="text-xs font-black text-gray-500">Overdue</p>
+          </div>
+          <div class="bg-lime-100 border-2 border-black rounded-xl p-3 shadow-neo-xs text-center">
+            <p class="font-display text-2xl text-emerald-600">7</p>
+            <p class="text-xs font-black text-gray-500">Completed</p>
+          </div>
+          <div class="bg-orange-100 border-2 border-black rounded-xl p-3 shadow-neo-xs text-center">
+            <p class="font-display text-2xl text-orange-600">1</p>
+            <p class="text-xs font-black text-gray-500">Awaiting Proof</p>
+          </div>
+        </div>
+
+        <!-- table -->
+        <div class="border-2 border-black rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-900 text-white">
+                <th class="px-4 py-3 text-left font-black text-xs uppercase tracking-wide">Task</th>
+                <th class="px-4 py-3 text-left font-black text-xs uppercase tracking-wide">Assigned To</th>
+                <th class="px-4 py-3 text-left font-black text-xs uppercase tracking-wide">Due</th>
+                <th class="px-4 py-3 text-left font-black text-xs uppercase tracking-wide">Status</th>
+                <th class="px-4 py-3 text-left font-black text-xs uppercase tracking-wide">Done%</th>
+                <th class="px-4 py-3 text-left font-black text-xs uppercase tracking-wide">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y-2 divide-black">
+              <tr class="bg-red-50">
+                <td class="px-4 py-3 font-bold text-gray-800">Clean bedroom</td>
+                <td class="px-4 py-3"><span class="flex items-center gap-1.5"><span class="text-base">🧒</span><span class="font-bold">Zara</span></span></td>
+                <td class="px-4 py-3 text-red-600 font-black text-xs">Apr 29</td>
+                <td class="px-4 py-3"><span class="text-xs font-black text-white bg-red-500 px-2 py-1 rounded-full border border-red-700">Overdue</span></td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-16 h-2 bg-gray-200 rounded-full border border-gray-400"><div class="w-0 h-2 bg-red-400 rounded-full"></div></div>
+                    <span class="text-xs font-black text-gray-600">0%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3"><button class="bg-yellow-400 border-2 border-black text-black font-black text-xs px-2.5 py-1 rounded-lg shadow-neo-xs">Send Reminder</button></td>
+              </tr>
+              <tr class="bg-orange-50">
+                <td class="px-4 py-3 font-bold text-gray-800">Wash dishes</td>
+                <td class="px-4 py-3"><span class="flex items-center gap-1.5"><span class="text-base">🧒</span><span class="font-bold">Zara</span></span></td>
+                <td class="px-4 py-3 text-amber-700 font-black text-xs">Today</td>
+                <td class="px-4 py-3"><span class="text-xs font-black text-orange-700 bg-orange-100 border border-orange-400 px-2 py-1 rounded-full">Photo Pending</span></td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-16 h-2 bg-gray-200 rounded-full border border-gray-400"><div class="w-12 h-2 bg-orange-400 rounded-full"></div></div>
+                    <span class="text-xs font-black text-gray-600">75%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3"><button class="bg-orange-400 border-2 border-black text-black font-black text-xs px-2.5 py-1 rounded-lg shadow-neo-xs">Review Proof</button></td>
+              </tr>
+              <tr class="bg-white">
+                <td class="px-4 py-3 font-bold text-gray-800">Maths worksheet p.42</td>
+                <td class="px-4 py-3"><span class="flex items-center gap-1.5"><span class="text-base">👦</span><span class="font-bold">Omar</span></span></td>
+                <td class="px-4 py-3 text-gray-600 font-bold text-xs">May 4</td>
+                <td class="px-4 py-3"><span class="text-xs font-black text-blue-700 bg-blue-100 border border-blue-300 px-2 py-1 rounded-full">In Progress</span></td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-16 h-2 bg-gray-200 rounded-full border border-gray-400"><div class="w-8 h-2 bg-blue-400 rounded-full"></div></div>
+                    <span class="text-xs font-black text-gray-600">50%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3"><button class="bg-white border-2 border-black text-black font-black text-xs px-2.5 py-1 rounded-lg">Send Reminder</button></td>
+              </tr>
+              <tr class="bg-emerald-50">
+                <td class="px-4 py-3 font-bold text-gray-400 line-through">Read for 20 mins</td>
+                <td class="px-4 py-3"><span class="flex items-center gap-1.5"><span class="text-base">👧</span><span class="font-bold">Lina</span></span></td>
+                <td class="px-4 py-3 text-gray-400 text-xs">Apr 30</td>
+                <td class="px-4 py-3"><span class="text-xs font-black text-emerald-700 bg-emerald-100 border border-emerald-400 px-2 py-1 rounded-full">Done ✓</span></td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-16 h-2 bg-gray-200 rounded-full border border-gray-400"><div class="w-16 h-2 bg-emerald-400 rounded-full"></div></div>
+                    <span class="text-xs font-black text-gray-600">100%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3"><span class="text-xs text-gray-400 font-bold">— Approved</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A4 · Photo Proof Verification -->
+  <div>
+    <p class="text-pink-300 font-black text-xs uppercase tracking-widest mb-3">A4 · Photo Proof Verification (web)</p>
+    <div class="browser-frame">
+      <div class="browser-bar">
+        <div class="browser-dot bg-red-400"></div>
+        <div class="browser-dot bg-yellow-400"></div>
+        <div class="browser-dot bg-green-400"></div>
+        <span class="ml-2 text-xs font-bold text-gray-600">app.familyhub.app/tasks/proof/review</span>
+      </div>
+      <div class="bg-white p-5">
+        <div class="max-w-xl mx-auto">
+          <!-- header -->
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-10 h-10 bg-orange-400 border-2 border-black rounded-xl shadow-neo-xs flex items-center justify-center text-xl">📸</div>
+            <div>
+              <h3 class="font-display text-xl text-gray-900">Proof Review</h3>
+              <p class="text-xs font-bold text-gray-500">Zara · Wash dishes · Due Today</p>
+            </div>
+            <span class="ml-auto text-xs font-black text-orange-700 bg-orange-100 border-2 border-orange-400 px-3 py-1 rounded-full">Awaiting Approval</span>
+          </div>
+
+          <div class="grid grid-cols-5 gap-4">
+            <!-- photo area (3/5) -->
+            <div class="col-span-3">
+              <div class="bg-gray-900 border-2 border-black rounded-2xl shadow-neo aspect-square flex items-center justify-center relative overflow-hidden">
+                <!-- simulated photo -->
+                <div class="absolute inset-0 bg-gradient-to-br from-gray-700 via-gray-600 to-gray-800"></div>
+                <div class="relative z-10 text-center">
+                  <div class="text-6xl mb-2">🍽️</div>
+                  <p class="text-white font-bold text-xs">zara_dishes_proof.jpg</p>
+                  <p class="text-gray-400 text-xs">Uploaded 4:32 PM</p>
+                </div>
+              </div>
+              <div class="mt-2 flex gap-2">
+                <button class="flex-1 bg-gray-100 border-2 border-black rounded-xl text-xs font-black py-2">View Full Size ↗</button>
+              </div>
+            </div>
+
+            <!-- actions (2/5) -->
+            <div class="col-span-2 space-y-3">
+              <div class="bg-gray-50 border-2 border-black rounded-xl p-3">
+                <p class="text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Task Details</p>
+                <p class="font-black text-gray-800 text-sm mb-1">Wash the dishes</p>
+                <p class="text-xs text-gray-600">Reward: <span class="text-yellow-600 font-black">⭐ 3 stickers</span></p>
+                <p class="text-xs text-gray-600 mt-0.5">Submitted: <span class="font-bold">4:32 PM today</span></p>
+              </div>
+
+              <div class="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-3">
+                <p class="text-xs font-black text-gray-600 mb-2">Parent note (optional)</p>
+                <textarea class="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white resize-none" rows="2" placeholder="Good job! Next time also wipe the counter..."></textarea>
+              </div>
+
+              <button class="w-full bg-lime-400 border-2 border-black text-black font-black text-sm py-3 rounded-xl shadow-neo-sm">
+                Approve + Award ⭐ 3
+              </button>
+              <button class="w-full bg-orange-400 border-2 border-black text-black font-black text-sm py-2.5 rounded-xl shadow-neo-xs">
+                Request Redo
+              </button>
+              <p class="text-xs text-gray-400 font-bold text-center">Approved stickers are added to Zara's balance automatically.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- Cluster B header -->
+<section class="max-w-5xl mx-auto mb-6">
+  <div class="flex items-center gap-4">
+    <div class="w-10 h-10 bg-cyan-400 border-2 border-black rounded-xl shadow-neo-xs flex items-center justify-center text-xl">🛡️</div>
+    <div>
+      <h2 class="font-display text-3xl text-white">Cluster B — Family Admin Panel</h2>
+      <p class="text-cyan-300 text-sm font-bold">4 screens: member list, edit member, invite modal, family settings</p>
+    </div>
+  </div>
+  <div class="h-0.5 bg-cyan-400/30 mt-4"></div>
+</section>
+
+<!-- B1 + B2 row -->
+<section class="max-w-5xl mx-auto mb-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+
+  <!-- B1 · Member list with roles (web) -->
+  <div>
+    <p class="text-cyan-300 font-black text-xs uppercase tracking-widest mb-3">B1 · Member List with Roles (web)</p>
+    <div class="browser-frame">
+      <div class="browser-bar">
+        <div class="browser-dot bg-red-400"></div>
+        <div class="browser-dot bg-yellow-400"></div>
+        <div class="browser-dot bg-green-400"></div>
+        <span class="ml-2 text-xs font-bold text-gray-600">app.familyhub.app/admin/members</span>
+        <button class="ml-auto bg-cyan-400 border-2 border-black text-black font-black text-xs px-3 py-1 rounded-lg shadow-neo-xs">+ Invite Member</button>
+      </div>
+      <div class="bg-white p-4">
+        <div class="border-2 border-black rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-900 text-white">
+                <th class="px-3 py-2.5 text-left font-black text-xs uppercase">Member</th>
+                <th class="px-3 py-2.5 text-left font-black text-xs uppercase">Role</th>
+                <th class="px-3 py-2.5 text-left font-black text-xs uppercase">Last Active</th>
+                <th class="px-3 py-2.5 text-left font-black text-xs uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr class="bg-yellow-50">
+                <td class="px-3 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-yellow-400 border-2 border-black rounded-full flex items-center justify-center text-sm">👩</div>
+                    <div>
+                      <p class="font-black text-gray-800 text-xs">Mum (You)</p>
+                      <p class="text-xs text-gray-500">sarah@family.com</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-3 py-3"><span class="text-xs font-black text-yellow-700 bg-yellow-200 border border-yellow-500 px-2 py-0.5 rounded-full">Admin · Parent</span></td>
+                <td class="px-3 py-3 text-xs text-gray-500 font-bold">Now</td>
+                <td class="px-3 py-3"><span class="text-xs text-gray-400 font-bold italic">— You</span></td>
+              </tr>
+              <tr class="bg-white">
+                <td class="px-3 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-blue-400 border-2 border-black rounded-full flex items-center justify-center text-sm">👨</div>
+                    <div>
+                      <p class="font-black text-gray-800 text-xs">Dad</p>
+                      <p class="text-xs text-gray-500">james@family.com</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-3 py-3"><span class="text-xs font-black text-blue-700 bg-blue-100 border border-blue-300 px-2 py-0.5 rounded-full">Adult · Parent</span></td>
+                <td class="px-3 py-3 text-xs text-gray-500 font-bold">2h ago</td>
+                <td class="px-3 py-3">
+                  <div class="flex gap-1">
+                    <button class="text-xs font-black bg-gray-100 border border-gray-300 px-2 py-1 rounded-lg">Edit</button>
+                    <button class="text-xs font-black bg-yellow-100 border border-yellow-400 px-2 py-1 rounded-lg">Promote</button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="bg-white">
+                <td class="px-3 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-pink-300 border-2 border-black rounded-full flex items-center justify-center text-sm">🧒</div>
+                    <div>
+                      <p class="font-black text-gray-800 text-xs">Zara</p>
+                      <p class="text-xs text-gray-500 italic">No account (child)</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-3 py-3"><span class="text-xs font-black text-pink-700 bg-pink-100 border border-pink-300 px-2 py-0.5 rounded-full">Child</span></td>
+                <td class="px-3 py-3 text-xs text-gray-500 font-bold">Today</td>
+                <td class="px-3 py-3">
+                  <div class="flex gap-1">
+                    <button class="text-xs font-black bg-gray-100 border border-gray-300 px-2 py-1 rounded-lg">Edit</button>
+                    <button class="text-xs font-black bg-red-100 border border-red-300 text-red-600 px-2 py-1 rounded-lg">Remove</button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="bg-purple-50">
+                <td class="px-3 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-purple-300 border-2 border-black rounded-full flex items-center justify-center text-sm">👴</div>
+                    <div>
+                      <p class="font-black text-gray-800 text-xs">Grandpa Bob</p>
+                      <p class="text-xs text-orange-500 font-bold italic">Invite pending</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-3 py-3"><span class="text-xs font-black text-purple-700 bg-purple-100 border border-purple-300 px-2 py-0.5 rounded-full">Guest · Grandparent</span></td>
+                <td class="px-3 py-3 text-xs text-orange-500 font-black">Never</td>
+                <td class="px-3 py-3">
+                  <div class="flex gap-1">
+                    <button class="text-xs font-black bg-orange-100 border border-orange-400 text-orange-700 px-2 py-1 rounded-lg">Resend</button>
+                    <button class="text-xs font-black bg-red-100 border border-red-300 text-red-600 px-2 py-1 rounded-lg">Remove</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B2 · Edit Member modal -->
+  <div>
+    <p class="text-cyan-300 font-black text-xs uppercase tracking-widest mb-3">B2 · Edit Member (web modal)</p>
+    <div class="browser-frame">
+      <div class="browser-bar">
+        <div class="browser-dot bg-red-400"></div>
+        <div class="browser-dot bg-yellow-400"></div>
+        <div class="browser-dot bg-green-400"></div>
+        <span class="ml-2 text-xs font-bold text-gray-600">app.familyhub.app/admin/members/3/edit</span>
+      </div>
+      <div class="bg-gray-200 p-4" style="min-height:480px;">
+        <div class="bg-white border-2 border-black rounded-2xl shadow-neo-md overflow-hidden">
+          <!-- header -->
+          <div class="bg-cyan-400 border-b-2 border-black px-5 py-3 flex items-center justify-between">
+            <span class="font-display text-xl text-black">Edit Member</span>
+            <button class="w-7 h-7 bg-black/20 border border-black/30 rounded-lg text-black font-black text-sm flex items-center justify-center">✕</button>
+          </div>
+          <div class="p-5 space-y-4">
+
+            <!-- avatar row -->
+            <div class="flex items-center gap-4 mb-2">
+              <div class="relative">
+                <div class="w-16 h-16 bg-pink-300 border-2 border-black rounded-2xl shadow-neo-xs flex items-center justify-center text-3xl">🧒</div>
+                <button class="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-400 border-2 border-black rounded-full flex items-center justify-center text-xs shadow-neo-xs">✏️</button>
+              </div>
+              <div>
+                <p class="font-black text-gray-700 text-sm">Zara</p>
+                <p class="text-xs text-gray-500">Member since May 2025</p>
+                <div class="flex gap-1 mt-1">
+                  <span class="text-xl cursor-pointer">😊</span>
+                  <span class="text-xl cursor-pointer">🧒</span>
+                  <span class="text-xl cursor-pointer">👧</span>
+                  <span class="text-xl cursor-pointer opacity-40">+</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- display name -->
+            <div>
+              <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Display Name</label>
+              <div class="border-2 border-black rounded-xl px-3 py-2.5 bg-gray-50 text-sm font-bold text-gray-700">Zara</div>
+            </div>
+
+            <!-- role -->
+            <div>
+              <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Role</label>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="text-xs font-black bg-gray-100 border border-gray-300 px-2 py-1 rounded-lg text-gray-500">Parent</span>
+                <span class="text-xs font-black bg-gray-100 border border-gray-300 px-2 py-1 rounded-lg text-gray-500">Teen</span>
+                <span class="text-xs font-black bg-pink-400 border-2 border-black px-2 py-1 rounded-lg shadow-neo-xs text-black">Child</span>
+                <span class="text-xs font-black bg-gray-100 border border-gray-300 px-2 py-1 rounded-lg text-gray-500">Guest</span>
+              </div>
+            </div>
+
+            <!-- link to account -->
+            <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-3">
+              <p class="text-xs font-black text-amber-700 mb-1">Linked Account</p>
+              <p class="text-xs text-gray-600">Zara has no Supabase account. She can be assigned tasks and earn stickers, but cannot log in independently.</p>
+              <button class="mt-2 text-xs font-black text-amber-700 underline underline-offset-2">Send invite link to add login →</button>
+            </div>
+
+            <!-- save -->
+            <div class="flex gap-3 pt-1">
+              <button class="bg-cyan-400 border-2 border-black text-black font-black text-sm px-5 py-2.5 rounded-xl shadow-neo-sm">Save Changes</button>
+              <button class="bg-white border-2 border-black text-gray-700 font-black text-sm px-4 py-2.5 rounded-xl">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- B3 + B4 row -->
+<section class="max-w-5xl mx-auto mb-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+
+  <!-- B3 · Invite Member modal -->
+  <div>
+    <p class="text-cyan-300 font-black text-xs uppercase tracking-widest mb-3">B3 · Invite Member (web modal)</p>
+    <div class="browser-frame">
+      <div class="browser-bar">
+        <div class="browser-dot bg-red-400"></div>
+        <div class="browser-dot bg-yellow-400"></div>
+        <div class="browser-dot bg-green-400"></div>
+        <span class="ml-2 text-xs font-bold text-gray-600">app.familyhub.app/admin/members/invite</span>
+      </div>
+      <div class="bg-gray-200 p-4" style="min-height:440px;">
+        <div class="bg-white border-2 border-black rounded-2xl shadow-neo-md overflow-hidden">
+          <div class="bg-lime-400 border-b-2 border-black px-5 py-3 flex items-center justify-between">
+            <span class="font-display text-xl text-black">Invite Member</span>
+            <button class="w-7 h-7 bg-black/20 border border-black/30 rounded-lg font-black text-sm flex items-center justify-center">✕</button>
+          </div>
+          <div class="p-5 space-y-4">
+
+            <!-- contact -->
+            <div>
+              <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Email or Phone <span class="text-red-500">*</span></label>
+              <div class="border-2 border-black rounded-xl px-3 py-2.5 bg-gray-50 text-sm font-bold text-gray-700">grandpa.bob@email.com</div>
+            </div>
+
+            <!-- display name -->
+            <div>
+              <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Display Name</label>
+              <div class="border-2 border-gray-300 rounded-xl px-3 py-2.5 bg-gray-50 text-sm font-bold text-gray-400">e.g. Grandpa Bob</div>
+            </div>
+
+            <!-- role -->
+            <div>
+              <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Role</label>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="text-xs font-black bg-gray-100 border border-gray-300 px-2 py-1 rounded-lg text-gray-500">Adult</span>
+                <span class="text-xs font-black bg-gray-100 border border-gray-300 px-2 py-1 rounded-lg text-gray-500">Teen</span>
+                <span class="text-xs font-black bg-gray-100 border border-gray-300 px-2 py-1 rounded-lg text-gray-500">Child</span>
+                <span class="text-xs font-black bg-lime-400 border-2 border-black px-2 py-1 rounded-lg shadow-neo-xs text-black">Guest</span>
+              </div>
+            </div>
+
+            <!-- welcome message -->
+            <div>
+              <label class="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Welcome Message (optional)</label>
+              <div class="border-2 border-gray-300 rounded-xl px-3 py-2 bg-gray-50 text-xs text-gray-500 h-14">Hey Grandpa! We'd love you to join our Family Hub. You can see the kids' schedules and cheer them on.</div>
+            </div>
+
+            <!-- magic link preview -->
+            <div class="bg-purple-50 border-2 border-purple-300 rounded-xl p-3">
+              <p class="text-xs font-black text-purple-700 mb-1">Magic Link (auto-generated)</p>
+              <p class="text-xs text-gray-600 font-mono break-all">https://familyhub.app/join?token=abc123xyz...&family=the-johnsons</p>
+              <div class="flex gap-2 mt-2">
+                <button class="text-xs font-black bg-purple-400 border-2 border-black px-3 py-1 rounded-lg shadow-neo-xs text-black">Copy Link</button>
+                <button class="text-xs font-black bg-gray-100 border border-gray-300 px-3 py-1 rounded-lg">Share via WhatsApp</button>
+              </div>
+            </div>
+
+            <button class="w-full bg-lime-400 border-2 border-black text-black font-black text-sm py-3 rounded-xl shadow-neo-sm">Send Invite</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B4 · Family Settings -->
+  <div>
+    <p class="text-cyan-300 font-black text-xs uppercase tracking-widest mb-3">B4 · Family Settings (web)</p>
+    <div class="browser-frame">
+      <div class="browser-bar">
+        <div class="browser-dot bg-red-400"></div>
+        <div class="browser-dot bg-yellow-400"></div>
+        <div class="browser-dot bg-green-400"></div>
+        <span class="ml-2 text-xs font-bold text-gray-600">app.familyhub.app/admin/settings</span>
+      </div>
+      <div class="bg-white p-5 space-y-5" style="min-height:440px;">
+
+        <!-- family identity -->
+        <div>
+          <p class="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Family Identity</p>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-black text-gray-500 mb-1">Family Name</label>
+              <div class="border-2 border-black rounded-xl px-3 py-2.5 bg-gray-50 text-sm font-bold text-gray-800">The Johnson Family</div>
+            </div>
+            <div>
+              <label class="block text-xs font-black text-gray-500 mb-1">Subdomain URL</label>
+              <div class="border-2 border-gray-300 rounded-xl px-3 py-2.5 bg-gray-100 flex items-center gap-2">
+                <span class="text-sm font-black text-gray-600">the-johnsons</span>
+                <span class="text-xs text-gray-400">.familyhub.app</span>
+                <span class="ml-auto text-xs font-black text-emerald-600 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">Available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- locale -->
+        <div>
+          <p class="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Locale</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-black text-gray-500 mb-1">Timezone</label>
+              <div class="border-2 border-gray-300 rounded-xl px-3 py-2 bg-gray-50 text-sm font-bold text-gray-700">Asia/Dubai (UTC+4)</div>
+            </div>
+            <div>
+              <label class="block text-xs font-black text-gray-500 mb-1">Currency</label>
+              <div class="border-2 border-gray-300 rounded-xl px-3 py-2 bg-gray-50 text-sm font-bold text-gray-700">AED — د.إ</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="bg-yellow-400 border-2 border-black text-black font-black text-sm px-5 py-2.5 rounded-xl shadow-neo-sm">Save Settings</button>
+
+        <!-- danger zone -->
+        <div class="border-2 border-red-400 rounded-xl p-4 bg-red-50">
+          <p class="text-xs font-black text-red-700 uppercase tracking-widest mb-3">Danger Zone</p>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-black text-red-800 text-sm">Transfer Ownership</p>
+                <p class="text-xs text-red-600">Hand admin rights to another member</p>
+              </div>
+              <button class="bg-white border-2 border-red-400 text-red-600 font-black text-xs px-3 py-1.5 rounded-lg">Transfer</button>
+            </div>
+            <div class="h-px bg-red-200"></div>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-black text-red-800 text-sm">Delete Family</p>
+                <p class="text-xs text-red-600">Permanently remove all data. Cannot be undone.</p>
+              </div>
+              <button class="bg-red-500 border-2 border-red-700 text-white font-black text-xs px-3 py-1.5 rounded-lg shadow-neo-xs">Delete</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION 4 · ARCHITECTURE SWIMLANE                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="max-w-5xl mx-auto mb-16">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 bg-purple-400 border-2 border-black rounded-xl shadow-neo-xs flex items-center justify-center text-xl">🏗️</div>
+    <h2 class="font-display text-3xl text-white">Architecture Mapping</h2>
+  </div>
+
+  <div class="bg-white border-2 border-black rounded-2xl shadow-neo-md overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse" style="min-width:700px;">
+        <thead>
+          <tr>
+            <th class="swim-head w-40">Action</th>
+            <th class="swim-head">USER</th>
+            <th class="swim-head">WEB (React)</th>
+            <th class="swim-head">API (Hono)</th>
+            <th class="swim-head">DATA (Postgres)</th>
+            <th class="swim-head">EXTERNAL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="bg-pink-50">
+            <td class="swim-cell font-black text-pink-700 border-l-4 border-pink-400">Create task</td>
+            <td class="swim-cell">Fills AssignTask form, submits</td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-pink-100 px-1 rounded">AssignTaskForm</code> POST</td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-gray-100 px-1 rounded">POST /api/tasks</code> Zod validation + tenant_id inject</td>
+            <td class="swim-cell arrow-r">INSERT <code class="text-xs">tasks</code> (tenant_id, assigner_member_id, assignee_member_ids[], due_at, reward_count, photo_proof_required, recurrence)</td>
+            <td class="swim-cell">Supabase Auth email notification (best-effort)</td>
+          </tr>
+          <tr class="bg-orange-50">
+            <td class="swim-cell font-black text-orange-700 border-l-4 border-orange-400">Upload photo proof</td>
+            <td class="swim-cell">Kid taps "Mark done", picks photo</td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-orange-100 px-1 rounded">TaskProofUploader</code> file picker</td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-gray-100 px-1 rounded">POST /api/tasks/:id/proof</code> multipart, tenant guard</td>
+            <td class="swim-cell arrow-r">INSERT <code class="text-xs">task_proofs</code> (tenant_id, task_id, storage_path, status=pending)</td>
+            <td class="swim-cell">Supabase Storage upload (private bucket, tenant-prefixed path)</td>
+          </tr>
+          <tr class="bg-lime-50">
+            <td class="swim-cell font-black text-emerald-700 border-l-4 border-emerald-400">Approve proof</td>
+            <td class="swim-cell">Parent clicks Approve in review screen</td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-lime-100 px-1 rounded">ProofReviewPanel</code></td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-gray-100 px-1 rounded">POST /api/tasks/:id/proof/:proofId/approve</code> admin guard</td>
+            <td class="swim-cell">UPDATE <code class="text-xs">task_proofs.status=approved</code>, UPDATE <code class="text-xs">members.sticker_balance += reward_count</code>, INSERT <code class="text-xs">activity_logs</code></td>
+            <td class="swim-cell">—</td>
+          </tr>
+          <tr class="bg-cyan-50">
+            <td class="swim-cell font-black text-cyan-700 border-l-4 border-cyan-400">Invite member</td>
+            <td class="swim-cell">Admin fills InviteForm, sends</td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-cyan-100 px-1 rounded">InviteForm</code></td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-gray-100 px-1 rounded">POST /api/members/invites</code> admin guard</td>
+            <td class="swim-cell arrow-r">INSERT <code class="text-xs">member_invites</code> (tenant_id, email, role, token, expires_at)</td>
+            <td class="swim-cell">Supabase Auth: send magic link invite email</td>
+          </tr>
+          <tr class="bg-purple-50">
+            <td class="swim-cell font-black text-purple-700 border-l-4 border-purple-400">Promote member</td>
+            <td class="swim-cell">Admin clicks Promote on member row</td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-purple-100 px-1 rounded">MemberRow</code> → confirm dialog</td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-gray-100 px-1 rounded">PATCH /api/members/:id/role</code> admin guard, role enum check</td>
+            <td class="swim-cell">UPDATE <code class="text-xs">members.role</code>, INSERT <code class="text-xs">activity_logs</code> (actor_id, action=role_change)</td>
+            <td class="swim-cell">—</td>
+          </tr>
+          <tr class="bg-yellow-50">
+            <td class="swim-cell font-black text-yellow-700 border-l-4 border-yellow-400">Update family settings</td>
+            <td class="swim-cell">Admin edits name/slug/timezone/currency</td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-yellow-100 px-1 rounded">FamilySettingsForm</code></td>
+            <td class="swim-cell arrow-r"><code class="text-xs bg-gray-100 px-1 rounded">PATCH /api/tenants/:id</code> owner guard, slug uniqueness check</td>
+            <td class="swim-cell">UPDATE <code class="text-xs">tenants</code> (name, slug, timezone, currency) — RLS: only owner row</td>
+            <td class="swim-cell">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION 5 · BUILT vs GAP                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="max-w-5xl mx-auto mb-20">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 bg-yellow-400 border-2 border-black rounded-xl shadow-neo-xs flex items-center justify-center text-xl">📊</div>
+    <h2 class="font-display text-3xl text-white">What's Built vs Backlog Gap</h2>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Already shipped -->
+    <div class="bg-emerald-50 border-2 border-emerald-500 rounded-2xl shadow-neo-md p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-2xl">✅</span>
+        <h3 class="font-display text-2xl text-emerald-800">Already Shipped</h3>
+      </div>
+      <ul class="space-y-3">
+        <li class="flex items-start gap-3">
+          <span class="text-emerald-500 font-black text-lg flex-shrink-0 mt-0.5">✓</span>
+          <div>
+            <p class="font-black text-emerald-900 text-sm">Tenants table — FHS-2</p>
+            <p class="text-xs text-emerald-700">name, slug, timezone, currency columns live; RLS enforced per tenant_id</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-emerald-500 font-black text-lg flex-shrink-0 mt-0.5">✓</span>
+          <div>
+            <p class="font-black text-emerald-900 text-sm">Members table with role enum — FHS-3</p>
+            <p class="text-xs text-emerald-700">role: admin | adult | teen | child | guest; tenant_id FK; RLS policies</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-emerald-500 font-black text-lg flex-shrink-0 mt-0.5">✓</span>
+          <div>
+            <p class="font-black text-emerald-900 text-sm">Activity logs — FHS-4</p>
+            <p class="text-xs text-emerald-700">Captures admin actions; usable as audit trail for role changes + task approvals</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-emerald-500 font-black text-lg flex-shrink-0 mt-0.5">✓</span>
+          <div>
+            <p class="font-black text-emerald-900 text-sm">Supabase Auth providers — FHS-187, FHS-189, FHS-191</p>
+            <p class="text-xs text-emerald-700">Email+password, OAuth (Google), magic-link; JWKS / ES256 middleware; users mirror</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-emerald-500 font-black text-lg flex-shrink-0 mt-0.5">✓</span>
+          <div>
+            <p class="font-black text-emerald-900 text-sm">Supabase Storage provisioned — FHS-189</p>
+            <p class="text-xs text-emerald-700">Private bucket available; tenant-prefixed paths can be wired for photo proofs</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Backlog gaps -->
+    <div class="bg-amber-50 border-2 border-amber-500 rounded-2xl shadow-neo-md p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-2xl">🚧</span>
+        <h3 class="font-display text-2xl text-amber-800">Backlog Gap</h3>
+      </div>
+      <ul class="space-y-3">
+        <li class="flex items-start gap-3">
+          <span class="text-amber-500 font-black text-sm flex-shrink-0 mt-1 bg-amber-200 border border-amber-500 rounded-full w-5 h-5 flex items-center justify-center">!</span>
+          <div>
+            <p class="font-black text-amber-900 text-sm">tasks + task_proofs tables</p>
+            <p class="text-xs text-amber-700">No schema, no migration, no RLS. Must include tenant_id, assignee_member_ids (array FK), recurrence, photo_proof_required, reward_count.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-amber-500 font-black text-sm flex-shrink-0 mt-1 bg-amber-200 border border-amber-500 rounded-full w-5 h-5 flex items-center justify-center">!</span>
+          <div>
+            <p class="font-black text-amber-900 text-sm">member_invites table + magic-link flow</p>
+            <p class="text-xs text-amber-700">No invite model; invite token generation, email send, redemption endpoint all missing.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-amber-500 font-black text-sm flex-shrink-0 mt-1 bg-amber-200 border border-amber-500 rounded-full w-5 h-5 flex items-center justify-center">!</span>
+          <div>
+            <p class="font-black text-amber-900 text-sm">Tasks CRUD endpoints</p>
+            <p class="text-xs text-amber-700">POST /api/tasks, GET /api/tasks, PATCH /api/tasks/:id, DELETE; GET /api/tasks/proof and proof approve/reject.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-amber-500 font-black text-sm flex-shrink-0 mt-1 bg-amber-200 border border-amber-500 rounded-full w-5 h-5 flex items-center justify-center">!</span>
+          <div>
+            <p class="font-black text-amber-900 text-sm">Role-based authorization guards at API edge</p>
+            <p class="text-xs text-amber-700">members.role checked in middleware; admin-only routes guarded; child members cannot approve or invite.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-amber-500 font-black text-sm flex-shrink-0 mt-1 bg-amber-200 border border-amber-500 rounded-full w-5 h-5 flex items-center justify-center">!</span>
+          <div>
+            <p class="font-black text-amber-900 text-sm">All UI screens</p>
+            <p class="text-xs text-amber-700">My Tasks (kid), AssignTask modal, Parent Overview table, Photo Proof Review, Member List, Edit Member, Invite, Family Settings — all net-new.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="text-amber-500 font-black text-sm flex-shrink-0 mt-1 bg-amber-200 border border-amber-500 rounded-full w-5 h-5 flex items-center justify-center">!</span>
+          <div>
+            <p class="font-black text-amber-900 text-sm">Sticker-balance side effects</p>
+            <p class="text-xs text-amber-700">Proof approval must atomically update members.sticker_balance + log activity. Needs careful transaction or event pattern.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  FOOTER                                                 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<footer class="max-w-5xl mx-auto border-t border-white/20 pt-6 pb-10 flex items-center justify-between flex-wrap gap-4">
+  <a href="../parent.html" class="flex items-center gap-2 text-purple-300 font-black text-sm hover:text-white transition-colors">
+    <span>←</span> Back to parent persona overview
+  </a>
+  <div class="flex items-center gap-3">
+    <span class="text-xs font-bold text-purple-400">Family Hub Design System</span>
+    <span class="text-xs text-purple-500">Fredoka One · Nunito · Neo-brutalist</span>
+    <span class="text-xs font-black text-purple-300 bg-purple-900 border border-purple-600 px-2 py-0.5 rounded-full">kingdom-bg #3d1065</span>
+  </div>
+</footer>
+
+</body>
+</html>

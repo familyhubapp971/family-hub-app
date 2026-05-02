@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coordinating Parent — Critical Features</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Fredoka One"', 'cursive'],
+            body: ['Nunito', 'sans-serif'],
+          },
+          boxShadow: {
+            'neo-xs': '1px 1px 0px 0px rgba(0,0,0,1)',
+            'neo-sm': '2px 2px 0px 0px rgba(0,0,0,1)',
+            neo: '3px 3px 0px 0px rgba(0,0,0,1)',
+            'neo-md': '4px 4px 0px 0px rgba(0,0,0,1)',
+            'neo-lg': '6px 6px 0px 0px rgba(0,0,0,1)',
+          },
+          colors: { kingdom: { bg: '#3d1065' } },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { background: #3d1065; font-family: Nunito, sans-serif; color: #1e293b; }
+    h1, h2, h3, h4 { font-family: 'Fredoka One', cursive; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-6xl mx-auto px-6 py-12">
+
+    <!-- Back link -->
+    <a href="../parent.html" class="inline-block bg-white border-2 border-black shadow-neo-sm px-3 py-1 mb-6 text-sm font-bold hover:shadow-neo-md transition-shadow">
+      ← Back to parent persona overview
+    </a>
+
+    <!-- Hero -->
+    <header class="mb-10">
+      <div class="inline-block bg-yellow-200 border-2 border-black shadow-neo-md px-4 py-1 mb-4 -rotate-1">
+        <span class="font-bold text-sm uppercase tracking-wide">Persona 1 · Critical features</span>
+      </div>
+      <h1 class="text-5xl md:text-6xl text-white mb-4">Coordinating Parent — Critical Features</h1>
+      <p class="text-lg text-purple-100 max-w-3xl">
+        How the everyday paying user does the things they came for, under the
+        new SaaS architecture. Each card opens a deep-dive page with screen
+        mockups, an architecture map (USER / WEB / API / DATA / EXTERNAL), and
+        a "shipped vs gap" footer that cross-references FHS tickets.
+      </p>
+    </header>
+
+    <!-- Context block -->
+    <section class="bg-white border-2 border-black shadow-neo-md p-6 mb-10">
+      <h2 class="text-2xl mb-3">How to read these</h2>
+      <ul class="space-y-2 list-disc list-inside text-slate-700">
+        <li>
+          <span class="font-bold">Legacy reference</span> — short summary of how
+          the legacy <code class="bg-slate-100 px-1.5 py-0.5 rounded">family-hub</code>
+          (single-tenant) version did it. We're not copying — just learning.
+        </li>
+        <li>
+          <span class="font-bold">Screen mockups</span> — what the actual UI
+          looks like under the new SaaS architecture. Real copy, real device
+          frames, real component idiom from <code class="bg-slate-100 px-1.5 py-0.5 rounded">@familyhub/ui</code>.
+        </li>
+        <li>
+          <span class="font-bold">Architecture map</span> — swimlane (USER /
+          WEB / API / DATA / EXTERNAL) showing which layer does what. Mirrors
+          the format used in <a href="../../../demo/whats-shipped.html" class="underline">whats-shipped.html</a>.
+        </li>
+        <li>
+          <span class="font-bold">Shipped vs gap</span> — the schema/infra
+          that already exists in this repo (FHS-2, FHS-3, FHS-4, etc.) vs what
+          still needs ticketing. Tells you "how much further until this feature
+          can ship".
+        </li>
+      </ul>
+    </section>
+
+    <!-- Feature grid -->
+    <section class="grid md:grid-cols-2 gap-6 mb-10">
+      <a href="habit-tracker.html" class="block bg-yellow-100 border-2 border-black shadow-neo-md hover:shadow-neo-lg hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all p-6 group">
+        <div class="flex items-start justify-between mb-3">
+          <span class="bg-black text-white font-bold text-xs px-2 py-1 uppercase">Core loop</span>
+          <span class="text-3xl">📋</span>
+        </div>
+        <h3 class="text-2xl mb-2">Habit Tracker</h3>
+        <p class="text-sm text-slate-700 mb-4">
+          The daily ritual. Member × habit × day grid, sticker rewards on
+          completion, end-of-week recap.
+        </p>
+        <p class="text-xs text-slate-600 mb-3">
+          <span class="font-bold">Backed by:</span> FHS-3 (members, weeks,
+          habits, week_actions tables shipped). UI + API still backlog.
+        </p>
+        <p class="text-sm font-bold underline group-hover:no-underline">Open deep-dive →</p>
+      </a>
+
+      <a href="weekly-meals.html" class="block bg-pink-100 border-2 border-black shadow-neo-md hover:shadow-neo-lg hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all p-6 group">
+        <div class="flex items-start justify-between mb-3">
+          <span class="bg-black text-white font-bold text-xs px-2 py-1 uppercase">Planning</span>
+          <span class="text-3xl">🍲</span>
+        </div>
+        <h3 class="text-2xl mb-2">Weekly Meals</h3>
+        <p class="text-sm text-slate-700 mb-4">
+          7-day × meal-slot planner, recipe library, auto-generated shopping
+          list, pantry stock awareness.
+        </p>
+        <p class="text-xs text-slate-600 mb-3">
+          <span class="font-bold">Backed by:</span> tenants + members + weeks
+          (FHS-2/3). All meal-specific tables + UI backlog.
+        </p>
+        <p class="text-sm font-bold underline group-hover:no-underline">Open deep-dive →</p>
+      </a>
+
+      <a href="family-calendar.html" class="block bg-cyan-100 border-2 border-black shadow-neo-md hover:shadow-neo-lg hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all p-6 group">
+        <div class="flex items-start justify-between mb-3">
+          <span class="bg-black text-white font-bold text-xs px-2 py-1 uppercase">Coordination</span>
+          <span class="text-3xl">🗓️</span>
+        </div>
+        <h3 class="text-2xl mb-2">Family Calendar</h3>
+        <p class="text-sm text-slate-700 mb-4">
+          Combined home + school events, member-color-coded, prayer-times
+          integration, conflict warnings, push reminders.
+        </p>
+        <p class="text-xs text-slate-600 mb-3">
+          <span class="font-bold">Backed by:</span> tenants.timezone (FHS-2),
+          weeks (FHS-3). Events table + iCal parser + RRULE logic backlog.
+        </p>
+        <p class="text-sm font-bold underline group-hover:no-underline">Open deep-dive →</p>
+      </a>
+
+      <a href="announcements.html" class="block bg-lime-100 border-2 border-black shadow-neo-md hover:shadow-neo-lg hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all p-6 group">
+        <div class="flex items-start justify-between mb-3">
+          <span class="bg-black text-white font-bold text-xs px-2 py-1 uppercase">Async comms</span>
+          <span class="text-3xl">📣</span>
+        </div>
+        <h3 class="text-2xl mb-2">Announcements & Noticeboard</h3>
+        <p class="text-sm text-slate-700 mb-4">
+          Pinned family notices, audience filtering (kids/adults/all),
+          reactions + comments + read-receipts, push notifications.
+        </p>
+        <p class="text-xs text-slate-600 mb-3">
+          <span class="font-bold">Backed by:</span> activity_logs (FHS-4).
+          Announcements table + push infra + UI backlog.
+        </p>
+        <p class="text-sm font-bold underline group-hover:no-underline">Open deep-dive →</p>
+      </a>
+
+      <a href="rewards-shop.html" class="block bg-yellow-100 border-2 border-black shadow-neo-md hover:shadow-neo-lg hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all p-6 group">
+        <div class="flex items-start justify-between mb-3">
+          <span class="bg-black text-white font-bold text-xs px-2 py-1 uppercase">Incentive</span>
+          <span class="text-3xl">⭐</span>
+        </div>
+        <h3 class="text-2xl mb-2">Rewards & Sticker Economy</h3>
+        <p class="text-sm text-slate-700 mb-4">
+          Kids earn stickers for completed habits/tasks; spend in
+          parent-curated shop (screen time, ice cream, special outings) with
+          parent approval.
+        </p>
+        <p class="text-xs text-slate-600 mb-3">
+          <span class="font-bold">Backed by:</span> week_actions (FHS-3 — earn
+          events). Sticker wallet + rewards + redemption tables backlog.
+        </p>
+        <p class="text-sm font-bold underline group-hover:no-underline">Open deep-dive →</p>
+      </a>
+
+      <a href="assignments-and-admin.html" class="block bg-pink-100 border-2 border-black shadow-neo-md hover:shadow-neo-lg hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all p-6 group">
+        <div class="flex items-start justify-between mb-3">
+          <span class="bg-black text-white font-bold text-xs px-2 py-1 uppercase">Admin</span>
+          <span class="text-3xl">🛠️</span>
+        </div>
+        <h3 class="text-2xl mb-2">Assignments + Family Admin</h3>
+        <p class="text-sm text-slate-700 mb-4">
+          Parent assigns tasks (chores, homework) with reward stickers + photo
+          proof. Plus the family-roster admin panel: invite members, manage
+          roles, family settings.
+        </p>
+        <p class="text-xs text-slate-600 mb-3">
+          <span class="font-bold">Backed by:</span> members + role enum (FHS-3),
+          tenants settings (FHS-2), Supabase Auth (FHS-187+). Tasks + invites
+          backlog.
+        </p>
+        <p class="text-sm font-bold underline group-hover:no-underline">Open deep-dive →</p>
+      </a>
+    </section>
+
+    <!-- Notes block -->
+    <section class="bg-white border-2 border-black shadow-neo-md p-6 mb-10">
+      <h2 class="text-2xl mb-3">What this set covers (and what it doesn't)</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <h3 class="text-lg mb-2 text-emerald-700">Covered here</h3>
+          <ul class="text-sm text-slate-700 space-y-1 list-disc list-inside">
+            <li>Habit tracking (the daily ritual)</li>
+            <li>Meal planning + shopping list</li>
+            <li>Family + school calendar</li>
+            <li>Announcements / noticeboard</li>
+            <li>Sticker rewards economy</li>
+            <li>Task assignments + admin panel</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-lg mb-2 text-amber-700">Deferred (separate persona docs / later)</h3>
+          <ul class="text-sm text-slate-700 space-y-1 list-disc list-inside">
+            <li>Savings + investments tracking (Persona 1 has it but lighter weight; <code class="bg-slate-100 px-1 rounded text-xs">FHS-3</code> schema landed)</li>
+            <li>Learning surfaces (journal, world-flags, maths) — kids' surface, not parent's daily loop</li>
+            <li>Billing / Stripe upgrade — separate billing persona doc</li>
+            <li>Onboarding wizard — covered in <a href="../parent.html" class="underline">parent.html</a> overview</li>
+            <li>Invite & invitee flow — covered in <a href="../invitee.html" class="underline">invitee.html</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="text-purple-200 text-sm text-center py-6">
+      <p>
+        Built from <code>positioning.md</code>, <code>saas-transformation.md</code>,
+        <code>features/*.md</code>, <code>packages/ui/*</code>, and the legacy
+        <code>family-hub/frontend/components/*.tsx</code> for behavioural reference.
+      </p>
+      <p class="mt-1">
+        Family Hub design system · Neo-brutalist · Fredoka One + Nunito ·
+        Updated whenever a feature ships
+      </p>
+    </footer>
+  </div>
+</body>
+</html>
