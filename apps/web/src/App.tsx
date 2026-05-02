@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './lib/auth-context';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LandingPage } from './pages/LandingPage';
+import { WelcomePage } from './pages/WelcomePage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { ResetPasswordRequestPage } from './pages/auth/ResetPasswordRequestPage';
@@ -17,7 +18,10 @@ export function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<WelcomePage />} />
+          {/* Legacy /api/hello debug card preserved at /_health so the
+              FHS-198 staging-deploy spec keeps validating end-to-end. */}
+          <Route path="/_health" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/auth/reset-request" element={<ResetPasswordRequestPage />} />

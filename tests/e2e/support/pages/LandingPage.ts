@@ -6,7 +6,9 @@ export class LandingPage {
   constructor(private readonly page: Page) {}
 
   async open() {
-    await this.page.goto('/');
+    // Debug card moved from / to /_health when MP Welcome page took over
+    // the root route (FHS-221). Test still validates the same end-to-end pipe.
+    await this.page.goto('/_health');
   }
 
   heading() {
