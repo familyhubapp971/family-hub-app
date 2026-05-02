@@ -1,16 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, X } from 'lucide-react';
-import { Button, Card, Badge } from '@familyhub/ui';
+import { Button, PricingCard, type PricingFeature } from '@familyhub/ui';
 
 // Pricing page — port of Magic Patterns design
 // kudjspxd3xxroueg5jw11o pages/Pricing.tsx. Tier copy is the source of
 // truth for marketing until Stripe wiring lands in Sprint 5
 // (FHS-68/70/71). Layout sized to fit a 1080p viewport without scroll.
-
-interface FeatureRow {
-  label: string;
-  included: boolean;
-}
+// Card composition lives in the packages/ui PricingCard primitive
+// (FHS-245).
 
 interface Tier {
   name: string;
@@ -19,7 +15,7 @@ interface Tier {
   ctaLabel: string;
   ctaVariant: 'primary' | 'secondary';
   featured?: boolean;
-  features: FeatureRow[];
+  features: PricingFeature[];
 }
 
 const tiers: Tier[] = [
@@ -111,66 +107,19 @@ export function PricingPage() {
         </div>
 
         <div className="grid w-full max-w-5xl grid-cols-1 gap-4 md:grid-cols-3">
-          {tiers.map((tier) => {
-            const cardClass = tier.featured
-              ? 'flex h-full flex-col bg-white !p-4 text-black border-4 !border-yellow-400'
-              : 'flex h-full flex-col bg-white !p-4 text-black';
-
-            return (
-              <div key={tier.name} className="relative pt-2">
-                {tier.featured && (
-                  <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2">
-                    <Badge
-                      variant="warning"
-                      className="border-2 border-black px-3 py-0.5 text-[10px] font-bold shadow-neo-sm"
-                    >
-                      Most popular
-                    </Badge>
-                  </div>
-                )}
-                <Card className={cardClass}>
-                  <h2 className="mb-0.5 font-heading text-lg">{tier.name}</h2>
-                  <div className="mb-3 font-heading text-2xl text-pink-600">
-                    {tier.price === 'Free' ? (
-                      <span className="text-black">Free</span>
-                    ) : (
-                      <>
-                        {tier.price}
-                        {tier.priceSuffix && (
-                          <span className="text-sm text-black">{tier.priceSuffix}</span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <Button
-                    onClick={() => navigate('/signup')}
-                    variant={tier.ctaVariant}
-                    size="sm"
-                    className="mb-3 w-full"
-                  >
-                    {tier.ctaLabel}
-                  </Button>
-                  <ul className="flex-1 space-y-1.5">
-                    {tier.features.map((row) => (
-                      <li
-                        key={row.label}
-                        className={`flex items-center gap-2 text-xs md:text-sm ${
-                          row.included ? '' : 'text-gray-400'
-                        }`}
-                      >
-                        {row.included ? (
-                          <Check className="text-green-600 shrink-0" size={16} />
-                        ) : (
-                          <X size={16} className="shrink-0" />
-                        )}
-                        <span className={row.included ? 'font-bold' : ''}>{row.label}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              </div>
-            );
-          })}
+          {tiers.map((tier) => (
+            <PricingCard
+              key={tier.name}
+              name={tier.name}
+              price={tier.price}
+              {...(tier.priceSuffix ? { priceSuffix: tier.priceSuffix } : {})}
+              ctaLabel={tier.ctaLabel}
+              ctaVariant={tier.ctaVariant}
+              onCta={() => navigate('/signup')}
+              features={tier.features}
+              {...(tier.featured ? { featured: true } : {})}
+            />
+          ))}
         </div>
       </main>
     </div>
