@@ -4,24 +4,50 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Calendar, CheckSquare, Home } from 'lucide-react';
 import { Button, Card } from '@familyhub/ui';
 
-// Hero copy rotates between two persona pitches every 5 seconds:
-//   - Sarah (the coordinating parent who buys/onboards)
-//   - Yusuf (the secondary parent who arrives via an invite link)
+// Hero copy rotates between two ad pitches every 5 seconds, each
+// targeting a different persona:
+//   - Slide 1 — pitch to the COORDINATING parent (Sarah persona):
+//     someone evaluating Family Hub to fix the mental load of running
+//     a household.
+//   - Slide 2 — pitch to the INVITED parent (Yusuf persona): someone
+//     receiving the link from their partner. The inviter's name cycles
+//     every 0.9s through a culturally diverse set so this slide reads
+//     as "your partner just sent you a link" regardless of who's
+//     looking — Sarah / Aisha / Maria / Priya / etc.
 // Source design: Magic Patterns kudjspxd3xxroueg5jw11o pages/Welcome.tsx.
+
+const inviterNames = [
+  'Sarah',
+  'Aisha',
+  'Maria',
+  'Priya',
+  'Emma',
+  'Fatima',
+  'Sofia',
+  'Yara',
+  'Olivia',
+  'Mei',
+] as const;
+
 const slides = [
   {
     id: 'sarah',
-    headline: 'Stop juggling five apps for one family.',
+    headline: 'Your whole family, finally in sync.',
     subtitle:
-      'Family Hub is the operating system for family life — one place for schedules, tasks, meals, learning, and the mental load your family generates every single day.',
+      "One beautifully calm place for the schedules, tasks, meals, and learning that make family life hum — so everyone wakes up knowing what's on.",
     cta: 'Start free — no card needed',
   },
   {
-    id: 'yusuf',
-    headline: "Sarah sent you a link. Click it. You're in.",
+    // 'invited-parent' = the secondary-parent ad slide (Yusuf-style
+    // persona). Internal id; never shown to the user. Headline is
+    // built dynamically from inviterNames so the partner name flashes
+    // through several options while this slide is up — depicting a
+    // wife inviting her husband to share the family's mental load.
+    id: 'invited-parent',
+    headline: null,
     subtitle:
-      'No signup wizard. No preferences screen. Just tap the link, see your tasks, check the family calendar, and get on with your day.',
-    cta: 'See how it works',
+      "From this week's meals to the kids' assignments, you'll both be looking at the same plan. Tap the link — let's run the week together.",
+    cta: 'Join the family team',
   },
 ] as const;
 
@@ -73,10 +99,10 @@ const featureCards = [
 export function WelcomePage() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [inviterIdx, setInviterIdx] = useState(0);
   const reduceMotion = useReducedMotion();
 
-  // Auto-rotate slides every 5s. Skipped when the user has
-  // prefers-reduced-motion enabled (a11y).
+  // Auto-rotate slides every 5s. Skipped under prefers-reduced-motion.
   useEffect(() => {
     if (reduceMotion) return;
     const id = setInterval(() => {
@@ -85,8 +111,23 @@ export function WelcomePage() {
     return () => clearInterval(id);
   }, [reduceMotion]);
 
+  // Fast-cycle the partner name on the invited-parent slide so the
+  // headline reads as "your partner just sent you a link" across many
+  // cultures. Only ticks while that slide is visible.
+  useEffect(() => {
+    if (reduceMotion) return;
+    if (slides[currentSlide]?.id !== 'invited-parent') return;
+    const id = setInterval(() => {
+      setInviterIdx((prev) => (prev + 1) % inviterNames.length);
+    }, 900);
+    return () => clearInterval(id);
+  }, [currentSlide, reduceMotion]);
+
+  const slide = slides[currentSlide]!;
+  const inviterName = inviterNames[inviterIdx]!;
+
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-kingdom-bg font-body text-white">
+    <div className="relative flex h-screen flex-col overflow-hidden bg-kingdom-bg font-body text-white">
       {/* Subtle radial purple glow at the top of the hero. */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.4),rgba(61,16,101,0)_60%)]" />
 
@@ -110,8 +151,9 @@ export function WelcomePage() {
           </motion.div>
         ))}
 
-      {/* Header */}
-      <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between p-6">
+      {/* Header — kept slim so the hero + feature cards both fit
+          above the fold on a 1080p viewport. */}
+      <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
         <Link
           to="/"
           className="font-heading text-2xl text-white transition-opacity hover:opacity-90"
@@ -136,10 +178,11 @@ export function WelcomePage() {
         </div>
       </header>
 
-      {/* Hero */}
-      <main className="relative z-10 mx-auto mt-12 flex w-full max-w-7xl flex-1 flex-col items-center justify-center p-6 text-center md:mt-24">
+      {/* Hero — flex-1 absorbs leftover viewport height; gap controls
+          vertical rhythm without pushing the feature row off-screen. */}
+      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 px-6 pb-6 text-center">
         {/* Cross-fading slide area */}
-        <div className="relative mb-8 flex min-h-[320px] w-full flex-col items-center justify-center md:min-h-[280px]">
+        <div className="relative flex min-h-[180px] w-full flex-col items-center justify-center md:min-h-[200px]">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
@@ -149,34 +192,50 @@ export function WelcomePage() {
               transition={{ duration: 0.5 }}
               className="absolute inset-0 flex flex-col items-center justify-center"
             >
-              <h1 className="mb-6 font-heading text-5xl leading-tight text-yellow-300 md:text-7xl">
-                {slides[currentSlide]!.headline}
+              <h1 className="mb-3 font-heading text-3xl leading-tight text-yellow-300 md:text-5xl lg:text-6xl">
+                {slide.id === 'invited-parent' ? (
+                  <>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={inviterName}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.25 }}
+                        className="inline-block text-pink-300"
+                      >
+                        {inviterName}
+                      </motion.span>
+                    </AnimatePresence>{' '}
+                    just teamed up with you on family life.
+                  </>
+                ) : (
+                  slide.headline
+                )}
               </h1>
-              <p className="max-w-2xl text-xl font-bold text-purple-100 md:text-2xl">
-                {slides[currentSlide]!.subtitle}
+              <p className="max-w-2xl text-base font-bold text-purple-100 md:text-lg">
+                {slide.subtitle}
               </p>
             </motion.div>
           </AnimatePresence>
         </div>
 
-        <div className="mb-12 flex flex-col items-center gap-4 sm:flex-row">
-          <Button
-            onClick={() => navigate('/signup')}
-            variant="primary"
-            size="lg"
-            className="px-8 py-4 text-xl"
-          >
-            {slides[currentSlide]!.cta}
-          </Button>
-        </div>
+        <Button
+          onClick={() => navigate('/signup')}
+          variant="primary"
+          size="lg"
+          className="px-6 py-3 text-base md:text-lg"
+        >
+          {slide.cta}
+        </Button>
 
         {/* Slider dots */}
-        <div className="mb-16 flex items-center gap-3">
-          {slides.map((slide, idx) => (
+        <div className="flex items-center gap-3">
+          {slides.map((s, idx) => (
             <button
-              key={slide.id}
+              key={s.id}
               onClick={() => setCurrentSlide(idx)}
-              className={`h-3 w-3 rounded-full transition-colors ${
+              className={`h-2.5 w-2.5 rounded-full transition-colors ${
                 currentSlide === idx ? 'bg-yellow-300' : 'bg-purple-400 hover:bg-purple-300'
               }`}
               aria-label={`Go to slide ${idx + 1}`}
@@ -184,29 +243,29 @@ export function WelcomePage() {
           ))}
         </div>
 
-        <p className="mb-16 font-bold text-purple-200">
+        <p className="text-sm font-bold text-purple-200">
           Trusted by 2,400+ families in UAE, UK &amp; US
         </p>
 
-        {/* Feature cards */}
-        <div className="grid w-full grid-cols-1 gap-8 text-left md:grid-cols-3">
+        {/* Feature cards — compact row sits above the fold. */}
+        <div className="grid w-full grid-cols-1 gap-4 text-left md:grid-cols-3">
           {featureCards.map(
             ({ accentBar, headerBg, cardBg, iconColor, Icon, title, body }, idx) => (
               <motion.div
                 key={title}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 * (idx + 1), duration: 0.5 }}
+                transition={{ delay: 0.15 * (idx + 1), duration: 0.4 }}
               >
                 <Card className={`h-full !p-0 ${cardBg} text-black border-l-[6px] ${accentBar}`}>
-                  <div className={`flex items-center justify-center p-5 ${headerBg}`}>
-                    <div className="flex h-16 w-16 items-center justify-center rounded-md border-2 border-black bg-white shadow-neo-sm">
-                      <Icon className={iconColor} size={32} />
+                  <div className={`flex items-center justify-center p-3 ${headerBg}`}>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-md border-2 border-black bg-white shadow-neo-sm">
+                      <Icon className={iconColor} size={26} />
                     </div>
                   </div>
-                  <div className="p-6">
-                    <h3 className="mb-2 font-heading text-xl">{title}</h3>
-                    <p className="text-sm font-bold text-gray-600">{body}</p>
+                  <div className="p-4">
+                    <h3 className="mb-1 font-heading text-base md:text-lg">{title}</h3>
+                    <p className="text-xs font-bold text-gray-600 md:text-sm">{body}</p>
                   </div>
                 </Card>
               </motion.div>
