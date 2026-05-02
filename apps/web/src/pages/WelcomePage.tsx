@@ -266,9 +266,9 @@ export function WelcomePage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 * (idx + 1), duration: 0.4 }}
-                whileHover={
-                  reduceMotion ? undefined : { y: -6, rotate: -1, transition: { duration: 0.15 } }
-                }
+                {...(reduceMotion
+                  ? {}
+                  : { whileHover: { y: -6, rotate: -1, transition: { duration: 0.15 } } })}
               >
                 <Card
                   className={`h-full !p-0 !shadow-neo-lg hover:!shadow-[8px_8px_0_0_rgba(0,0,0,1)] transition-shadow duration-150 ${cardBg} text-black border-l-[6px] ${accentBar}`}
