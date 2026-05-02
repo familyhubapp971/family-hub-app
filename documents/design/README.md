@@ -10,10 +10,19 @@ visual decisions already made.
 
 ## Current artefacts
 
-- [`user-journeys.html`](user-journeys.html) — end-to-end journeys for the
-  4 personas (coordinating parent, community administrator, early-adopter
-  dad, invitee) across 10 lifecycle stages, each cross-referenced to FHS
-  epic/ticket IDs and flagging backlog gaps.
+- [`index.html`](index.html) — entry point. Links to the 4 persona
+  journey boards.
+- [`personas/<name>/journey.html`](personas/) — for each persona
+  (coordinating parent, community administrator, early-adopter dad,
+  invitee), a Figma-style flow board of high-fidelity screen mockups
+  across the 10 lifecycle stages, cross-referenced to FHS tickets and
+  flagging backlog gaps.
+- [`personas/parent/features/`](personas/parent/features/) — the
+  coordinating parent has 6 critical-feature deep-dives (habit tracker,
+  weekly meals, family calendar, announcements, rewards/sticker shop,
+  assignments + admin) showing what the SaaS UI looks like for each.
+  See [`personas/parent/features/index.html`](personas/parent/features/index.html)
+  for the hub.
 
 ## Conventions
 
