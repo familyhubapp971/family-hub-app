@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Hub — Personas (design decision guide)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['"Fredoka One"', 'cursive'],
+        body: ['Nunito', 'sans-serif'],
+      },
+      boxShadow: {
+        'neo-xs': '1px 1px 0px 0px rgba(0,0,0,1)',
+        'neo-sm': '2px 2px 0px 0px rgba(0,0,0,1)',
+        'neo':    '3px 3px 0px 0px rgba(0,0,0,1)',
+        'neo-md': '4px 4px 0px 0px rgba(0,0,0,1)',
+        'neo-lg': '6px 6px 0px 0px rgba(0,0,0,1)',
+      },
+      colors: { kingdom: { bg: '#3d1065' } },
+    },
+  },
+};
+</script>
+<style>
+  body { font-family: 'Nunito', sans-serif; background: #3d1065; color: #1e1e1e; }
+  h1,h2,h3,h4,h5,h6 { font-family: 'Fredoka One', cursive; }
+  .neo-card {
+    background: #fff; border: 2px solid #000;
+    box-shadow: 4px 4px 0 0 #000; border-radius: 8px;
+  }
+  .pill {
+    display: inline-block; font-size: 11px; font-weight: 900;
+    padding: 3px 10px; border-radius: 9999px; border: 2px solid #000;
+    box-shadow: 2px 2px 0 0 #000;
+  }
+  .quote-bubble {
+    background: #fef9c3; border: 2px solid #000;
+    box-shadow: 3px 3px 0 0 #000; border-radius: 12px;
+    padding: 12px 14px; position: relative;
+  }
+  .quote-bubble::after {
+    content: ''; position: absolute; bottom: -10px; left: 24px;
+    width: 0; height: 0;
+    border-top: 12px solid #000;
+    border-right: 12px solid transparent;
+  }
+  .quote-bubble::before {
+    content: ''; position: absolute; bottom: -7px; left: 26px;
+    width: 0; height: 0;
+    border-top: 9px solid #fef9c3;
+    border-right: 9px solid transparent;
+    z-index: 1;
+  }
+  .avatar {
+    width: 88px; height: 88px; border-radius: 50%;
+    border: 3px solid #000; box-shadow: 4px 4px 0 0 #000;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fredoka One', cursive; font-size: 36px;
+    flex-shrink: 0;
+  }
+  .principle-card {
+    background: #fff; border: 2px solid #000; border-radius: 8px;
+    padding: 16px; box-shadow: 3px 3px 0 0 #000;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-7xl mx-auto px-6 py-12">
+
+  <!-- ════════════════════════ HERO ════════════════════════ -->
+  <header class="mb-12">
+    <div class="inline-block bg-yellow-200 border-2 border-black shadow-neo-md px-4 py-1 mb-4 -rotate-1">
+      <span class="font-bold text-sm uppercase tracking-wide">Single source of truth · use this to settle every "who is this for?" debate</span>
+    </div>
+    <h1 class="text-5xl md:text-6xl text-white mb-4">Family Hub — Personas</h1>
+    <p class="text-lg text-purple-100 max-w-3xl mb-3">
+      Four people. Each one drives different design decisions. Read the
+      cards once, then keep this open while you design — every screen
+      should answer "which of these four wins this trade-off?"
+    </p>
+    <p class="text-sm text-purple-200 max-w-3xl">
+      Names match the canonical Khan family used everywhere else in the
+      product (dashboard mockups, signup flow, test data). Designs that
+      use Khan-family copy stay consistent end-to-end.
+    </p>
+  </header>
+
+  <!-- ════════════════════════ PERSONA GRID ════════════════════════ -->
+  <section class="grid md:grid-cols-2 gap-6 mb-12">
+
+    <!-- ─── SARAH — Coordinating parent ─── -->
+    <div class="neo-card overflow-hidden">
+      <div class="bg-pink-200 border-b-2 border-black p-5 flex items-start gap-4">
+        <div class="avatar bg-pink-300">S</div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="pill bg-black text-white">★ Primary</span>
+            <span class="pill bg-white">Admin · Mum · 38</span>
+          </div>
+          <h2 class="text-3xl mb-1">Sarah Khan</h2>
+          <p class="text-sm font-bold">The coordinating parent who owns the family mental load.</p>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="quote-bubble mb-5 italic text-sm">
+          "I don't have time for an onboarding wizard. Just let me in,
+          let me see what's happening, and let me close the tab."
+        </div>
+
+        <h3 class="text-base mb-2">Top jobs she hires Family Hub to do</h3>
+        <ul class="space-y-1 text-sm mb-4 list-disc list-inside text-slate-700">
+          <li>See <strong>everything</strong> at a glance — kids' habits, today's tasks, this week's meals</li>
+          <li>Assign chores + track who did what without nagging in person</li>
+          <li>Settle "what's for dinner?" + "did you finish your homework?" without 5 group chats</li>
+        </ul>
+
+        <h3 class="text-base mb-2">Friction she will not tolerate</h3>
+        <ul class="space-y-1 text-sm mb-4 list-disc list-inside text-slate-700">
+          <li>Multi-step onboarding wizards. Anything &gt;3 screens loses her.</li>
+          <li>Asking what she can answer herself (her timezone, her currency).</li>
+          <li>Forcing her to set up the kids before she sees value.</li>
+        </ul>
+
+        <div class="bg-yellow-100 border-2 border-black rounded p-3">
+          <h3 class="text-sm mb-2">→ Design decisions she drives</h3>
+          <ul class="space-y-1 text-xs list-disc list-inside text-slate-700">
+            <li><strong>Magic-link auth</strong>, no password. One round-trip wins over two.</li>
+            <li><strong>Smart defaults</strong>: timezone + currency auto-detected, slug derived from family name.</li>
+            <li><strong>Defer kid setup</strong> to in-dashboard cards, not signup gates.</li>
+            <li>Dashboard shows <strong>her view of everything</strong> — kid drill-downs, all tabs visible.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── YUSUF — Co-parent / partner ─── -->
+    <div class="neo-card overflow-hidden">
+      <div class="bg-cyan-200 border-b-2 border-black p-5 flex items-start gap-4">
+        <div class="avatar bg-cyan-300">Y</div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="pill bg-black text-white">Secondary</span>
+            <span class="pill bg-white">Adult · Dad · 41</span>
+          </div>
+          <h2 class="text-3xl mb-1">Yusuf Khan</h2>
+          <p class="text-sm font-bold">The partner who joins because Sarah told him to.</p>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="quote-bubble mb-5 italic text-sm">
+          "Send me the link. I'll log in once. After that, just notify me
+          when there's something I actually need to do."
+        </div>
+
+        <h3 class="text-base mb-2">Top jobs he hires Family Hub to do</h3>
+        <ul class="space-y-1 text-sm mb-4 list-disc list-inside text-slate-700">
+          <li>See his own pending tasks in one glance ("Fixing the bike")</li>
+          <li>Check the family calendar before booking work travel</li>
+          <li>Approve kid reward redemptions without a meeting about it</li>
+        </ul>
+
+        <h3 class="text-base mb-2">Friction he will not tolerate</h3>
+        <ul class="space-y-1 text-sm mb-4 list-disc list-inside text-slate-700">
+          <li>Being forced to set up the family — Sarah already did it.</li>
+          <li>Notification spam for things that don't need him.</li>
+          <li>"Confirm your role" / "set your preferences" pre-screens.</li>
+        </ul>
+
+        <div class="bg-yellow-100 border-2 border-black rounded p-3">
+          <h3 class="text-sm mb-2">→ Design decisions he drives</h3>
+          <ul class="space-y-1 text-xs list-disc list-inside text-slate-700">
+            <li><strong>One-click invite acceptance</strong> — he clicks, he's in. No re-entering family details.</li>
+            <li><strong>Notification scoping</strong>: only @-mentions + items assigned to him.</li>
+            <li><strong>"My Tasks" tab</strong> as the entry point — same chrome as Sarah's view but defaulted to his slice.</li>
+            <li>Magic-link login persists — no re-auth on every visit.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── AMINA — Teen ─── -->
+    <div class="neo-card overflow-hidden">
+      <div class="bg-yellow-200 border-b-2 border-black p-5 flex items-start gap-4">
+        <div class="avatar bg-yellow-300">A</div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="pill bg-black text-white">Kid</span>
+            <span class="pill bg-white">Teen · 14</span>
+          </div>
+          <h2 class="text-3xl mb-1">Amina Khan</h2>
+          <p class="text-sm font-bold">The teen who is half-on-board, half-rolling-her-eyes.</p>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="quote-bubble mb-5 italic text-sm">
+          "Fine, I'll do it. But I want my own space — I don't want my
+          little brother seeing my reading log. And the stickers had
+          better mean something."
+        </div>
+
+        <h3 class="text-base mb-2">Top jobs she hires Family Hub to do</h3>
+        <ul class="space-y-1 text-sm mb-4 list-disc list-inside text-slate-700">
+          <li>See her own habits + streaks — feel proud of an 8-day streak</li>
+          <li>Spend earned stickers on rewards that she actually wants</li>
+          <li>Get reminders without a parent texting her again</li>
+        </ul>
+
+        <h3 class="text-base mb-2">Friction she will not tolerate</h3>
+        <ul class="space-y-1 text-sm mb-4 list-disc list-inside text-slate-700">
+          <li>Anything that <strong>feels like a kid's app</strong> — no babyish copy.</li>
+          <li>Her board mixed with Ibrahim's. She wants her own world.</li>
+          <li>Stickers that don't redeem for anything real.</li>
+        </ul>
+
+        <div class="bg-yellow-100 border-2 border-black rounded p-3">
+          <h3 class="text-sm mb-2">→ Design decisions she drives</h3>
+          <ul class="space-y-1 text-xs list-disc list-inside text-slate-700">
+            <li><strong>Split login</strong>: kid login = pick avatar + PIN. No email required.</li>
+            <li><strong>Per-kid dashboard scope</strong>: Amina sees only Amina's data — no family-wide tabs visible.</li>
+            <li><strong>Reward shop with parent approval</strong> — stickers redeem for negotiated real-life things.</li>
+            <li>Tone-neutral copy on her surfaces. Bold + clean, not cutesy.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── IBRAHIM — Child ─── -->
+    <div class="neo-card overflow-hidden">
+      <div class="bg-purple-200 border-b-2 border-black p-5 flex items-start gap-4">
+        <div class="avatar bg-purple-300">I</div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="pill bg-black text-white">Kid</span>
+            <span class="pill bg-white">Child · 6</span>
+          </div>
+          <h2 class="text-3xl mb-1">Ibrahim Khan</h2>
+          <p class="text-sm font-bold">The young child who can read, sort of, and loves stars.</p>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="quote-bubble mb-5 italic text-sm">
+          "Where's my star? Did I get a star? Mum, can I have screen time
+          for stars? I want the ice cream one!"
+        </div>
+
+        <h3 class="text-base mb-2">Top jobs he hires Family Hub to do</h3>
+        <ul class="space-y-1 text-sm mb-4 list-disc list-inside text-slate-700">
+          <li>Tap the thing he did + watch a star fly into his wallet</li>
+          <li>See his star balance go up over the week</li>
+          <li>Beg for ice cream at 122 stars and feel pride that he earned it</li>
+        </ul>
+
+        <h3 class="text-base mb-2">Friction he will not tolerate</h3>
+        <ul class="space-y-1 text-sm mb-4 list-disc list-inside text-slate-700">
+          <li>Reading-heavy screens. Icons + giant numbers + colour beats text.</li>
+          <li>Slow feedback. He needs the star animation NOW.</li>
+          <li>Forms. Anything that requires typing more than his PIN.</li>
+        </ul>
+
+        <div class="bg-yellow-100 border-2 border-black rounded p-3">
+          <h3 class="text-sm mb-2">→ Design decisions he drives</h3>
+          <ul class="space-y-1 text-xs list-disc list-inside text-slate-700">
+            <li><strong>Avatar + PIN login</strong> — he picks his face, types 4 digits.</li>
+            <li><strong>Big tap targets</strong> — minimum 56px. Habit cards are tappable cards, not list rows.</li>
+            <li><strong>Instant celebratory feedback</strong> — star animation on every habit completion.</li>
+            <li><strong>Icon-led copy</strong> — every action has an emoji or pictogram. Text is supportive, not primary.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════ CROSS-CUTTING PRINCIPLES ════════════════════════ -->
+  <section class="mb-12">
+    <h2 class="text-3xl text-white mb-2">Cross-cutting principles</h2>
+    <p class="text-purple-100 mb-5 max-w-3xl text-sm">
+      What every persona has in common — the floor every screen must hit.
+    </p>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="principle-card bg-yellow-50">
+        <div class="font-display text-xl mb-1">⚡ Fast in, fast out</div>
+        <p class="text-xs text-slate-600">Sarah is impatient. Yusuf wants to leave. Amina has homework. Ibrahim is 6. <strong>Nobody wants to be in the app longer than they have to.</strong> Optimise for time-to-value, not time-on-page.</p>
+      </div>
+      <div class="principle-card bg-cyan-50">
+        <div class="font-display text-xl mb-1">🪟 Right view per role</div>
+        <p class="text-xs text-slate-600">Parents see everything. Kids see only their own world. <strong>Never mix surfaces.</strong> Role-gated tabs are not a feature — they're the contract.</p>
+      </div>
+      <div class="principle-card bg-pink-50">
+        <div class="font-display text-xl mb-1">🎯 Smart defaults &gt; questions</div>
+        <p class="text-xs text-slate-600">Auto-detect what you can. Pre-fill what you can guess. Reserve forms for things only the human can answer. <strong>An empty form is a tax.</strong></p>
+      </div>
+      <div class="principle-card bg-lime-50">
+        <div class="font-display text-xl mb-1">⭐ Reward, don't nag</div>
+        <p class="text-xs text-slate-600">Every habit done is a celebration. Every task closed is a green tick. <strong>The app's job is to make finishing things feel good</strong> — not to remind people they haven't.</p>
+      </div>
+      <div class="principle-card bg-purple-100">
+        <div class="font-display text-xl mb-1">🏠 Built for the family, not the user</div>
+        <p class="text-xs text-slate-600">Most apps optimise for one user at a time. Family Hub is a <strong>shared</strong> tool. Designs must show whose data is whose, who's watching, who's responsible.</p>
+      </div>
+      <div class="principle-card bg-yellow-50">
+        <div class="font-display text-xl mb-1">🖥 Desktop-first responsive</div>
+        <p class="text-xs text-slate-600">Parents coordinate on a laptop. Kids might use a tablet at the kitchen table. <strong>1280w default. Reflow at 768w only when it changes meaning.</strong> No mobile app right now.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════ DECISION MATRIX ════════════════════════ -->
+  <section class="mb-12">
+    <h2 class="text-3xl text-white mb-2">When personas conflict — who wins?</h2>
+    <p class="text-purple-100 mb-5 max-w-3xl text-sm">
+      Use this when a design decision serves one persona at another's expense.
+    </p>
+    <div class="bg-white border-2 border-black shadow-neo-md rounded-md overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-100 border-b-2 border-black text-left">
+          <tr>
+            <th class="p-3 font-display">Trade-off</th>
+            <th class="p-3 font-display">Wins</th>
+            <th class="p-3 font-display">Why</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          <tr>
+            <td class="p-3"><strong>Onboarding length</strong> vs feature discovery</td>
+            <td class="p-3"><span class="pill bg-pink-200">Sarah</span></td>
+            <td class="p-3 text-xs text-slate-600">Less is more. Defer feature surfaces to in-dashboard CTAs.</td>
+          </tr>
+          <tr>
+            <td class="p-3"><strong>Visual richness</strong> vs information density</td>
+            <td class="p-3"><span class="pill bg-purple-200">Ibrahim</span> on kid screens<br><span class="pill bg-pink-200 mt-1">Sarah</span> on parent screens</td>
+            <td class="p-3 text-xs text-slate-600">Per-role surfaces. Never one design serving both.</td>
+          </tr>
+          <tr>
+            <td class="p-3"><strong>Notification volume</strong> vs information completeness</td>
+            <td class="p-3"><span class="pill bg-cyan-200">Yusuf</span></td>
+            <td class="p-3 text-xs text-slate-600">If Yusuf turns off notifications because they're noisy, the whole flow breaks.</td>
+          </tr>
+          <tr>
+            <td class="p-3"><strong>Kid privacy</strong> vs parent oversight</td>
+            <td class="p-3"><span class="pill bg-yellow-200">Amina</span> for personal logs<br><span class="pill bg-pink-200 mt-1">Sarah</span> for safety + completion</td>
+            <td class="p-3 text-xs text-slate-600">Parents see <em>that</em> habits were done; kids own <em>how</em> they journal about them.</td>
+          </tr>
+          <tr>
+            <td class="p-3"><strong>Sticker fungibility</strong> vs custom rewards per kid</td>
+            <td class="p-3"><span class="pill bg-yellow-200">Amina</span></td>
+            <td class="p-3 text-xs text-slate-600">Stickers must redeem for things she actually wants — she's the harder kid to keep engaged.</td>
+          </tr>
+          <tr>
+            <td class="p-3"><strong>Auth security</strong> vs kid-friendly login</td>
+            <td class="p-3"><span class="pill bg-purple-200">Ibrahim</span> for kids<br><span class="pill bg-pink-200 mt-1">Sarah</span> for parents</td>
+            <td class="p-3 text-xs text-slate-600">Email+password for adults; avatar+PIN for kids. Never the same flow.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ════════════════════════ DESIGN-SYSTEM ANCHORS ════════════════════════ -->
+  <section class="bg-white border-2 border-black shadow-neo-md p-6 mb-10">
+    <h2 class="text-2xl mb-3">Design-system anchors (don't deviate)</h2>
+    <div class="grid md:grid-cols-3 gap-4 text-sm">
+      <div>
+        <h3 class="font-display text-base mb-1">Style</h3>
+        <p class="text-xs text-slate-600">Neo-brutalist. 2px solid black borders. Hard offset shadows (1–6px black, no soft drops). Sharp corners or <code>rounded-md</code> max — never <code>rounded-2xl</code>.</p>
+      </div>
+      <div>
+        <h3 class="font-display text-base mb-1">Colour</h3>
+        <p class="text-xs text-slate-600">Page bg <code>#3d1065</code> kingdom purple. Cards white or pastel (yellow-100, pink-100, cyan-100, lime-100, purple-200). Accents from Tailwind 100–700 only.</p>
+      </div>
+      <div>
+        <h3 class="font-display text-base mb-1">Type</h3>
+        <p class="text-xs text-slate-600">Headings: <strong>Fredoka One</strong>. Body: <strong>Nunito</strong> (400/600/700/800/900). Both Google Fonts. Bold weights everywhere.</p>
+      </div>
+    </div>
+    <p class="text-xs text-slate-500 mt-4">Live tokens: <code>packages/ui/tailwind.preset.js</code> · components: <code>packages/ui/src/{Button,Card,Badge,Input}.tsx</code></p>
+  </section>
+
+  <!-- Footer -->
+  <footer class="text-purple-200 text-xs text-center py-6">
+    <p>One file · 4 personas · 6 cross-cutting principles · 6-row decision matrix</p>
+    <p class="mt-1">Sourced from <code>documents/strategy/positioning.md</code> + the actual Khan family copy used across the dashboard, signup flow, and tests.</p>
+  </footer>
+</div>
+</body>
+</html>
