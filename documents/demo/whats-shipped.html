@@ -318,6 +318,39 @@
         min-width: 860px;
       }
 
+      /* Collapsible phase headers — click any phase row to fold/unfold its steps. */
+      .phase-row {
+        cursor: pointer;
+        user-select: none;
+      }
+      .phase-row:hover td {
+        background: #273548;
+      }
+      .phase-row:focus-visible td {
+        outline: 3px solid #facc15;
+        outline-offset: -3px;
+      }
+      .phase-chevron {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 4px;
+        border: 1.5px solid #000;
+        background: #facc15;
+        color: #1e1e1e;
+        font-size: 11px;
+        font-weight: 900;
+        box-shadow: 1px 1px 0 #000;
+        flex-shrink: 0;
+        margin-right: 8px;
+        transition: transform 0.18s ease;
+      }
+      .phase-row[aria-expanded='false'] .phase-chevron {
+        transform: rotate(-90deg);
+      }
+
       /* Step col widths */
       .col-step {
         width: 72px;
@@ -391,12 +424,25 @@
             (FHS-5 → feature PRs) &nbsp;·&nbsp; epic FHS-1 closed
           </div>
         </div>
-        <div class="flex gap-3 flex-wrap">
-          <a href="#" class="text-xs font-black text-cyan-300 underline"
-            >staging-api.familyhub.app</a
+        <div class="flex gap-3 flex-wrap items-center">
+          <a
+            href="https://api-staging-5500.up.railway.app"
+            target="_blank"
+            rel="noopener"
+            class="text-xs font-black text-cyan-300 underline"
+            >api-staging-5500.up.railway.app</a
           >
-          <a href="#" class="text-xs font-black text-cyan-300 underline"
-            >staging-web.familyhub.app</a
+          <a
+            href="https://frontend-staging-409d.up.railway.app"
+            target="_blank"
+            rel="noopener"
+            class="text-xs font-black text-cyan-300 underline"
+            >frontend-staging-409d.up.railway.app</a
+          >
+          <span
+            class="text-[10px] font-bold text-slate-400"
+            title="Custom familyhub.app subdomains pending FHS-30 (Sprint 3)"
+            >*.familyhub.app pending FHS-30</span
           >
         </div>
         <div class="ml-auto text-xs text-slate-500 font-bold">
@@ -607,7 +653,17 @@
               <td class="col-user">
                 <div class="card card-yellow">
                   <div class="card-title">Public staging URL reachable in browser</div>
-                  <div class="card-code">staging-web.familyhub.app</div>
+                  <div class="card-code">
+                    <a
+                      href="https://frontend-staging-409d.up.railway.app"
+                      target="_blank"
+                      rel="noopener"
+                      style="color: inherit; text-decoration: underline"
+                      >frontend-staging-409d.up.railway.app</a
+                    ><br /><span style="opacity: 0.7"
+                      >→ familyhub.app subdomain pending FHS-30</span
+                    >
+                  </div>
                   <span class="badge badge-merged">MERGED</span>
                 </div>
               </td>
@@ -1518,5 +1574,56 @@
 
       <div class="h-10"></div>
     </div>
+
+    <script>
+      // Collapsible phase headers — click any phase row to fold/unfold its
+      // step rows. Pure vanilla JS so the static HTML stays self-contained.
+      (function () {
+        function nextPhaseSiblings(phaseRow) {
+          var rows = [];
+          var next = phaseRow.nextElementSibling;
+          while (next && !next.classList.contains('phase-row')) {
+            rows.push(next);
+            next = next.nextElementSibling;
+          }
+          return rows;
+        }
+
+        function toggle(phaseRow) {
+          var expanded = phaseRow.getAttribute('aria-expanded') !== 'false';
+          phaseRow.setAttribute('aria-expanded', String(!expanded));
+          nextPhaseSiblings(phaseRow).forEach(function (row) {
+            row.style.display = expanded ? 'none' : '';
+          });
+        }
+
+        document.querySelectorAll('.phase-row').forEach(function (phaseRow) {
+          phaseRow.setAttribute('role', 'button');
+          phaseRow.setAttribute('tabindex', '0');
+          phaseRow.setAttribute('aria-expanded', 'true');
+
+          // Inject a chevron at the very start of the inner flex row so it
+          // doesn't disturb the existing badges-on-the-right layout.
+          var inner = phaseRow.querySelector('td > div');
+          if (inner && !inner.querySelector('.phase-chevron')) {
+            var chev = document.createElement('span');
+            chev.className = 'phase-chevron';
+            chev.textContent = '▾';
+            chev.setAttribute('aria-hidden', 'true');
+            inner.insertBefore(chev, inner.firstChild);
+          }
+
+          phaseRow.addEventListener('click', function () {
+            toggle(phaseRow);
+          });
+          phaseRow.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggle(phaseRow);
+            }
+          });
+        });
+      })();
+    </script>
   </body>
 </html>
