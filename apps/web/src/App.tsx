@@ -3,6 +3,7 @@ import { AuthProvider } from './lib/auth-context';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LandingPage } from './pages/LandingPage';
 import { WelcomePage } from './pages/WelcomePage';
+import { PricingPage } from './pages/PricingPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { ResetPasswordRequestPage } from './pages/auth/ResetPasswordRequestPage';
@@ -19,6 +20,7 @@ export function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<WelcomePage />} />
+          <Route path="/pricing" element={<PricingPage />} />
           {/* Legacy /api/hello debug card preserved at /_health so the
               FHS-198 staging-deploy spec keeps validating end-to-end. */}
           <Route path="/_health" element={<LandingPage />} />
