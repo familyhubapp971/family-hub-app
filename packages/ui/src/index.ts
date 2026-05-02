@@ -10,3 +10,6 @@ export { TopNav, type TopNavTab } from './TopNav';
 export { AvatarGrid, type AvatarTile } from './AvatarGrid';
 export { PinInput } from './PinInput';
 export { StepperHeader } from './StepperHeader';
+export { FeatureCard } from './FeatureCard';
+export { PricingCard, type PricingFeature } from './PricingCard';
+export { FloatingDecorations, type FloatingDecoration } from './FloatingDecorations';

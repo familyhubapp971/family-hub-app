@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Calendar, CheckSquare, BookOpen, NotebookPen } from 'lucide-react';
-import { Button, Card } from '@familyhub/ui';
+import { Button, FeatureCard, FloatingDecorations, type FloatingDecoration } from '@familyhub/ui';
 
 // Hero copy rotates between two ad pitches every 5 seconds, each
 // targeting a different persona:
@@ -52,15 +52,7 @@ const slides = [
   },
 ] as const;
 
-interface FloatingElement {
-  icon: string;
-  top: string;
-  left?: string;
-  right?: string;
-  delay: number;
-}
-
-const floatingElements: FloatingElement[] = [
+const floatingElements: FloatingDecoration[] = [
   { icon: '📅', top: '15%', left: '10%', delay: 0 },
   { icon: '✅', top: '60%', left: '15%', delay: 1 },
   { icon: '⭐', top: '20%', right: '12%', delay: 0.5 },
@@ -144,25 +136,8 @@ export function WelcomePage() {
       {/* Subtle radial purple glow at the top of the hero. */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.4),rgba(61,16,101,0)_60%)]" />
 
-      {/* Floating decorative emojis — hidden on mobile to reduce noise.
-          Static when the user prefers reduced motion. */}
-      {!reduceMotion &&
-        floatingElements.map((el, idx) => (
-          <motion.div
-            key={idx}
-            className="pointer-events-none absolute hidden text-4xl opacity-50 md:block"
-            style={{ top: el.top, left: el.left, right: el.right }}
-            animate={{ y: [0, -20, 0], rotate: [0, 5, -5, 0] }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: el.delay,
-            }}
-          >
-            {el.icon}
-          </motion.div>
-        ))}
+      {/* Floating decorative emojis — hidden on mobile, motion-safe. */}
+      <FloatingDecorations elements={floatingElements} />
 
       {/* Header — kept slim so the hero + feature cards both fit
           above the fold on a 1080p viewport. */}
@@ -274,19 +249,15 @@ export function WelcomePage() {
                   ? {}
                   : { whileHover: { y: -6, rotate: -1, transition: { duration: 0.15 } } })}
               >
-                <Card
-                  className={`h-full !p-0 !shadow-neo-lg hover:!shadow-[8px_8px_0_0_rgba(0,0,0,1)] transition-shadow duration-150 ${cardBg} text-black border-l-[6px] ${accentBar}`}
-                >
-                  <div className={`flex items-center justify-center p-3 ${headerBg}`}>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-md border-2 border-black bg-white shadow-neo">
-                      <Icon className={iconColor} size={26} />
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="mb-1 font-heading text-base md:text-lg">{title}</h3>
-                    <p className="text-xs font-bold text-gray-600 md:text-sm">{body}</p>
-                  </div>
-                </Card>
+                <FeatureCard
+                  icon={<Icon size={26} />}
+                  title={title}
+                  body={body}
+                  headerBg={headerBg}
+                  cardBg={cardBg}
+                  iconColor={iconColor}
+                  accentBar={accentBar}
+                />
               </motion.div>
             ),
           )}

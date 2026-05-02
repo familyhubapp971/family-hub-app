@@ -8,6 +8,9 @@ import {
   AvatarGrid,
   PinInput,
   StepperHeader,
+  FeatureCard,
+  PricingCard,
+  FloatingDecorations,
 } from '../../../packages/ui/src';
 
 // Sanity tests for the FHS-242 design-system extensions:
@@ -228,5 +231,93 @@ describe('StepperHeader', () => {
     expect(screen.getByText('Family')).toBeInTheDocument();
     expect(screen.getByText('Members')).toBeInTheDocument();
     expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+});
+
+describe('FeatureCard', () => {
+  it('renders title + body + applies accent / cardBg classes', () => {
+    render(
+      <FeatureCard
+        icon={<span data-testid="icon">icon</span>}
+        title="One calendar"
+        body="See everyone in one place"
+        headerBg="bg-yellow-200"
+        cardBg="bg-yellow-50"
+        iconColor="text-pink-500"
+        accentBar="border-l-pink-400"
+        testId="fc"
+      />,
+    );
+    const card = screen.getByTestId('fc');
+    expect(screen.getByText('One calendar')).toBeInTheDocument();
+    expect(screen.getByText('See everyone in one place')).toBeInTheDocument();
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+    expect(card.className).toContain('border-l-pink-400');
+    expect(card.className).toContain('bg-yellow-50');
+  });
+});
+
+describe('PricingCard', () => {
+  const baseProps = {
+    name: 'Family',
+    price: '$7.99',
+    priceSuffix: '/mo',
+    ctaLabel: 'Start free trial',
+    onCta: () => {},
+    features: [
+      { label: 'Unlimited members', included: true },
+      { label: 'Custom subdomain', included: false },
+    ],
+  };
+
+  it('renders the tier name + price + suffix + CTA + features', () => {
+    render(<PricingCard {...baseProps} />);
+    expect(screen.getByText('Family')).toBeInTheDocument();
+    expect(screen.getByText('$7.99')).toBeInTheDocument();
+    expect(screen.getByText('/mo')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start free trial' })).toBeInTheDocument();
+    expect(screen.getByText('Unlimited members')).toBeInTheDocument();
+    expect(screen.getByText('Custom subdomain')).toBeInTheDocument();
+  });
+
+  it('renders Free as plain text when price === "Free"', () => {
+    render(<PricingCard {...baseProps} price="Free" priceSuffix={undefined} />);
+    expect(screen.getByText('Free')).toBeInTheDocument();
+  });
+
+  it('shows the Most popular badge only when featured=true', () => {
+    const { rerender } = render(<PricingCard {...baseProps} testId="pc" />);
+    expect(screen.queryByText('Most popular')).not.toBeInTheDocument();
+    rerender(<PricingCard {...baseProps} featured testId="pc" />);
+    expect(screen.getByText('Most popular')).toBeInTheDocument();
+  });
+
+  it('fires onCta when the CTA button is clicked', () => {
+    const onCta = vi.fn();
+    render(<PricingCard {...baseProps} onCta={onCta} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Start free trial' }));
+    expect(onCta).toHaveBeenCalledOnce();
+  });
+});
+
+describe('FloatingDecorations', () => {
+  it('renders one element per item with the correct icon', () => {
+    render(
+      <FloatingDecorations
+        elements={[
+          { icon: '📅', top: '15%', left: '10%' },
+          { icon: '⭐', top: '20%', right: '12%' },
+        ]}
+        testId="fd"
+      />,
+    );
+    const wrapper = screen.getByTestId('fd');
+    expect(wrapper.textContent).toContain('📅');
+    expect(wrapper.textContent).toContain('⭐');
+  });
+
+  it('marks the wrapper aria-hidden so it is invisible to screen readers', () => {
+    render(<FloatingDecorations elements={[{ icon: '📅', top: '15%' }]} testId="fd" />);
+    expect(screen.getByTestId('fd')).toHaveAttribute('aria-hidden', 'true');
   });
 });
