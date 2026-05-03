@@ -97,12 +97,13 @@ export function PricingPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-6 pb-6 pt-6 md:pt-10">
-        <div className="mb-8 text-center md:mb-10">
+        <div className="mb-16 text-center md:mb-20">
           <h1 className="mb-1 font-heading text-2xl md:text-3xl lg:text-4xl">
             Simple, honest pricing
           </h1>
           <p className="text-sm text-purple-200 md:text-base">
-            No per-seat surprises. Cancel any time. Two months free on annual plans.
+            One bill for the whole family — mums, dads, kids, the lot. No per-seat surprises, cancel
+            any time, two months free on annual plans.
           </p>
         </div>
 

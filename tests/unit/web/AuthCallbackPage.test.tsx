@@ -21,8 +21,8 @@ function renderAt(initial: string) {
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/dashboard" element={<div data-testid="route-marker">legacy-dashboard</div>} />
         <Route
-          path="/t/:slug/dashboard"
-          element={<div data-testid="route-marker">tenant-dashboard</div>}
+          path="/t/:slug/onboarding"
+          element={<div data-testid="route-marker">tenant-onboarding</div>}
         />
         <Route path="/login" element={<div data-testid="route-marker">login</div>} />
       </Routes>
@@ -41,12 +41,14 @@ describe('FHS-249 — AuthCallbackPage redirect', () => {
     sessionStorage.clear();
   });
 
-  it('redirects to /t/<slug>/dashboard when fh.signup.intent has a slug', async () => {
+  it('redirects to /t/<slug>/onboarding when fh.signup.intent has a slug', async () => {
+    // FHS-36 — fresh signups land on the onboarding wizard. The
+    // wizard's own gate bounces returning users to /dashboard.
     sessionStorage.setItem('fh.signup.intent', JSON.stringify({ slug: 'khans' }));
     authState.session = { user: { id: 'u1' } };
     renderAt('/auth/callback');
     await waitFor(() =>
-      expect(screen.getByTestId('route-marker').textContent).toBe('tenant-dashboard'),
+      expect(screen.getByTestId('route-marker').textContent).toBe('tenant-onboarding'),
     );
   });
 

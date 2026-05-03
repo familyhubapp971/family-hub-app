@@ -16,8 +16,13 @@ export function AuthLayout({ title, children }: { title: string; children: React
       >
         FamilyHub
       </Link>
-      <main className="flex min-h-full items-center justify-center px-4 py-10">
-        <Card className="w-full max-w-md border-4 border-white p-8 text-gray-900 shadow-neo-lg">
+      {/* Vertical-centered card sat slightly below true-centre so it
+          doesn't align with the brand link in the top-left corner of
+          the page. pt-24 on small viewports + items-center + a small
+          downward translate on md+ ≅ the visual sweet-spot the design
+          calls for. */}
+      <main className="flex min-h-full items-center justify-center px-4 pb-10 pt-24 md:pt-32">
+        <Card className="w-full max-w-md translate-y-4 border-4 border-white p-8 text-gray-900 shadow-neo-lg md:translate-y-8">
           <h1 className="font-display text-3xl text-kingdom-bg">{title}</h1>
           <div className="mt-6">{children}</div>
         </Card>

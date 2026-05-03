@@ -11,6 +11,7 @@ import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { MePage } from './pages/MePage';
+import { OnboardingPage } from './pages/OnboardingPage';
 
 // Top-level routing. AuthProvider wraps every route so useAuth() is
 // available everywhere — including the OAuth callback page that needs
@@ -42,6 +43,16 @@ export function App() {
 
           {/* Tenant-scoped pages. The TenantProvider reads :slug from
               the URL and exposes it to descendants via useTenantSlug(). */}
+          <Route
+            path="/t/:slug/onboarding"
+            element={
+              <ProtectedRoute>
+                <TenantProvider>
+                  <OnboardingPage />
+                </TenantProvider>
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/t/:slug/dashboard"
             element={
