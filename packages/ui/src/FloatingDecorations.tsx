@@ -1,8 +1,13 @@
+import type { ReactNode } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 export interface FloatingDecoration {
-  /** Emoji or short string to render. Could be any small visual. */
-  icon: string;
+  /**
+   * Emoji, short string, or any React node. Use a string for static
+   * emojis; pass a component (e.g. <DynamicCalendar />) for visuals
+   * that need live state.
+   */
+  icon: ReactNode;
   /** CSS top position (e.g. "15%", "120px"). */
   top: string;
   /** CSS left position (mutually exclusive with right). */
