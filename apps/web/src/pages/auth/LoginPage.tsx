@@ -1,30 +1,37 @@
 import { useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { Button, Input, Label } from '@familyhub/ui';
-import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { AuthLayout } from './AuthLayout';
 
-// Canonical Google "G" logo, inline so no extra dep / network fetch.
-// Brand-mark colours per Google's identity guidelines.
+// LoginPage — passwordless parent auth (FHS-224, ADR 0011). Two co-equal
+// entry points: magic-link (signInWithOtp → /verify-email) and Google
+// OAuth (signInWithOAuth → /auth/callback). Password field removed
+// entirely; the existing ResetPasswordRequestPage now redirects to
+// /verify-email since "forgot password" → "send me another magic link"
+// in this world.
+
+// Inline Google "G" mark — matches SignupPage's logo so the two screens
+// feel identical. Brand-mark colours per Google's identity guidelines.
 function GoogleIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
       <path
         fill="#4285F4"
-        d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
       />
       <path
         fill="#34A853"
-        d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
       />
       <path
         fill="#FBBC05"
-        d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
       />
       <path
         fill="#EA4335"
-        d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
       />
     </svg>
   );
@@ -32,60 +39,69 @@ function GoogleIcon() {
 
 const loginSchema = z.object({
   email: z.string().email('enter a valid email'),
-  password: z.string().min(1, 'password required'),
 });
 
 type Status =
   | { kind: 'idle' }
   | { kind: 'submitting' }
-  | { kind: 'oauth' }
+  | { kind: 'submitting-google' }
   | { kind: 'error'; message: string };
 
 export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const parsed = loginSchema.safeParse({ email, password });
+    const parsed = loginSchema.safeParse({ email });
     if (!parsed.success) {
       setStatus({ kind: 'error', message: parsed.error.issues[0]?.message ?? 'invalid input' });
       return;
     }
     setStatus({ kind: 'submitting' });
-    const { error } = await supabase.auth.signInWithPassword({
+    // shouldCreateUser:false makes /login login-only — Supabase rejects
+    // unknown emails with a clear "user not found" error rather than
+    // silently creating an account, so /login and /signup stay
+    // semantically distinct (AC1 from FHS-224).
+    const { error } = await supabase.auth.signInWithOtp({
       email: parsed.data.email,
-      password: parsed.data.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        shouldCreateUser: false,
+      },
     });
     if (error) {
       setStatus({ kind: 'error', message: error.message });
       return;
     }
-    // On success the AuthProvider's onAuthStateChange will flip the
-    // session — navigating immediately is fine because the dashboard's
-    // protected-route check will already see the session by then.
-    navigate('/dashboard', { replace: true });
+    // Stash the email so /verify-email can render "Check your inbox at
+    // <email>" without us threading state through the navigation.
+    sessionStorage.setItem('fh.signup.email', parsed.data.email);
+    navigate('/verify-email');
   }
 
   async function onGoogle() {
-    setStatus({ kind: 'oauth' });
+    setStatus({ kind: 'submitting-google' });
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) {
       setStatus({ kind: 'error', message: error.message });
     }
-    // On success the browser navigates to Google's consent screen; no
-    // local state change needed.
+    // signInWithOAuth navigates the browser away on success — no
+    // post-call handling needed here.
   }
+
+  const submitting = status.kind === 'submitting' || status.kind === 'submitting-google';
 
   return (
     <AuthLayout title="Log in">
+      <p className="mb-4 font-body text-sm text-gray-700">
+        We&rsquo;ll email you a one-time link to log in. No password to remember.
+      </p>
+
       <form onSubmit={onSubmit} className="space-y-4" data-testid="login-form" noValidate>
         <div>
           <Label htmlFor="email" required>
@@ -99,28 +115,9 @@ export function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            placeholder="sarah@example.com"
             testId="login-email"
           />
-        </div>
-        <div>
-          <Label htmlFor="password" required>
-            Password
-          </Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            testId="login-password"
-          />
-          <p className="mt-1 text-right font-body text-xs">
-            <Link to="/auth/reset-request" className="underline">
-              Forgot password?
-            </Link>
-          </p>
         </div>
 
         {status.kind === 'error' && (
@@ -133,10 +130,11 @@ export function LoginPage() {
           type="submit"
           variant="primary"
           size="md"
-          disabled={status.kind === 'submitting' || status.kind === 'oauth'}
+          disabled={submitting}
+          fullWidth
           testId="login-submit"
         >
-          {status.kind === 'submitting' ? 'Signing in…' : 'Log in'}
+          {status.kind === 'submitting' ? 'Sending…' : 'Continue with email →'}
         </Button>
       </form>
 
@@ -151,13 +149,13 @@ export function LoginPage() {
         variant="secondary"
         size="md"
         onClick={onGoogle}
-        disabled={status.kind === 'submitting' || status.kind === 'oauth'}
+        disabled={submitting}
         testId="login-google"
-        className="w-full"
+        fullWidth
       >
         <span className="inline-flex items-center justify-center gap-3">
           <GoogleIcon />
-          {status.kind === 'oauth' ? 'Redirecting…' : 'Continue with Google'}
+          {status.kind === 'submitting-google' ? 'Redirecting…' : 'Continue with Google'}
         </span>
       </Button>
 

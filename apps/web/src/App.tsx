@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './lib/auth-context';
 import { TenantProvider } from './lib/tenant-context';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -7,7 +7,6 @@ import { WelcomePage } from './pages/WelcomePage';
 import { PricingPage } from './pages/PricingPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
-import { ResetPasswordRequestPage } from './pages/auth/ResetPasswordRequestPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -34,7 +33,10 @@ export function App() {
           <Route path="/_health" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          <Route path="/auth/reset-request" element={<ResetPasswordRequestPage />} />
+          {/* FHS-224 / ADR 0011 — passwords retired. The old reset-password
+              entry point now redirects into the magic-link flow so any
+              bookmarked link still works. */}
+          <Route path="/auth/reset-request" element={<Navigate to="/login" replace />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
 
