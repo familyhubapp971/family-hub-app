@@ -73,8 +73,11 @@ describe('<DashboardPage /> — tab framework', () => {
 
   it('defaults to the home (Dashboard) panel when ?tab is absent', () => {
     renderAt('/t/khans/dashboard');
+    // Home tab renders <TodayTabPanel /> (FHS-228). With no session
+    // mocked the panel sits in its loading state — assert that, not
+    // the placeholder title (which is only used for non-home tabs).
     expect(screen.getByTestId('dashboard-panel-home')).toBeInTheDocument();
-    expect(screen.getByTestId('dashboard-panel-title').textContent).toBe('Dashboard');
+    expect(screen.getByTestId('today-loading')).toBeInTheDocument();
   });
 
   it('honours ?tab=meals on initial render', () => {
