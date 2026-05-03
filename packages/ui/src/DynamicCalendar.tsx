@@ -18,7 +18,10 @@ export interface DynamicCalendarProps {
    * detected locale; falls back to "en-US" when unavailable (SSR / jsdom).
    */
   locale?: string;
-  /** Tailwind width — defaults to w-12 to roughly match `text-4xl` emoji. */
+  /**
+   * Tailwind sizing — defaults to a square `h-12 w-12`. Width controls
+   * the card; height is required so the two halves can split 50/50.
+   */
   className?: string;
   testId?: string;
 }
@@ -28,7 +31,12 @@ function detectLocale(): string {
   return 'en-US';
 }
 
-export function DynamicCalendar({ now, locale, className = 'w-12', testId }: DynamicCalendarProps) {
+export function DynamicCalendar({
+  now,
+  locale,
+  className = 'h-12 w-12',
+  testId,
+}: DynamicCalendarProps) {
   // When `now` is passed (tests), don't run the clock effect at all so
   // the rendered date is fully deterministic.
   const [today, setToday] = useState<Date>(() => now ?? new Date());
@@ -43,9 +51,14 @@ export function DynamicCalendar({ now, locale, className = 'w-12', testId }: Dyn
   }, [now]);
 
   const resolvedLocale = locale ?? detectLocale();
+  // Force exactly 3 uppercase characters: en-US's `short` already gives
+  // JUL/DEC/etc., but other locales return the full word ("desember" no,
+  // "Dezember" yes). slice(0,3) keeps the header from overflowing the
+  // red strip in any locale.
   const month = new Intl.DateTimeFormat(resolvedLocale, { month: 'short' })
     .format(today)
-    .toUpperCase();
+    .toUpperCase()
+    .slice(0, 3);
   const day = today.getDate();
 
   // a11y: render a hidden long-form date for screen readers; the visual
@@ -64,10 +77,12 @@ export function DynamicCalendar({ now, locale, className = 'w-12', testId }: Dyn
       data-testid={testId}
       className={`inline-flex flex-col overflow-hidden rounded-md border-2 border-black bg-white shadow-neo-sm ${className}`}
     >
-      <div className="bg-red-700 px-1 py-0.5 text-center text-[10px] font-bold uppercase tracking-wider text-white">
+      {/* Equal-height split: each half takes 50% of the card height
+          via flex-1 and centers its content. */}
+      <div className="flex flex-1 items-center justify-center bg-red-700 px-1 text-[10px] font-bold uppercase tracking-wider text-white">
         {month}
       </div>
-      <div className="px-1 py-1 text-center font-heading text-xl leading-none text-black">
+      <div className="flex flex-1 items-center justify-center px-1 font-heading text-xl leading-none text-black">
         {day}
       </div>
     </div>
