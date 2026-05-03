@@ -50,7 +50,9 @@ const slides = [
     headline: 'Your whole family, finally in sync.',
     subtitle:
       "One beautifully calm place for the schedules, tasks, meals, and learning that make family life hum — so everyone wakes up knowing what's on.",
-    cta: 'Start free — no card needed',
+    // Copy length matched across all 3 slides (~20 chars) so the CTA
+    // button doesn't visibly resize during the cross-fade transition.
+    cta: 'Start your free trial',
   },
   {
     // 'invited-parent' = the secondary-parent ad slide (Yusuf-style
@@ -74,7 +76,7 @@ const slides = [
     headline: null,
     subtitle:
       'Lessons done, chores ticked, rewards unlocked — your kids see their own week, build streaks, and feel proud without you nagging.',
-    cta: 'Set up your kids',
+    cta: 'Add your kids today',
   },
 ] as const;
 

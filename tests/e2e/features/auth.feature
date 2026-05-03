@@ -5,20 +5,15 @@
 Feature: Auth
 
   As a prospective Family Hub member
-  I want to create an account with my email and a password
-  so that I can sign in and start using the app.
+  I want to sign in with a magic link or Google OAuth (no password)
+  so that I can use the app without remembering credentials.
 
-  # Demoted from @critical — calling staging Supabase from GH Actions
-  # runners is unreliable (slow/hanging fetches to ap-south-1, no error
-  # response). FHS-193 will replace this with a hermetic test that mocks
-  # the supabase client OR uses a network-record/replay fixture, then
-  # re-tag @critical. Until then, the scenario runs in the post-merge
-  # full e2e matrix where flakiness doesn't gate PRs.
-  Scenario: Visitor signs up with valid credentials
-    Given I open the signup page
-    When I enter a valid email and password
-    And I submit the signup form
-    Then I see a check-your-inbox confirmation message
+  # FHS-224 retired the password signup scenario. The hermetic
+  # equivalents now live in signup.feature (signup form behaviour) +
+  # verify-email.feature (post-submit confirmation). Scenario 1 below
+  # is the legacy /me vertical slice (FHS-196) which still uses the
+  # synthetic e2e account; it stays out of @critical because hitting
+  # staging Supabase from GH Actions runners is flaky.
 
   # FHS-196 — Vertical-slice check. Signs in with the dedicated
   # synthetic e2e@familyhub.test account, then visits /me and asserts
