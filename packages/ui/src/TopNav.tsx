@@ -66,6 +66,7 @@ export function TopNav({
             return (
               <button
                 key={tab.id}
+                id={`tab-${tab.id}`}
                 role="tab"
                 aria-selected={active}
                 aria-controls={`panel-${tab.id}`}

@@ -10,6 +10,7 @@ import { SignupPage } from './pages/auth/SignupPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { LegacyDashboardRedirect } from './pages/LegacyDashboardRedirect';
 import { MembersPage } from './pages/MembersPage';
 import { MePage } from './pages/MePage';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -86,12 +87,16 @@ export function App() {
           />
 
           {/* Legacy un-prefixed routes — kept as-is for now so existing
-              deep links don't 404. Cleanup tracked under FHS-205. */}
+              deep links don't 404. Cleanup tracked under FHS-205.
+              `/dashboard` resolves the user's first tenant via /api/me
+              and forwards to /t/<slug>/dashboard so the new tenant-
+              scoped DashboardPage (which requires TenantProvider) keeps
+              working from older bookmarks + the OAuth callback. */}
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <LegacyDashboardRedirect />
               </ProtectedRoute>
             }
           />
