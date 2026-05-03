@@ -1,6 +1,6 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check } from 'lucide-react';
+import { Check, Loader2, X } from 'lucide-react';
 import { z } from 'zod';
 import { Button, Input } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
@@ -14,6 +14,43 @@ import { supabase } from '../../lib/supabase';
 // Brand-faithful Google "G" mark. Inlined SVG so we don't pull a
 // brand-icon dependency for one logo. Source: Google identity
 // guidelines (4-colour Goog­le G).
+// Inline indicator next to the slug preview text. Shows a spinner while
+// checking, a green check when available, and a red X with screen-reader
+// text when taken (suggestions render in a separate row below).
+function SlugStatusIndicator({ status }: { status: SlugStatus }) {
+  if (status.kind === 'checking') {
+    return (
+      <Loader2
+        className="animate-spin text-gray-400"
+        size={14}
+        aria-label="Checking availability"
+        data-testid="signup-slug-checking"
+      />
+    );
+  }
+  if (status.kind === 'available') {
+    return (
+      <Check
+        className="text-green-600"
+        size={14}
+        aria-label="URL is available"
+        data-testid="signup-slug-available"
+      />
+    );
+  }
+  if (status.kind === 'taken') {
+    return (
+      <X
+        className="text-red-500"
+        size={14}
+        aria-label="URL is taken"
+        data-testid="signup-slug-taken"
+      />
+    );
+  }
+  return null;
+}
+
 function GoogleLogo() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -62,13 +99,84 @@ type Status =
   | { kind: 'submitting-google' }
   | { kind: 'error'; message: string };
 
+type SlugStatus =
+  | { kind: 'idle' }
+  | { kind: 'checking' }
+  | { kind: 'available' }
+  | { kind: 'taken'; suggestions: string[] };
+
 export function SignupPage() {
   const navigate = useNavigate();
   const [familyName, setFamilyName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
-  const slug = useMemo(() => deriveSlug(familyName), [familyName]);
+  // `customSlug` is null when the slug should auto-track family name. The
+  // user flips it on by clicking "Change" or picking a suggestion; "Use
+  // auto" resets it back to null.
+  const [customSlug, setCustomSlug] = useState<string | null>(null);
+  const [editingSlug, setEditingSlug] = useState(false);
+  const slugInputRef = useRef<HTMLInputElement | null>(null);
+  // Focus the slug input the moment we flip into edit mode. Doing this
+  // via ref + effect (rather than autoFocus) avoids the lint rule that
+  // bans autoFocus for accessibility reasons.
+  useEffect(() => {
+    if (editingSlug) slugInputRef.current?.focus();
+  }, [editingSlug]);
+  const slug = useMemo(() => customSlug ?? deriveSlug(familyName), [customSlug, familyName]);
+  const [slugStatus, setSlugStatus] = useState<SlugStatus>({ kind: 'idle' });
+
+  // Live debounced slug-availability check (FHS-225). Hits FHS-27's
+  // GET /api/public/slug-available endpoint 300ms after the user stops
+  // typing, sets `slugStatus` so the form can show ✓/✗/spinner. The
+  // server is the source of truth — this is a courtesy hint while
+  // typing; the POST tenant call (FHS-25) re-checks at insert time.
+  useEffect(() => {
+    if (slug === 'family' || slug.length < 2) {
+      setSlugStatus({ kind: 'idle' });
+      return;
+    }
+    setSlugStatus({ kind: 'checking' });
+    // `ignored` guards against stale-response races: a fast typist can
+    // queue two fetches where the first resolves *after* the second.
+    // ctrl.abort() interrupts the network read but `.json()` isn't
+    // always abortable on every runtime, so we belt-and-brace by
+    // dropping any setState from a closure whose effect already cleaned up.
+    let ignored = false;
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/public/slug-available?slug=${encodeURIComponent(slug)}`, {
+          signal: ctrl.signal,
+        });
+        if (ignored) return;
+        if (!res.ok) {
+          // 400 means the slug failed server-side regex — we already
+          // limit it client-side, so treat as a soft "couldn't check".
+          setSlugStatus({ kind: 'idle' });
+          return;
+        }
+        const body = (await res.json()) as {
+          available: boolean;
+          suggestions: string[];
+        };
+        if (ignored) return;
+        setSlugStatus(
+          body.available ? { kind: 'available' } : { kind: 'taken', suggestions: body.suggestions },
+        );
+      } catch (err) {
+        if (ignored) return;
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        // Network blip — silent, the server check on submit will catch it.
+        setSlugStatus({ kind: 'idle' });
+      }
+    }, 300);
+    return () => {
+      ignored = true;
+      ctrl.abort();
+      window.clearTimeout(timer);
+    };
+  }, [slug]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -121,6 +229,11 @@ export function SignupPage() {
   }
 
   const submitting = status.kind === 'submitting' || status.kind === 'submitting-google';
+  // AC5: submit is enabled only once the slug check resolves to
+  // `available`. Anything else (idle = no slug yet / placeholder,
+  // checking = in flight, taken = clash) keeps the button greyed out
+  // and gives the user a clear next action via the button label.
+  const slugBlocksSubmit = slugStatus.kind !== 'available';
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body md:flex-row md:bg-white">
@@ -190,12 +303,76 @@ export function SignupPage() {
                 placeholder="The Khan Family"
                 testId="signup-family-name"
               />
-              <p className="mt-2 text-sm font-bold text-gray-500" data-testid="signup-slug-preview">
-                Your URL: <span className="text-purple-600">/t/{slug}</span>{' '}
-                <span className="text-xs italic text-gray-400">
-                  · custom domain coming after launch
-                </span>
-              </p>
+              <div
+                className="mt-2 text-sm font-bold text-gray-500"
+                data-testid="signup-slug-preview"
+              >
+                {editingSlug ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>Your URL: /t/</span>
+                    <input
+                      ref={slugInputRef}
+                      type="text"
+                      value={slug}
+                      onChange={(e) => setCustomSlug(deriveSlug(e.target.value))}
+                      className="w-40 rounded-md border-2 border-black bg-white px-2 py-1 text-sm font-bold text-purple-600 shadow-neo-xs focus:outline-none focus:ring-2 focus:ring-kingdom-bg"
+                      aria-label="Custom URL slug"
+                      data-testid="signup-slug-input"
+                    />
+                    <SlugStatusIndicator status={slugStatus} />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomSlug(null);
+                        setEditingSlug(false);
+                      }}
+                      className="text-xs font-bold text-purple-600 underline"
+                      data-testid="signup-slug-use-auto"
+                    >
+                      Use auto
+                    </button>
+                  </div>
+                ) : (
+                  <p>
+                    <span className="inline-flex items-center gap-1.5">
+                      Your URL: <span className="text-purple-600">/t/{slug}</span>
+                      <SlugStatusIndicator status={slugStatus} />
+                      <button
+                        type="button"
+                        onClick={() => setEditingSlug(true)}
+                        className="text-xs font-bold text-purple-600 underline"
+                        data-testid="signup-slug-change"
+                      >
+                        Change
+                      </button>
+                    </span>
+                    <span className="ml-1 text-xs italic text-gray-400">
+                      · custom domain coming after launch
+                    </span>
+                  </p>
+                )}
+              </div>
+              {slugStatus.kind === 'taken' && (
+                <div
+                  className="mt-2 flex flex-wrap items-center gap-2"
+                  data-testid="signup-slug-suggestions"
+                >
+                  <span className="text-xs font-bold text-gray-500">Try:</span>
+                  {slugStatus.suggestions.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => {
+                        setCustomSlug(s);
+                        setEditingSlug(false);
+                      }}
+                      className="rounded-md border-2 border-black bg-yellow-100 px-2 py-0.5 text-xs font-bold text-black shadow-neo-xs transition-all hover:-translate-y-0.5 hover:bg-yellow-200"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -250,10 +427,16 @@ export function SignupPage() {
               variant="primary"
               size="lg"
               fullWidth
-              disabled={submitting}
+              disabled={submitting || slugBlocksSubmit}
               testId="signup-submit"
             >
-              {status.kind === 'submitting' ? 'Sending…' : 'Continue with email →'}
+              {status.kind === 'submitting'
+                ? 'Sending…'
+                : slugStatus.kind === 'checking'
+                  ? 'Checking URL…'
+                  : slugStatus.kind === 'taken'
+                    ? 'Pick a different URL'
+                    : 'Continue with email →'}
             </Button>
 
             <div className="relative my-4 flex items-center">

@@ -34,6 +34,26 @@ export class SignupPage {
     return this.page.getByTestId('signup-slug-preview');
   }
 
+  slugAvailable() {
+    return this.page.getByTestId('signup-slug-available');
+  }
+
+  slugTaken() {
+    return this.page.getByTestId('signup-slug-taken');
+  }
+
+  slugSuggestions() {
+    return this.page.getByTestId('signup-slug-suggestions');
+  }
+
+  changeSlugLink() {
+    return this.page.getByTestId('signup-slug-change');
+  }
+
+  slugInput() {
+    return this.page.getByTestId('signup-slug-input');
+  }
+
   submitButton() {
     return this.page.getByTestId('signup-submit');
   }
