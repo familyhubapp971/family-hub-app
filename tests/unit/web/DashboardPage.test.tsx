@@ -82,8 +82,11 @@ describe('<DashboardPage /> — tab framework', () => {
 
   it('honours ?tab=meals on initial render', () => {
     renderAt('/t/khans/dashboard?tab=meals');
+    // Meals tab renders <MealsTabPanel /> (FHS-229). With no session
+    // mocked the panel sits in its loading state — assert that, not
+    // the placeholder title (which is only used for not-yet-built tabs).
     expect(screen.getByTestId('dashboard-panel-meals')).toBeInTheDocument();
-    expect(screen.getByTestId('dashboard-panel-title').textContent).toBe('Meals');
+    expect(screen.getByTestId('meals-loading')).toBeInTheDocument();
   });
 
   it('falls back to the default panel when ?tab is unknown', () => {

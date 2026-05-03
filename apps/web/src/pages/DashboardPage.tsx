@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth-context';
 import { useTenantSlug } from '../lib/tenant-context';
 import { TodayTabPanel } from './dashboard/TodayTabPanel';
+import { MealsTabPanel } from './dashboard/MealsTabPanel';
 
 // FHS-227 — Parent Dashboard shell. Six tabs gated by tenant_features
 // (FHS-50 — deferred). Each tab's actual content ships in its own
@@ -149,6 +150,8 @@ export function DashboardPage() {
           <Card className="bg-white p-6 text-gray-900 md:p-8">
             {active.id === 'home' ? (
               <TodayTabPanel />
+            ) : active.id === 'meals' ? (
+              <MealsTabPanel />
             ) : (
               <PlaceholderPanel
                 label={active.label}
