@@ -10,6 +10,7 @@ import { SignupPage } from './pages/auth/SignupPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { MembersPage } from './pages/MembersPage';
 import { MePage } from './pages/MePage';
 import { OnboardingPage } from './pages/OnboardingPage';
 
@@ -59,6 +60,16 @@ export function App() {
               <ProtectedRoute>
                 <TenantProvider>
                   <DashboardPage />
+                </TenantProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/t/:slug/members"
+            element={
+              <ProtectedRoute>
+                <TenantProvider>
+                  <MembersPage />
                 </TenantProvider>
               </ProtectedRoute>
             }
