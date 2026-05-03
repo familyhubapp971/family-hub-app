@@ -52,7 +52,7 @@ sections:
 _Seeded by FHS-172 / FHS-173 / FHS-174 — populate as ADRs land:_
 
 - [`0001-multi-tenancy.md`](0001-multi-tenancy.md) — accepted (FHS-172)
-- [`0002-subdomain-tenant-routing.md`](0002-subdomain-tenant-routing.md) — accepted (FHS-173)
+- [`0002-subdomain-tenant-routing.md`](0002-subdomain-tenant-routing.md) — accepted (FHS-173); amended by 0012
 - [`0003-auth-library.md`](0003-auth-library.md) — accepted: Supabase Auth (FHS-173)
 - [`0004-stripe-billing.md`](0004-stripe-billing.md) — accepted (FHS-173)
 - [`0005-monorepo-structure.md`](0005-monorepo-structure.md) — accepted (FHS-174)
@@ -62,3 +62,4 @@ _Seeded by FHS-172 / FHS-173 / FHS-174 — populate as ADRs land:_
 - [`0009-family-membership-model.md`](0009-family-membership-model.md) — accepted: single `family_members` table for everyone in a family (parents, children, guardians)
 - [`0010-frontend-animation-library.md`](0010-frontend-animation-library.md) — accepted: framer-motion v11 for web animations (FHS-220)
 - [`0011-magic-link-only-parent-auth.md`](0011-magic-link-only-parent-auth.md) — accepted: parent auth is magic-link + Google OAuth, no passwords (FHS-224, FHS-248)
+- [`0012-path-prefix-tenant-routing-interim.md`](0012-path-prefix-tenant-routing-interim.md) — accepted: path-prefix `/t/<slug>/` as interim tenant routing alongside subdomain (FHS-13, FHS-249)

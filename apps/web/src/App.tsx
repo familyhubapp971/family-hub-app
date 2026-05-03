@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './lib/auth-context';
+import { TenantProvider } from './lib/tenant-context';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LandingPage } from './pages/LandingPage';
 import { WelcomePage } from './pages/WelcomePage';
@@ -14,11 +15,17 @@ import { MePage } from './pages/MePage';
 // Top-level routing. AuthProvider wraps every route so useAuth() is
 // available everywhere — including the OAuth callback page that needs
 // to react to the session flip mid-render.
+//
+// FHS-249 — tenant-scoped pages live under `/t/:slug/*` (per ADR 0012).
+// Marketing + auth routes stay at the root. Legacy `/dashboard` and
+// `/me` redirect into the tenant-scoped tree once the user's tenant is
+// known (the AuthCallbackPage figures it out post-login).
 export function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* Marketing + auth — no tenant context. */}
           <Route path="/" element={<WelcomePage />} />
           <Route path="/pricing" element={<PricingPage />} />
           {/* Legacy /api/hello debug card preserved at /_health so the
@@ -28,6 +35,32 @@ export function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/auth/reset-request" element={<ResetPasswordRequestPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+          {/* Tenant-scoped pages. The TenantProvider reads :slug from
+              the URL and exposes it to descendants via useTenantSlug(). */}
+          <Route
+            path="/t/:slug/dashboard"
+            element={
+              <ProtectedRoute>
+                <TenantProvider>
+                  <DashboardPage />
+                </TenantProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/t/:slug/me"
+            element={
+              <ProtectedRoute>
+                <TenantProvider>
+                  <MePage />
+                </TenantProvider>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Legacy un-prefixed routes — kept as-is for now so existing
+              deep links don't 404. Cleanup tracked under FHS-205. */}
           <Route
             path="/dashboard"
             element={

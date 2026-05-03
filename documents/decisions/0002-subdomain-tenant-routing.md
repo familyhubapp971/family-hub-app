@@ -1,8 +1,13 @@
 # 0002 — Subdomain tenant routing
 
-**Status:** accepted
+**Status:** accepted (amended by [ADR 0012](0012-path-prefix-tenant-routing-interim.md))
 **Date:** 2026-04-24
 **Jira:** [FHS-173](https://qualicion2.atlassian.net/browse/FHS-173)
+
+> **2026-05-03 update:** path-prefix routing (`/t/<slug>/...`) is added
+> alongside subdomain routing as an _interim_ mechanism until we own a
+> real domain. The path-prefix Alternative below is rejected for the
+> long term but accepted for the interim. See [ADR 0012](0012-path-prefix-tenant-routing-interim.md).
 
 ## Context
 
