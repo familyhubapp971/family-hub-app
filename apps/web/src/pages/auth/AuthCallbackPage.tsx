@@ -20,18 +20,18 @@ export function AuthCallbackPage() {
   useEffect(() => {
     if (loading) return;
     if (session) {
-      // FHS-249 — prefer the tenant-scoped dashboard URL when we know
-      // the slug. Fresh signups stash it in `fh.signup.intent` (set by
-      // SignupPage); existing logins fall through to the legacy
-      // /dashboard until FHS-12 wires a "current tenant from /me"
-      // lookup. Either route lands on the same component today.
+      // FHS-249 — prefer the tenant-scoped URL when we know the slug.
+      // FHS-36 — fresh signups land on /onboarding (the wizard's own
+      // gate bounces them to /dashboard if they've already completed
+      // it). Existing logins fall through to the legacy /dashboard
+      // until FHS-12 wires a "current tenant from /me" lookup.
       let redirectTo = '/dashboard';
       const intent = sessionStorage.getItem('fh.signup.intent');
       if (intent) {
         try {
           const parsed = JSON.parse(intent) as { slug?: unknown };
           if (typeof parsed.slug === 'string' && SLUG_RE.test(parsed.slug)) {
-            redirectTo = `/t/${parsed.slug}/dashboard`;
+            redirectTo = `/t/${parsed.slug}/onboarding`;
           }
         } catch {
           // Malformed sessionStorage — fall back to /dashboard quietly.

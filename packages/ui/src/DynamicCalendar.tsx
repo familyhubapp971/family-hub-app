@@ -34,7 +34,7 @@ function detectLocale(): string {
 export function DynamicCalendar({
   now,
   locale,
-  className = 'h-12 w-12',
+  className = 'h-14 w-14',
   testId,
 }: DynamicCalendarProps) {
   // When `now` is passed (tests), don't run the clock effect at all so
@@ -78,11 +78,13 @@ export function DynamicCalendar({
       className={`inline-flex flex-col overflow-hidden rounded-md border-2 border-black bg-white shadow-neo-sm ${className}`}
     >
       {/* Equal-height split: each half takes 50% of the card height
-          via flex-1 and centers its content. */}
-      <div className="flex flex-1 items-center justify-center bg-red-700 px-1 text-[10px] font-bold uppercase tracking-wider text-white">
+          via flex-1. Day number uses leading-none + a smaller text-lg
+          so the digit fits inside the half-card height (28px on the
+          h-14 default) without clipping descenders or ascenders. */}
+      <div className="flex flex-1 items-center justify-center bg-red-700 px-1 text-[11px] font-bold uppercase leading-none tracking-wider text-white">
         {month}
       </div>
-      <div className="flex flex-1 items-center justify-center px-1 font-heading text-xl leading-none text-black">
+      <div className="flex flex-1 items-center justify-center px-1 font-heading text-lg leading-none text-black">
         {day}
       </div>
     </div>

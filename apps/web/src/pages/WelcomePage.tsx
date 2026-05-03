@@ -82,12 +82,14 @@ const slides = [
 
 // Calendar slot is a live component (always shows today's date) instead
 // of the 📅 emoji, which is hard-coded to "JUL 17" by the OS glyph and
-// looks stale on any other day.
+// looks stale on any other day. Positioned a little lower than the
+// emoji-only set so the calendar doesn't crowd the brand link in the
+// top-left corner of the hero.
 const floatingElements: FloatingDecoration[] = [
   {
     icon: <DynamicCalendar testId="welcome-floating-calendar" />,
-    top: '15%',
-    left: '10%',
+    top: '30%',
+    left: '8%',
     delay: 0,
   },
   { icon: '✅', top: '60%', left: '15%', delay: 1 },
