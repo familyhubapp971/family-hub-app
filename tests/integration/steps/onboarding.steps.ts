@@ -194,7 +194,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
   });
 
   Scenario(
-    'Idempotent — second submit returns 200 without duplicating members',
+    'Idempotent — second submit returns 200 without duplicating members or seed',
     ({ Given, When, Then, And }) => {
       let res: Response;
 
