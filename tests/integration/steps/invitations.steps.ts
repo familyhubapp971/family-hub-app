@@ -139,20 +139,23 @@ describeFeature(feature, ({ Background, Scenario }) => {
       token = await mintToken(privateKey);
     });
 
-    And('a tenant {string} exists with the inviter as an admin member', async (slug: string) => {
-      const insertedTenants = await db
-        .insert(tenants)
-        .values({ slug, name: `${slug} Family` })
-        .returning();
-      const tenant = insertedTenants[0]!;
-      tenantIds[slug] = tenant.id;
-      await db.insert(members).values({
-        tenantId: tenant.id,
-        userId: USER_ID,
-        displayName: 'Inviter',
-        role: 'admin',
-      });
-    });
+    And(
+      'a tenant {string} exists with the inviter as an admin member',
+      async (_ctx, slug: string) => {
+        const insertedTenants = await db
+          .insert(tenants)
+          .values({ slug, name: `${slug} Family` })
+          .returning();
+        const tenant = insertedTenants[0]!;
+        tenantIds[slug] = tenant.id;
+        await db.insert(members).values({
+          tenantId: tenant.id,
+          userId: USER_ID,
+          displayName: 'Inviter',
+          role: 'admin',
+        });
+      },
+    );
   });
 
   Scenario(
@@ -162,7 +165,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
       When(
         'the inviter POSTs an invitation for {string} as {string}',
-        async (email: string, role: string) => {
+        async (_ctx, email: string, role: string) => {
           res = await app.request('/api/invitations', {
             method: 'POST',
             headers: {
@@ -181,7 +184,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
       And(
         'exactly 1 row exists in pending_invitations with email {string} and status {string}',
-        async (email: string, status: string) => {
+        async (_ctx, email: string, status: string) => {
           const { rows } = await db.execute<{ count: string }>(
             sql`SELECT COUNT(*)::text AS count FROM pending_invitations
               WHERE email = ${email} AND status = ${status}`,
@@ -192,7 +195,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
       And(
         'Supabase admin invite was called once with redirect_to containing {string}',
-        (substr: string) => {
+        (_ctx, substr: string) => {
           expect(inviteUserByEmail).toHaveBeenCalledTimes(1);
           const arg = inviteUserByEmail.mock.calls[0]![0] as { redirectTo: string };
           expect(arg.redirectTo).toContain(substr);
@@ -206,23 +209,26 @@ describeFeature(feature, ({ Background, Scenario }) => {
     ({ Given, When, Then, And }) => {
       let res: Response;
 
-      Given('the inviter has an outstanding pending invite for {string}', async (email: string) => {
-        // Seed via the API so the row goes through exactly the same
-        // path as a real first invite.
-        await app.request('/api/invitations', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'x-test-tenant': tenantIds['khan']!,
-          },
-          body: JSON.stringify({ email, role: 'adult' }),
-        });
-      });
+      Given(
+        'the inviter has an outstanding pending invite for {string}',
+        async (_ctx, email: string) => {
+          // Seed via the API so the row goes through exactly the same
+          // path as a real first invite.
+          await app.request('/api/invitations', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'x-test-tenant': tenantIds['khan']!,
+            },
+            body: JSON.stringify({ email, role: 'adult' }),
+          });
+        },
+      );
 
       When(
         'the inviter POSTs an invitation for {string} as {string}',
-        async (email: string, role: string) => {
+        async (_ctx, email: string, role: string) => {
           res = await app.request('/api/invitations', {
             method: 'POST',
             headers: {
@@ -241,7 +247,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
       And(
         'exactly 1 row exists in pending_invitations with email {string} and status {string}',
-        async (email: string, status: string) => {
+        async (_ctx, email: string, status: string) => {
           const { rows } = await db.execute<{ count: string }>(
             sql`SELECT COUNT(*)::text AS count FROM pending_invitations
                 WHERE email = ${email} AND status = ${status}`,
@@ -257,7 +263,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
     Given(
       'a second tenant {string} exists with the inviter as an admin member',
-      async (slug: string) => {
+      async (_ctx, slug: string) => {
         const insertedTenants = await db
           .insert(tenants)
           .values({ slug, name: `${slug} Family` })
@@ -278,7 +284,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
     // keyword exactly (the library is strict about Given vs And).
     And(
       'the inviter has an outstanding pending invite for {string} in tenant {string}',
-      async (email: string, slug: string) => {
+      async (_ctx, email: string, slug: string) => {
         await app.request('/api/invitations', {
           method: 'POST',
           headers: {
@@ -293,7 +299,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
     When(
       'the inviter POSTs an invitation for {string} as {string} in tenant {string}',
-      async (email: string, role: string, slug: string) => {
+      async (_ctx, email: string, role: string, slug: string) => {
         res = await app.request('/api/invitations', {
           method: 'POST',
           headers: {
@@ -312,7 +318,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
     And(
       'exactly 2 rows exist in pending_invitations with email {string} and status {string}',
-      async (email: string, status: string) => {
+      async (_ctx, email: string, status: string) => {
         const { rows } = await db.execute<{ count: string }>(
           sql`SELECT COUNT(*)::text AS count FROM pending_invitations
               WHERE email = ${email} AND status = ${status}`,
