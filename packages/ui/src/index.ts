@@ -13,3 +13,4 @@ export { StepperHeader } from './StepperHeader';
 export { FeatureCard } from './FeatureCard';
 export { PricingCard, type PricingFeature } from './PricingCard';
 export { FloatingDecorations, type FloatingDecoration } from './FloatingDecorations';
+export { DynamicCalendar, type DynamicCalendarProps } from './DynamicCalendar';

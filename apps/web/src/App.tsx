@@ -8,6 +8,7 @@ import { PricingPage } from './pages/PricingPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { ResetPasswordRequestPage } from './pages/auth/ResetPasswordRequestPage';
+import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { MePage } from './pages/MePage';
@@ -35,6 +36,7 @@ export function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/auth/reset-request" element={<ResetPasswordRequestPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
 
           {/* Tenant-scoped pages. The TenantProvider reads :slug from
               the URL and exposes it to descendants via useTenantSlug(). */}

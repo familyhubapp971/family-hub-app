@@ -2,18 +2,27 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Calendar, CheckSquare, BookOpen, NotebookPen } from 'lucide-react';
-import { Button, FeatureCard, FloatingDecorations, type FloatingDecoration } from '@familyhub/ui';
+import {
+  Button,
+  DynamicCalendar,
+  FeatureCard,
+  FloatingDecorations,
+  type FloatingDecoration,
+} from '@familyhub/ui';
 
-// Hero copy rotates between two ad pitches every 5 seconds, each
+// Hero copy rotates between three ad pitches every 5 seconds, each
 // targeting a different persona:
 //   - Slide 1 — pitch to the COORDINATING parent (Sarah persona):
 //     someone evaluating Family Hub to fix the mental load of running
 //     a household.
 //   - Slide 2 — pitch to the INVITED parent (Yusuf persona): someone
 //     receiving the link from their partner. The inviter's name cycles
-//     every 0.9s through a culturally diverse set so this slide reads
+//     every 1.5s through a culturally diverse set so this slide reads
 //     as "your partner just sent you a link" regardless of who's
-//     looking — Sarah / Aisha / Maria / Priya / etc.
+//     looking — Sarah / Aisha / Sandra / Priya / etc.
+//   - Slide 3 — pitch to the parent of a KID (Sarah-as-mum view): a
+//     kid name cycles, framing the app as the place where the kid
+//     racks up streaks for chores + lessons + rewards.
 // Source design: Magic Patterns kudjspxd3xxroueg5jw11o pages/Welcome.tsx.
 
 const inviterNames = [
@@ -27,8 +36,13 @@ const inviterNames = [
   'Yara',
   'Olivia',
   'Sarah',
+  'Sandra',
   'Mei',
 ] as const;
+
+// Kid names — culturally diverse to mirror the inviter set. Used by
+// the third slide to cycle through "<Kid> just earned their streak".
+const kidNames = ['Iman', 'Faith', 'Noah', 'Ibrahim'] as const;
 
 const slides = [
   {
@@ -50,10 +64,30 @@ const slides = [
       "From this week's meals to the kids' assignments, you'll both be looking at the same plan. Tap the link — let's run the week together.",
     cta: 'Join the family team',
   },
+  {
+    // 'kid' = parent-of-kid pitch. The kid name cycles through
+    // kidNames so the slide reads as "your kid is the one earning
+    // streaks here". Subtitle weaves the three concrete things kids
+    // actually do in the app: lessons, chores, rewards (mirrors the
+    // FeatureCards below).
+    id: 'kid',
+    headline: null,
+    subtitle:
+      'Lessons done, chores ticked, rewards unlocked — your kids see their own week, build streaks, and feel proud without you nagging.',
+    cta: 'Set up your kids',
+  },
 ] as const;
 
+// Calendar slot is a live component (always shows today's date) instead
+// of the 📅 emoji, which is hard-coded to "JUL 17" by the OS glyph and
+// looks stale on any other day.
 const floatingElements: FloatingDecoration[] = [
-  { icon: '📅', top: '15%', left: '10%', delay: 0 },
+  {
+    icon: <DynamicCalendar testId="welcome-floating-calendar" />,
+    top: '15%',
+    left: '10%',
+    delay: 0,
+  },
   { icon: '✅', top: '60%', left: '15%', delay: 1 },
   { icon: '⭐', top: '20%', right: '12%', delay: 0.5 },
   { icon: '🏠', top: '65%', right: '15%', delay: 1.5 },
@@ -102,6 +136,7 @@ export function WelcomePage() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [inviterIdx, setInviterIdx] = useState(0);
+  const [kidIdx, setKidIdx] = useState(0);
   const reduceMotion = useReducedMotion();
 
   // Auto-rotate slides every 5s. Skipped under prefers-reduced-motion.
@@ -128,8 +163,21 @@ export function WelcomePage() {
     return () => clearInterval(id);
   }, [currentSlide, reduceMotion]);
 
+  // Same cycling pattern for the kid slide — name flashes through
+  // Iman / Faith / Noah / Ibrahim while the slide is up.
+  useEffect(() => {
+    if (slides[currentSlide]?.id !== 'kid') return;
+    setKidIdx(0);
+    if (reduceMotion) return;
+    const id = setInterval(() => {
+      setKidIdx((prev) => (prev + 1) % kidNames.length);
+    }, 1500);
+    return () => clearInterval(id);
+  }, [currentSlide, reduceMotion]);
+
   const slide = slides[currentSlide]!;
   const inviterName = inviterNames[inviterIdx]!;
+  const kidName = kidNames[kidIdx]!;
 
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-kingdom-bg font-body text-white">
@@ -196,6 +244,22 @@ export function WelcomePage() {
                       </motion.span>
                     </AnimatePresence>{' '}
                     just teamed up with you on family life.
+                  </>
+                ) : slide.id === 'kid' ? (
+                  <>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={kidName}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.25 }}
+                        className="inline-block text-pink-300"
+                      >
+                        {kidName}
+                      </motion.span>
+                    </AnimatePresence>{' '}
+                    just earned their streak this week.
                   </>
                 ) : (
                   slide.headline
