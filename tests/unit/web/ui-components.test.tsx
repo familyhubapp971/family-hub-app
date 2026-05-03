@@ -103,6 +103,15 @@ describe('TopNav', () => {
     expect(onTabChange).toHaveBeenCalledWith('calendar');
   });
 
+  it('gives every tab button an id matching its aria-controls panel id', () => {
+    render(<TopNav tabs={tabs} activeTab="dashboard" onTabChange={() => {}} />);
+    for (const t of tabs) {
+      const btn = screen.getByRole('tab', { name: new RegExp(t.label, 'i') });
+      expect(btn.id).toBe(`tab-${t.id}`);
+      expect(btn.getAttribute('aria-controls')).toBe(`panel-${t.id}`);
+    }
+  });
+
   it('renders the brand and rightSlot when provided', () => {
     render(
       <TopNav
