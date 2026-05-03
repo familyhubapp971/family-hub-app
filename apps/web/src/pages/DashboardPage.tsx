@@ -4,6 +4,7 @@ import { Button, Card, TopNav, type TopNavTab } from '@familyhub/ui';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth-context';
 import { useTenantSlug } from '../lib/tenant-context';
+import { TodayTabPanel } from './dashboard/TodayTabPanel';
 
 // FHS-227 — Parent Dashboard shell. Six tabs gated by tenant_features
 // (FHS-50 — deferred). Each tab's actual content ships in its own
@@ -146,22 +147,44 @@ export function DashboardPage() {
           data-testid={`dashboard-panel-${active.id}`}
         >
           <Card className="bg-white p-6 text-gray-900 md:p-8">
-            <header className="mb-3 flex items-baseline justify-between">
-              <h1
-                className="font-heading text-2xl text-black md:text-3xl"
-                data-testid="dashboard-panel-title"
-              >
-                {active.label}
-              </h1>
-              <span className="font-mono text-xs text-gray-500">{active.ticket}</span>
-            </header>
-            <p className="text-sm text-gray-700">{active.description}</p>
-            <p className="mt-4 text-sm font-bold text-gray-600">
-              Coming soon — tracked under {active.ticket}.
-            </p>
+            {active.id === 'home' ? (
+              <TodayTabPanel />
+            ) : (
+              <PlaceholderPanel
+                label={active.label}
+                ticket={active.ticket}
+                description={active.description}
+              />
+            )}
           </Card>
         </section>
       </main>
     </div>
+  );
+}
+
+function PlaceholderPanel({
+  label,
+  ticket,
+  description,
+}: {
+  label: string;
+  ticket: string;
+  description: string;
+}) {
+  return (
+    <>
+      <header className="mb-3 flex items-baseline justify-between">
+        <h1
+          className="font-heading text-2xl text-black md:text-3xl"
+          data-testid="dashboard-panel-title"
+        >
+          {label}
+        </h1>
+        <span className="font-mono text-xs text-gray-500">{ticket}</span>
+      </header>
+      <p className="text-sm text-gray-700">{description}</p>
+      <p className="mt-4 text-sm font-bold text-gray-600">Coming soon — tracked under {ticket}.</p>
+    </>
   );
 }
