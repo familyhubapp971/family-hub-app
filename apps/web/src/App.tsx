@@ -2,18 +2,18 @@ import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './lib/auth-context';
 import { TenantProvider } from './lib/tenant-context';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { LandingPage } from './pages/LandingPage';
-import { WelcomePage } from './pages/WelcomePage';
-import { PricingPage } from './pages/PricingPage';
+import { LandingPage } from './pages/marketing/LandingPage';
+import { WelcomePage } from './pages/marketing/WelcomePage';
+import { PricingPage } from './pages/marketing/PricingPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { LegacyDashboardRedirect } from './pages/LegacyDashboardRedirect';
-import { MembersPage } from './pages/MembersPage';
-import { MePage } from './pages/MePage';
-import { OnboardingPage } from './pages/OnboardingPage';
+import { DashboardPage } from './pages/tenant/DashboardPage';
+import { LegacyDashboardRedirect } from './pages/redirects/LegacyDashboardRedirect';
+import { MembersPage } from './pages/tenant/MembersPage';
+import { MePage } from './pages/tenant/MePage';
+import { OnboardingPage } from './pages/tenant/OnboardingPage';
 
 // Top-level routing. AuthProvider wraps every route so useAuth() is
 // available everywhere — including the OAuth callback page that needs
