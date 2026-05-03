@@ -10,7 +10,7 @@ import {
   type FloatingDecoration,
 } from '@familyhub/ui';
 
-// Hero copy rotates between three ad pitches every 5 seconds, each
+// Hero copy rotates between four ad pitches every 5 seconds, each
 // targeting a different persona:
 //   - Slide 1 — pitch to the COORDINATING parent (Sarah persona):
 //     someone evaluating Family Hub to fix the mental load of running
@@ -23,6 +23,10 @@ import {
 //   - Slide 3 — pitch to the parent of a KID (Sarah-as-mum view): a
 //     kid name cycles, framing the app as the place where the kid
 //     racks up streaks for chores + lessons + rewards.
+//   - Slide 4 — pitch to DADS as active participants (Yusuf-but-leading):
+//     the dad name cycles. Aspirational, not duty-coded — implies
+//     dads want IN on the wins (school run, bedtime, weekend plans),
+//     not just ticking admin boxes.
 // Source design: Magic Patterns kudjspxd3xxroueg5jw11o pages/Welcome.tsx.
 
 const inviterNames = [
@@ -43,6 +47,11 @@ const inviterNames = [
 // Kid names — culturally diverse to mirror the inviter set. Used by
 // the third slide to cycle through "<Kid> just earned their streak".
 const kidNames = ['Iman', 'Faith', 'Noah', 'Ibrahim'] as const;
+
+// Dad names — culturally diverse, used by the fourth slide. Pitched
+// as the dad LEADING moments (school run, bedtime, weekend wins),
+// not just receiving an invite from his partner.
+const dadNames = ['Yusuf', 'Marcus', 'Olu', 'Raj', 'James', 'Mohammed'] as const;
 
 const slides = [
   {
@@ -77,6 +86,17 @@ const slides = [
     subtitle:
       'Lessons done, chores ticked, rewards unlocked — your kids see their own week, build streaks, and feel proud without you nagging.',
     cta: 'Add your kids today',
+  },
+  {
+    // 'dad' = pitch dads as active participants. Aspirational, not
+    // duty-coded — the headline frames the dad LANDING a moment
+    // (school run / bedtime story / weekend plan) so the read is
+    // "be the dad who's in the wins", not "here's another chore app".
+    id: 'dad',
+    headline: null,
+    subtitle:
+      'Be the dad your kids notice — not because you nagged, but because you showed up. Family Hub puts the wins on your radar so you can land them.',
+    cta: 'Get in the loop',
   },
 ] as const;
 
@@ -141,6 +161,7 @@ export function WelcomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [inviterIdx, setInviterIdx] = useState(0);
   const [kidIdx, setKidIdx] = useState(0);
+  const [dadIdx, setDadIdx] = useState(0);
   const reduceMotion = useReducedMotion();
 
   // Auto-rotate slides every 5s. Skipped under prefers-reduced-motion.
@@ -179,9 +200,22 @@ export function WelcomePage() {
     return () => clearInterval(id);
   }, [currentSlide, reduceMotion]);
 
+  // Same cycling pattern for the dad slide — name flashes through
+  // Yusuf / Marcus / Olu / Raj / James / Mohammed while the slide is up.
+  useEffect(() => {
+    if (slides[currentSlide]?.id !== 'dad') return;
+    setDadIdx(0);
+    if (reduceMotion) return;
+    const id = setInterval(() => {
+      setDadIdx((prev) => (prev + 1) % dadNames.length);
+    }, 1500);
+    return () => clearInterval(id);
+  }, [currentSlide, reduceMotion]);
+
   const slide = slides[currentSlide]!;
   const inviterName = inviterNames[inviterIdx]!;
   const kidName = kidNames[kidIdx]!;
+  const dadName = dadNames[dadIdx]!;
 
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-kingdom-bg font-body text-white">
@@ -264,6 +298,22 @@ export function WelcomePage() {
                       </motion.span>
                     </AnimatePresence>{' '}
                     just earned their streak this week.
+                  </>
+                ) : slide.id === 'dad' ? (
+                  <>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={dadName}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.25 }}
+                        className="inline-block text-pink-300"
+                      >
+                        {dadName}
+                      </motion.span>
+                    </AnimatePresence>{' '}
+                    just won three rounds of dad-of-the-week.
                   </>
                 ) : (
                   slide.headline

@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
-import { Button, Card, Input, Label, Select, StepperHeader } from '@familyhub/ui';
+import {
+  Button,
+  Card,
+  CurrencyPicker,
+  Input,
+  Label,
+  Select,
+  StepperHeader,
+  TimezonePicker,
+  detectBrowserCurrency,
+  detectBrowserTimezone,
+} from '@familyhub/ui';
 import { useAuth } from '../lib/auth-context';
 import { useTenantSlug } from '../lib/tenant-context';
 
@@ -44,14 +55,6 @@ function makeUiId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function detectBrowserTimezone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  } catch {
-    return 'UTC';
-  }
-}
-
 type Status =
   | { kind: 'loading' }
   | { kind: 'gated' } // user has completed onboarding — redirecting
@@ -73,7 +76,7 @@ export function OnboardingPage() {
     { uiId: makeUiId(), displayName: '', role: 'adult' },
   ]);
   const [timezone, setTimezone] = useState<string>(() => detectBrowserTimezone());
-  const [currency, setCurrency] = useState<string>('USD');
+  const [currency, setCurrency] = useState<string>(() => detectBrowserCurrency());
 
   // Gate check on mount: hit /api/me, find this slug in tenants[],
   // bounce to /dashboard if onboarding_completed=true. Renders the
@@ -327,17 +330,13 @@ export function OnboardingPage() {
                 We default to your browser&rsquo;s timezone — change it if you&rsquo;re setting this
                 up for someone elsewhere.
               </p>
-              <Label htmlFor="onboarding-timezone">IANA timezone</Label>
-              <Input
-                id="onboarding-timezone"
+              <Label htmlFor="onboarding-timezone-trigger">Timezone</Label>
+              <TimezonePicker
+                id="onboarding-timezone-trigger"
                 value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                placeholder="e.g. Asia/Dubai"
+                onChange={setTimezone}
                 testId="onboarding-timezone"
               />
-              <p className="mt-2 text-xs italic text-gray-500">
-                FHS-38 will replace this with a proper picker.
-              </p>
             </div>
           )}
 
@@ -345,19 +344,16 @@ export function OnboardingPage() {
             <div data-testid="onboarding-step-currency">
               <h2 className="mb-3 font-heading text-2xl">Pick a currency</h2>
               <p className="mb-4 font-bold text-gray-600">
-                Three-letter ISO 4217 code (e.g. USD, AED, GBP).
+                We&rsquo;ll show prices and rewards in this currency. Inferred from your
+                browser&rsquo;s region — change it if it&rsquo;s wrong.
               </p>
-              <Label htmlFor="onboarding-currency">Currency</Label>
-              <Input
-                id="onboarding-currency"
+              <Label htmlFor="onboarding-currency-trigger">Currency</Label>
+              <CurrencyPicker
+                id="onboarding-currency-trigger"
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))}
-                placeholder="USD"
+                onChange={setCurrency}
                 testId="onboarding-currency"
               />
-              <p className="mt-2 text-xs italic text-gray-500">
-                FHS-39 will replace this with a proper picker.
-              </p>
             </div>
           )}
 
