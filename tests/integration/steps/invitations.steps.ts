@@ -273,7 +273,10 @@ describeFeature(feature, ({ Background, Scenario }) => {
       },
     );
 
-    Given(
+    // The .feature uses `And` for the second precondition — bind via
+    // `And()` not `Given()` so @amiceli/vitest-cucumber matches the
+    // keyword exactly (the library is strict about Given vs And).
+    And(
       'the inviter has an outstanding pending invite for {string} in tenant {string}',
       async (email: string, slug: string) => {
         await app.request('/api/invitations', {
