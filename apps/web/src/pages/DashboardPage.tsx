@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth-context';
 import { useTenantSlug } from '../lib/tenant-context';
 import { TodayTabPanel } from './dashboard/TodayTabPanel';
 import { MealsTabPanel } from './dashboard/MealsTabPanel';
+import { CalendarTabPanel } from './dashboard/CalendarTabPanel';
 
 // FHS-227 — Parent Dashboard shell. Six tabs gated by tenant_features
 // (FHS-50 — deferred). Each tab's actual content ships in its own
@@ -152,6 +153,8 @@ export function DashboardPage() {
               <TodayTabPanel />
             ) : active.id === 'meals' ? (
               <MealsTabPanel />
+            ) : active.id === 'calendar' ? (
+              <CalendarTabPanel />
             ) : (
               <PlaceholderPanel
                 label={active.label}

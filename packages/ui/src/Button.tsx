@@ -8,15 +8,18 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   testId?: string;
 }
 
-export function Button({
-  children,
-  variant = 'primary',
-  size = 'md',
-  fullWidth = false,
-  className = '',
-  testId,
-  ...props
-}: ButtonProps) {
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    children,
+    variant = 'primary',
+    size = 'md',
+    fullWidth = false,
+    className = '',
+    testId,
+    ...props
+  },
+  ref,
+) {
   // focus-visible ring keeps keyboard users oriented (WCAG 2.4.7) — must
   // not drop the ring when removing the default outline.
   // Hover: lift -2px (pointer devices only) + grow shadow → 5px. Press:
@@ -46,6 +49,7 @@ export function Button({
   };
   return (
     <button
+      ref={ref}
       className={[baseStyles, variants[variant], sizes[size], fullWidth ? 'w-full' : '', className]
         .filter(Boolean)
         .join(' ')}
@@ -55,4 +59,4 @@ export function Button({
       {children}
     </button>
   );
-}
+});
