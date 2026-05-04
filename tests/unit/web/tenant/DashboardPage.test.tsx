@@ -96,18 +96,18 @@ describe('<DashboardPage /> — tab framework', () => {
 
   it('clicking a tab updates the active panel content + URL ?tab param', () => {
     renderAt('/t/khans/dashboard');
-    // Switch to Noticeboard — still uses the placeholder so the title
-    // assertion holds. (Home / Meals / Calendar / Assignments now mount
-    // real panels tested in their own files; here we only need to
-    // verify the framework's URL+panel routing.)
-    const tab = screen.getByRole('tab', { name: 'Noticeboard' });
+    // Switch to Tasks — last remaining placeholder (FHS-233 will fill
+    // it). Home / Meals / Calendar / Assignments / Noticeboard now
+    // mount real panels tested in their own files; here we only need
+    // to verify the framework's URL+panel routing.
+    const tab = screen.getByRole('tab', { name: 'Tasks' });
     act(() => {
       fireEvent.click(tab);
     });
-    expect(screen.getByTestId('dashboard-panel-noticeboard')).toBeInTheDocument();
-    expect(screen.getByTestId('dashboard-panel-title').textContent).toBe('Noticeboard');
+    expect(screen.getByTestId('dashboard-panel-tasks')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-panel-title').textContent).toBe('Tasks');
     expect(screen.queryByTestId('dashboard-panel-home')).not.toBeInTheDocument();
-    expect(screen.getByTestId('location-search').textContent).toBe('?tab=noticeboard');
+    expect(screen.getByTestId('location-search').textContent).toBe('?tab=tasks');
   });
 
   it('clicking back to Dashboard removes the ?tab param entirely', () => {

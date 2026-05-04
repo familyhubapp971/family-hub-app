@@ -8,6 +8,7 @@ import { TodayTabPanel } from './dashboard/TodayTabPanel';
 import { MealsTabPanel } from './dashboard/MealsTabPanel';
 import { CalendarTabPanel } from './dashboard/CalendarTabPanel';
 import { AssignmentsTabPanel } from './dashboard/AssignmentsTabPanel';
+import { NoticeboardTabPanel } from './dashboard/NoticeboardTabPanel';
 
 // FHS-227 — Parent Dashboard shell. Six tabs gated by tenant_features
 // (FHS-50 — deferred). Each tab's actual content ships in its own
@@ -158,6 +159,8 @@ export function DashboardPage() {
               <CalendarTabPanel />
             ) : active.id === 'assignments' ? (
               <AssignmentsTabPanel />
+            ) : active.id === 'noticeboard' ? (
+              <NoticeboardTabPanel />
             ) : (
               <PlaceholderPanel
                 label={active.label}
