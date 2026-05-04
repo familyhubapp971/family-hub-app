@@ -96,16 +96,16 @@ describe('<DashboardPage /> — tab framework', () => {
 
   it('clicking a tab updates the active panel content + URL ?tab param', () => {
     renderAt('/t/khans/dashboard');
-    // Switch to Tasks — last remaining placeholder (FHS-233 will fill
-    // it). Home / Meals / Calendar / Assignments / Noticeboard now
-    // mount real panels tested in their own files; here we only need
-    // to verify the framework's URL+panel routing.
+    // All six tabs now mount real panels (FHS-228..FHS-233). Switching
+    // tabs swaps the panel's data-testid and updates the URL ?tab param.
+    // Each panel's content is tested in its own file; here we only
+    // verify the framework's URL+panel routing.
     const tab = screen.getByRole('tab', { name: 'Tasks' });
     act(() => {
       fireEvent.click(tab);
     });
     expect(screen.getByTestId('dashboard-panel-tasks')).toBeInTheDocument();
-    expect(screen.getByTestId('dashboard-panel-title').textContent).toBe('Tasks');
+    expect(screen.getByTestId('tasks-loading')).toBeInTheDocument();
     expect(screen.queryByTestId('dashboard-panel-home')).not.toBeInTheDocument();
     expect(screen.getByTestId('location-search').textContent).toBe('?tab=tasks');
   });
