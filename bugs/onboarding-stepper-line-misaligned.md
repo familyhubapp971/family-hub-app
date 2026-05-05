@@ -1,5 +1,5 @@
 ---
-status: in-jira: FHS-255 (in progress)
+status: fixed (FHS-255 — squashed in 497448c, 2026-05-05)
 date: 2026-05-03
 found-by: oduniyi (manual exploration)
 ---
