@@ -155,11 +155,12 @@ describe('<LoginPage />', () => {
     expect(screen.getByTestId('location-search').textContent).toBe('');
   });
 
-  it('the kid panel "Switch to parent log-in" link returns to the parent panel', () => {
+  it('the kid panel "Switch to parent log-in" link returns to the parent panel + clears the URL', () => {
     renderPage('/login?role=kid');
     fireEvent.click(screen.getByTestId('login-kid-back-to-parent'));
     expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('login-kid-panel')).toBeNull();
+    expect(screen.getByTestId('location-search').textContent).toBe('');
   });
 
   it('falls back to the parent panel when ?role is unknown', () => {
