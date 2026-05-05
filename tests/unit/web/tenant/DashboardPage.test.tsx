@@ -10,6 +10,7 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 
 const mocks = vi.hoisted(() => ({
   signOut: vi.fn(),
+  signOutAll: vi.fn(),
 }));
 
 vi.mock('../../../../apps/web/src/lib/supabase', () => ({
@@ -23,8 +24,13 @@ vi.mock('../../../../apps/web/src/lib/supabase', () => ({
 const authState: { user: { email?: string; id?: string } | null } = {
   user: { email: 'sarah@example.com', id: 'u-1' },
 };
+// FHS-253 — DashboardPage now calls signOutAll() (which clears both
+// the Supabase session AND fh.kid.token). The mock returns a passthrough
+// that calls supabase.auth.signOut so the existing assertion + spy
+// chain still works.
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
+  signOutAll: mocks.signOutAll,
 }));
 
 import { DashboardPage } from '../../../../apps/web/src/pages/tenant/DashboardPage';
@@ -56,6 +62,8 @@ function renderAt(initial: string) {
 beforeEach(() => {
   mocks.signOut.mockReset();
   mocks.signOut.mockResolvedValue({});
+  mocks.signOutAll.mockReset();
+  mocks.signOutAll.mockResolvedValue({ error: null });
   authState.user = { email: 'sarah@example.com', id: 'u-1' };
 });
 
@@ -139,12 +147,13 @@ describe('<DashboardPage /> — tab framework', () => {
     expect(screen.getByTestId('dashboard-user-email').textContent).toBe('—');
   });
 
-  it('clicking Log out calls supabase.auth.signOut()', async () => {
+  it('clicking Log out calls signOutAll() (clears Supabase session + kid JWT)', async () => {
     renderAt('/t/khans/dashboard');
     const btn = screen.getByTestId('dashboard-logout');
     await act(async () => {
       fireEvent.click(btn);
     });
-    expect(mocks.signOut).toHaveBeenCalledTimes(1);
+    // FHS-253 — single helper call that drops both identities at once.
+    expect(mocks.signOutAll).toHaveBeenCalledTimes(1);
   });
 });
