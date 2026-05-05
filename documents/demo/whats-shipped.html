@@ -382,8 +382,8 @@
           <div>
             <h1 class="text-3xl text-black mb-1">Family Hub — What's Shipped</h1>
             <p class="text-xs font-bold text-slate-500 mb-3">
-              Last updated: 2026-05-02 &nbsp;·&nbsp; Slice 1 in flight (FHS-241 merged)
-              &nbsp;·&nbsp; Source: git log + Jira FHS
+              Last updated: 2026-05-05 &nbsp;·&nbsp; Sprint 2 (Demo Slice) shipped — 23 stories,
+              full signup → kid-login flow live on staging &nbsp;·&nbsp; Source: git log + Jira FHS
             </p>
             <p class="text-sm text-slate-700 max-w-2xl leading-relaxed">
               Cumulative log of capabilities landed sprint over sprint. Each row is one numbered
@@ -1448,6 +1448,381 @@
                 </div>
               </td>
             </tr>
+
+            <!-- ════════════════════════════════
+           PHASE 5 — DEMO SLICE (Sprint 2)
+      ════════════════════════════════ -->
+            <tr class="phase-row">
+              <td colspan="6">
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span class="phase-number">5</span>
+                  <div>
+                    <div class="phase-title">Demo Slice — full vertical signup → kid login</div>
+                    <div class="phase-subtitle">
+                      Sprint 2 close. Sarah can register her family, onboard, invite members, and
+                      manage the dashboard; her kids can log in on the family iPad with a face +
+                      4-digit PIN. End-to-end flow live on staging.
+                    </div>
+                  </div>
+                  <div class="ml-auto flex gap-2 flex-wrap">
+                    <span class="phase-badge" style="background: #dcfce7; color: #166534"
+                      >SHIPPED</span
+                    >
+                    <span class="phase-badge" style="background: #dbeafe; color: #1d4ed8"
+                      >SPRINT 2</span
+                    >
+                    <span class="phase-badge" style="background: #f3e8ff; color: #5b21b6"
+                      >EPIC FHS-23 · 35 · 90 · 104 · 226 · 234</span
+                    >
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- STEP 22 — Path-based tenant routing -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">22</div>
+                <div class="step-label">Tenant<br />URLs</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user">
+                <div class="card card-yellow">
+                  <div class="card-title">
+                    Sarah&rsquo;s family lives at /t/khan/dashboard — bookmarkable, shareable URL
+                  </div>
+                  <div class="card-code">Interim until custom domains ship (Sprint 6)</div>
+                  <span class="badge badge-ticket">FHS-249</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">
+                    /t/:slug/* routing tree + TenantProvider context for descendants
+                  </div>
+                  <div class="card-code">apps/web/src/lib/tenant-context.tsx</div>
+                  <span class="badge badge-ticket">FHS-249</span>
+                  <span class="badge badge-tech">REACT-ROUTER</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api empty"></td>
+              <!-- DATA -->
+              <td class="col-data empty"></td>
+              <!-- EXTERNAL -->
+              <td class="col-ext">
+                <div class="card card-pink">
+                  <div class="card-title">ADR 0012 ratifies the path-prefix interim</div>
+                  <div class="card-code">documents/decisions/0012-tenant-url-strategy.md</div>
+                  <span class="badge badge-tech">ADR</span>
+                </div>
+              </td>
+            </tr>
+
+            <!-- STEP 23 — Signup → tenant -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">23</div>
+                <div class="step-label">Signup<br />flow</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user">
+                <div class="card card-yellow">
+                  <div class="card-title">
+                    Sarah picks "Khan" as her family slug, gets a magic link, confirms email, walks
+                    through onboarding, lands on her dashboard
+                  </div>
+                  <div class="card-code">
+                    /signup → /verify-email → /auth/callback → /t/khan/onboarding →
+                    /t/khan/dashboard
+                  </div>
+                  <span class="badge badge-ticket">FHS-26</span>
+                  <span class="badge badge-ticket">FHS-223</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">
+                    SignupPage + VerifyEmailPage + AuthCallbackPage + OnboardingWizard
+                  </div>
+                  <div class="card-code">
+                    apps/web/src/pages/auth/* + tenant/OnboardingPage.tsx · live debounce on slug
+                  </div>
+                  <span class="badge badge-ticket">FHS-26</span>
+                  <span class="badge badge-ticket">FHS-225</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api">
+                <div class="card card-pink-api">
+                  <div class="card-title">
+                    POST /api/public/tenant + GET /api/public/slug-available + POST
+                    /api/onboarding/complete
+                  </div>
+                  <div class="card-code">3 routes wired with Zod schemas + Drizzle inserts</div>
+                  <span class="badge badge-ticket">FHS-25</span>
+                  <span class="badge badge-ticket">FHS-27</span>
+                  <span class="badge badge-ticket">FHS-37</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- DATA -->
+              <td class="col-data">
+                <div class="card card-lime">
+                  <div class="card-title">
+                    tenants + members rows seeded; onboarding_completed flag flipped
+                  </div>
+                  <div class="card-code">
+                    + default habits + rewards + meals seeded on completion (FHS-40)
+                  </div>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- EXTERNAL -->
+              <td class="col-ext">
+                <div class="card card-pink">
+                  <div class="card-title">Supabase magic-link email + Google OAuth provider</div>
+                  <div class="card-code">
+                    Branded Family Hub email template · ADR 0011 (passwords retired)
+                  </div>
+                  <span class="badge badge-ticket">FHS-224</span>
+                  <span class="badge badge-ticket">FHS-248</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+            </tr>
+
+            <!-- STEP 24 — Onboarding wizard -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">24</div>
+                <div class="step-label">Onboarding<br />wizard</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user">
+                <div class="card card-yellow">
+                  <div class="card-title">
+                    Sarah picks her timezone + currency + family name, hits Done
+                  </div>
+                  <div class="card-code">3-step neo-brutalist wizard with stepper progress</div>
+                  <span class="badge badge-ticket">FHS-36</span>
+                  <span class="badge badge-ticket">FHS-38</span>
+                  <span class="badge badge-ticket">FHS-39</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">
+                    OnboardingPage with timezone picker (IANA list) + currency picker (ISO 4217)
+                  </div>
+                  <div class="card-code">
+                    apps/web/src/pages/tenant/OnboardingPage.tsx · StepperHeader UI primitive
+                  </div>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api empty"></td>
+              <!-- DATA -->
+              <td class="col-data">
+                <div class="card card-lime">
+                  <div class="card-title">Default habits + rewards + meals seeded per tenant</div>
+                  <div class="card-code">
+                    Family ready to use without manual setup; admin can edit anything
+                  </div>
+                  <span class="badge badge-ticket">FHS-40</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- EXTERNAL -->
+              <td class="col-ext empty"></td>
+            </tr>
+
+            <!-- STEP 25 — Dashboard + 6 tabs -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">25</div>
+                <div class="step-label">Dashboard<br />tabs</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user">
+                <div class="card card-yellow">
+                  <div class="card-title">
+                    Sarah sees Today + Meals + Calendar + Assignments + Notices + Tasks tabs and a
+                    family member grid
+                  </div>
+                  <div class="card-code">
+                    /t/khan/dashboard?tab=meals · URL-state preserved per tab
+                  </div>
+                  <span class="badge badge-ticket">FHS-228</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">
+                    DashboardPage tab framework + 6 tab panels rendered on demand
+                  </div>
+                  <div class="card-code">
+                    apps/web/src/pages/tenant/dashboard/{Today,Meals,Calendar,Assignments,Notices,Tasks}TabPanel.tsx
+                  </div>
+                  <span class="badge badge-ticket">FHS-227</span>
+                  <span class="badge badge-ticket">FHS-229</span>
+                  <span class="badge badge-ticket">FHS-230</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api">
+                <div class="card card-pink-api">
+                  <div class="card-title">
+                    GET/POST /api/{dashboard,meals,events,assignments,notices,tasks}
+                  </div>
+                  <div class="card-code">
+                    7 routers each with tenant-scoped Drizzle queries + Zod schemas
+                  </div>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- DATA -->
+              <td class="col-data">
+                <div class="card card-lime">
+                  <div class="card-title">
+                    events + assignments + notices + tasks tables (tenant_id FK + indices)
+                  </div>
+                  <div class="card-code">All scoped per family · cascading deletes wired</div>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- EXTERNAL -->
+              <td class="col-ext empty"></td>
+            </tr>
+
+            <!-- STEP 26 — Members + invites -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">26</div>
+                <div class="step-label">Members<br />+ invites</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user">
+                <div class="card card-yellow">
+                  <div class="card-title">
+                    Sarah invites Yusuf via email → Yusuf clicks the magic link → joins khan family
+                  </div>
+                  <div class="card-code">
+                    /t/khan/members shows family list + status badges (active / pending invite)
+                  </div>
+                  <span class="badge badge-ticket">FHS-91</span>
+                  <span class="badge badge-ticket">FHS-108</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">MembersPage with status badges + invite form</div>
+                  <div class="card-code">apps/web/src/pages/tenant/MembersPage.tsx</div>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api">
+                <div class="card card-pink-api">
+                  <div class="card-title">
+                    POST /api/invitations + token-based join · GET /api/members
+                  </div>
+                  <div class="card-code">apps/api/src/routes/{invitations,members}.ts</div>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- DATA -->
+              <td class="col-data">
+                <div class="card card-lime">
+                  <div class="card-title">invitations table + members.role enum</div>
+                  <div class="card-code">admin / adult / teen / child / guest</div>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- EXTERNAL -->
+              <td class="col-ext">
+                <div class="card card-pink">
+                  <div class="card-title">Supabase magic-link email reused for invites</div>
+                  <div class="card-code">Same branded template · same delivery infra</div>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+            </tr>
+
+            <!-- STEP 27 — Kid auth (epic FHS-234) -->
+            <tr class="step-row">
+              <td class="col-step">
+                <div class="step-num">27</div>
+                <div class="step-label">Kid<br />login</div>
+              </td>
+              <!-- USER -->
+              <td class="col-user">
+                <div class="card card-yellow">
+                  <div class="card-title">
+                    Iman taps her face on the family iPad, types her 4-digit PIN, lands on the
+                    dashboard
+                  </div>
+                  <div class="card-code">
+                    /t/khan/kid-login · avatar grid + big-touch PIN keypad · iOS-autocap link
+                    tolerance · sibling iPad-grab race guarded
+                  </div>
+                  <span class="badge badge-ticket">FHS-237</span>
+                  <span class="badge badge-ticket">FHS-238</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- WEB -->
+              <td class="col-web">
+                <div class="card card-cyan">
+                  <div class="card-title">
+                    KidLoginPage + parent/kid segmented toggle on /login + AvatarGrid + PinInput UI
+                    primitives
+                  </div>
+                  <div class="card-code">
+                    apps/web/src/pages/auth/{KidLoginPage,LoginPage}.tsx · ?role=kid deep-link
+                  </div>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- API -->
+              <td class="col-api">
+                <div class="card card-pink-api">
+                  <div class="card-title">
+                    POST /api/auth/kid-pin + GET /api/public/kid-members/:slug
+                  </div>
+                  <div class="card-code">
+                    bcrypt verify · scope=child JWT (HS256) · per-memberId lockout · constant-time
+                    compare · slug-normalised
+                  </div>
+                  <span class="badge badge-ticket">FHS-236</span>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- DATA -->
+              <td class="col-data">
+                <div class="card card-lime">
+                  <div class="card-title">members.pin_hash + is_child + avatar_emoji columns</div>
+                  <div class="card-code">migration 0007 (FHS-235) · bcryptjs cost factor 10</div>
+                  <span class="badge badge-merged">MERGED</span>
+                </div>
+              </td>
+              <!-- EXTERNAL -->
+              <td class="col-ext empty"></td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -1526,15 +1901,17 @@
           <div class="font-display text-cyan-300 text-base mb-3">Sprint plan ahead</div>
           <div class="space-y-2">
             <div class="flex gap-2 items-start">
-              <span class="badge badge-pending shrink-0 mt-0.5">Sprint 2</span>
+              <span class="badge badge-merged shrink-0 mt-0.5">Sprint 2</span>
               <span class="text-xs text-slate-400"
-                >Custom subdomain URLs, signup → tenant link, RLS enforcement (FHS-0.2)</span
+                >Demo Slice — full vertical signup → onboarding → invite → kid login. Shipped
+                2026-05-05.</span
               >
             </div>
             <div class="flex gap-2 items-start">
               <span class="badge badge-pending shrink-0 mt-0.5">Sprint 3</span>
               <span class="text-xs text-slate-400"
-                >Feature modules + gating flags, habit UI, savings UI</span
+                >Feature modules + gating flags, habit UI, savings UI, kid-only dashboard
+                shape</span
               >
             </div>
             <div class="flex gap-2 items-start">
