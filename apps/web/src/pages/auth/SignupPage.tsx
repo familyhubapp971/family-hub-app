@@ -80,6 +80,14 @@ const signupSchema = z.object({
   email: z.string().email('enter a valid email'),
 });
 
+// FHS-256 — Google OAuth doesn't ask the user for an email (Google
+// provides it post-callback), but we still need a valid family name +
+// display name + slug before kicking off the OAuth round-trip; without
+// them the post-callback tenant create fails and the user lands in a
+// no-tenant zombie state. Reuses the email-path schema's family + name
+// rules so the messaging stays consistent.
+const googleStartSchema = signupSchema.pick({ familyName: true, displayName: true });
+
 // Auto-derive a DNS-safe slug from the family name. Capped at 30 chars
 // (Supabase's overall family-id limit). Server-side validation in FHS-25
 // is the source of truth — this is just the live preview.
@@ -212,10 +220,61 @@ export function SignupPage() {
   }
 
   async function onGoogle() {
+    // FHS-256 — pre-OAuth gate. Without family name + display name we
+    // cannot create a tenant after the OAuth callback returns, and the
+    // user ends up authenticated-but-tenantless. Refuse to start.
+    //
+    // Clear any prior email-path error first so the inline message
+    // below reflects the Google-path validation, not a stale rate-limit
+    // notice from a previous email attempt.
+    setStatus({ kind: 'idle' });
+    const parsed = googleStartSchema.safeParse({ familyName, displayName });
+    if (!parsed.success) {
+      setStatus({
+        kind: 'error',
+        message: parsed.error.issues[0]?.message ?? 'family name is required',
+      });
+      return;
+    }
+    // Reject the deriveSlug placeholder ('family') — it fires when the
+    // family name has no alphanumeric chars (e.g. "!!!"), which would
+    // otherwise stash slug='family' and 409 the tenant create the
+    // moment a second user does the same.
+    if (slug === 'family') {
+      setStatus({
+        kind: 'error',
+        message: 'family name needs at least one letter or number',
+      });
+      return;
+    }
+    // Slug-availability gate: 'taken' is the hard fail; 'checking'
+    // also blocks because firing OAuth mid-debounce risks stashing a
+    // slug that turns out taken when the response arrives — and at
+    // that point the user is already authenticated, so there's no
+    // graceful retry. 'available' / 'idle' / 'error' fall through
+    // (the post-callback create re-checks at insert time).
+    if (slugStatus.kind === 'taken') {
+      setStatus({
+        kind: 'error',
+        message: 'that family URL is taken — pick another before continuing',
+      });
+      return;
+    }
+    if (slugStatus.kind === 'checking') {
+      setStatus({
+        kind: 'error',
+        message: 'still checking your family URL — try again in a moment',
+      });
+      return;
+    }
     setStatus({ kind: 'submitting-google' });
     sessionStorage.setItem(
       'fh.signup.intent',
-      JSON.stringify({ familyName: familyName || '', displayName: displayName || '', slug }),
+      JSON.stringify({
+        familyName: parsed.data.familyName,
+        displayName: parsed.data.displayName,
+        slug,
+      }),
     );
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
