@@ -223,6 +223,11 @@ export function SignupPage() {
     // FHS-256 — pre-OAuth gate. Without family name + display name we
     // cannot create a tenant after the OAuth callback returns, and the
     // user ends up authenticated-but-tenantless. Refuse to start.
+    //
+    // Clear any prior email-path error first so the inline message
+    // below reflects the Google-path validation, not a stale rate-limit
+    // notice from a previous email attempt.
+    setStatus({ kind: 'idle' });
     const parsed = googleStartSchema.safeParse({ familyName, displayName });
     if (!parsed.success) {
       setStatus({
@@ -231,13 +236,34 @@ export function SignupPage() {
       });
       return;
     }
-    // Slug must also be free — a duplicate slug here would 409 the
-    // post-callback tenant create. Treat 'taken' as a hard block;
-    // 'checking' / 'idle' / 'error' fall through (user retries).
+    // Reject the deriveSlug placeholder ('family') — it fires when the
+    // family name has no alphanumeric chars (e.g. "!!!"), which would
+    // otherwise stash slug='family' and 409 the tenant create the
+    // moment a second user does the same.
+    if (slug === 'family') {
+      setStatus({
+        kind: 'error',
+        message: 'family name needs at least one letter or number',
+      });
+      return;
+    }
+    // Slug-availability gate: 'taken' is the hard fail; 'checking'
+    // also blocks because firing OAuth mid-debounce risks stashing a
+    // slug that turns out taken when the response arrives — and at
+    // that point the user is already authenticated, so there's no
+    // graceful retry. 'available' / 'idle' / 'error' fall through
+    // (the post-callback create re-checks at insert time).
     if (slugStatus.kind === 'taken') {
       setStatus({
         kind: 'error',
         message: 'that family URL is taken — pick another before continuing',
+      });
+      return;
+    }
+    if (slugStatus.kind === 'checking') {
+      setStatus({
+        kind: 'error',
+        message: 'still checking your family URL — try again in a moment',
       });
       return;
     }
