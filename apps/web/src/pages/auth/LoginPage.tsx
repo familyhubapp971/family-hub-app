@@ -267,10 +267,11 @@ function RoleButton({
   );
 }
 
-// FHS-237 — placeholder kid login panel. FHS-238 swaps the body of
-// this component for the avatar grid + PIN keypad. The surrounding
-// heading + intro copy + "switch to parent" footer all still apply
-// once the real form lands, so they live here in the wrapper.
+// FHS-238 — top-level /login?role=kid panel. The actual avatar grid +
+// PIN keypad lives at /t/:slug/kid-login (tenant-scoped, see
+// App.tsx) because the page needs to know which family's kids to
+// show. /login is unscoped, so a kid landing here without a family
+// slug gets pointed to the family link their grown-up sent them.
 function KidLoginPanel({ onSwitchToParent }: { onSwitchToParent: () => void }) {
   return (
     <section
@@ -283,15 +284,17 @@ function KidLoginPanel({ onSwitchToParent }: { onSwitchToParent: () => void }) {
         Kid log in
       </h2>
       <p className="mb-4 font-body text-sm text-gray-700">
-        Tap your face and type your 4-digit PIN. Ask a grown-up if you forgot it.
+        Hi! Kid log-in lives at your family&rsquo;s link.
       </p>
       <div
-        data-testid="login-kid-placeholder"
+        data-testid="login-kid-pointer"
         className="rounded-md border-2 border-dashed border-black bg-yellow-50 p-6 text-center"
       >
-        <p className="font-heading text-lg text-black">Coming soon</p>
+        <p className="font-heading text-lg text-black">Ask a grown-up</p>
         <p className="mt-2 font-body text-sm text-gray-700">
-          The avatar picker + PIN keypad lands in FHS-238.
+          They&rsquo;ll send you a link that ends with{' '}
+          <span className="font-mono font-semibold">/kid-login</span>. Tap that, then your face,
+          then your 4-digit PIN.
         </p>
       </div>
 

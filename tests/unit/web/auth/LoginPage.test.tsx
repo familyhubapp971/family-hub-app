@@ -135,7 +135,7 @@ describe('<LoginPage />', () => {
     renderPage('/login?role=kid');
     expect(screen.getByTestId('login-kid-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('login-parent-panel')).toBeNull();
-    expect(screen.getByTestId('login-kid-placeholder')).toBeInTheDocument();
+    expect(screen.getByTestId('login-kid-pointer')).toBeInTheDocument();
   });
 
   it('clicking the kid tab swaps the panel + sets ?role=kid in the URL', () => {
