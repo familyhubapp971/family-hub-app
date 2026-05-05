@@ -80,6 +80,14 @@ const signupSchema = z.object({
   email: z.string().email('enter a valid email'),
 });
 
+// FHS-256 — Google OAuth doesn't ask the user for an email (Google
+// provides it post-callback), but we still need a valid family name +
+// display name + slug before kicking off the OAuth round-trip; without
+// them the post-callback tenant create fails and the user lands in a
+// no-tenant zombie state. Reuses the email-path schema's family + name
+// rules so the messaging stays consistent.
+const googleStartSchema = signupSchema.pick({ familyName: true, displayName: true });
+
 // Auto-derive a DNS-safe slug from the family name. Capped at 30 chars
 // (Supabase's overall family-id limit). Server-side validation in FHS-25
 // is the source of truth — this is just the live preview.
@@ -212,10 +220,35 @@ export function SignupPage() {
   }
 
   async function onGoogle() {
+    // FHS-256 — pre-OAuth gate. Without family name + display name we
+    // cannot create a tenant after the OAuth callback returns, and the
+    // user ends up authenticated-but-tenantless. Refuse to start.
+    const parsed = googleStartSchema.safeParse({ familyName, displayName });
+    if (!parsed.success) {
+      setStatus({
+        kind: 'error',
+        message: parsed.error.issues[0]?.message ?? 'family name is required',
+      });
+      return;
+    }
+    // Slug must also be free — a duplicate slug here would 409 the
+    // post-callback tenant create. Treat 'taken' as a hard block;
+    // 'checking' / 'idle' / 'error' fall through (user retries).
+    if (slugStatus.kind === 'taken') {
+      setStatus({
+        kind: 'error',
+        message: 'that family URL is taken — pick another before continuing',
+      });
+      return;
+    }
     setStatus({ kind: 'submitting-google' });
     sessionStorage.setItem(
       'fh.signup.intent',
-      JSON.stringify({ familyName: familyName || '', displayName: displayName || '', slug }),
+      JSON.stringify({
+        familyName: parsed.data.familyName,
+        displayName: parsed.data.displayName,
+        slug,
+      }),
     );
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

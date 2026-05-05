@@ -95,14 +95,48 @@ describe('<SignupPage />', () => {
     expect(sessionStorage.getItem('fh.signup.email')).toBe('sarah@example.com');
   });
 
-  it('Google button kicks off signInWithOAuth with provider=google', () => {
+  // FHS-256 — Google OAuth must not start without family name + display
+  // name, otherwise the post-callback tenant create fails and the user
+  // ends up authenticated-but-tenantless.
+  it('Google button kicks off signInWithOAuth when family name + display name are valid', () => {
     signInWithOAuth.mockResolvedValue({ error: null });
     renderPage();
+    fireEvent.change(screen.getByTestId('signup-family-name'), {
+      target: { value: 'The Khan Family' },
+    });
+    fireEvent.change(screen.getByTestId('signup-display-name'), {
+      target: { value: 'Sarah Khan' },
+    });
     fireEvent.click(screen.getByTestId('signup-google'));
     expect(signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
       options: { redirectTo: expect.stringContaining('/auth/callback') },
     });
+    // Validated values land in sessionStorage for the post-callback
+    // tenant create to read.
+    expect(JSON.parse(sessionStorage.getItem('fh.signup.intent') ?? '{}')).toMatchObject({
+      familyName: 'The Khan Family',
+      displayName: 'Sarah Khan',
+      slug: 'the-khan-family',
+    });
+  });
+
+  it('Google button shows an error + does NOT start OAuth when family name is empty', () => {
+    renderPage();
+    fireEvent.click(screen.getByTestId('signup-google'));
+    expect(signInWithOAuth).not.toHaveBeenCalled();
+    expect(screen.getByTestId('signup-error').textContent).toMatch(/family name is required/i);
+    expect(sessionStorage.getItem('fh.signup.intent')).toBeNull();
+  });
+
+  it('Google button shows an error + does NOT start OAuth when display name is empty', () => {
+    renderPage();
+    fireEvent.change(screen.getByTestId('signup-family-name'), {
+      target: { value: 'The Khan Family' },
+    });
+    fireEvent.click(screen.getByTestId('signup-google'));
+    expect(signInWithOAuth).not.toHaveBeenCalled();
+    expect(screen.getByTestId('signup-error').textContent).toMatch(/your name is required/i);
   });
 
   // FHS-225 — live debounced slug-availability check.
@@ -286,6 +320,24 @@ describe('<SignupPage />', () => {
       // The stale `taken` response was ignored; UI is still `available`.
       expect(screen.getByTestId('signup-slug-available')).toBeInTheDocument();
       expect(screen.queryByTestId('signup-slug-taken')).toBeNull();
+    });
+
+    // FHS-256 — slug-taken must also block the Google OAuth path,
+    // not just the email path. Otherwise the post-callback tenant
+    // create 409s on the duplicate slug.
+    it('Google button shows an error + does NOT start OAuth when the slug is taken', async () => {
+      fetchMock.mockReturnValue(ok({ available: false, suggestions: ['the-khan-family-42'] }));
+      renderPage();
+      typeFamily('The Khan Family');
+      await advanceAndFlush(300);
+      fireEvent.change(screen.getByTestId('signup-display-name'), {
+        target: { value: 'Sarah Khan' },
+      });
+      // Slug status is 'taken' at this point.
+      expect(screen.getByTestId('signup-slug-taken')).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('signup-google'));
+      expect(signInWithOAuth).not.toHaveBeenCalled();
+      expect(screen.getByTestId('signup-error').textContent).toMatch(/taken/i);
     });
 
     it('stashes the overridden slug (not the auto-derived one) on submit', async () => {
