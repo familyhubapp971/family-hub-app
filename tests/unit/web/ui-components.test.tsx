@@ -241,6 +241,35 @@ describe('StepperHeader', () => {
     expect(screen.getByText('Members')).toBeInTheDocument();
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
+
+  // FHS-255 — bar must anchor to the circle's vertical centre
+  // (top-5 = 20px = h-10 / 2) regardless of whether labels are
+  // rendered. Using top-1/2 makes the bar drift down when labels
+  // grow the parent flex row's height.
+  it('progress bar anchors to the circle centre, not the label-row centre', () => {
+    render(
+      <StepperHeader
+        steps={3}
+        current={2}
+        labels={['Welcome', 'Members', 'Done']}
+        testId="stepper"
+      />,
+    );
+    const bar = screen.getByTestId('stepper-bar');
+    expect(bar.className).toContain('top-5');
+    expect(bar.className).not.toContain('top-1/2');
+  });
+
+  it('progress bar still uses the same fixed offset when labels are absent', () => {
+    render(<StepperHeader steps={3} current={2} testId="stepper" />);
+    const bar = screen.getByTestId('stepper-bar');
+    expect(bar.className).toContain('top-5');
+  });
+
+  it('omits the progress bar entirely when hideBar is true', () => {
+    render(<StepperHeader steps={3} current={2} hideBar testId="stepper" />);
+    expect(screen.queryByTestId('stepper-bar')).toBeNull();
+  });
 });
 
 describe('FeatureCard', () => {
