@@ -100,6 +100,34 @@ describeFeature(feature, ({ Background, Scenario }) => {
   });
 
   Scenario(
+    'Uppercase slug is normalised so iOS-autocapitalised links resolve',
+    ({ Given, When, Then, And }) => {
+      let res: Response;
+      let body: { family: { name: string } };
+
+      Given(
+        'the tenant {string} named {string} has these members:',
+        async (_ctx, slug: string, name: string, table: MemberRow[]) => {
+          await seedTenantWithMembers(slug, name, table);
+        },
+      );
+
+      When('I GET /api/public/kid-members/Khan', async () => {
+        res = await app.request('/api/public/kid-members/Khan');
+        body = (await res.json()) as typeof body;
+      });
+
+      Then('the response status is 200', () => {
+        expect(res.status).toBe(200);
+      });
+
+      And('the family name is {string}', (_ctx, name: string) => {
+        expect(body.family.name).toBe(name);
+      });
+    },
+  );
+
+  Scenario(
     'Tenant isolation — kids in another tenant are never returned',
     ({ Given, When, Then, And }) => {
       let res: Response;

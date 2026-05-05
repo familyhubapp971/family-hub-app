@@ -24,6 +24,14 @@ Feature: GET /api/public/kid-members/:slug (FHS-238)
     When I GET /api/public/kid-members/no-such-family
     Then the response status is 404
 
+  Scenario: Uppercase slug is normalised so iOS-autocapitalised links resolve
+    Given the tenant "khan" named "Khan Family" has these members:
+      | name | role  | pin  |
+      | Iman | child | 1234 |
+    When I GET /api/public/kid-members/Khan
+    Then the response status is 200
+    And the family name is "Khan Family"
+
   Scenario: Tenant isolation — kids in another tenant are never returned
     Given the tenant "khan" named "Khan Family" has these members:
       | name | role  | pin  |

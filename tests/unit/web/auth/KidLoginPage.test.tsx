@@ -213,6 +213,43 @@ describe('<KidLoginPage />', () => {
     expect(screen.queryByTestId('kid-login-error')).toBeNull();
   });
 
+  it('discards an in-flight PIN submit if a sibling taps a different avatar mid-flight', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ family: { slug: 'khan', name: 'Khan Family' }, kids: KIDS }),
+    );
+    // Hold the kid-pin POST open so the avatar swap happens before it
+    // resolves. Then resolve as 200 — the token + navigate must be
+    // discarded because the active selection changed.
+    let resolvePinFetch: (r: Response) => void = () => {};
+    const pendingPin = new Promise<Response>((resolve) => {
+      resolvePinFetch = resolve;
+    });
+    fetchMock.mockReturnValueOnce(pendingPin);
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Khan Family')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Aisha/ }));
+    const inputs = screen.getByTestId('kid-login-pin').querySelectorAll<HTMLInputElement>('input');
+    ['1', '2', '3', '4'].forEach((d, i) => {
+      fireEvent.change(inputs[i]!, { target: { value: d } });
+    });
+
+    // Sibling grabs the iPad mid-flight.
+    fireEvent.click(screen.getByRole('button', { name: /Yusuf/ }));
+
+    // Now resolve the original (Aisha's) fetch with a successful token.
+    resolvePinFetch(
+      jsonResponse({ token: 'aisha.jwt', member: { id: KIDS[0]!.id, displayName: 'Aisha' } }),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // The original submit is stale — neither Aisha's token nor a
+    // navigation away from /kid-login should land.
+    expect(localStorage.getItem('fh.kid.token')).toBeNull();
+    expect(screen.getByTestId('location-pathname').textContent).toBe('/t/khan/kid-login');
+  });
+
   it('"Switch to parent log-in" link routes to /login', async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ family: { slug: 'khan', name: 'Khan Family' }, kids: KIDS }),

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AvatarGrid, Button, PinInput, type AvatarTile } from '@familyhub/ui';
 import { AuthLayout } from './AuthLayout';
@@ -64,6 +64,15 @@ export function KidLoginPage() {
   // it doesn't expose a clear() — we force-remount it via this nonce
   // after a wrong PIN so the digits visually reset.
   const [pinNonce, setPinNonce] = useState(0);
+  // Mirror selectedId in a ref so an in-flight PIN submit can detect
+  // mid-fetch avatar swaps without re-running the callback (which would
+  // capture the new selection in a fresh closure but also tear down
+  // the in-flight one). The submit handler reads this on every
+  // terminal branch and bails out as stale if it changed.
+  const selectedIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
   useEffect(() => {
     if (!slug) {
@@ -115,15 +124,23 @@ export function KidLoginPage() {
   const onPinComplete = useCallback(
     async (pin: string) => {
       if (!slug || !selectedId) return;
+      // Capture the kid this submit is for. If a sibling taps a
+      // different avatar mid-flight, the resolved response below
+      // belongs to the previous kid and must not write their token /
+      // navigate as them — staleSelection guards every terminal branch.
+      const submittingFor = selectedId;
+      const isStale = () => selectedIdRef.current !== submittingFor;
       setSubmit({ kind: 'submitting' });
       try {
         const res = await fetch(`${API_BASE}/api/auth/kid-pin`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenantSlug: slug, memberId: selectedId, pin }),
+          body: JSON.stringify({ tenantSlug: slug, memberId: submittingFor, pin }),
         });
+        if (isStale()) return;
         if (res.status === 200) {
           const body = (await res.json()) as { token: string };
+          if (isStale()) return;
           localStorage.setItem('fh.kid.token', body.token);
           navigate(`/t/${slug}/dashboard`);
           return;
@@ -146,6 +163,7 @@ export function KidLoginPage() {
         });
         setPinNonce((n) => n + 1);
       } catch (e) {
+        if (isStale()) return;
         const message = e instanceof Error ? e.message : 'network error';
         setSubmit({ kind: 'error', message });
         setPinNonce((n) => n + 1);

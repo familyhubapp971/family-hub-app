@@ -48,7 +48,12 @@ export const publicKidMembersResponseSchema = z.object({
 export type PublicKidMembersResponse = z.infer<typeof publicKidMembersResponseSchema>;
 
 export const publicKidMembersRouter = new Hono().get('/:slug', async (c) => {
-  const parsed = paramsSchema.safeParse({ slug: c.req.param('slug') });
+  // Lowercase the slug before validating — iOS auto-capitalises the
+  // first character of pasted URLs in some apps (Notes, Mail), and a
+  // kid following a "/t/Khan/kid-login" link should land on Khan's
+  // family page, not a 404.
+  const rawSlug = c.req.param('slug') ?? '';
+  const parsed = paramsSchema.safeParse({ slug: rawSlug.toLowerCase() });
   if (!parsed.success) {
     return c.json(
       {
