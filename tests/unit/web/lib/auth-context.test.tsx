@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => {
   return {
     authCallback: null as ((event: string, session: Session | null) => void) | null,
     getSessionMock: vi.fn(),
+    signOutMock: vi.fn(),
     unsubscribeMock: vi.fn(),
   };
 });
@@ -18,6 +19,7 @@ vi.mock('../../../../apps/web/src/lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: mocks.getSessionMock,
+      signOut: mocks.signOutMock,
       onAuthStateChange: (cb: (event: string, session: Session | null) => void) => {
         mocks.authCallback = cb;
         return { data: { subscription: { unsubscribe: mocks.unsubscribeMock } } };
@@ -27,7 +29,14 @@ vi.mock('../../../../apps/web/src/lib/supabase', () => ({
 }));
 
 // Imported AFTER vi.mock so the provider sees the mocked module.
-import { AuthProvider, useAuth } from '../../../../apps/web/src/lib/auth-context';
+import {
+  AuthProvider,
+  KID_TOKEN_STORAGE_KEY,
+  clearKidToken,
+  getKidToken,
+  signOutAll,
+  useAuth,
+} from '../../../../apps/web/src/lib/auth-context';
 
 function Probe() {
   const { session, user, loading } = useAuth();
@@ -139,5 +148,96 @@ describe('AuthProvider + useAuth', () => {
     unmount();
 
     expect(mocks.unsubscribeMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+// FHS-253 — kid JWT helpers. The kid token lives in localStorage under
+// fh.kid.token. Parent sign-out used to leave it behind; expired
+// tokens used to sit forever. Both fixed in auth-context.tsx.
+
+// Build a JWT-shaped string with a forged exp claim — we never
+// verify the signature on the client, so any base64url payload works.
+function fakeKidJwt(expSeconds: number): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+    .replace(/=+$/, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+  const payload = btoa(JSON.stringify({ scope: 'child', exp: expSeconds }))
+    .replace(/=+$/, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+  return `${header}.${payload}.signature-doesnt-matter-here`;
+}
+
+describe('signOutAll() (FHS-253)', () => {
+  beforeEach(() => {
+    mocks.signOutMock.mockReset();
+    localStorage.clear();
+  });
+
+  it('clears fh.kid.token AND calls supabase signOut', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, 'parent-walked-away-token');
+    mocks.signOutMock.mockResolvedValue({ error: null });
+
+    const result = await signOutAll();
+
+    expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
+    expect(mocks.signOutMock).toHaveBeenCalledTimes(1);
+    expect(result.error).toBeNull();
+  });
+
+  it('still clears the kid token even when supabase signOut errors', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, 'token-must-still-go');
+    mocks.signOutMock.mockResolvedValue({ error: new Error('network blip') });
+
+    const result = await signOutAll();
+
+    // Most important assertion: a Supabase failure must NOT leave the
+    // kid logged in on the iPad.
+    expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
+    expect(result.error?.message).toBe('network blip');
+  });
+});
+
+describe('getKidToken() (FHS-253)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('returns the token when the exp claim is in the future', () => {
+    const future = Math.floor(Date.now() / 1000) + 600;
+    const token = fakeKidJwt(future);
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, token);
+
+    expect(getKidToken()).toBe(token);
+    // Read does not mutate when the token is valid.
+    expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBe(token);
+  });
+
+  it('returns null and clears the token when exp is in the past', () => {
+    const past = Math.floor(Date.now() / 1000) - 60;
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt(past));
+
+    expect(getKidToken()).toBeNull();
+    expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
+  });
+
+  it('returns null and clears when the token is malformed (not a JWT)', () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, 'not-a-jwt-at-all');
+
+    expect(getKidToken()).toBeNull();
+    expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
+  });
+
+  it('returns null when no kid token is stored', () => {
+    expect(getKidToken()).toBeNull();
+  });
+
+  it('clearKidToken() drops the entry without touching anything else', () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, 'whatever');
+    localStorage.setItem('unrelated.key', 'kept');
+    clearKidToken();
+    expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem('unrelated.key')).toBe('kept');
   });
 });

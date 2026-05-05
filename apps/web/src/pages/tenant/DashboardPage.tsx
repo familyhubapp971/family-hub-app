@@ -1,8 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button, Card, TopNav, type TopNavTab } from '@familyhub/ui';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../lib/auth-context';
+import { signOutAll, useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { TodayTabPanel } from './dashboard/TodayTabPanel';
 import { MealsTabPanel } from './dashboard/MealsTabPanel';
@@ -96,10 +95,13 @@ export function DashboardPage() {
 
   const onLogout = useCallback(async () => {
     setSigningOut(true);
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error('signOut failed', err);
+    // FHS-253 — signOutAll clears both the parent Supabase session
+    // AND the kid JWT in localStorage. Calling supabase.auth.signOut
+    // directly here used to leave fh.kid.token behind on the iPad,
+    // so a kid stayed "logged in" after the parent walked away.
+    const { error } = await signOutAll();
+    if (error) {
+      console.error('signOut failed', error);
       setSigningOut(false);
       return;
     }
