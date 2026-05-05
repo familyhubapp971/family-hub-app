@@ -46,7 +46,11 @@ export function StepperHeader({
             would centre the bar on the row-with-labels, which sits
             below the circles' centre. */}
         {!hideBar && (
-          <div className="absolute left-0 right-0 top-5 -translate-y-1/2" data-testid="stepper-bar">
+          <div
+            className="absolute left-0 right-0 top-5 -translate-y-1/2"
+            data-testid="stepper-bar"
+            aria-hidden="true"
+          >
             <div className="relative mx-5 h-1 rounded-full bg-kingdom-800">
               <div
                 className="absolute left-0 top-0 h-full rounded-full bg-green-400 transition-[width] duration-500 ease-out motion-reduce:transition-none"
