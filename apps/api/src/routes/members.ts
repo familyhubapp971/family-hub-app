@@ -148,6 +148,11 @@ export const setMemberPinResponseSchema = z.object({
 export type SetMemberPinResponse = z.infer<typeof setMemberPinResponseSchema>;
 
 const ADMIN_OR_ADULT_ROLES = new Set(['admin', 'adult']);
+// FHS-252 — only child/teen members can have a kid-login PIN.
+// Defence-in-depth: the page UI gates the affordance already, but a
+// direct curl could otherwise PIN-flag an admin and surface them on
+// the kid-login avatar grid.
+const PIN_ELIGIBLE_TARGET_ROLES = new Set(['child', 'teen']);
 
 membersRouter.put('/:id/pin', async (c) => {
   getAuthenticatedUser(c);
@@ -199,6 +204,16 @@ membersRouter.put('/:id/pin', async (c) => {
     .limit(1);
   if (!targetRow) {
     return c.json({ error: 'not found', detail: 'no such member in this tenant' }, 404);
+  }
+  if (!PIN_ELIGIBLE_TARGET_ROLES.has(targetRow.role)) {
+    return c.json(
+      {
+        error: 'forbidden',
+        detail: 'kid PIN can only be set on members with role child or teen',
+        errorCode: 'PIN_TARGET_INELIGIBLE',
+      },
+      403,
+    );
   }
 
   // Hash + write. Setting a PIN flips the is_child flag on so the

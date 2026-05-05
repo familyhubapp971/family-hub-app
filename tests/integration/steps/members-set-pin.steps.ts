@@ -407,4 +407,34 @@ describeFeature(feature, ({ Background, Scenario }) => {
       expect(res.status).toBe(400);
     });
   });
+
+  // FHS-252 — defence-in-depth: even if the page UI is bypassed
+  // (curl), the API refuses to PIN-flag a non-child/non-teen target.
+  Scenario(
+    'Setting a PIN on a non-child/non-teen target is rejected with 403',
+    ({ Given, When, Then }) => {
+      let res: Response;
+
+      Given(
+        'an existing adult member {string} of tenant {string}',
+        async (_ctx, name: string, slug: string) => {
+          const tenantId = tenantIds[slug];
+          if (!tenantId) throw new Error(`tenant ${slug} not seeded`);
+          const [m] = await db
+            .insert(members)
+            .values({ tenantId, displayName: name, role: 'adult' })
+            .returning();
+          memberIds[name] = m!.id;
+        },
+      );
+
+      When('the admin PUTs PIN {string} for {string}', async (_ctx, pin: string, name: string) => {
+        res = await setPinAs(adminToken, 'khan', memberIds[name]!, pin);
+      });
+
+      Then('the response status is 403', () => {
+        expect(res.status).toBe(403);
+      });
+    },
+  );
 });

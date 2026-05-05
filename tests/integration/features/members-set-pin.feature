@@ -45,3 +45,8 @@ Feature: PUT/DELETE /api/members/:id/pin (FHS-252)
     Given a kid member "Iman" exists in tenant "khan" with no PIN
     When the admin PUTs PIN "abcd" for "Iman"
     Then the response status is 400
+
+  Scenario: Setting a PIN on a non-child/non-teen target is rejected with 403
+    Given an existing adult member "Yusuf" of tenant "khan"
+    When the admin PUTs PIN "1234" for "Yusuf"
+    Then the response status is 403

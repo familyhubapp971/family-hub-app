@@ -114,41 +114,11 @@ export function MembersPage() {
   }, [session, slug]);
 
   useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/members', {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            'x-tenant-slug': slug,
-          },
-        });
-        if (!res.ok) {
-          if (!cancelled) {
-            setStatus({
-              kind: 'error',
-              message: `Couldn't load members (server returned ${res.status})`,
-            });
-          }
-          return;
-        }
-        const body = (await res.json()) as ListMembersResponse;
-        if (!cancelled)
-          setStatus({ kind: 'ready', members: body.members, callerRole: body.callerRole });
-      } catch (err) {
-        if (!cancelled) {
-          setStatus({
-            kind: 'error',
-            message: err instanceof Error ? err.message : 'Network error — try again.',
-          });
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session, slug]);
+    // Re-uses the same memoised fetcher that the post-PIN-save flow
+    // calls, so the page makes ONE request per (session, slug) change
+    // instead of duplicating a near-identical inline loader.
+    void fetchMembers();
+  }, [fetchMembers]);
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg p-6 font-body text-white">
@@ -313,8 +283,14 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
           body: JSON.stringify({ pin }),
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
-          setError(body.error ?? `Server returned ${res.status}.`);
+          // Prefer the server's `detail` over the terse `error` so the
+          // kid's adult sees "admins and adults can manage kid PINs"
+          // instead of the bare "forbidden".
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            detail?: string;
+          };
+          setError(body.detail ?? body.error ?? `Server returned ${res.status}.`);
           setSubmitting(false);
           return;
         }

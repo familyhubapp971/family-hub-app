@@ -236,4 +236,41 @@ describe('<MembersPage />', () => {
     await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
     expect(screen.queryByTestId('members-row-1-pin-toggle')).toBeNull();
   });
+
+  // FHS-252 — symmetry: teen role caller also blocked, locked in
+  // so a future ADMIN_OR_ADULT loosening can't sneak teens in.
+  it('a teen role caller does NOT see the PIN toggle either', async () => {
+    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'teen', kidHasPin: false }));
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
+    expect(screen.queryByTestId('members-row-1-pin-toggle')).toBeNull();
+  });
+
+  // FHS-252 (qa-expert blocker #3) — server-side `detail` message
+  // surfaces to the kid's adult, not the bare `error` keyword.
+  it('shows the server detail message (not just "forbidden") when a 403 fires', async () => {
+    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: false }));
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-row-1-pin-toggle')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('members-row-1-pin-toggle'));
+    fireEvent.change(screen.getByTestId('members-row-1-pin-input'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByTestId('members-row-1-pin-confirm'), {
+      target: { value: '1234' },
+    });
+
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      json: async () => ({
+        error: 'forbidden',
+        detail: 'admins and adults can manage kid PINs',
+      }),
+    });
+    fireEvent.click(screen.getByTestId('members-row-1-pin-save'));
+    await waitFor(() =>
+      expect(screen.getByTestId('members-row-1-pin-error').textContent).toMatch(
+        /admins and adults/i,
+      ),
+    );
+  });
 });
