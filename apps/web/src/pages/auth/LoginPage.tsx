@@ -1,19 +1,25 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useCallback, useState, type FormEvent } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button, Input, Label } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
 import { AuthLayout } from './AuthLayout';
 
-// LoginPage — passwordless parent auth (FHS-224, ADR 0011). Two co-equal
-// entry points: magic-link (signInWithOtp → /verify-email) and Google
-// OAuth (signInWithOAuth → /auth/callback). Password field removed
-// entirely; the existing ResetPasswordRequestPage now redirects to
-// /verify-email since "forgot password" → "send me another magic link"
-// in this world.
+// LoginPage — split parent / kid auth (FHS-237).
+//
+// Parent path: passwordless via Supabase magic-link OR Google OAuth
+// (unchanged from FHS-224 / ADR 0011). Kid path: shared-device login
+// using avatar + 4-digit PIN, talking to POST /api/auth/kid-pin
+// (FHS-236). The actual kid form (avatar grid + PIN keypad) ships in
+// FHS-238 — for now the kid panel renders a "coming soon" hint so the
+// toggle, URL-state, and a11y wiring can be tested in isolation.
+//
+// URL state: `?role=kid` selects the kid panel on first load, so a
+// kid's home-screen icon ("My Family Hub" PWA shortcut) can deep-link
+// into their entry point.
 
-// Inline Google "G" mark — matches SignupPage's logo so the two screens
-// feel identical. Brand-mark colours per Google's identity guidelines.
+type Role = 'parent' | 'kid';
+
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -47,10 +53,39 @@ type Status =
   | { kind: 'submitting-google' }
   | { kind: 'error'; message: string };
 
+function isKnownRole(value: string | null): value is Role {
+  return value === 'parent' || value === 'kid';
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
+
+  const requested = params.get('role');
+  const role: Role = isKnownRole(requested) ? requested : 'parent';
+
+  const onRoleChange = useCallback(
+    (next: Role) => {
+      const updated = new URLSearchParams(params);
+      if (next === 'parent') {
+        updated.delete('role');
+      } else {
+        updated.set('role', next);
+      }
+      // replace:true so toggling 4× doesn't leave 4 history entries
+      // (and the browser back button still exits /login cleanly).
+      setParams(updated, { replace: true });
+      // Clear any "wrong email" error when toggling — the kid panel
+      // doesn't have an email field, and a stale error reads as
+      // confusing if it pops back when the user switches back. Don't
+      // wipe in-flight submitting states, in case an OAuth redirect
+      // is mid-flight from a stray click.
+      setStatus((s) => (s.kind === 'error' ? { kind: 'idle' } : s));
+    },
+    [params, setParams],
+  );
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -98,73 +133,180 @@ export function LoginPage() {
 
   return (
     <AuthLayout title="Log in">
-      <p className="mb-4 font-body text-sm text-gray-700">
-        We&rsquo;ll email you a one-time link to log in. No password to remember.
-      </p>
+      <RoleToggle role={role} onChange={onRoleChange} />
 
-      <form onSubmit={onSubmit} className="space-y-4" data-testid="login-form" noValidate>
-        <div>
-          <Label htmlFor="email" required>
-            Email
-          </Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="sarah@example.com"
-            testId="login-email"
-          />
-        </div>
-
-        {status.kind === 'error' && (
-          <p className="font-body text-sm text-red-600" data-testid="login-error" role="alert">
-            {status.message}
-          </p>
-        )}
-
-        <Button
-          type="submit"
-          variant="primary"
-          size="md"
-          disabled={submitting}
-          fullWidth
-          testId="login-submit"
+      {role === 'parent' ? (
+        <section
+          id="login-parent-panel"
+          aria-labelledby="login-parent-heading"
+          data-testid="login-parent-panel"
+          className="mt-4"
         >
-          {status.kind === 'submitting' ? 'Sending…' : 'Continue with email →'}
-        </Button>
-      </form>
+          <h2 id="login-parent-heading" className="sr-only">
+            Parent log in
+          </h2>
+          <p className="mb-4 font-body text-sm text-gray-700">
+            We&rsquo;ll email you a one-time link to log in. No password to remember.
+          </p>
 
-      <div className="my-6 flex items-center gap-3 font-body text-xs uppercase tracking-widest text-gray-500">
-        <div className="h-px flex-1 bg-gray-300" />
-        or
-        <div className="h-px flex-1 bg-gray-300" />
+          <form onSubmit={onSubmit} className="space-y-4" data-testid="login-form" noValidate>
+            <div>
+              <Label htmlFor="email" required>
+                Email
+              </Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="sarah@example.com"
+                testId="login-email"
+              />
+            </div>
+
+            {status.kind === 'error' && (
+              <p className="font-body text-sm text-red-600" data-testid="login-error" role="alert">
+                {status.message}
+              </p>
+            )}
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              disabled={submitting}
+              fullWidth
+              testId="login-submit"
+            >
+              {status.kind === 'submitting' ? 'Sending…' : 'Continue with email →'}
+            </Button>
+          </form>
+
+          <div className="my-6 flex items-center gap-3 font-body text-xs uppercase tracking-widest text-gray-500">
+            <div className="h-px flex-1 bg-gray-300" />
+            or
+            <div className="h-px flex-1 bg-gray-300" />
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={onGoogle}
+            disabled={submitting}
+            testId="login-google"
+            fullWidth
+          >
+            <span className="inline-flex items-center justify-center gap-3">
+              <GoogleIcon />
+              {status.kind === 'submitting-google' ? 'Redirecting…' : 'Continue with Google'}
+            </span>
+          </Button>
+
+          <p className="mt-6 font-body text-sm text-gray-700">
+            New here?{' '}
+            <Link to="/signup" className="font-semibold underline">
+              Create an account
+            </Link>
+          </p>
+        </section>
+      ) : (
+        <KidLoginPanel onSwitchToParent={() => onRoleChange('parent')} />
+      )}
+    </AuthLayout>
+  );
+}
+
+// Segmented control (not an ARIA tablist) — two mutually-exclusive
+// buttons toggling which login form is mounted. Plain group + per-button
+// `aria-pressed` avoids the `tablist` arrow-key navigation requirement
+// while still being screen-reader-friendly. Tab key cycles through the
+// buttons in DOM order, the focus-visible ring stays bright yellow.
+function RoleToggle({ role, onChange }: { role: Role; onChange: (next: Role) => void }) {
+  return (
+    <div
+      role="group"
+      aria-label="Login role"
+      className="flex gap-2 rounded-md border-2 border-black bg-white p-1 shadow-neo-sm"
+      data-testid="login-role-toggle"
+    >
+      <RoleButton id="parent" label="I'm a parent" active={role === 'parent'} onSelect={onChange} />
+      <RoleButton id="kid" label="I'm a kid" active={role === 'kid'} onSelect={onChange} />
+    </div>
+  );
+}
+
+function RoleButton({
+  id,
+  label,
+  active,
+  onSelect,
+}: {
+  id: Role;
+  label: string;
+  active: boolean;
+  onSelect: (id: Role) => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      data-testid={`login-role-${id}`}
+      onClick={() => onSelect(id)}
+      className={[
+        'flex-1 rounded px-3 py-2 text-sm font-bold transition-colors',
+        'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400',
+        active ? 'bg-yellow-300 text-black' : 'bg-white text-gray-700 hover:bg-gray-50',
+      ].join(' ')}
+    >
+      {label}
+    </button>
+  );
+}
+
+// FHS-237 — placeholder kid login panel. FHS-238 swaps the body of
+// this component for the avatar grid + PIN keypad. The surrounding
+// heading + intro copy + "switch to parent" footer all still apply
+// once the real form lands, so they live here in the wrapper.
+function KidLoginPanel({ onSwitchToParent }: { onSwitchToParent: () => void }) {
+  return (
+    <section
+      id="login-kid-panel"
+      aria-labelledby="login-kid-heading"
+      data-testid="login-kid-panel"
+      className="mt-4"
+    >
+      <h2 id="login-kid-heading" className="sr-only">
+        Kid log in
+      </h2>
+      <p className="mb-4 font-body text-sm text-gray-700">
+        Tap your face and type your 4-digit PIN. Ask a grown-up if you forgot it.
+      </p>
+      <div
+        data-testid="login-kid-placeholder"
+        className="rounded-md border-2 border-dashed border-black bg-yellow-50 p-6 text-center"
+      >
+        <p className="font-heading text-lg text-black">Coming soon</p>
+        <p className="mt-2 font-body text-sm text-gray-700">
+          The avatar picker + PIN keypad lands in FHS-238.
+        </p>
       </div>
 
-      <Button
-        type="button"
-        variant="secondary"
-        size="md"
-        onClick={onGoogle}
-        disabled={submitting}
-        testId="login-google"
-        fullWidth
-      >
-        <span className="inline-flex items-center justify-center gap-3">
-          <GoogleIcon />
-          {status.kind === 'submitting-google' ? 'Redirecting…' : 'Continue with Google'}
-        </span>
-      </Button>
-
       <p className="mt-6 font-body text-sm text-gray-700">
-        New here?{' '}
-        <Link to="/signup" className="font-semibold underline">
-          Create an account
-        </Link>
+        Are you a grown-up?{' '}
+        <button
+          type="button"
+          onClick={onSwitchToParent}
+          data-testid="login-kid-back-to-parent"
+          className="font-semibold underline"
+        >
+          Switch to parent log-in
+        </button>
+        .
       </p>
-    </AuthLayout>
+    </section>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { LoginPage } from '../../../../apps/web/src/pages/auth/LoginPage';
 
 // FHS-224 — passwordless login. Tests cover the rewritten UX:
@@ -18,11 +18,24 @@ vi.mock('../../../../apps/web/src/lib/supabase', () => ({
   },
 }));
 
-function renderPage() {
+function LocationProbe() {
+  const loc = useLocation();
+  return <span data-testid="location-search">{loc.search}</span>;
+}
+
+function renderPage(initial = '/login') {
   return render(
-    <MemoryRouter initialEntries={['/login']}>
+    <MemoryRouter initialEntries={[initial]}>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/login"
+          element={
+            <>
+              <LoginPage />
+              <LocationProbe />
+            </>
+          }
+        />
         <Route path="/verify-email" element={<div data-testid="route-marker">verify-email</div>} />
         <Route path="/signup" element={<div data-testid="route-marker">signup</div>} />
       </Routes>
@@ -104,5 +117,67 @@ describe('<LoginPage />', () => {
     renderPage();
     fireEvent.click(screen.getByRole('link', { name: /create an account/i }));
     expect(screen.getByTestId('route-marker').textContent).toBe('signup');
+  });
+
+  // FHS-237 — parent / kid toggle.
+  it('defaults to the parent panel + role-toggle has aria-pressed=true on parent', () => {
+    renderPage();
+    expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('login-kid-panel')).toBeNull();
+    expect(screen.getByTestId('login-role-parent').getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByTestId('login-role-kid').getAttribute('aria-pressed')).toBe('false');
+    // Default URL has no ?role= param — kid is the only state we encode
+    // so a returning parent doesn't see ugly query strings on /login.
+    expect(screen.getByTestId('location-search').textContent).toBe('');
+  });
+
+  it('honours ?role=kid on initial render', () => {
+    renderPage('/login?role=kid');
+    expect(screen.getByTestId('login-kid-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('login-parent-panel')).toBeNull();
+    expect(screen.getByTestId('login-kid-placeholder')).toBeInTheDocument();
+  });
+
+  it('clicking the kid tab swaps the panel + sets ?role=kid in the URL', () => {
+    renderPage();
+    fireEvent.click(screen.getByTestId('login-role-kid'));
+    expect(screen.getByTestId('login-kid-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('login-parent-panel')).toBeNull();
+    expect(screen.getByTestId('location-search').textContent).toBe('?role=kid');
+    expect(screen.getByTestId('login-role-kid').getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByTestId('login-role-parent').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('toggling back to parent clears ?role= from the URL', () => {
+    renderPage('/login?role=kid');
+    fireEvent.click(screen.getByTestId('login-role-parent'));
+    expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('location-search').textContent).toBe('');
+  });
+
+  it('the kid panel "Switch to parent log-in" link returns to the parent panel', () => {
+    renderPage('/login?role=kid');
+    fireEvent.click(screen.getByTestId('login-kid-back-to-parent'));
+    expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('login-kid-panel')).toBeNull();
+  });
+
+  it('falls back to the parent panel when ?role is unknown', () => {
+    renderPage('/login?role=banana');
+    expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument();
+  });
+
+  // I4 (qa-expert): a stale "enter a valid email" error from the parent
+  // form mustn't reappear after the user toggles to kid and back —
+  // they cleared their input by switching tabs, the warning would read
+  // as a glitch.
+  it('clears any inline parent-form error when the user toggles role', () => {
+    renderPage();
+    fireEvent.change(screen.getByTestId('login-email'), { target: { value: 'not-an-email' } });
+    fireEvent.submit(screen.getByTestId('login-form'));
+    expect(screen.getByTestId('login-error')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('login-role-kid'));
+    fireEvent.click(screen.getByTestId('login-role-parent'));
+    expect(screen.queryByTestId('login-error')).toBeNull();
   });
 });
