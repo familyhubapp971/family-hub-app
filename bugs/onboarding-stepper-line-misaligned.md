@@ -1,5 +1,5 @@
 ---
-status: open
+status: in-jira: FHS-255 (in progress)
 date: 2026-05-03
 found-by: oduniyi (manual exploration)
 ---
