@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LandingPage } from './pages/marketing/LandingPage';
 import { WelcomePage } from './pages/marketing/WelcomePage';
 import { PricingPage } from './pages/marketing/PricingPage';
+import { KidLoginPage } from './pages/auth/KidLoginPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
@@ -42,6 +43,14 @@ export function App() {
           <Route path="/auth/reset-request" element={<Navigate to="/login" replace />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+          {/* FHS-238 — kid login. Tenant-scoped (slug in URL) but NOT
+              behind ProtectedRoute: the kid hasn't authenticated yet,
+              that's the whole point. The page reads :slug via useParams
+              directly so it can resolve the family + show the avatar
+              grid. After successful PIN entry the kid lands on
+              /t/:slug/dashboard like any other authenticated user. */}
+          <Route path="/t/:slug/kid-login" element={<KidLoginPage />} />
 
           {/* Tenant-scoped pages. The TenantProvider reads :slug from
               the URL and exposes it to descendants via useTenantSlug(). */}
