@@ -149,6 +149,62 @@ describe('AuthProvider + useAuth', () => {
 
     expect(mocks.unsubscribeMock).toHaveBeenCalledTimes(1);
   });
+
+  // FHS-253 (qa-expert blocker #8) — when a parent signs in on a
+  // device the kid was using, the kid's stale token must come off.
+  it('clears fh.kid.token when SIGNED_IN fires (stale kid identity on parent log-in)', async () => {
+    mocks.getSessionMock.mockResolvedValue({ data: { session: null } });
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, 'kid-was-here-before-parent');
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('loading').textContent).toBe('false');
+    });
+
+    await act(async () => {
+      mocks.authCallback?.('SIGNED_IN', fakeSession('sarah@example.com'));
+    });
+
+    expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
+  });
+
+  // FHS-253 (qa-expert blocker #3) — multi-tab: Tab A clears the
+  // kid token, Tab B receives a storage event and stays consistent.
+  it('listens for cross-tab storage events on fh.kid.token (forward-defensive for FHS-205)', async () => {
+    mocks.getSessionMock.mockResolvedValue({ data: { session: null } });
+
+    const { unmount } = render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('loading').textContent).toBe('false');
+    });
+
+    // Simulate Tab A's signOutAll writing-then-removing fh.kid.token.
+    // Tab B receives the storage event with newValue=null.
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, 'leftover-from-this-tab');
+    await act(async () => {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: KID_TOKEN_STORAGE_KEY,
+          newValue: null,
+          oldValue: 'leftover-from-this-tab',
+          storageArea: localStorage,
+        }),
+      );
+    });
+
+    // Idempotent — clearKidToken ensures the local copy is gone too.
+    expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
+
+    unmount();
+  });
 });
 
 // FHS-253 — kid JWT helpers. The kid token lives in localStorage under

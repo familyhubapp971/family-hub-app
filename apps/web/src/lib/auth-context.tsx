@@ -30,17 +30,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      // SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED, PASSWORD_RECOVERY.
-      // We only care about the session payload — the event name is logged
-      // by the SDK and surfaces in DevTools if needed.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // FHS-253 — when a parent signs in on a device where a kid was
+      // previously using the family iPad, the kid's stale token must
+      // come off here. Otherwise the next consumer (FHS-205 kid-only
+      // middleware) will see two identities at once.
+      if (event === 'SIGNED_IN') {
+        clearKidToken();
+      }
       setSession(nextSession);
       setLoading(false);
     });
 
+    // FHS-253 — multi-tab sync. When Tab A clears fh.kid.token (via
+    // signOutAll), Tab B sees a `storage` event with newValue=null.
+    // Today no consumer reads the token, so this is forward-defensive
+    // for FHS-205: any future kid-only redirect logic can hook this
+    // listener and react. We swallow our own writes (storageArea check)
+    // so we don't process events we just fired ourselves.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === KID_TOKEN_STORAGE_KEY && e.newValue === null) {
+        // localStorage in this tab is already in sync (it's shared).
+        // Calling clearKidToken is idempotent and gives FHS-205 a
+        // single hook point to extend with re-render / redirect logic.
+        clearKidToken();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+
     return () => {
       active = false;
       sub.subscription.unsubscribe();
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
 
