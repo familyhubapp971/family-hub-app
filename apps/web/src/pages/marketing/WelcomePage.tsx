@@ -31,6 +31,7 @@ import {
 
 const inviterNames = [
   'Jumi',
+  'Sandra',
   'Aisha',
   'Maria',
   'Priya',
@@ -40,7 +41,6 @@ const inviterNames = [
   'Yara',
   'Olivia',
   'Sarah',
-  'Sandra',
   'Mei',
 ] as const;
 
