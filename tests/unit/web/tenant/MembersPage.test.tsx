@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MembersPage } from '../../../../apps/web/src/pages/tenant/MembersPage';
 import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
@@ -116,5 +116,161 @@ describe('<MembersPage />', () => {
       Authorization: 'Bearer fake-jwt',
       'x-tenant-slug': 'khans',
     });
+  });
+
+  // FHS-252 — admin/adult-only PIN management on the members page.
+  // Without these affordances, no real family can use kid login.
+
+  function listWithKid(opts: { callerRole: string; kidHasPin: boolean }) {
+    return {
+      ok: true,
+      json: async () => ({
+        callerRole: opts.callerRole,
+        members: [
+          {
+            id: 'admin-id',
+            displayName: 'Sarah Khan',
+            role: 'admin',
+            avatarEmoji: '👩',
+            status: 'active',
+            createdAt: '2026-05-02T00:00:00.000Z',
+            isChild: false,
+            hasPin: false,
+          },
+          {
+            id: 'kid-id',
+            displayName: 'Iman',
+            role: 'child',
+            avatarEmoji: null,
+            status: 'unclaimed',
+            createdAt: '2026-05-02T00:00:00.000Z',
+            isChild: opts.kidHasPin,
+            hasPin: opts.kidHasPin,
+          },
+        ],
+      }),
+    };
+  }
+
+  it('admin sees a "Set PIN" toggle on a kid row + can submit a fresh PIN', async () => {
+    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: false }));
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-row-1-pin-toggle')).toBeInTheDocument());
+    expect(screen.getByTestId('members-row-1-pin-toggle').textContent).toBe('Set PIN');
+    expect(screen.queryByTestId('members-row-1-pin-badge')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('members-row-1-pin-toggle'));
+    expect(screen.getByTestId('members-row-1-pin-form')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId('members-row-1-pin-input'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByTestId('members-row-1-pin-confirm'), {
+      target: { value: '1234' },
+    });
+
+    // PUT call returns success → form re-fetches the list. Mock the
+    // PUT + the follow-up GET.
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        member: { id: 'kid-id', displayName: 'Iman', isChild: true, hasPin: true },
+      }),
+    });
+    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: true }));
+
+    fireEvent.click(screen.getByTestId('members-row-1-pin-save'));
+    await waitFor(() =>
+      expect(screen.getByTestId('members-row-1-pin-badge').textContent).toBe('PIN set'),
+    );
+
+    const putCall = fetchMock.mock.calls.find(
+      (c) => typeof c[0] === 'string' && c[0].endsWith('/kid-id/pin') && c[1]?.method === 'PUT',
+    );
+    expect(putCall).toBeDefined();
+    expect(JSON.parse(putCall![1].body as string)).toEqual({ pin: '1234' });
+  });
+
+  it('mismatched PIN + Confirm shows inline error and does NOT call the API', async () => {
+    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: false }));
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-row-1-pin-toggle')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('members-row-1-pin-toggle'));
+    fireEvent.change(screen.getByTestId('members-row-1-pin-input'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByTestId('members-row-1-pin-confirm'), {
+      target: { value: '5678' },
+    });
+    fireEvent.click(screen.getByTestId('members-row-1-pin-save'));
+
+    expect(screen.getByTestId('members-row-1-pin-error').textContent).toMatch(/don.t match/i);
+    // No PUT was fired (only the initial GET).
+    expect(fetchMock.mock.calls).toHaveLength(1);
+  });
+
+  it('"Remove kid login" DELETEs the PIN and reloads the list', async () => {
+    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: true }));
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-row-1-pin-toggle')).toBeInTheDocument());
+    expect(screen.getByTestId('members-row-1-pin-toggle').textContent).toBe('Reset PIN');
+
+    fireEvent.click(screen.getByTestId('members-row-1-pin-toggle'));
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        member: { id: 'kid-id', displayName: 'Iman', isChild: false, hasPin: false },
+      }),
+    });
+    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: false }));
+
+    fireEvent.click(screen.getByTestId('members-row-1-pin-remove'));
+    await waitFor(() => expect(screen.queryByTestId('members-row-1-pin-badge')).toBeNull());
+
+    const deleteCall = fetchMock.mock.calls.find(
+      (c) => typeof c[0] === 'string' && c[0].endsWith('/kid-id/pin') && c[1]?.method === 'DELETE',
+    );
+    expect(deleteCall).toBeDefined();
+  });
+
+  it('a child role caller does NOT see the PIN toggle (admin/adult only)', async () => {
+    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'child', kidHasPin: false }));
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
+    expect(screen.queryByTestId('members-row-1-pin-toggle')).toBeNull();
+  });
+
+  // FHS-252 — symmetry: teen role caller also blocked, locked in
+  // so a future ADMIN_OR_ADULT loosening can't sneak teens in.
+  it('a teen role caller does NOT see the PIN toggle either', async () => {
+    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'teen', kidHasPin: false }));
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
+    expect(screen.queryByTestId('members-row-1-pin-toggle')).toBeNull();
+  });
+
+  // FHS-252 (qa-expert blocker #3) — server-side `detail` message
+  // surfaces to the kid's adult, not the bare `error` keyword.
+  it('shows the server detail message (not just "forbidden") when a 403 fires', async () => {
+    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: false }));
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-row-1-pin-toggle')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('members-row-1-pin-toggle'));
+    fireEvent.change(screen.getByTestId('members-row-1-pin-input'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByTestId('members-row-1-pin-confirm'), {
+      target: { value: '1234' },
+    });
+
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      json: async () => ({
+        error: 'forbidden',
+        detail: 'admins and adults can manage kid PINs',
+      }),
+    });
+    fireEvent.click(screen.getByTestId('members-row-1-pin-save'));
+    await waitFor(() =>
+      expect(screen.getByTestId('members-row-1-pin-error').textContent).toMatch(
+        /admins and adults/i,
+      ),
+    );
   });
 });
