@@ -1,5 +1,5 @@
 ---
-status: in-jira: FHS-252
+status: fixed (FHS-252 — squashed in 467af3d, 2026-05-06)
 date: 2026-05-05
 found-by: oduniyi (sprint-2 close manual review)
 severity: showstopper

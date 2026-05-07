@@ -1,4 +1,4 @@
-import { useCallback, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button, Input, Label } from '@familyhub/ui';
@@ -65,6 +65,15 @@ export function LoginPage() {
 
   const requested = params.get('role');
   const role: Role = isKnownRole(requested) ? requested : 'parent';
+
+  // FHS-258 — clear a stale validation error the moment the user keeps
+  // editing the email field. Without this, "enter a valid email" sticks
+  // on screen even after the user has corrected the typo. The
+  // role-toggle path already had its own clear (see onRoleChange) — this
+  // covers the typing path.
+  useEffect(() => {
+    setStatus((s) => (s.kind === 'error' ? { kind: 'idle' } : s));
+  }, [email]);
 
   const onRoleChange = useCallback(
     (next: Role) => {

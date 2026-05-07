@@ -134,6 +134,15 @@ export function SignupPage() {
   const slug = useMemo(() => customSlug ?? deriveSlug(familyName), [customSlug, familyName]);
   const [slugStatus, setSlugStatus] = useState<SlugStatus>({ kind: 'idle' });
 
+  // FHS-258 — clear a stale validation error the moment the user keeps
+  // editing. Without this, "family name is required" sticks on screen
+  // even after the user has typed a real name. Functional updater keeps
+  // submitting / submitting-google states untouched (don't drop a
+  // genuine in-flight indicator).
+  useEffect(() => {
+    setStatus((s) => (s.kind === 'error' ? { kind: 'idle' } : s));
+  }, [familyName, displayName, email, slug]);
+
   // Live debounced slug-availability check (FHS-225). Hits FHS-27's
   // GET /api/public/slug-available endpoint 300ms after the user stops
   // typing, sets `slugStatus` so the form can show ✓/✗/spinner. The
