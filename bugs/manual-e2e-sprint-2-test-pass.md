@@ -98,11 +98,10 @@ Tickets covered: FHS-91 / 108
 
 Tickets covered: FHS-235 / 236 / 237 / 238
 
-> ⚠️ **Heads up:** Bug **FHS-252** (`members-no-kid-pin-ui.md`) means
-> the parent UI doesn't yet let Sarah set a kid's PIN, avatar, or
-> `is_child` flag — so this whole flow currently needs a manual
-> SQL update to test. If you can't set a PIN, mark every row below
-> **Blocked** and link FHS-252.
+> ✅ **Heads up:** FHS-252 **FIXED** — Sarah can now set kid PINs from
+> `/t/<slug>/members`. Re-run section F end-to-end as a regression
+> check. F12 specifically verifies FHS-253 (kid token cleared on
+> parent sign-out).
 
 | #   | Step                                                                             | Expected outcome                                                                       | Result | Notes |
 | --- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------ | ----- |

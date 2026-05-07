@@ -56,6 +56,49 @@ describe('<SignupPage />', () => {
     expect(screen.getByTestId('signup-slug-preview').textContent).toContain('/t/family');
   });
 
+  // FHS-258 — error from a failed submit must clear the moment the
+  // user starts typing again. Without this the form looks broken
+  // even after the user has corrected the field. Using
+  // fireEvent.submit on the form because the button is disabled
+  // when slugStatus !== 'available' (which is the case at empty form).
+  it('clears the inline error when the user types into family-name after a failed submit', () => {
+    renderPage();
+    fireEvent.submit(screen.getByTestId('signup-form'));
+    expect(screen.getByTestId('signup-error')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('signup-family-name'), {
+      target: { value: 'The Khan Family' },
+    });
+    expect(screen.queryByTestId('signup-error')).toBeNull();
+  });
+
+  it('clears the inline error when the user types into display-name after a failed submit', () => {
+    renderPage();
+    fireEvent.change(screen.getByTestId('signup-family-name'), {
+      target: { value: 'The Khan Family' },
+    });
+    fireEvent.submit(screen.getByTestId('signup-form'));
+    expect(screen.getByTestId('signup-error')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('signup-display-name'), {
+      target: { value: 'Sarah Khan' },
+    });
+    expect(screen.queryByTestId('signup-error')).toBeNull();
+  });
+
+  it('clears the inline error when the user types into email after a failed submit', () => {
+    renderPage();
+    fireEvent.change(screen.getByTestId('signup-family-name'), {
+      target: { value: 'The Khan Family' },
+    });
+    fireEvent.change(screen.getByTestId('signup-display-name'), { target: { value: 'Sarah' } });
+    fireEvent.change(screen.getByTestId('signup-email'), { target: { value: 'not-an-email' } });
+    fireEvent.submit(screen.getByTestId('signup-form'));
+    expect(screen.getByTestId('signup-error')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('signup-email'), {
+      target: { value: 'sarah@example.com' },
+    });
+    expect(screen.queryByTestId('signup-error')).toBeNull();
+  });
+
   it('rejects invalid email + does not call Supabase', () => {
     renderPage();
     fireEvent.change(screen.getByTestId('signup-family-name'), {

@@ -59,6 +59,19 @@ describe('<LoginPage />', () => {
     expect(screen.queryByTestId('login-password')).toBeNull();
   });
 
+  // FHS-258 — error from a failed submit must clear the moment the
+  // user starts typing again.
+  it('clears the inline error when the user types into email after a failed submit', () => {
+    renderPage();
+    fireEvent.change(screen.getByTestId('login-email'), { target: { value: 'not-an-email' } });
+    fireEvent.submit(screen.getByTestId('login-form'));
+    expect(screen.getByTestId('login-error')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('login-email'), {
+      target: { value: 'sarah@example.com' },
+    });
+    expect(screen.queryByTestId('login-error')).toBeNull();
+  });
+
   it('rejects an invalid email + does not call Supabase', () => {
     renderPage();
     fireEvent.change(screen.getByTestId('login-email'), { target: { value: 'not-an-email' } });

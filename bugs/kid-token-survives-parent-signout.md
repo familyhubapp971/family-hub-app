@@ -1,5 +1,5 @@
 ---
-status: in-jira: FHS-253
+status: fixed (FHS-253 — squashed in 4c7b396, 2026-05-05)
 date: 2026-05-05
 found-by: oduniyi (sprint-2 close manual review)
 severity: medium
