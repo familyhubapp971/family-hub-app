@@ -80,13 +80,12 @@ const signupSchema = z.object({
   email: z.string().email('enter a valid email'),
 });
 
-// FHS-256 — Google OAuth doesn't ask the user for an email (Google
-// provides it post-callback), but we still need a valid family name +
-// display name + slug before kicking off the OAuth round-trip; without
-// them the post-callback tenant create fails and the user lands in a
-// no-tenant zombie state. Reuses the email-path schema's family + name
-// rules so the messaging stays consistent.
-const googleStartSchema = signupSchema.pick({ familyName: true, displayName: true });
+// FHS-256 / FHS-259 — Google OAuth pre-flight gate. Only `familyName`
+// is required upfront because Google provides display name + email
+// post-callback (AuthCallbackPage backfills display name from
+// `user_metadata.full_name`). If the user typed display name and
+// email anyway, those win — see SignupPage.onGoogle below.
+const googleStartSchema = signupSchema.pick({ familyName: true });
 
 // Auto-derive a DNS-safe slug from the family name. Capped at 30 chars
 // (Supabase's overall family-id limit). Server-side validation in FHS-25
@@ -277,11 +276,15 @@ export function SignupPage() {
       return;
     }
     setStatus({ kind: 'submitting-google' });
+    // FHS-259 — stash whatever the user typed so it wins over Google's
+    // profile values, but don't require displayName. AuthCallbackPage
+    // backfills from user_metadata.full_name when the user left it
+    // blank.
     sessionStorage.setItem(
       'fh.signup.intent',
       JSON.stringify({
         familyName: parsed.data.familyName,
-        displayName: parsed.data.displayName,
+        displayName: displayName.trim(),
         slug,
       }),
     );
