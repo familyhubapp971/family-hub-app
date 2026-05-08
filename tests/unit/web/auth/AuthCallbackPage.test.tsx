@@ -134,7 +134,7 @@ describe('FHS-249 + FHS-259 — AuthCallbackPage', () => {
 
   // FHS-259 — slug got taken by another signup mid-OAuth (rare but
   // possible). Bounce to /signup so the user can pick another name.
-  it('routes to /signup with an error when tenant create returns 409 (slug taken)', async () => {
+  it('routes to /signup + clears intent when tenant create returns 409 (slug taken)', async () => {
     sessionStorage.setItem(
       'fh.signup.intent',
       JSON.stringify({ familyName: 'Khan', displayName: 'Sarah', slug: 'khan' }),
@@ -147,6 +147,27 @@ describe('FHS-249 + FHS-259 — AuthCallbackPage', () => {
     renderAt('/auth/callback');
 
     await waitFor(() => expect(screen.getByTestId('route-marker').textContent).toBe('signup'));
+    // Stale intent gets cleared so the next /signup attempt starts clean.
+    expect(sessionStorage.getItem('fh.signup.intent')).toBeNull();
+  });
+
+  // FHS-259 (qa-expert nice-to-have #1) — 400 from the server (e.g.
+  // empty familyName from a malformed sessionStorage write) should
+  // also route to /signup, not strand the user on a 5xx error pane.
+  it('routes to /signup when tenant create returns 400 (validator rejected the body)', async () => {
+    sessionStorage.setItem(
+      'fh.signup.intent',
+      JSON.stringify({ familyName: '', displayName: 'Sarah', slug: 'khan' }),
+    );
+    authState.session = {
+      access_token: 'jwt',
+      user: { id: 'u1', email: 'sarah@example.com', user_metadata: {} },
+    };
+    fetchMock.mockResolvedValueOnce(new Response('{"error":"invalid"}', { status: 400 }));
+    renderAt('/auth/callback');
+
+    await waitFor(() => expect(screen.getByTestId('route-marker').textContent).toBe('signup'));
+    expect(sessionStorage.getItem('fh.signup.intent')).toBeNull();
   });
 
   // FHS-259 — server-side failure surfaces a visible error rather

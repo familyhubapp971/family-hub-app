@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { Session } from '@supabase/supabase-js';
 import { useAuth } from '../../lib/auth-context';
 import { AuthLayout } from './AuthLayout';
 
@@ -45,9 +46,16 @@ function pickDisplayName(
   const meta = user.user_metadata ?? {};
   const fromGoogle = (meta.full_name ?? meta.name ?? '').trim();
   if (fromGoogle.length >= 2) return fromGoogle;
-  // Last resort: email local-part. Capitalise so it doesn't look broken.
+  // Email local-part as the practical floor — Supabase guarantees
+  // user.email is set on confirmed sessions so this is what real
+  // signups land on when the form left displayName blank AND Google
+  // didn't send a profile name (e.g. magic-link signup with empty
+  // form). Capitalise so it doesn't look broken.
   const local = (user.email ?? '').split('@')[0] ?? '';
   if (local) return local.charAt(0).toUpperCase() + local.slice(1);
+  // Truly degenerate — no email on the session. Should be impossible
+  // post-Supabase-auth; kept as a safety net so the API never sees an
+  // empty string (which would 400 the schema validator).
   return 'You';
 }
 
@@ -55,6 +63,16 @@ type CallbackStatus =
   | { kind: 'idle' }
   | { kind: 'creating-tenant' }
   | { kind: 'error'; message: string };
+
+// Cast helpers — Supabase Session has access_token: string + user: User
+// non-optional, but we keep the local view narrow so we don't depend on
+// the wider User shape (only .email + .user_metadata are read).
+type CallbackSession = Pick<Session, 'access_token'> & {
+  user: {
+    email?: string;
+    user_metadata?: { full_name?: string; name?: string };
+  };
+};
 
 // FHS-259 — OAuth + magic-link landing page. Supabase's JS client
 // (with detectSessionInUrl) pulls the session out of the URL hash on
@@ -73,6 +91,12 @@ export function AuthCallbackPage() {
   const navigate = useNavigate();
   const { loading, session } = useAuth();
   const [status, setStatus] = useState<CallbackStatus>({ kind: 'idle' });
+  // qa-expert FHS-259 #1 — the in-flight guard MUST be a ref, not
+  // useState. setStatus is batched, so a fast TOKEN_REFRESHED event
+  // re-runs the effect before the previous render committed and
+  // both reads see the stale 'idle' → double POST. A ref flips
+  // synchronously and survives the cleanup boundary.
+  const tenantPostInFlightRef = useRef(false);
 
   useEffect(() => {
     if (loading) return;
@@ -91,23 +115,21 @@ export function AuthCallbackPage() {
       return;
     }
 
-    // Already creating tenant (re-render under the same effect run) —
-    // bail to avoid a double-POST.
-    if (status.kind === 'creating-tenant') return;
+    // Race-safe single-flight guard: synchronous flip on the ref means
+    // a re-entry from session re-emit (TOKEN_REFRESHED, USER_UPDATED)
+    // sees the true value and bails before firing a second POST.
+    if (tenantPostInFlightRef.current) return;
+    tenantPostInFlightRef.current = true;
 
     // FHS-259 — actually wire the tenant-create call. Until this
     // landed, the intent was stashed but never POSTed; users completed
     // auth but had no tenant.
     setStatus({ kind: 'creating-tenant' });
-    const u = session as {
-      user?: { user_metadata?: { full_name?: string; name?: string }; email?: string };
-      access_token?: string;
-    };
-    const user = u.user ?? {};
-    const accessToken = u.access_token;
+    const s = session as unknown as CallbackSession;
+    const accessToken = s.access_token;
     const body = {
       familyName: (intent.familyName ?? '').trim(),
-      displayName: pickDisplayName(intent, user),
+      displayName: pickDisplayName(intent, s.user),
       slug: intent.slug,
     };
 
@@ -118,7 +140,7 @@ export function AuthCallbackPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken ?? ''}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify(body),
         });
@@ -128,15 +150,25 @@ export function AuthCallbackPage() {
           navigate(`/t/${intent.slug}/onboarding`, { replace: true });
           return;
         }
-        if (res.status === 409) {
-          // Slug taken by someone else mid-OAuth. Send the user back
-          // to /signup so they can pick another. Keep the family-name
-          // value in sessionStorage so the form can re-hydrate it
-          // later (out of scope for this PR).
+        // 409 (slug taken mid-OAuth) and 400 (server-side validator
+        // rejected the body — usually empty/invalid familyName from a
+        // malformed sessionStorage write) both mean "let the user try
+        // again from /signup" rather than stranding them on an error
+        // pane with no recovery route.
+        if (res.status === 409 || res.status === 400) {
           setStatus({
             kind: 'error',
-            message: 'That family URL was just taken — pick another and try again.',
+            message:
+              res.status === 409
+                ? 'That family URL was just taken — pick another and try again.'
+                : "Couldn't read your family details — please re-enter them.",
           });
+          // Clear the intent on 409 so a retry from /signup starts
+          // clean (the user picks a new family name anyway). On 400
+          // the intent is already wrong — clearing it lets the form
+          // re-hydrate from scratch.
+          sessionStorage.removeItem('fh.signup.intent');
+          tenantPostInFlightRef.current = false;
           navigate('/signup', { replace: true });
           return;
         }
@@ -144,19 +176,20 @@ export function AuthCallbackPage() {
           kind: 'error',
           message: `Couldn't finish creating your family (server returned ${res.status}). Please try again or contact support.`,
         });
+        tenantPostInFlightRef.current = false;
       } catch (err) {
         if (cancelled) return;
         setStatus({
           kind: 'error',
           message: err instanceof Error ? err.message : 'Network error — try again.',
         });
+        tenantPostInFlightRef.current = false;
       }
     })();
 
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, session, navigate]);
 
   return (
