@@ -374,14 +374,27 @@ describe('<SignupPage />', () => {
       });
     });
 
-    it('Google button shows an error + does NOT start OAuth when display name is empty (with slug available)', async () => {
+    // FHS-259 — display name is now optional on the Google path
+    // (AuthCallbackPage backfills it from user_metadata.full_name).
+    // Empty display name + valid family name + slug available should
+    // proceed cleanly to OAuth.
+    it('Google button starts OAuth when display name is empty (Google fills it post-callback)', async () => {
       fetchMock.mockReturnValue(ok({ available: true }));
+      signInWithOAuth.mockResolvedValue({ error: null });
       renderPage();
       typeFamily('The Khan Family');
       await advanceAndFlush(300);
       fireEvent.click(screen.getByTestId('signup-google'));
-      expect(signInWithOAuth).not.toHaveBeenCalled();
-      expect(screen.getByTestId('signup-error').textContent).toMatch(/your name is required/i);
+      expect(signInWithOAuth).toHaveBeenCalledWith({
+        provider: 'google',
+        options: { redirectTo: expect.stringContaining('/auth/callback') },
+      });
+      // Intent stash carries familyName + slug; displayName is empty
+      // (string) — AuthCallbackPage will fill it from Google profile.
+      const intent = JSON.parse(sessionStorage.getItem('fh.signup.intent') ?? '{}');
+      expect(intent.familyName).toBe('The Khan Family');
+      expect(intent.slug).toBe('the-khan-family');
+      expect(intent.displayName).toBe('');
     });
 
     it('Google button clears any stale email-path error at the top of its handler', async () => {
