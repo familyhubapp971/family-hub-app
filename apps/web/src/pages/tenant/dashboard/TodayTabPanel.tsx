@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Badge, Card } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
+import { API_BASE } from '../../../lib/api';
 
 // FHS-228 — TodayTabPanel.
 //
@@ -97,7 +98,7 @@ export function TodayTabPanel() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/dashboard/today', {
+        const res = await fetch(`${API_BASE}/api/dashboard/today`, {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             'x-tenant-slug': slug,

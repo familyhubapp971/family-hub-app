@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
+import { API_BASE } from '../../../lib/api';
 
 // FHS-229 — MealsTabPanel.
 //
@@ -73,7 +74,7 @@ export function MealsTabPanel() {
   const refetch = useCallback(async () => {
     if (!headers) return;
     try {
-      const res = await fetch('/api/meals', { headers });
+      const res = await fetch(`${API_BASE}/api/meals`, { headers });
       if (!res.ok) {
         setStatus({
           kind: 'error',
@@ -100,7 +101,7 @@ export function MealsTabPanel() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/meals', { headers, signal: ac.signal });
+        const res = await fetch(`${API_BASE}/api/meals`, { headers, signal: ac.signal });
         if (cancelled) return;
         if (!res.ok) {
           setStatus({
@@ -149,7 +150,7 @@ export function MealsTabPanel() {
     const targetCell = { day: editing.day, slot: editing.slot };
     setSaving(true);
     try {
-      const res = await fetch('/api/meals', {
+      const res = await fetch(`${API_BASE}/api/meals`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({

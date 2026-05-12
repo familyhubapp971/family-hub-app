@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
+import { API_BASE } from '../../../lib/api';
 
 // FHS-233 — TasksTabPanel.
 //
@@ -69,7 +70,7 @@ export function TasksTabPanel() {
   const refetch = useCallback(async () => {
     if (!headers) return;
     try {
-      const res = await fetch('/api/tasks', { headers });
+      const res = await fetch(`${API_BASE}/api/tasks`, { headers });
       if (!res.ok) {
         setStatus({
           kind: 'error',
@@ -94,7 +95,7 @@ export function TasksTabPanel() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/tasks', { headers, signal: ac.signal });
+        const res = await fetch(`${API_BASE}/api/tasks`, { headers, signal: ac.signal });
         if (cancelled) return;
         if (!res.ok) {
           setStatus({
@@ -145,7 +146,7 @@ export function TasksTabPanel() {
       setSaving(true);
       setSaveError(null);
       try {
-        const res = await fetch('/api/tasks', {
+        const res = await fetch(`${API_BASE}/api/tasks`, {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: trimmed, dueDate: draft.dueDate || null }),
@@ -213,7 +214,7 @@ export function TasksTabPanel() {
         );
       };
       try {
-        const res = await fetch(`/api/tasks/${id}`, {
+        const res = await fetch(`${API_BASE}/api/tasks/${id}`, {
           method: 'PATCH',
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ done: nextDone }),
@@ -242,7 +243,7 @@ export function TasksTabPanel() {
       if (!headers || deletingRef.current.has(id)) return;
       deletingRef.current.add(id);
       try {
-        const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE', headers });
+        const res = await fetch(`${API_BASE}/api/tasks/${id}`, { method: 'DELETE', headers });
         if (!res.ok) {
           setErrorAnnouncement(`Couldn't delete task (server returned ${res.status})`);
           return;

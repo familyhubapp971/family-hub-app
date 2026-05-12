@@ -62,7 +62,7 @@ describe('<OnboardingPage />', () => {
       expect(screen.getByTestId('route-marker').textContent).toBe('tenant-dashboard'),
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/me',
+      'http://localhost:3001/api/me',
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: 'Bearer fake-jwt' }),
       }),
@@ -155,7 +155,9 @@ describe('<OnboardingPage />', () => {
       expect(screen.getByTestId('route-marker').textContent).toBe('tenant-dashboard'),
     );
     // Inspect the POST payload shape.
-    const submitCall = fetchMock.mock.calls.find(([url]) => url === '/api/onboarding/complete');
+    const submitCall = fetchMock.mock.calls.find(
+      ([url]) => url === 'http://localhost:3001/api/onboarding/complete',
+    );
     expect(submitCall).toBeDefined();
     const init = submitCall![1] as RequestInit;
     expect(init.method).toBe('POST');

@@ -10,7 +10,7 @@ import { supabase } from './supabase';
 // - Throws ApiError on non-2xx so callers can `.catch(err)` instead of
 //   branching on res.ok.
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+export const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
 
 export class ApiError extends Error {
   constructor(

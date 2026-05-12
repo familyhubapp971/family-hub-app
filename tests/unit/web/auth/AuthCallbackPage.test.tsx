@@ -74,7 +74,7 @@ describe('FHS-249 + FHS-259 — AuthCallbackPage', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('/api/public/tenant');
+    expect(url).toBe('http://localhost:3001/api/public/tenant');
     expect(init.method).toBe('POST');
     expect(init.headers).toMatchObject({
       'Content-Type': 'application/json',

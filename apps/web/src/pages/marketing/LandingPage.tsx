@@ -3,6 +3,7 @@ import { helloResponseSchema, type HelloResponse } from '@familyhub/shared';
 import { Button, Card, Badge } from '@familyhub/ui';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../lib/auth-context';
+import { API_BASE } from '../../lib/api';
 
 type FetchState =
   | { status: 'idle' }
@@ -11,7 +12,7 @@ type FetchState =
   | { status: 'error'; message: string };
 
 async function fetchHello(signal: AbortSignal): Promise<HelloResponse> {
-  const response = await fetch('/api/hello', {
+  const response = await fetch(`${API_BASE}/api/hello`, {
     signal,
     headers: { Accept: 'application/json' },
   });

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
+import { API_BASE } from '../../../lib/api';
 
 // FHS-232 — NoticeboardTabPanel.
 //
@@ -66,7 +67,7 @@ export function NoticeboardTabPanel() {
   const refetch = useCallback(async () => {
     if (!headers) return;
     try {
-      const res = await fetch('/api/notices', { headers });
+      const res = await fetch(`${API_BASE}/api/notices`, { headers });
       if (!res.ok) {
         setStatus({
           kind: 'error',
@@ -91,7 +92,7 @@ export function NoticeboardTabPanel() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/notices', { headers, signal: ac.signal });
+        const res = await fetch(`${API_BASE}/api/notices`, { headers, signal: ac.signal });
         if (cancelled) return;
         if (!res.ok) {
           setStatus({
@@ -142,7 +143,7 @@ export function NoticeboardTabPanel() {
       setSaving(true);
       setSaveError(null);
       try {
-        const res = await fetch('/api/notices', {
+        const res = await fetch(`${API_BASE}/api/notices`, {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ body: trimmed, pinned: draft.pinned }),
@@ -187,7 +188,7 @@ export function NoticeboardTabPanel() {
       if (!headers || deletingRef.current.has(id)) return;
       deletingRef.current.add(id);
       try {
-        const res = await fetch(`/api/notices/${id}`, {
+        const res = await fetch(`${API_BASE}/api/notices/${id}`, {
           method: 'DELETE',
           headers,
         });

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Check, Loader2, X } from 'lucide-react';
 import { z } from 'zod';
 import { Button, Input } from '@familyhub/ui';
+import { API_BASE } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 
 // SignupPage — port of Magic Patterns design (kudjspxd3xxroueg5jw11o
@@ -162,9 +163,12 @@ export function SignupPage() {
     const ctrl = new AbortController();
     const timer = window.setTimeout(async () => {
       try {
-        const res = await fetch(`/api/public/slug-available?slug=${encodeURIComponent(slug)}`, {
-          signal: ctrl.signal,
-        });
+        const res = await fetch(
+          `${API_BASE}/api/public/slug-available?slug=${encodeURIComponent(slug)}`,
+          {
+            signal: ctrl.signal,
+          },
+        );
         if (ignored) return;
         if (!res.ok) {
           // 400 means the slug failed server-side regex — we already

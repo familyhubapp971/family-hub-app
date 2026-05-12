@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { useAuth } from '../../lib/auth-context';
 import { AuthLayout } from './AuthLayout';
+import { API_BASE } from '../../lib/api';
 
 // Slug syntax — must mirror the canonical regex in
 // `apps/api/src/middleware/resolve-tenant.ts` (SLUG_RE) and the
@@ -136,7 +137,7 @@ export function AuthCallbackPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/public/tenant', {
+        const res = await fetch(`${API_BASE}/api/public/tenant`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

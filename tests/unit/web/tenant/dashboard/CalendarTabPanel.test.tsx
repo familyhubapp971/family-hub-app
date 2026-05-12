@@ -64,7 +64,7 @@ describe('<CalendarTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('/api/events?weekStart=2026-05-04');
+    expect(url).toBe('http://localhost:3001/api/events?weekStart=2026-05-04');
     expect(init.headers).toMatchObject({
       Authorization: 'Bearer tok-abc',
       'x-tenant-slug': 'khans',
@@ -138,14 +138,18 @@ describe('<CalendarTabPanel />', () => {
       fireEvent.click(screen.getByTestId('calendar-prev'));
     });
     await waitFor(() => {
-      expect(fetchMock.mock.calls.at(-1)![0]).toBe('/api/events?weekStart=2026-04-27');
+      expect(fetchMock.mock.calls.at(-1)![0]).toBe(
+        'http://localhost:3001/api/events?weekStart=2026-04-27',
+      );
     });
 
     act(() => {
       fireEvent.click(screen.getByTestId('calendar-today'));
     });
     await waitFor(() => {
-      expect(fetchMock.mock.calls.at(-1)![0]).toBe('/api/events?weekStart=2026-05-04');
+      expect(fetchMock.mock.calls.at(-1)![0]).toBe(
+        'http://localhost:3001/api/events?weekStart=2026-05-04',
+      );
     });
   });
 

@@ -15,6 +15,7 @@ import {
 } from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
+import { API_BASE } from '../../lib/api';
 
 // FHS-36 / FHS-37 — OnboardingWizard at /t/:slug/onboarding.
 //
@@ -86,7 +87,7 @@ export function OnboardingPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/me', {
+        const res = await fetch(`${API_BASE}/api/me`, {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (!res.ok) {
@@ -147,7 +148,7 @@ export function OnboardingPage() {
     if (!session) return;
     setStatus({ kind: 'submitting' });
     try {
-      const res = await fetch('/api/onboarding/complete', {
+      const res = await fetch(`${API_BASE}/api/onboarding/complete`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,

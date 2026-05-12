@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../lib/auth-context';
+import { API_BASE } from '../../lib/api';
 
 // FHS-227 — bridge for the un-prefixed `/dashboard` route. Fetches
 // /api/me, picks the user's first tenant, and forwards to the
@@ -26,7 +27,7 @@ export function LegacyDashboardRedirect() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/me', {
+        const res = await fetch(`${API_BASE}/api/me`, {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (!res.ok) {

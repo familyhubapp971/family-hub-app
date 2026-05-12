@@ -111,7 +111,7 @@ describe('<MembersPage />', () => {
     renderAt('/t/khans/members');
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('/api/members');
+    expect(url).toBe('http://localhost:3001/api/members');
     expect(init.headers).toMatchObject({
       Authorization: 'Bearer fake-jwt',
       'x-tenant-slug': 'khans',

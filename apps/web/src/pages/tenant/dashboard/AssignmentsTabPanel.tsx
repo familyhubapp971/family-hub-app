@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
+import { API_BASE } from '../../../lib/api';
 
 // FHS-231 — AssignmentsTabPanel.
 //
@@ -74,7 +75,7 @@ export function AssignmentsTabPanel() {
   const refetch = useCallback(async () => {
     if (!headers) return;
     try {
-      const res = await fetch('/api/assignments', { headers });
+      const res = await fetch(`${API_BASE}/api/assignments`, { headers });
       if (!res.ok) {
         setStatus({
           kind: 'error',
@@ -99,7 +100,7 @@ export function AssignmentsTabPanel() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/assignments', { headers, signal: ac.signal });
+        const res = await fetch(`${API_BASE}/api/assignments`, { headers, signal: ac.signal });
         if (cancelled) return;
         if (!res.ok) {
           setStatus({
@@ -150,7 +151,7 @@ export function AssignmentsTabPanel() {
       setSaving(true);
       setSaveError(null);
       try {
-        const res = await fetch('/api/assignments', {
+        const res = await fetch(`${API_BASE}/api/assignments`, {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -228,7 +229,7 @@ export function AssignmentsTabPanel() {
       };
 
       try {
-        const res = await fetch(`/api/assignments/${id}`, {
+        const res = await fetch(`${API_BASE}/api/assignments/${id}`, {
           method: 'PATCH',
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ done: nextDone }),

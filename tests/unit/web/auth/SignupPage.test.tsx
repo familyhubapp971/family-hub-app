@@ -220,7 +220,7 @@ describe('<SignupPage />', () => {
       expect(fetchMock).not.toHaveBeenCalled();
       await advanceAndFlush(300);
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/public/slug-available?slug=the-khan-family',
+        'http://localhost:3001/api/public/slug-available?slug=the-khan-family',
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
       expect(screen.getByTestId('signup-slug-available')).toBeInTheDocument();

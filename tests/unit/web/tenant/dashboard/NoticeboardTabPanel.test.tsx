@@ -176,7 +176,7 @@ describe('<NoticeboardTabPanel />', () => {
 
     const deleteCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'DELETE');
     expect(deleteCall).toBeDefined();
-    expect(deleteCall![0]).toBe('/api/notices/n1');
+    expect(deleteCall![0]).toBe('http://localhost:3001/api/notices/n1');
 
     await waitFor(() => expect(screen.queryByTestId('notice-row-n1')).toBeNull());
   });
@@ -189,7 +189,7 @@ describe('<NoticeboardTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('/api/notices');
+    expect(url).toBe('http://localhost:3001/api/notices');
     expect(init.headers).toMatchObject({
       Authorization: 'Bearer tok-abc',
       'x-tenant-slug': 'khans',

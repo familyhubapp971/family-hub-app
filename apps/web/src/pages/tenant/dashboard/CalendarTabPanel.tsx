@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Card } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
+import { API_BASE } from '../../../lib/api';
 
 // FHS-230 — CalendarTabPanel.
 //
@@ -94,7 +95,7 @@ export function CalendarTabPanel() {
     async (week: string) => {
       if (!headers) return;
       try {
-        const res = await fetch(`/api/events?weekStart=${week}`, { headers });
+        const res = await fetch(`${API_BASE}/api/events?weekStart=${week}`, { headers });
         if (!res.ok) {
           setStatus({
             kind: 'error',
@@ -121,7 +122,7 @@ export function CalendarTabPanel() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/events?weekStart=${weekStart}`, {
+        const res = await fetch(`${API_BASE}/api/events?weekStart=${weekStart}`, {
           headers,
           signal: ac.signal,
         });
@@ -196,7 +197,7 @@ export function CalendarTabPanel() {
       setSaving(true);
       setSaveError(null);
       try {
-        const res = await fetch('/api/events', {
+        const res = await fetch(`${API_BASE}/api/events`, {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({

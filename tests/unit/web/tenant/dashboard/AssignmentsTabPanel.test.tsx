@@ -199,7 +199,7 @@ describe('<AssignmentsTabPanel />', () => {
 
     const patchCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'PATCH');
     expect(patchCall).toBeDefined();
-    expect(patchCall![0]).toBe('/api/assignments/a1');
+    expect(patchCall![0]).toBe('http://localhost:3001/api/assignments/a1');
     const body = JSON.parse((patchCall![1] as RequestInit).body as string);
     expect(body).toEqual({ done: true });
 
@@ -218,7 +218,7 @@ describe('<AssignmentsTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('/api/assignments');
+    expect(url).toBe('http://localhost:3001/api/assignments');
     expect(init.headers).toMatchObject({
       Authorization: 'Bearer tok-abc',
       'x-tenant-slug': 'khans',

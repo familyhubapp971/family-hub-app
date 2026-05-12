@@ -161,7 +161,7 @@ describe('<TasksTabPanel />', () => {
 
     const patchCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'PATCH');
     expect(patchCall).toBeDefined();
-    expect(patchCall![0]).toBe('/api/tasks/t1');
+    expect(patchCall![0]).toBe('http://localhost:3001/api/tasks/t1');
 
     await waitFor(() =>
       expect(screen.getByTestId('tasks-done-list')).toContainElement(
@@ -189,7 +189,7 @@ describe('<TasksTabPanel />', () => {
 
     const deleteCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'DELETE');
     expect(deleteCall).toBeDefined();
-    expect(deleteCall![0]).toBe('/api/tasks/t1');
+    expect(deleteCall![0]).toBe('http://localhost:3001/api/tasks/t1');
     await waitFor(() => expect(screen.queryByTestId('task-row-t1')).toBeNull());
   });
 
@@ -201,7 +201,7 @@ describe('<TasksTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('/api/tasks');
+    expect(url).toBe('http://localhost:3001/api/tasks');
     expect(init.headers).toMatchObject({
       Authorization: 'Bearer tok-abc',
       'x-tenant-slug': 'khans',

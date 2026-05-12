@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Badge, Button, Card, Input, Label } from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
+import { API_BASE } from '../../lib/api';
 
 // FHS-108 — /t/:slug/members. Lists every member of the family with a
 // role badge and a status badge (active vs unclaimed). Read-only.
@@ -90,7 +91,7 @@ export function MembersPage() {
   const fetchMembers = useCallback(async () => {
     if (!session) return;
     try {
-      const res = await fetch('/api/members', {
+      const res = await fetch(`${API_BASE}/api/members`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           'x-tenant-slug': slug,
@@ -273,7 +274,7 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
       }
       setSubmitting(true);
       try {
-        const res = await fetch(`/api/members/${member.id}/pin`, {
+        const res = await fetch(`${API_BASE}/api/members/${member.id}/pin`, {
           method: 'PUT',
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -311,7 +312,7 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/members/${member.id}/pin`, {
+      const res = await fetch(`${API_BASE}/api/members/${member.id}/pin`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${accessToken}`,

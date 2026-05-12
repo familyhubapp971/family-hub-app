@@ -119,7 +119,7 @@ describe('<TodayTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('/api/dashboard/today');
+    expect(url).toBe('http://localhost:3001/api/dashboard/today');
     expect(init.headers).toMatchObject({
       Authorization: 'Bearer tok-abc',
       'x-tenant-slug': 'khans',

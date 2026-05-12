@@ -204,7 +204,7 @@ describe('<MealsTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('/api/meals');
+    expect(url).toBe('http://localhost:3001/api/meals');
     expect(init.headers).toMatchObject({
       Authorization: 'Bearer tok-abc',
       'x-tenant-slug': 'khans',
