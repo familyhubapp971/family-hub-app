@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>FamilyHub · Business Model Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;500;600;700;800;900&display=swap"
+    />
+    <style>
+      @page {
+        size: A3 landscape;
+        margin: 7mm;
+      }
+      :root {
+        /* Brand surface (page background) */
+        --bg: oklch(34% 0.16 305); /* kingdom purple #3d1065 */
+        --bg-glow: oklch(48% 0.22 305); /* radial glow centre */
+        /* Paper surfaces (cards on the brand) — tinted off-white, never pure */
+        --paper: oklch(98% 0.004 305);
+        --paper-2: oklch(96% 0.006 305);
+        /* Ink */
+        --ink: oklch(20% 0.02 305);
+        --ink-soft: oklch(42% 0.02 305);
+        --rule: oklch(82% 0.012 305);
+        --rule-soft: oklch(92% 0.008 305);
+        /* Brand accents */
+        --kingdom: oklch(34% 0.16 305);
+        --kingdom-on: oklch(82% 0.1 305); /* light purple for text on dark */
+        --accent: oklch(90% 0.18 96); /* yellow-300 */
+        --accent-tint: oklch(97% 0.06 96);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          'Nunito',
+          -apple-system,
+          sans-serif;
+        font-weight: 500;
+        color: var(--ink);
+        background: var(--bg);
+        font-size: 9.5px;
+        line-height: 1.45;
+      }
+      .heading,
+      h1,
+      h2,
+      .label,
+      .num-tab {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        letter-spacing: 0.005em;
+      }
+
+      .page {
+        width: 100%;
+        height: calc(297mm - 14mm);
+        padding: 10px 12px 8px;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        position: relative;
+        overflow: hidden;
+      }
+      /* Radial purple glow at the top, matches the marketing hero */
+      .page::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 80% 50% at 50% 0%, var(--bg-glow), transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .page > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ---------- Masthead: single baseline, no slab ---------- */
+      header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 22px;
+        padding: 4px 4px 8px;
+        margin-bottom: 8px;
+        border-bottom: 1px solid oklch(82% 0.1 305 / 0.4);
+      }
+      header .brand {
+        font-family: 'Fredoka One', cursive;
+        font-size: 22px;
+        color: #ffffff;
+        line-height: 1;
+        white-space: nowrap;
+        flex-shrink: 0;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+      }
+      header .brand .star {
+        color: #fde047;
+        font-size: 22px;
+        line-height: 1;
+      }
+      header .brand .word {
+        color: #ffffff;
+      }
+      header .title {
+        text-align: center;
+        line-height: 1;
+        flex: 1;
+      }
+      header h1 {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 22px;
+        margin: 0;
+        color: oklch(100% 0 0);
+        letter-spacing: -0.005em;
+        line-height: 1;
+      }
+      header .tagline {
+        margin: 4px 0 0 0;
+        font-size: 9px;
+        color: var(--accent);
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        line-height: 1;
+      }
+      header .meta {
+        text-align: right;
+        font-size: 8.5px;
+        color: var(--kingdom-on);
+        line-height: 1.5;
+        flex-shrink: 0;
+        font-weight: 700;
+      }
+      header .meta strong {
+        color: oklch(100% 0 0);
+      }
+
+      /* ---------- Pitch (sits on the purple page) ---------- */
+      .pitch {
+        margin: 0 0 10px 0;
+        font-size: 10.5px;
+        line-height: 1.55;
+        max-width: 76ch;
+        color: oklch(98% 0.004 305);
+        font-weight: 600;
+      }
+      .pitch strong {
+        color: #ffffff;
+        font-weight: 800;
+      }
+      .pitch .pin {
+        font-family: 'Fredoka One', cursive;
+        color: var(--accent);
+        margin-right: 4px;
+      }
+      /* Financial-literacy thread, light-on-purple variant for the pitch */
+      .pitch .fl-thread {
+        color: var(--accent);
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+      .pitch .fl-thread strong {
+        color: var(--accent);
+      }
+
+      /* ---------- 9-cell grid ---------- */
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.25fr 1fr 1fr;
+        grid-template-rows: 1fr 1fr 0.8fr;
+        grid-template-areas:
+          'partners activities value reln segments'
+          'partners resources value channels segments'
+          'costs    costs      costs revenue revenue';
+        gap: 6px;
+        flex: 1;
+        min-height: 0;
+      }
+      .cell {
+        background: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        padding: 8px 10px 9px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+      }
+      /* Value-prop is the focal point: subtle yellow tint, slightly heavier border */
+      .cell.value {
+        background: var(--accent-tint);
+        border-color: oklch(78% 0.08 96);
+      }
+      /* Recurring financial-literacy thread — subtle, repeated, never dominant */
+      .fl-thread {
+        font-weight: 700;
+        color: var(--kingdom);
+      }
+      .fl-anchor {
+        font-weight: 800;
+        color: var(--kingdom);
+      }
+      .cell.value .fl-bullet::before {
+        background: var(--kingdom);
+        opacity: 1;
+      }
+      .cell h2 {
+        margin: 0 0 5px 0;
+        font-size: 11px;
+        color: var(--kingdom);
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        letter-spacing: 0.02em;
+      }
+      .cell h2 .n {
+        font-size: 9px;
+        color: var(--ink-soft);
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+      .cell ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .cell li {
+        font-size: 9.5px;
+        line-height: 1.4;
+        margin-bottom: 3px;
+        padding-left: 9px;
+        position: relative;
+        font-weight: 500;
+      }
+      .cell li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.55em;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--kingdom);
+        opacity: 0.55;
+      }
+      .cell li strong {
+        font-weight: 800;
+        color: var(--ink);
+      }
+      .cell .note {
+        font-size: 9.5px;
+        margin: 4px 0 0 0;
+        color: var(--ink-soft);
+      }
+      .cell .note strong {
+        color: var(--kingdom);
+        font-weight: 800;
+      }
+
+      /* ---------- Compact comparison + price tables ---------- */
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 9px;
+        font-weight: 500;
+        margin-top: 5px;
+      }
+      th,
+      td {
+        padding: 2px 4px;
+        text-align: left;
+        border-bottom: 1px solid var(--rule-soft);
+        line-height: 1.3;
+      }
+      th {
+        color: var(--ink-soft);
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 8.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border-bottom: 1.5px solid var(--ink);
+      }
+      td.num,
+      th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
+      }
+      tr.summary td {
+        font-weight: 800;
+        color: var(--kingdom);
+        border-bottom: none;
+        border-top: 1.5px solid var(--ink);
+      }
+
+      /* ---------- Areas ---------- */
+      .partners {
+        grid-area: partners;
+      }
+      .activities {
+        grid-area: activities;
+      }
+      .resources {
+        grid-area: resources;
+      }
+      .value {
+        grid-area: value;
+      }
+      .reln {
+        grid-area: reln;
+      }
+      .channels {
+        grid-area: channels;
+      }
+      .segments {
+        grid-area: segments;
+      }
+      .costs {
+        grid-area: costs;
+      }
+      .revenue {
+        grid-area: revenue;
+      }
+
+      footer {
+        margin-top: 8px;
+        font-size: 8.5px;
+        color: var(--ink-soft);
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        border-top: 1px solid var(--rule);
+        padding-top: 5px;
+      }
+      footer strong {
+        color: var(--kingdom);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+      }
+
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="brand"><span class="star">★</span>FamilyHub</div>
+        <div class="title">
+          <h1>Business Model Canvas</h1>
+          <div class="tagline">The operating system for modern family life</div>
+        </div>
+        <div class="meta">
+          <strong>Babatunde Oduniyi</strong><br />
+          <strong>Sandra Mottoh</strong><br />
+          co-founders<br />
+          24-month target: $720k+ annual revenue
+        </div>
+      </header>
+
+      <p class="pitch">
+        <span class="pin">★</span>
+        FamilyHub is the operating system for modern family life. Four pillars no single competitor
+        combines: family admin (calendars, meals, assignments), beneficial screen time (children
+        earn stickers by learning),
+        <span class="fl-thread"
+          >a sticker economy in which children
+          <strong>earn &middot; save &middot; invest &middot; spend</strong> from early childhood
+          &mdash; financial literacy embedded in everyday family life</span
+        >, and cultural flexibility (Ramadan journal, mosque integration, extended-family roles).
+        Designed for households historically underserved by mainstream family-tech.
+      </p>
+
+      <div class="grid">
+        <div class="cell partners">
+          <h2>Key Partners <span class="n">08</span></h2>
+          <ul>
+            <li><strong>Identity and secure database</strong> (Supabase)</li>
+            <li><strong>Payments and subscription billing</strong> (Stripe)</li>
+            <li><strong>Cloud hosting</strong> (Railway)</li>
+            <li><strong>AI personalisation engines</strong> (OpenAI, Anthropic)</li>
+            <li><strong>Reliability and product analytics</strong> (Sentry, PostHog)</li>
+            <li>
+              <strong>Islamic schools, mosques, homeschool co-ops</strong>: community distribution
+              partners
+            </li>
+            <li>
+              <strong>Standard Chartered Foundation</strong>: non-dilutive capital and ecosystem
+            </li>
+            <li><strong>Apple and Google app stores</strong>: native mobile distribution</li>
+          </ul>
+        </div>
+
+        <div class="cell activities">
+          <h2>Key Activities <span class="n">07</span></h2>
+          <ul>
+            <li>Product development on a 2-week release cadence</li>
+            <li>Educational content and curriculum (Maths, Logic, World Flags)</li>
+            <li>Family acquisition through search, paid social, and community partners</li>
+            <li>Customer support and family success programmes</li>
+            <li>Operating the per-child personalisation engine</li>
+            <li>Partnership development (schools, mosques, co-ops)</li>
+            <li>Finance, tax, and accounting operations</li>
+          </ul>
+        </div>
+
+        <div class="cell resources">
+          <h2>Key Resources <span class="n">06</span></h2>
+          <ul>
+            <li><strong>Secure cloud platform</strong>, built and operating today</li>
+            <li><strong>Per-child learning data</strong> &mdash; our competitive moat</li>
+            <li>Proprietary curriculum content</li>
+            <li>Brand and design system</li>
+            <li>Founder team, AI-augmented</li>
+            <li>12-month operating runway</li>
+          </ul>
+        </div>
+
+        <div class="cell value">
+          <h2>Value Propositions <span class="n">02</span></h2>
+          <ul>
+            <li>
+              <strong>Family admin</strong>: calendars, meals, announcements, assignments, journal.
+            </li>
+            <li>
+              <strong>Beneficial screen time</strong>: Maths, World Flags, Logic. Kids earn by
+              learning.
+            </li>
+            <li class="fl-bullet">
+              <strong>Sticker economy</strong>:
+              <span class="fl-thread">earn &middot; save &middot; invest &middot; spend</span>.
+              <strong class="fl-anchor">Financial literacy from early childhood</strong>, baked into
+              family life.
+            </li>
+            <li>
+              <strong>Cultural flexibility</strong>: Ramadan journal, mosque/church integration,
+              extended-family roles.
+            </li>
+          </ul>
+          <table>
+            <thead>
+              <tr>
+                <th>Competitor</th>
+                <th class="num">Admin</th>
+                <th class="num">Edu</th>
+                <th class="num">$$</th>
+                <th class="num">Cul.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Cozi, FamilyWall</td>
+                <td class="num">●</td>
+                <td class="num">·</td>
+                <td class="num">·</td>
+                <td class="num">·</td>
+              </tr>
+              <tr>
+                <td>Khan, Prodigy</td>
+                <td class="num">·</td>
+                <td class="num">●</td>
+                <td class="num">◐</td>
+                <td class="num">·</td>
+              </tr>
+              <tr>
+                <td>GoHenry, RoosterMoney</td>
+                <td class="num">◐</td>
+                <td class="num">·</td>
+                <td class="num">●</td>
+                <td class="num">·</td>
+              </tr>
+              <tr>
+                <td>Muslim Pro etc.</td>
+                <td class="num">·</td>
+                <td class="num">·</td>
+                <td class="num">·</td>
+                <td class="num">◐</td>
+              </tr>
+              <tr class="summary">
+                <td>FamilyHub</td>
+                <td class="num">●</td>
+                <td class="num">●</td>
+                <td class="num">●</td>
+                <td class="num">●</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note">
+            <strong>AI moat.</strong> Per-child placement data compounds; competitor switching
+            incurs cold-start regression.
+          </p>
+        </div>
+
+        <div class="cell reln">
+          <h2>Customer Relationships <span class="n">04</span></h2>
+          <ul>
+            <li><strong>Self-serve onboarding</strong>: under 5 minutes</li>
+            <li>
+              <strong>Lifecycle email programme</strong>: welcome, day-3 prompt, day-14 progress
+              recap, monthly streak report
+            </li>
+            <li>
+              <strong>Retention loops</strong>: sticker streaks, weekly meal prompts, child learning
+              progress
+            </li>
+            <li>
+              <strong>Enterprise customer success</strong>: hands-on until our first five paid
+              organisations
+            </li>
+            <li>
+              <strong>Product-led growth</strong>: in-app behavioural cues convert free families to
+              paid
+            </li>
+          </ul>
+        </div>
+
+        <div class="cell channels">
+          <h2>Channels <span class="n">03</span></h2>
+          <ul>
+            <li>
+              <strong>Search and content</strong> (e.g. &ldquo;Muslim family planner&rdquo;,
+              &ldquo;homeschool app&rdquo;)
+            </li>
+            <li><strong>Product Hunt</strong> launch</li>
+            <li>
+              <strong>Paid social campaigns</strong> on Meta and TikTok, focused on UAE / Saudi / UK
+            </li>
+            <li><strong>Community partnerships</strong> (Islamic schools, mosques, co-ops)</li>
+            <li>
+              <strong>Mobile distribution</strong>: web app today, native iOS and Android upcoming
+            </li>
+            <li><strong>Direct enterprise sales</strong> beyond 100 paid families</li>
+            <li>
+              <strong>In-app referrals</strong>: invite-a-family, both households receive a free
+              month
+            </li>
+            <li><strong>Branded partner portals</strong> double as consumer surfaces</li>
+          </ul>
+        </div>
+
+        <div class="cell segments">
+          <h2>Customer Segments <span class="n">01</span></h2>
+          <ul>
+            <li>
+              <strong>Core consumer</strong>: tech-comfortable parents with 2+ children, currently
+              juggling multiple apps
+            </li>
+            <li>
+              <strong>Underserved consumer</strong>: Muslim, multi-faith, multi-generational,
+              blended families
+            </li>
+            <li>
+              <strong>Organisations (branded deployments)</strong>: Islamic schools, mosques,
+              churches, homeschool co-ops, NGOs (20 to 500+ families)
+            </li>
+          </ul>
+          <p class="note">
+            <strong>Launch geography.</strong> 1. UAE / Saudi Arabia. 2. US / Canada / UK. 3.
+            Indonesia / Pakistan.
+          </p>
+        </div>
+
+        <div class="cell costs">
+          <h2>Cost Structure <span class="n">09</span></h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Line</th>
+                <th>Type</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Cloud hosting</td>
+                <td>Variable</td>
+                <td>~$20/mo today, scales linearly with paid families</td>
+              </tr>
+              <tr>
+                <td>Identity and database</td>
+                <td>Variable</td>
+                <td>Free tier today, paid tier at scale</td>
+              </tr>
+              <tr>
+                <td>Payment processing fees</td>
+                <td>Variable</td>
+                <td>2.9% + 30¢, built into pricing</td>
+              </tr>
+              <tr>
+                <td>AI personalisation</td>
+                <td>Variable</td>
+                <td>Target &lt; $0.50 per child per month</td>
+              </tr>
+              <tr>
+                <td>Payroll</td>
+                <td>Fixed</td>
+                <td>Founder team, plus first hire at 100 paid families</td>
+              </tr>
+              <tr>
+                <td>Marketing</td>
+                <td>Variable</td>
+                <td>Cost to acquire a family stays under 6× monthly subscription revenue</td>
+              </tr>
+              <tr>
+                <td>Compliance and legal</td>
+                <td>Fixed</td>
+                <td>EU, US, and UK child-data regulations</td>
+              </tr>
+              <tr>
+                <td>Domain and certificates</td>
+                <td>Fixed</td>
+                <td>familyhub.app, all subdomains</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note">
+            <strong>Cost moat.</strong> The cost of serving an additional family is near zero;
+            per-family economics improve with every paid family.
+          </p>
+        </div>
+
+        <div class="cell revenue">
+          <h2>Revenue Streams <span class="n">05</span></h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Consumer</th>
+                <th class="num">Price</th>
+                <th>Includes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Household (Free)</td>
+                <td class="num">$0</td>
+                <td>3 members, limited features</td>
+              </tr>
+              <tr>
+                <td>Family</td>
+                <td class="num">$7.99 / $69 yr</td>
+                <td>Unlimited members, all core + Maths</td>
+              </tr>
+              <tr>
+                <td>Family Pro</td>
+                <td class="num">$12.99 / $109 yr</td>
+                <td>+ Logic, World Flags, custom subdomain</td>
+              </tr>
+            </tbody>
+          </table>
+          <table>
+            <thead>
+              <tr>
+                <th>Enterprise</th>
+                <th class="num">Annual</th>
+                <th>Includes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Up to 20 families</td>
+                <td class="num">$299</td>
+                <td>Branded subdomain + logo</td>
+              </tr>
+              <tr>
+                <td>21 to 100 families</td>
+                <td class="num">$999</td>
+                <td>+ admin tools, member roles</td>
+              </tr>
+              <tr>
+                <td>101 to 500 families</td>
+                <td class="num">$1,999</td>
+                <td>+ reporting, bulk invites</td>
+              </tr>
+              <tr>
+                <td>501+ families</td>
+                <td class="num">$3,499</td>
+                <td>+ dedicated support, SSO</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note">
+            <strong>24-month target.</strong>
+            5,000+ paid families, 30+ partner organisations, $720k+ annual recurring revenue. An
+            8&ndash;12× revenue multiple implies a $5.7M&ndash;$8.6M acquisition value range.
+          </p>
+        </div>
+      </div>
+
+      <footer>
+        <span><strong>★ FamilyHub</strong> · familyhub.app</span>
+        <span>Supporting documents available on request.</span>
+      </footer>
+    </div>
+  </body>
+</html>

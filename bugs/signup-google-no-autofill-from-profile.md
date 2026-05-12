@@ -1,5 +1,5 @@
 ---
-status: in-jira: FHS-259
+status: fixed (FHS-259 — squashed in 60b9845, 2026-05-06)
 date: 2026-05-06
 found-by: oduniyi (FHS-251 manual test pass)
 severity: medium

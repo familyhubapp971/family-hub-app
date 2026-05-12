@@ -1,5 +1,5 @@
 ---
-status: open
+status: fixed (FHS-256 + FHS-259 — squashed in f838966 + 60b9845, 2026-05-05 / 2026-05-08)
 date: 2026-05-03
 found-by: oduniyi (manual exploration)
 ---

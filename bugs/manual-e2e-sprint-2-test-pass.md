@@ -39,15 +39,15 @@ If any row blocks the next, that's a bug — file it.
 
 Tickets covered: FHS-220 / 221 / 222 / 26 / 27 / 223 / 224 / 225 / 248
 
-| #   | Step                                                              | Expected outcome                                                                                       | Result | Notes |
-| --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------ | ----- |
-| A1  | Open `/`                                                          | Kingdom-purple landing page; starfield animates (off if reduce-motion)                                 |        |       |
-| A2  | Click **Pricing**                                                 | Three plans: Free / Family / Family Pro with prices + CTAs                                             |        |       |
-| A3  | Click any **Sign up** CTA                                         | Land on `/signup` with two-card layout (social proof + form)                                           |        |       |
-| A4  | Type family name "Khan" + try a duplicate slug                    | Slug auto-fills "khan"; duplicate triggers red error within ~500ms                                     |        |       |
-| A5  | Submit with email + family name + free slug                       | Land on `/verify-email` with email echoed back                                                         |        |       |
-| A6  | Open magic-link email → click button                              | Land at `/auth/callback` → forwarded to `/t/<slug>/onboarding`                                         |        |       |
-| A7  | On `/signup` click **Continue with Google** before filling fields | Should require family name + slug first (currently bypasses — see `google-oauth-skips-signup-form.md`) |        |       |
+| #   | Step                                                                | Expected outcome                                                                                                              | Result | Notes |
+| --- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------ | ----- |
+| A1  | Open `/`                                                            | Kingdom-purple landing page; starfield animates (off if reduce-motion)                                                        |        |       |
+| A2  | Click **Pricing**                                                   | Three plans: Free / Family / Family Pro with prices + CTAs                                                                    |        |       |
+| A3  | Click any **Sign up** CTA                                           | Land on `/signup` with two-card layout (social proof + form)                                                                  |        |       |
+| A4  | Type family name "Khan" + try a duplicate slug                      | Slug auto-fills "khan"; duplicate triggers red error within ~500ms                                                            |        |       |
+| A5  | Submit with email + family name + free slug                         | Land on `/verify-email` with email echoed back                                                                                |        |       |
+| A6  | Open magic-link email → click button                                | Land at `/auth/callback` → forwarded to `/t/<slug>/onboarding`                                                                |        |       |
+| A7  | On `/signup` type only family name + click **Continue with Google** | Land on `/t/<slug>/onboarding` (Google fills display name + email post-callback). **FIXED in FHS-256 + FHS-259 — re-verify.** |        |       |
 
 ## B. Onboarding wizard
 
