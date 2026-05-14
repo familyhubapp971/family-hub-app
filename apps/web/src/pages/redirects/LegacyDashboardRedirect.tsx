@@ -1,22 +1,39 @@
-import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { Button, Card } from '@familyhub/ui';
+import type { Session } from '@supabase/supabase-js';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE } from '../../lib/api';
 
 // FHS-227 — bridge for the un-prefixed `/dashboard` route. Fetches
 // /api/me, picks the user's first tenant, and forwards to the
-// tenant-scoped dashboard. Replaces the previous setup where the
-// legacy route mounted DashboardPage directly — which now requires a
-// TenantProvider and would crash without a slug.
+// tenant-scoped dashboard. When the user is authenticated but has no
+// tenant yet (most often because a previous signup tenant-create call
+// dropped between Supabase auth and the API POST), render an inline
+// create-family form rather than silently bouncing to the homepage.
 //
 // Cleanup tracked under FHS-205 (drop legacy un-prefixed routes once
 // AuthCallback resolves the tenant itself).
+
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 interface MeResponse {
   tenants?: Array<{ slug: string }>;
 }
 
 type State = { kind: 'loading' } | { kind: 'redirect'; to: string } | { kind: 'no-tenant' };
+
+function deriveSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 30);
+}
 
 export function LegacyDashboardRedirect() {
   const { session } = useAuth();
@@ -49,7 +66,13 @@ export function LegacyDashboardRedirect() {
   }, [session]);
 
   if (state.kind === 'redirect') return <Navigate to={state.to} replace />;
-  if (state.kind === 'no-tenant') return <Navigate to="/" replace />;
+  if (state.kind === 'no-tenant') {
+    // Defensive: a render at no-tenant without a session means the user
+    // hit /dashboard unauthenticated. The ProtectedRoute wrapper would
+    // normally have bounced them already, but cover the case anyway.
+    if (!session) return <Navigate to="/" replace />;
+    return <CreateFamilyPanel session={session} />;
+  }
   return (
     <main className="flex min-h-full items-center justify-center px-4 py-10">
       <p
@@ -58,6 +81,156 @@ export function LegacyDashboardRedirect() {
       >
         Finding your family hub…
       </p>
+    </main>
+  );
+}
+
+interface CreateFamilyPanelProps {
+  session: Session;
+}
+
+function CreateFamilyPanel({ session }: CreateFamilyPanelProps) {
+  const navigate = useNavigate();
+  const [familyName, setFamilyName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [editingSlug, setEditingSlug] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // The slug input mirrors the family name until the user edits it
+  // directly. This matches the SignupPage UX so a user who's seen it
+  // before recognises the pattern.
+  const effectiveSlug = editingSlug ? slug : deriveSlug(familyName);
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fName = familyName.trim();
+    if (fName.length < 2) {
+      setError('Family name is required.');
+      return;
+    }
+    if (!SLUG_RE.test(effectiveSlug) || effectiveSlug.length < 2) {
+      setError('Family URL must be 2+ lowercase letters, digits or hyphens.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    const meta = (session.user.user_metadata ?? {}) as {
+      full_name?: string;
+      name?: string;
+    };
+    const fromMeta = (meta.full_name ?? meta.name ?? '').trim();
+    const fromEmail = session.user.email?.split('@')[0] ?? '';
+    const displayName =
+      fromMeta.length >= 2
+        ? fromMeta
+        : fromEmail.length > 0
+          ? fromEmail.charAt(0).toUpperCase() + fromEmail.slice(1)
+          : 'You';
+    try {
+      const res = await fetch(`${API_BASE}/api/public/tenant`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ familyName: fName, displayName, slug: effectiveSlug }),
+      });
+      if (res.status === 200 || res.status === 201) {
+        navigate(`/t/${effectiveSlug}/onboarding`, { replace: true });
+        return;
+      }
+      if (res.status === 409) {
+        setError('That family URL is taken — try a different one.');
+        setSubmitting(false);
+        setEditingSlug(true);
+        return;
+      }
+      if (res.status === 400) {
+        setError("Couldn't read your family details — please check the inputs.");
+        setSubmitting(false);
+        return;
+      }
+      setError(
+        `Couldn't create your family (server returned ${res.status}). Please try again or contact support.`,
+      );
+      setSubmitting(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error — try again.');
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="flex min-h-full items-center justify-center bg-kingdom-bg px-4 py-10">
+      <Card className="w-full max-w-md border-4 border-black bg-white p-8 shadow-neo-lg">
+        <h1 className="mb-2 font-display text-2xl text-kingdom-bg">Create your family hub</h1>
+        <p className="mb-6 font-body text-sm text-gray-600">
+          You&rsquo;re signed in, but don&rsquo;t have a family hub yet. Pick a name to get started.
+        </p>
+        <form
+          onSubmit={onSubmit}
+          className="space-y-4"
+          data-testid="no-tenant-create-form"
+          noValidate
+        >
+          <div>
+            <label className="mb-1 block font-body text-sm font-bold" htmlFor="no-tenant-family">
+              Family name
+            </label>
+            <input
+              id="no-tenant-family"
+              type="text"
+              value={familyName}
+              onChange={(e) => setFamilyName(e.target.value)}
+              required
+              minLength={2}
+              maxLength={60}
+              className="w-full rounded-md border-2 border-black px-3 py-2 font-body"
+              placeholder="The Khan family"
+              data-testid="no-tenant-family-name"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block font-body text-sm font-bold" htmlFor="no-tenant-slug">
+              Family URL
+            </label>
+            <div className="flex items-center gap-2 font-body text-sm">
+              <span className="text-gray-500">familyhub.app/t/</span>
+              <input
+                id="no-tenant-slug"
+                type="text"
+                value={effectiveSlug}
+                onChange={(e) => {
+                  setEditingSlug(true);
+                  setSlug(e.target.value);
+                }}
+                className="flex-1 rounded-md border-2 border-black px-3 py-2"
+                data-testid="no-tenant-slug"
+              />
+            </div>
+          </div>
+          {error !== null && (
+            <p
+              className="font-body text-sm text-red-600"
+              role="alert"
+              data-testid="no-tenant-error"
+            >
+              {error}
+            </p>
+          )}
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            fullWidth
+            disabled={submitting || familyName.trim().length < 2}
+            testId="no-tenant-submit"
+          >
+            {submitting ? 'Creating…' : 'Create my family'}
+          </Button>
+        </form>
+      </Card>
     </main>
   );
 }
