@@ -1,6 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
 
+// In CI the workflow exports DATABASE_URL with credentials matching the
+// `postgres:16-alpine` service (e.g. fh_test:fh_test@localhost). Inline
+// command-line env vars on a child_process spawn OVERRIDE the parent
+// process env, so previously hardcoding a no-credential URL here meant
+// the API process tried to connect anonymously and every DB-touching
+// endpoint failed in CI. Inherit DATABASE_URL when set; fall back to
+// the local-dev convention only when it isn't.
+const apiDatabaseUrl = process.env.DATABASE_URL ?? 'postgres://localhost:5432/familyhub_test';
+
 // Generates Playwright spec files from .feature files into .features-gen/.
 // Scenario names in features/ MUST mirror Gherkin scenarios in
 // documents/features/<slug>.md character-for-character (Jira AC traceability).
@@ -47,8 +56,7 @@ export default defineConfig({
   // cold pnpm + tsx + vite startup on a fresh CI runner.
   webServer: [
     {
-      command:
-        'NODE_ENV=test PORT=3001 LOG_LEVEL=error DATABASE_URL=postgres://localhost:5432/familyhub_test pnpm --filter @familyhub/api dev',
+      command: `NODE_ENV=test PORT=3001 LOG_LEVEL=error DATABASE_URL=${apiDatabaseUrl} pnpm --filter @familyhub/api dev`,
       url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
