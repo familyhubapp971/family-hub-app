@@ -1,6 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
 
+// See playwright.config.ts for the rationale: inline command-line env
+// vars override the parent process env on child_process spawn, so a
+// hardcoded no-credential DATABASE_URL here meant the API booted but
+// couldn't connect to the postgres service in CI. Inherit the URL
+// from the CI workflow's env when set.
+const apiDatabaseUrl = process.env.DATABASE_URL ?? 'postgres://localhost:5432/familyhub_test';
+
 // Critical-path subset for PR CI: only @critical-tagged scenarios,
 // chromium only, must finish under 5 min. Full matrix runs post-merge
 // to staging via the regular playwright.config.ts.
@@ -34,8 +41,7 @@ export default defineConfig({
   // Boot api + web; CI has no manual servers.
   webServer: [
     {
-      command:
-        'NODE_ENV=test PORT=3001 LOG_LEVEL=error DATABASE_URL=postgres://localhost:5432/familyhub_test pnpm --filter @familyhub/api dev',
+      command: `NODE_ENV=test PORT=3001 LOG_LEVEL=error DATABASE_URL=${apiDatabaseUrl} pnpm --filter @familyhub/api dev`,
       url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

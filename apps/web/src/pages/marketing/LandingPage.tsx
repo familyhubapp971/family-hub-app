@@ -12,12 +12,15 @@ type FetchState =
   | { status: 'error'; message: string };
 
 async function fetchHello(signal: AbortSignal): Promise<HelloResponse> {
-  const response = await fetch(`${API_BASE}/api/hello`, {
+  // The hello / health endpoints are mounted at the root of the API
+  // (`/hello`, `/health`) — not under `/api/`. Feature endpoints live
+  // under `/api/*` (see apps/api/src/app.ts).
+  const response = await fetch(`${API_BASE}/hello`, {
     signal,
     headers: { Accept: 'application/json' },
   });
   if (!response.ok) {
-    throw new Error(`/api/hello returned ${response.status}`);
+    throw new Error(`/hello returned ${response.status}`);
   }
   const data: unknown = await response.json();
   const parsed = helloResponseSchema.safeParse(data);
@@ -56,7 +59,7 @@ export function LandingPage() {
         </p>
 
         <Card className="mt-6 border-2 border-black p-4 shadow-neo-sm">
-          <h2 className="font-display text-lg">/api/hello response</h2>
+          <h2 className="font-display text-lg">/hello response</h2>
           <StateView state={state} />
         </Card>
 

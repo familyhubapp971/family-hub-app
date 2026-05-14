@@ -28,7 +28,7 @@ describe('<LandingPage />', () => {
   }
 
   it('renders the fetched /hello payload', async () => {
-    global.fetch = vi.fn().mockResolvedValue(
+    const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
           message: 'hello from @familyhub/api',
@@ -36,7 +36,8 @@ describe('<LandingPage />', () => {
         }),
         { status: 200, headers: { 'content-type': 'application/json' } },
       ),
-    ) as unknown as typeof global.fetch;
+    );
+    global.fetch = fetchMock as unknown as typeof global.fetch;
 
     renderPage();
 
@@ -46,6 +47,14 @@ describe('<LandingPage />', () => {
       expect(screen.getByTestId('hello-message')).toHaveTextContent('hello from @familyhub/api');
     });
     expect(screen.getByTestId('hello-timestamp')).toHaveTextContent('2025-01-01T00:00:00.000Z');
+
+    // Regression: the hello endpoint is mounted at /hello on the API
+    // (not /api/hello). Asserting the URL stops a future drift between
+    // web fetch and API mount point that would silently 404 in CI.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [calledUrl] = fetchMock.mock.calls[0]!;
+    expect(String(calledUrl)).toMatch(/\/hello$/);
+    expect(String(calledUrl)).not.toMatch(/\/api\/hello$/);
   });
 
   it('shows an error card when the response shape is invalid', async () => {
