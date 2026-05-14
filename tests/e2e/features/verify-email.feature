@@ -8,13 +8,13 @@ Feature: Verify-email page
 
   @critical
   Scenario: Verify-email page renders with the email from the query param
-    Given I open the page "/verify-email?email=sarah@example.com"
+    Given I open the page "/verify-email?email=sarah@gmail.com"
     Then I see the verify-email heading
-    And I see the email "sarah@example.com" on the verify-email page
+    And I see the email "sarah@gmail.com" on the verify-email page
     And the Open Gmail link points at mail.google.com
 
   @critical
   Scenario: Back link returns to the signup page
-    Given I open the page "/verify-email?email=sarah@example.com"
+    Given I open the page "/verify-email?email=sarah@gmail.com"
     When I click the verify-email back link
     Then I am on the signup page
