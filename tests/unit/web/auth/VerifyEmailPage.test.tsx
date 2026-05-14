@@ -60,14 +60,34 @@ describe('<VerifyEmailPage />', () => {
     expect(resend.disabled).toBe(true);
   });
 
-  it('Open Gmail link points at mail.google.com and opens in a new tab', () => {
-    sessionStorage.setItem('fh.signup.email', 'sarah@example.com');
+  it('shows the Gmail webmail link for a gmail.com address', () => {
+    sessionStorage.setItem('fh.signup.email', 'sarah@gmail.com');
     renderAt('/verify-email');
-    const link = screen.getByTestId('verify-email-open-gmail') as HTMLAnchorElement;
+    const link = screen.getByTestId('verify-email-open-mailbox') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('https://mail.google.com/');
+    expect(link.textContent).toContain('Open Gmail');
     expect(link.getAttribute('target')).toBe('_blank');
     // Security — `target=_blank` without rel=noopener can be exploited.
     expect(link.getAttribute('rel')).toContain('noopener');
+  });
+
+  it('shows the Outlook webmail link for an outlook.com address (regression: hardcoded Gmail link)', () => {
+    sessionStorage.setItem('fh.signup.email', 'qualicion@outlook.com');
+    renderAt('/verify-email');
+    const link = screen.getByTestId('verify-email-open-mailbox') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('https://outlook.live.com/mail/');
+    expect(link.textContent).toContain('Open Outlook');
+  });
+
+  it('hides the open-mailbox button when the email domain is unknown', () => {
+    sessionStorage.setItem('fh.signup.email', 'sarah@acme-corp.com');
+    renderAt('/verify-email');
+    expect(screen.queryByTestId('verify-email-open-mailbox')).toBeNull();
+  });
+
+  it('hides the open-mailbox button when no email is known', () => {
+    renderAt('/verify-email');
+    expect(screen.queryByTestId('verify-email-open-mailbox')).toBeNull();
   });
 
   it('Back link routes to /signup', () => {

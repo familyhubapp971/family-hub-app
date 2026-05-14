@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { useAuth } from '../../lib/auth-context';
 import { AuthLayout } from './AuthLayout';
 import { API_BASE } from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 
 // Slug syntax — must mirror the canonical regex in
 // `apps/api/src/middleware/resolve-tenant.ts` (SLUG_RE) and the
@@ -88,9 +89,12 @@ type CallbackSession = Pick<Session, 'access_token'> & {
 //   3. On 409 — slug got taken by someone else mid-flight; show an
 //      error and route to /signup so the user can pick another.
 //   4. With no intent — legacy /dashboard fallback (login flow).
+type ExchangeState = 'pending' | 'done' | 'error';
+
 export function AuthCallbackPage() {
   const navigate = useNavigate();
   const { loading, session } = useAuth();
+  const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<CallbackStatus>({ kind: 'idle' });
   // qa-expert FHS-259 #1 — the in-flight guard MUST be a ref, not
   // useState. setStatus is batched, so a fast TOKEN_REFRESHED event
@@ -99,7 +103,61 @@ export function AuthCallbackPage() {
   // synchronously and survives the cleanup boundary.
   const tenantPostInFlightRef = useRef(false);
 
+  // PKCE callback handling — Supabase's JS client default flow puts
+  // the auth code in `?code=` rather than the URL hash. With
+  // `detectSessionInUrl: true` the SDK does start the exchange
+  // automatically on import, but it resolves on a different microtask
+  // than AuthProvider's `getSession()` — the latter can return null
+  // first, flip loading=false, and bounce the user to /login before
+  // the session lands via onAuthStateChange. Claim the code
+  // explicitly here so the session is guaranteed before the read.
+  const exchangeCodeRef = useRef<string | null>(searchParams.get('code'));
+  const [exchangeState, setExchangeState] = useState<ExchangeState>(() =>
+    exchangeCodeRef.current ? 'pending' : 'done',
+  );
+
   useEffect(() => {
+    if (exchangeState !== 'pending') return;
+    const code = exchangeCodeRef.current;
+    if (!code) {
+      setExchangeState('done');
+      return;
+    }
+    let cancelled = false;
+    void supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+      if (cancelled) return;
+      if (error) {
+        setStatus({
+          kind: 'error',
+          message: 'Your sign-in link has expired or already been used. Request a new one.',
+        });
+        setExchangeState('error');
+        return;
+      }
+      // Strip the one-shot PKCE params from the URL so a refresh or
+      // share doesn't retry (a second exchange of the same code fails).
+      if (typeof window !== 'undefined' && window.history?.replaceState) {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('code');
+          url.searchParams.delete('state');
+          window.history.replaceState({}, '', url.toString());
+        } catch {
+          // History API unavailable — non-fatal, the session lands anyway.
+        }
+      }
+      setExchangeState('done');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [exchangeState]);
+
+  useEffect(() => {
+    // Block until the PKCE exchange resolves so we don't read a stale
+    // (still-null) session and bounce the user to /login.
+    if (exchangeState === 'pending') return;
+    if (exchangeState === 'error') return;
     if (loading) return;
     if (!session) {
       // No session means OAuth failed or was cancelled. Bounce to login
@@ -191,7 +249,7 @@ export function AuthCallbackPage() {
     return () => {
       cancelled = true;
     };
-  }, [loading, session, navigate]);
+  }, [exchangeState, loading, session, navigate]);
 
   return (
     <AuthLayout title="Signing you in…">

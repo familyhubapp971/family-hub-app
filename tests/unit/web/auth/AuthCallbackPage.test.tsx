@@ -19,6 +19,18 @@ vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 
+// Stub Supabase so we can assert exchangeCodeForSession is called and
+// drive its result. The PKCE callback path (?code=...) hits this; the
+// older tests below (no ?code=) never call it.
+const exchangeCodeForSession = vi.fn();
+vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      exchangeCodeForSession: (...args: unknown[]) => exchangeCodeForSession(...args),
+    },
+  },
+}));
+
 function renderAt(initial: string) {
   return render(
     <MemoryRouter initialEntries={[initial]}>
@@ -44,6 +56,10 @@ describe('FHS-249 + FHS-259 — AuthCallbackPage', () => {
     authState.loading = false;
     authState.session = null;
     fetchMock.mockReset();
+    exchangeCodeForSession.mockReset();
+    // Default: no PKCE exchange is in flight (URL has no ?code=), so
+    // the mock returns null on the unlikely path it's invoked.
+    exchangeCodeForSession.mockResolvedValue({ error: null });
     vi.stubGlobal('fetch', fetchMock);
   });
 
@@ -221,5 +237,66 @@ describe('FHS-249 + FHS-259 — AuthCallbackPage', () => {
     renderAt('/auth/callback');
     await waitFor(() => expect(screen.getByTestId('route-marker').textContent).toBe('login'));
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // PKCE callback race fix — when the magic link lands the user at
+  // /auth/callback?code=<pkce>, the SDK's automatic
+  // detectSessionInUrl racing with AuthProvider.getSession() can
+  // cause useAuth() to flip loading=false / session=null first and
+  // bounce the user to /login before the session is exchanged.
+  // The fix: claim the code explicitly, wait for the exchange to
+  // resolve, then proceed.
+  describe('PKCE callback (?code=…) race fix', () => {
+    it('calls supabase.auth.exchangeCodeForSession before reading the session', async () => {
+      // Session is initially null (the SDK is still mid-exchange) but
+      // we'd otherwise bounce to /login. Pre-fix, the test would
+      // assert "login" — post-fix it must NOT bounce.
+      authState.session = null;
+      let resolveExchange: (v: { error: null }) => void = () => {};
+      exchangeCodeForSession.mockImplementation(
+        () =>
+          new Promise((res) => {
+            resolveExchange = res;
+          }),
+      );
+      renderAt('/auth/callback?code=pkce-abc&state=xyz');
+
+      // The exchange is awaited — no bounce-to-login while pending.
+      await waitFor(() => expect(exchangeCodeForSession).toHaveBeenCalledWith('pkce-abc'));
+      expect(screen.queryByTestId('route-marker')).toBeNull();
+
+      // Once the exchange resolves, the existing flow takes over.
+      // With no signup intent stashed the legacy login fallback fires.
+      authState.session = {
+        access_token: 'jwt',
+        user: { id: 'u1', email: 'sarah@example.com' },
+      };
+      resolveExchange({ error: null });
+      await waitFor(() =>
+        expect(screen.getByTestId('route-marker').textContent).toBe('legacy-dashboard'),
+      );
+    });
+
+    it('shows an inline error when the exchange fails (expired or already-used link)', async () => {
+      exchangeCodeForSession.mockResolvedValueOnce({
+        error: { message: 'invalid_grant' },
+      });
+      renderAt('/auth/callback?code=stale-code');
+
+      await waitFor(() => expect(screen.getByTestId('auth-callback-error')).toBeInTheDocument());
+      expect(screen.getByTestId('auth-callback-error').textContent).toMatch(/expired or already/i);
+      // Must NOT bounce on a failed exchange — the user needs to read
+      // the error and request a fresh link.
+      expect(screen.queryByTestId('route-marker')).toBeNull();
+    });
+
+    it('does NOT call exchangeCodeForSession when there is no ?code= in the URL', async () => {
+      authState.session = { access_token: 'jwt', user: { id: 'u1', email: 'sarah@example.com' } };
+      renderAt('/auth/callback');
+      await waitFor(() =>
+        expect(screen.getByTestId('route-marker').textContent).toBe('legacy-dashboard'),
+      );
+      expect(exchangeCodeForSession).not.toHaveBeenCalled();
+    });
   });
 });

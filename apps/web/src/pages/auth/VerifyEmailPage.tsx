@@ -4,6 +4,7 @@ import { Mail } from 'lucide-react';
 import { z } from 'zod';
 import { Button, Card } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
+import { webmailFor } from '../../lib/webmail';
 
 // Validate the email source BEFORE we render it or hand it to Supabase.
 // Without this, a crafted /verify-email?email=<garbage> request would
@@ -128,17 +129,27 @@ export function VerifyEmailPage() {
           )}
         </p>
 
-        <a
-          href="https://mail.google.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mb-6 w-full"
-          data-testid="verify-email-open-gmail"
-        >
-          <Button variant="primary" size="lg" fullWidth>
-            Open Gmail
-          </Button>
-        </a>
+        {(() => {
+          // Pick the webmail label + URL from the email's domain. Unknown
+          // / workplace domains return url=null → we hide the button
+          // entirely rather than ship a wrong link (the original "Open
+          // Gmail" hard-coded URL was the bug an Outlook user hit).
+          const mailbox = webmailFor(email);
+          if (!mailbox.url) return null;
+          return (
+            <a
+              href={mailbox.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mb-6 w-full"
+              data-testid="verify-email-open-mailbox"
+            >
+              <Button variant="primary" size="lg" fullWidth>
+                {mailbox.label}
+              </Button>
+            </a>
+          );
+        })()}
 
         <div className="flex flex-col items-center gap-3 text-sm font-bold">
           <button
