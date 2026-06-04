@@ -18,7 +18,7 @@
         /* Brand surface (page background) */
         --bg: oklch(34% 0.16 305); /* kingdom purple #3d1065 */
         --bg-glow: oklch(48% 0.22 305); /* radial glow centre */
-        /* Paper surfaces (cards on the brand) — tinted off-white, never pure */
+        /* Paper surfaces (cards on the brand) , tinted off-white, never pure */
         --paper: oklch(98% 0.004 305);
         --paper-2: oklch(96% 0.006 305);
         /* Ink */
@@ -83,7 +83,7 @@
         z-index: 1;
       }
 
-      /* ---------- Masthead: single baseline, no slab ---------- */
+      /* ----- Masthead: single baseline, no slab ----- */
       header {
         display: flex;
         align-items: baseline;
@@ -148,7 +148,7 @@
         color: oklch(100% 0 0);
       }
 
-      /* ---------- Pitch (sits on the purple page) ---------- */
+      /* ----- Pitch (sits on the purple page) ----- */
       .pitch {
         margin: 0 0 10px 0;
         font-size: 10.5px;
@@ -176,7 +176,7 @@
         color: var(--accent);
       }
 
-      /* ---------- 9-cell grid ---------- */
+      /* ----- 9-cell grid ----- */
       .grid {
         display: grid;
         grid-template-columns: 1fr 1fr 1.25fr 1fr 1fr;
@@ -204,7 +204,7 @@
         background: var(--accent-tint);
         border-color: oklch(78% 0.08 96);
       }
-      /* Recurring financial-literacy thread — subtle, repeated, never dominant */
+      /* Recurring financial-literacy thread , subtle, repeated, never dominant */
       .fl-thread {
         font-weight: 700;
         color: var(--kingdom);
@@ -237,6 +237,20 @@
         list-style: none;
         margin: 0;
         padding: 0;
+      }
+      /* Sub-header inside the Key Partners cell splitting active vs potential
+         relationships. Tiny, all-caps, kingdom-purple — sits between groups. */
+      .cell .partners-group {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 8px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        margin: 5px 0 3px 0;
+      }
+      .cell .partners-group:first-of-type {
+        margin-top: 0;
       }
       .cell li {
         font-size: 9.5px;
@@ -271,7 +285,7 @@
         font-weight: 800;
       }
 
-      /* ---------- Compact comparison + price tables ---------- */
+      /* ----- Compact comparison + price tables ----- */
       table {
         border-collapse: collapse;
         width: 100%;
@@ -308,7 +322,7 @@
         border-top: 1.5px solid var(--ink);
       }
 
-      /* ---------- Areas ---------- */
+      /* ----- Areas ----- */
       .partners {
         grid-area: partners;
       }
@@ -367,11 +381,12 @@
         <div class="brand"><span class="star">★</span>FamilyHub</div>
         <div class="title">
           <h1>Business Model Canvas</h1>
-          <div class="tagline">The operating system for modern family life</div>
+          <div class="tagline">An all-in-one platform for modern family life</div>
         </div>
         <div class="meta">
           <strong>Babatunde Oduniyi</strong><br />
           <strong>Sandra Mottoh</strong><br />
+          <strong>Jumi Shonubi</strong><br />
           co-founders<br />
           24-month target: $720k+ annual revenue
         </div>
@@ -379,32 +394,41 @@
 
       <p class="pitch">
         <span class="pin">★</span>
-        FamilyHub is the operating system for modern family life. Four pillars no single competitor
-        combines: family admin (calendars, meals, assignments), beneficial screen time (children
-        earn stickers by learning),
+        FamilyHub is an all-in-one family platform helping modern households build stronger
+        routines, healthier digital habits, and long-term financial resilience. The platform
+        combines family coordination, beneficial screen time, and
         <span class="fl-thread"
-          >a sticker economy in which children
-          <strong>earn &middot; save &middot; invest &middot; spend</strong> from early childhood
-          &mdash; financial literacy embedded in everyday family life</span
-        >, and cultural flexibility (Ramadan journal, mosque integration, extended-family roles).
-        Designed for households historically underserved by mainstream family-tech.
+          >embedded financial literacy through a gamified reward economy where children learn to
+          <strong>earn &middot; save &middot; invest &middot; spend</strong> through everyday
+          family life</span
+        >. Designed to be inclusive , built around the needs of households historically
+        underserved by family-tech, with internationally-relevant experiences such as the Ramadan
+        journal.
       </p>
 
       <div class="grid">
         <div class="cell partners">
           <h2>Key Partners <span class="n">08</span></h2>
+          <p class="partners-group">Active</p>
           <ul>
             <li><strong>Identity and secure database</strong> (Supabase)</li>
             <li><strong>Payments and subscription billing</strong> (Stripe)</li>
             <li><strong>Cloud hosting</strong> (Railway)</li>
             <li><strong>AI personalisation engines</strong> (OpenAI, Anthropic)</li>
             <li><strong>Reliability and product analytics</strong> (Sentry, PostHog)</li>
+          </ul>
+          <p class="partners-group">Potential</p>
+          <ul>
             <li>
-              <strong>Islamic schools, mosques, homeschool co-ops</strong>: community distribution
-              partners
+              <strong>UAE government partners</strong>: Early Childhood Authority, ADEK,
+              Department of Community Development (Abu Dhabi), Family Development Foundation
             </li>
             <li>
               <strong>Standard Chartered Foundation</strong>: non-dilutive capital and ecosystem
+            </li>
+            <li>
+              <strong>Faith-based schools, places of worship, homeschool co-ops</strong>:
+              community distribution partners
             </li>
             <li><strong>Apple and Google app stores</strong>: native mobile distribution</li>
           </ul>
@@ -418,7 +442,7 @@
             <li>Family acquisition through search, paid social, and community partners</li>
             <li>Customer support and family success programmes</li>
             <li>Operating the per-child personalisation engine</li>
-            <li>Partnership development (schools, mosques, co-ops)</li>
+            <li>Partnership development (faith-based schools, places of worship, co-ops)</li>
             <li>Finance, tax, and accounting operations</li>
           </ul>
         </div>
@@ -427,7 +451,7 @@
           <h2>Key Resources <span class="n">06</span></h2>
           <ul>
             <li><strong>Secure cloud platform</strong>, built and operating today</li>
-            <li><strong>Per-child learning data</strong> &mdash; our competitive moat</li>
+            <li><strong>Per-child learning data</strong> , our competitive moat</li>
             <li>Proprietary curriculum content</li>
             <li>Brand and design system</li>
             <li>Founder team, AI-augmented</li>
@@ -452,8 +476,8 @@
               family life.
             </li>
             <li>
-              <strong>Cultural flexibility</strong>: Ramadan journal, mosque/church integration,
-              extended-family roles.
+              <strong>Cultural and faith flexibility</strong>: Ramadan journal, multi-faith
+              calendar support, place-of-worship integration, extended-family roles.
             </li>
           </ul>
           <table>
@@ -537,14 +561,17 @@
           <h2>Channels <span class="n">03</span></h2>
           <ul>
             <li>
-              <strong>Search and content</strong> (e.g. &ldquo;Muslim family planner&rdquo;,
-              &ldquo;homeschool app&rdquo;)
+              <strong>Search and content</strong> (e.g. &ldquo;family planner app&rdquo;,
+              &ldquo;homeschool app&rdquo;, &ldquo;multi-faith family planner&rdquo;)
             </li>
             <li><strong>Product Hunt</strong> launch</li>
             <li>
               <strong>Paid social campaigns</strong> on Meta and TikTok, focused on UAE / Saudi / UK
             </li>
-            <li><strong>Community partnerships</strong> (Islamic schools, mosques, co-ops)</li>
+            <li>
+              <strong>Community partnerships</strong> (faith-based schools, places of worship,
+              co-ops)
+            </li>
             <li>
               <strong>Mobile distribution</strong>: web app today, native iOS and Android upcoming
             </li>
@@ -565,12 +592,13 @@
               juggling multiple apps
             </li>
             <li>
-              <strong>Underserved consumer</strong>: Muslim, multi-faith, multi-generational,
-              blended families
+              <strong>Underserved consumer</strong>: multi-faith, multi-generational, blended,
+              and large households
             </li>
             <li>
-              <strong>Organisations (branded deployments)</strong>: Islamic schools, mosques,
-              churches, homeschool co-ops, NGOs (20 to 500+ families)
+              <strong>Organisations (branded deployments)</strong>: faith-based schools, places of
+              worship, homeschool co-ops, NGOs, government-affiliated family programmes (20 to
+              500+ families)
             </li>
           </ul>
           <p class="note">
@@ -628,7 +656,7 @@
               <tr>
                 <td>Domain and certificates</td>
                 <td>Fixed</td>
-                <td>familyhub.app, all subdomains</td>
+                <td>Custom domain and wildcard SSL</td>
               </tr>
             </tbody>
           </table>
@@ -700,13 +728,13 @@
           <p class="note">
             <strong>24-month target.</strong>
             5,000+ paid families, 30+ partner organisations, $720k+ annual recurring revenue. An
-            8&ndash;12× revenue multiple implies a $5.7M&ndash;$8.6M acquisition value range.
+            8-12× revenue multiple implies a $5.7M-$8.6M acquisition value range.
           </p>
         </div>
       </div>
 
       <footer>
-        <span><strong>★ FamilyHub</strong> · familyhub.app</span>
+        <span><strong>★ FamilyHub</strong></span>
         <span>Supporting documents available on request.</span>
       </footer>
     </div>
