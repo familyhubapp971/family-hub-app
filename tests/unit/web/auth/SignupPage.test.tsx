@@ -292,14 +292,16 @@ describe('<SignupPage />', () => {
       expect(submit.textContent).toMatch(/checking url/i);
     });
 
-    it('keeps submit disabled in the idle state (no slug entered yet)', () => {
+    it('leaves submit enabled in the idle state — Zod catches empty fields on submit', () => {
       renderPage();
-      // No typing — slug derives to the placeholder "family", which the
-      // effect treats as idle (no check, no UI indicator). Submit must
-      // stay disabled until the user types a real family name AND the
-      // server confirms the slug is available.
+      // Idle covers both "user hasn't typed yet" AND "availability
+      // fetch failed silently" (staging Hobby auto-purge — see the
+      // FHS-205 follow-up test below). We no longer block submit on
+      // idle. With an empty form, clicking submit surfaces the Zod
+      // validation error inline instead of leaving the user staring
+      // at a permanently-disabled button.
       const submit = screen.getByTestId('signup-submit') as HTMLButtonElement;
-      expect(submit.disabled).toBe(true);
+      expect(submit.disabled).toBe(false);
     });
 
     it('ignores stale fetch responses that resolve after a newer keystroke', async () => {
@@ -494,6 +496,27 @@ describe('<SignupPage />', () => {
         familyName: 'The Khan Family',
         slug: 'khans-house',
       });
+    });
+
+    // Regression: when the live availability check fails silently
+    // (staging Hobby tier auto-purges the API on idle), the slug
+    // status falls back to `idle`. The button used to gate on
+    // `!== 'available'`, which left users staring at a permanently-
+    // disabled "Continue with email" button with no recovery path.
+    // The gate now blocks only on `checking` / `taken`; the server
+    // re-validates the slug at insert time.
+    it('keeps submit enabled when the availability fetch fails (transient outage)', async () => {
+      fetchMock.mockReturnValue(Promise.reject(new TypeError('Failed to fetch')));
+      renderPage();
+      typeFamily('The Khan Family');
+      // Pre-debounce: spinner is up, submit blocked by `checking`.
+      expect((screen.getByTestId('signup-submit') as HTMLButtonElement).disabled).toBe(true);
+      await advanceAndFlush(300);
+      // After the failed fetch, status drops back to `idle`. Submit
+      // must NOT stay disabled — the user can still try, and the
+      // server will reject if the slug is actually taken.
+      expect(screen.queryByTestId('signup-slug-checking')).toBeNull();
+      expect((screen.getByTestId('signup-submit') as HTMLButtonElement).disabled).toBe(false);
     });
   });
 });
