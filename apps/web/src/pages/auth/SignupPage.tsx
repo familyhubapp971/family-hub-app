@@ -304,11 +304,17 @@ export function SignupPage() {
   }
 
   const submitting = status.kind === 'submitting' || status.kind === 'submitting-google';
-  // AC5: submit is enabled only once the slug check resolves to
-  // `available`. Anything else (idle = no slug yet / placeholder,
-  // checking = in flight, taken = clash) keeps the button greyed out
-  // and gives the user a clear next action via the button label.
-  const slugBlocksSubmit = slugStatus.kind !== 'available';
+  // Block submit only on the two states where we KNOW the slug is
+  // bad to send: an in-flight check (avoid racing two POSTs) or a
+  // server-confirmed clash. `idle` covers both pre-typing and a
+  // silently-failed availability fetch (staging Hobby tier idles out
+  // and drops the API for hours at a time — see FHS-205 follow-up).
+  // Letting submit through on `idle` means a transient outage no
+  // longer strands the user on a permanently-disabled button: Zod
+  // validation catches genuinely empty fields, and POST /api/public/
+  // tenant rechecks the slug at insert time so a real clash still
+  // surfaces in the magic-link callback.
+  const slugBlocksSubmit = slugStatus.kind === 'checking' || slugStatus.kind === 'taken';
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body md:flex-row md:bg-white">
