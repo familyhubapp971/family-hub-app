@@ -103,8 +103,8 @@ describe('<LoginPage />', () => {
     expect(sessionStorage.getItem('fh.signup.email')).toBe('sarah@example.com');
   });
 
-  it('renders the Supabase error inline when signInWithOtp fails', async () => {
-    signInWithOtp.mockResolvedValue({ error: { message: 'rate limit' } });
+  it('rewrites the email rate-limit error to a friendly next-step message', async () => {
+    signInWithOtp.mockResolvedValue({ error: { message: 'email rate limit exceeded' } });
     renderPage();
     fireEvent.change(screen.getByTestId('login-email'), {
       target: { value: 'sarah@example.com' },
@@ -112,7 +112,9 @@ describe('<LoginPage />', () => {
     fireEvent.submit(screen.getByTestId('login-form'));
     await Promise.resolve();
     await Promise.resolve();
-    expect(screen.getByTestId('login-error').textContent).toContain('rate limit');
+    const text = screen.getByTestId('login-error').textContent ?? '';
+    expect(text).toMatch(/too many sign-in links/i);
+    expect(text).toMatch(/google/i);
     expect(screen.queryByTestId('route-marker')).toBeNull();
   });
 
