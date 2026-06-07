@@ -1,8 +1,9 @@
 import { type Page } from '@playwright/test';
 
-// Page object for the public Signup page (`/signup`). MP redesign per
-// FHS-26: split-screen, magic-link only, no password. Step files MUST
-// go through these methods — no raw page.locator() per CLAUDE.md.
+// Page object for the public Signup page (`/signup`). Auth-first since
+// the duplicate-family-name fix: email + Google only. Family name +
+// slug locators moved to CreateFamilyPanel (page object lives where
+// dashboard-redirect tests need it).
 export class SignupPage {
   constructor(private readonly page: Page) {}
 
@@ -11,47 +12,15 @@ export class SignupPage {
   }
 
   heading() {
-    return this.page.getByRole('heading', { name: /create your family/i });
+    return this.page.getByRole('heading', { name: /get started/i });
   }
 
   socialProofHeading() {
     return this.page.getByRole('heading', { name: /2,400\+ families/i });
   }
 
-  familyNameInput() {
-    return this.page.getByTestId('signup-family-name');
-  }
-
-  displayNameInput() {
-    return this.page.getByTestId('signup-display-name');
-  }
-
   emailInput() {
     return this.page.getByTestId('signup-email');
-  }
-
-  slugPreview() {
-    return this.page.getByTestId('signup-slug-preview');
-  }
-
-  slugAvailable() {
-    return this.page.getByTestId('signup-slug-available');
-  }
-
-  slugTaken() {
-    return this.page.getByTestId('signup-slug-taken');
-  }
-
-  slugSuggestions() {
-    return this.page.getByTestId('signup-slug-suggestions');
-  }
-
-  changeSlugLink() {
-    return this.page.getByTestId('signup-slug-change');
-  }
-
-  slugInput() {
-    return this.page.getByTestId('signup-slug-input');
   }
 
   submitButton() {
