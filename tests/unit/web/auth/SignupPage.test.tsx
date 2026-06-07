@@ -103,15 +103,29 @@ describe('<SignupPage />', () => {
     );
   });
 
-  it('surfaces a Supabase error message to the user', async () => {
-    signInWithOtp.mockResolvedValue({ error: { message: 'rate limited' } });
+  it('rewrites the email rate-limit error to a friendly next-step message', async () => {
+    signInWithOtp.mockResolvedValue({ error: { message: 'email rate limit exceeded' } });
+    renderPage();
+    fireEvent.change(screen.getByTestId('signup-email'), {
+      target: { value: 'sarah@example.com' },
+    });
+    fireEvent.submit(screen.getByTestId('signup-form'));
+    await waitFor(() => {
+      const text = screen.getByTestId('signup-error').textContent ?? '';
+      expect(text).toMatch(/too many sign-in links/i);
+      expect(text).toMatch(/google/i);
+    });
+  });
+
+  it('passes through an unknown Supabase error unchanged', async () => {
+    signInWithOtp.mockResolvedValue({ error: { message: 'Some brand-new Supabase failure' } });
     renderPage();
     fireEvent.change(screen.getByTestId('signup-email'), {
       target: { value: 'sarah@example.com' },
     });
     fireEvent.submit(screen.getByTestId('signup-form'));
     await waitFor(() =>
-      expect(screen.getByTestId('signup-error').textContent).toMatch(/rate limited/i),
+      expect(screen.getByTestId('signup-error').textContent).toMatch(/brand-new supabase failure/i),
     );
   });
 });

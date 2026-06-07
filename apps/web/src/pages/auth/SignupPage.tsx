@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { z } from 'zod';
 import { Button, Input } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
+import { friendlyAuthErrorMessage } from '../../lib/auth-errors';
 
 // SignupPage — auth-first onboarding. The signup form collects only
 // the email address (or kicks off Google OAuth); family name + slug
@@ -66,7 +67,7 @@ export function SignupPage() {
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) {
-      setStatus({ kind: 'error', message: error.message });
+      setStatus({ kind: 'error', message: friendlyAuthErrorMessage(error.message) });
       return;
     }
     // Stash the email so /verify-email can render "Check your inbox at <email>".
@@ -81,7 +82,7 @@ export function SignupPage() {
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) {
-      setStatus({ kind: 'error', message: error.message });
+      setStatus({ kind: 'error', message: friendlyAuthErrorMessage(error.message) });
     }
     // signInWithOAuth navigates the browser away on success — no
     // post-call handling needed.

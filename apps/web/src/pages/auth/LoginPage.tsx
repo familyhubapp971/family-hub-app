@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button, Input, Label } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
+import { friendlyAuthErrorMessage } from '../../lib/auth-errors';
 import { AuthLayout } from './AuthLayout';
 
 // LoginPage — split parent / kid auth (FHS-237).
@@ -116,7 +117,7 @@ export function LoginPage() {
       },
     });
     if (error) {
-      setStatus({ kind: 'error', message: error.message });
+      setStatus({ kind: 'error', message: friendlyAuthErrorMessage(error.message) });
       return;
     }
     // Stash the email so /verify-email can render "Check your inbox at
@@ -132,7 +133,7 @@ export function LoginPage() {
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) {
-      setStatus({ kind: 'error', message: error.message });
+      setStatus({ kind: 'error', message: friendlyAuthErrorMessage(error.message) });
     }
     // signInWithOAuth navigates the browser away on success — no
     // post-call handling needed here.
