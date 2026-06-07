@@ -1,57 +1,20 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, Loader2, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { z } from 'zod';
 import { Button, Input } from '@familyhub/ui';
-import { API_BASE } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 
-// SignupPage — port of Magic Patterns design (kudjspxd3xxroueg5jw11o
-// pages/Register.tsx) per FHS-26. Split-screen: social proof on the
-// left, form on the right. No password — magic link only (ADR 0011).
-// Backend wiring (POST tenant + slug-available check) lands in
-// FHS-25 + FHS-27; this PR is the page UI + magic-link send.
+// SignupPage — auth-first onboarding. The signup form collects only
+// the email address (or kicks off Google OAuth); family name + slug
+// are captured post-auth on the `CreateFamilyPanel` rendered by
+// `LegacyDashboardRedirect` when a freshly-authenticated user has no
+// tenant yet. Single source of truth for family details, no
+// sessionStorage intent dance, and the magic-link click survives
+// being opened in a different tab/browser/device.
 
 // Brand-faithful Google "G" mark. Inlined SVG so we don't pull a
-// brand-icon dependency for one logo. Source: Google identity
-// guidelines (4-colour Goog­le G).
-// Inline indicator next to the slug preview text. Shows a spinner while
-// checking, a green check when available, and a red X with screen-reader
-// text when taken (suggestions render in a separate row below).
-function SlugStatusIndicator({ status }: { status: SlugStatus }) {
-  if (status.kind === 'checking') {
-    return (
-      <Loader2
-        className="animate-spin text-gray-400"
-        size={14}
-        aria-label="Checking availability"
-        data-testid="signup-slug-checking"
-      />
-    );
-  }
-  if (status.kind === 'available') {
-    return (
-      <Check
-        className="text-green-600"
-        size={14}
-        aria-label="URL is available"
-        data-testid="signup-slug-available"
-      />
-    );
-  }
-  if (status.kind === 'taken') {
-    return (
-      <X
-        className="text-red-500"
-        size={14}
-        aria-label="URL is taken"
-        data-testid="signup-slug-taken"
-      />
-    );
-  }
-  return null;
-}
-
+// brand-icon dependency for one logo.
 function GoogleLogo() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -76,148 +39,28 @@ function GoogleLogo() {
 }
 
 const signupSchema = z.object({
-  familyName: z.string().min(2, 'family name is required'),
-  displayName: z.string().min(2, 'your name is required'),
   email: z.string().email('enter a valid email'),
 });
 
-// FHS-256 / FHS-259 — Google OAuth pre-flight gate. Only `familyName`
-// is required upfront because Google provides display name + email
-// post-callback (AuthCallbackPage backfills display name from
-// `user_metadata.full_name`). If the user typed display name and
-// email anyway, those win — see SignupPage.onGoogle below.
-const googleStartSchema = signupSchema.pick({ familyName: true });
-
-// Auto-derive a DNS-safe slug from the family name. Capped at 30 chars
-// (Supabase's overall family-id limit). Server-side validation in FHS-25
-// is the source of truth — this is just the live preview.
-function deriveSlug(familyName: string): string {
-  return (
-    familyName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-      .slice(0, 30) || 'family'
-  );
-}
-
 type Status =
   | { kind: 'idle' }
+  | { kind: 'error'; message: string }
   | { kind: 'submitting' }
-  | { kind: 'submitting-google' }
-  | { kind: 'error'; message: string };
-
-type SlugStatus =
-  | { kind: 'idle' }
-  | { kind: 'checking' }
-  | { kind: 'available' }
-  | { kind: 'taken'; suggestions: string[] };
+  | { kind: 'submitting-google' };
 
 export function SignupPage() {
   const navigate = useNavigate();
-  const [familyName, setFamilyName] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
-  // `customSlug` is null when the slug should auto-track family name. The
-  // user flips it on by clicking "Change" or picking a suggestion; "Use
-  // auto" resets it back to null.
-  const [customSlug, setCustomSlug] = useState<string | null>(null);
-  const [editingSlug, setEditingSlug] = useState(false);
-  const slugInputRef = useRef<HTMLInputElement | null>(null);
-  // Focus the slug input the moment we flip into edit mode. Doing this
-  // via ref + effect (rather than autoFocus) avoids the lint rule that
-  // bans autoFocus for accessibility reasons.
-  useEffect(() => {
-    if (editingSlug) slugInputRef.current?.focus();
-  }, [editingSlug]);
-  const slug = useMemo(() => customSlug ?? deriveSlug(familyName), [customSlug, familyName]);
-  const [slugStatus, setSlugStatus] = useState<SlugStatus>({ kind: 'idle' });
-
-  // FHS-258 — clear a stale validation error the moment the user keeps
-  // editing. Without this, "family name is required" sticks on screen
-  // even after the user has typed a real name. Functional updater keeps
-  // submitting / submitting-google states untouched (don't drop a
-  // genuine in-flight indicator).
-  useEffect(() => {
-    setStatus((s) => (s.kind === 'error' ? { kind: 'idle' } : s));
-  }, [familyName, displayName, email, slug]);
-
-  // Live debounced slug-availability check (FHS-225). Hits FHS-27's
-  // GET /api/public/slug-available endpoint 300ms after the user stops
-  // typing, sets `slugStatus` so the form can show ✓/✗/spinner. The
-  // server is the source of truth — this is a courtesy hint while
-  // typing; the POST tenant call (FHS-25) re-checks at insert time.
-  useEffect(() => {
-    if (slug === 'family' || slug.length < 2) {
-      setSlugStatus({ kind: 'idle' });
-      return;
-    }
-    setSlugStatus({ kind: 'checking' });
-    // `ignored` guards against stale-response races: a fast typist can
-    // queue two fetches where the first resolves *after* the second.
-    // ctrl.abort() interrupts the network read but `.json()` isn't
-    // always abortable on every runtime, so we belt-and-brace by
-    // dropping any setState from a closure whose effect already cleaned up.
-    let ignored = false;
-    const ctrl = new AbortController();
-    const timer = window.setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `${API_BASE}/api/public/slug-available?slug=${encodeURIComponent(slug)}`,
-          {
-            signal: ctrl.signal,
-          },
-        );
-        if (ignored) return;
-        if (!res.ok) {
-          // 400 means the slug failed server-side regex — we already
-          // limit it client-side, so treat as a soft "couldn't check".
-          setSlugStatus({ kind: 'idle' });
-          return;
-        }
-        const body = (await res.json()) as {
-          available: boolean;
-          suggestions: string[];
-        };
-        if (ignored) return;
-        setSlugStatus(
-          body.available ? { kind: 'available' } : { kind: 'taken', suggestions: body.suggestions },
-        );
-      } catch (err) {
-        if (ignored) return;
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        // Network blip — silent, the server check on submit will catch it.
-        setSlugStatus({ kind: 'idle' });
-      }
-    }, 300);
-    return () => {
-      ignored = true;
-      ctrl.abort();
-      window.clearTimeout(timer);
-    };
-  }, [slug]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const parsed = signupSchema.safeParse({ familyName, displayName, email });
+    const parsed = signupSchema.safeParse({ email });
     if (!parsed.success) {
       setStatus({ kind: 'error', message: parsed.error.issues[0]?.message ?? 'invalid input' });
       return;
     }
     setStatus({ kind: 'submitting' });
-    // Stash the family-name + display-name + slug for the post-magic-link
-    // flow to pick up (FHS-25 will read these in the verify-email
-    // callback to call POST /api/public/tenant). Local storage is fine
-    // — values are non-secret and survive the magic-link round-trip.
-    sessionStorage.setItem(
-      'fh.signup.intent',
-      JSON.stringify({
-        familyName: parsed.data.familyName,
-        displayName: parsed.data.displayName,
-        slug,
-      }),
-    );
     const { error } = await supabase.auth.signInWithOtp({
       email: parsed.data.email,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
@@ -232,66 +75,7 @@ export function SignupPage() {
   }
 
   async function onGoogle() {
-    // FHS-256 — pre-OAuth gate. Without family name + display name we
-    // cannot create a tenant after the OAuth callback returns, and the
-    // user ends up authenticated-but-tenantless. Refuse to start.
-    //
-    // Clear any prior email-path error first so the inline message
-    // below reflects the Google-path validation, not a stale rate-limit
-    // notice from a previous email attempt.
-    setStatus({ kind: 'idle' });
-    const parsed = googleStartSchema.safeParse({ familyName, displayName });
-    if (!parsed.success) {
-      setStatus({
-        kind: 'error',
-        message: parsed.error.issues[0]?.message ?? 'family name is required',
-      });
-      return;
-    }
-    // Reject the deriveSlug placeholder ('family') — it fires when the
-    // family name has no alphanumeric chars (e.g. "!!!"), which would
-    // otherwise stash slug='family' and 409 the tenant create the
-    // moment a second user does the same.
-    if (slug === 'family') {
-      setStatus({
-        kind: 'error',
-        message: 'family name needs at least one letter or number',
-      });
-      return;
-    }
-    // Slug-availability gate: 'taken' is the hard fail; 'checking'
-    // also blocks because firing OAuth mid-debounce risks stashing a
-    // slug that turns out taken when the response arrives — and at
-    // that point the user is already authenticated, so there's no
-    // graceful retry. 'available' / 'idle' / 'error' fall through
-    // (the post-callback create re-checks at insert time).
-    if (slugStatus.kind === 'taken') {
-      setStatus({
-        kind: 'error',
-        message: 'that family URL is taken — pick another before continuing',
-      });
-      return;
-    }
-    if (slugStatus.kind === 'checking') {
-      setStatus({
-        kind: 'error',
-        message: 'still checking your family URL — try again in a moment',
-      });
-      return;
-    }
     setStatus({ kind: 'submitting-google' });
-    // FHS-259 — stash whatever the user typed so it wins over Google's
-    // profile values, but don't require displayName. AuthCallbackPage
-    // backfills from user_metadata.full_name when the user left it
-    // blank.
-    sessionStorage.setItem(
-      'fh.signup.intent',
-      JSON.stringify({
-        familyName: parsed.data.familyName,
-        displayName: displayName.trim(),
-        slug,
-      }),
-    );
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -304,24 +88,11 @@ export function SignupPage() {
   }
 
   const submitting = status.kind === 'submitting' || status.kind === 'submitting-google';
-  // Block submit only on the two states where we KNOW the slug is
-  // bad to send: an in-flight check (avoid racing two POSTs) or a
-  // server-confirmed clash. `idle` covers both pre-typing and a
-  // silently-failed availability fetch (staging Hobby tier idles out
-  // and drops the API for hours at a time — see FHS-205 follow-up).
-  // Letting submit through on `idle` means a transient outage no
-  // longer strands the user on a permanently-disabled button: Zod
-  // validation catches genuinely empty fields, and POST /api/public/
-  // tenant rechecks the slug at insert time so a real clash still
-  // surfaces in the magic-link callback.
-  const slugBlocksSubmit = slugStatus.kind === 'checking' || slugStatus.kind === 'taken';
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body md:flex-row md:bg-white">
       {/* Left panel — social proof. Hidden on mobile to save vertical space. */}
       <aside className="relative hidden flex-col justify-center bg-kingdom-bg p-12 text-white md:flex md:w-1/2 lg:p-16">
-        {/* Brand link (md+) — top-left of the kingdom-purple panel.
-            Mobile gets its own brand on the form panel below. */}
         <Link
           to="/"
           className="absolute left-12 top-8 font-heading text-2xl text-white transition-opacity hover:opacity-90 lg:left-16"
@@ -351,131 +122,19 @@ export function SignupPage() {
       {/* Right panel — form. Full-width on mobile, half on md+. */}
       <main className="flex w-full flex-col justify-center bg-white p-6 text-black md:w-1/2 md:p-12 lg:p-16">
         <div className="mx-auto w-full max-w-md">
-          {/* Brand link (mobile only) — md+ shows the brand on the
-              left kingdom-purple panel instead, so hide it here to
-              avoid duplication. */}
           <Link
             to="/"
             className="mb-6 inline-block font-heading text-2xl text-kingdom-bg transition-opacity hover:opacity-90 md:hidden"
           >
             FamilyHub
           </Link>
-          <h2 className="mb-2 font-heading text-3xl">Create your family</h2>
+          <h2 className="mb-2 font-heading text-3xl">Get started</h2>
           <p className="mb-6 font-bold text-gray-600">
-            We&rsquo;ll email you a one-time link to log in. No password to remember.
+            We&rsquo;ll email you a one-time link to sign in. No password to remember. You&rsquo;ll
+            name your family hub in the next step.
           </p>
 
           <form onSubmit={onSubmit} className="space-y-5" data-testid="signup-form" noValidate>
-            <div>
-              <label
-                htmlFor="familyName"
-                className="mb-2 block text-xs font-bold uppercase tracking-wider"
-              >
-                Family Name
-              </label>
-              <Input
-                id="familyName"
-                name="familyName"
-                type="text"
-                variant="dark"
-                required
-                value={familyName}
-                onChange={(e) => setFamilyName(e.target.value)}
-                placeholder="The Khan Family"
-                testId="signup-family-name"
-              />
-              <div
-                className="mt-2 text-sm font-bold text-gray-500"
-                data-testid="signup-slug-preview"
-              >
-                {editingSlug ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span>Your URL: /t/</span>
-                    <input
-                      ref={slugInputRef}
-                      type="text"
-                      value={slug}
-                      onChange={(e) => setCustomSlug(deriveSlug(e.target.value))}
-                      className="w-40 rounded-md border-2 border-black bg-white px-2 py-1 text-sm font-bold text-purple-600 shadow-neo-xs focus:outline-none focus:ring-2 focus:ring-kingdom-bg"
-                      aria-label="Custom URL slug"
-                      data-testid="signup-slug-input"
-                    />
-                    <SlugStatusIndicator status={slugStatus} />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCustomSlug(null);
-                        setEditingSlug(false);
-                      }}
-                      className="text-xs font-bold text-purple-600 underline"
-                      data-testid="signup-slug-use-auto"
-                    >
-                      Use auto
-                    </button>
-                  </div>
-                ) : (
-                  <p>
-                    <span className="inline-flex items-center gap-1.5">
-                      Your URL: <span className="text-purple-600">/t/{slug}</span>
-                      <SlugStatusIndicator status={slugStatus} />
-                      <button
-                        type="button"
-                        onClick={() => setEditingSlug(true)}
-                        className="text-xs font-bold text-purple-600 underline"
-                        data-testid="signup-slug-change"
-                      >
-                        Change
-                      </button>
-                    </span>
-                    <span className="ml-1 text-xs italic text-gray-400">
-                      · custom domain coming after launch
-                    </span>
-                  </p>
-                )}
-              </div>
-              {slugStatus.kind === 'taken' && (
-                <div
-                  className="mt-2 flex flex-wrap items-center gap-2"
-                  data-testid="signup-slug-suggestions"
-                >
-                  <span className="text-xs font-bold text-gray-500">Try:</span>
-                  {slugStatus.suggestions.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => {
-                        setCustomSlug(s);
-                        setEditingSlug(false);
-                      }}
-                      className="rounded-md border-2 border-black bg-yellow-100 px-2 py-0.5 text-xs font-bold text-black shadow-neo-xs transition-all hover:-translate-y-0.5 hover:bg-yellow-200"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label
-                htmlFor="displayName"
-                className="mb-2 block text-xs font-bold uppercase tracking-wider"
-              >
-                Your Name
-              </label>
-              <Input
-                id="displayName"
-                name="displayName"
-                type="text"
-                variant="dark"
-                required
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Sarah Khan"
-                testId="signup-display-name"
-              />
-            </div>
-
             <div>
               <label
                 htmlFor="email"
@@ -491,7 +150,11 @@ export function SignupPage() {
                 variant="dark"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  // FHS-258 lineage — clear inline error as the user keeps typing.
+                  setStatus((s) => (s.kind === 'error' ? { kind: 'idle' } : s));
+                }}
                 placeholder="sarah@example.com"
                 testId="signup-email"
               />
@@ -508,16 +171,10 @@ export function SignupPage() {
               variant="primary"
               size="lg"
               fullWidth
-              disabled={submitting || slugBlocksSubmit}
+              disabled={submitting}
               testId="signup-submit"
             >
-              {status.kind === 'submitting'
-                ? 'Sending…'
-                : slugStatus.kind === 'checking'
-                  ? 'Checking URL…'
-                  : slugStatus.kind === 'taken'
-                    ? 'Pick a different URL'
-                    : 'Continue with email →'}
+              {status.kind === 'submitting' ? 'Sending…' : 'Continue with email →'}
             </Button>
 
             <div className="relative my-4 flex items-center">
