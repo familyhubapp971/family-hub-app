@@ -4,6 +4,14 @@ export interface TopNavTab {
   id: string;
   label: string;
   icon?: React.ReactNode;
+  /**
+   * Optional numeric badge rendered as a pill next to the label.
+   * Hidden when 0 or undefined so callers can pass the count straight
+   * through without conditional logic. Negative values are clamped to 0.
+   * FHS-261 — wired by the founder; counts come from /api/dashboard/today
+   * once FHS-262 expands its response.
+   */
+  badge?: number;
 }
 
 interface TopNavProps {
@@ -81,6 +89,18 @@ export function TopNav({
               >
                 {tab.icon && <span className="shrink-0">{tab.icon}</span>}
                 <span>{tab.label}</span>
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <span
+                    aria-label={`${tab.badge} unread`}
+                    data-testid={`tab-${tab.id}-badge`}
+                    className={[
+                      'ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[0.6875rem] font-black leading-none',
+                      active ? 'bg-black text-yellow-300' : 'bg-pink-500 text-white',
+                    ].join(' ')}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}
