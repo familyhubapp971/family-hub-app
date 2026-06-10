@@ -392,10 +392,12 @@ export const mealTemplates = pgTable(
     slot: mealSlot('slot').notNull(),
     name: text('name'),
     notes: text('notes'),
-    // FHS-264 — who the meal is for. Null = the whole family. SET NULL on
-    // member delete so a removed member's meals fall back to "everyone"
-    // rather than vanishing.
-    memberId: uuid('member_id').references(() => members.id, { onDelete: 'set null' }),
+    // FHS-264 — who the meal is for. Null = the whole family. CASCADE on
+    // member delete: a removed member's personal meals are removed too.
+    // (SET NULL would turn a per-member row into a second whole-family row
+    // and could collide with an existing one under the everyone partial
+    // unique index — so the meal goes, not the family's slot.)
+    memberId: uuid('member_id').references(() => members.id, { onDelete: 'cascade' }),
     // FHS-264 — visual "repeats every week" flag. No scheduling behaviour
     // yet; the UI just shows a repeat icon.
     recurring: boolean('recurring').notNull().default(false),

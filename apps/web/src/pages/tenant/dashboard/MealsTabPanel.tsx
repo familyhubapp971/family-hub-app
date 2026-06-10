@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Repeat } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
@@ -96,23 +96,39 @@ function dotColor(memberId: string | null, members: MemberLite[]): string {
 }
 
 function AvatarDot({
-  member,
+  memberId,
+  membersById,
   members,
   testId,
 }: {
-  member: MemberLite | null;
+  memberId: string | null;
+  membersById: Map<string, MemberLite>;
   members: MemberLite[];
   testId: string;
 }) {
-  const label = member ? member.displayName : 'Everyone';
-  const glyph = member ? (member.avatarEmoji ?? initials(member.displayName)) : '👪';
+  const member = memberId ? (membersById.get(memberId) ?? null) : null;
+  // Three distinct cases: whole-family (null), a known member, and a
+  // member whose details didn't load — never mislabel the last as
+  // "Everyone" (that would wrongly assert a personal meal is shared).
+  let label: string;
+  let glyph: string;
+  if (memberId === null) {
+    label = 'Everyone';
+    glyph = '👪';
+  } else if (member) {
+    label = member.displayName;
+    glyph = member.avatarEmoji ?? initials(member.displayName);
+  } else {
+    label = 'Family member';
+    glyph = '?';
+  }
   return (
     <span
       data-testid={testId}
       title={label}
       aria-label={label}
       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-black text-xs ${dotColor(
-        member?.id ?? null,
+        memberId,
         members,
       )}`}
     >
@@ -129,6 +145,15 @@ export function MealsTabPanel() {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // The panel unmounts on tab switch; guard the post-save refetch (which
+  // has no AbortSignal) from setting state on an unmounted component.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const headers = useMemo(
     () =>
@@ -149,6 +174,7 @@ export function MealsTabPanel() {
           fetch(`${API_BASE}/api/meals`, { headers, signal: signal ?? null }),
           fetch(`${API_BASE}/api/members`, { headers, signal: signal ?? null }),
         ]);
+        if (!mountedRef.current) return;
         if (!mealsRes.ok) {
           setStatus({
             kind: 'error',
@@ -167,6 +193,7 @@ export function MealsTabPanel() {
         setStatus({ kind: 'ready', meals: mealsBody.meals ?? [], members });
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
+        if (!mountedRef.current) return;
         setStatus({
           kind: 'error',
           message: err instanceof Error ? err.message : 'Network error — try again.',
@@ -301,6 +328,8 @@ export function MealsTabPanel() {
                 <button
                   type="button"
                   data-testid={`meals-add-${day}`}
+                  aria-expanded={editorOpen && editor?.mealId === null}
+                  aria-controls={editorOpen ? `meals-editor-${day}` : undefined}
                   onClick={() => {
                     setSaveError(null);
                     setEditor({
@@ -329,6 +358,10 @@ export function MealsTabPanel() {
                       <button
                         type="button"
                         data-testid={`meals-meal-${meal.id}`}
+                        aria-expanded={editor?.mealId === meal.id}
+                        aria-controls={
+                          editor?.mealId === meal.id ? `meals-editor-${day}` : undefined
+                        }
                         onClick={() => {
                           setSaveError(null);
                           setEditor({
@@ -343,7 +376,8 @@ export function MealsTabPanel() {
                         className="flex w-full items-center gap-2 rounded border border-black/10 bg-yellow-50 px-2 py-1.5 text-left hover:bg-yellow-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black motion-safe:transition-colors"
                       >
                         <AvatarDot
-                          member={meal.memberId ? (membersById.get(meal.memberId) ?? null) : null}
+                          memberId={meal.memberId}
+                          membersById={membersById}
                           members={members}
                           testId={`meals-meal-${meal.id}-avatar`}
                         />
@@ -444,6 +478,9 @@ function MealEditor({
     <div
       className="mt-2 space-y-2 rounded border-2 border-black bg-white p-2"
       data-testid="meals-editor"
+      id={`meals-editor-${editor.day}`}
+      role="group"
+      aria-label={editor.mealId !== null ? 'Edit meal' : 'Add meal'}
     >
       <div className="flex gap-2">
         <label className="flex-1 text-xs font-bold text-gray-700">

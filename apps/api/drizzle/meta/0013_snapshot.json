@@ -1,5 +1,5 @@
 {
-  "id": "99f069f7-a61e-4ecb-9db4-30dfed1aa0ef",
+  "id": "b4b1183b-4dbb-4087-ab94-0d8689426262",
   "prevId": "4dd07628-8184-46d3-8cec-c7bf8bbcaa21",
   "version": "7",
   "dialect": "postgresql",
@@ -952,7 +952,7 @@
           "tableTo": "members",
           "columnsFrom": ["member_id"],
           "columnsTo": ["id"],
-          "onDelete": "set null",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

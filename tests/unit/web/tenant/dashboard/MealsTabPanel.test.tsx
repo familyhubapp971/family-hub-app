@@ -320,6 +320,72 @@ describe('<MealsTabPanel />', () => {
     expect(JSON.parse((postCall![1] as RequestInit).body as string).name).toBe('');
   });
 
+  it('shows Remove only when editing an existing meal, not when adding', async () => {
+    installApi({
+      members: MEMBERS,
+      meals: [
+        {
+          id: 'm1',
+          dayOfWeek: 'fri',
+          slot: 'dinner',
+          name: 'Fish',
+          memberId: null,
+          recurring: false,
+        },
+      ],
+    });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    // Adding → no Remove button.
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-fri'));
+    });
+    expect(screen.queryByTestId('meals-editor-delete')).not.toBeInTheDocument();
+
+    // Editing an existing meal → Remove present.
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-meal-m1'));
+    });
+    expect(screen.getByTestId('meals-editor-delete')).toBeInTheDocument();
+  });
+
+  it('Escape in the name field closes the editor', async () => {
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    expect(screen.getByTestId('meals-editor')).toBeInTheDocument();
+    act(() => {
+      fireEvent.keyDown(screen.getByTestId('meals-editor-name'), { key: 'Escape' });
+    });
+    expect(screen.queryByTestId('meals-editor')).not.toBeInTheDocument();
+  });
+
+  it('labels a meal whose member did not load as a family member, not "Everyone"', async () => {
+    // Members fetch returns empty (degraded), but a meal is assigned to ALI.
+    installApi({
+      members: [],
+      meals: [
+        {
+          id: 'm1',
+          dayOfWeek: 'mon',
+          slot: 'lunch',
+          name: 'Ali wrap',
+          memberId: ALI,
+          recurring: false,
+        },
+      ],
+    });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+    const dot = screen.getByTestId('meals-meal-m1-avatar');
+    expect(dot.getAttribute('aria-label')).toBe('Family member');
+  });
+
   it('passes the bearer token + tenant slug on requests', async () => {
     installApi({ members: MEMBERS });
     renderAt('/t/khans/dashboard');

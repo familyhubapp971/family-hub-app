@@ -60,3 +60,11 @@ Feature: GET + POST /api/meals (FHS-229)
     And a member "Bob" exists in tenant "smith"
     When the caller POSTs a meal "Sneaky" for "mon" "lunch" for member "Bob" in tenant "khan"
     Then the response status is 400
+
+  Scenario: Deleting a member removes their meals but keeps the shared family slot (FHS-264)
+    Given a member "Ali" exists in tenant "khan"
+    And the caller POSTs a meal "Family toast" for "mon" "breakfast" in tenant "khan"
+    And the caller POSTs a meal "Ali eggs" for "mon" "breakfast" for member "Ali" in tenant "khan"
+    When member "Ali" is deleted from tenant "khan"
+    Then re-fetching /api/meals for tenant "khan" lists 1 meals
+    And the response includes "Family toast" for "mon" "breakfast"

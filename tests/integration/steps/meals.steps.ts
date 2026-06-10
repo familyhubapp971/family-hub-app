@@ -478,4 +478,58 @@ describeFeature(feature, ({ Background, Scenario }) => {
       });
     },
   );
+
+  Scenario(
+    'Deleting a member removes their meals but keeps the shared family slot (FHS-264)',
+    ({ Given, And, When, Then }) => {
+      let body: MealsResponse;
+
+      Given(
+        'a member {string} exists in tenant {string}',
+        async (_ctx, name: string, slug: string) => {
+          await insertMember(slug, name);
+        },
+      );
+
+      And(
+        'the caller POSTs a meal {string} for {string} {string} in tenant {string}',
+        async (_ctx, name: string, day: string, slot: string, slug: string) => {
+          await postMeal(slug, day, slot, name);
+        },
+      );
+
+      And(
+        'the caller POSTs a meal {string} for {string} {string} for member {string} in tenant {string}',
+        async (_ctx, name: string, day: string, slot: string, memberName: string, slug: string) => {
+          await postMeal(slug, day, slot, name, { memberId: memberIds[memberName]! });
+        },
+      );
+
+      When('member {string} is deleted from tenant {string}', async (_ctx, name: string) => {
+        // Exercises the FK cascade in real Postgres. If the FK were still
+        // SET NULL, Ali's per-member row would collide with the family row
+        // under the everyone partial unique index and this would throw.
+        await db.execute(sql`DELETE FROM members WHERE id = ${memberIds[name]!}`);
+      });
+
+      Then(
+        're-fetching /api/meals for tenant {string} lists {int} meals',
+        async (_ctx, slug: string, n: number) => {
+          const out = await getMeals(slug);
+          expect(out.res.status).toBe(200);
+          body = out.body;
+          expect(body.meals).toHaveLength(n);
+        },
+      );
+
+      And(
+        'the response includes {string} for {string} {string}',
+        (_ctx, name: string, day: string, slot: string) => {
+          const cell = body.meals.find((m) => m.dayOfWeek === day && m.slot === slot);
+          expect(cell, `${day} ${slot} cell missing`).toBeDefined();
+          expect(cell!.name).toBe(name);
+        },
+      );
+    },
+  );
 });

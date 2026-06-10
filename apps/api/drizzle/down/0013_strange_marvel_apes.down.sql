@@ -1,4 +1,4 @@
--- Rollback for 0013_curly_robbie_robertson.sql (FHS-264).
+-- Rollback for 0013_strange_marvel_apes.sql (FHS-264).
 -- Undoes the meal_templates member_id + recurring expansion and restores
 -- the original one-row-per-(tenant, day, slot) unique index.
 --
