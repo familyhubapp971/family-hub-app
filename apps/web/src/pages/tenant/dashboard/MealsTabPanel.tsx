@@ -44,6 +44,13 @@ const FAMILY_COLOR = {
   badge: 'bg-green-300',
   dot: 'bg-green-400',
 };
+// Neutral grey for a meal whose member didn't load — never reuse a real
+// member's colour for an unknown one (that would misattribute it).
+const NEUTRAL_COLOR = {
+  card: 'bg-gray-50 border-gray-400',
+  badge: 'bg-gray-200',
+  dot: 'bg-gray-300',
+};
 const MEMBER_COLORS = [
   { card: 'bg-amber-50 border-amber-400', badge: 'bg-amber-300', dot: 'bg-amber-300' },
   { card: 'bg-violet-50 border-violet-400', badge: 'bg-violet-300', dot: 'bg-violet-300' },
@@ -51,6 +58,10 @@ const MEMBER_COLORS = [
   { card: 'bg-cyan-50 border-cyan-400', badge: 'bg-cyan-300', dot: 'bg-cyan-300' },
   { card: 'bg-rose-50 border-rose-400', badge: 'bg-rose-300', dot: 'bg-rose-300' },
   { card: 'bg-sky-50 border-sky-400', badge: 'bg-sky-300', dot: 'bg-sky-300' },
+  { card: 'bg-lime-50 border-lime-400', badge: 'bg-lime-300', dot: 'bg-lime-300' },
+  { card: 'bg-orange-50 border-orange-400', badge: 'bg-orange-300', dot: 'bg-orange-300' },
+  { card: 'bg-teal-50 border-teal-400', badge: 'bg-teal-300', dot: 'bg-teal-300' },
+  { card: 'bg-fuchsia-50 border-fuchsia-400', badge: 'bg-fuchsia-300', dot: 'bg-fuchsia-300' },
 ];
 
 interface MealCell {
@@ -85,7 +96,8 @@ interface Editor {
 function colorFor(memberId: string | null, members: MemberLite[]) {
   if (memberId === null) return FAMILY_COLOR;
   const idx = members.findIndex((m) => m.id === memberId);
-  return MEMBER_COLORS[(idx < 0 ? 0 : idx) % MEMBER_COLORS.length]!;
+  if (idx < 0) return NEUTRAL_COLOR;
+  return MEMBER_COLORS[idx % MEMBER_COLORS.length]!;
 }
 
 function badgeLetter(memberId: string | null, members: MemberLite[]): string {

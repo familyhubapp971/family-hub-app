@@ -398,6 +398,34 @@ describe('<MealsTabPanel />', () => {
     expect(dot.getAttribute('aria-label')).toBe('Family member');
   });
 
+  it('pre-fills the editor who-for from the active member filter', async () => {
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId(`meals-filter-${SARA}`));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    expect((screen.getByTestId('meals-editor-member') as HTMLSelectElement).value).toBe(SARA);
+  });
+
+  it('pre-fills the editor who-for as Everyone under the Family or All filter', async () => {
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-filter-family'));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    expect((screen.getByTestId('meals-editor-member') as HTMLSelectElement).value).toBe('');
+  });
+
   it('passes the bearer token + tenant slug on requests', async () => {
     installApi({ members: MEMBERS });
     renderAt('/t/khans/dashboard');
