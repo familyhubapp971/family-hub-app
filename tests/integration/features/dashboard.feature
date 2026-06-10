@@ -24,6 +24,20 @@ Feature: GET /api/dashboard/today (FHS-228)
     And the response lists 2 members
     And the member named "Iman" appears in the response
 
+  Scenario: Today screen surfaces per-member stats, goals, and recent activity
+    Given the "khan" tenant has 2 starter habits and 0 starter rewards
+    And the caller completed both "khan" habits in the current week
+    And the caller has 1 pending task and 1 task completed today in "khan"
+    And the "khan" tenant has a savings goal "Hajj fund" with a 300 deposit and a 50 withdrawal
+    And the "khan" tenant has a meal planned for today
+    And the "khan" tenant has a recent activity entry "completed a habit"
+    When the caller GETs /api/dashboard/today for tenant "khan"
+    Then the response status is 200
+    And the caller's member stats show 2 of 2 habits done, streak 1, and 1 task pending
+    And the response snapshot counts include tasksDoneToday 1 and mealsPlanned 1
+    And the response goal "Hajj fund" shows progress 250 and target 5000
+    And the response recent activity includes "completed a habit"
+
   Scenario: A non-member of the tenant gets 403
     Given a second tenant "smith" exists with no caller membership
     When the caller GETs /api/dashboard/today for tenant "smith"
