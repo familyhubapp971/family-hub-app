@@ -166,10 +166,10 @@ describe('<DashboardPage /> — tab framework', () => {
 });
 
 describe('<DashboardPage /> — FHS-261 header', () => {
-  it('fetches /api/me + /api/dashboard/today and renders the family name', async () => {
+  it('fetches /api/me + /api/dashboard/today and renders "<name> Family Hub"', async () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() =>
-      expect(screen.getByTestId('dashboard-family-name').textContent).toBe('The Khans'),
+      expect(screen.getByTestId('dashboard-family-name').textContent).toBe('The Khans Family Hub'),
     );
     // Both lookups went out with the slug as the tenant context.
     expect(mocks.fetchMock).toHaveBeenCalledWith(

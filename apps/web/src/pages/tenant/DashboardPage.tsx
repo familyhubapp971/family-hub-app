@@ -50,7 +50,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   {
     id: 'home',
-    label: 'Dashboard',
+    label: 'Family Dashboard',
     icon: <Home size={16} aria-hidden="true" />,
     ticket: 'FHS-228',
     description: 'Family member grid + today snapshot.',
@@ -124,7 +124,7 @@ interface MeResponseTenant {
 function FamilyInitialDisc({ name }: { name: string }) {
   const initial = name.trim().charAt(0).toUpperCase() || 'F';
   const palette = [
-    'from-pink-400 to-fuchsia-500',
+    'from-pink-400 to-purple-500',
     'from-amber-400 to-pink-500',
     'from-cyan-400 to-blue-500',
     'from-emerald-400 to-cyan-500',
@@ -135,11 +135,23 @@ function FamilyInitialDisc({ name }: { name: string }) {
     <span
       aria-hidden="true"
       data-testid="dashboard-family-initial"
-      className={`grid h-10 w-10 place-items-center rounded-full border-2 border-black bg-gradient-to-br ${palette[idx]} font-display text-lg font-black text-white shadow-neo-sm`}
+      className={`grid h-12 w-12 place-items-center rounded-full border-2 border-black bg-gradient-to-br ${palette[idx]} font-display text-2xl font-black text-white shadow-neo-sm`}
     >
       {initial}
     </span>
   );
+}
+
+// Build the hero title from the tenant's stored name. We always append
+// "Family Hub" so the header reads as a branded surface (matches MP),
+// but skip the append when the user already named their family ending
+// in "Family" or "Family Hub" so we don't end up with "KHAN FAMILY
+// FAMILY HUB".
+function buildHeroTitle(name: string | null): string {
+  const base = (name ?? 'Family').trim();
+  if (/family\s*hub$/i.test(base)) return base;
+  if (/family$/i.test(base)) return `${base} Hub`;
+  return `${base} Family Hub`;
 }
 
 function FamilyHero({
@@ -164,7 +176,7 @@ function FamilyHero({
       <FamilyInitialDisc name={familyName ?? 'Family'} />
       <div className="flex flex-col">
         <span className="flex items-center gap-1.5 font-display text-lg font-black uppercase leading-tight tracking-wide text-white sm:text-xl">
-          <span data-testid="dashboard-family-name">{familyName ?? 'Family Hub'}</span>
+          <span data-testid="dashboard-family-name">{buildHeroTitle(familyName)}</span>
           <span aria-hidden="true" className="text-yellow-300">
             ✨
           </span>

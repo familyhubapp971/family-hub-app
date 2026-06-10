@@ -83,7 +83,7 @@ export function TopNav({
                   'inline-flex shrink-0 items-center gap-1.5 rounded-xl border-2 border-black px-3 py-1.5 text-sm font-bold transition-all duration-150',
                   'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 focus-visible:ring-offset-kingdom-bg',
                   active
-                    ? 'bg-yellow-300 text-black shadow-neo'
+                    ? 'bg-pink-400 text-white shadow-neo'
                     : 'bg-white/10 text-white shadow-none hover:bg-white/20',
                 ].join(' ')}
               >
