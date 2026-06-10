@@ -185,6 +185,106 @@ describe('<TodayTabPanel />', () => {
     expect(screen.queryByTestId('today-member-0-streak')).not.toBeInTheDocument();
   });
 
+  it('treats a teen as a young, clickable member and a guest as a non-linked card', async () => {
+    mockJson(
+      makeResponse({
+        members: [
+          {
+            id: 'm3',
+            displayName: 'Zaid',
+            role: 'teen',
+            avatarEmoji: null,
+            habitsDone: 1,
+            habitsTotal: 2,
+            streak: 0,
+            tasksPending: 0,
+            statusText: '1/2 habits',
+          },
+          {
+            id: 'm4',
+            displayName: 'Nana',
+            role: 'guest',
+            avatarEmoji: null,
+            habitsDone: 0,
+            habitsTotal: 0,
+            streak: 0,
+            tasksPending: 0,
+            statusText: 'All done',
+          },
+        ],
+        counts: { members: 2, habits: 2, rewards: 0, tasksDoneToday: 0, mealsPlanned: 0 },
+      }),
+    );
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
+    // Teen → clickable into their world.
+    expect(screen.getByTestId('today-member-0-link').getAttribute('href')).toBe(
+      '/t/khans/child/m3',
+    );
+    // Guest → adult-style card, not a link.
+    expect(screen.queryByTestId('today-member-1-link')).not.toBeInTheDocument();
+    expect(screen.getByTestId('today-member-1-role').textContent?.toLowerCase()).toContain('guest');
+  });
+
+  it('shows a dash for kids habits when the family has no children', async () => {
+    mockJson(
+      makeResponse({
+        members: [
+          {
+            id: 'm1',
+            displayName: 'Sarah',
+            role: 'admin',
+            avatarEmoji: null,
+            habitsDone: 0,
+            habitsTotal: 0,
+            streak: 0,
+            tasksPending: 0,
+            statusText: 'All done',
+          },
+        ],
+        counts: { members: 1, habits: 0, rewards: 0, tasksDoneToday: 0, mealsPlanned: 0 },
+      }),
+    );
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('today-snapshot-habits').textContent).toContain('—');
+  });
+
+  it('labels the ring "No habits assigned" when a member has zero habits', async () => {
+    mockJson(
+      makeResponse({
+        members: [
+          {
+            id: 'm2',
+            displayName: 'Iman',
+            role: 'child',
+            avatarEmoji: null,
+            habitsDone: 0,
+            habitsTotal: 0,
+            streak: 0,
+            tasksPending: 0,
+            statusText: 'All done',
+          },
+        ],
+        counts: { members: 1, habits: 0, rewards: 0, tasksDoneToday: 0, mealsPlanned: 0 },
+      }),
+    );
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
+    expect(screen.getByLabelText('No habits assigned')).toBeInTheDocument();
+  });
+
+  it('clamps a goal bar at 100% when progress exceeds target', async () => {
+    mockJson(
+      makeResponse({
+        goals: [{ id: 'g1', label: 'Steps', progress: 150, target: 100 }],
+      }),
+    );
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('today-goal-0').textContent).toContain('100%');
+  });
+
   it('renders up to 3 goal bars (with a percentage) and the activity feed', async () => {
     mockJson(
       makeResponse({

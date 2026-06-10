@@ -87,8 +87,8 @@ function timeAgo(iso: string, now: Date = new Date()): string {
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.round(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  return days === 1 ? 'yesterday' : `${days}d ago`;
+  const days = Math.floor(hrs / 24);
+  return days <= 1 ? 'yesterday' : `${days}d ago`;
 }
 
 // Small SVG progress ring for a member's habit completion.
@@ -100,7 +100,7 @@ function HabitRing({ done, total }: { done: number; total: number }) {
     <div
       className="relative h-12 w-12 shrink-0"
       role="img"
-      aria-label={`${done} of ${total} habits done`}
+      aria-label={total > 0 ? `${done} of ${total} habits done` : 'No habits assigned'}
     >
       <svg viewBox="0 0 44 44" className="h-12 w-12 -rotate-90">
         <circle cx="22" cy="22" r={r} fill="none" stroke="#000" strokeWidth="4" opacity="0.12" />
@@ -281,10 +281,10 @@ function GoalBar({ goal, index }: { goal: DashboardGoal; index: number }) {
       <div
         className="h-3 overflow-hidden rounded-full border-2 border-black bg-white"
         role="progressbar"
-        aria-valuenow={pct ?? undefined}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`${goal.label} progress`}
+        aria-label={pct === null ? `${goal.label} progress (open-ended)` : `${goal.label} progress`}
+        {...(pct !== null
+          ? { 'aria-valuenow': pct, 'aria-valuemin': 0, 'aria-valuemax': 100 }
+          : {})}
       >
         <div className="h-full bg-green-500" style={{ width: `${pct ?? 0}%` }} />
       </div>
@@ -293,13 +293,14 @@ function GoalBar({ goal, index }: { goal: DashboardGoal; index: number }) {
 }
 
 function ActivityRow({ entry, index }: { entry: DashboardActivity; index: number }) {
+  const ago = timeAgo(entry.timestamp);
   return (
     <li className="flex items-start gap-2" data-testid={`today-activity-${index}`}>
       <span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-black" />
       <p className="text-sm text-black">
-        {entry.actor ? <span className="font-bold">{entry.actor}</span> : null}{' '}
-        <span>{entry.action}</span>{' '}
-        <span className="text-gray-500">· {timeAgo(entry.timestamp)}</span>
+        {entry.actor ? <span className="font-bold">{entry.actor} </span> : null}
+        <span>{entry.action}</span>
+        {ago ? <span className="text-gray-500"> · {ago}</span> : null}
       </p>
     </li>
   );
@@ -404,7 +405,7 @@ export function TodayTabPanel() {
           <SnapshotStat
             testId="today-snapshot-habits"
             icon={<Sparkles size={18} aria-hidden="true" className="text-green-600" />}
-            value={`${kidsHabitsDone}/${kidsHabitsTotal}`}
+            value={kids.length === 0 ? '—' : `${kidsHabitsDone}/${kidsHabitsTotal}`}
             label="Kids' habits"
           />
           <SnapshotStat
@@ -440,7 +441,11 @@ export function TodayTabPanel() {
           )}
         </section>
 
-        <aside className="space-y-6" data-testid="today-sidebar">
+        <aside
+          className="space-y-6"
+          data-testid="today-sidebar"
+          aria-label="Family goals and recent activity"
+        >
           <section aria-labelledby="today-goals-heading">
             <h3
               id="today-goals-heading"
