@@ -147,16 +147,20 @@ describe('<MealsTabPanel />', () => {
     expect(urls.some((u) => u.endsWith('/api/members'))).toBe(true);
   });
 
-  it('renders 7 day cards, a pill per member, and empty-day states', async () => {
+  it('renders 7 day cards, a legend, and All/Family/member filter pills', async () => {
     installApi({ members: MEMBERS });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
     for (const d of ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']) {
       expect(screen.getByTestId(`meals-day-${d}`)).toBeInTheDocument();
     }
+    expect(screen.getByTestId('meals-legend')).toBeInTheDocument();
+    expect(screen.getByTestId('meals-week-range')).toBeInTheDocument();
     expect(screen.getByTestId('meals-filter-all')).toBeInTheDocument();
+    expect(screen.getByTestId('meals-filter-family')).toBeInTheDocument();
     expect(screen.getByTestId(`meals-filter-${ALI}`)).toBeInTheDocument();
-    expect(screen.getByTestId('meals-day-mon-empty')).toBeInTheDocument();
+    // Empty day still shows its Add Meal button.
+    expect(screen.getByTestId('meals-add-mon')).toBeInTheDocument();
   });
 
   it('shows a meal with its name, avatar dot, and a repeat icon when recurring', async () => {
@@ -190,7 +194,7 @@ describe('<MealsTabPanel />', () => {
     expect(screen.queryByTestId('meals-meal-m2-recurring')).not.toBeInTheDocument();
   });
 
-  it('filtering to a member shows their meals + whole-family meals, hides others', async () => {
+  it('filter pills narrow the view by exact owner (All / Family / member)', async () => {
     installApi({
       members: MEMBERS,
       meals: [
@@ -223,12 +227,20 @@ describe('<MealsTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
 
+    // Member pill → only that member's meals.
     act(() => {
       fireEvent.click(screen.getByTestId(`meals-filter-${ALI}`));
     });
-    expect(screen.getByTestId('meals-meal-fam-name')).toBeInTheDocument(); // family always shows
     expect(screen.getByTestId('meals-meal-ali-name')).toBeInTheDocument();
+    expect(screen.queryByTestId('meals-meal-fam-name')).not.toBeInTheDocument();
     expect(screen.queryByTestId('meals-meal-sara-name')).not.toBeInTheDocument();
+
+    // Family pill → only whole-family meals.
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-filter-family'));
+    });
+    expect(screen.getByTestId('meals-meal-fam-name')).toBeInTheDocument();
+    expect(screen.queryByTestId('meals-meal-ali-name')).not.toBeInTheDocument();
   });
 
   it('adding a meal POSTs day/slot/name/memberId/recurring and shows it after refetch', async () => {
@@ -384,6 +396,34 @@ describe('<MealsTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
     const dot = screen.getByTestId('meals-meal-m1-avatar');
     expect(dot.getAttribute('aria-label')).toBe('Family member');
+  });
+
+  it('pre-fills the editor who-for from the active member filter', async () => {
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId(`meals-filter-${SARA}`));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    expect((screen.getByTestId('meals-editor-member') as HTMLSelectElement).value).toBe(SARA);
+  });
+
+  it('pre-fills the editor who-for as Everyone under the Family or All filter', async () => {
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-filter-family'));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    expect((screen.getByTestId('meals-editor-member') as HTMLSelectElement).value).toBe('');
   });
 
   it('passes the bearer token + tenant slug on requests', async () => {
