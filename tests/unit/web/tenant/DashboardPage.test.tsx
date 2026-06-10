@@ -83,7 +83,14 @@ function defaultFetchMocks() {
         json: async () => ({
           date: '2026-06-10',
           greetingName: 'Sarah',
-          counts: { members: 4, habits: 5, rewards: 3, tasksDoneToday: 1, mealsPlanned: 2 },
+          counts: {
+            members: 4,
+            habits: 5,
+            rewards: 3,
+            tasksDoneToday: 1,
+            tasksTotalToday: 2,
+            mealsPlanned: 2,
+          },
           members: [
             {
               id: 'm-1',
@@ -95,6 +102,7 @@ function defaultFetchMocks() {
               streak: 0,
               tasksPending: 1,
               statusText: '1 task left',
+              starBalance: 0,
             },
             {
               id: 'm-2',
@@ -106,6 +114,7 @@ function defaultFetchMocks() {
               streak: 0,
               tasksPending: 0,
               statusText: 'All done',
+              starBalance: 0,
             },
             {
               id: 'm-3',
@@ -117,6 +126,7 @@ function defaultFetchMocks() {
               streak: 2,
               tasksPending: 0,
               statusText: '1/3 habits',
+              starBalance: 87,
             },
             {
               id: 'm-4',
@@ -128,6 +138,7 @@ function defaultFetchMocks() {
               streak: 5,
               tasksPending: 0,
               statusText: 'All done',
+              starBalance: 122,
             },
           ],
           goals: [],
