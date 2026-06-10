@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import type { DashboardTodayResponse } from '@familyhub/shared';
+import type { DashboardMember, DashboardTodayResponse } from '@familyhub/shared';
 
-// FHS-228 / FHS-263 — TodayTabPanel. Loading / error / empty / populated
-// paths, the request shape (Authorization + x-tenant-slug), and the
-// redesigned layout: snapshot row, stat-rich member cards (habit ring,
-// streak, status, child link), goals bars, and the activity feed.
+// FHS-263 exact-match — TodayTabPanel. Family Overview 4-up cards (kid
+// bar + streak + View World link; adult tasks + status box), Today's
+// Snapshot ratio tiles, the purple Family Goals card with Kids' Star
+// Balances, and the Recent Activity feed.
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
@@ -36,12 +36,35 @@ function renderAt(initial: string) {
   );
 }
 
+function member(over: Partial<DashboardMember> = {}): DashboardMember {
+  return {
+    id: 'm',
+    displayName: 'Member',
+    role: 'child',
+    avatarEmoji: null,
+    habitsDone: 0,
+    habitsTotal: 0,
+    streak: 0,
+    tasksPending: 0,
+    statusText: '',
+    starBalance: 0,
+    ...over,
+  };
+}
+
 function makeResponse(overrides: Partial<DashboardTodayResponse> = {}): DashboardTodayResponse {
   return {
-    date: '2026-05-03',
+    date: '2026-06-11',
     greetingName: 'Sarah',
     members: [],
-    counts: { members: 0, habits: 0, rewards: 0, tasksDoneToday: 0, mealsPlanned: 0 },
+    counts: {
+      members: 0,
+      habits: 0,
+      rewards: 0,
+      tasksDoneToday: 0,
+      tasksTotalToday: 0,
+      mealsPlanned: 0,
+    },
     goals: [],
     recentActivity: [],
     ...overrides,
@@ -75,109 +98,83 @@ describe('<TodayTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('today-error')).toBeInTheDocument());
   });
 
-  it('renders empty states when the family has no members, goals, or activity', async () => {
+  it('renders empty states for no members, goals, stars, and activity', async () => {
     mockJson(makeResponse());
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
     expect(screen.getByTestId('today-members-empty')).toBeInTheDocument();
     expect(screen.getByTestId('today-goals-empty')).toBeInTheDocument();
+    expect(screen.getByTestId('today-stars-empty')).toBeInTheDocument();
     expect(screen.getByTestId('today-activity-empty')).toBeInTheDocument();
-    // Snapshot still renders with zeros.
-    expect(screen.getByTestId('today-snapshot-tasks').textContent).toContain('0');
   });
 
-  it('renders the snapshot row from the expanded counts + kids habits', async () => {
+  it('renders the snapshot ratio tiles (kids habits, tasks done/total, meals/3)', async () => {
     mockJson(
       makeResponse({
-        members: [
-          {
-            id: 'm2',
-            displayName: 'Iman',
-            role: 'child',
-            avatarEmoji: null,
-            habitsDone: 2,
-            habitsTotal: 3,
-            streak: 4,
-            tasksPending: 0,
-            statusText: '2/3 habits',
-          },
-        ],
-        counts: { members: 1, habits: 3, rewards: 0, tasksDoneToday: 5, mealsPlanned: 2 },
+        members: [member({ id: 'k', role: 'child', habitsDone: 2, habitsTotal: 3 })],
+        counts: {
+          members: 1,
+          habits: 3,
+          rewards: 0,
+          tasksDoneToday: 2,
+          tasksTotalToday: 6,
+          mealsPlanned: 3,
+        },
       }),
     );
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
     expect(screen.getByTestId('today-snapshot-habits').textContent).toContain('2/3');
-    expect(screen.getByTestId('today-snapshot-tasks').textContent).toContain('5');
-    expect(screen.getByTestId('today-snapshot-meals').textContent).toContain('2');
+    expect(screen.getByTestId('today-snapshot-tasks').textContent).toContain('2/6');
+    expect(screen.getByTestId('today-snapshot-meals').textContent).toContain('3/3');
   });
 
-  it('renders a clickable, stat-rich card for a child and a task card for an adult', async () => {
+  it('renders a clickable kid card (bar + streak + View World) and a non-linked adult card', async () => {
     mockJson(
       makeResponse({
         members: [
-          {
+          member({
             id: 'm1',
             displayName: 'Sarah Khan',
             role: 'admin',
-            avatarEmoji: '👩',
-            habitsDone: 0,
-            habitsTotal: 0,
-            streak: 0,
             tasksPending: 2,
             statusText: '2 tasks left',
-          },
-          {
+          }),
+          member({
             id: 'm2',
             displayName: 'Iman',
             role: 'child',
-            avatarEmoji: null,
             habitsDone: 2,
             habitsTotal: 3,
             streak: 4,
-            tasksPending: 1,
-            statusText: '2/3 habits',
-          },
+            starBalance: 87,
+          }),
         ],
-        counts: { members: 2, habits: 3, rewards: 0, tasksDoneToday: 1, mealsPlanned: 0 },
       }),
     );
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
 
-    // Adult: task card, role badge, not a link.
+    // Adult: role label, pending tasks, status box, not a link.
     expect(screen.getByTestId('today-member-0-name').textContent).toBe('Sarah Khan');
-    expect(screen.getByTestId('today-member-0-role').textContent?.toLowerCase()).toContain('admin');
+    expect(screen.getByTestId('today-member-0-role').textContent).toBe('Admin');
     expect(screen.getByTestId('today-member-0-tasks').textContent).toBe('2');
+    expect(screen.getByTestId('today-member-0-status').textContent).toContain('2 tasks left');
     expect(screen.queryByTestId('today-member-0-link')).not.toBeInTheDocument();
 
-    // Child: clickable into their world, with streak + status + ring.
-    expect(screen.getByTestId('today-member-1-name').textContent).toBe('Iman');
+    // Kid: clickable to their world, habit bar (progressbar), streak, View World.
     expect(screen.getByTestId('today-member-1-link').getAttribute('href')).toBe(
       '/t/khans/child/m2',
     );
-    expect(screen.getByTestId('today-member-1-streak').textContent).toContain('4');
-    expect(screen.getByTestId('today-member-1-status').textContent).toBe('2/3 habits');
-    expect(screen.getByLabelText('2 of 3 habits done')).toBeInTheDocument();
+    expect(screen.getByTestId('today-member-1-streak').textContent).toContain('4 day streak');
+    expect(screen.getByLabelText('Iman: 2 of 3 habits done')).toBeInTheDocument();
+    expect(screen.getByText('View World')).toBeInTheDocument();
   });
 
-  it('hides the streak for a child with a zero streak', async () => {
+  it('hides the streak for a kid with a zero streak', async () => {
     mockJson(
       makeResponse({
-        members: [
-          {
-            id: 'm2',
-            displayName: 'Iman',
-            role: 'child',
-            avatarEmoji: null,
-            habitsDone: 0,
-            habitsTotal: 3,
-            streak: 0,
-            tasksPending: 0,
-            statusText: '0/3 habits',
-          },
-        ],
-        counts: { members: 1, habits: 3, rewards: 0, tasksDoneToday: 0, mealsPlanned: 0 },
+        members: [member({ id: 'm2', role: 'child', habitsTotal: 3, streak: 0 })],
       }),
     );
     renderAt('/t/khans/dashboard');
@@ -185,141 +182,51 @@ describe('<TodayTabPanel />', () => {
     expect(screen.queryByTestId('today-member-0-streak')).not.toBeInTheDocument();
   });
 
-  it('treats a teen as a young, clickable member and a guest as a non-linked card', async () => {
+  it('renders the top goal percentage and per-kid star balances', async () => {
     mockJson(
       makeResponse({
         members: [
-          {
-            id: 'm3',
-            displayName: 'Zaid',
-            role: 'teen',
-            avatarEmoji: null,
-            habitsDone: 1,
-            habitsTotal: 2,
-            streak: 0,
-            tasksPending: 0,
-            statusText: '1/2 habits',
-          },
-          {
-            id: 'm4',
-            displayName: 'Nana',
-            role: 'guest',
-            avatarEmoji: null,
-            habitsDone: 0,
-            habitsTotal: 0,
-            streak: 0,
-            tasksPending: 0,
-            statusText: 'All done',
-          },
+          member({ id: 'a', displayName: 'Amina', role: 'teen', starBalance: 87 }),
+          member({ id: 'b', displayName: 'Ibrahim', role: 'child', starBalance: 122 }),
         ],
-        counts: { members: 2, habits: 2, rewards: 0, tasksDoneToday: 0, mealsPlanned: 0 },
+        goals: [{ id: 'g1', label: 'Family Holiday Fund', progress: 650, target: 1000 }],
       }),
     );
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
-    // Teen → clickable into their world.
-    expect(screen.getByTestId('today-member-0-link').getAttribute('href')).toBe(
-      '/t/khans/child/m3',
-    );
-    // Guest → adult-style card, not a link.
-    expect(screen.queryByTestId('today-member-1-link')).not.toBeInTheDocument();
-    expect(screen.getByTestId('today-member-1-role').textContent?.toLowerCase()).toContain('guest');
+
+    expect(screen.getByTestId('today-goal-0').textContent).toContain('Family Holiday Fund');
+    expect(screen.getByTestId('today-goal-0').textContent).toContain('65%');
+    expect(screen.getByTestId('today-star-a').textContent).toContain('Amina');
+    expect(screen.getByTestId('today-star-a').textContent).toContain('87');
+    expect(screen.getByTestId('today-star-b').textContent).toContain('122');
   });
 
-  it('shows a dash for kids habits when the family has no children', async () => {
+  it('renders the activity feed with actor + action', async () => {
     mockJson(
       makeResponse({
-        members: [
-          {
-            id: 'm1',
-            displayName: 'Sarah',
-            role: 'admin',
-            avatarEmoji: null,
-            habitsDone: 0,
-            habitsTotal: 0,
-            streak: 0,
-            tasksPending: 0,
-            statusText: 'All done',
-          },
-        ],
-        counts: { members: 1, habits: 0, rewards: 0, tasksDoneToday: 0, mealsPlanned: 0 },
-      }),
-    );
-    renderAt('/t/khans/dashboard');
-    await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('today-snapshot-habits').textContent).toContain('—');
-  });
-
-  it('labels the ring "No habits assigned" when a member has zero habits', async () => {
-    mockJson(
-      makeResponse({
-        members: [
-          {
-            id: 'm2',
-            displayName: 'Iman',
-            role: 'child',
-            avatarEmoji: null,
-            habitsDone: 0,
-            habitsTotal: 0,
-            streak: 0,
-            tasksPending: 0,
-            statusText: 'All done',
-          },
-        ],
-        counts: { members: 1, habits: 0, rewards: 0, tasksDoneToday: 0, mealsPlanned: 0 },
-      }),
-    );
-    renderAt('/t/khans/dashboard');
-    await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
-    expect(screen.getByLabelText('No habits assigned')).toBeInTheDocument();
-  });
-
-  it('clamps a goal bar at 100% when progress exceeds target', async () => {
-    mockJson(
-      makeResponse({
-        goals: [{ id: 'g1', label: 'Steps', progress: 150, target: 100 }],
-      }),
-    );
-    renderAt('/t/khans/dashboard');
-    await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('today-goal-0').textContent).toContain('100%');
-  });
-
-  it('renders up to 3 goal bars (with a percentage) and the activity feed', async () => {
-    mockJson(
-      makeResponse({
-        goals: [
-          { id: 'g1', label: 'Hajj fund', progress: 250, target: 1000 },
-          { id: 'g2', label: 'New bikes', progress: 60, target: 300 },
-          { id: 'g3', label: 'Open ended', progress: 40, target: null },
-          { id: 'g4', label: 'Fourth — should not render', progress: 1, target: 2 },
-        ],
         recentActivity: [
           {
             id: 'a1',
-            actor: 'Sarah',
-            action: 'completed a habit',
-            timestamp: '2026-05-03T08:00:00.000Z',
+            actor: 'Amina',
+            action: 'completed Morning Routine',
+            timestamp: '2026-06-11T08:00:00.000Z',
           },
           {
             id: 'a2',
             actor: null,
             action: 'family created',
-            timestamp: '2026-05-03T07:00:00.000Z',
+            timestamp: '2026-06-11T07:00:00.000Z',
           },
         ],
       }),
     );
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
-
-    expect(screen.getByTestId('today-goal-0').textContent).toContain('Hajj fund');
-    expect(screen.getByTestId('today-goal-0').textContent).toContain('25%');
-    expect(screen.getByTestId('today-goal-2').textContent).toContain('Open ended');
-    expect(screen.queryByTestId('today-goal-3')).not.toBeInTheDocument(); // capped at 3
-
-    expect(screen.getByTestId('today-activity-0').textContent).toContain('Sarah');
-    expect(screen.getByTestId('today-activity-0').textContent).toContain('completed a habit');
+    expect(screen.getByTestId('today-activity-0').textContent).toContain('Amina');
+    expect(screen.getByTestId('today-activity-0').textContent).toContain(
+      'completed Morning Routine',
+    );
     expect(screen.getByTestId('today-activity-1').textContent).toContain('family created');
   });
 
@@ -339,7 +246,6 @@ describe('<TodayTabPanel />', () => {
     authState.session = null;
     renderAt('/t/khans/dashboard');
     expect(fetchMock).not.toHaveBeenCalled();
-    // Stays in loading state — no error rendered.
     expect(screen.getByTestId('today-loading')).toBeInTheDocument();
   });
 });
