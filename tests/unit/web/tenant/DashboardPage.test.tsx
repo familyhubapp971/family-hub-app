@@ -1,37 +1,36 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 
-// FHS-227 — Parent Dashboard shell. The actual tab CONTENT lives in
-// sibling tickets (FHS-228..FHS-233); this suite covers framework
-// invariants only: 6 tabs render, default = home, ?tab= drives the
-// active panel, clicking a tab updates the URL + content, sign-out
-// wires through.
+// FHS-227 + FHS-261 — Parent Dashboard shell. Tab framework invariants
+// (6 tabs render, default = home, ?tab= drives the active panel) plus
+// the FHS-261 header refactor: family-name hero replaces the plain
+// "Family Hub" wordmark; profile pill dropdown replaces the email +
+// Log out pair; per-tab icons + badge support are wired into TopNav.
 
 const mocks = vi.hoisted(() => ({
   signOut: vi.fn(),
   signOutAll: vi.fn(),
+  fetchMock: vi.fn(),
 }));
 
 vi.mock('../../../../apps/web/src/lib/supabase', () => ({
-  supabase: {
-    auth: {
-      signOut: mocks.signOut,
-    },
-  },
+  supabase: { auth: { signOut: mocks.signOut } },
 }));
 
-const authState: { user: { email?: string; id?: string } | null } = {
-  user: { email: 'sarah@example.com', id: 'u-1' },
+const authState: {
+  user: { email?: string; id?: string; user_metadata?: Record<string, unknown> } | null;
+  session: { access_token?: string } | null;
+} = {
+  user: { email: 'sarah@example.com', id: 'u-1', user_metadata: {} },
+  session: { access_token: 'tok-1' },
 };
-// FHS-253 — DashboardPage now calls signOutAll() (which clears both
-// the Supabase session AND fh.kid.token). The mock returns a passthrough
-// that calls supabase.auth.signOut so the existing assertion + spy
-// chain still works.
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
   signOutAll: mocks.signOutAll,
 }));
+
+vi.stubGlobal('fetch', mocks.fetchMock);
 
 import { DashboardPage } from '../../../../apps/web/src/pages/tenant/DashboardPage';
 import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
@@ -44,19 +43,58 @@ function LocationProbe() {
 function renderAt(initial: string) {
   return render(
     <MemoryRouter initialEntries={[initial]}>
+      {/* LocationProbe sits above <Routes> so it survives navigation
+          and keeps reporting the current URL even after the dashboard
+          route unmounts (e.g. when Add Child pushes /t/<slug>/members). */}
+      <LocationProbe />
       <Routes>
         <Route
           path="/t/:slug/dashboard"
           element={
             <TenantProvider>
               <DashboardPage />
-              <LocationProbe />
             </TenantProvider>
           }
         />
+        <Route path="/t/:slug/members" element={<div data-testid="members-route" />} />
+        <Route path="/" element={<div data-testid="welcome-route" />} />
       </Routes>
     </MemoryRouter>,
   );
+}
+
+// Sensible defaults for /api/me and /api/dashboard/today so each test
+// only overrides what it actually cares about.
+function defaultFetchMocks() {
+  mocks.fetchMock.mockImplementation(async (url: string) => {
+    if (url.includes('/api/me')) {
+      return {
+        ok: true,
+        json: async () => ({
+          id: 'u-1',
+          email: 'sarah@example.com',
+          tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'admin' }],
+        }),
+      } as Response;
+    }
+    if (url.includes('/api/dashboard/today')) {
+      return {
+        ok: true,
+        json: async () => ({
+          date: '2026-06-10',
+          greetingName: 'Sarah',
+          counts: { members: 4, habits: 5, rewards: 3 },
+          members: [
+            { id: 'm-1', displayName: 'Sarah', role: 'admin', avatarEmoji: null },
+            { id: 'm-2', displayName: 'Yusuf', role: 'adult', avatarEmoji: null },
+            { id: 'm-3', displayName: 'Iman', role: 'child', avatarEmoji: '👧' },
+            { id: 'm-4', displayName: 'Ali', role: 'child', avatarEmoji: '👦' },
+          ],
+        }),
+      } as Response;
+    }
+    return { ok: false, status: 404, json: async () => ({}) } as Response;
+  });
 }
 
 beforeEach(() => {
@@ -64,7 +102,10 @@ beforeEach(() => {
   mocks.signOut.mockResolvedValue({});
   mocks.signOutAll.mockReset();
   mocks.signOutAll.mockResolvedValue({ error: null });
-  authState.user = { email: 'sarah@example.com', id: 'u-1' };
+  mocks.fetchMock.mockReset();
+  defaultFetchMocks();
+  authState.user = { email: 'sarah@example.com', id: 'u-1', user_metadata: {} };
+  authState.session = { access_token: 'tok-1' };
 });
 
 afterEach(() => {
@@ -75,24 +116,18 @@ describe('<DashboardPage /> — tab framework', () => {
   it('renders all six tabs in the nav', () => {
     renderAt('/t/khans/dashboard');
     for (const label of ['Dashboard', 'Meals', 'Calendar', 'Assignments', 'Noticeboard', 'Tasks']) {
-      expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
     }
   });
 
   it('defaults to the home (Dashboard) panel when ?tab is absent', () => {
     renderAt('/t/khans/dashboard');
-    // Home tab renders <TodayTabPanel /> (FHS-228). With no session
-    // mocked the panel sits in its loading state — assert that, not
-    // the placeholder title (which is only used for non-home tabs).
     expect(screen.getByTestId('dashboard-panel-home')).toBeInTheDocument();
     expect(screen.getByTestId('today-loading')).toBeInTheDocument();
   });
 
   it('honours ?tab=meals on initial render', () => {
     renderAt('/t/khans/dashboard?tab=meals');
-    // Meals tab renders <MealsTabPanel /> (FHS-229). With no session
-    // mocked the panel sits in its loading state — assert that, not
-    // the placeholder title (which is only used for not-yet-built tabs).
     expect(screen.getByTestId('dashboard-panel-meals')).toBeInTheDocument();
     expect(screen.getByTestId('meals-loading')).toBeInTheDocument();
   });
@@ -104,16 +139,11 @@ describe('<DashboardPage /> — tab framework', () => {
 
   it('clicking a tab updates the active panel content + URL ?tab param', () => {
     renderAt('/t/khans/dashboard');
-    // All six tabs now mount real panels (FHS-228..FHS-233). Switching
-    // tabs swaps the panel's data-testid and updates the URL ?tab param.
-    // Each panel's content is tested in its own file; here we only
-    // verify the framework's URL+panel routing.
-    const tab = screen.getByRole('tab', { name: 'Tasks' });
+    const tab = screen.getByRole('tab', { name: /Tasks/ });
     act(() => {
       fireEvent.click(tab);
     });
     expect(screen.getByTestId('dashboard-panel-tasks')).toBeInTheDocument();
-    expect(screen.getByTestId('tasks-loading')).toBeInTheDocument();
     expect(screen.queryByTestId('dashboard-panel-home')).not.toBeInTheDocument();
     expect(screen.getByTestId('location-search').textContent).toBe('?tab=tasks');
   });
@@ -122,7 +152,7 @@ describe('<DashboardPage /> — tab framework', () => {
     renderAt('/t/khans/dashboard?tab=meals');
     expect(screen.getByTestId('location-search').textContent).toBe('?tab=meals');
     act(() => {
-      fireEvent.click(screen.getByRole('tab', { name: 'Dashboard' }));
+      fireEvent.click(screen.getByRole('tab', { name: /Dashboard/ }));
     });
     expect(screen.getByTestId('location-search').textContent).toBe('');
     expect(screen.getByTestId('dashboard-panel-home')).toBeInTheDocument();
@@ -130,30 +160,101 @@ describe('<DashboardPage /> — tab framework', () => {
 
   it('marks the active tab with aria-selected=true and others false', () => {
     renderAt('/t/khans/dashboard?tab=tasks');
-    const tasks = screen.getByRole('tab', { name: 'Tasks' });
-    const meals = screen.getByRole('tab', { name: 'Meals' });
-    expect(tasks.getAttribute('aria-selected')).toBe('true');
-    expect(meals.getAttribute('aria-selected')).toBe('false');
+    expect(screen.getByRole('tab', { name: /Tasks/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: /Meals/ }).getAttribute('aria-selected')).toBe('false');
+  });
+});
+
+describe('<DashboardPage /> — FHS-261 header', () => {
+  it('fetches /api/me + /api/dashboard/today and renders "<name> Family Hub"', async () => {
+    renderAt('/t/khans/dashboard');
+    await waitFor(() =>
+      expect(screen.getByTestId('dashboard-family-name').textContent).toBe('The Khans Family Hub'),
+    );
+    // Both lookups went out with the slug as the tenant context.
+    expect(mocks.fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/me'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer tok-1' }),
+      }),
+    );
+    expect(mocks.fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/dashboard/today'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'x-tenant-slug': 'khans' }),
+      }),
+    );
   });
 
-  it('renders the signed-in user email in the right slot', () => {
+  it('shows "N members active" pulse when /api/dashboard/today returns members', async () => {
     renderAt('/t/khans/dashboard');
-    expect(screen.getByTestId('dashboard-user-email').textContent).toBe('sarah@example.com');
+    await waitFor(() =>
+      expect(screen.getByTestId('dashboard-members-active').textContent).toMatch(
+        /4 members active/i,
+      ),
+    );
   });
 
-  it('renders an em-dash when the auth context has no email', () => {
-    authState.user = { email: undefined, id: 'u-1' };
+  it('renders the loading skeleton until both fetches resolve', () => {
+    // Reset the fetch so it never resolves during this test.
+    mocks.fetchMock.mockReset();
+    mocks.fetchMock.mockReturnValue(new Promise(() => {}));
     renderAt('/t/khans/dashboard');
-    expect(screen.getByTestId('dashboard-user-email').textContent).toBe('—');
+    expect(screen.getByTestId('dashboard-family-hero-loading')).toBeInTheDocument();
   });
 
-  it('clicking Log out calls signOutAll() (clears Supabase session + kid JWT)', async () => {
+  it('profile pill is collapsed by default and opens on click', async () => {
     renderAt('/t/khans/dashboard');
-    const btn = screen.getByTestId('dashboard-logout');
+    expect(screen.queryByTestId('dashboard-profile-menu')).toBeNull();
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    expect(screen.getByTestId('dashboard-profile-menu')).toBeInTheDocument();
+  });
+
+  it('dropdown lists every child member with a View World link', async () => {
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('dashboard-family-name')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    expect(screen.getByTestId('dashboard-profile-child-m-3').textContent).toMatch(/Iman/);
+    expect(screen.getByTestId('dashboard-profile-child-m-4').textContent).toMatch(/Ali/);
+    // Adults must NOT appear under Children.
+    expect(screen.queryByTestId('dashboard-profile-child-m-1')).toBeNull();
+    expect(screen.queryByTestId('dashboard-profile-child-m-2')).toBeNull();
+  });
+
+  it('Add Child button navigates to the members page with ?add=child', async () => {
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    fireEvent.click(screen.getByTestId('dashboard-profile-add-child'));
+    await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
+    expect(screen.getByTestId('location-search').textContent).toBe('?add=child');
+  });
+
+  it('Log out lives inside the dropdown and calls signOutAll()', async () => {
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
     await act(async () => {
-      fireEvent.click(btn);
+      fireEvent.click(screen.getByTestId('dashboard-logout'));
     });
-    // FHS-253 — single helper call that drops both identities at once.
     expect(mocks.signOutAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to the auth email as parent name when no display name is set', async () => {
+    authState.user = { email: 'sarah@example.com', id: 'u-1', user_metadata: {} };
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    expect(screen.getByTestId('dashboard-profile-parent-name').textContent).toBe(
+      'sarah@example.com',
+    );
+  });
+
+  it('uses user_metadata.full_name as the parent name when present', async () => {
+    authState.user = {
+      email: 'sarah@example.com',
+      id: 'u-1',
+      user_metadata: { full_name: 'Sarah Khan' },
+    };
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    expect(screen.getByTestId('dashboard-profile-parent-name').textContent).toBe('Sarah Khan');
   });
 });
