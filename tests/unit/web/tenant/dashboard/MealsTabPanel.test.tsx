@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-229 — MealsTabPanel. Loading / error / grid / cell-edit /
-// save / delete-on-clear paths.
+// FHS-264 — MealsTabPanel redesign. Day cards, filter pills, avatar
+// dots, repeat icon, and the who-for + recurring editor. A small
+// in-memory fake stands in for the API so add / edit / delete + refetch
+// behave like the real backend.
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
@@ -15,6 +17,79 @@ vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
 
 import { MealsTabPanel } from '../../../../../apps/web/src/pages/tenant/dashboard/MealsTabPanel';
 import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+
+interface Meal {
+  id: string;
+  dayOfWeek: string;
+  slot: string;
+  name: string;
+  memberId: string | null;
+  recurring: boolean;
+}
+interface Member {
+  id: string;
+  displayName: string;
+  avatarEmoji: string | null;
+}
+
+// Wires fetchMock to a mutable in-memory store. GET /api/meals and
+// /api/members read it; POST /api/meals upserts/deletes like the API.
+function installApi(opts: {
+  meals?: Meal[];
+  members?: Member[];
+  mealsOk?: boolean;
+  mealsStatus?: number;
+}) {
+  const state = {
+    meals: [...(opts.meals ?? [])],
+    members: [...(opts.members ?? [])],
+  };
+  let gen = 0;
+  fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    const u = String(url);
+    if (init?.method === 'POST') {
+      const body = JSON.parse(init.body as string) as {
+        dayOfWeek: string;
+        slot: string;
+        name: string;
+        memberId: string | null;
+        recurring: boolean;
+      };
+      const match = (m: Meal) =>
+        m.dayOfWeek === body.dayOfWeek && m.slot === body.slot && m.memberId === body.memberId;
+      if (body.name.trim() === '') {
+        state.meals = state.meals.filter((m) => !match(m));
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ deleted: true }) });
+      }
+      const idx = state.meals.findIndex(match);
+      const row: Meal = {
+        id: idx >= 0 ? state.meals[idx]!.id : `gen-${++gen}`,
+        dayOfWeek: body.dayOfWeek,
+        slot: body.slot,
+        name: body.name.trim(),
+        memberId: body.memberId,
+        recurring: body.recurring,
+      };
+      if (idx >= 0) state.meals[idx] = row;
+      else state.meals.push(row);
+      return Promise.resolve({ ok: true, status: 200, json: async () => row });
+    }
+    if (u.includes('/api/members')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ members: state.members, callerRole: 'admin' }),
+      });
+    }
+    // GET /api/meals
+    return Promise.resolve({
+      ok: opts.mealsOk ?? true,
+      status: opts.mealsStatus ?? 200,
+      json: async () => ({ meals: state.meals }),
+    });
+  });
+  return state;
+}
 
 function renderAt(initial: string) {
   return render(
@@ -33,6 +108,13 @@ function renderAt(initial: string) {
   );
 }
 
+const ALI = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const SARA = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const MEMBERS: Member[] = [
+  { id: ALI, displayName: 'Ali', avatarEmoji: '👦' },
+  { id: SARA, displayName: 'Sara', avatarEmoji: '👧' },
+];
+
 beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
@@ -50,161 +132,199 @@ describe('<MealsTabPanel />', () => {
     expect(screen.getByTestId('meals-loading')).toBeInTheDocument();
   });
 
-  it('renders the inline error when the API returns a non-2xx', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) });
+  it('renders the inline error when the meals API returns a non-2xx', async () => {
+    installApi({ mealsOk: false, mealsStatus: 500 });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-error')).toBeInTheDocument());
   });
 
-  it('renders an empty grid with + Add buttons when no meals are stored', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ meals: [] }) });
+  it('fetches both /api/meals and /api/members', async () => {
+    installApi({ members: MEMBERS });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
-    // Spot-check a couple of cells render the empty-state button.
-    expect(screen.getByTestId('meals-cell-button-mon-breakfast')).toBeInTheDocument();
-    expect(screen.getByTestId('meals-cell-button-sun-snack')).toBeInTheDocument();
+    const urls = fetchMock.mock.calls.map(([u]) => String(u));
+    expect(urls.some((u) => u.endsWith('/api/meals'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/api/members'))).toBe(true);
   });
 
-  it('places stored meal names in their day/slot cells', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        meals: [
-          { id: 'm1', dayOfWeek: 'mon', slot: 'breakfast', name: 'Porridge' },
-          { id: 'm2', dayOfWeek: 'wed', slot: 'dinner', name: 'Pasta' },
-        ],
-      }),
+  it('renders 7 day cards, a pill per member, and empty-day states', async () => {
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+    for (const d of ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']) {
+      expect(screen.getByTestId(`meals-day-${d}`)).toBeInTheDocument();
+    }
+    expect(screen.getByTestId('meals-filter-all')).toBeInTheDocument();
+    expect(screen.getByTestId(`meals-filter-${ALI}`)).toBeInTheDocument();
+    expect(screen.getByTestId('meals-day-mon-empty')).toBeInTheDocument();
+  });
+
+  it('shows a meal with its name, avatar dot, and a repeat icon when recurring', async () => {
+    installApi({
+      members: MEMBERS,
+      meals: [
+        {
+          id: 'm1',
+          dayOfWeek: 'mon',
+          slot: 'breakfast',
+          name: 'Porridge',
+          memberId: null,
+          recurring: true,
+        },
+        {
+          id: 'm2',
+          dayOfWeek: 'mon',
+          slot: 'dinner',
+          name: 'Eggs',
+          memberId: ALI,
+          recurring: false,
+        },
+      ],
     });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('meals-cell-name-mon-breakfast').textContent).toBe('Porridge');
-    expect(screen.getByTestId('meals-cell-name-wed-dinner').textContent).toBe('Pasta');
+    expect(screen.getByTestId('meals-meal-m1-name').textContent).toBe('Porridge');
+    expect(screen.getByTestId('meals-meal-m1-avatar')).toBeInTheDocument();
+    // Recurring shows the repeat icon; non-recurring does not.
+    expect(screen.getByTestId('meals-meal-m1-recurring')).toBeInTheDocument();
+    expect(screen.queryByTestId('meals-meal-m2-recurring')).not.toBeInTheDocument();
   });
 
-  it('clicking a cell opens the inline editor with the current value', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        meals: [{ id: 'm1', dayOfWeek: 'mon', slot: 'breakfast', name: 'Porridge' }],
-      }),
+  it('filtering to a member shows their meals + whole-family meals, hides others', async () => {
+    installApi({
+      members: MEMBERS,
+      meals: [
+        {
+          id: 'fam',
+          dayOfWeek: 'mon',
+          slot: 'breakfast',
+          name: 'Family toast',
+          memberId: null,
+          recurring: false,
+        },
+        {
+          id: 'ali',
+          dayOfWeek: 'mon',
+          slot: 'lunch',
+          name: 'Ali sandwich',
+          memberId: ALI,
+          recurring: false,
+        },
+        {
+          id: 'sara',
+          dayOfWeek: 'mon',
+          slot: 'lunch',
+          name: 'Sara salad',
+          memberId: SARA,
+          recurring: false,
+        },
+      ],
     });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
 
     act(() => {
-      fireEvent.click(screen.getByTestId('meals-cell-button-mon-breakfast'));
+      fireEvent.click(screen.getByTestId(`meals-filter-${ALI}`));
     });
-    const input = screen.getByTestId('meals-input-mon-breakfast') as HTMLInputElement;
-    expect(input).toBeInTheDocument();
-    expect(input.value).toBe('Porridge');
+    expect(screen.getByTestId('meals-meal-fam-name')).toBeInTheDocument(); // family always shows
+    expect(screen.getByTestId('meals-meal-ali-name')).toBeInTheDocument();
+    expect(screen.queryByTestId('meals-meal-sara-name')).not.toBeInTheDocument();
   });
 
-  it('saving fires POST /api/meals with day/slot/name + refetches', async () => {
-    fetchMock
-      // initial GET — empty
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ meals: [] }) })
-      // POST upsert
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ id: 'm1', dayOfWeek: 'tue', slot: 'lunch', name: 'Soup' }),
-      })
-      // refetch GET
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          meals: [{ id: 'm1', dayOfWeek: 'tue', slot: 'lunch', name: 'Soup' }],
-        }),
-      });
-
+  it('adding a meal POSTs day/slot/name/memberId/recurring and shows it after refetch', async () => {
+    installApi({ members: MEMBERS });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
 
     act(() => {
-      fireEvent.click(screen.getByTestId('meals-cell-button-tue-lunch'));
+      fireEvent.click(screen.getByTestId('meals-add-tue'));
     });
-    const input = screen.getByTestId('meals-input-tue-lunch');
+    expect(screen.getByTestId('meals-editor')).toBeInTheDocument();
     act(() => {
-      fireEvent.change(input, { target: { value: 'Soup' } });
+      fireEvent.change(screen.getByTestId('meals-editor-slot'), { target: { value: 'lunch' } });
+      fireEvent.change(screen.getByTestId('meals-editor-member'), { target: { value: ALI } });
+      fireEvent.change(screen.getByTestId('meals-editor-name'), { target: { value: 'Soup' } });
+      fireEvent.click(screen.getByTestId('meals-editor-recurring'));
     });
     await act(async () => {
-      fireEvent.click(screen.getByTestId('meals-save-tue-lunch'));
+      fireEvent.click(screen.getByTestId('meals-editor-save'));
     });
 
-    await waitFor(() =>
-      expect(screen.getByTestId('meals-cell-name-tue-lunch').textContent).toBe('Soup'),
-    );
-
-    // Find the POST call.
+    await waitFor(() => expect(screen.getByText('Soup')).toBeInTheDocument());
     const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
-    expect(postCall).toBeDefined();
-    const [, init] = postCall!;
-    expect(JSON.parse(init.body as string)).toEqual({
+    expect(JSON.parse((postCall![1] as RequestInit).body as string)).toEqual({
       dayOfWeek: 'tue',
       slot: 'lunch',
       name: 'Soup',
+      memberId: ALI,
+      recurring: true,
     });
   });
 
-  it('clearing a cell sends an empty name (delete path)', async () => {
-    fetchMock
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          meals: [{ id: 'm1', dayOfWeek: 'mon', slot: 'breakfast', name: 'Porridge' }],
-        }),
-      })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ deleted: true }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ meals: [] }) });
-
+  it('clicking a meal opens the editor pre-filled and saves an edit', async () => {
+    installApi({
+      members: MEMBERS,
+      meals: [
+        {
+          id: 'm1',
+          dayOfWeek: 'wed',
+          slot: 'dinner',
+          name: 'Pasta',
+          memberId: null,
+          recurring: false,
+        },
+      ],
+    });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
 
     act(() => {
-      fireEvent.click(screen.getByTestId('meals-cell-button-mon-breakfast'));
+      fireEvent.click(screen.getByTestId('meals-meal-m1'));
     });
+    const input = screen.getByTestId('meals-editor-name') as HTMLInputElement;
+    expect(input.value).toBe('Pasta');
     act(() => {
-      fireEvent.change(screen.getByTestId('meals-input-mon-breakfast'), {
-        target: { value: '' },
-      });
+      fireEvent.change(input, { target: { value: 'Lasagne' } });
     });
     await act(async () => {
-      fireEvent.click(screen.getByTestId('meals-save-mon-breakfast'));
+      fireEvent.click(screen.getByTestId('meals-editor-save'));
     });
-
-    await waitFor(() => expect(screen.queryByTestId('meals-cell-name-mon-breakfast')).toBeNull());
-
-    const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
-    const body = JSON.parse((postCall![1] as RequestInit).body as string);
-    expect(body.name).toBe('');
+    await waitFor(() => expect(screen.getByText('Lasagne')).toBeInTheDocument());
   });
 
-  it('Escape cancels the edit', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        meals: [{ id: 'm1', dayOfWeek: 'mon', slot: 'breakfast', name: 'Porridge' }],
-      }),
+  it('removing a meal sends an empty name and drops it from the grid', async () => {
+    installApi({
+      members: MEMBERS,
+      meals: [
+        {
+          id: 'm1',
+          dayOfWeek: 'thu',
+          slot: 'lunch',
+          name: 'Wraps',
+          memberId: null,
+          recurring: false,
+        },
+      ],
     });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
 
     act(() => {
-      fireEvent.click(screen.getByTestId('meals-cell-button-mon-breakfast'));
+      fireEvent.click(screen.getByTestId('meals-meal-m1'));
     });
-    const input = screen.getByTestId('meals-input-mon-breakfast');
-    act(() => {
-      fireEvent.keyDown(input, { key: 'Escape' });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('meals-editor-delete'));
     });
-    expect(screen.queryByTestId('meals-input-mon-breakfast')).toBeNull();
-    expect(screen.getByTestId('meals-cell-name-mon-breakfast').textContent).toBe('Porridge');
+    await waitFor(() => expect(screen.queryByTestId('meals-meal-m1-name')).not.toBeInTheDocument());
+    const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
+    expect(JSON.parse((postCall![1] as RequestInit).body as string).name).toBe('');
   });
 
-  it('passes the bearer token + tenant slug on every request', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ meals: [] }) });
+  it('passes the bearer token + tenant slug on requests', async () => {
+    installApi({ members: MEMBERS });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('http://localhost:3001/api/meals');
+    const [, init] = fetchMock.mock.calls[0]!;
     expect(init.headers).toMatchObject({
       Authorization: 'Bearer tok-abc',
       'x-tenant-slug': 'khans',
