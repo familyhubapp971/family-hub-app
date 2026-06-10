@@ -47,6 +47,9 @@ Feature: GET /api/dashboard/today (FHS-228)
     Given a second tenant "smith" exists with the caller as an admin member
     And the "smith" tenant has a child member "Zaid" with no linked user
     And the "smith" tenant has 4 starter habits and 2 starter rewards
+    And the "smith" tenant has a savings goal "Smith fund" with a 100 deposit
+    And the "smith" tenant has a recent activity entry "smith event"
+    And the "smith" tenant has 1 task completed today by "Zaid"
     When the caller GETs /api/dashboard/today for tenant "khan"
     Then the response status is 200
     And the response counts are:
@@ -55,3 +58,6 @@ Feature: GET /api/dashboard/today (FHS-228)
       | habits  | 0 |
       | rewards | 0 |
     And no member named "Zaid" is in the response
+    And the response goals are empty
+    And the response recent activity is empty
+    And the response snapshot counts include tasksDoneToday 0 and mealsPlanned 0

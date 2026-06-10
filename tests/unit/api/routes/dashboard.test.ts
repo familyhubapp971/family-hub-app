@@ -252,6 +252,102 @@ describe('FHS-228 / FHS-262 — GET /api/dashboard/today', () => {
     }
   });
 
+  it('de-duplicates habit completions and excludes archived-habit completions', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-10T12:00:00.000Z'));
+    try {
+      const M1 = '22222222-2222-4222-8222-222222222222';
+      const H1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+      const H_ARCHIVED = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb9';
+      const WK = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1';
+      const app = buildAppWithSeed(
+        {},
+        {
+          members: [{ id: M1, displayName: 'Sarah', role: 'admin', avatarEmoji: null }],
+          habitIds: [H1], // only H1 is active; H_ARCHIVED is not returned by query 3
+          weeks: [{ id: WK, startDate: '2026-06-08', endDate: '2026-06-14' }],
+          actions: [
+            { weekId: WK, memberId: M1, habitId: H1, completedCount: 1 },
+            { weekId: WK, memberId: M1, habitId: H1, completedCount: 1 }, // duplicate row, same habit
+            { weekId: WK, memberId: M1, habitId: H_ARCHIVED, completedCount: 5 }, // archived → excluded
+          ],
+        },
+      );
+      const res = await app.request('/api/dashboard/today');
+      const body = (await res.json()) as {
+        members: Array<{ habitsDone: number; habitsTotal: number; streak: number }>;
+      };
+      expect(body.members[0]).toMatchObject({ habitsDone: 1, habitsTotal: 1, streak: 1 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('surfaces a null activity actor as null rather than crashing', async () => {
+    const app = buildAppWithSeed(
+      {},
+      {
+        members: [
+          {
+            id: '22222222-2222-4222-8222-222222222222',
+            displayName: 'Sarah',
+            role: 'admin',
+            avatarEmoji: null,
+          },
+        ],
+        activity: [
+          {
+            id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee9',
+            action: 'family created',
+            createdAt: new Date('2026-06-10T08:00:00.000Z'),
+            actor: null, // system event / removed member
+          },
+        ],
+      },
+    );
+    const res = await app.request('/api/dashboard/today');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      recentActivity: Array<{ actor: string | null; action: string }>;
+    };
+    expect(body.recentActivity[0]).toEqual({
+      id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee9',
+      actor: null,
+      action: 'family created',
+      timestamp: '2026-06-10T08:00:00.000Z',
+    });
+  });
+
+  it('counts tasksDoneToday against the tenant timezone, not UTC', async () => {
+    vi.useFakeTimers();
+    // 20:30 UTC on Jun 10 is 00:30 Jun 11 in Asia/Dubai (+04) — "today" is Jun 11 there.
+    vi.setSystemTime(new Date('2026-06-10T20:30:00.000Z'));
+    try {
+      const app = buildAppWithSeed(
+        {},
+        {
+          tenantTimezone: 'Asia/Dubai',
+          tasks: [
+            {
+              memberId: '22222222-2222-4222-8222-222222222222',
+              doneAt: new Date('2026-06-10T20:30:00.000Z'),
+            }, // Jun 11 Dubai → today
+            {
+              memberId: '22222222-2222-4222-8222-222222222222',
+              doneAt: new Date('2026-06-10T08:00:00.000Z'),
+            }, // Jun 10 Dubai → not today
+          ],
+        },
+      );
+      const res = await app.request('/api/dashboard/today');
+      const body = (await res.json()) as { counts: { tasksDoneToday: number }; date: string };
+      expect(body.date).toBe('2026-06-11');
+      expect(body.counts.tasksDoneToday).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("anchors the date in the tenant's IANA timezone", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-03T22:00:00.000Z'));

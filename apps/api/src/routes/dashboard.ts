@@ -246,7 +246,10 @@ export const dashboardRouter = new Hono().get('/today', async (c) => {
       actor: members.displayName,
     })
     .from(activityLogs)
-    .leftJoin(members, eq(activityLogs.actorMemberId, members.id))
+    .leftJoin(
+      members,
+      and(eq(activityLogs.actorMemberId, members.id), eq(members.tenantId, tenantId)),
+    )
     .where(eq(activityLogs.tenantId, tenantId))
     .orderBy(desc(activityLogs.createdAt))
     .limit(3);
@@ -291,9 +294,9 @@ export const dashboardRouter = new Hono().get('/today', async (c) => {
   let tasksDoneToday = 0;
   for (const t of taskRows) {
     if (t.doneAt === null) {
-      if (t.memberId) {
-        tasksPendingByMember.set(t.memberId, (tasksPendingByMember.get(t.memberId) ?? 0) + 1);
-      }
+      // tasks.member_id is NOT NULL; cross-tenant scope is guaranteed by
+      // the tenantId filter on the query above.
+      tasksPendingByMember.set(t.memberId, (tasksPendingByMember.get(t.memberId) ?? 0) + 1);
     } else if (isoDateInTimezone(t.doneAt, tenantRow?.timezone) === today) {
       tasksDoneToday += 1;
     }

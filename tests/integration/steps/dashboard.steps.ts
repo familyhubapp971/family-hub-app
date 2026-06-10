@@ -325,14 +325,12 @@ describeFeature(feature, ({ Background, Scenario }) => {
         async (_ctx, slug: string) => {
           const tenantId = tenantIds[slug]!;
           await db.insert(tasks).values({ tenantId, memberId: callerMemberId, title: 'Pending' });
-          await db
-            .insert(tasks)
-            .values({
-              tenantId,
-              memberId: callerMemberId,
-              title: 'Done today',
-              doneAt: new Date(),
-            });
+          await db.insert(tasks).values({
+            tenantId,
+            memberId: callerMemberId,
+            title: 'Done today',
+            doneAt: new Date(),
+          });
         },
       );
 
@@ -518,6 +516,50 @@ describeFeature(feature, ({ Background, Scenario }) => {
         },
       );
 
+      And(
+        'the {string} tenant has a savings goal {string} with a {int} deposit',
+        async (_ctx, slug: string, name: string, deposit: number) => {
+          const tenantId = tenantIds[slug]!;
+          const inserted = await db
+            .insert(savings)
+            .values({ tenantId, name, targetAmount: '1000.00' })
+            .returning();
+          await db.insert(savingsTransactions).values({
+            tenantId,
+            savingsId: inserted[0]!.id,
+            amount: `${deposit}.00`,
+            type: 'deposit',
+            occurredOn: new Date().toISOString().slice(0, 10),
+          });
+        },
+      );
+
+      And(
+        'the {string} tenant has a recent activity entry {string}',
+        async (_ctx, slug: string, action: string) => {
+          // actorMemberId null = a system-logged event in the other tenant.
+          await db.insert(activityLogs).values({ tenantId: tenantIds[slug]!, action });
+        },
+      );
+
+      And(
+        'the {string} tenant has 1 task completed today by {string}',
+        async (_ctx, slug: string, memberName: string) => {
+          const tenantId = tenantIds[slug]!;
+          const memberRows = await db
+            .select()
+            .from(members)
+            .where(sql`tenant_id = ${tenantId} AND display_name = ${memberName}`)
+            .limit(1);
+          await db.insert(tasks).values({
+            tenantId,
+            memberId: memberRows[0]!.id,
+            title: 'Done in smith',
+            doneAt: new Date(),
+          });
+        },
+      );
+
       When(
         'the caller GETs /api/dashboard/today for tenant {string}',
         async (_ctx, slug: string) => {
@@ -547,6 +589,22 @@ describeFeature(feature, ({ Background, Scenario }) => {
       And('no member named {string} is in the response', (_ctx, name: string) => {
         expect(body.members.find((m) => m.displayName === name)).toBeUndefined();
       });
+
+      And('the response goals are empty', () => {
+        expect(body.goals).toEqual([]);
+      });
+
+      And('the response recent activity is empty', () => {
+        expect(body.recentActivity).toEqual([]);
+      });
+
+      And(
+        'the response snapshot counts include tasksDoneToday {int} and mealsPlanned {int}',
+        (_ctx, done: number, meals: number) => {
+          expect(body.counts.tasksDoneToday).toBe(done);
+          expect(body.counts.mealsPlanned).toBe(meals);
+        },
+      );
     },
   );
 });
