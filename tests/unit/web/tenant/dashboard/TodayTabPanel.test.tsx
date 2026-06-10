@@ -166,7 +166,7 @@ describe('<TodayTabPanel />', () => {
     expect(screen.getByTestId('today-member-1-link').getAttribute('href')).toBe(
       '/t/khans/child/m2',
     );
-    expect(screen.getByTestId('today-member-1-streak').textContent).toContain('4 day streak');
+    expect(screen.getByTestId('today-member-1-streak').textContent).toContain('4 week streak');
     expect(screen.getByLabelText('Iman: 2 of 3 habits done')).toBeInTheDocument();
     expect(screen.getByText('View World')).toBeInTheDocument();
   });

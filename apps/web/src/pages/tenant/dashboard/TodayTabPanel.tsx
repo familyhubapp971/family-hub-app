@@ -172,7 +172,7 @@ export function TodayTabPanel() {
               testId="today-snapshot-habits"
               icon={<CheckSquare size={18} className="text-pink-600" />}
               ring="bg-pink-100"
-              value={`${kidsHabitsDone}/${kidsHabitsTotal}`}
+              value={kids.length === 0 ? '—' : `${kidsHabitsDone}/${kidsHabitsTotal}`}
               label="Kids Habits"
             />
             <SnapshotTile
@@ -290,7 +290,7 @@ function MemberCard({
             aria-hidden="true"
             className={`flex h-12 w-12 items-center justify-center rounded-full border-2 border-black font-heading text-xl shadow-neo-xs ${rs.disc}`}
           >
-            {member.displayName.trim()[0]?.toUpperCase() ?? '?'}
+            {[...member.displayName.trim()][0]?.toUpperCase() ?? '?'}
           </div>
           <div>
             <h3
@@ -325,11 +325,15 @@ function MemberCard({
             </div>
             <div
               className="h-2.5 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100"
-              role="progressbar"
-              aria-label={`${member.displayName}: ${member.habitsDone} of ${member.habitsTotal} habits done`}
-              aria-valuenow={member.habitsDone}
-              aria-valuemin={0}
-              aria-valuemax={member.habitsTotal}
+              {...(member.habitsTotal > 0
+                ? {
+                    role: 'progressbar',
+                    'aria-label': `${member.displayName}: ${member.habitsDone} of ${member.habitsTotal} habits done`,
+                    'aria-valuenow': member.habitsDone,
+                    'aria-valuemin': 0,
+                    'aria-valuemax': member.habitsTotal,
+                  }
+                : { 'aria-label': `${member.displayName}: no habits assigned` })}
             >
               <div
                 className="h-full border-r-2 border-black bg-green-400"
@@ -341,7 +345,7 @@ function MemberCard({
                 data-testid={`today-member-${index}-streak`}
                 className="flex items-center gap-1 pt-1 text-xs font-bold text-orange-500"
               >
-                <Flame size={12} className="fill-orange-500" /> {member.streak} day streak
+                <Flame size={12} className="fill-orange-500" /> {member.streak} week streak
               </div>
             )}
           </div>
