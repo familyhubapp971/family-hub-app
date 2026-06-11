@@ -56,6 +56,7 @@ function makeResponse(overrides: Partial<DashboardTodayResponse> = {}): Dashboar
   return {
     date: '2026-06-11',
     greetingName: 'Sarah',
+    callerMemberId: '00000000-0000-4000-8000-000000000001',
     members: [],
     counts: {
       members: 0,

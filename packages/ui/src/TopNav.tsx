@@ -5,25 +5,23 @@ export interface TopNavTab {
   label: string;
   icon?: React.ReactNode;
   /**
-   * Optional numeric badge rendered as a pill next to the label.
+   * Optional numeric badge rendered as a red pill next to the label.
    * Hidden when 0 or undefined so callers can pass the count straight
-   * through without conditional logic. Negative values are clamped to 0.
-   * FHS-261 — wired by the founder; counts come from /api/dashboard/today
-   * once FHS-262 expands its response.
+   * through without conditional logic.
    */
   badge?: number;
 }
 
 interface TopNavProps {
-  /** Brand area on the far left — usually the logo + product name. */
+  /** Brand area on the top-left — logo + product name. */
   brand?: React.ReactNode;
-  /** Ordered tab list. Renders left-to-right after the brand. */
+  /** Ordered tab list. Renders as the second row, under the brand. */
   tabs: TopNavTab[];
   /** Currently active tab id. */
   activeTab: string;
   /** Fires with the clicked tab's id. */
   onTabChange: (tabId: string) => void;
-  /** Optional content rendered on the far right (user menu, settings, etc.). */
+  /** Optional content rendered top-right (profile pill, logout, etc.). */
   rightSlot?: React.ReactNode;
   /** Optional className override on the outer <nav>. */
   className?: string;
@@ -31,11 +29,12 @@ interface TopNavProps {
 }
 
 /**
- * Sticky top navigation used across authenticated surfaces (Parent
- * Dashboard, ChildWorld). Designed for the kingdom-purple background:
- * white pill-buttons for tabs, yellow active state. Tab list is fully
- * data-driven so the same component serves multiple surfaces — Dashboard
- * passes its 6 tabs, ChildWorld passes its 5.
+ * Top navigation for authenticated surfaces (Parent Dashboard,
+ * ChildWorld), matching the Magic Patterns design: a darker-purple
+ * banner with TWO rows — branding + right slot on top, the tab strip
+ * underneath. Active tab is a pink pill with black text; inactive tabs
+ * are borderless grey text that lighten on hover. Badges are small red
+ * pills.
  *
  * Keyboard a11y: tab buttons are real <button>s; arrow keys are NOT
  * intercepted (browser default Tab key navigation is sufficient and
@@ -53,22 +52,24 @@ export function TopNav({
   return (
     <nav
       data-testid={testId}
-      className={[
-        'sticky top-0 z-30 w-full border-b-2 border-black bg-kingdom-bg/95 backdrop-blur',
-        className,
-      ]
+      className={['w-full border-b-2 border-black bg-[#2a0b46] pt-4 text-white', className]
         .filter(Boolean)
         .join(' ')}
       role="navigation"
     >
-      <div className="mx-auto flex w-full max-w-[1400px] items-center gap-4 px-4 py-3 md:px-6">
-        {brand && <div className="shrink-0 font-heading text-xl text-white">{brand}</div>}
+      <div className="mx-auto w-full max-w-[1400px] px-4 md:px-6">
+        {/* Row 1 — branding left, profile/logout right. */}
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          {brand && <div className="shrink-0">{brand}</div>}
+          {rightSlot && (
+            <div className="flex max-w-full flex-wrap items-center gap-3 self-end md:self-auto">
+              {rightSlot}
+            </div>
+          )}
+        </div>
 
-        <div
-          className="flex flex-1 items-center gap-2 overflow-x-auto"
-          role="tablist"
-          aria-label="Primary"
-        >
+        {/* Row 2 — tab strip. */}
+        <div className="flex gap-2 overflow-x-auto pb-0" role="tablist" aria-label="Primary">
           {tabs.map((tab) => {
             const active = tab.id === activeTab;
             return (
@@ -80,11 +81,11 @@ export function TopNav({
                 aria-controls={`panel-${tab.id}`}
                 onClick={() => onTabChange(tab.id)}
                 className={[
-                  'inline-flex shrink-0 items-center gap-1.5 rounded-xl border-2 border-black px-3 py-1.5 text-sm font-bold transition-all duration-150',
-                  'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 focus-visible:ring-offset-kingdom-bg',
+                  'flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-5 py-2.5 text-sm font-bold transition-colors',
+                  'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400',
                   active
-                    ? 'bg-pink-400 text-white shadow-neo'
-                    : 'bg-white/10 text-white shadow-none hover:bg-white/20',
+                    ? 'border-2 border-black bg-pink-400 text-black shadow-neo-xs'
+                    : 'bg-transparent text-gray-300 hover:bg-white/10 hover:text-white',
                 ].join(' ')}
               >
                 {tab.icon && <span className="shrink-0">{tab.icon}</span>}
@@ -93,10 +94,7 @@ export function TopNav({
                   <span
                     aria-label={`${tab.badge} unread`}
                     data-testid={`tab-${tab.id}-badge`}
-                    className={[
-                      'ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[0.6875rem] font-black leading-none',
-                      active ? 'bg-black text-yellow-300' : 'bg-pink-500 text-white',
-                    ].join(' ')}
+                    className="ml-1 rounded-full border border-black bg-red-500 px-1.5 py-0.5 text-[10px] font-black leading-none text-white"
                   >
                     {tab.badge}
                   </span>
@@ -105,8 +103,6 @@ export function TopNav({
             );
           })}
         </div>
-
-        {rightSlot && <div className="shrink-0">{rightSlot}</div>}
       </div>
     </nav>
   );
