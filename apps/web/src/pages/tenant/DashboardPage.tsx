@@ -12,6 +12,7 @@ import {
   Utensils,
 } from 'lucide-react';
 import { Card, TopNav, type TopNavTab } from '@familyhub/ui';
+import type { DashboardMember } from '@familyhub/shared';
 import { signOutAll, useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
@@ -103,13 +104,6 @@ type TabBadgeMap = Partial<Record<(typeof TABS)[number]['id'], number>>;
 
 function isKnownTab(id: string | null): id is string {
   return id !== null && TABS.some((t) => t.id === id);
-}
-
-interface DashboardMember {
-  id: string;
-  displayName: string;
-  role: string;
-  avatarEmoji: string | null;
 }
 
 interface MeResponseTenant {
@@ -279,7 +273,7 @@ function ProfilePill({
               >
                 {initial}
               </span>
-              <div>
+              <div className="min-w-0">
                 <p
                   className="truncate font-heading text-sm uppercase tracking-wide"
                   data-testid="dashboard-profile-parent-name"
@@ -389,11 +383,13 @@ export function DashboardPage() {
           ? (me.tenants as MeResponseTenant[]).find((t) => t.slug === slug)
           : undefined;
       if (tenant) setFamilyName(tenant.name);
-      if (today && Array.isArray(today.members)) setMembers(today.members as DashboardMember[]);
-      // Tasks tab badge = the family's still-open tasks (FHS-262 counts).
-      if (today && today.counts) {
-        const c = today.counts as { tasksDoneToday?: number; tasksTotalToday?: number };
-        setOpenTasks(Math.max(0, (c.tasksTotalToday ?? 0) - (c.tasksDoneToday ?? 0)));
+      if (today && Array.isArray(today.members)) {
+        const roster = today.members as DashboardMember[];
+        setMembers(roster);
+        // "My Tasks" badge = the CALLER's pending tasks (the tab is a
+        // per-parent list, so a family-wide count would mismatch it).
+        const me = roster.find((m) => m.id === (today.callerMemberId as string | undefined));
+        setOpenTasks(me?.tasksPending ?? 0);
       }
       setHeaderLoading(false);
     });
@@ -481,7 +477,7 @@ export function DashboardPage() {
               disabled={signingOut}
               aria-label="Logout"
               data-testid="dashboard-logout"
-              className="flex items-center gap-2 rounded-md border-2 border-black bg-red-500 px-4 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-red-600 disabled:opacity-50 motion-safe:hover:-translate-y-0.5"
+              className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-red-500 px-4 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-red-600 disabled:opacity-50 motion-safe:hover:-translate-y-0.5"
             >
               <LogOut size={16} strokeWidth={3} aria-hidden="true" />
               <span className="hidden sm:inline">{signingOut ? 'Signing out…' : 'Logout'}</span>

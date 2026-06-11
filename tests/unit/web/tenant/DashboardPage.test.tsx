@@ -83,6 +83,7 @@ function defaultFetchMocks() {
         json: async () => ({
           date: '2026-06-10',
           greetingName: 'Sarah',
+          callerMemberId: 'm-1',
           counts: {
             members: 4,
             habits: 5,

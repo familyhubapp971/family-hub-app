@@ -62,7 +62,9 @@ export function TopNav({
         <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           {brand && <div className="shrink-0">{brand}</div>}
           {rightSlot && (
-            <div className="flex items-center gap-3 self-end md:self-auto">{rightSlot}</div>
+            <div className="flex max-w-full flex-wrap items-center gap-3 self-end md:self-auto">
+              {rightSlot}
+            </div>
           )}
         </div>
 
