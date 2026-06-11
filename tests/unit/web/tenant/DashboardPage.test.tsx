@@ -282,13 +282,21 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     expect(screen.getByTestId('location-search').textContent).toBe('?add=child');
   });
 
-  it('Log out lives inside the dropdown and calls signOutAll()', async () => {
+  it('standalone Logout button is always visible and calls signOutAll()', async () => {
     renderAt('/t/khans/dashboard');
-    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    // No dropdown needed — the red Logout button sits in the nav (MP).
+    expect(screen.queryByTestId('dashboard-profile-menu')).toBeNull();
     await act(async () => {
       fireEvent.click(screen.getByTestId('dashboard-logout'));
     });
     expect(mocks.signOutAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('Tasks tab shows an open-tasks badge from the dashboard counts', async () => {
+    renderAt('/t/khans/dashboard');
+    // Fixture: tasksTotalToday 2 - tasksDoneToday 1 = 1 open task.
+    await waitFor(() => expect(screen.getByTestId('tab-tasks-badge')).toBeInTheDocument());
+    expect(screen.getByTestId('tab-tasks-badge').textContent).toBe('1');
   });
 
   it('falls back to the auth email as parent name when no display name is set', async () => {

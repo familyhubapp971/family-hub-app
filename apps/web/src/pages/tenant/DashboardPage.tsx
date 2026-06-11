@@ -7,6 +7,7 @@ import {
   CheckSquare,
   ChevronDown,
   Home,
+  LogOut,
   Plus,
   Utensils,
 } from 'lucide-react';
@@ -172,23 +173,23 @@ function FamilyHero({
     );
   }
   return (
-    <div className="flex items-center gap-3" data-testid="dashboard-family-hero">
+    <div className="flex items-center gap-4" data-testid="dashboard-family-hero">
       <FamilyInitialDisc name={familyName ?? 'Family'} />
       <div className="flex flex-col">
-        <span className="flex items-center gap-1.5 font-display text-lg font-black uppercase leading-tight tracking-wide text-white sm:text-xl">
+        <h1 className="flex items-center gap-1.5 font-heading text-2xl uppercase leading-tight tracking-wide text-white drop-shadow-md md:text-3xl">
           <span data-testid="dashboard-family-name">{buildHeroTitle(familyName)}</span>
           <span aria-hidden="true" className="text-yellow-300">
             ✨
           </span>
-        </span>
+        </h1>
         {memberCount !== null && memberCount > 0 && (
           <span
-            className="flex items-center gap-1.5 text-[0.6875rem] font-bold uppercase tracking-wider text-emerald-300"
+            className="mt-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-pink-300"
             data-testid="dashboard-members-active"
           >
             <span
               aria-hidden="true"
-              className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"
+              className="inline-block h-2.5 w-2.5 animate-pulse rounded-full border border-black bg-green-400"
             />
             {memberCount} {memberCount === 1 ? 'member' : 'members'} active
           </span>
@@ -198,18 +199,18 @@ function FamilyHero({
   );
 }
 
+// Children in the dropdown get coloured initial discs (MP cycles
+// yellow/purple). Same order = same colour across reloads.
+const CHILD_DISC_COLORS = ['bg-yellow-300', 'bg-purple-300', 'bg-pink-300', 'bg-cyan-300'];
+
 function ProfilePill({
   parentName,
   childMembers,
-  signingOut,
-  onLogout,
   onAddChild,
   slug,
 }: {
   parentName: string;
   childMembers: DashboardMember[];
-  signingOut: boolean;
-  onLogout: () => void;
   onAddChild: () => void;
   slug: string;
 }) {
@@ -234,7 +235,9 @@ function ProfilePill({
     };
   }, [open]);
 
-  const initial = parentName.trim().charAt(0).toUpperCase() || '?';
+  const initial = [...parentName.trim()][0]?.toUpperCase() ?? '?';
+  // MP shows the first name only, uppercase, in the pill trigger.
+  const firstName = parentName.trim().split(/\s+/)[0] ?? parentName;
 
   return (
     <div ref={wrapRef} className="relative">
@@ -244,41 +247,58 @@ function ProfilePill({
         aria-haspopup="menu"
         aria-expanded={open}
         data-testid="dashboard-profile-pill"
-        className="inline-flex items-center gap-2 rounded-full border-2 border-black bg-white/10 px-2 py-1 text-sm font-bold text-white transition-colors hover:bg-white/20 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400"
+        className={`flex items-center gap-3 rounded-full border-2 border-black py-1.5 pl-1.5 pr-4 text-sm font-bold text-white shadow-neo-xs transition-colors hover:bg-[#5a1d8a] focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 ${open ? 'bg-[#5a1d8a]' : 'bg-[#4a1578]'}`}
       >
         <span
           aria-hidden="true"
-          className="grid h-7 w-7 place-items-center rounded-full bg-yellow-300 text-xs font-black text-black"
+          className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-pink-300 font-heading text-lg text-black"
         >
           {initial}
         </span>
-        <span className="max-w-[120px] truncate sm:max-w-[180px]">{parentName}</span>
-        <ChevronDown size={14} aria-hidden="true" />
+        <span className="max-w-[120px] truncate uppercase tracking-wide sm:max-w-[180px]">
+          {firstName}
+        </span>
+        <ChevronDown
+          size={14}
+          strokeWidth={3}
+          aria-hidden="true"
+          className={`transition-transform ${open ? 'rotate-180' : ''}`}
+        />
       </button>
       {open && (
         <div
           role="menu"
           data-testid="dashboard-profile-menu"
-          className="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-xl border-2 border-black bg-white text-gray-900 shadow-neo-lg"
+          className="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-xl border-2 border-black bg-white text-gray-900 shadow-neo-md"
         >
-          <div className="border-b border-gray-200 px-3 py-2">
-            <p className="text-[0.6875rem] font-bold uppercase tracking-wider text-gray-500">
-              Signed in as
-            </p>
-            <p
-              className="truncate text-sm font-bold text-black"
-              data-testid="dashboard-profile-parent-name"
-            >
-              {parentName}
-            </p>
+          <div className="border-b-2 border-black bg-pink-50 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-black bg-pink-300 font-heading text-xl"
+              >
+                {initial}
+              </span>
+              <div>
+                <p
+                  className="truncate font-heading text-sm uppercase tracking-wide"
+                  data-testid="dashboard-profile-parent-name"
+                >
+                  {parentName}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                  Parent · Admin
+                </p>
+              </div>
+            </div>
           </div>
           {childMembers.length > 0 && (
-            <div className="px-1 py-1">
-              <p className="px-2 pt-2 text-[0.6875rem] font-bold uppercase tracking-wider text-gray-500">
+            <div className="px-3 py-2">
+              <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
                 Children
               </p>
-              <ul className="mt-1">
-                {childMembers.map((c) => (
+              <ul>
+                {childMembers.map((c, i) => (
                   <li key={c.id}>
                     <button
                       type="button"
@@ -288,15 +308,19 @@ function ProfilePill({
                         window.location.assign(`/t/${slug}/child/${c.id}`);
                       }}
                       data-testid={`dashboard-profile-child-${c.id}`}
-                      className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-bold hover:bg-yellow-50"
+                      className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-gray-100"
                     >
-                      <span className="flex items-center gap-2 truncate">
-                        <span aria-hidden="true" className="text-base">
-                          {c.avatarEmoji ?? '🙂'}
-                        </span>
-                        <span className="truncate">{c.displayName}</span>
+                      <span
+                        aria-hidden="true"
+                        className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-black font-heading text-sm ${CHILD_DISC_COLORS[i % CHILD_DISC_COLORS.length]}`}
+                      >
+                        {[...c.displayName.trim()][0]?.toUpperCase() ?? '?'}
                       </span>
-                      <span aria-hidden="true" className="text-xs text-fuchsia-600">
+                      <span className="truncate text-sm font-bold">{c.displayName}</span>
+                      <span
+                        aria-hidden="true"
+                        className="ml-auto text-[10px] font-bold uppercase tracking-wider text-gray-400 group-hover:text-purple-600"
+                      >
                         View World →
                       </span>
                     </button>
@@ -305,7 +329,7 @@ function ProfilePill({
               </ul>
             </div>
           )}
-          <div className="border-t border-gray-200 px-1 py-1">
+          <div className="px-3 pb-3">
             <button
               type="button"
               role="menuitem"
@@ -314,22 +338,10 @@ function ProfilePill({
                 onAddChild();
               }}
               data-testid="dashboard-profile-add-child"
-              className="flex w-full items-center gap-2 rounded-lg border border-dashed border-gray-400 px-2 py-1.5 text-left text-sm font-bold text-gray-700 hover:bg-gray-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-300 px-3 py-2.5 text-purple-500 transition-colors hover:border-purple-500 hover:bg-purple-50 hover:text-purple-700"
             >
-              <Plus size={14} aria-hidden="true" />
-              Add Child
-            </button>
-          </div>
-          <div className="border-t border-gray-200 px-1 py-1">
-            <button
-              type="button"
-              role="menuitem"
-              onClick={onLogout}
-              disabled={signingOut}
-              data-testid="dashboard-logout"
-              className="w-full rounded-lg px-2 py-1.5 text-left text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
-            >
-              {signingOut ? 'Signing out…' : 'Log out'}
+              <Plus size={16} strokeWidth={3} aria-hidden="true" />
+              <span className="text-sm font-bold">Add Child</span>
             </button>
           </div>
         </div>
@@ -347,6 +359,7 @@ export function DashboardPage() {
 
   const [familyName, setFamilyName] = useState<string | null>(null);
   const [members, setMembers] = useState<DashboardMember[] | null>(null);
+  const [openTasks, setOpenTasks] = useState<number>(0);
   const [headerLoading, setHeaderLoading] = useState(true);
 
   const requested = params.get('tab');
@@ -377,6 +390,11 @@ export function DashboardPage() {
           : undefined;
       if (tenant) setFamilyName(tenant.name);
       if (today && Array.isArray(today.members)) setMembers(today.members as DashboardMember[]);
+      // Tasks tab badge = the family's still-open tasks (FHS-262 counts).
+      if (today && today.counts) {
+        const c = today.counts as { tasksDoneToday?: number; tasksTotalToday?: number };
+        setOpenTasks(Math.max(0, (c.tasksTotalToday ?? 0) - (c.tasksDoneToday ?? 0)));
+      }
       setHeaderLoading(false);
     });
     return () => {
@@ -416,9 +434,10 @@ export function DashboardPage() {
     navigate(`/t/${slug}/members?add=child`);
   }, [navigate, slug]);
 
-  // Once FHS-262 + FHS-263 ship, this map is the only place the page
-  // needs to learn about counts — TopNav already supports the badge prop.
-  const tabBadges: TabBadgeMap = {};
+  // Tab badges. Tasks = open tasks from /api/dashboard/today counts;
+  // assignments/noticeboard counts wire up when those tabs are
+  // redesigned (their APIs don't expose totals yet).
+  const tabBadges: TabBadgeMap = { tasks: openTasks };
 
   const navTabs: TopNavTab[] = TABS.map((t) => ({
     id: t.id,
@@ -449,14 +468,25 @@ export function DashboardPage() {
         activeTab={activeTab}
         onTabChange={onTabChange}
         rightSlot={
-          <ProfilePill
-            parentName={parentName}
-            childMembers={childMembers}
-            signingOut={signingOut}
-            onLogout={onLogout}
-            onAddChild={onAddChild}
-            slug={slug}
-          />
+          <>
+            <ProfilePill
+              parentName={parentName}
+              childMembers={childMembers}
+              onAddChild={onAddChild}
+              slug={slug}
+            />
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={signingOut}
+              aria-label="Logout"
+              data-testid="dashboard-logout"
+              className="flex items-center gap-2 rounded-md border-2 border-black bg-red-500 px-4 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-red-600 disabled:opacity-50 motion-safe:hover:-translate-y-0.5"
+            >
+              <LogOut size={16} strokeWidth={3} aria-hidden="true" />
+              <span className="hidden sm:inline">{signingOut ? 'Signing out…' : 'Logout'}</span>
+            </button>
+          </>
         }
         testId="dashboard-nav"
       />
@@ -468,27 +498,34 @@ export function DashboardPage() {
           aria-labelledby={`tab-${active.id}`}
           data-testid={`dashboard-panel-${active.id}`}
         >
-          <Card className="bg-white p-6 text-gray-900 md:p-8">
-            {active.id === 'home' ? (
-              <TodayTabPanel />
-            ) : active.id === 'meals' ? (
-              <MealsTabPanel />
-            ) : active.id === 'calendar' ? (
-              <CalendarTabPanel />
-            ) : active.id === 'assignments' ? (
-              <AssignmentsTabPanel />
-            ) : active.id === 'noticeboard' ? (
-              <NoticeboardTabPanel />
-            ) : active.id === 'tasks' ? (
-              <TasksTabPanel />
-            ) : (
-              <PlaceholderPanel
-                label={active.label}
-                ticket={active.ticket}
-                description={active.description}
-              />
-            )}
-          </Card>
+          {/* MP renders tab content straight on the kingdom-purple
+              background (each tab brings its own cards). The home tab is
+              already rebuilt that way — wrapping it in a white card would
+              hide its white headings. Tabs not yet redesigned keep the
+              white card until their own MP rebuild lands. */}
+          {active.id === 'home' ? (
+            <TodayTabPanel />
+          ) : (
+            <Card className="bg-white p-6 text-gray-900 md:p-8">
+              {active.id === 'meals' ? (
+                <MealsTabPanel />
+              ) : active.id === 'calendar' ? (
+                <CalendarTabPanel />
+              ) : active.id === 'assignments' ? (
+                <AssignmentsTabPanel />
+              ) : active.id === 'noticeboard' ? (
+                <NoticeboardTabPanel />
+              ) : active.id === 'tasks' ? (
+                <TasksTabPanel />
+              ) : (
+                <PlaceholderPanel
+                  label={active.label}
+                  ticket={active.ticket}
+                  description={active.description}
+                />
+              )}
+            </Card>
+          )}
         </section>
       </main>
     </div>
