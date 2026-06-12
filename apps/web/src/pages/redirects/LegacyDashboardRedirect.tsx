@@ -53,6 +53,30 @@ export function LegacyDashboardRedirect() {
         }
         const body = (await res.json()) as MeResponse;
         const slug = body.tenants?.[0]?.slug;
+        // FHS-275 — ALWAYS try to claim pending invites first, even when
+        // the user already has a family of their own: a newly-claimed
+        // invite should land them on the inviting family, and skipping
+        // the claim would leave their seat pending forever.
+        try {
+          const claimRes = await fetch(`${API_BASE}/api/invitations/claim`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (claimRes.ok) {
+            const claimBody = (await claimRes.json()) as {
+              claimed?: Array<{ slug: string }>;
+            };
+            const claimedSlug = claimBody.claimed?.[0]?.slug;
+            if (claimedSlug) {
+              if (!cancelled) {
+                setState({ kind: 'redirect', to: `/t/${claimedSlug}/dashboard` });
+              }
+              return;
+            }
+          }
+        } catch {
+          // Claim is best-effort — fall through.
+        }
         if (!cancelled) {
           setState(slug ? { kind: 'redirect', to: `/t/${slug}/dashboard` } : { kind: 'no-tenant' });
         }
