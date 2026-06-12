@@ -241,6 +241,20 @@ describe('FHS-37 — POST /api/onboarding/complete', () => {
     expect(new Set(insertedTables)).toEqual(new Set([members, habits, rewards]));
   });
 
+  it('FHS-275 — invite email on a non-adult member is rejected with 400', async () => {
+    const app = buildAppWithSeed({});
+    const res = await app.request('/api/onboarding/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        timezone: 'Asia/Dubai',
+        currency: 'AED',
+        members: [{ displayName: 'Iman', role: 'child', email: 'iman@example.com' }],
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
   it('FHS-274 — whitespace-only yourName is rejected with 400', async () => {
     const app = buildAppWithSeed({});
     const res = await app.request('/api/onboarding/complete', {

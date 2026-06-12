@@ -82,6 +82,22 @@ describe('<LegacyDashboardRedirect />', () => {
     await waitFor(() => expect(screen.getByTestId('no-tenant-create-form')).toBeInTheDocument());
   });
 
+  it('FHS-275 — claims a pending invite and redirects to that family', async () => {
+    // /api/me → no tenants; /api/invitations/claim → claimed khans.
+    mocks.fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ tenants: [] }) });
+    mocks.fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ claimed: [{ tenantId: 't-1', slug: 'khans' }] }),
+    });
+    renderRoute();
+    await waitFor(() => expect(screen.getByTestId('tenant-dashboard')).toBeInTheDocument());
+    const claimCall = mocks.fetchMock.mock.calls.find(([u]) =>
+      String(u).includes('/api/invitations/claim'),
+    );
+    expect(claimCall).toBeDefined();
+    expect((claimCall![1] as RequestInit).method).toBe('POST');
+  });
+
   describe('create-family panel', () => {
     beforeEach(() => {
       mocks.fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ tenants: [] }) });

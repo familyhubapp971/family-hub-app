@@ -53,9 +53,34 @@ export function LegacyDashboardRedirect() {
         }
         const body = (await res.json()) as MeResponse;
         const slug = body.tenants?.[0]?.slug;
-        if (!cancelled) {
-          setState(slug ? { kind: 'redirect', to: `/t/${slug}/dashboard` } : { kind: 'no-tenant' });
+        if (slug) {
+          if (!cancelled) setState({ kind: 'redirect', to: `/t/${slug}/dashboard` });
+          return;
         }
+        // FHS-275 — no membership yet: claim any pending invite for this
+        // email before offering to create a brand-new family. An invited
+        // parent lands on THEIR family, not the create form.
+        try {
+          const claimRes = await fetch(`${API_BASE}/api/invitations/claim`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (claimRes.ok) {
+            const claimBody = (await claimRes.json()) as {
+              claimed?: Array<{ slug: string }>;
+            };
+            const claimedSlug = claimBody.claimed?.[0]?.slug;
+            if (claimedSlug) {
+              if (!cancelled) {
+                setState({ kind: 'redirect', to: `/t/${claimedSlug}/dashboard` });
+              }
+              return;
+            }
+          }
+        } catch {
+          // Claim is best-effort — fall through to the create form.
+        }
+        if (!cancelled) setState({ kind: 'no-tenant' });
       } catch {
         if (!cancelled) setState({ kind: 'no-tenant' });
       }

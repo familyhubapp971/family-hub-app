@@ -162,6 +162,10 @@ describe('<OnboardingPage />', () => {
     fireEvent.change(screen.getByTestId('onboarding-member-name-0'), {
       target: { value: 'Iman' },
     });
+    // FHS-275 — default role is adult, so the email field shows.
+    fireEvent.change(screen.getByTestId('onboarding-member-email-0'), {
+      target: { value: 'iman@example.com' },
+    });
     fireEvent.click(screen.getByTestId('onboarding-next'));
     fireEvent.click(screen.getByTestId('onboarding-next')); // timezone defaults to browser
     fireEvent.click(screen.getByTestId('onboarding-next')); // currency defaults USD
@@ -180,7 +184,7 @@ describe('<OnboardingPage />', () => {
     expect(JSON.parse(init.body as string)).toMatchObject({
       currency: 'USD',
       yourName: 'Sarah',
-      members: [{ displayName: 'Iman', role: 'adult' }],
+      members: [{ displayName: 'Iman', role: 'adult', email: 'iman@example.com' }],
     });
   });
 });

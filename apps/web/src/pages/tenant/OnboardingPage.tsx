@@ -50,6 +50,9 @@ interface WizardMember {
   displayName: string;
   role: 'adult' | 'teen' | 'child' | 'guest';
   avatarEmoji?: string;
+  // FHS-275 — optional invite email (adults only): they get a sign-in
+  // link and become this member on first login.
+  email?: string;
 }
 
 function makeUiId(): string {
@@ -177,6 +180,7 @@ export function OnboardingPage() {
             displayName: m.displayName.trim(),
             role: m.role,
             ...(m.avatarEmoji ? { avatarEmoji: m.avatarEmoji } : {}),
+            ...(m.role === 'adult' && m.email?.trim() ? { email: m.email.trim() } : {}),
           })),
         }),
       });
@@ -344,6 +348,21 @@ export function OnboardingPage() {
                         </button>
                       </div>
                     </div>
+                    {m.role === 'adult' && (
+                      <div className="mt-3">
+                        <Label htmlFor={`member-email-${m.uiId}`}>
+                          Email (optional — we&rsquo;ll invite them to sign in)
+                        </Label>
+                        <Input
+                          id={`member-email-${m.uiId}`}
+                          type="email"
+                          value={m.email ?? ''}
+                          onChange={(e) => patchMember(m.uiId, { email: e.target.value })}
+                          placeholder="e.g. yusuf@example.com"
+                          testId={`onboarding-member-email-${idx}`}
+                        />
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
