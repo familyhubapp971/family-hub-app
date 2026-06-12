@@ -297,3 +297,72 @@ export const invitationClaimRouter = new Hono().post('/', async (c) => {
 
   return c.json({ claimed }, 200);
 });
+
+// FHS-276 — POST /api/invitations/:id/resend.
+//
+// Re-fires the Supabase invite email for a still-pending invitation
+// (typo'd address fixed at the provider, email lost, etc.). Admin or
+// adult caller, same tenant. The invitation row keeps its id/seat link
+// so a later claim still lands on the right member.
+export const invitationResendRouter = new Hono().post('/:id/resend', async (c) => {
+  getAuthenticatedUser(c);
+  const userRow = c.get('userRow');
+  if (!userRow) throw new Error('resend handler reached without userRow');
+  const tenantId = c.get('tenantId');
+  if (!tenantId) {
+    return c.json({ error: 'tenant context required', errorCode: 'TENANT_REQUIRED' }, 400);
+  }
+  const id = c.req.param('id');
+  if (!z.string().uuid().safeParse(id).success) {
+    return c.json({ error: 'invalid invitation id' }, 400);
+  }
+  const db = getDb();
+  const callerRows = await db
+    .select({ id: members.id, role: members.role })
+    .from(members)
+    .where(and(eq(members.tenantId, tenantId), eq(members.userId, userRow.id)))
+    .limit(1);
+  const caller = callerRows[0];
+  if (!caller) {
+    return c.json({ error: 'forbidden', detail: 'caller is not a member of this tenant' }, 403);
+  }
+  if (caller.role !== 'admin' && caller.role !== 'adult') {
+    return c.json({ error: 'forbidden', detail: 'role not permitted to resend invites' }, 403);
+  }
+  const invRows = await db
+    .select({
+      id: pendingInvitations.id,
+      email: pendingInvitations.email,
+      status: pendingInvitations.status,
+    })
+    .from(pendingInvitations)
+    .where(and(eq(pendingInvitations.tenantId, tenantId), eq(pendingInvitations.id, id)))
+    .limit(1);
+  const inv = invRows[0];
+  if (!inv) return c.json({ error: 'invitation not found' }, 404);
+  if (inv.status !== 'pending') {
+    return c.json({ error: 'invitation is not pending', status: inv.status }, 409);
+  }
+  const baseUrl = config.APP_BASE_URL;
+  if (!baseUrl) {
+    return c.json({ error: 'server misconfigured', detail: 'APP_BASE_URL is required' }, 500);
+  }
+  try {
+    const supabaseUser = await inviteUserByEmail({
+      email: inv.email,
+      redirectTo: `${baseUrl.replace(/\/$/, '')}/auth/callback?invite=${inv.id}`,
+      data: { invite_id: inv.id, tenant_id: tenantId },
+    });
+    await db
+      .update(pendingInvitations)
+      .set({ supabaseInviteId: supabaseUser.id, updatedAt: new Date() })
+      .where(eq(pendingInvitations.id, inv.id));
+  } catch (err) {
+    log.error(
+      { err: err instanceof Error ? err.message : String(err), invitationId: inv.id, tenantId },
+      'invite resend failed',
+    );
+    return c.json({ error: 'invitation could not be resent' }, 502);
+  }
+  return c.json({ resent: true }, 200);
+});
