@@ -65,7 +65,7 @@ function ev(over: Partial<Ev>): Ev {
     title: 'Event',
     notes: null,
     memberId: null,
-    type: 'school',
+    type: 'home',
     location: null,
     wear: null,
     ...over,
@@ -190,15 +190,15 @@ describe('<CalendarTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
 
-    // Default = School.
-    expect(screen.getByTestId('calendar-event-sch')).toBeInTheDocument();
-    expect(screen.queryByTestId('calendar-event-hom')).not.toBeInTheDocument();
+    // Default = Home (pre-FHS-265 events all carry type 'home').
+    expect(screen.getByTestId('calendar-event-hom')).toBeInTheDocument();
+    expect(screen.queryByTestId('calendar-event-sch')).not.toBeInTheDocument();
 
     act(() => {
-      fireEvent.click(screen.getByTestId('calendar-subtab-home'));
+      fireEvent.click(screen.getByTestId('calendar-subtab-school'));
     });
-    expect(screen.queryByTestId('calendar-event-sch')).not.toBeInTheDocument();
-    expect(screen.getByTestId('calendar-event-hom')).toBeInTheDocument();
+    expect(screen.queryByTestId('calendar-event-hom')).not.toBeInTheDocument();
+    expect(screen.getByTestId('calendar-event-sch')).toBeInTheDocument();
   });
 
   it('member filter pills show their events plus whole-family ones', async () => {
@@ -254,7 +254,7 @@ describe('<CalendarTabPanel />', () => {
       title: 'Swimming Lesson',
       startTime: '15:00',
       memberId: AMINA,
-      type: 'school',
+      type: 'home',
       location: 'Leisure Centre',
       wear: 'Swimsuit',
     });
@@ -290,7 +290,7 @@ describe('<CalendarTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
 
     act(() => {
-      fireEvent.click(screen.getByTestId('calendar-subtab-home'));
+      fireEvent.click(screen.getByTestId('calendar-subtab-school'));
     });
     const monday = mondayIso();
     act(() => {
@@ -298,14 +298,14 @@ describe('<CalendarTabPanel />', () => {
     });
     act(() => {
       fireEvent.change(screen.getByTestId('calendar-form-title'), {
-        target: { value: 'Park visit' },
+        target: { value: 'PE Day' },
       });
     });
     await act(async () => {
       fireEvent.click(screen.getByTestId('calendar-form-save'));
     });
     const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
-    expect(JSON.parse((postCall![1] as RequestInit).body as string).type).toBe('home');
+    expect(JSON.parse((postCall![1] as RequestInit).body as string).type).toBe('school');
   });
 
   it('shows the friendly empty state on a day with no activities', async () => {

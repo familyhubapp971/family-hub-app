@@ -53,6 +53,7 @@ type Status =
 
 interface DraftForm {
   date: string; // the day card the form is open on
+  type: EventType; // captured at form-open so a sub-tab switch mid-edit can't reroute the event
   memberIds: Set<string>; // checked children; 0 or 2+ = whole family
   title: string;
   startTime: string;
@@ -93,9 +94,11 @@ const UNKNOWN_STYLE = {
   dot: 'bg-gray-200',
 };
 
-function styleFor(memberId: string | null, members: MemberLite[]) {
+// Colour index runs over the CHILDREN list (not the full roster) so a
+// child's colour doesn't shift when adults join, and matches the legend.
+function styleFor(memberId: string | null, children: MemberLite[]) {
   if (memberId === null) return FAMILY_STYLE;
-  const idx = members.findIndex((m) => m.id === memberId);
+  const idx = children.findIndex((m) => m.id === memberId);
   if (idx < 0) return UNKNOWN_STYLE;
   return MEMBER_STYLES[idx % MEMBER_STYLES.length]!;
 }
@@ -160,12 +163,18 @@ export function CalendarTabPanel() {
   const slug = useTenantSlug();
   const { session } = useAuth();
   const [weekStart, setWeekStart] = useState<string>(() => mondayOf(new Date()));
-  const [subTab, setSubTab] = useState<EventType>('school');
+  // Default to Home: every event created before FHS-265 carries
+  // type='home', so opening on School would look empty after deploy.
+  const [subTab, setSubTab] = useState<EventType>('home');
   const [filter, setFilter] = useState<string>('all'); // 'all' | memberId
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [draft, setDraft] = useState<DraftForm | null>(null);
   const [saving, setSaving] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Synchronous double-submit guard — two fast clicks can both pass an
+  // `if (saving)` state check before React re-renders.
+  const savingRef = useRef(false);
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;
@@ -218,13 +227,16 @@ export function CalendarTabPanel() {
   useEffect(() => {
     if (!headers) return;
     setStatus({ kind: 'loading' });
+    // Navigating weeks closes any open form — its day card is gone.
+    setDraft(null);
+    setSaveError(null);
     const ac = new AbortController();
     void load(weekStart, ac.signal);
     return () => ac.abort();
   }, [headers, weekStart, load]);
 
   const onSave = useCallback(async () => {
-    if (!draft || !headers || saving) return;
+    if (!draft || !headers || savingRef.current) return;
     const title = draft.title.trim();
     if (title.length === 0) {
       setSaveError('Give the activity a name.');
@@ -233,6 +245,7 @@ export function CalendarTabPanel() {
     // Exactly one child checked → that child; none or several → the
     // whole family (our data model stores one member per event).
     const memberId = draft.memberIds.size === 1 ? [...draft.memberIds][0]! : null;
+    savingRef.current = true;
     setSaving(true);
     setSaveError(null);
     try {
@@ -244,7 +257,7 @@ export function CalendarTabPanel() {
           title,
           startTime: draft.startTime || null,
           memberId,
-          type: subTab,
+          type: draft.type,
           location: draft.location.trim() || null,
           wear: draft.wear.trim() || null,
         }),
@@ -254,13 +267,15 @@ export function CalendarTabPanel() {
         return;
       }
       setDraft(null);
+      setAnnouncement(`${title} added`);
       await load(weekStart);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
-  }, [draft, headers, saving, subTab, weekStart, load]);
+  }, [draft, headers, weekStart, load]);
 
   if (status.kind === 'loading') {
     return (
@@ -291,6 +306,9 @@ export function CalendarTabPanel() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6" data-testid="calendar-ready">
+      <p aria-live="polite" className="sr-only" data-testid="calendar-announcement">
+        {announcement}
+      </p>
       {/* Header + week navigation */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -357,7 +375,7 @@ export function CalendarTabPanel() {
           {children.map((c) => (
             <span key={c.id} className="flex items-center gap-1.5">
               <span
-                className={`h-4 w-4 rounded-full border-2 border-black ${styleFor(c.id, members).dot}`}
+                className={`h-4 w-4 rounded-full border-2 border-black ${styleFor(c.id, children).dot}`}
                 aria-hidden="true"
               />
               <span className="text-sm font-bold">{c.displayName}</span>
@@ -449,7 +467,7 @@ export function CalendarTabPanel() {
                     </div>
                     <ul className="space-y-3">
                       {dayEvents.map((ev) => {
-                        const style = styleFor(ev.memberId, members);
+                        const style = styleFor(ev.memberId, children);
                         const who =
                           ev.memberId === null
                             ? 'Family'
@@ -469,17 +487,31 @@ export function CalendarTabPanel() {
                               >
                                 {letterFor(ev.memberId, members)}
                               </span>
-                              <span
-                                className="text-sm font-bold leading-tight"
-                                data-testid={`calendar-event-${ev.id}-title`}
-                              >
-                                {ev.title}
+                              <span className="min-w-0">
+                                <span
+                                  className="block text-sm font-bold leading-tight"
+                                  data-testid={`calendar-event-${ev.id}-title`}
+                                >
+                                  {ev.title}
+                                </span>
+                                {ev.notes && (
+                                  <span
+                                    className="block truncate text-xs italic text-gray-500"
+                                    data-testid={`calendar-event-${ev.id}-notes`}
+                                  >
+                                    {ev.notes}
+                                  </span>
+                                )}
                               </span>
                             </div>
                             <div className="sm:col-span-2">
                               <span className="inline-flex items-center gap-1 rounded border border-black/10 bg-white/50 px-2 py-1 text-[10px] font-bold">
                                 <Clock size={10} aria-hidden="true" />
-                                {ev.startTime ?? '—'}
+                                {ev.startTime
+                                  ? ev.endTime
+                                    ? `${ev.startTime} – ${ev.endTime}`
+                                    : ev.startTime
+                                  : '—'}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 text-sm font-bold text-gray-700 sm:col-span-3">
@@ -529,7 +561,6 @@ export function CalendarTabPanel() {
                     <ActivityForm
                       draft={draft}
                       childrenList={children}
-                      members={members}
                       saving={saving}
                       saveError={saveError}
                       onChange={setDraft}
@@ -547,6 +578,7 @@ export function CalendarTabPanel() {
                         setSaveError(null);
                         setDraft({
                           date: dayIso,
+                          type: subTab,
                           memberIds: filter !== 'all' ? new Set([filter]) : new Set(),
                           title: '',
                           startTime: '',
@@ -632,7 +664,6 @@ function FilterPill({
 function ActivityForm({
   draft,
   childrenList,
-  members,
   saving,
   saveError,
   onChange,
@@ -641,7 +672,6 @@ function ActivityForm({
 }: {
   draft: DraftForm;
   childrenList: MemberLite[];
-  members: MemberLite[];
   saving: boolean;
   saveError: string | null;
   onChange: (d: DraftForm) => void;
@@ -682,7 +712,7 @@ function ActivityForm({
           <div className="flex flex-wrap gap-4">
             {childrenList.map((c) => {
               const checked = draft.memberIds.has(c.id);
-              const style = styleFor(c.id, members);
+              const style = styleFor(c.id, childrenList);
               return (
                 <label key={c.id} className="group flex cursor-pointer items-center gap-2">
                   <input
@@ -705,7 +735,8 @@ function ActivityForm({
             })}
           </div>
           <p className="mt-1 text-[10px] font-bold text-gray-400">
-            Tick one child, or leave empty / tick several for the whole family.
+            Tick exactly one child to assign it to them. Leave all unticked (or tick two or more)
+            and it goes on the whole family&rsquo;s calendar.
           </p>
         </div>
 
