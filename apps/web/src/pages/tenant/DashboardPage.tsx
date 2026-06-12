@@ -451,7 +451,11 @@ export function DashboardPage() {
   const childMembers = (members ?? []).filter((m) => m.role === 'child');
 
   return (
-    <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-white">
+    // No text-white on the page root: MP relies on default-black body text
+    // inside the white cards; headings on the purple set text-white
+    // themselves. A global white default made card text (member names,
+    // counts) white-on-white once tabs were unwrapped from the Card.
+    <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-gray-900">
       <TopNav
         brand={
           <FamilyHero

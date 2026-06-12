@@ -163,9 +163,10 @@ export function CalendarTabPanel() {
   const slug = useTenantSlug();
   const { session } = useAuth();
   const [weekStart, setWeekStart] = useState<string>(() => mondayOf(new Date()));
-  // Default to Home: every event created before FHS-265 carries
-  // type='home', so opening on School would look empty after deploy.
-  const [subTab, setSubTab] = useState<EventType>('home');
+  // Default to School per the founder's call (matches the mockup). Note:
+  // events created before FHS-265 carry type='home' — they live under the
+  // Home sub-tab.
+  const [subTab, setSubTab] = useState<EventType>('school');
   const [filter, setFilter] = useState<string>('all'); // 'all' | memberId
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [draft, setDraft] = useState<DraftForm | null>(null);
