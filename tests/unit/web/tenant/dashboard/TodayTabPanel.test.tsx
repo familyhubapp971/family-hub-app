@@ -48,6 +48,7 @@ function member(over: Partial<DashboardMember> = {}): DashboardMember {
     tasksPending: 0,
     statusText: '',
     starBalance: 0,
+    pendingSignup: false,
     ...over,
   };
 }
@@ -229,6 +230,31 @@ describe('<TodayTabPanel />', () => {
       'completed Morning Routine',
     );
     expect(screen.getByTestId('today-activity-1').textContent).toContain('family created');
+  });
+
+  it('shows the pending-signup chip and the adult task-title status (FHS-273)', async () => {
+    mockJson(
+      makeResponse({
+        members: [
+          member({
+            id: 'm1',
+            displayName: 'Yusuf',
+            role: 'adult',
+            tasksPending: 3,
+            statusText: 'Fixing the bike',
+            pendingSignup: true,
+          }),
+          member({ id: 'm2', displayName: 'Iman', role: 'child', habitsTotal: 3 }),
+        ],
+      }),
+    );
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
+    // Adult status box shows their newest open task, never habit copy.
+    expect(screen.getByTestId('today-member-0-status').textContent).toContain('Fixing the bike');
+    expect(screen.getByTestId('today-member-0-pending')).toBeInTheDocument();
+    // Signed-up member: no chip.
+    expect(screen.queryByTestId('today-member-1-pending')).not.toBeInTheDocument();
   });
 
   it('passes the tenant slug + bearer token on the request', async () => {
