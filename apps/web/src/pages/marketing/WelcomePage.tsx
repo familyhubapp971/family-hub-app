@@ -227,23 +227,30 @@ export function WelcomePage() {
 
       {/* Header — kept slim so the hero + feature cards both fit
           above the fold on a 1080p viewport. */}
-      <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
+      <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-4 md:px-6">
         <Link
           to="/"
-          className="font-heading text-2xl text-white transition-opacity hover:opacity-90"
+          className="shrink-0 font-heading text-xl text-white transition-opacity hover:opacity-90 md:text-2xl"
         >
           FamilyHub
         </Link>
-        <nav className="hidden items-center gap-8 font-bold md:flex">
-          <Link to="/" className="text-yellow-300">
+        {/* FHS-277 — nav must exist on phones too (70%+ of users):
+            Pricing always shows; the same-page Features link stays
+            desktop-only to keep the row from wrapping at 375px. */}
+        <nav className="flex items-center gap-1 font-bold md:gap-8">
+          <Link to="/" className="hidden px-2 py-2.5 text-yellow-300 md:inline">
             Features
           </Link>
-          <Link to="/pricing" className="transition-colors hover:text-yellow-300">
+          {/* Padded so the phone tap target clears 44px tall. */}
+          <Link to="/pricing" className="px-2 py-2.5 transition-colors hover:text-yellow-300">
             Pricing
           </Link>
         </nav>
-        <div className="flex items-center gap-4">
-          <Link to="/login" className="font-bold transition-colors hover:text-yellow-300">
+        <div className="flex items-center gap-1 md:gap-4">
+          <Link
+            to="/login"
+            className="px-2 py-2.5 font-bold transition-colors hover:text-yellow-300"
+          >
             Log in
           </Link>
           <Button onClick={() => navigate('/signup')} variant="primary">
