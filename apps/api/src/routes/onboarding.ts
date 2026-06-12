@@ -61,18 +61,29 @@ const wizardMemberSchema = z
     path: ['email'],
   });
 
-export const completeOnboardingRequestSchema = z.object({
-  timezone: timezoneSchema,
-  currency: currencySchema,
-  // FHS-274 — the founder's own name. Renames the calling admin's member
-  // row so the wizard never inserts a duplicate person for them. Trimmed
-  // BEFORE the min-length check so whitespace-only values 400 instead of
-  // silently skipping the rename.
-  yourName: z.string().trim().min(1).max(80).optional(),
-  // The OTHER family members (the founder is excluded — they already
-  // exist as the admin row). A solo parent can finish with none.
-  members: z.array(wizardMemberSchema).min(0).max(8),
-});
+export const completeOnboardingRequestSchema = z
+  .object({
+    timezone: timezoneSchema,
+    currency: currencySchema,
+    // FHS-274 — the founder's own name. Renames the calling admin's member
+    // row so the wizard never inserts a duplicate person for them. Trimmed
+    // BEFORE the min-length check so whitespace-only values 400 instead of
+    // silently skipping the rename.
+    yourName: z.string().trim().min(1).max(80).optional(),
+    // The OTHER family members (the founder is excluded — they already
+    // exist as the admin row). A solo parent can finish with none.
+    members: z.array(wizardMemberSchema).min(0).max(8),
+  })
+  .refine(
+    (b) => {
+      const emails = b.members.flatMap((m) => (m.email ? [m.email.toLowerCase()] : []));
+      return new Set(emails).size === emails.length;
+    },
+    {
+      message: 'each invite email can only be used once',
+      path: ['members'],
+    },
+  );
 
 export const completeOnboardingResponseSchema = z.object({
   tenant: z.object({
@@ -152,6 +163,19 @@ export const onboardingRouter = new Hono().post('/complete', async (c) => {
         error: 'invalid request',
         issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
       },
+      400,
+    );
+  }
+
+  // FHS-275 — the founder can't invite themselves; their login is
+  // already linked to the admin seat.
+  if (
+    parsed.data.members.some(
+      (m) => m.email && m.email.toLowerCase() === userRow.email.toLowerCase(),
+    )
+  ) {
+    return c.json(
+      { error: 'invalid request', detail: "you can't invite your own email — that's you" },
       400,
     );
   }

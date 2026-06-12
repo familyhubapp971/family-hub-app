@@ -53,13 +53,10 @@ export function LegacyDashboardRedirect() {
         }
         const body = (await res.json()) as MeResponse;
         const slug = body.tenants?.[0]?.slug;
-        if (slug) {
-          if (!cancelled) setState({ kind: 'redirect', to: `/t/${slug}/dashboard` });
-          return;
-        }
-        // FHS-275 — no membership yet: claim any pending invite for this
-        // email before offering to create a brand-new family. An invited
-        // parent lands on THEIR family, not the create form.
+        // FHS-275 — ALWAYS try to claim pending invites first, even when
+        // the user already has a family of their own: a newly-claimed
+        // invite should land them on the inviting family, and skipping
+        // the claim would leave their seat pending forever.
         try {
           const claimRes = await fetch(`${API_BASE}/api/invitations/claim`, {
             method: 'POST',
@@ -78,9 +75,11 @@ export function LegacyDashboardRedirect() {
             }
           }
         } catch {
-          // Claim is best-effort — fall through to the create form.
+          // Claim is best-effort — fall through.
         }
-        if (!cancelled) setState({ kind: 'no-tenant' });
+        if (!cancelled) {
+          setState(slug ? { kind: 'redirect', to: `/t/${slug}/dashboard` } : { kind: 'no-tenant' });
+        }
       } catch {
         if (!cancelled) setState({ kind: 'no-tenant' });
       }
