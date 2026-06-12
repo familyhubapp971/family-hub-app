@@ -147,6 +147,10 @@ describe('<MembersPage />', () => {
     expect(screen.getByTestId('members-row-1-resend')).toBeInTheDocument();
     // The parent role label reads "Parent", not "adult" (MP design).
     expect(screen.getByTestId('members-row-1-role').textContent).toBe('Parent');
+    // FHS-278 — admin toggle visible but DISABLED until they sign up.
+    const toggle = screen.getByTestId('members-row-1-admin-toggle') as HTMLButtonElement;
+    expect(toggle.disabled).toBe(true);
+    expect(toggle.title).toContain('finish signing up');
   });
 
   it('admin toggle is disabled for the last admin and shown only on parent rows (FHS-276)', async () => {
