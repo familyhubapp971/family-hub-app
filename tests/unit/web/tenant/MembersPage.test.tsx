@@ -92,15 +92,123 @@ describe('<MembersPage />', () => {
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
 
-    // Row 0 — Sarah / admin / active
+    // Row 0 — Sarah / Admin, signed in → no pending box.
     expect(screen.getByTestId('members-row-0-name').textContent).toBe('Sarah Khan');
     expect(screen.getByTestId('members-row-0-role').textContent?.toLowerCase()).toContain('admin');
-    expect(screen.getByTestId('members-row-0-status').textContent).toBe('Active');
+    expect(screen.queryByTestId('members-row-0-pending')).toBeNull();
 
-    // Row 1 — Iman / child / unclaimed
+    // Row 1 — Iman / Child. Kids are never "pending" (PIN login), so no
+    // pending box even though the seat is unclaimed (FHS-276 design).
     expect(screen.getByTestId('members-row-1-name').textContent).toBe('Iman');
     expect(screen.getByTestId('members-row-1-role').textContent?.toLowerCase()).toContain('child');
-    expect(screen.getByTestId('members-row-1-status').textContent).toBe('Unclaimed');
+    expect(screen.queryByTestId('members-row-1-pending')).toBeNull();
+  });
+
+  it('shows the pending box + resend on an unclaimed parent seat (FHS-276)', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        callerRole: 'admin',
+        members: [
+          {
+            id: 'm1',
+            displayName: 'Sarah Khan',
+            role: 'admin',
+            avatarEmoji: '👩',
+            status: 'active',
+            createdAt: '2026-05-02T00:00:00.000Z',
+            isChild: false,
+            hasPin: false,
+            age: null,
+            inviteEmail: null,
+            inviteId: null,
+          },
+          {
+            id: 'm2',
+            displayName: 'Jumi',
+            role: 'adult',
+            avatarEmoji: null,
+            status: 'unclaimed',
+            createdAt: '2026-05-02T00:00:00.000Z',
+            isChild: false,
+            hasPin: false,
+            age: null,
+            inviteEmail: 'jumi@example.com',
+            inviteId: '44444444-4444-4444-8444-444444444444',
+          },
+        ],
+      }),
+    });
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
+    const pending = screen.getByTestId('members-row-1-pending');
+    expect(pending.textContent).toContain('signed up');
+    expect(pending.textContent).toContain('jumi@example.com');
+    expect(screen.getByTestId('members-row-1-resend')).toBeInTheDocument();
+    // The parent role label reads "Parent", not "adult" (MP design).
+    expect(screen.getByTestId('members-row-1-role').textContent).toBe('Parent');
+  });
+
+  it('admin toggle is disabled for the last admin and shown only on parent rows (FHS-276)', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        callerRole: 'admin',
+        members: [
+          {
+            id: 'm1',
+            displayName: 'Sarah Khan',
+            role: 'admin',
+            avatarEmoji: null,
+            status: 'active',
+            createdAt: '2026-05-02T00:00:00.000Z',
+            isChild: false,
+            hasPin: false,
+            age: null,
+            inviteEmail: null,
+            inviteId: null,
+          },
+          {
+            id: 'm2',
+            displayName: 'Yusuf',
+            role: 'adult',
+            avatarEmoji: null,
+            status: 'active',
+            createdAt: '2026-05-02T00:00:00.000Z',
+            isChild: false,
+            hasPin: false,
+            age: null,
+            inviteEmail: null,
+            inviteId: null,
+          },
+          {
+            id: 'm3',
+            displayName: 'Iman',
+            role: 'child',
+            avatarEmoji: null,
+            status: 'unclaimed',
+            createdAt: '2026-05-02T00:00:00.000Z',
+            isChild: true,
+            hasPin: false,
+            age: 6,
+            inviteEmail: null,
+            inviteId: null,
+          },
+        ],
+      }),
+    });
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
+    // Sole admin: toggle disabled. Other parent: "Make admin" enabled.
+    expect((screen.getByTestId('members-row-0-admin-toggle') as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    const make = screen.getByTestId('members-row-1-admin-toggle') as HTMLButtonElement;
+    expect(make.disabled).toBe(false);
+    expect(make.textContent).toContain('Make admin');
+    // Kid row: no admin toggle; age shows in the badge.
+    expect(screen.queryByTestId('members-row-2-admin-toggle')).toBeNull();
+    expect(screen.getByTestId('members-row-2-role').textContent).toBe('Child (6)');
   });
 
   it('passes the tenant slug + bearer token on the request', async () => {
@@ -157,7 +265,7 @@ describe('<MembersPage />', () => {
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-row-1-pin-toggle')).toBeInTheDocument());
     expect(screen.getByTestId('members-row-1-pin-toggle').textContent).toBe('Set PIN');
-    expect(screen.queryByTestId('members-row-1-pin-badge')).toBeNull();
+    expect(screen.getByTestId('members-row-1-pin-toggle').textContent).toContain('Set PIN');
 
     fireEvent.click(screen.getByTestId('members-row-1-pin-toggle'));
     expect(screen.getByTestId('members-row-1-pin-form')).toBeInTheDocument();
@@ -179,7 +287,7 @@ describe('<MembersPage />', () => {
 
     fireEvent.click(screen.getByTestId('members-row-1-pin-save'));
     await waitFor(() =>
-      expect(screen.getByTestId('members-row-1-pin-badge').textContent).toBe('PIN set'),
+      expect(screen.getByTestId('members-row-1-pin-toggle').textContent).toContain('Reset PIN'),
     );
 
     const putCall = fetchMock.mock.calls.find(
@@ -222,7 +330,9 @@ describe('<MembersPage />', () => {
     fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: false }));
 
     fireEvent.click(screen.getByTestId('members-row-1-pin-remove'));
-    await waitFor(() => expect(screen.queryByTestId('members-row-1-pin-badge')).toBeNull());
+    await waitFor(() =>
+      expect(screen.getByTestId('members-row-1-pin-toggle').textContent).toContain('Set PIN'),
+    );
 
     const deleteCall = fetchMock.mock.calls.find(
       (c) => typeof c[0] === 'string' && c[0].endsWith('/kid-id/pin') && c[1]?.method === 'DELETE',

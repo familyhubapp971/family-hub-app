@@ -254,6 +254,7 @@ export const invitationClaimRouter = new Hono().post('/', async (c) => {
       id: pendingInvitations.id,
       tenantId: pendingInvitations.tenantId,
       memberId: pendingInvitations.memberId,
+      role: pendingInvitations.role,
     })
     .from(pendingInvitations)
     .where(
@@ -265,7 +266,38 @@ export const invitationClaimRouter = new Hono().post('/', async (c) => {
 
   const claimed: Array<{ tenantId: string; slug: string }> = [];
   for (const inv of pending) {
-    if (!inv.memberId) continue; // members-page invites without a seat — FHS-276
+    // FHS-276 — members-page invites carry no pre-created seat: create
+    // the member row at claim time instead (display name from the email
+    // local-part; rename later on Manage Members).
+    if (!inv.memberId) {
+      const local = userRow.email.split('@')[0] ?? 'Parent';
+      const display = local.charAt(0).toUpperCase() + local.slice(1);
+      const created = await db
+        .insert(members)
+        .values({
+          tenantId: inv.tenantId,
+          userId: userRow.id,
+          displayName: display,
+          role: inv.role,
+        })
+        .returning({ id: members.id });
+      if (!created[0]) continue;
+      await db
+        .update(pendingInvitations)
+        .set({ status: 'accepted', updatedAt: new Date() })
+        .where(eq(pendingInvitations.id, inv.id));
+      const trows0 = await db
+        .select({ slug: tenants.slug })
+        .from(tenants)
+        .where(eq(tenants.id, inv.tenantId))
+        .limit(1);
+      if (trows0[0]) claimed.push({ tenantId: inv.tenantId, slug: trows0[0].slug });
+      log.info(
+        { invitationId: inv.id, tenantId: inv.tenantId, memberId: created[0].id },
+        'invitation claimed (seat created)',
+      );
+      continue;
+    }
     // Claim only an unclaimed seat in the invite's own tenant.
     const updatedRows = await db
       .update(members)

@@ -9,7 +9,7 @@ import type { User } from '../../../../apps/api/src/db/schema.js';
 // for the first time; pending invitations addressed to their email
 // link their login to the wizard-created member seat.
 
-const dbMock = { select: vi.fn(), update: vi.fn() };
+const dbMock = { select: vi.fn(), update: vi.fn(), insert: vi.fn() };
 vi.mock('../../../../apps/api/src/db/client.js', () => ({
   getDb: () => dbMock,
 }));
@@ -31,6 +31,7 @@ function chain(rows: unknown): unknown {
     where: () => obj,
     limit: () => obj,
     set: () => obj,
+    values: () => obj,
     returning: () => Promise.resolve(rows),
     then: (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
       Promise.resolve(rows).then(res, rej),
@@ -53,6 +54,11 @@ function buildApp(opts: {
     // update(members) → claim returning; update(pendingInvitations) → no rows needed.
     return chain(table === members ? (opts.memberClaimRows ?? []) : []);
   });
+  const insertedTables: unknown[] = [];
+  dbMock.insert.mockImplementation((table: unknown) => {
+    insertedTables.push(table);
+    return chain([{ id: MEMBER_ID }]);
+  });
 
   const seed: MiddlewareHandler = async (c, next) => {
     c.set('user', { id: USER_ID, email: FIXED_USER.email, claims: {} });
@@ -62,12 +68,13 @@ function buildApp(opts: {
   const app = new Hono();
   app.use('*', seed);
   app.route('/api/invitations/claim', invitationClaimRouter);
-  return { app, updatedTables };
+  return { app, updatedTables, insertedTables };
 }
 
 beforeEach(() => {
   dbMock.select.mockReset();
   dbMock.update.mockReset();
+  dbMock.insert.mockReset();
 });
 
 describe('FHS-275 — POST /api/invitations/claim', () => {
@@ -105,13 +112,17 @@ describe('FHS-275 — POST /api/invitations/claim', () => {
     expect(updatedTables).not.toContain(pendingInvitations);
   });
 
-  it('skips invites with no linked seat (members-page invites, FHS-276)', async () => {
-    const { app, updatedTables } = buildApp({
-      invites: [{ id: INVITE_ID, tenantId: TENANT_ID, memberId: null }],
+  it('creates a member seat for a seatless invite (members-page invites, FHS-276)', async () => {
+    const { app, updatedTables, insertedTables } = buildApp({
+      invites: [{ id: INVITE_ID, tenantId: TENANT_ID, memberId: null, role: 'adult' }],
     });
     const res = await app.request('/api/invitations/claim', { method: 'POST' });
     expect(res.status).toBe(200);
-    expect(((await res.json()) as { claimed: unknown[] }).claimed).toEqual([]);
-    expect(updatedTables).toHaveLength(0);
+    const body = (await res.json()) as { claimed: Array<{ slug: string }> };
+    expect(body.claimed).toEqual([{ tenantId: TENANT_ID, slug: 'khans' }]);
+    // A members row was created (display name from email local-part) and
+    // the invitation was flipped to accepted.
+    expect(insertedTables).toContain(members);
+    expect(updatedTables).toContain(pendingInvitations);
   });
 });
