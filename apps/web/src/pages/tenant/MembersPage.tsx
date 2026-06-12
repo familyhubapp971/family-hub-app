@@ -241,6 +241,9 @@ export function MembersPage() {
               const rs = roleStyle(m.role);
               const isParentRow = m.role === 'admin' || m.role === 'adult';
               const lastAdminLock = m.role === 'admin' && adminCount <= 1;
+              // FHS-278 — admin only becomes available once the seat has a
+              // real login. Button stays visible (founder's call), disabled.
+              const adminToggleDisabled = lastAdminLock || m.status === 'unclaimed';
               const callerCanManagePin =
                 ADMIN_OR_ADULT.has(status.callerRole) && PIN_ELIGIBLE_ROLES.has(m.role);
               return (
@@ -352,7 +355,12 @@ export function MembersPage() {
                         <button
                           type="button"
                           data-testid={`members-row-${idx}-admin-toggle`}
-                          disabled={lastAdminLock}
+                          disabled={adminToggleDisabled}
+                          title={
+                            m.status === 'unclaimed'
+                              ? 'Available once they finish signing up'
+                              : undefined
+                          }
                           onClick={() =>
                             void mutate(`/api/members/${m.id}`, {
                               method: 'PATCH',
@@ -362,7 +370,7 @@ export function MembersPage() {
                             })
                           }
                           className={`flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold transition-colors ${
-                            lastAdminLock
+                            adminToggleDisabled
                               ? 'cursor-not-allowed text-gray-400'
                               : 'text-purple-600 hover:bg-purple-50 hover:text-purple-800'
                           }`}

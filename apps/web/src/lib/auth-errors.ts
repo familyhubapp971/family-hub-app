@@ -33,6 +33,13 @@ export function friendlyAuthErrorMessage(raw: string | undefined): string {
     return 'That sign-in link has expired or already been used. Request a new one.';
   }
 
+  // FHS-279 — Log in with an email that has no account. The login form
+  // sends shouldCreateUser=false on purpose (login must not create
+  // accounts), and Supabase answers "Signups not allowed for otp".
+  if (/signups?\s+not\s+allowed/i.test(message)) {
+    return 'No account found for this email - create an account first, then log in.';
+  }
+
   // Supabase's invalid-email guard. Front-end Zod normally catches this
   // first; keep the fallback for when the network strips the casing.
   if (/invalid.*email/i.test(message) || /email.*invalid/i.test(message)) {
