@@ -73,11 +73,24 @@ export function OnboardingPage() {
   const { session } = useAuth();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [step, setStep] = useState(1);
-  const [members, setMembers] = useState<WizardMember[]>([
-    { uiId: makeUiId(), displayName: '', role: 'adult' },
-  ]);
+  // FHS-274 — the founder is shown as a pinned "You — Admin" row and
+  // submitted as `yourName` (renames their admin row server-side).
+  // The list below holds only the OTHER family members.
+  const [yourName, setYourName] = useState('');
+  const [members, setMembers] = useState<WizardMember[]>([]);
   const [timezone, setTimezone] = useState<string>(() => detectBrowserTimezone());
   const [currency, setCurrency] = useState<string>(() => detectBrowserCurrency());
+
+  // Suggest (never silently submit) a name from auth metadata; the
+  // founder sees and can change it before anything is saved.
+  const { user } = useAuth();
+  useEffect(() => {
+    if (yourName) return;
+    const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
+    const guess = (meta.full_name ?? meta.name ?? '').trim();
+    if (guess.length >= 2) setYourName(guess);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- prefill once
+  }, [user]);
 
   // Gate check on mount: hit /api/me, find this slug in tenants[],
   // bounce to /dashboard if onboarding_completed=true. Renders the
@@ -121,23 +134,24 @@ export function OnboardingPage() {
   const canAdvance = useMemo(() => {
     if (step === 2) {
       return (
-        members.length >= 1 &&
-        members.length <= 8 &&
+        yourName.trim().length >= 1 &&
+        members.length <= 7 &&
         members.every((m) => m.displayName.trim().length >= 1)
       );
     }
     if (step === 3) return timezone.trim().length > 0;
     if (step === 4) return /^[A-Z]{3}$/.test(currency);
     return true;
-  }, [step, members, timezone, currency]);
+  }, [step, yourName, members, timezone, currency]);
 
   function addMember() {
-    if (members.length >= 8) return;
+    if (members.length >= 7) return;
     setMembers((prev) => [...prev, { uiId: makeUiId(), displayName: '', role: 'adult' }]);
   }
 
   function removeMember(uiId: string) {
-    setMembers((prev) => (prev.length === 1 ? prev : prev.filter((m) => m.uiId !== uiId)));
+    // Others can drop to zero — the founder ("You") is always present.
+    setMembers((prev) => prev.filter((m) => m.uiId !== uiId));
   }
 
   function patchMember(uiId: string, patch: Partial<WizardMember>) {
@@ -158,6 +172,7 @@ export function OnboardingPage() {
         body: JSON.stringify({
           timezone,
           currency,
+          yourName: yourName.trim(),
           members: members.map((m) => ({
             displayName: m.displayName.trim(),
             role: m.role,
@@ -224,8 +239,31 @@ export function OnboardingPage() {
             <div data-testid="onboarding-step-members">
               <h2 className="mb-3 font-heading text-2xl">Who&rsquo;s in the family?</h2>
               <p className="mb-4 font-bold text-gray-600">
-                Add 1–8 people. You can always invite more later.
+                That&rsquo;s you below — then add the rest of the family. You can always invite more
+                later.
               </p>
+              <div
+                className="mb-3 rounded-md border-2 border-black bg-pink-50 p-3 shadow-neo-sm"
+                data-testid="onboarding-member-you"
+              >
+                <div className="grid gap-3 md:grid-cols-[1fr,140px]">
+                  <div>
+                    <Label htmlFor="onboarding-your-name">Your name</Label>
+                    <Input
+                      id="onboarding-your-name"
+                      value={yourName}
+                      onChange={(e) => setYourName(e.target.value)}
+                      placeholder="e.g. Sarah"
+                      testId="onboarding-your-name"
+                    />
+                  </div>
+                  <div className="flex items-end pb-1">
+                    <span className="rounded-full border-2 border-black bg-pink-200 px-3 py-1 text-xs font-bold">
+                      You · Admin
+                    </span>
+                  </div>
+                </div>
+              </div>
               <ul className="space-y-3" data-testid="onboarding-members-list">
                 {members.map((m, idx) => (
                   <li
@@ -298,7 +336,6 @@ export function OnboardingPage() {
                         <button
                           type="button"
                           onClick={() => removeMember(m.uiId)}
-                          disabled={members.length === 1}
                           className="rounded-md border-2 border-black bg-red-200 p-2 text-black shadow-neo-sm transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label={`Remove member ${idx + 1}`}
                           data-testid={`onboarding-member-remove-${idx}`}
@@ -315,7 +352,7 @@ export function OnboardingPage() {
                 variant="secondary"
                 size="md"
                 onClick={addMember}
-                disabled={members.length >= 8}
+                disabled={members.length >= 7}
                 testId="onboarding-add-member"
                 className="mt-4"
               >
@@ -362,8 +399,9 @@ export function OnboardingPage() {
             <div data-testid="onboarding-step-done">
               <h2 className="mb-3 font-heading text-2xl">All set?</h2>
               <p className="mb-4 font-bold text-gray-600">
-                You&rsquo;re about to add <span className="text-black">{members.length}</span>{' '}
-                family member{members.length === 1 ? '' : 's'}, set your timezone to{' '}
+                You&rsquo;re joining as <span className="text-black">{yourName.trim()}</span>{' '}
+                (admin) with <span className="text-black">{members.length}</span> other family
+                member{members.length === 1 ? '' : 's'}, timezone{' '}
                 <span className="text-black">{timezone}</span>, and pick{' '}
                 <span className="text-black">{currency}</span> as your currency.
               </p>

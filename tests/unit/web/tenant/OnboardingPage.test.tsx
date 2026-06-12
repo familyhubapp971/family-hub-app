@@ -96,7 +96,11 @@ describe('<OnboardingPage />', () => {
     fireEvent.click(screen.getByTestId('onboarding-next'));
     expect(screen.getByTestId('onboarding-step-members')).toBeInTheDocument();
 
-    // Type a name into the first member row.
+    // FHS-274 — fill the pinned "You" row, then add one other member.
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), {
+      target: { value: 'Sarah' },
+    });
+    fireEvent.click(screen.getByTestId('onboarding-add-member'));
     fireEvent.change(screen.getByTestId('onboarding-member-name-0'), {
       target: { value: 'Iman' },
     });
@@ -105,12 +109,13 @@ describe('<OnboardingPage />', () => {
     fireEvent.click(screen.getByTestId('onboarding-next'));
     expect(screen.getByTestId('onboarding-step-timezone')).toBeInTheDocument();
 
-    // Back to step 2 — name should still be there.
+    // Back to step 2 — both names should still be there.
     fireEvent.click(screen.getByTestId('onboarding-back'));
+    expect((screen.getByTestId('onboarding-your-name') as HTMLInputElement).value).toBe('Sarah');
     expect((screen.getByTestId('onboarding-member-name-0') as HTMLInputElement).value).toBe('Iman');
   });
 
-  it('disables Next on the members step until at least one name is filled', async () => {
+  it('disables Next on the members step until your name is filled (FHS-274)', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ tenants: [{ slug: 'khans', onboardingCompleted: false }] }),
@@ -120,6 +125,13 @@ describe('<OnboardingPage />', () => {
 
     fireEvent.click(screen.getByTestId('onboarding-next'));
     const next = screen.getByTestId('onboarding-next') as HTMLButtonElement;
+    expect(next.disabled).toBe(true);
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), {
+      target: { value: 'Sarah' },
+    });
+    expect(next.disabled).toBe(false);
+    // An added (other) member with an empty name re-blocks Next.
+    fireEvent.click(screen.getByTestId('onboarding-add-member'));
     expect(next.disabled).toBe(true);
     fireEvent.change(screen.getByTestId('onboarding-member-name-0'), {
       target: { value: 'Iman' },
@@ -143,6 +155,10 @@ describe('<OnboardingPage />', () => {
 
     // Welcome → Members → fill → Timezone → Currency → Done → Finish.
     fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), {
+      target: { value: 'Sarah' },
+    });
+    fireEvent.click(screen.getByTestId('onboarding-add-member'));
     fireEvent.change(screen.getByTestId('onboarding-member-name-0'), {
       target: { value: 'Iman' },
     });
@@ -163,6 +179,7 @@ describe('<OnboardingPage />', () => {
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toMatchObject({
       currency: 'USD',
+      yourName: 'Sarah',
       members: [{ displayName: 'Iman', role: 'adult' }],
     });
   });
