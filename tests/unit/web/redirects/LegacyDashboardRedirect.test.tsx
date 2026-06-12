@@ -90,6 +90,9 @@ describe('<LegacyDashboardRedirect />', () => {
     it('auto-derives the slug from the family name and submits to /api/public/tenant', async () => {
       renderRoute();
       await waitFor(() => expect(screen.getByTestId('no-tenant-create-form')).toBeInTheDocument());
+      fireEvent.change(screen.getByTestId('no-tenant-your-name'), {
+        target: { value: 'Sarah' },
+      });
       fireEvent.change(screen.getByTestId('no-tenant-family-name'), {
         target: { value: 'The Khan Family' },
       });
@@ -104,7 +107,8 @@ describe('<LegacyDashboardRedirect />', () => {
       });
       fireEvent.submit(screen.getByTestId('no-tenant-create-form'));
       await waitFor(() => expect(screen.getByTestId('tenant-onboarding')).toBeInTheDocument());
-      // The /api/public/tenant POST carried the existing session token.
+      // The /api/public/tenant POST carried the existing session token
+      // and the founder's typed name (FHS-274 — no metadata guessing).
       expect(mocks.fetchMock).toHaveBeenLastCalledWith(
         expect.stringContaining('/api/public/tenant'),
         expect.objectContaining({
@@ -112,11 +116,16 @@ describe('<LegacyDashboardRedirect />', () => {
           headers: expect.objectContaining({ Authorization: 'Bearer tok-1' }),
         }),
       );
+      const lastCall = mocks.fetchMock.mock.calls.at(-1)!;
+      expect(JSON.parse((lastCall[1] as RequestInit).body as string).displayName).toBe('Sarah');
     });
 
     it('shows an inline error and re-enables editing on 409 (slug taken)', async () => {
       renderRoute();
       await waitFor(() => expect(screen.getByTestId('no-tenant-create-form')).toBeInTheDocument());
+      fireEvent.change(screen.getByTestId('no-tenant-your-name'), {
+        target: { value: 'Sarah' },
+      });
       fireEvent.change(screen.getByTestId('no-tenant-family-name'), {
         target: { value: 'Khans' },
       });

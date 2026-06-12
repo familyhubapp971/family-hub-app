@@ -92,6 +92,7 @@ interface CreateFamilyPanelProps {
 function CreateFamilyPanel({ session }: CreateFamilyPanelProps) {
   const navigate = useNavigate();
   const [familyName, setFamilyName] = useState('');
+  const [yourName, setYourName] = useState('');
   const [slug, setSlug] = useState('');
   const [editingSlug, setEditingSlug] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,18 +116,13 @@ function CreateFamilyPanel({ session }: CreateFamilyPanelProps) {
     }
     setSubmitting(true);
     setError(null);
-    const meta = (session.user.user_metadata ?? {}) as {
-      full_name?: string;
-      name?: string;
-    };
-    const fromMeta = (meta.full_name ?? meta.name ?? '').trim();
-    const fromEmail = session.user.email?.split('@')[0] ?? '';
-    const displayName =
-      fromMeta.length >= 2
-        ? fromMeta
-        : fromEmail.length > 0
-          ? fromEmail.charAt(0).toUpperCase() + fromEmail.slice(1)
-          : 'You';
+    // FHS-274 — the founder types their own name; no more guessing from
+    // auth metadata / email prefixes (which produced names like "FAMILY").
+    const displayName = yourName.trim();
+    if (displayName.length < 2) {
+      setError('Your name is required.');
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/public/tenant`, {
         method: 'POST',
@@ -174,6 +170,26 @@ function CreateFamilyPanel({ session }: CreateFamilyPanelProps) {
           data-testid="no-tenant-create-form"
           noValidate
         >
+          <div>
+            <label className="mb-1 block font-body text-sm font-bold" htmlFor="no-tenant-your-name">
+              Your name
+            </label>
+            <input
+              id="no-tenant-your-name"
+              type="text"
+              value={yourName}
+              onChange={(e) => setYourName(e.target.value)}
+              required
+              minLength={2}
+              maxLength={80}
+              className="w-full rounded-md border-2 border-black px-3 py-2 font-body"
+              placeholder="e.g. Sarah"
+              data-testid="no-tenant-your-name"
+            />
+            <p className="mt-1 font-body text-xs text-gray-500">
+              You&rsquo;ll appear on the dashboard with this name, as the family admin.
+            </p>
+          </div>
           <div>
             <label className="mb-1 block font-body text-sm font-bold" htmlFor="no-tenant-family">
               Family name
@@ -224,7 +240,7 @@ function CreateFamilyPanel({ session }: CreateFamilyPanelProps) {
             variant="primary"
             size="lg"
             fullWidth
-            disabled={submitting || familyName.trim().length < 2}
+            disabled={submitting || familyName.trim().length < 2 || yourName.trim().length < 2}
             testId="no-tenant-submit"
           >
             {submitting ? 'Creating…' : 'Create my family'}
