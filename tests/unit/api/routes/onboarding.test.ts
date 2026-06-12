@@ -241,6 +241,21 @@ describe('FHS-37 — POST /api/onboarding/complete', () => {
     expect(new Set(insertedTables)).toEqual(new Set([members, habits, rewards]));
   });
 
+  it('FHS-274 — whitespace-only yourName is rejected with 400', async () => {
+    const app = buildAppWithSeed({});
+    const res = await app.request('/api/onboarding/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        timezone: 'Asia/Dubai',
+        currency: 'AED',
+        yourName: '   ',
+        members: [],
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
   it('FHS-274 — yourName renames the admin; zero others insert nothing', async () => {
     const updated = fixedTenant();
     updated.onboardingCompleted = true;

@@ -56,8 +56,10 @@ export const completeOnboardingRequestSchema = z.object({
   timezone: timezoneSchema,
   currency: currencySchema,
   // FHS-274 — the founder's own name. Renames the calling admin's member
-  // row so the wizard never inserts a duplicate person for them.
-  yourName: z.string().min(1).max(80).optional(),
+  // row so the wizard never inserts a duplicate person for them. Trimmed
+  // BEFORE the min-length check so whitespace-only values 400 instead of
+  // silently skipping the rename.
+  yourName: z.string().trim().min(1).max(80).optional(),
   // The OTHER family members (the founder is excluded — they already
   // exist as the admin row). A solo parent can finish with none.
   members: z.array(wizardMemberSchema).min(0).max(8),
@@ -148,6 +150,9 @@ export const onboardingRouter = new Hono().post('/complete', async (c) => {
     return c.json({ error: 'tenant not found' }, 404);
   }
   if (current.onboardingCompleted) {
+    // Read-only by design: a duplicate submit (tab refresh race) changes
+    // nothing — including yourName. Renames after onboarding belong to
+    // the members page (FHS-276), not a replayed wizard call.
     return c.json(completeOnboardingResponseSchema.parse(project(current, 0)), 200);
   }
 
