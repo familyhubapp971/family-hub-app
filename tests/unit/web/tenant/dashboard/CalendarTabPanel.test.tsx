@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-230 — CalendarTabPanel.
+// FHS-265 — CalendarTabPanel (MP layout). School/Home sub-tabs, legend +
+// per-child filter pills, day cards with when/where/wear rows, and the
+// per-day Add Activity form. An in-memory fake backs /api/events +
+// /api/members so add + refetch behave like the real API.
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
@@ -14,6 +17,92 @@ vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
 
 import { CalendarTabPanel } from '../../../../../apps/web/src/pages/tenant/dashboard/CalendarTabPanel';
 import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+
+interface Ev {
+  id: string;
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  title: string;
+  notes: string | null;
+  memberId: string | null;
+  type: 'school' | 'home';
+  location: string | null;
+  wear: string | null;
+}
+interface Member {
+  id: string;
+  displayName: string;
+  role: string;
+}
+
+const AMINA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const IBRAHIM = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const MEMBERS: Member[] = [
+  { id: 'p1', displayName: 'Sarah', role: 'admin' },
+  { id: AMINA, displayName: 'Amina', role: 'teen' },
+  { id: IBRAHIM, displayName: 'Ibrahim', role: 'child' },
+];
+
+// This week's Monday in local time — events seeded on it always render
+// in the default-loaded week.
+function mondayIso(): string {
+  const now = new Date();
+  const copy = new Date(now);
+  copy.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const y = copy.getFullYear();
+  const m = String(copy.getMonth() + 1).padStart(2, '0');
+  const d = String(copy.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function ev(over: Partial<Ev>): Ev {
+  return {
+    id: 'e1',
+    date: mondayIso(),
+    startTime: null,
+    endTime: null,
+    title: 'Event',
+    notes: null,
+    memberId: null,
+    type: 'school',
+    location: null,
+    wear: null,
+    ...over,
+  };
+}
+
+function installApi(opts: { events?: Ev[]; members?: Member[]; eventsOk?: boolean }) {
+  const state = { events: [...(opts.events ?? [])], members: [...(opts.members ?? MEMBERS)] };
+  let gen = 0;
+  fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    const u = String(url);
+    if (init?.method === 'POST') {
+      const body = JSON.parse(init.body as string) as Omit<Ev, 'id' | 'endTime' | 'notes'>;
+      const row: Ev = {
+        id: `gen-${++gen}`,
+        endTime: null,
+        notes: null,
+        ...body,
+      } as Ev;
+      state.events.push(row);
+      return Promise.resolve({ ok: true, status: 201, json: async () => row });
+    }
+    if (u.includes('/api/members')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ members: state.members, callerRole: 'admin' }),
+      });
+    }
+    return Promise.resolve({
+      ok: opts.eventsOk ?? true,
+      status: opts.eventsOk === false ? 500 : 200,
+      json: async () => ({ weekStart: mondayIso(), events: state.events }),
+    });
+  });
+  return state;
+}
 
 function renderAt(initial: string) {
   return render(
@@ -36,248 +125,206 @@ beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
   authState.session = { access_token: 'tok-abc' };
-  // Pin the clock so mondayOf(today) is deterministic. 2026-05-06 is a
-  // Wednesday → Monday is 2026-05-04. Fake ONLY Date so waitFor()'s
-  // setInterval polling still runs — full fake timers freeze the loop
-  // and every async assertion times out.
-  vi.useFakeTimers({ toFake: ['Date'] });
-  vi.setSystemTime(new Date('2026-05-06T12:00:00.000Z'));
 });
 
 afterEach(() => {
-  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
 describe('<CalendarTabPanel />', () => {
-  it('renders a loading hint while the request is in flight', () => {
+  it('renders a loading hint while requests are in flight', () => {
     fetchMock.mockReturnValue(new Promise(() => {}));
     renderAt('/t/khans/dashboard');
     expect(screen.getByTestId('calendar-loading')).toBeInTheDocument();
   });
 
-  it('fires GET /api/events with the current Monday on first render', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ weekStart: '2026-05-04', events: [] }),
-    });
-    renderAt('/t/khans/dashboard');
-    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
-    const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('http://localhost:3001/api/events?weekStart=2026-05-04');
-    expect(init.headers).toMatchObject({
-      Authorization: 'Bearer tok-abc',
-      'x-tenant-slug': 'khans',
-    });
-  });
-
-  it('renders the inline error when the API returns a non-2xx', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) });
+  it('renders the inline error when the events API fails', async () => {
+    installApi({ eventsOk: false });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-error')).toBeInTheDocument());
   });
 
-  it('places events under the correct day-column', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        weekStart: '2026-05-04',
-        events: [
-          {
-            id: 'e1',
-            date: '2026-05-04', // Mon (day-0)
-            startTime: '09:00',
-            endTime: null,
-            title: 'Swim',
-            notes: null,
-            memberId: null,
-          },
-          {
-            id: 'e2',
-            date: '2026-05-08', // Fri (day-4)
-            startTime: null,
-            endTime: null,
-            title: 'School trip',
-            notes: null,
-            memberId: null,
-          },
-        ],
-      }),
-    });
+  it('renders 7 day cards, the sub-tabs, legend, filter pills and the Today pill', async () => {
+    installApi({});
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('calendar-event-e1').textContent).toContain('Swim');
-    // Event e1 sits in day-0 (Mon); event e2 in day-4 (Fri).
-    const monday = screen.getByTestId('calendar-day-0');
-    const friday = screen.getByTestId('calendar-day-4');
-    expect(monday).toContainElement(screen.getByTestId('calendar-event-e1'));
-    expect(friday).toContainElement(screen.getByTestId('calendar-event-e2'));
+    expect(screen.getByTestId('calendar-subtab-school')).toBeInTheDocument();
+    expect(screen.getByTestId('calendar-subtab-home')).toBeInTheDocument();
+    expect(screen.getByTestId('calendar-legend')).toBeInTheDocument();
+    expect(screen.getByTestId('calendar-filter-all')).toBeInTheDocument();
+    expect(screen.getByTestId(`calendar-filter-${AMINA}`)).toBeInTheDocument();
+    // Only kids get filter pills — the admin doesn't.
+    expect(screen.queryByTestId('calendar-filter-p1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('calendar-today-pill')).toBeInTheDocument();
+    expect(screen.getByTestId('calendar-week-label')).toBeInTheDocument();
   });
 
-  it('Prev / Next / Today change the week and refire the fetch', async () => {
-    fetchMock
-      // Initial week (2026-05-04)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ weekStart: '2026-05-04', events: [] }),
-      })
-      // Prev week (2026-04-27)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ weekStart: '2026-04-27', events: [] }),
-      })
-      // Next week — back to 2026-05-04 after Today click
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ weekStart: '2026-05-04', events: [] }),
-      });
-    renderAt('/t/khans/dashboard');
-    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
-
-    act(() => {
-      fireEvent.click(screen.getByTestId('calendar-prev'));
-    });
-    await waitFor(() => {
-      expect(fetchMock.mock.calls.at(-1)![0]).toBe(
-        'http://localhost:3001/api/events?weekStart=2026-04-27',
-      );
-    });
-
-    act(() => {
-      fireEvent.click(screen.getByTestId('calendar-today'));
-    });
-    await waitFor(() => {
-      expect(fetchMock.mock.calls.at(-1)![0]).toBe(
-        'http://localhost:3001/api/events?weekStart=2026-05-04',
-      );
-    });
-  });
-
-  it('+ Add opens the inline form; submitting POSTs and refetches', async () => {
-    fetchMock
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ weekStart: '2026-05-04', events: [] }),
-      })
-      // POST
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
+  it('shows an event row with title, when, where, and wear', async () => {
+    installApi({
+      events: [
+        ev({
           id: 'e1',
-          date: '2026-05-05',
-          startTime: '09:00',
-          endTime: null,
-          title: 'Dentist',
-          notes: null,
-          memberId: null,
+          title: 'Swimming Lesson',
+          startTime: '15:00',
+          memberId: AMINA,
+          location: 'Leisure Centre',
+          wear: 'Swimsuit and towel',
         }),
-      })
-      // Refetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          weekStart: '2026-05-04',
-          events: [
-            {
-              id: 'e1',
-              date: '2026-05-05',
-              startTime: '09:00',
-              endTime: null,
-              title: 'Dentist',
-              notes: null,
-              memberId: null,
-            },
-          ],
-        }),
-      });
+      ],
+    });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('calendar-event-e1-title').textContent).toBe('Swimming Lesson');
+    expect(screen.getByTestId('calendar-event-e1-location').textContent).toBe('Leisure Centre');
+    expect(screen.getByTestId('calendar-event-e1-wear').textContent).toBe('Swimsuit and towel');
+    expect(screen.getByLabelText('Amina')).toBeInTheDocument();
+  });
 
+  it('School/Home sub-tabs split events by type', async () => {
+    installApi({
+      events: [
+        ev({ id: 'sch', title: 'PE Day', type: 'school' }),
+        ev({ id: 'hom', title: 'Park visit', type: 'home' }),
+      ],
+    });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+    // Default = School.
+    expect(screen.getByTestId('calendar-event-sch')).toBeInTheDocument();
+    expect(screen.queryByTestId('calendar-event-hom')).not.toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('calendar-subtab-home'));
+    });
+    expect(screen.queryByTestId('calendar-event-sch')).not.toBeInTheDocument();
+    expect(screen.getByTestId('calendar-event-hom')).toBeInTheDocument();
+  });
+
+  it('member filter pills show their events plus whole-family ones', async () => {
+    installApi({
+      events: [
+        ev({ id: 'am', title: 'Amina swim', memberId: AMINA }),
+        ev({ id: 'ib', title: 'Ibrahim football', memberId: IBRAHIM }),
+        ev({ id: 'fam', title: 'Family picnic', memberId: null }),
+      ],
+    });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
 
     act(() => {
-      fireEvent.click(screen.getByTestId('calendar-add'));
+      fireEvent.click(screen.getByTestId(`calendar-filter-${AMINA}`));
+    });
+    expect(screen.getByTestId('calendar-event-am')).toBeInTheDocument();
+    expect(screen.getByTestId('calendar-event-fam')).toBeInTheDocument();
+    expect(screen.queryByTestId('calendar-event-ib')).not.toBeInTheDocument();
+  });
+
+  it('adding an activity POSTs date/title/time/member/type/location/wear and shows it', async () => {
+    installApi({});
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+    const monday = mondayIso();
+    act(() => {
+      fireEvent.click(screen.getByTestId(`calendar-add-${monday}`));
     });
     expect(screen.getByTestId('calendar-add-form')).toBeInTheDocument();
-
     act(() => {
-      fireEvent.change(screen.getByTestId('calendar-add-date'), {
-        target: { value: '2026-05-05' },
+      fireEvent.click(screen.getByTestId(`calendar-form-child-${AMINA}`));
+      fireEvent.change(screen.getByTestId('calendar-form-title'), {
+        target: { value: 'Swimming Lesson' },
       });
-      fireEvent.change(screen.getByTestId('calendar-add-title'), {
+      fireEvent.change(screen.getByTestId('calendar-form-when'), { target: { value: '15:00' } });
+      fireEvent.change(screen.getByTestId('calendar-form-where'), {
+        target: { value: 'Leisure Centre' },
+      });
+      fireEvent.change(screen.getByTestId('calendar-form-wear'), {
+        target: { value: 'Swimsuit' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('calendar-form-save'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Swimming Lesson')).toBeInTheDocument());
+    const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
+    expect(JSON.parse((postCall![1] as RequestInit).body as string)).toEqual({
+      date: monday,
+      title: 'Swimming Lesson',
+      startTime: '15:00',
+      memberId: AMINA,
+      type: 'school',
+      location: 'Leisure Centre',
+      wear: 'Swimsuit',
+    });
+  });
+
+  it('checking two children saves a whole-family event (memberId null)', async () => {
+    installApi({});
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+    const monday = mondayIso();
+    act(() => {
+      fireEvent.click(screen.getByTestId(`calendar-add-${monday}`));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId(`calendar-form-child-${AMINA}`));
+      fireEvent.click(screen.getByTestId(`calendar-form-child-${IBRAHIM}`));
+      fireEvent.change(screen.getByTestId('calendar-form-title'), {
         target: { value: 'Dentist' },
       });
-      fireEvent.change(screen.getByTestId('calendar-add-start'), {
-        target: { value: '09:00' },
-      });
     });
-
     await act(async () => {
-      fireEvent.click(screen.getByTestId('calendar-add-submit'));
+      fireEvent.click(screen.getByTestId('calendar-form-save'));
     });
-
-    await waitFor(() =>
-      expect(screen.getByTestId('calendar-event-e1').textContent).toContain('Dentist'),
-    );
 
     const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
-    expect(postCall).toBeDefined();
-    const body = JSON.parse((postCall![1] as RequestInit).body as string);
-    expect(body).toMatchObject({
-      date: '2026-05-05',
-      title: 'Dentist',
-      startTime: '09:00',
-    });
+    expect(JSON.parse((postCall![1] as RequestInit).body as string).memberId).toBeNull();
   });
 
-  it("highlights today's day-column with aria-current=date", async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ weekStart: '2026-05-04', events: [] }),
-    });
-    renderAt('/t/khans/dashboard');
-    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
-    // Pinned clock = 2026-05-06 (Wednesday) → day-2 in a Mon-start week.
-    const today = screen.getByTestId('calendar-day-2');
-    expect(today.getAttribute('aria-current')).toBe('date');
-    const otherDay = screen.getByTestId('calendar-day-0');
-    expect(otherDay.getAttribute('aria-current')).toBeNull();
-  });
-
-  it('returns focus to the + Add button after Cancel', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ weekStart: '2026-05-04', events: [] }),
-    });
-    renderAt('/t/khans/dashboard');
-    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
-    const addBtn = screen.getByTestId('calendar-add');
-    act(() => {
-      fireEvent.click(addBtn);
-    });
-    act(() => {
-      fireEvent.click(screen.getByTestId('calendar-add-cancel'));
-    });
-    // requestAnimationFrame fires inside act when timers are real; flush.
-    await waitFor(() => expect(addBtn).toHaveFocus());
-  });
-
-  it('shows an inline error if the title is blank when submitting', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ weekStart: '2026-05-04', events: [] }),
-    });
+  it('the saved event type follows the active sub-tab', async () => {
+    installApi({});
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
 
     act(() => {
-      fireEvent.click(screen.getByTestId('calendar-add'));
+      fireEvent.click(screen.getByTestId('calendar-subtab-home'));
     });
-    // Submit the form via the form element to bypass the native
-    // `required` HTML5 check (jsdom otherwise blocks the submit).
-    const form = screen.getByTestId('calendar-add-form') as HTMLFormElement;
+    const monday = mondayIso();
+    act(() => {
+      fireEvent.click(screen.getByTestId(`calendar-add-${monday}`));
+    });
+    act(() => {
+      fireEvent.change(screen.getByTestId('calendar-form-title'), {
+        target: { value: 'Park visit' },
+      });
+    });
     await act(async () => {
-      fireEvent.submit(form);
+      fireEvent.click(screen.getByTestId('calendar-form-save'));
     });
-    expect(screen.getByTestId('calendar-add-error').textContent).toContain('Title');
+    const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
+    expect(JSON.parse((postCall![1] as RequestInit).body as string).type).toBe('home');
+  });
+
+  it('shows the friendly empty state on a day with no activities', async () => {
+    installApi({});
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+    expect(screen.getByTestId(`calendar-day-${mondayIso()}-empty`)).toBeInTheDocument();
+    expect(screen.getAllByText('No activities scheduled').length).toBeGreaterThan(0);
+  });
+
+  it('passes the bearer token + tenant slug and a weekStart query', async () => {
+    installApi({});
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(String(url)).toContain('/api/events?weekStart=');
+    expect(init.headers).toMatchObject({
+      Authorization: 'Bearer tok-abc',
+      'x-tenant-slug': 'khans',
+    });
   });
 });

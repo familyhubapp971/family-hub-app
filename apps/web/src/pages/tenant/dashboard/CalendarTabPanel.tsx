@@ -1,17 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card } from '@familyhub/ui';
+import {
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Home,
+  MapPin,
+  Plus,
+  Save,
+  X,
+} from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-230 — CalendarTabPanel.
+// FHS-230 / FHS-265 — CalendarTabPanel (Magic Patterns layout).
 //
-// Week view of the family calendar. 7 day-columns (Mon-Sun) with the
-// week's events listed under each day. Header has prev / today / next
-// navigation. + Add opens a small inline form to create one event;
-// success refetches the current week.
+// Week-based day list with School / Home sub-tabs. Each day is a card:
+// a header (pink + "Today" pill on the current day, activity count),
+// activity rows showing who-it's-for (coloured avatar disc), when,
+// where (location) and what to wear, and a per-day "Add Activity"
+// inline form. A legend + per-child filter pills narrow the view
+// client-side. Renders directly on the kingdom-purple background.
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+type EventType = 'school' | 'home';
 
 interface EventItem {
   id: string;
@@ -21,25 +35,85 @@ interface EventItem {
   title: string;
   notes: string | null;
   memberId: string | null;
+  type: EventType;
+  location: string | null;
+  wear: string | null;
 }
 
-interface ListEventsResponse {
-  weekStart: string;
-  events: EventItem[];
+interface MemberLite {
+  id: string;
+  displayName: string;
+  role: string;
 }
 
 type Status =
   | { kind: 'loading' }
-  | { kind: 'ready'; events: EventItem[] }
+  | { kind: 'ready'; events: EventItem[]; members: MemberLite[] }
   | { kind: 'error'; message: string };
 
-// Returns the Monday on or before `d` as YYYY-MM-DD (UTC-anchored).
+interface DraftForm {
+  date: string; // the day card the form is open on
+  memberIds: Set<string>; // checked children; 0 or 2+ = whole family
+  title: string;
+  startTime: string;
+  location: string;
+  wear: string;
+}
+
+// Family rows are green; each member cycles a distinct colour. Shared
+// by the legend, the filter pills and the activity rows.
+const FAMILY_STYLE = {
+  border: 'border-green-400',
+  bg: 'bg-green-50',
+  avatar: 'bg-green-200',
+  dot: 'bg-green-200',
+};
+const MEMBER_STYLES = [
+  {
+    border: 'border-yellow-400',
+    bg: 'bg-yellow-50',
+    avatar: 'bg-yellow-200',
+    dot: 'bg-yellow-200',
+  },
+  {
+    border: 'border-purple-400',
+    bg: 'bg-purple-50',
+    avatar: 'bg-purple-200',
+    dot: 'bg-purple-200',
+  },
+  { border: 'border-cyan-400', bg: 'bg-cyan-50', avatar: 'bg-cyan-200', dot: 'bg-cyan-200' },
+  { border: 'border-pink-400', bg: 'bg-pink-50', avatar: 'bg-pink-200', dot: 'bg-pink-200' },
+  { border: 'border-amber-400', bg: 'bg-amber-50', avatar: 'bg-amber-200', dot: 'bg-amber-200' },
+  { border: 'border-sky-400', bg: 'bg-sky-50', avatar: 'bg-sky-200', dot: 'bg-sky-200' },
+];
+const UNKNOWN_STYLE = {
+  border: 'border-gray-400',
+  bg: 'bg-gray-50',
+  avatar: 'bg-gray-200',
+  dot: 'bg-gray-200',
+};
+
+function styleFor(memberId: string | null, members: MemberLite[]) {
+  if (memberId === null) return FAMILY_STYLE;
+  const idx = members.findIndex((m) => m.id === memberId);
+  if (idx < 0) return UNKNOWN_STYLE;
+  return MEMBER_STYLES[idx % MEMBER_STYLES.length]!;
+}
+
+function letterFor(memberId: string | null, members: MemberLite[]): string {
+  if (memberId === null) return 'F';
+  const m = members.find((x) => x.id === memberId);
+  return [...(m?.displayName.trim() ?? '?')][0]?.toUpperCase() ?? '?';
+}
+
 function mondayOf(d: Date): string {
-  const utc = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dow = utc.getUTCDay(); // Sun=0, Mon=1, ...
-  const diff = (dow + 6) % 7; // days since Monday
-  utc.setUTCDate(utc.getUTCDate() - diff);
-  return utc.toISOString().slice(0, 10);
+  const copy = new Date(d);
+  const offset = (copy.getDay() + 6) % 7; // 0 = Monday
+  copy.setDate(copy.getDate() - offset);
+  const y = copy.getFullYear();
+  const m = String(copy.getMonth() + 1).padStart(2, '0');
+  const day = String(copy.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function addDaysIso(iso: string, days: number): string {
@@ -49,63 +123,89 @@ function addDaysIso(iso: string, days: number): string {
   return dt.toISOString().slice(0, 10);
 }
 
+// "Monday 15 Jun" — UTC-anchored so the server date never shifts.
+function dayLabel(iso: string): string {
+  if (!ISO_DATE.test(iso)) return iso;
+  const [y, m, d] = iso.split('-').map((s) => Number.parseInt(s, 10));
+  return new Date(Date.UTC(y!, m! - 1, d!)).toLocaleDateString(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+}
+
 function formatWeekRange(weekStart: string): string {
-  const [y, m, d] = weekStart.split('-').map((s) => Number.parseInt(s, 10));
-  const start = new Date(Date.UTC(y!, m! - 1, d!));
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 6);
-  const fmt = (dt: Date) =>
-    dt.toLocaleDateString(undefined, {
-      month: 'short',
+  const end = addDaysIso(weekStart, 6);
+  const fmt = (iso: string) => {
+    const [y, m, d] = iso.split('-').map((s) => Number.parseInt(s, 10));
+    return new Date(Date.UTC(y!, m! - 1, d!)).toLocaleDateString(undefined, {
       day: 'numeric',
+      month: 'short',
       timeZone: 'UTC',
     });
-  return `${fmt(start)} – ${fmt(end)}`;
+  };
+  return `${fmt(weekStart)} — ${fmt(end)}`;
+}
+
+function localTodayIso(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function CalendarTabPanel() {
   const slug = useTenantSlug();
   const { session } = useAuth();
   const [weekStart, setWeekStart] = useState<string>(() => mondayOf(new Date()));
+  const [subTab, setSubTab] = useState<EventType>('school');
+  const [filter, setFilter] = useState<string>('all'); // 'all' | memberId
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
-  const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ date: '', title: '', startTime: '', endTime: '' });
+  const [draft, setDraft] = useState<DraftForm | null>(null);
   const [saving, setSaving] = useState(false);
-  const savingRef = useRef(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveAnnouncement, setSaveAnnouncement] = useState<string>('');
-  const addButtonRef = useRef<HTMLButtonElement>(null);
-  // Today's calendar day in UTC — used to highlight the current column
-  // (aria-current) and to default the add-form date when on the current
-  // week. Computed once per render; cheap.
-  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const headers = useMemo(
     () =>
-      session
-        ? {
-            Authorization: `Bearer ${session.access_token}`,
-            'x-tenant-slug': slug,
-          }
-        : null,
+      session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
     [session, slug],
   );
 
-  const refetch = useCallback(
-    async (week: string) => {
+  const load = useCallback(
+    async (week: string, signal?: AbortSignal) => {
       if (!headers) return;
       try {
-        const res = await fetch(`${API_BASE}/api/events?weekStart=${week}`, { headers });
-        if (!res.ok) {
+        const [evRes, memRes] = await Promise.all([
+          fetch(`${API_BASE}/api/events?weekStart=${week}`, { headers, signal: signal ?? null }),
+          fetch(`${API_BASE}/api/members`, { headers, signal: signal ?? null }),
+        ]);
+        if (!mountedRef.current) return;
+        if (!evRes.ok) {
           setStatus({
             kind: 'error',
-            message: `Couldn't load calendar (server returned ${res.status})`,
+            message: `Couldn't load the calendar (server ${evRes.status})`,
           });
           return;
         }
-        const body = (await res.json()) as ListEventsResponse;
-        setStatus({ kind: 'ready', events: body.events });
+        const evBody = (await evRes.json()) as { events: EventItem[] };
+        let members: MemberLite[] = [];
+        if (memRes.ok) {
+          const mb = (await memRes.json()) as { members: MemberLite[] };
+          members = mb.members ?? [];
+        }
+        setStatus({ kind: 'ready', events: evBody.events ?? [], members });
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        if (!mountedRef.current) return;
         setStatus({
           kind: 'error',
           message: err instanceof Error ? err.message : 'Network error — try again.',
@@ -119,346 +219,599 @@ export function CalendarTabPanel() {
     if (!headers) return;
     setStatus({ kind: 'loading' });
     const ac = new AbortController();
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/events?weekStart=${weekStart}`, {
-          headers,
-          signal: ac.signal,
-        });
-        if (cancelled) return;
-        if (!res.ok) {
-          setStatus({
-            kind: 'error',
-            message: `Couldn't load calendar (server returned ${res.status})`,
-          });
-          return;
-        }
-        const body = (await res.json()) as ListEventsResponse;
-        if (cancelled) return;
-        setStatus({ kind: 'ready', events: body.events });
-      } catch (err) {
-        if (cancelled || (err instanceof Error && err.name === 'AbortError')) return;
-        setStatus({
-          kind: 'error',
-          message: err instanceof Error ? err.message : 'Network error — try again.',
-        });
-      }
-    })();
-    return () => {
-      cancelled = true;
-      ac.abort();
-    };
-  }, [headers, weekStart]);
+    void load(weekStart, ac.signal);
+    return () => ac.abort();
+  }, [headers, weekStart, load]);
 
-  const onPrev = useCallback(() => {
-    setWeekStart((w) => addDaysIso(w, -7));
-  }, []);
-
-  const onNext = useCallback(() => {
-    setWeekStart((w) => addDaysIso(w, 7));
-  }, []);
-
-  const onToday = useCallback(() => {
-    setWeekStart(mondayOf(new Date()));
-  }, []);
-
-  const onAddOpen = useCallback(() => {
-    // Default to today when the user is viewing the current week, else
-    // fall back to the Monday of the displayed week.
-    const weekEnd = addDaysIso(weekStart, 6);
-    const defaultDate = todayIso >= weekStart && todayIso <= weekEnd ? todayIso : weekStart;
-    setAdding(true);
+  const onSave = useCallback(async () => {
+    if (!draft || !headers || saving) return;
+    const title = draft.title.trim();
+    if (title.length === 0) {
+      setSaveError('Give the activity a name.');
+      return;
+    }
+    // Exactly one child checked → that child; none or several → the
+    // whole family (our data model stores one member per event).
+    const memberId = draft.memberIds.size === 1 ? [...draft.memberIds][0]! : null;
+    setSaving(true);
     setSaveError(null);
-    setDraft({ date: defaultDate, title: '', startTime: '', endTime: '' });
-  }, [weekStart, todayIso]);
-
-  const onAddCancel = useCallback(() => {
-    setAdding(false);
-    setSaveError(null);
-    // Return focus to the + Add button so keyboard users don't lose
-    // their place when the form unmounts.
-    requestAnimationFrame(() => addButtonRef.current?.focus());
-  }, []);
-
-  const onAddSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      // Ref guard wins over state for the double-click race: state
-      // updates are deferred until the next render, so two fast clicks
-      // can both pass an `if (saving)` check before either has set it.
-      if (!headers || savingRef.current) return;
-      const trimmedTitle = draft.title.trim();
-      if (!trimmedTitle) {
-        setSaveError('Title is required.');
+    try {
+      const res = await fetch(`${API_BASE}/api/events`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: draft.date,
+          title,
+          startTime: draft.startTime || null,
+          memberId,
+          type: subTab,
+          location: draft.location.trim() || null,
+          wear: draft.wear.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        setSaveError(`Couldn't save (server returned ${res.status})`);
         return;
       }
-      savingRef.current = true;
-      setSaving(true);
-      setSaveError(null);
-      try {
-        const res = await fetch(`${API_BASE}/api/events`, {
-          method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            date: draft.date,
-            title: trimmedTitle,
-            startTime: draft.startTime || null,
-            endTime: draft.endTime || null,
-          }),
-        });
-        if (!res.ok) {
-          // Surface the API's structured error message when present so
-          // the user sees "endTime must be after startTime" not "500".
-          let detail = `Couldn't save (server returned ${res.status})`;
-          try {
-            const body = (await res.json()) as {
-              error?: string;
-              issues?: Array<{ message?: string }>;
-            };
-            if (body.issues?.[0]?.message) detail = body.issues[0].message;
-            else if (body.error) detail = body.error;
-          } catch {
-            // Non-JSON body — keep the generic detail.
-          }
-          setSaveError(detail);
-          return;
-        }
-        setAdding(false);
-        setSaveAnnouncement(`Added "${trimmedTitle}" on ${draft.date}`);
-        await refetch(weekStart);
-        requestAnimationFrame(() => addButtonRef.current?.focus());
-      } catch (err) {
-        setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
-      } finally {
-        savingRef.current = false;
-        setSaving(false);
-      }
-    },
-    [headers, draft, refetch, weekStart],
-  );
-
-  // Group events by date so each day-column lists its own.
-  const eventsByDate = useMemo(() => {
-    const map = new Map<string, EventItem[]>();
-    if (status.kind !== 'ready') return map;
-    for (const ev of status.events) {
-      const list = map.get(ev.date) ?? [];
-      list.push(ev);
-      map.set(ev.date, list);
+      setDraft(null);
+      await load(weekStart);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
+    } finally {
+      setSaving(false);
     }
-    return map;
-  }, [status]);
+  }, [draft, headers, saving, subTab, weekStart, load]);
 
   if (status.kind === 'loading') {
     return (
-      <p
-        data-testid="calendar-loading"
-        className="text-sm font-bold text-gray-600"
-        aria-live="polite"
-        aria-busy="true"
-      >
-        Loading calendar…
+      <p data-testid="calendar-loading" className="font-bold text-purple-200" aria-busy="true">
+        Loading the calendar…
       </p>
     );
   }
-
   if (status.kind === 'error') {
     return (
-      <p data-testid="calendar-error" role="alert" className="text-sm font-bold text-red-600">
+      <p data-testid="calendar-error" role="alert" className="font-bold text-red-300">
         {status.message}
       </p>
     );
   }
 
+  const { events, members } = status;
+  const children = members.filter((m) => m.role === 'child' || m.role === 'teen');
+  const todayIso = localTodayIso();
+  const days = Array.from({ length: 7 }, (_, i) => addDaysIso(weekStart, i));
+
+  const visible = events.filter((e) => {
+    if (e.type !== subTab) return false;
+    if (filter === 'all') return true;
+    // A member pill shows their events plus whole-family ones.
+    return e.memberId === filter || e.memberId === null;
+  });
+
   return (
-    <div className="space-y-4" data-testid="calendar-ready">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+    <div className="mx-auto max-w-5xl space-y-6" data-testid="calendar-ready">
+      {/* Header + week navigation */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="font-heading text-2xl text-black md:text-3xl">Calendar</h2>
-          <p className="mt-1 text-sm text-gray-600" data-testid="calendar-week-label">
-            Week of {formatWeekRange(weekStart)}
-          </p>
+          <h2 className="font-heading text-3xl tracking-wide text-white">Calendar</h2>
+          <p className="font-mono text-sm text-purple-200">Weekly schedule at a glance</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
+          <button
             type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onPrev}
-            testId="calendar-prev"
+            data-testid="calendar-prev-week"
+            aria-label="Previous week"
+            onClick={() => setWeekStart((w) => addDaysIso(w, -7))}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black bg-white text-black shadow-neo-xs hover:bg-gray-50"
           >
-            ← Prev
-          </Button>
-          <Button
+            <ChevronLeft size={16} strokeWidth={3} />
+          </button>
+          <span
+            className="rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold text-black shadow-neo-xs"
+            data-testid="calendar-week-label"
+          >
+            {formatWeekRange(weekStart)}
+          </span>
+          <button
             type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onToday}
-            testId="calendar-today"
+            data-testid="calendar-next-week"
+            aria-label="Next week"
+            onClick={() => setWeekStart((w) => addDaysIso(w, 7))}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black bg-white text-black shadow-neo-xs hover:bg-gray-50"
           >
-            Today
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onNext}
-            testId="calendar-next"
-          >
-            Next →
-          </Button>
-          <Button
-            ref={addButtonRef}
-            type="button"
-            variant="primary"
-            size="sm"
-            onClick={onAddOpen}
-            testId="calendar-add"
-          >
-            + Add
-          </Button>
+            <ChevronRight size={16} strokeWidth={3} />
+          </button>
         </div>
-      </header>
+      </div>
 
-      {/* Polite aria-live so screen readers announce a successful add. */}
-      <p aria-live="polite" className="sr-only" data-testid="calendar-announcement">
-        {saveAnnouncement}
-      </p>
-
-      {adding && (
-        <Card className="border-2 border-black bg-yellow-50 p-4 shadow-neo-sm">
-          <form
-            onSubmit={onAddSubmit}
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-            data-testid="calendar-add-form"
-          >
-            <label className="flex flex-col gap-1 text-sm font-bold text-black">
-              Date
-              <input
-                type="date"
-                required
-                value={draft.date}
-                onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-                data-testid="calendar-add-date"
-                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm font-bold text-black">
-              Title
-              <input
-                type="text"
-                required
-                maxLength={120}
-                value={draft.title}
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                data-testid="calendar-add-title"
-                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm font-bold text-black">
-              Start time (optional)
-              <input
-                type="time"
-                value={draft.startTime}
-                onChange={(e) => setDraft({ ...draft, startTime: e.target.value })}
-                data-testid="calendar-add-start"
-                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm font-bold text-black">
-              End time (optional)
-              <input
-                type="time"
-                value={draft.endTime}
-                onChange={(e) => setDraft({ ...draft, endTime: e.target.value })}
-                data-testid="calendar-add-end"
-                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </label>
-            {saveError && (
-              <p
-                role="alert"
-                data-testid="calendar-add-error"
-                className="col-span-full text-xs font-bold text-red-600"
-              >
-                {saveError}
-              </p>
-            )}
-            <div className="col-span-full flex gap-2">
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                disabled={saving}
-                testId="calendar-add-submit"
-              >
-                {saving ? 'Saving…' : 'Save event'}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={onAddCancel}
-                disabled={saving}
-                testId="calendar-add-cancel"
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
-
+      {/* School / Home sub-tabs */}
       <div
-        className="overflow-x-auto rounded-md border-2 border-black shadow-neo-sm"
-        data-testid="calendar-grid"
+        className="flex gap-1 rounded-xl border-2 border-black bg-white p-1.5 shadow-neo-sm"
+        role="group"
+        aria-label="Calendar type"
       >
-        <ol className="grid min-w-[720px] grid-cols-7 divide-x-2 divide-black">
-          {DAY_LABELS.map((label, idx) => {
-            const date = addDaysIso(weekStart, idx);
-            const dayEvents = eventsByDate.get(date) ?? [];
-            const dayPart = date.split('-')[2];
-            const isToday = date === todayIso;
-            return (
-              <li
-                key={date}
-                data-testid={`calendar-day-${idx}`}
-                data-date={date}
-                aria-current={isToday ? 'date' : undefined}
-                aria-label={`${label} ${dayPart}`}
-                className={`min-h-[160px] p-2 ${isToday ? 'bg-yellow-50' : 'bg-white'}`}
+        <SubTabButton
+          testId="calendar-subtab-school"
+          active={subTab === 'school'}
+          onClick={() => setSubTab('school')}
+          icon={<BookOpen size={18} strokeWidth={3} aria-hidden="true" />}
+          label="School"
+        />
+        <SubTabButton
+          testId="calendar-subtab-home"
+          active={subTab === 'home'}
+          onClick={() => setSubTab('home')}
+          icon={<Home size={18} strokeWidth={3} aria-hidden="true" />}
+          label="Home"
+        />
+      </div>
+
+      {/* Legend + filters */}
+      <div
+        className="flex flex-col items-start justify-between gap-4 rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm sm:flex-row sm:items-center"
+        data-testid="calendar-legend"
+      >
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="text-sm font-bold uppercase tracking-wider text-gray-500">Legend:</span>
+          {children.map((c) => (
+            <span key={c.id} className="flex items-center gap-1.5">
+              <span
+                className={`h-4 w-4 rounded-full border-2 border-black ${styleFor(c.id, members).dot}`}
+                aria-hidden="true"
+              />
+              <span className="text-sm font-bold">{c.displayName}</span>
+            </span>
+          ))}
+          <span className="flex items-center gap-1.5">
+            <span
+              className={`h-4 w-4 rounded-full border-2 border-black ${FAMILY_STYLE.dot}`}
+              aria-hidden="true"
+            />
+            <span className="text-sm font-bold">Family</span>
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by member">
+          <FilterPill
+            testId="calendar-filter-all"
+            active={filter === 'all'}
+            onClick={() => setFilter('all')}
+            label="All"
+          />
+          {children.map((c) => (
+            <FilterPill
+              key={c.id}
+              testId={`calendar-filter-${c.id}`}
+              active={filter === c.id}
+              onClick={() => setFilter(c.id)}
+              label={c.displayName}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Day list */}
+      <div className="space-y-6">
+        {days.map((dayIso) => {
+          const isToday = dayIso === todayIso;
+          const dayEvents = visible
+            .filter((e) => e.date === dayIso)
+            .sort((a, b) => (a.startTime ?? '99:99').localeCompare(b.startTime ?? '99:99'));
+          const formOpen = draft?.date === dayIso;
+          return (
+            <section
+              key={dayIso}
+              data-testid={`calendar-day-${dayIso}`}
+              className={`overflow-hidden rounded-xl border-2 border-black bg-white ${
+                isToday ? 'border-pink-500 shadow-[4px_4px_0_0_#ec4899]' : 'shadow-neo-sm'
+              }`}
+              aria-labelledby={`calendar-day-${dayIso}-h`}
+            >
+              {/* Day header */}
+              <div
+                className={`flex items-center justify-between border-b-2 border-black px-5 py-4 ${
+                  isToday ? 'bg-pink-400 text-black' : 'bg-white'
+                }`}
               >
-                <header className="mb-2 flex items-baseline justify-between">
-                  <span className="font-heading text-sm text-black">{label}</span>
-                  <span className="font-mono text-xs text-gray-500">{dayPart}</span>
-                </header>
-                {dayEvents.length === 0 ? (
-                  <p className="text-xs text-gray-400" data-testid={`calendar-day-${idx}-empty`}>
-                    —
-                  </p>
+                <div className="flex items-center gap-3">
+                  <h3 id={`calendar-day-${dayIso}-h`} className="font-heading text-xl">
+                    {dayLabel(dayIso)}
+                  </h3>
+                  {isToday && (
+                    <span
+                      data-testid="calendar-today-pill"
+                      className="rounded-full bg-black px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
+                    >
+                      Today
+                    </span>
+                  )}
+                  {dayEvents.length > 0 && (
+                    <span
+                      className={`rounded-full border border-black/20 px-2 py-0.5 text-[10px] font-bold ${
+                        isToday ? 'bg-white/30' : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {dayEvents.length} {dayEvents.length === 1 ? 'activity' : 'activities'}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white p-5">
+                {dayEvents.length > 0 ? (
+                  <div className="w-full">
+                    {/* Column headers (desktop) */}
+                    <div className="mb-3 hidden grid-cols-12 gap-4 border-b-2 border-gray-100 px-2 pb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 sm:grid">
+                      <div className="col-span-4">Who &amp; Activity</div>
+                      <div className="col-span-2">When</div>
+                      <div className="col-span-3">Where</div>
+                      <div className="col-span-3">What to wear</div>
+                    </div>
+                    <ul className="space-y-3">
+                      {dayEvents.map((ev) => {
+                        const style = styleFor(ev.memberId, members);
+                        const who =
+                          ev.memberId === null
+                            ? 'Family'
+                            : (members.find((m) => m.id === ev.memberId)?.displayName ??
+                              'Family member');
+                        return (
+                          <li
+                            key={ev.id}
+                            data-testid={`calendar-event-${ev.id}`}
+                            className={`grid grid-cols-1 items-center gap-2 rounded-lg border-2 border-l-4 border-black p-3 shadow-neo-xs sm:grid-cols-12 sm:gap-4 ${style.border} ${style.bg} motion-safe:transition-transform motion-safe:hover:-translate-y-0.5`}
+                          >
+                            <div className="flex items-center gap-3 sm:col-span-4">
+                              <span
+                                aria-label={who}
+                                title={who}
+                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-black font-heading text-sm ${style.avatar}`}
+                              >
+                                {letterFor(ev.memberId, members)}
+                              </span>
+                              <span
+                                className="text-sm font-bold leading-tight"
+                                data-testid={`calendar-event-${ev.id}-title`}
+                              >
+                                {ev.title}
+                              </span>
+                            </div>
+                            <div className="sm:col-span-2">
+                              <span className="inline-flex items-center gap-1 rounded border border-black/10 bg-white/50 px-2 py-1 text-[10px] font-bold">
+                                <Clock size={10} aria-hidden="true" />
+                                {ev.startTime ?? '—'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-sm font-bold text-gray-700 sm:col-span-3">
+                              {ev.location && (
+                                <MapPin
+                                  size={12}
+                                  className="shrink-0 text-gray-400"
+                                  aria-hidden="true"
+                                />
+                              )}
+                              <span data-testid={`calendar-event-${ev.id}-location`}>
+                                {ev.location ?? '—'}
+                              </span>
+                            </div>
+                            <div className="sm:col-span-3">
+                              <span
+                                className="inline-block rounded border-2 border-black/10 bg-white px-2 py-1 text-[10px] font-bold text-gray-700"
+                                data-testid={`calendar-event-${ev.id}-wear`}
+                              >
+                                {ev.wear ?? '—'}
+                              </span>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                 ) : (
-                  <ul className="space-y-1">
-                    {dayEvents.map((ev) => (
-                      <li
-                        key={ev.id}
-                        data-testid={`calendar-event-${ev.id}`}
-                        className="rounded border-2 border-black bg-yellow-50 px-2 py-1 text-xs shadow-neo-xs"
-                      >
-                        {ev.startTime && (
-                          <span className="mr-1 font-mono text-[10px] text-gray-600">
-                            {ev.startTime}
-                          </span>
-                        )}
-                        <span className="font-bold text-black">{ev.title}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div
+                    data-testid={`calendar-day-${dayIso}-empty`}
+                    className="mb-4 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-8 text-center"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="mb-3 flex h-16 w-16 items-center justify-center rounded-full border border-gray-100 bg-white text-3xl shadow-sm"
+                    >
+                      🎈
+                    </span>
+                    <p className="mb-1 font-bold text-gray-500">No activities scheduled</p>
+                    <p className="text-xs text-gray-400">Enjoy the free time!</p>
+                  </div>
                 )}
-              </li>
-            );
-          })}
-        </ol>
+
+                {/* Add Activity */}
+                <div className="mt-4">
+                  {formOpen ? (
+                    <ActivityForm
+                      draft={draft}
+                      childrenList={children}
+                      members={members}
+                      saving={saving}
+                      saveError={saveError}
+                      onChange={setDraft}
+                      onSave={() => void onSave()}
+                      onClose={() => {
+                        setDraft(null);
+                        setSaveError(null);
+                      }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      data-testid={`calendar-add-${dayIso}`}
+                      onClick={() => {
+                        setSaveError(null);
+                        setDraft({
+                          date: dayIso,
+                          memberIds: filter !== 'all' ? new Set([filter]) : new Set(),
+                          title: '',
+                          startTime: '',
+                          location: '',
+                          wear: '',
+                        });
+                      }}
+                      className={`flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed py-3 font-bold transition-colors hover:border-black hover:bg-gray-50 hover:text-black ${
+                        dayEvents.length === 0
+                          ? 'border-solid border-black bg-white text-black shadow-neo-xs'
+                          : 'border-gray-300 text-gray-500'
+                      }`}
+                    >
+                      <Plus size={18} aria-hidden="true" /> Add Activity
+                    </button>
+                  )}
+                </div>
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SubTabButton({
+  testId,
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  testId: string;
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-pressed={active}
+      onClick={onClick}
+      className={`flex flex-1 items-center justify-center gap-2 rounded-lg border-2 py-3 text-sm font-bold transition-all ${
+        active
+          ? 'border-black bg-pink-400 text-black shadow-neo-xs'
+          : 'border-transparent bg-transparent text-gray-500 hover:bg-gray-100'
+      }`}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+function FilterPill({
+  testId,
+  active,
+  onClick,
+  label,
+}: {
+  testId: string;
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-pressed={active}
+      onClick={onClick}
+      className={`min-h-[36px] rounded-full border-2 border-black px-4 py-1.5 text-sm font-bold transition-colors ${
+        active ? 'bg-pink-400 text-black shadow-neo-xs' : 'bg-white text-gray-500 hover:bg-gray-50'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ActivityForm({
+  draft,
+  childrenList,
+  members,
+  saving,
+  saveError,
+  onChange,
+  onSave,
+  onClose,
+}: {
+  draft: DraftForm;
+  childrenList: MemberLite[];
+  members: MemberLite[];
+  saving: boolean;
+  saveError: string | null;
+  onChange: (d: DraftForm) => void;
+  onSave: () => void;
+  onClose: () => void;
+}) {
+  const toggleChild = (id: string) => {
+    const next = new Set(draft.memberIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onChange({ ...draft, memberIds: next });
+  };
+  return (
+    <div
+      className="mt-2 rounded-xl border-2 border-black bg-white p-5 shadow-neo-xs"
+      data-testid="calendar-add-form"
+      role="group"
+      aria-label="Add new activity"
+    >
+      <div className="mb-4 flex items-center justify-between border-b-2 border-gray-100 pb-3">
+        <h4 className="font-heading text-lg">Add New Activity</h4>
+        <button
+          type="button"
+          aria-label="Close"
+          data-testid="calendar-form-close"
+          onClick={onClose}
+          className="text-gray-400 transition-colors hover:text-black"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <p className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-500">
+            Who is this for?
+          </p>
+          <div className="flex flex-wrap gap-4">
+            {childrenList.map((c) => {
+              const checked = draft.memberIds.has(c.id);
+              const style = styleFor(c.id, members);
+              return (
+                <label key={c.id} className="group flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    data-testid={`calendar-form-child-${c.id}`}
+                    aria-label={c.displayName}
+                    className="h-5 w-5 rounded border-2 border-black"
+                    checked={checked}
+                    onChange={() => toggleChild(c.id)}
+                  />
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className={`h-4 w-4 rounded-full border-2 border-black ${style.dot}`}
+                      aria-hidden="true"
+                    />
+                    <span className="text-sm font-bold">{c.displayName}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="mt-1 text-[10px] font-bold text-gray-400">
+            Tick one child, or leave empty / tick several for the whole family.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="col-span-1 md:col-span-2">
+            <label
+              className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-500"
+              htmlFor="calendar-form-title"
+            >
+              Activity Name
+            </label>
+            <input
+              id="calendar-form-title"
+              type="text"
+              placeholder="e.g. Swimming Lesson"
+              data-testid="calendar-form-title"
+              value={draft.title}
+              maxLength={120}
+              onChange={(e) => onChange({ ...draft, title: e.target.value })}
+              className="w-full rounded-lg border-2 border-black px-3 py-2 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400/50"
+            />
+          </div>
+          <div>
+            <label
+              className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-500"
+              htmlFor="calendar-form-when"
+            >
+              When
+            </label>
+            <input
+              id="calendar-form-when"
+              type="time"
+              data-testid="calendar-form-when"
+              value={draft.startTime}
+              onChange={(e) => onChange({ ...draft, startTime: e.target.value })}
+              className="w-full rounded-lg border-2 border-black px-3 py-2 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400/50"
+            />
+          </div>
+          <div>
+            <label
+              className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-500"
+              htmlFor="calendar-form-where"
+            >
+              Where
+            </label>
+            <input
+              id="calendar-form-where"
+              type="text"
+              placeholder="e.g. Leisure Centre"
+              data-testid="calendar-form-where"
+              value={draft.location}
+              maxLength={120}
+              onChange={(e) => onChange({ ...draft, location: e.target.value })}
+              className="w-full rounded-lg border-2 border-black px-3 py-2 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400/50"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label
+              className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-500"
+              htmlFor="calendar-form-wear"
+            >
+              What to wear
+            </label>
+            <input
+              id="calendar-form-wear"
+              type="text"
+              placeholder="e.g. Swimsuit and towel"
+              data-testid="calendar-form-wear"
+              value={draft.wear}
+              maxLength={120}
+              onChange={(e) => onChange({ ...draft, wear: e.target.value })}
+              className="w-full rounded-lg border-2 border-black px-3 py-2 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400/50"
+            />
+          </div>
+        </div>
+
+        {saveError && (
+          <p
+            role="alert"
+            data-testid="calendar-save-error"
+            className="text-xs font-bold text-red-600"
+          >
+            {saveError}
+          </p>
+        )}
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            data-testid="calendar-form-cancel"
+            onClick={onClose}
+            disabled={saving}
+            className="min-h-[44px] rounded-lg border-2 border-black px-4 py-2 font-bold transition-colors hover:bg-gray-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            data-testid="calendar-form-save"
+            onClick={onSave}
+            disabled={saving || draft.title.trim().length === 0}
+            className="flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-black bg-pink-400 px-6 py-2 font-bold shadow-neo-xs transition-all hover:translate-y-[2px] hover:shadow-none disabled:opacity-50"
+          >
+            <Save size={16} aria-hidden="true" /> {saving ? 'Saving…' : 'Save Activity'}
+          </button>
+        </div>
       </div>
     </div>
   );

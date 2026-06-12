@@ -495,18 +495,19 @@ export function DashboardPage() {
           data-testid={`dashboard-panel-${active.id}`}
         >
           {/* MP renders tab content straight on the kingdom-purple
-              background (each tab brings its own cards). The home tab is
-              already rebuilt that way — wrapping it in a white card would
-              hide its white headings. Tabs not yet redesigned keep the
-              white card until their own MP rebuild lands. */}
+              background (each tab brings its own cards). Rebuilt tabs
+              (home, calendar) render that way — wrapping them in a white
+              card would hide their white headings. Tabs not yet
+              redesigned keep the white card until their own MP rebuild
+              lands. */}
           {active.id === 'home' ? (
             <TodayTabPanel />
+          ) : active.id === 'calendar' ? (
+            <CalendarTabPanel />
           ) : (
             <Card className="bg-white p-6 text-gray-900 md:p-8">
               {active.id === 'meals' ? (
                 <MealsTabPanel />
-              ) : active.id === 'calendar' ? (
-                <CalendarTabPanel />
               ) : active.id === 'assignments' ? (
                 <AssignmentsTabPanel />
               ) : active.id === 'noticeboard' ? (
