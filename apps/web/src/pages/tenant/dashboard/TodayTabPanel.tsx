@@ -314,6 +314,16 @@ function MemberCard({
         )}
       </div>
 
+      {member.pendingSignup && (
+        <span
+          data-testid={`today-member-${index}-pending`}
+          className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-md border-2 border-yellow-400 bg-yellow-50 px-2 py-1 text-[10px] font-bold text-yellow-800"
+        >
+          <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-full bg-yellow-500" />
+          Pending &mdash; hasn&rsquo;t signed up
+        </span>
+      )}
+
       <div className="mt-auto">
         {young ? (
           <div className="space-y-2">

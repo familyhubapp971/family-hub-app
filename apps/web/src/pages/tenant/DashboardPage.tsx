@@ -9,6 +9,7 @@ import {
   Home,
   LogOut,
   Plus,
+  Users,
   Utensils,
 } from 'lucide-react';
 import { Card, TopNav, type TopNavTab } from '@familyhub/ui';
@@ -201,11 +202,13 @@ function ProfilePill({
   parentName,
   childMembers,
   onAddChild,
+  onManageMembers,
   slug,
 }: {
   parentName: string;
   childMembers: DashboardMember[];
   onAddChild: () => void;
+  onManageMembers: () => void;
   slug: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -323,7 +326,20 @@ function ProfilePill({
               </ul>
             </div>
           )}
-          <div className="px-3 pb-3">
+          <div className="space-y-2 border-t-2 border-black px-3 pb-3 pt-3">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onManageMembers();
+              }}
+              data-testid="dashboard-profile-manage-members"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-gray-100"
+            >
+              <Users size={16} strokeWidth={3} aria-hidden="true" />
+              Manage members
+            </button>
             <button
               type="button"
               role="menuitem"
@@ -430,6 +446,10 @@ export function DashboardPage() {
     navigate(`/t/${slug}/members?add=child`);
   }, [navigate, slug]);
 
+  const onManageMembers = useCallback(() => {
+    navigate(`/t/${slug}/members`);
+  }, [navigate, slug]);
+
   // Tab badges. Tasks = open tasks from /api/dashboard/today counts;
   // assignments/noticeboard counts wire up when those tabs are
   // redesigned (their APIs don't expose totals yet).
@@ -458,11 +478,19 @@ export function DashboardPage() {
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-gray-900">
       <TopNav
         brand={
-          <FamilyHero
-            familyName={familyName}
-            memberCount={members?.length ?? null}
-            loading={headerLoading}
-          />
+          <button
+            type="button"
+            onClick={() => onTabChange(DEFAULT_TAB)}
+            aria-label="Go to Family Dashboard"
+            data-testid="dashboard-brand-home"
+            className="text-left transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
+          >
+            <FamilyHero
+              familyName={familyName}
+              memberCount={members?.length ?? null}
+              loading={headerLoading}
+            />
+          </button>
         }
         tabs={navTabs}
         activeTab={activeTab}
@@ -473,6 +501,7 @@ export function DashboardPage() {
               parentName={parentName}
               childMembers={childMembers}
               onAddChild={onAddChild}
+              onManageMembers={onManageMembers}
               slug={slug}
             />
             <button

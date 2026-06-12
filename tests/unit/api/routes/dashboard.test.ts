@@ -163,8 +163,9 @@ describe('FHS-228 / FHS-262 — GET /api/dashboard/today', () => {
         {},
         {
           members: [
-            { id: M1, displayName: 'Sarah', role: 'admin', avatarEmoji: '👩' },
-            { id: M2, displayName: 'Iman', role: 'child', avatarEmoji: null },
+            { id: M1, displayName: 'Sarah', role: 'admin', avatarEmoji: '👩', userId: USER_ID },
+            // Wizard-created child: no linked login yet → pendingSignup.
+            { id: M2, displayName: 'Iman', role: 'child', avatarEmoji: null, userId: null },
           ],
           habitIds: [H1, H2],
           rewardsCount: 3,
@@ -175,11 +176,36 @@ describe('FHS-228 / FHS-262 — GET /api/dashboard/today', () => {
             { weekId: WK, memberId: M2, habitId: H1, completedCount: 1 },
           ],
           tasks: [
-            { memberId: M1, doneAt: null },
-            { memberId: M2, doneAt: null },
-            { memberId: M2, doneAt: null },
-            { memberId: M1, doneAt: new Date('2026-06-10T09:00:00.000Z') }, // done today
-            { memberId: M1, doneAt: new Date('2026-06-01T09:00:00.000Z') }, // earlier
+            {
+              memberId: M1,
+              doneAt: null,
+              title: 'Grocery run & Bills',
+              createdAt: new Date('2026-06-09T08:00:00.000Z'),
+            },
+            {
+              memberId: M2,
+              doneAt: null,
+              title: 'Tidy room',
+              createdAt: new Date('2026-06-09T09:00:00.000Z'),
+            },
+            {
+              memberId: M2,
+              doneAt: null,
+              title: 'Pack bag',
+              createdAt: new Date('2026-06-09T10:00:00.000Z'),
+            },
+            {
+              memberId: M1,
+              doneAt: new Date('2026-06-10T09:00:00.000Z'),
+              title: 'Done one',
+              createdAt: new Date('2026-06-08T09:00:00.000Z'),
+            }, // done today
+            {
+              memberId: M1,
+              doneAt: new Date('2026-06-01T09:00:00.000Z'),
+              title: 'Old one',
+              createdAt: new Date('2026-05-30T09:00:00.000Z'),
+            }, // earlier
           ],
           savings: [{ id: G1, name: 'Hajj fund', targetAmount: '5000.00' }],
           tx: [
@@ -225,8 +251,10 @@ describe('FHS-228 / FHS-262 — GET /api/dashboard/today', () => {
         habitsTotal: 2,
         streak: 1,
         tasksPending: 1,
-        statusText: '1 task left',
+        // FHS-273 — adults surface their newest open task, not habit copy.
+        statusText: 'Grocery run & Bills',
         starBalance: 3, // 1 + 2 habit completions
+        pendingSignup: false,
       });
       expect(iman).toMatchObject({
         habitsDone: 1,
@@ -235,6 +263,8 @@ describe('FHS-228 / FHS-262 — GET /api/dashboard/today', () => {
         tasksPending: 2,
         statusText: '2 tasks left',
         starBalance: 1,
+        // Iman is a wizard-created child with no linked login.
+        pendingSignup: true,
       });
       expect(body.counts).toEqual({
         members: 2,

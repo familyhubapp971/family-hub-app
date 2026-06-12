@@ -104,6 +104,7 @@ function defaultFetchMocks() {
               tasksPending: 1,
               statusText: '1 task left',
               starBalance: 0,
+              pendingSignup: false,
             },
             {
               id: 'm-2',
@@ -116,6 +117,7 @@ function defaultFetchMocks() {
               tasksPending: 0,
               statusText: 'All done',
               starBalance: 0,
+              pendingSignup: false,
             },
             {
               id: 'm-3',
@@ -128,6 +130,7 @@ function defaultFetchMocks() {
               tasksPending: 0,
               statusText: '1/3 habits',
               starBalance: 87,
+              pendingSignup: false,
             },
             {
               id: 'm-4',
@@ -140,6 +143,7 @@ function defaultFetchMocks() {
               tasksPending: 0,
               statusText: 'All done',
               starBalance: 122,
+              pendingSignup: false,
             },
           ],
           goals: [],
@@ -281,6 +285,14 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     fireEvent.click(screen.getByTestId('dashboard-profile-add-child'));
     await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
     expect(screen.getByTestId('location-search').textContent).toBe('?add=child');
+  });
+
+  it('Manage members item navigates to the members page (FHS-273)', async () => {
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    fireEvent.click(screen.getByTestId('dashboard-profile-manage-members'));
+    await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
+    expect(screen.getByTestId('location-search').textContent).toBe('');
   });
 
   it('standalone Logout button is always visible and calls signOutAll()', async () => {
