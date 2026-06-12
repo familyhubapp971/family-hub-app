@@ -37,6 +37,9 @@ const inviteRoleSchema = z.enum(INVITE_ROLE_VALUES);
 export const createInvitationRequestSchema = z.object({
   email: z.string().email('enter a valid email').max(254),
   role: inviteRoleSchema.default('adult'),
+  // FHS-276 — optional: create the member seat now (named card shows as
+  // pending immediately); claim links the login to THIS seat.
+  displayName: z.string().trim().min(1).max(80).optional(),
 });
 
 export const createInvitationResponseSchema = z.object({
@@ -137,6 +140,17 @@ export const invitationsRouter = new Hono().post('/', async (c) => {
   // (pending_invitations_tenant_email_pending_uniq) catches
   // double-invite races at insert time.
   let invitation: PendingInvitation;
+  // FHS-276 — when the caller named the seat, create the member row up
+  // front so the Manage Members grid shows a pending card immediately.
+  let seatMemberId: string | null = null;
+  if (parsed.data.displayName) {
+    const seat = await db
+      .insert(members)
+      .values({ tenantId, displayName: parsed.data.displayName, role })
+      .returning({ id: members.id });
+    seatMemberId = seat[0]?.id ?? null;
+  }
+
   try {
     const inserted = await db
       .insert(pendingInvitations)
@@ -145,6 +159,7 @@ export const invitationsRouter = new Hono().post('/', async (c) => {
         email,
         role,
         invitedBy: caller.id,
+        memberId: seatMemberId,
         status: 'pending',
       })
       .returning();
@@ -270,8 +285,16 @@ export const invitationClaimRouter = new Hono().post('/', async (c) => {
     // the member row at claim time instead (display name from the email
     // local-part; rename later on Manage Members).
     if (!inv.memberId) {
-      const local = userRow.email.split('@')[0] ?? 'Parent';
-      const display = local.charAt(0).toUpperCase() + local.slice(1);
+      // Flip the invitation FIRST with a status guard so two concurrent
+      // claims can't both create a member row (only one wins the flip).
+      const flipped = await db
+        .update(pendingInvitations)
+        .set({ status: 'accepted', updatedAt: new Date() })
+        .where(and(eq(pendingInvitations.id, inv.id), eq(pendingInvitations.status, 'pending')))
+        .returning({ id: pendingInvitations.id });
+      if (!flipped[0]) continue;
+      const local = (userRow.email.split('@')[0] ?? '').trim();
+      const display = local ? local.charAt(0).toUpperCase() + local.slice(1) : 'Parent';
       const created = await db
         .insert(members)
         .values({
@@ -282,10 +305,6 @@ export const invitationClaimRouter = new Hono().post('/', async (c) => {
         })
         .returning({ id: members.id });
       if (!created[0]) continue;
-      await db
-        .update(pendingInvitations)
-        .set({ status: 'accepted', updatedAt: new Date() })
-        .where(eq(pendingInvitations.id, inv.id));
       const trows0 = await db
         .select({ slug: tenants.slug })
         .from(tenants)

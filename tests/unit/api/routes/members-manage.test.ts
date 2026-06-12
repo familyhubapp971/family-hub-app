@@ -129,6 +129,24 @@ describe('FHS-276 — members roster mutations', () => {
     expect(dbMock.update).not.toHaveBeenCalled();
   });
 
+  it('PATCH refuses self-demotion even with other admins → 400', async () => {
+    // Target IS the caller (same member id) and an admin.
+    const app = buildApp({ target: { id: 'caller-member-id', role: 'admin' }, adminRows: 2 });
+    const res = await app.request(
+      '/api/members/caller-member-id'.replace(
+        'caller-member-id',
+        '33333333-3333-4333-8333-333333333333',
+      ),
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'adult' }),
+      },
+    );
+    expect(res.status).toBe(400);
+    expect(dbMock.update).not.toHaveBeenCalled();
+  });
+
   it('PATCH refuses to demote the last admin → 400', async () => {
     const app = buildApp({ target: { id: TARGET_ID, role: 'admin' }, adminRows: 1 });
     const res = await app.request(`/api/members/${TARGET_ID}`, {

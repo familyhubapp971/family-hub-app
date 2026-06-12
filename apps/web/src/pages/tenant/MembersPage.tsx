@@ -171,20 +171,24 @@ export function MembersPage() {
           )}
         </div>
 
-        {activeForm === 'parent' && (
+        {activeForm === 'parent' && callerIsAdmin && (
           <InviteParentForm
             onClose={() => setActiveForm('none')}
-            onSubmit={async (email) => {
+            onSubmit={async (email, name) => {
               const ok = await mutate('/api/invitations', {
                 method: 'POST',
-                body: JSON.stringify({ email, role: 'adult' }),
+                body: JSON.stringify({
+                  email,
+                  role: 'adult',
+                  ...(name ? { displayName: name } : {}),
+                }),
               });
               if (ok) setActiveForm('none');
             }}
             error={actionError}
           />
         )}
-        {activeForm === 'child' && (
+        {activeForm === 'child' && callerIsAdmin && (
           <AddChildForm
             onClose={() => setActiveForm('none')}
             onSubmit={async (displayName, age) => {
@@ -407,7 +411,7 @@ function InviteParentForm({
   error,
 }: {
   onClose: () => void;
-  onSubmit: (email: string) => Promise<void>;
+  onSubmit: (email: string, name: string | null) => Promise<void>;
   error: string | null;
 }) {
   const [name, setName] = useState('');
@@ -433,7 +437,7 @@ function InviteParentForm({
           e.preventDefault();
           if (!email.trim()) return;
           setSubmitting(true);
-          void onSubmit(email.trim()).finally(() => setSubmitting(false));
+          void onSubmit(email.trim(), name.trim() || null).finally(() => setSubmitting(false));
         }}
       >
         <div className="flex-1">
@@ -643,9 +647,10 @@ function RemoveButton({
           type="button"
           data-testid={`members-row-${rowIdx}-remove-confirm`}
           onClick={onConfirm}
+          title="Their personal tasks and meals are removed too"
           className="rounded border-2 border-black bg-red-100 px-2 py-1 text-xs font-bold text-red-700"
         >
-          Remove {name}?
+          Remove {name}? (their tasks &amp; meals go too)
         </button>
         <button
           type="button"

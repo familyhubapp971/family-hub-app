@@ -51,8 +51,9 @@ function buildApp(opts: {
   const updatedTables: unknown[] = [];
   dbMock.update.mockImplementation((table: unknown) => {
     updatedTables.push(table);
-    // update(members) → claim returning; update(pendingInvitations) → no rows needed.
-    return chain(table === members ? (opts.memberClaimRows ?? []) : []);
+    // update(members) → claim returning; update(pendingInvitations) →
+    // the flip-first guard returns the flipped row (FHS-276 race fix).
+    return chain(table === members ? (opts.memberClaimRows ?? []) : [{ id: INVITE_ID }]);
   });
   const insertedTables: unknown[] = [];
   dbMock.insert.mockImplementation((table: unknown) => {

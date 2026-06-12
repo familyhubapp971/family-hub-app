@@ -472,6 +472,14 @@ membersRouter.patch('/:id', async (c) => {
         400,
       );
     }
+    // An admin can't demote THEMSELF — another admin must do it, so a
+    // mis-tap can't lock the family's owner out of management.
+    if (target.id === caller.id && target.role === 'admin' && parsed.data.role === 'adult') {
+      return c.json(
+        { error: 'forbidden', detail: 'ask another admin to remove your admin access' },
+        400,
+      );
+    }
     // Never demote the last admin.
     if (target.role === 'admin' && parsed.data.role === 'adult') {
       const admins = await countAdmins(db, tenantId);
