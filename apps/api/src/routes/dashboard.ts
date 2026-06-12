@@ -227,7 +227,7 @@ export const dashboardRouter = new Hono().get('/today', async (c) => {
     })
     .from(tasks)
     .where(eq(tasks.tenantId, tenantId))
-    .orderBy(asc(tasks.createdAt));
+    .orderBy(desc(tasks.createdAt));
 
   // 9 — savings goals.
   const savingsRows = await db
@@ -314,7 +314,7 @@ export const dashboardRouter = new Hono().get('/today', async (c) => {
   }
 
   const tasksPendingByMember = new Map<string, number>();
-  // Rows are createdAt-ASC, so the last pending write per member wins =
+  // Rows are createdAt-DESC, so the FIRST pending row seen per member is
   // their newest open task (the adult card's status line, per the mock).
   const latestPendingTaskByMember = new Map<string, string>();
   let tasksDoneToday = 0;
@@ -323,7 +323,9 @@ export const dashboardRouter = new Hono().get('/today', async (c) => {
       // tasks.member_id is NOT NULL; cross-tenant scope is guaranteed by
       // the tenantId filter on the query above.
       tasksPendingByMember.set(t.memberId, (tasksPendingByMember.get(t.memberId) ?? 0) + 1);
-      latestPendingTaskByMember.set(t.memberId, t.title);
+      if (!latestPendingTaskByMember.has(t.memberId)) {
+        latestPendingTaskByMember.set(t.memberId, t.title);
+      }
     } else if (isoDateInTimezone(t.doneAt, tenantRow?.timezone) === today) {
       tasksDoneToday += 1;
     }
@@ -346,19 +348,26 @@ export const dashboardRouter = new Hono().get('/today', async (c) => {
     // line is the newest open task's title (or 'All done'). Kids keep the
     // habit-aware derivation.
     const isKid = m.role === 'child' || m.role === 'teen';
+    // Kids log in by PIN, never email signup — pending only applies to
+    // grown-up seats (incl. guests) without a linked login.
+    const pendingSignup = !isKid && m.userId === null;
     const statusText = isKid
       ? deriveStatusText({ tasksPending, habitsDone, habitsTotal })
-      : (latestPendingTaskByMember.get(m.id) ?? 'All done');
-    const { userId, ...rest } = m;
+      : pendingSignup && tasksPending === 0
+        ? 'Awaiting signup'
+        : (latestPendingTaskByMember.get(m.id) ?? 'All done');
     return {
-      ...rest,
+      id: m.id,
+      displayName: m.displayName,
+      role: m.role,
+      avatarEmoji: m.avatarEmoji,
       habitsDone,
       habitsTotal,
       streak,
       tasksPending,
       statusText,
       starBalance: starBalanceByMember.get(m.id) ?? 0,
-      pendingSignup: userId === null,
+      pendingSignup,
     };
   });
 

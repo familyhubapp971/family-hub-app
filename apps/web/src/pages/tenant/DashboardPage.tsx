@@ -265,6 +265,7 @@ function ProfilePill({
       {open && (
         <div
           role="menu"
+          aria-label="Profile menu"
           data-testid="dashboard-profile-menu"
           className="absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-xl border-2 border-black bg-white text-gray-900 shadow-neo-md"
         >

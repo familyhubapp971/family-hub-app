@@ -372,9 +372,10 @@ function MemberCard({
             <div className="rounded-lg border-2 border-black bg-gray-50 p-2 shadow-neo-xs">
               <p
                 data-testid={`today-member-${index}-status`}
-                className="flex items-center gap-1 text-xs font-bold text-gray-600"
+                className="flex min-w-0 items-center gap-1 text-xs font-bold text-gray-600"
               >
-                <Activity size={12} /> {member.statusText}
+                <Activity size={12} className="shrink-0" />
+                <span className="truncate">{member.statusText}</span>
               </p>
             </div>
           </div>
