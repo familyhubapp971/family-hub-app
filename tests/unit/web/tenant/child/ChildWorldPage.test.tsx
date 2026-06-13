@@ -35,6 +35,12 @@ function installApi() {
         json: async () => ({ rewards: [], stickerBalance: 0 }),
       });
     }
+    if (u.includes('/api/journal')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ entries: [] }) });
+    }
+    if (u.includes('/api/learn')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ subjects: [] }) });
+    }
     // /api/habits
     return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: [], logs: [] }) });
   });
@@ -83,13 +89,14 @@ describe('<ChildWorldPage />', () => {
     );
   });
 
-  it('switches to a placeholder tab', async () => {
+  it('switches to the Journal tab', async () => {
     renderAt();
     await waitFor(() => expect(screen.getByTestId('child-world')).toBeInTheDocument());
     act(() => {
       fireEvent.click(screen.getByRole('tab', { name: /Journal/ }));
     });
-    expect(screen.getByTestId('child-panel-soon-journal')).toBeInTheDocument();
+    expect(screen.getByTestId('child-panel-journal')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('journal-tab')).toBeInTheDocument());
   });
 
   it('Back to family returns to the dashboard', async () => {
