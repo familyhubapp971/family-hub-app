@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, CalendarDays, GraduationCap, Sparkles, Utensils } from 'lucide-react';
+import { ArrowLeft, BookOpen, CalendarDays, Home, PenLine, Utensils } from 'lucide-react';
 import { TopNav, type TopNavTab } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
@@ -25,11 +25,11 @@ interface ChildTab {
 }
 
 const CHILD_TABS: ChildTab[] = [
-  { id: 'world', label: 'My World', icon: <Sparkles size={16} aria-hidden="true" /> },
+  { id: 'world', label: 'My World', icon: <Home size={16} aria-hidden="true" /> },
   { id: 'meals', label: 'Meals', icon: <Utensils size={16} aria-hidden="true" /> },
   { id: 'calendar', label: 'Calendar', icon: <CalendarDays size={16} aria-hidden="true" /> },
-  { id: 'journal', label: 'Journal', icon: <BookOpen size={16} aria-hidden="true" /> },
-  { id: 'learn', label: 'Learn', icon: <GraduationCap size={16} aria-hidden="true" /> },
+  { id: 'journal', label: 'Journal', icon: <PenLine size={16} aria-hidden="true" /> },
+  { id: 'learn', label: 'Learn', icon: <BookOpen size={16} aria-hidden="true" /> },
 ];
 
 const DEFAULT_TAB = 'world';
@@ -97,12 +97,21 @@ export function ChildWorldPage() {
             >
               {member?.avatarEmoji ?? '🌟'}
             </span>
-            <h1
-              className="font-heading text-2xl uppercase tracking-wide text-white drop-shadow-md md:text-3xl"
-              data-testid="child-world-name"
-            >
-              {childName === 'My' ? 'My World' : `${childName}'s World`}
-            </h1>
+            <div>
+              <h1
+                className="font-heading text-2xl uppercase tracking-wide text-white drop-shadow-md md:text-3xl"
+                data-testid="child-world-name"
+              >
+                {childName === 'My' ? 'My World' : `${childName}'s World`}
+              </h1>
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-green-300">
+                <span
+                  aria-hidden="true"
+                  className="h-2.5 w-2.5 rounded-full border border-black bg-green-400 motion-safe:animate-pulse"
+                />
+                Magic Active
+              </p>
+            </div>
           </div>
         }
         tabs={navTabs}
@@ -113,7 +122,7 @@ export function ChildWorldPage() {
             type="button"
             onClick={onBack}
             data-testid="child-world-back"
-            className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-white px-4 py-2 font-bold text-purple-900 shadow-neo-sm transition-transform hover:bg-yellow-50 motion-safe:hover:-translate-y-0.5"
+            className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-[#4a1578] px-4 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-[#5a1d8a] motion-safe:hover:-translate-y-0.5"
           >
             <ArrowLeft size={16} strokeWidth={3} aria-hidden="true" />
             <span className="hidden sm:inline">Back to family</span>

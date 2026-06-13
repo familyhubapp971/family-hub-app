@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PenLine } from 'lucide-react';
 import { Button } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
@@ -130,15 +131,19 @@ export function JournalTab({ memberId }: { memberId: string }) {
         data-testid="journal-add-form"
         className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm"
       >
-        <label className="flex flex-col gap-2 text-sm font-bold text-black">
-          What&rsquo;s on your mind today?
+        <label className="flex flex-col gap-2 font-heading text-lg text-black">
+          <span className="flex items-center gap-2">
+            <PenLine size={20} className="text-pink-500" aria-hidden="true" /> What&rsquo;s on your
+            mind today?
+          </span>
           <textarea
-            rows={3}
+            rows={4}
             maxLength={5000}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            placeholder="Write about your day here…"
             data-testid="journal-add-body"
-            className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="h-28 rounded-xl border-2 border-black bg-gray-50 p-4 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
         </label>
         {saveError && (

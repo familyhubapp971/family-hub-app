@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Coffee, Cookie, Moon, Sun, Utensils } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -28,12 +29,22 @@ const DAYS: Array<{ key: string; label: string }> = [
   { key: 'sun', label: 'Sunday' },
 ];
 const SLOT_ORDER = ['breakfast', 'lunch', 'dinner', 'snack'];
-const SLOT_ICON: Record<string, string> = {
-  breakfast: '🥣',
-  lunch: '🥪',
-  dinner: '🍝',
-  snack: '🍎',
+const SLOT_ICON: Record<string, typeof Coffee> = {
+  breakfast: Coffee,
+  lunch: Sun,
+  dinner: Moon,
+  snack: Cookie,
 };
+// Rotating pastel tint per day so the planner reads as a lively board.
+const DAY_TINT = [
+  'bg-yellow-50',
+  'bg-pink-50',
+  'bg-cyan-50',
+  'bg-violet-50',
+  'bg-emerald-50',
+  'bg-orange-50',
+  'bg-sky-50',
+];
 
 type Status = 'loading' | 'ready' | 'error';
 
@@ -128,38 +139,50 @@ export function MealsTab({ memberId }: { memberId: string }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="meals-tab">
-      {DAYS.filter((d) => (byDay.get(d.key) ?? []).length > 0).map((d) => (
-        <section
-          key={d.key}
-          data-testid={`meal-day-${d.key}`}
-          aria-labelledby={`meal-day-h-${d.key}`}
-          className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm"
-        >
-          <h3 id={`meal-day-h-${d.key}`} className="mb-2 font-heading text-lg text-black">
-            {d.label}
-          </h3>
-          <ul className="space-y-2">
-            {(byDay.get(d.key) ?? []).map((m) => (
-              <li
-                key={m.id}
-                data-testid={`meal-item-${m.id}`}
-                className="flex items-center gap-2 rounded-lg border-2 border-black bg-yellow-50 p-2"
-              >
-                <span aria-hidden="true" className="text-xl">
-                  {SLOT_ICON[m.slot] ?? '🍽️'}
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                    {m.slot}
-                  </span>
-                  <span className="block truncate text-sm font-bold text-black">{m.name}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+    <div className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-6">
+      <h2 className="mb-5 flex items-center gap-3 font-heading text-2xl uppercase tracking-wide text-black">
+        <Utensils size={24} className="text-pink-500" aria-hidden="true" /> My Yummy Meals 😋
+      </h2>
+      <div
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+        data-testid="meals-tab"
+      >
+        {DAYS.filter((d) => (byDay.get(d.key) ?? []).length > 0).map((d, di) => (
+          <section
+            key={d.key}
+            data-testid={`meal-day-${d.key}`}
+            aria-labelledby={`meal-day-h-${d.key}`}
+            className={`rounded-xl border-2 border-black p-4 shadow-neo-sm ${DAY_TINT[di % DAY_TINT.length]}`}
+          >
+            <h3
+              id={`meal-day-h-${d.key}`}
+              className="mb-2 border-b-2 border-black pb-2 font-heading text-lg text-black"
+            >
+              {d.label}
+            </h3>
+            <ul className="space-y-2">
+              {(byDay.get(d.key) ?? []).map((m) => {
+                const Icon = SLOT_ICON[m.slot] ?? Utensils;
+                return (
+                  <li
+                    key={m.id}
+                    data-testid={`meal-item-${m.id}`}
+                    className="flex items-center gap-2 rounded-lg border-2 border-black bg-white p-2"
+                  >
+                    <Icon size={18} className="shrink-0 text-gray-700" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                        {m.slot}
+                      </span>
+                      <span className="block truncate text-sm font-bold text-black">{m.name}</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

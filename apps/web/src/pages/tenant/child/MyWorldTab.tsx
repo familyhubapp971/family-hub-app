@@ -208,88 +208,134 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
     );
   }
 
+  // This week's completion, for the habit progress bars + summary banner.
+  const totalPossible = habits.length * week.days.length;
+  const doneThisWeek = habits.reduce(
+    (sum, h) => sum + week.days.filter((d) => logged.has(key(h.id, d.iso))).length,
+    0,
+  );
+
   return (
-    <div className="space-y-6" data-testid="my-world">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-12" data-testid="my-world">
       <p aria-live="polite" className="sr-only" data-testid="my-world-announce">
         {announce}
       </p>
 
-      {/* Habit tracker */}
+      {/* Habit tracker (left column) */}
       <section
         aria-labelledby="habit-tracker-heading"
-        className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-6"
+        className="space-y-4 xl:col-span-8"
         data-testid="habit-tracker"
       >
-        <h2 id="habit-tracker-heading" className="mb-4 font-heading text-xl text-black">
+        <h2
+          id="habit-tracker-heading"
+          className="font-heading text-xl uppercase tracking-wide text-white"
+        >
           My Habits
         </h2>
+
+        {/* Weekly summary banner */}
+        <div
+          data-testid="habits-summary"
+          className="flex items-center justify-between rounded-xl border-2 border-black bg-[#6b21a8] p-4 shadow-neo-sm"
+        >
+          <div className="flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="grid h-10 w-10 place-items-center rounded-lg border-2 border-black bg-pink-400 text-black"
+            >
+              <Check size={20} strokeWidth={3} />
+            </span>
+            <span className="font-heading text-sm uppercase tracking-wide text-white">
+              Weekly Habits
+            </span>
+          </div>
+          <div className="text-right">
+            <span className="font-heading text-3xl text-yellow-300">
+              {doneThisWeek}/{totalPossible}
+            </span>
+            <p className="text-xs font-bold text-white">Habits Done ✨</p>
+          </div>
+        </div>
+
         {habits.length === 0 ? (
           <p
             data-testid="habits-empty"
-            className="py-3 text-center text-sm font-bold text-gray-500"
+            className="rounded-xl border-2 border-black bg-white py-6 text-center text-sm font-bold text-gray-500 shadow-neo-sm"
           >
             No habits yet — a grown-up can add some.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="p-1 text-left text-xs font-bold text-gray-500">Habit</th>
-                  {week.days.map((d) => (
-                    <th key={d.iso} className="p-1 text-center text-[10px] font-bold text-gray-500">
-                      {d.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {habits.map((h) => (
-                  <tr key={h.id} data-testid={`habit-row-${h.id}`}>
-                    <td className="py-1.5 pr-2">
+          <ul className="space-y-3">
+            {habits.map((h) => {
+              const habitDone = week.days.filter((d) => logged.has(key(h.id, d.iso))).length;
+              const pct = Math.round((habitDone / week.days.length) * 100);
+              return (
+                <li
+                  key={h.id}
+                  data-testid={`habit-row-${h.id}`}
+                  className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
                       <span
-                        data-testid={`habit-name-${h.id}`}
-                        className="flex items-center gap-2 font-heading text-sm text-black"
+                        aria-hidden="true"
+                        className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border-2 border-black font-heading text-lg text-black"
+                        style={{ backgroundColor: h.color }}
                       >
-                        <span
-                          aria-hidden="true"
-                          className="inline-block h-3 w-3 rounded-full border border-black"
-                          style={{ backgroundColor: h.color }}
-                        />
-                        {h.name}
+                        {[...h.name.trim()][0]?.toUpperCase() ?? '★'}
                       </span>
-                    </td>
-                    {week.days.map((d) => {
-                      const isOn = logged.has(key(h.id, d.iso));
-                      return (
-                        <td key={d.iso} className="p-1 text-center">
-                          <button
-                            type="button"
-                            onClick={() => onToggle(h.id, d.iso)}
-                            aria-pressed={isOn}
-                            aria-label={`${h.name} on ${d.label}: ${isOn ? 'done' : 'not done'}`}
-                            data-testid={`habit-cell-${h.id}-${d.iso}`}
-                            className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black motion-safe:transition-colors ${
-                              isOn ? 'bg-green-400' : 'bg-gray-50 hover:bg-yellow-100'
-                            }`}
-                          >
-                            {isOn && <Check size={16} strokeWidth={3} aria-hidden="true" />}
-                          </button>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <div className="min-w-0">
+                        <span
+                          data-testid={`habit-name-${h.id}`}
+                          className="block truncate font-heading text-base text-black"
+                        >
+                          {h.name}
+                        </span>
+                        <div className="mt-1 h-2.5 w-40 max-w-full overflow-hidden rounded-full border-2 border-black bg-gray-100">
+                          <div className="h-full bg-green-400" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 sm:flex-nowrap sm:justify-end">
+                      {week.days.map((d, i) => {
+                        const isOn = logged.has(key(h.id, d.iso));
+                        return (
+                          <div key={d.iso} className="flex flex-col items-center gap-1">
+                            <span
+                              aria-hidden="true"
+                              className="text-[10px] font-bold text-gray-400"
+                            >
+                              {DAY_LABELS[i]![0]}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => onToggle(h.id, d.iso)}
+                              aria-pressed={isOn}
+                              aria-label={`${h.name} on ${d.label}: ${isOn ? 'done' : 'not done'}`}
+                              data-testid={`habit-cell-${h.id}-${d.iso}`}
+                              className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black motion-safe:transition-colors ${
+                                isOn ? 'bg-green-400' : 'bg-gray-50 hover:bg-yellow-100'
+                              }`}
+                            >
+                              {isOn && <Check size={16} strokeWidth={3} aria-hidden="true" />}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 
-      {/* Rewards shop */}
+      {/* Rewards shop (right column) */}
       <section
         aria-labelledby="rewards-shop-heading"
-        className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-6"
+        className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-6 xl:col-span-4"
         data-testid="rewards-shop"
       >
         <div className="mb-4 flex items-center justify-between">
@@ -298,10 +344,10 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           </h2>
           <span
             data-testid="sticker-balance"
-            className="flex items-center gap-1.5 rounded-full border-2 border-black bg-yellow-300 px-3 py-1 font-heading text-sm text-black shadow-neo-xs"
+            className="flex items-center gap-1.5 rounded-full border-2 border-black bg-black px-3 py-1.5 font-heading text-sm text-white shadow-neo-xs"
           >
-            <Star size={16} className="fill-yellow-500" aria-hidden="true" />
-            {balance} {balance === 1 ? 'sticker' : 'stickers'}
+            <Star size={14} className="fill-yellow-300 text-yellow-300" aria-hidden="true" />
+            {balance} Stars
           </span>
         </div>
         {rewards.length === 0 ? (
@@ -312,10 +358,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
             No rewards yet — a grown-up can add some.
           </p>
         ) : (
-          <ul
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-            data-testid="rewards-grid"
-          >
+          <ul className="grid grid-cols-1 gap-3" data-testid="rewards-grid">
             {rewards.map((r) => {
               const affordable = balance >= r.stickerCost;
               return (
