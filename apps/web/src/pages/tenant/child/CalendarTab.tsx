@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Clock, MapPin, Shirt } from 'lucide-react';
+import { Calendar, Clock, MapPin, Shirt } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -24,6 +24,17 @@ interface CalEvent {
 }
 
 type Status = 'loading' | 'ready' | 'error';
+
+// Rotating pastel header band per day column.
+const DAY_TINT = [
+  'bg-yellow-300',
+  'bg-pink-300',
+  'bg-cyan-300',
+  'bg-violet-300',
+  'bg-emerald-300',
+  'bg-orange-300',
+  'bg-sky-300',
+];
 
 function formatDay(iso: string): string {
   const [y, m, d] = iso.split('-').map((s) => Number.parseInt(s, 10));
@@ -131,48 +142,59 @@ export function CalendarTab({ memberId }: { memberId: string }) {
   }
 
   return (
-    <div className="space-y-4" data-testid="calendar-tab">
-      {byDay.map((group) => (
-        <section
-          key={group.date}
-          data-testid={`cal-day-${group.date}`}
-          aria-labelledby={`cal-day-h-${group.date}`}
-          className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm"
-        >
-          <h3 id={`cal-day-h-${group.date}`} className="mb-2 font-heading text-lg text-black">
-            {formatDay(group.date)}
-          </h3>
-          <ul className="space-y-2">
-            {group.items.map((e) => (
-              <li
-                key={e.id}
-                data-testid={`cal-event-${e.id}`}
-                className="rounded-lg border-2 border-black bg-cyan-50 p-3"
-              >
-                <p className="text-sm font-bold text-black">{e.title}</p>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-bold text-gray-600">
-                  {e.startTime && (
-                    <span className="flex items-center gap-1">
-                      <Clock size={12} aria-hidden="true" /> {e.startTime}
-                      {e.endTime ? `–${e.endTime}` : ''}
-                    </span>
-                  )}
-                  {e.location && (
-                    <span className="flex items-center gap-1">
-                      <MapPin size={12} aria-hidden="true" /> {e.location}
-                    </span>
-                  )}
-                  {e.wear && (
-                    <span className="flex items-center gap-1">
-                      <Shirt size={12} aria-hidden="true" /> {e.wear}
-                    </span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+    <div className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-6">
+      <h2 className="mb-5 flex items-center gap-3 font-heading text-2xl uppercase tracking-wide text-black">
+        <Calendar size={24} className="text-blue-500" aria-hidden="true" /> My Schedule 📅
+      </h2>
+      <div
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+        data-testid="calendar-tab"
+      >
+        {byDay.map((group, gi) => (
+          <section
+            key={group.date}
+            data-testid={`cal-day-${group.date}`}
+            aria-labelledby={`cal-day-h-${group.date}`}
+            className="overflow-hidden rounded-xl border-2 border-black bg-white shadow-neo-sm"
+          >
+            <h3
+              id={`cal-day-h-${group.date}`}
+              className={`border-b-2 border-black px-3 py-2 font-heading text-base text-black ${DAY_TINT[gi % DAY_TINT.length]}`}
+            >
+              {formatDay(group.date)}
+            </h3>
+            <ul className="space-y-2 p-3">
+              {group.items.map((e) => (
+                <li
+                  key={e.id}
+                  data-testid={`cal-event-${e.id}`}
+                  className="rounded-lg border-2 border-black bg-cyan-50 p-3"
+                >
+                  <p className="text-sm font-bold text-black">{e.title}</p>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-bold text-gray-600">
+                    {e.startTime && (
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} aria-hidden="true" /> {e.startTime}
+                        {e.endTime ? `–${e.endTime}` : ''}
+                      </span>
+                    )}
+                    {e.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin size={12} aria-hidden="true" /> {e.location}
+                      </span>
+                    )}
+                    {e.wear && (
+                      <span className="flex items-center gap-1">
+                        <Shirt size={12} aria-hidden="true" /> {e.wear}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }
