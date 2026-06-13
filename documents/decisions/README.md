@@ -64,3 +64,4 @@ _Seeded by FHS-172 / FHS-173 / FHS-174 — populate as ADRs land:_
 - [`0011-magic-link-only-parent-auth.md`](0011-magic-link-only-parent-auth.md) — accepted: parent auth is magic-link + Google OAuth, no passwords (FHS-224, FHS-248)
 - [`0012-path-prefix-tenant-routing-interim.md`](0012-path-prefix-tenant-routing-interim.md) — accepted: path-prefix `/t/<slug>/` as interim tenant routing alongside subdomain (FHS-13, FHS-249)
 - [`0013-tasks-tab-shared-visibility.md`](0013-tasks-tab-shared-visibility.md) — accepted: Tasks tab is shared-to-see, private-to-edit — family-wide read, owner-scoped write (FHS-267)
+- [`0014-myworld-economy-separate-tables.md`](0014-myworld-economy-separate-tables.md) — accepted: My World uses its own per-child `mw_*` tables, leaving the generic family-finance stubs free (FHS-291)
