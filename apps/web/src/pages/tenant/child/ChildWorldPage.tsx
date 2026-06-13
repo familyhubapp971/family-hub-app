@@ -139,13 +139,7 @@ export function ChildWorldPage() {
               className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm"
             >
               <p aria-hidden="true" className="text-5xl">
-                {active.id === 'meals'
-                  ? '🍽️'
-                  : active.id === 'calendar'
-                    ? '📅'
-                    : active.id === 'journal'
-                      ? '📔'
-                      : '📚'}
+                {active.id === 'journal' ? '📔' : '📚'}
               </p>
               <h2 className="mt-3 font-heading text-2xl text-black">{active.label}</h2>
               <p className="mt-2 text-sm font-bold text-purple-700">Coming soon!</p>

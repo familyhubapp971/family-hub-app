@@ -62,7 +62,7 @@ export function MealsTab({ memberId }: { memberId: string }) {
         // Just this child's meals + whole-family meals, and only real
         // (named) entries — the planner stores empty cells too.
         const mine = (body.meals ?? []).filter(
-          (m) => m.name.trim() !== '' && (m.memberId === null || m.memberId === memberId),
+          (m) => (m.name ?? '').trim() !== '' && (m.memberId === null || m.memberId === memberId),
         );
         setMeals(mine);
         setStatus('ready');

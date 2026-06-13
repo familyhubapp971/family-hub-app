@@ -88,6 +88,29 @@ describe('<CalendarTab />', () => {
     await waitFor(() => expect(screen.getByTestId('calendar-error')).toBeInTheDocument());
   });
 
+  it('renders an error state when the request throws (network)', async () => {
+    fetchMock.mockRejectedValue(new Error('offline'));
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('calendar-error')).toBeInTheDocument());
+  });
+
+  it('renders an event with all optional fields null (title only, no crash)', async () => {
+    installEvents([
+      evt({
+        id: 'e1',
+        startTime: null,
+        endTime: null,
+        location: null,
+        wear: null,
+        title: 'Free play',
+        memberId: CHILD,
+      }),
+    ]);
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('cal-event-e1')).toBeInTheDocument());
+    expect(screen.getByTestId('cal-event-e1').textContent).toContain('Free play');
+  });
+
   it('has no create / edit / delete controls (read-only)', async () => {
     installEvents([evt({ id: 'e1', memberId: CHILD })]);
     renderTab();

@@ -88,6 +88,23 @@ describe('<MealsTab />', () => {
     await waitFor(() => expect(screen.getByTestId('meals-error')).toBeInTheDocument());
   });
 
+  it('renders an error state when the request throws (network)', async () => {
+    fetchMock.mockRejectedValue(new Error('offline'));
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('meals-error')).toBeInTheDocument());
+  });
+
+  it('does not crash if a meal name is null (defensive)', async () => {
+    installMeals([
+      meal({ id: 'm1', name: null, memberId: CHILD }),
+      meal({ id: 'm2', name: 'Toast', memberId: CHILD }),
+    ]);
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('meals-tab')).toBeInTheDocument());
+    expect(screen.queryByTestId('meal-item-m1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('meal-item-m2')).toBeInTheDocument();
+  });
+
   it('has no create / edit / delete controls (read-only)', async () => {
     installMeals([meal({ id: 'm1', memberId: CHILD, name: 'Porridge' })]);
     renderTab();

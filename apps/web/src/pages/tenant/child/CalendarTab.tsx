@@ -27,6 +27,9 @@ type Status = 'loading' | 'ready' | 'error';
 
 function formatDay(iso: string): string {
   const [y, m, d] = iso.split('-').map((s) => Number.parseInt(s, 10));
+  // y/m/d are 1-based for a real date, so a falsy value means a missing
+  // or malformed part — fall back to the raw string. (This also narrows
+  // the `number | undefined` from the indexed access.)
   if (!y || !m || !d) return iso;
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(undefined, {
     weekday: 'long',
