@@ -6,6 +6,8 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 import { MyWorldTab } from './MyWorldTab';
+import { MealsTab } from './MealsTab';
+import { CalendarTab } from './CalendarTab';
 
 // FHS-268 — ChildWorld shell.
 //
@@ -127,6 +129,10 @@ export function ChildWorldPage() {
         >
           {active.id === 'world' ? (
             <MyWorldTab memberId={memberId} />
+          ) : active.id === 'meals' ? (
+            <MealsTab memberId={memberId} />
+          ) : active.id === 'calendar' ? (
+            <CalendarTab memberId={memberId} />
           ) : (
             <div
               data-testid={`child-panel-soon-${active.id}`}
