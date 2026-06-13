@@ -11,6 +11,7 @@ import { SignupPage } from './pages/auth/SignupPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/tenant/DashboardPage';
+import { ChildWorldPage } from './pages/tenant/child/ChildWorldPage';
 import { LegacyDashboardRedirect } from './pages/redirects/LegacyDashboardRedirect';
 import { MembersPage } from './pages/tenant/MembersPage';
 import { MePage } from './pages/tenant/MePage';
@@ -90,6 +91,17 @@ export function App() {
               <ProtectedRoute>
                 <TenantProvider>
                   <MePage />
+                </TenantProvider>
+              </ProtectedRoute>
+            }
+          />
+          {/* FHS-268 — ChildWorld: a parent views a child's world. */}
+          <Route
+            path="/t/:slug/child/:memberId"
+            element={
+              <ProtectedRoute>
+                <TenantProvider>
+                  <ChildWorldPage />
                 </TenantProvider>
               </ProtectedRoute>
             }
