@@ -63,3 +63,4 @@ _Seeded by FHS-172 / FHS-173 / FHS-174 — populate as ADRs land:_
 - [`0010-frontend-animation-library.md`](0010-frontend-animation-library.md) — accepted: framer-motion v11 for web animations (FHS-220)
 - [`0011-magic-link-only-parent-auth.md`](0011-magic-link-only-parent-auth.md) — accepted: parent auth is magic-link + Google OAuth, no passwords (FHS-224, FHS-248)
 - [`0012-path-prefix-tenant-routing-interim.md`](0012-path-prefix-tenant-routing-interim.md) — accepted: path-prefix `/t/<slug>/` as interim tenant routing alongside subdomain (FHS-13, FHS-249)
+- [`0013-tasks-tab-shared-visibility.md`](0013-tasks-tab-shared-visibility.md) — accepted: Tasks tab is shared-to-see, private-to-edit — family-wide read, owner-scoped write (FHS-267)
