@@ -14,9 +14,10 @@ import {
 } from 'lucide-react';
 import { Card, TopNav, type TopNavTab } from '@familyhub/ui';
 import type { DashboardMember } from '@familyhub/shared';
-import { signOutAll, useAuth } from '../../lib/auth-context';
+import { getKidToken, signOutAll, useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
+import { KidDashboardShell } from './KidDashboardShell';
 import { TodayTabPanel } from './dashboard/TodayTabPanel';
 import { MealsTabPanel } from './dashboard/MealsTabPanel';
 import { CalendarTabPanel } from './dashboard/CalendarTabPanel';
@@ -361,7 +362,17 @@ function ProfilePill({
   );
 }
 
+// FHS-257 — the dashboard route is shared by parents (Supabase session)
+// and kids (kid JWT). A kid token takes precedence so a child who just
+// logged in gets the kid shell, never the parent surface.
 export function DashboardPage() {
+  const { session } = useAuth();
+  const kidToken = getKidToken();
+  if (kidToken && !session) return <KidDashboardShell />;
+  return <ParentDashboard />;
+}
+
+function ParentDashboard() {
   const slug = useTenantSlug();
   const navigate = useNavigate();
   const { user, session } = useAuth();
