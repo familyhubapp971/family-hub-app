@@ -292,6 +292,48 @@ describeFeature(feature, ({ Background, Scenario }) => {
   });
 
   Scenario(
+    "Two concurrent redeems with exactly enough stickers can't double-spend",
+    ({ Given, And, When, Then }) => {
+      let statuses: number[] = [];
+      Given(
+        'the caller logs {string} for {string} on {string}',
+        async (_c, h: string, m: string, d: string) => {
+          await logHabit('khan', h, m, d);
+        },
+      );
+      And(
+        'the caller logs {string} for {string} on {string}',
+        async (_c, h: string, m: string, d: string) => {
+          await logHabit('khan', h, m, d);
+        },
+      );
+      When(
+        'the caller fires two redeems of {string} for {string} at once in tenant {string}',
+        async (_c, r: string, m: string, slug: string) => {
+          const fire = () =>
+            app.request(`/api/rewards/${rewardIds[r]!}/redeem`, {
+              method: 'POST',
+              headers: { ...headers(slug), 'Content-Type': 'application/json' },
+              body: JSON.stringify({ memberId: memberIds[m]! }),
+            });
+          const results = await Promise.all([fire(), fire()]);
+          statuses = results.map((res) => res.status);
+        },
+      );
+      Then('exactly one redeem succeeds and one is rejected', () => {
+        expect(statuses.filter((s) => s === 201)).toHaveLength(1);
+        expect(statuses.filter((s) => s === 409)).toHaveLength(1);
+      });
+      And(
+        '{string} has a sticker balance of {int} in tenant {string}',
+        async (_c, m: string, n: number) => {
+          expect(await getBalance('khan', m)).toBe(n);
+        },
+      );
+    },
+  );
+
+  Scenario(
     "Tenant isolation — another tenant's habit logs never count",
     ({ Given, And, When, Then }) => {
       let res: Response;

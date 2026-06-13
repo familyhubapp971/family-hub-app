@@ -69,6 +69,10 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const [announce, setAnnounce] = useState('');
   const togglingRef = useRef<Set<string>>(new Set());
   const redeemingRef = useRef<Set<string>>(new Set());
+  // Synchronous mirror of `logged` so a toggle reads the latest committed
+  // ticks without racing React's commit (two fast taps on different cells
+  // each compose correctly).
+  const loggedRef = useRef<Set<string>>(new Set());
 
   const headers = useMemo(
     () =>
@@ -101,8 +105,10 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
       }
       const hBody = (await hRes.json()) as { habits: Habit[]; logs: HabitLog[] };
       const rBody = (await rRes.json()) as { rewards: Reward[]; stickerBalance: number };
+      const loggedSet = new Set((hBody.logs ?? []).map((l) => key(l.habitId, l.logDate)));
+      loggedRef.current = loggedSet;
       setHabits(hBody.habits ?? []);
-      setLogged(new Set((hBody.logs ?? []).map((l) => key(l.habitId, l.logDate))));
+      setLogged(loggedSet);
       setRewards(rBody.rewards ?? []);
       setBalance(rBody.stickerBalance ?? 0);
       setStatus('ready');
@@ -121,15 +127,14 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
       const k = key(habitId, dayIso);
       if (togglingRef.current.has(k)) return;
       togglingRef.current.add(k);
-      const wasLogged = logged.has(k);
-      const nextDone = !wasLogged;
-      // Optimistic: flip the tick + nudge the balance by one sticker.
-      setLogged((s) => {
-        const next = new Set(s);
-        if (nextDone) next.add(k);
-        else next.delete(k);
-        return next;
-      });
+      // Read + write the synchronous ref so the prior state is correct
+      // even when the network resolves before React commits.
+      const nextDone = !loggedRef.current.has(k);
+      const optimistic = new Set(loggedRef.current);
+      if (nextDone) optimistic.add(k);
+      else optimistic.delete(k);
+      loggedRef.current = optimistic;
+      setLogged(optimistic);
       setBalance((b) => b + (nextDone ? 1 : -1));
       try {
         const res = await fetch(`${API_BASE}/api/habits/${habitId}/log`, {
@@ -140,19 +145,18 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
         if (!res.ok) throw new Error(`status ${res.status}`);
       } catch {
         // Revert both the tick and the balance.
-        setLogged((s) => {
-          const next = new Set(s);
-          if (nextDone) next.delete(k);
-          else next.add(k);
-          return next;
-        });
+        const reverted = new Set(loggedRef.current);
+        if (nextDone) reverted.delete(k);
+        else reverted.add(k);
+        loggedRef.current = reverted;
+        setLogged(reverted);
         setBalance((b) => b + (nextDone ? -1 : 1));
         setAnnounce("Couldn't save that — try again.");
       } finally {
         togglingRef.current.delete(k);
       }
     },
-    [headers, logged, memberId],
+    [headers, memberId],
   );
 
   const onRedeem = useCallback(
@@ -265,7 +269,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                             aria-pressed={isOn}
                             aria-label={`${h.name} on ${d.label}: ${isOn ? 'done' : 'not done'}`}
                             data-testid={`habit-cell-${h.id}-${d.iso}`}
-                            className={`flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black motion-safe:transition-colors ${
+                            className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black motion-safe:transition-colors ${
                               isOn ? 'bg-green-400' : 'bg-gray-50 hover:bg-yellow-100'
                             }`}
                           >

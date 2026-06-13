@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { and, asc, count, eq, isNull, sum } from 'drizzle-orm';
+import { and, asc, count, eq, isNull, sql, sum } from 'drizzle-orm';
 import { getDb } from '../db/client.js';
 import { rewards, rewardRedemptions, habitLogs, members } from '../db/schema.js';
 import { getAuthenticatedUser } from '../middleware/auth.js';
@@ -32,6 +32,11 @@ export const listRewardsResponseSchema = z.object({
 const memberQuerySchema = z.object({ memberId: z.string().uuid() });
 const redeemRequestSchema = z.object({ memberId: z.string().uuid() });
 
+// The ChildWorld routes are parent-accessed: any member of the tenant
+// (a parent/adult opening a child's world) may call them. Kid HS256
+// tokens are blocked upstream by rejectKidTokens (FHS-257), so this only
+// admits Supabase-session members. Tighten to a role check here if a
+// kid-token path to these routes is ever added.
 async function callerIsMember(
   db: ReturnType<typeof getDb>,
   tenantId: string,
@@ -168,31 +173,56 @@ export const rewardsRouter = new Hono()
     if (!reward) {
       return c.json({ error: 'not found', detail: 'reward not found in this tenant' }, 404);
     }
-    const balance = await stickerBalance(db, tenantId, parsed.data.memberId);
-    if (balance < reward.stickerCost) {
+    // Serialize redemptions per (tenant, member) inside a transaction with
+    // a Postgres advisory lock so two concurrent redeems can't both pass
+    // the balance check and double-spend (TOCTOU). The lock is held for
+    // the transaction; a second redeem waits, then re-reads the now-lower
+    // balance and 409s.
+    const outcome = await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${tenantId}:${parsed.data.memberId}`}, 0))`,
+      );
+      const [earnedRow, spentRow] = await Promise.all([
+        tx
+          .select({ c: count() })
+          .from(habitLogs)
+          .where(
+            and(eq(habitLogs.tenantId, tenantId), eq(habitLogs.memberId, parsed.data.memberId)),
+          ),
+        tx
+          .select({ s: sum(rewardRedemptions.stickerCost) })
+          .from(rewardRedemptions)
+          .where(
+            and(
+              eq(rewardRedemptions.tenantId, tenantId),
+              eq(rewardRedemptions.memberId, parsed.data.memberId),
+            ),
+          ),
+      ]);
+      const balance = (earnedRow[0]?.c ?? 0) - Number(spentRow[0]?.s ?? 0);
+      if (balance < reward.stickerCost) {
+        return { ok: false as const, balance };
+      }
+      const [redemption] = await tx
+        .insert(rewardRedemptions)
+        .values({
+          tenantId,
+          rewardId,
+          memberId: parsed.data.memberId,
+          stickerCost: reward.stickerCost,
+        })
+        .returning({ id: rewardRedemptions.id });
+      return { ok: true as const, balance: balance - reward.stickerCost, id: redemption!.id };
+    });
+    if (!outcome.ok) {
       return c.json(
         {
           error: 'insufficient stickers',
           errorCode: 'INSUFFICIENT_STICKERS',
-          detail: `needs ${reward.stickerCost}, has ${balance}`,
+          detail: `needs ${reward.stickerCost}, has ${outcome.balance}`,
         },
         409,
       );
     }
-    const [redemption] = await db
-      .insert(rewardRedemptions)
-      .values({
-        tenantId,
-        rewardId,
-        memberId: parsed.data.memberId,
-        stickerCost: reward.stickerCost,
-      })
-      .returning({ id: rewardRedemptions.id });
-    if (!redemption) {
-      return c.json({ error: 'redeem failed', errorCode: 'REDEEM_NO_ROW' }, 500);
-    }
-    return c.json(
-      { stickerBalance: balance - reward.stickerCost, redemptionId: redemption.id },
-      201,
-    );
+    return c.json({ stickerBalance: outcome.balance, redemptionId: outcome.id }, 201);
   });

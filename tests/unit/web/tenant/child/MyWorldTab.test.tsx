@@ -159,6 +159,43 @@ describe('<MyWorldTab />', () => {
     );
   });
 
+  it('reverts the tick + balance when the toggle PATCH fails', async () => {
+    const state = installApi({ balance: 0 });
+    // Make PATCH fail; keep the GETs succeeding.
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (init?.method === 'PATCH' && u.includes('/log')) {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+      }
+      if (u.includes('/api/rewards')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ rewards: state.rewards, stickerBalance: state.balance }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ habits: state.habits, logs: state.logs }),
+      });
+    });
+    renderTab();
+    await waitFor(() =>
+      expect(screen.getByTestId(`habit-cell-${HABIT}-${MONDAY}`)).toBeInTheDocument(),
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByTestId(`habit-cell-${HABIT}-${MONDAY}`));
+    });
+    // Reverts to not-ticked + balance back to 0.
+    await waitFor(() =>
+      expect(screen.getByTestId(`habit-cell-${HABIT}-${MONDAY}`).getAttribute('aria-pressed')).toBe(
+        'false',
+      ),
+    );
+    expect(screen.getByTestId('sticker-balance').textContent).toContain('0');
+  });
+
   it('disables Buy when the balance is below the reward cost', async () => {
     installApi({ balance: 1 }); // reward costs 2
     renderTab();

@@ -35,6 +35,13 @@ Feature: ChildWorld habits + rewards sticker economy (FHS-268)
     When the caller redeems "Ice cream" for "Ali" in tenant "khan"
     Then the redeem response status is 409
 
+  Scenario: Two concurrent redeems with exactly enough stickers can't double-spend
+    Given the caller logs "Brush teeth" for "Ali" on "2026-06-08"
+    And the caller logs "Brush teeth" for "Ali" on "2026-06-09"
+    When the caller fires two redeems of "Ice cream" for "Ali" at once in tenant "khan"
+    Then exactly one redeem succeeds and one is rejected
+    And "Ali" has a sticker balance of 0 in tenant "khan"
+
   Scenario: Tenant isolation — another tenant's habit logs never count
     Given a second tenant "smith" exists with the caller as an admin member
     And the "smith" tenant has a child member "Sam"
