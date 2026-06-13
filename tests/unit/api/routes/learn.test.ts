@@ -55,6 +55,13 @@ describe('FHS-270 — GET /api/learn guards', () => {
     const res = await buildApp({ memberChecks: [[]] }).request(`/api/learn?memberId=${MEMBER_ID}`);
     expect(res.status).toBe(403);
   });
+
+  it('403 when a non-parent caller targets another member', async () => {
+    const res = await buildApp({
+      memberChecks: [[{ id: 'caller', role: 'teen' }], [{ id: MEMBER_ID }]],
+    }).request(`/api/learn?memberId=${MEMBER_ID}`);
+    expect(res.status).toBe(403);
+  });
 });
 
 describe('FHS-270 — PATCH /api/learn/:subject guards', () => {

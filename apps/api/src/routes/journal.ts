@@ -27,17 +27,24 @@ const createRequestSchema = z.object({
   body: z.string().trim().min(1, 'body is required').max(5000),
 });
 
-async function callerIsMember(
+async function loadCaller(
   db: ReturnType<typeof getDb>,
   tenantId: string,
   userId: string,
-): Promise<boolean> {
+): Promise<{ id: string; role: string } | null> {
   const rows = await db
-    .select({ id: members.id })
+    .select({ id: members.id, role: members.role })
     .from(members)
     .where(and(eq(members.tenantId, tenantId), eq(members.userId, userId)))
     .limit(1);
-  return rows.length > 0;
+  return rows[0] ?? null;
+}
+
+// Journal is private to the child + their parents (per FHS-270): a caller
+// may read/write a member's journal only if they ARE that member or are a
+// parent (admin/adult). A teen/child/guest can't touch another member's.
+function canManage(caller: { id: string; role: string }, memberId: string): boolean {
+  return caller.id === memberId || caller.role === 'admin' || caller.role === 'adult';
 }
 
 async function memberInTenant(
@@ -73,11 +80,15 @@ export const journalRouter = new Hono()
       );
     }
     const db = getDb();
-    if (!(await callerIsMember(db, tenantId, userRow.id))) {
+    const caller = await loadCaller(db, tenantId, userRow.id);
+    if (!caller) {
       return c.json({ error: 'forbidden', detail: 'caller is not a member of this tenant' }, 403);
     }
     if (!(await memberInTenant(db, tenantId, parsed.data.memberId))) {
       return c.json({ error: 'not found', detail: 'member not found in this tenant' }, 404);
+    }
+    if (!canManage(caller, parsed.data.memberId)) {
+      return c.json({ error: 'forbidden', detail: 'not allowed for this member' }, 403);
     }
     const rows = await db
       .select({
@@ -123,11 +134,15 @@ export const journalRouter = new Hono()
       );
     }
     const db = getDb();
-    if (!(await callerIsMember(db, tenantId, userRow.id))) {
+    const caller = await loadCaller(db, tenantId, userRow.id);
+    if (!caller) {
       return c.json({ error: 'forbidden', detail: 'caller is not a member of this tenant' }, 403);
     }
     if (!(await memberInTenant(db, tenantId, parsed.data.memberId))) {
       return c.json({ error: 'not found', detail: 'member not found in this tenant' }, 404);
+    }
+    if (!canManage(caller, parsed.data.memberId)) {
+      return c.json({ error: 'forbidden', detail: 'not allowed for this member' }, 403);
     }
     const [row] = await db
       .insert(journalEntries)

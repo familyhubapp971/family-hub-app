@@ -37,17 +37,23 @@ const patchRequestSchema = z.object({
   progress: z.number().int().min(0).max(100),
 });
 
-async function callerIsMember(
+async function loadCaller(
   db: ReturnType<typeof getDb>,
   tenantId: string,
   userId: string,
-): Promise<boolean> {
+): Promise<{ id: string; role: string } | null> {
   const rows = await db
-    .select({ id: members.id })
+    .select({ id: members.id, role: members.role })
     .from(members)
     .where(and(eq(members.tenantId, tenantId), eq(members.userId, userId)))
     .limit(1);
-  return rows.length > 0;
+  return rows[0] ?? null;
+}
+
+// A caller may read/write a member's learn progress only if they ARE that
+// member or are a parent (admin/adult) — same access model as the journal.
+function canManage(caller: { id: string; role: string }, memberId: string): boolean {
+  return caller.id === memberId || caller.role === 'admin' || caller.role === 'adult';
 }
 
 async function memberInTenant(
@@ -83,11 +89,15 @@ export const learnRouter = new Hono()
       );
     }
     const db = getDb();
-    if (!(await callerIsMember(db, tenantId, userRow.id))) {
+    const caller = await loadCaller(db, tenantId, userRow.id);
+    if (!caller) {
       return c.json({ error: 'forbidden', detail: 'caller is not a member of this tenant' }, 403);
     }
     if (!(await memberInTenant(db, tenantId, parsed.data.memberId))) {
       return c.json({ error: 'not found', detail: 'member not found in this tenant' }, 404);
+    }
+    if (!canManage(caller, parsed.data.memberId)) {
+      return c.json({ error: 'forbidden', detail: 'not allowed for this member' }, 403);
     }
     const rows = await db
       .select({ subject: learnProgress.subject, progress: learnProgress.progress })
@@ -131,11 +141,15 @@ export const learnRouter = new Hono()
       );
     }
     const db = getDb();
-    if (!(await callerIsMember(db, tenantId, userRow.id))) {
+    const caller = await loadCaller(db, tenantId, userRow.id);
+    if (!caller) {
       return c.json({ error: 'forbidden', detail: 'caller is not a member of this tenant' }, 403);
     }
     if (!(await memberInTenant(db, tenantId, parsed.data.memberId))) {
       return c.json({ error: 'not found', detail: 'member not found in this tenant' }, 404);
+    }
+    if (!canManage(caller, parsed.data.memberId)) {
+      return c.json({ error: 'forbidden', detail: 'not allowed for this member' }, 403);
     }
     await db
       .insert(learnProgress)

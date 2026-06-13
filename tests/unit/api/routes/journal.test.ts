@@ -58,10 +58,18 @@ describe('FHS-270 — GET /api/journal guards', () => {
     expect(res.status).toBe(403);
   });
   it('404 when the target member is not in the tenant', async () => {
-    const res = await buildApp({ memberChecks: [[{ id: 'caller' }], []] }).request(
+    const res = await buildApp({ memberChecks: [[{ id: 'caller', role: 'admin' }], []] }).request(
       `/api/journal?memberId=${MEMBER_ID}`,
     );
     expect(res.status).toBe(404);
+  });
+
+  it('403 when a non-parent caller targets another member', async () => {
+    // caller is a teen member (not admin/adult, not the target).
+    const res = await buildApp({
+      memberChecks: [[{ id: 'caller', role: 'teen' }], [{ id: MEMBER_ID }]],
+    }).request(`/api/journal?memberId=${MEMBER_ID}`);
+    expect(res.status).toBe(403);
   });
 });
 
