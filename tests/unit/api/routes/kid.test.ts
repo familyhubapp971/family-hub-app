@@ -48,4 +48,15 @@ describe('FHS-257 — GET /api/kid/me (real app wiring)', () => {
     expect(res.status).toBe(401);
     expect((await res.json()).errorCode).toBe('KID_AUTH_INVALID');
   });
+
+  it('returns 403 KID_ON_PARENT_ROUTE when a kid token hits a parent route', async () => {
+    // A kid token presented to a parent endpoint is rejected by the
+    // global rejectKidTokens guard BEFORE the parent ES256 auth runs.
+    const token = await mintKidToken();
+    const res = await buildApp().request('/api/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(403);
+    expect((await res.json()).errorCode).toBe('KID_ON_PARENT_ROUTE');
+  });
 });

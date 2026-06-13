@@ -5,6 +5,7 @@ import { createLogger } from './logger.js';
 import { getDb } from './db/client.js';
 import { getOrCreateUser } from './lib/user-mirror.js';
 import { authMiddleware, type AuthMiddlewareOptions } from './middleware/auth.js';
+import { rejectKidTokens } from './middleware/kid-auth.js';
 import { corsMiddleware } from './middleware/cors-allowlist.js';
 import { rateLimit } from './middleware/rate-limit.js';
 import { requestContext } from './middleware/request-context.js';
@@ -98,6 +99,11 @@ export function buildApp(opts: BuildAppOptions = {}) {
     userMirrorSync: (claims) => getOrCreateUser(getDb(), claims),
     ...(opts.auth ?? {}),
   };
+  // FHS-257 — reject a kid (HS256) token presented to a parent route with
+  // an explicit 403 KID_ON_PARENT_ROUTE, before the parent ES256 auth
+  // would 401 it. Skips /api/kid (where kid tokens belong) internally.
+  app.use('*', rejectKidTokens);
+
   app.use('*', authMiddleware(authOpts));
 
   // Tenant resolution runs AFTER auth so the JWT-claim source can use

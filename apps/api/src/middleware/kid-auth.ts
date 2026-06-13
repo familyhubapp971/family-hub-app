@@ -82,6 +82,9 @@ export function kidAuthMiddleware(opts: KidAuthMiddlewareOptions = {}): Middlewa
   const secret = new TextEncoder().encode(opts.secret ?? config.KID_AUTH_SECRET);
   return async (c, next) => {
     const token = extractBearer(c);
+    // looksLikeKidToken reads UNVERIFIED claims only to route the token —
+    // the strict jwtVerify below (pinned alg + issuer) is what actually
+    // authenticates it, so a forged "kid-shaped" token still 401s.
     if (!token || !looksLikeKidToken(token)) {
       await next();
       return;
@@ -136,6 +139,12 @@ export const requireKidAuth: MiddlewareHandler = async (c, next) => {
  * an explicit 403 so a kid hitting a parent endpoint is unambiguous.
  */
 export const rejectKidTokens: MiddlewareHandler = async (c, next) => {
+  // Kid routes legitimately carry a kid token — never reject them here.
+  const path = c.req.path;
+  if (path === '/api/kid' || path.startsWith('/api/kid/')) {
+    await next();
+    return;
+  }
   const token = extractBearer(c);
   if (token && looksLikeKidToken(token)) {
     return c.json({ error: 'parent login required', errorCode: 'KID_ON_PARENT_ROUTE' }, 403);

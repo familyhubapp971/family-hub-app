@@ -119,4 +119,35 @@ describe('<KidDashboardShell />', () => {
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-login-page')).toBeInTheDocument());
   });
+
+  it('ejects to kid-login when /api/kid/me returns 401 (revoked token)', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    fetchMock.mockResolvedValue({ ok: false, status: 401, json: async () => ({}) });
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-login-page')).toBeInTheDocument());
+    expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
+  });
+
+  it('ejects when the token is for a different tenant than the URL', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    // URL slug is "khan"; the confirmed session is for "other".
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ memberId: 'm1', tenantId: 't1', tenantSlug: 'other' }),
+    });
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-login-page')).toBeInTheDocument());
+    expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
+  });
+
+  it('keeps the shell up when /api/kid/me fails with a network error', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    fetchMock.mockRejectedValue(new Error('offline'));
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
+    expect(screen.queryByTestId('kid-login-page')).not.toBeInTheDocument();
+    // Did not falsely announce an active session on the offline path.
+    expect(screen.getByTestId('kid-session-confirmed').textContent).toBe('');
+  });
 });

@@ -66,21 +66,34 @@ export function KidDashboardShell() {
       return;
     }
     let cancelled = false;
+    const ejectToLogin = () => {
+      clearKidToken();
+      navigate(`/t/${slug}/kid-login`, { replace: true });
+    };
     fetch(`${API_BASE}/api/kid/me`, { headers: { Authorization: `Bearer ${kidToken}` } })
-      .then((r) => {
+      .then(async (r) => {
         if (cancelled) return;
-        if (r.ok) {
-          setConfirmed(true);
-        } else {
+        if (!r.ok) {
           setConfirmed(false);
-          clearKidToken();
-          navigate(`/t/${slug}/kid-login`, { replace: true });
+          ejectToLogin();
+          return;
         }
+        // Tenant guard: a kid token minted for tenant A must not run the
+        // shell on tenant B's URL. The token's own tenantSlug is the
+        // source of truth; a mismatch means a copied/stale token.
+        const body = (await r.json().catch(() => null)) as { tenantSlug?: string } | null;
+        if (cancelled) return;
+        if (body?.tenantSlug && body.tenantSlug !== slug) {
+          setConfirmed(false);
+          ejectToLogin();
+          return;
+        }
+        setConfirmed(true);
       })
       .catch(() => {
-        // Network blip — keep the shell up; the tabs are placeholders
-        // anyway, so a failed confirm shouldn't eject the kid.
-        if (!cancelled) setConfirmed(true);
+        // Network blip — keep the shell up (tabs are placeholders), but
+        // don't announce "session active" since we couldn't confirm.
+        if (!cancelled) setConfirmed(null);
       });
     return () => {
       cancelled = true;
@@ -131,7 +144,7 @@ export function KidDashboardShell() {
             className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-white px-4 py-2 font-bold text-purple-900 shadow-neo-sm transition-transform hover:bg-yellow-50 motion-safe:hover:-translate-y-0.5"
           >
             <LogOut size={16} strokeWidth={3} aria-hidden="true" />
-            <span className="hidden sm:inline">Switch user</span>
+            <span>Switch user</span>
           </button>
         }
         testId="kid-nav"
