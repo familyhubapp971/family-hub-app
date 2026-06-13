@@ -8,6 +8,8 @@ import { API_BASE } from '../../../lib/api';
 import { MyWorldTab } from './MyWorldTab';
 import { MealsTab } from './MealsTab';
 import { CalendarTab } from './CalendarTab';
+import { JournalTab } from './JournalTab';
+import { LearnTab } from './LearnTab';
 
 // FHS-268 — ChildWorld shell.
 //
@@ -133,17 +135,10 @@ export function ChildWorldPage() {
             <MealsTab memberId={memberId} />
           ) : active.id === 'calendar' ? (
             <CalendarTab memberId={memberId} />
+          ) : active.id === 'journal' ? (
+            <JournalTab memberId={memberId} />
           ) : (
-            <div
-              data-testid={`child-panel-soon-${active.id}`}
-              className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm"
-            >
-              <p aria-hidden="true" className="text-5xl">
-                {active.id === 'journal' ? '📔' : '📚'}
-              </p>
-              <h2 className="mt-3 font-heading text-2xl text-black">{active.label}</h2>
-              <p className="mt-2 text-sm font-bold text-purple-700">Coming soon!</p>
-            </div>
+            <LearnTab memberId={memberId} />
           )}
         </section>
       </main>
