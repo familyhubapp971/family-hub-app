@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card } from '@familyhub/ui';
+import { CheckCircle2, Circle, Clock, Plus } from 'lucide-react';
+import { Button } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-231 — AssignmentsTabPanel.
+// FHS-231 / FHS-266 — AssignmentsTabPanel (Magic Patterns layout).
 //
-// Family homework / chores list. Sorted by due-date ascending (NULLS
-// last via the API). Click the checkbox to toggle done; the row dims
-// when complete. + Add opens an inline form for title + optional due
-// date.
+// Family homework / chores. Member filter pills narrow the list; each
+// row carries a coloured avatar dot + name badge for who it's for, a
+// subject emoji, and a red due-date. Click the circle to toggle done
+// (the row dims + strikes through). "+ Add Assignment" opens an inline
+// form for title + optional due date.
 
 interface Assignment {
   id: string;
@@ -21,14 +23,35 @@ interface Assignment {
   doneAt: string | null;
 }
 
-interface ListAssignmentsResponse {
-  assignments: Assignment[];
+interface MemberLite {
+  id: string;
+  displayName: string;
+  avatarEmoji: string | null;
 }
 
 type Status =
   | { kind: 'loading' }
-  | { kind: 'ready'; assignments: Assignment[] }
+  | { kind: 'ready'; assignments: Assignment[]; members: MemberLite[] }
   | { kind: 'error'; message: string };
+
+const DOT_COLORS = [
+  'bg-rose-200',
+  'bg-sky-200',
+  'bg-amber-200',
+  'bg-violet-200',
+  'bg-emerald-200',
+  'bg-orange-200',
+];
+
+function memberColor(memberId: string | null, members: MemberLite[]): string {
+  if (memberId === null) return 'bg-yellow-200';
+  const idx = members.findIndex((m) => m.id === memberId);
+  return DOT_COLORS[(idx < 0 ? 0 : idx) % DOT_COLORS.length]!;
+}
+
+function initials(name: string): string {
+  return [...name.trim()][0]?.toUpperCase() ?? '?';
+}
 
 function formatDueDate(iso: string | null): string {
   if (!iso) return 'No due date';
@@ -47,96 +70,74 @@ export function AssignmentsTabPanel() {
   const slug = useTenantSlug();
   const { session } = useAuth();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
+  const [filter, setFilter] = useState<string>('all'); // 'all' | memberId
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ title: '', dueDate: '' });
+  const [draft, setDraft] = useState({ title: '', dueDate: '', memberId: '' });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  // Two live regions: polite for successes ("Added X", "Marked Y done"),
-  // assertive for errors. Mixing them confuses screen readers — a polite
-  // announce read after an error gets the priorities wrong.
   const [statusAnnouncement, setStatusAnnouncement] = useState('');
   const [errorAnnouncement, setErrorAnnouncement] = useState('');
-  const addButtonRef = useRef<HTMLButtonElement>(null);
-  // Per-row toggle in-flight set so the same row isn't double-toggled.
   const togglingRef = useRef<Set<string>>(new Set());
-
-  const headers = useMemo(
-    () =>
-      session
-        ? {
-            Authorization: `Bearer ${session.access_token}`,
-            'x-tenant-slug': slug,
-          }
-        : null,
-    [session, slug],
-  );
-
-  const refetch = useCallback(async () => {
-    if (!headers) return;
-    try {
-      const res = await fetch(`${API_BASE}/api/assignments`, { headers });
-      if (!res.ok) {
-        setStatus({
-          kind: 'error',
-          message: `Couldn't load assignments (server returned ${res.status})`,
-        });
-        return;
-      }
-      const body = (await res.json()) as ListAssignmentsResponse;
-      setStatus({ kind: 'ready', assignments: body.assignments });
-    } catch (err) {
-      setStatus({
-        kind: 'error',
-        message: err instanceof Error ? err.message : 'Network error — try again.',
-      });
-    }
-  }, [headers]);
-
-  useEffect(() => {
-    if (!headers) return;
-    setStatus({ kind: 'loading' });
-    const ac = new AbortController();
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/assignments`, { headers, signal: ac.signal });
-        if (cancelled) return;
-        if (!res.ok) {
-          setStatus({
-            kind: 'error',
-            message: `Couldn't load assignments (server returned ${res.status})`,
-          });
-          return;
-        }
-        const body = (await res.json()) as ListAssignmentsResponse;
-        if (cancelled) return;
-        setStatus({ kind: 'ready', assignments: body.assignments });
-      } catch (err) {
-        if (cancelled || (err instanceof Error && err.name === 'AbortError')) return;
-        setStatus({
-          kind: 'error',
-          message: err instanceof Error ? err.message : 'Network error — try again.',
-        });
-      }
-    })();
-    return () => {
-      cancelled = true;
-      ac.abort();
-    };
-  }, [headers]);
-
-  const onAddOpen = useCallback(() => {
-    setAdding(true);
-    setSaveError(null);
-    setDraft({ title: '', dueDate: '' });
-  }, []);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  // Mirror the rendered rows so an optimistic toggle can capture the prior
+  // row synchronously — capturing it inside the setStatus updater races the
+  // network when the PATCH resolves before React commits the update.
+  const assignmentsRef = useRef<Assignment[]>([]);
 
   const onAddCancel = useCallback(() => {
     setAdding(false);
     setSaveError(null);
     requestAnimationFrame(() => addButtonRef.current?.focus());
   }, []);
+
+  const headers = useMemo(
+    () =>
+      session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
+    [session, slug],
+  );
+
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!headers) return;
+      try {
+        const [aRes, mRes] = await Promise.all([
+          fetch(`${API_BASE}/api/assignments`, { headers, signal: signal ?? null }),
+          fetch(`${API_BASE}/api/members`, { headers, signal: signal ?? null }),
+        ]);
+        if (!aRes.ok) {
+          setStatus({
+            kind: 'error',
+            message: `Couldn't load assignments (server returned ${aRes.status})`,
+          });
+          return;
+        }
+        const aBody = (await aRes.json()) as { assignments: Assignment[] };
+        let members: MemberLite[] = [];
+        if (mRes.ok) members = ((await mRes.json()) as { members: MemberLite[] }).members ?? [];
+        setStatus({ kind: 'ready', assignments: aBody.assignments ?? [], members });
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setStatus({
+          kind: 'error',
+          message: err instanceof Error ? err.message : 'Network error — try again.',
+        });
+      }
+    },
+    [headers],
+  );
+
+  useEffect(() => {
+    if (!headers) return;
+    setStatus({ kind: 'loading' });
+    const ac = new AbortController();
+    void load(ac.signal);
+    return () => ac.abort();
+  }, [headers, load]);
+
+  useEffect(() => {
+    if (status.kind === 'ready') assignmentsRef.current = status.assignments;
+  }, [status]);
 
   const onAddSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
@@ -157,6 +158,7 @@ export function AssignmentsTabPanel() {
           body: JSON.stringify({
             title: trimmedTitle,
             dueDate: draft.dueDate || null,
+            ...(draft.memberId ? { memberId: draft.memberId } : {}),
           }),
         });
         if (!res.ok) {
@@ -169,16 +171,16 @@ export function AssignmentsTabPanel() {
             if (body.issues?.[0]?.message) detail = body.issues[0].message;
             else if (body.error) detail = body.error;
           } catch {
-            /* non-JSON body */
+            /* non-JSON */
           }
           setSaveError(detail);
           return;
         }
         setAdding(false);
+        setDraft({ title: '', dueDate: '', memberId: '' });
         setStatusAnnouncement(`Added assignment "${trimmedTitle}"`);
         setErrorAnnouncement('');
-        await refetch();
-        requestAnimationFrame(() => addButtonRef.current?.focus());
+        await load();
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
       } finally {
@@ -186,48 +188,35 @@ export function AssignmentsTabPanel() {
         setSaving(false);
       }
     },
-    [headers, draft, refetch],
+    [headers, draft, load],
   );
 
   const onToggleDone = useCallback(
     async (id: string, nextDone: boolean) => {
       if (!headers || togglingRef.current.has(id)) return;
+      const priorRow = assignmentsRef.current.find((a) => a.id === id);
+      if (!priorRow) return;
+      const title = priorRow.title;
       togglingRef.current.add(id);
-
-      // Snapshot the row's prior state so we can revert in-place on
-      // failure — no refetch flash where the user sees their checkbox
-      // stay flipped for a beat before bouncing back.
-      let priorRow: Assignment | undefined;
-      let title = '';
-      setStatus((s) => {
-        if (s.kind !== 'ready') return s;
-        const row = s.assignments.find((a) => a.id === id);
-        if (row) {
-          priorRow = { ...row };
-          title = row.title;
-        }
-        return {
-          kind: 'ready',
-          assignments: s.assignments.map((a) =>
-            a.id === id
-              ? { ...a, done: nextDone, doneAt: nextDone ? new Date().toISOString() : null }
-              : a,
-          ),
-        };
-      });
-
+      setStatus((s) =>
+        s.kind === 'ready'
+          ? {
+              ...s,
+              assignments: s.assignments.map((a) =>
+                a.id === id
+                  ? { ...a, done: nextDone, doneAt: nextDone ? new Date().toISOString() : null }
+                  : a,
+              ),
+            }
+          : s,
+      );
       const revert = () => {
-        if (!priorRow) return;
         setStatus((s) =>
           s.kind === 'ready'
-            ? {
-                kind: 'ready',
-                assignments: s.assignments.map((a) => (a.id === id ? priorRow! : a)),
-              }
+            ? { ...s, assignments: s.assignments.map((a) => (a.id === id ? priorRow : a)) }
             : s,
         );
       };
-
       try {
         const res = await fetch(`${API_BASE}/api/assignments/${id}`, {
           method: 'PATCH',
@@ -238,7 +227,6 @@ export function AssignmentsTabPanel() {
           revert();
           setErrorAnnouncement(`Couldn't update assignment (server returned ${res.status})`);
         } else {
-          // Polite confirmation that the row moved between sections.
           setStatusAnnouncement(
             nextDone ? `Marked "${title}" done` : `Moved "${title}" back to to-do`,
           );
@@ -266,7 +254,6 @@ export function AssignmentsTabPanel() {
       </p>
     );
   }
-
   if (status.kind === 'error') {
     return (
       <p data-testid="assignments-error" role="alert" className="text-sm font-bold text-red-600">
@@ -275,27 +262,35 @@ export function AssignmentsTabPanel() {
     );
   }
 
-  const open = status.assignments.filter((a) => !a.done);
-  const done = status.assignments.filter((a) => a.done);
+  const { members } = status;
+  const visible = status.assignments.filter((a) => filter === 'all' || a.memberId === filter);
 
   return (
-    <div className="space-y-4" data-testid="assignments-ready">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-heading text-2xl text-black md:text-3xl">Assignments</h2>
-          <p className="mt-1 text-sm text-gray-600">Homework, chores, anything with a due date.</p>
-        </div>
-        <Button
-          ref={addButtonRef}
-          type="button"
-          variant="primary"
-          size="sm"
-          onClick={onAddOpen}
-          testId="assignments-add"
+    <div className="mx-auto max-w-4xl space-y-4" data-testid="assignments-ready">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end">
+        <h2 className="font-heading text-2xl tracking-wide text-white">Assignments</h2>
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label="Filter assignments by member"
         >
-          + Add
-        </Button>
-      </header>
+          <FilterPill
+            testId="assignments-filter-all"
+            active={filter === 'all'}
+            onClick={() => setFilter('all')}
+            label="All"
+          />
+          {members.map((m) => (
+            <FilterPill
+              key={m.id}
+              testId={`assignments-filter-${m.id}`}
+              active={filter === m.id}
+              onClick={() => setFilter(m.id)}
+              label={m.displayName}
+            />
+          ))}
+        </div>
+      </div>
 
       <p aria-live="polite" className="sr-only" data-testid="assignments-status-announcement">
         {statusAnnouncement}
@@ -309,11 +304,28 @@ export function AssignmentsTabPanel() {
         {errorAnnouncement}
       </p>
 
-      {adding && (
-        <Card className="border-2 border-black bg-yellow-50 p-4 shadow-neo-sm">
+      <div className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-5">
+        {visible.length === 0 ? (
+          <p
+            data-testid="assignments-empty"
+            className="py-4 text-center text-sm font-bold text-gray-500"
+          >
+            {filter === 'all'
+              ? 'Nothing here — add the first assignment.'
+              : 'No assignments for this person yet.'}
+          </p>
+        ) : (
+          <ul className="space-y-3" data-testid="assignments-list">
+            {visible.map((a) => (
+              <AssignmentRow key={a.id} assignment={a} members={members} onToggle={onToggleDone} />
+            ))}
+          </ul>
+        )}
+
+        {adding ? (
           <form
             onSubmit={onAddSubmit}
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            className="mt-5 grid grid-cols-1 gap-3 rounded-md border-2 border-black bg-yellow-50 p-4 sm:grid-cols-2"
             data-testid="assignments-add-form"
           >
             <label className="flex flex-col gap-1 text-sm font-bold text-black sm:col-span-2">
@@ -327,6 +339,22 @@ export function AssignmentsTabPanel() {
                 data-testid="assignments-add-title"
                 className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-bold text-black">
+              For
+              <select
+                value={draft.memberId}
+                onChange={(e) => setDraft({ ...draft, memberId: e.target.value })}
+                data-testid="assignments-add-member"
+                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black"
+              >
+                <option value="">Whole family</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.displayName}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="flex flex-col gap-1 text-sm font-bold text-black">
               Due date (optional)
@@ -369,78 +397,120 @@ export function AssignmentsTabPanel() {
               </Button>
             </div>
           </form>
-        </Card>
-      )}
-
-      <section aria-labelledby="assignments-open-heading">
-        <h3 id="assignments-open-heading" className="mb-2 font-heading text-lg text-black">
-          To do
-          <span className="ml-2 font-mono text-xs text-gray-500">{open.length}</span>
-        </h3>
-        {open.length === 0 ? (
-          <p className="text-sm text-gray-600" data-testid="assignments-open-empty">
-            Nothing to do — nice!
-          </p>
         ) : (
-          <ul className="space-y-2" data-testid="assignments-open-list">
-            {open.map((a) => (
-              <AssignmentRow key={a.id} assignment={a} onToggle={onToggleDone} />
-            ))}
-          </ul>
+          <button
+            type="button"
+            ref={addButtonRef}
+            onClick={() => {
+              setAdding(true);
+              setSaveError(null);
+            }}
+            data-testid="assignments-add"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-gray-400 py-2.5 font-bold text-gray-500 hover:border-black hover:bg-gray-50 hover:text-black motion-safe:transition-colors"
+          >
+            <Plus size={18} aria-hidden="true" /> Add Assignment
+          </button>
         )}
-      </section>
-
-      <section aria-labelledby="assignments-done-heading">
-        <h3 id="assignments-done-heading" className="mb-2 font-heading text-lg text-black">
-          Done
-          <span className="ml-2 font-mono text-xs text-gray-500">{done.length}</span>
-        </h3>
-        {done.length === 0 ? (
-          <p className="text-sm text-gray-400" data-testid="assignments-done-empty">
-            No completed items yet.
-          </p>
-        ) : (
-          <ul className="space-y-2 opacity-70" data-testid="assignments-done-list">
-            {done.map((a) => (
-              <AssignmentRow key={a.id} assignment={a} onToggle={onToggleDone} />
-            ))}
-          </ul>
-        )}
-      </section>
+      </div>
     </div>
+  );
+}
+
+function FilterPill({
+  testId,
+  active,
+  onClick,
+  label,
+}: {
+  testId: string;
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      onClick={onClick}
+      aria-pressed={active}
+      className={`min-h-[36px] rounded-full border-2 border-black px-3 py-1 text-xs font-bold motion-safe:transition-colors ${
+        active ? 'bg-pink-400 text-black shadow-neo-xs' : 'bg-white text-gray-500 hover:bg-gray-50'
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 
 function AssignmentRow({
   assignment,
+  members,
   onToggle,
 }: {
   assignment: Assignment;
+  members: MemberLite[];
   onToggle: (id: string, nextDone: boolean) => void;
 }) {
+  const who = members.find((m) => m.id === assignment.memberId);
+  const whoLabel = who ? who.displayName : 'Family';
   return (
     <li data-testid={`assignment-row-${assignment.id}`}>
-      <Card className="flex items-center gap-3 border-2 border-black bg-white p-3 shadow-neo-sm">
-        <input
-          type="checkbox"
-          checked={assignment.done}
-          onChange={(e) => onToggle(assignment.id, e.target.checked)}
+      <div
+        className={`flex items-center gap-3 rounded-xl border-2 border-black p-3 shadow-neo-xs motion-safe:transition-colors ${
+          assignment.done ? 'bg-gray-100 opacity-70' : 'bg-white hover:bg-gray-50'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => onToggle(assignment.id, !assignment.done)}
           aria-label={`Mark "${assignment.title}" ${assignment.done ? 'not done' : 'done'}`}
           data-testid={`assignment-toggle-${assignment.id}`}
-          className="h-6 w-6 shrink-0 cursor-pointer accent-yellow-400"
-        />
+          className="shrink-0 text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+        >
+          {assignment.done ? (
+            <CheckCircle2 size={24} className="fill-green-400" />
+          ) : (
+            <Circle size={24} />
+          )}
+        </button>
+        <span
+          aria-hidden="true"
+          data-testid={`assignment-avatar-${assignment.id}`}
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-black text-xs ${memberColor(
+            assignment.memberId,
+            members,
+          )}`}
+          title={whoLabel}
+        >
+          {who ? (who.avatarEmoji ?? initials(who.displayName)) : '👪'}
+        </span>
         <div className="min-w-0 flex-1">
           <p
-            className={`font-heading text-base text-black ${assignment.done ? 'line-through' : ''}`}
+            className={`font-heading text-base text-black ${assignment.done ? 'line-through text-gray-500' : ''}`}
             data-testid={`assignment-title-${assignment.id}`}
           >
+            <span aria-hidden="true">📚 </span>
             {assignment.title}
           </p>
-          <p className="text-xs text-gray-600" data-testid={`assignment-due-${assignment.id}`}>
-            {formatDueDate(assignment.dueDate)}
-          </p>
+          <div className="mt-1 flex items-center gap-3">
+            <span
+              className="flex items-center gap-1 text-xs font-bold text-red-500"
+              data-testid={`assignment-due-${assignment.id}`}
+            >
+              <Clock size={12} aria-hidden="true" /> {formatDueDate(assignment.dueDate)}
+            </span>
+            <span
+              data-testid={`assignment-member-${assignment.id}`}
+              className={`rounded-full border-2 border-black px-2 py-0.5 text-[10px] font-bold ${memberColor(
+                assignment.memberId,
+                members,
+              )}`}
+            >
+              {whoLabel}
+            </span>
+          </div>
         </div>
-      </Card>
+      </div>
     </li>
   );
 }
