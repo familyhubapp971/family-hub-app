@@ -24,6 +24,7 @@ import {
   invitationResendRouter,
   invitationsRouter,
 } from './routes/invitations.js';
+import { kidRouter } from './routes/kid.js';
 import { meRouter } from './routes/me.js';
 import { mealsRouter } from './routes/meals.js';
 import { membersRouter } from './routes/members.js';
@@ -132,6 +133,9 @@ export function buildApp(opts: BuildAppOptions = {}) {
   app.route('/api/public/slug-available', slugAvailableRouter);
   app.route('/api/public/kid-members', publicKidMembersRouter);
   app.route('/api/auth/kid-pin', kidPinRouter);
+  // FHS-257 — kid-scoped routes; skip parent auth (see PUBLIC_PATH_PREFIXES)
+  // and verify the HS256 kid JWT inside the router instead.
+  app.route('/api/kid', kidRouter);
   // FHS-275 — claim must mount BEFORE the generic router so POST
   // /api/invitations/claim doesn't fall through to POST /api/invitations.
   app.route('/api/invitations/claim', invitationClaimRouter);

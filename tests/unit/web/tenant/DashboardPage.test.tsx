@@ -28,6 +28,10 @@ const authState: {
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
   signOutAll: mocks.signOutAll,
+  // FHS-257 — DashboardPage now branches to the kid shell when a kid
+  // token is present. These parent tests have no kid token.
+  getKidToken: () => null,
+  clearKidToken: vi.fn(),
 }));
 
 vi.stubGlobal('fetch', mocks.fetchMock);

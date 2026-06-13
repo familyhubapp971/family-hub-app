@@ -67,7 +67,7 @@ export function App() {
           <Route
             path="/t/:slug/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowKid>
                 <TenantProvider>
                   <DashboardPage />
                 </TenantProvider>
