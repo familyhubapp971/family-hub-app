@@ -1,22 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card } from '@familyhub/ui';
+import { Megaphone, Pin, X } from 'lucide-react';
+import { Button } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-232 — NoticeboardTabPanel.
+// FHS-232 / FHS-266 — NoticeboardTabPanel (Magic Patterns layout).
 //
-// Family bulletin board. Pinned notes float to the top; everything
-// else lists newest-first. Inline + Add textarea (with optional pin
-// checkbox); per-row delete button (admin/adult only — the API
-// gates, the UI shows the button optimistically and surfaces the
-// 403 if a non-admin role somehow reaches it).
+// Family bulletin board as a wrapping grid of post-it cards inside a
+// lime panel. Each note: an emoji icon, a pin marker, the text, and a
+// "From <author>" footer; pinned notes float to the top. Posting opens
+// an inline form with an emoji picker; admins/adults can delete.
 
 interface Notice {
   id: string;
   body: string;
   pinned: boolean;
   authorMemberId: string | null;
+  authorName: string | null;
+  icon: string | null;
   createdAt: string;
 }
 
@@ -29,22 +31,29 @@ type Status =
   | { kind: 'ready'; notices: Notice[] }
   | { kind: 'error'; message: string };
 
-function formatPostedAt(iso: string): string {
-  const dt = new Date(iso);
-  return dt.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
+// Post-it background colours, cycled by card position so the board reads
+// as a lively wall rather than a uniform list.
+const CARD_COLORS = [
+  'bg-yellow-100',
+  'bg-pink-100',
+  'bg-cyan-100',
+  'bg-orange-100',
+  'bg-violet-100',
+  'bg-lime-50',
+];
+
+const ICON_CHOICES = ['📌', '🎉', '📅', '🛒', '⚠️', '❤️', '🏆', '🍕'];
 
 export function NoticeboardTabPanel() {
   const slug = useTenantSlug();
   const { session } = useAuth();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ body: '', pinned: false });
+  const [draft, setDraft] = useState<{ body: string; pinned: boolean; icon: string }>({
+    body: '',
+    pinned: false,
+    icon: '📌',
+  });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -55,12 +64,7 @@ export function NoticeboardTabPanel() {
 
   const headers = useMemo(
     () =>
-      session
-        ? {
-            Authorization: `Bearer ${session.access_token}`,
-            'x-tenant-slug': slug,
-          }
-        : null,
+      session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
     [session, slug],
   );
 
@@ -102,8 +106,7 @@ export function NoticeboardTabPanel() {
           return;
         }
         const body = (await res.json()) as ListNoticesResponse;
-        if (cancelled) return;
-        setStatus({ kind: 'ready', notices: body.notices });
+        if (!cancelled) setStatus({ kind: 'ready', notices: body.notices });
       } catch (err) {
         if (cancelled || (err instanceof Error && err.name === 'AbortError')) return;
         setStatus({
@@ -121,7 +124,7 @@ export function NoticeboardTabPanel() {
   const onAddOpen = useCallback(() => {
     setAdding(true);
     setSaveError(null);
-    setDraft({ body: '', pinned: false });
+    setDraft({ body: '', pinned: false, icon: '📌' });
   }, []);
 
   const onAddCancel = useCallback(() => {
@@ -146,7 +149,7 @@ export function NoticeboardTabPanel() {
         const res = await fetch(`${API_BASE}/api/notices`, {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ body: trimmed, pinned: draft.pinned }),
+          body: JSON.stringify({ body: trimmed, pinned: draft.pinned, icon: draft.icon }),
         });
         if (!res.ok) {
           let detail = `Couldn't save (server returned ${res.status})`;
@@ -156,9 +159,6 @@ export function NoticeboardTabPanel() {
               detail?: string;
               issues?: Array<{ message?: string }>;
             };
-            // Prefer the human-readable `detail` ("only admins and
-            // adults can post notices") over the machine-readable
-            // `error` ("forbidden"); fall back to the first Zod issue.
             if (body.detail) detail = body.detail;
             else if (body.issues?.[0]?.message) detail = body.issues[0].message;
             else if (body.error) detail = body.error;
@@ -188,13 +188,8 @@ export function NoticeboardTabPanel() {
       if (!headers || deletingRef.current.has(id)) return;
       deletingRef.current.add(id);
       try {
-        const res = await fetch(`${API_BASE}/api/notices/${id}`, {
-          method: 'DELETE',
-          headers,
-        });
+        const res = await fetch(`${API_BASE}/api/notices/${id}`, { method: 'DELETE', headers });
         if (!res.ok) {
-          // 403 has a specific cause — surface the role gate clearly so
-          // a teen/child who somehow reaches the button understands.
           const friendly =
             res.status === 403
               ? 'Only admins and adults can delete notices.'
@@ -228,7 +223,6 @@ export function NoticeboardTabPanel() {
       </p>
     );
   }
-
   if (status.kind === 'error') {
     return (
       <p data-testid="notices-error" role="alert" className="text-sm font-bold text-red-600">
@@ -237,28 +231,12 @@ export function NoticeboardTabPanel() {
     );
   }
 
-  const pinned = status.notices.filter((n) => n.pinned);
-  const rest = status.notices.filter((n) => !n.pinned);
+  const notices = status.notices;
 
   return (
-    <div className="space-y-4" data-testid="notices-ready">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-heading text-2xl text-black md:text-3xl">Noticeboard</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Family bulletin board — pin the things everyone needs to see.
-          </p>
-        </div>
-        <Button
-          ref={addButtonRef}
-          type="button"
-          variant="primary"
-          size="sm"
-          onClick={onAddOpen}
-          testId="notices-add"
-        >
-          + Add
-        </Button>
+    <div className="mx-auto max-w-4xl space-y-4" data-testid="notices-ready">
+      <header className="flex items-end justify-between">
+        <h2 className="font-heading text-2xl tracking-wide text-white">Noticeboard</h2>
       </header>
 
       <p aria-live="polite" className="sr-only" data-testid="notices-status-announcement">
@@ -273,18 +251,18 @@ export function NoticeboardTabPanel() {
         {errorAnnouncement}
       </p>
 
-      {adding && (
-        <Card className="border-2 border-black bg-yellow-50 p-4 shadow-neo-sm">
+      <div className="rounded-xl border-2 border-black bg-lime-100 p-4 shadow-neo-sm md:p-6">
+        {adding && (
           <form
             onSubmit={onAddSubmit}
-            className="flex flex-col gap-3"
+            className="mb-6 flex flex-col gap-3 rounded-md border-2 border-black bg-white p-4"
             data-testid="notices-add-form"
           >
             <label className="flex flex-col gap-1 text-sm font-bold text-black">
               Note
               <textarea
                 required
-                rows={3}
+                rows={2}
                 maxLength={2000}
                 value={draft.body}
                 onChange={(e) => setDraft({ ...draft, body: e.target.value })}
@@ -292,6 +270,23 @@ export function NoticeboardTabPanel() {
                 className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
             </label>
+            <div className="flex flex-wrap items-center gap-1" data-testid="notices-add-icon">
+              <span className="mr-1 text-xs font-bold text-gray-600">Icon</span>
+              {ICON_CHOICES.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  aria-label={`Use icon ${emoji}`}
+                  aria-pressed={draft.icon === emoji}
+                  onClick={() => setDraft({ ...draft, icon: emoji })}
+                  className={`flex h-8 w-8 items-center justify-center rounded-md border-2 text-lg ${
+                    draft.icon === emoji ? 'border-black bg-yellow-200' : 'border-gray-300'
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
             <label className="flex items-center gap-2 text-sm font-bold text-black">
               <input
                 type="checkbox"
@@ -333,74 +328,99 @@ export function NoticeboardTabPanel() {
               </Button>
             </div>
           </form>
-        </Card>
-      )}
+        )}
 
-      {pinned.length > 0 && (
-        <section aria-labelledby="notices-pinned-heading">
-          <h3 id="notices-pinned-heading" className="mb-2 font-heading text-lg text-black">
-            <span aria-hidden="true">📌 </span>Pinned
-            <span className="ml-2 font-mono text-xs text-gray-500">{pinned.length}</span>
-          </h3>
-          <ul className="space-y-2" data-testid="notices-pinned-list">
-            {pinned.map((n) => (
-              <NoticeRow key={n.id} notice={n} onDelete={onDelete} />
+        {notices.length === 0 ? (
+          <p
+            data-testid="notices-empty"
+            className="py-4 text-center text-sm font-bold text-lime-800"
+          >
+            No notes yet — post the first one.
+          </p>
+        ) : (
+          <ul
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            data-testid="notices-grid"
+          >
+            {notices.map((n, i) => (
+              <NoticeCard
+                key={n.id}
+                notice={n}
+                color={CARD_COLORS[i % CARD_COLORS.length]!}
+                onDelete={onDelete}
+              />
             ))}
           </ul>
-        </section>
-      )}
+        )}
 
-      {/* Hide the secondary section entirely when there are pinned
-          notes but no others — an empty "More notes" subhead next to a
-          full Pinned section reads as broken. */}
-      {(rest.length > 0 || pinned.length === 0) && (
-        <section aria-labelledby="notices-feed-heading">
-          <h3 id="notices-feed-heading" className="mb-2 font-heading text-lg text-black">
-            {pinned.length > 0 ? 'More notes' : 'Notes'}
-            <span className="ml-2 font-mono text-xs text-gray-500">{rest.length}</span>
-          </h3>
-          {rest.length === 0 ? (
-            <p className="text-sm text-gray-600" data-testid="notices-feed-empty">
-              No notes yet — post one above.
-            </p>
-          ) : (
-            <ul className="space-y-2" data-testid="notices-feed-list">
-              {rest.map((n) => (
-                <NoticeRow key={n.id} notice={n} onDelete={onDelete} />
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+        {!adding && (
+          <button
+            type="button"
+            ref={addButtonRef}
+            onClick={onAddOpen}
+            data-testid="notices-add"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-lime-600 bg-white/50 py-2.5 font-bold text-lime-800 hover:border-black hover:bg-lime-50 hover:text-black motion-safe:transition-colors"
+          >
+            <Megaphone size={18} aria-hidden="true" /> Post New Announcement
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-function NoticeRow({ notice, onDelete }: { notice: Notice; onDelete: (id: string) => void }) {
+function NoticeCard({
+  notice,
+  color,
+  onDelete,
+}: {
+  notice: Notice;
+  color: string;
+  onDelete: (id: string) => void;
+}) {
   return (
     <li data-testid={`notice-row-${notice.id}`}>
-      <Card className="flex items-start gap-3 border-2 border-black bg-white p-3 shadow-neo-sm">
-        <div className="min-w-0 flex-1">
-          <p
-            className="whitespace-pre-wrap break-words font-body text-sm text-black"
-            data-testid={`notice-body-${notice.id}`}
+      <div
+        className={`flex h-full flex-col gap-3 rounded-xl border-2 border-black p-4 shadow-neo-sm motion-safe:transition-transform motion-safe:hover:-translate-y-1 ${color}`}
+      >
+        <div className="flex items-start justify-between">
+          <span
+            data-testid={`notice-icon-${notice.id}`}
+            className="text-3xl leading-none"
+            aria-hidden="true"
           >
-            {notice.body}
-          </p>
-          <p className="mt-1 text-xs text-gray-500" data-testid={`notice-time-${notice.id}`}>
-            {formatPostedAt(notice.createdAt)}
+            {notice.icon ?? '📌'}
+          </span>
+          <span className="flex items-center gap-2">
+            {notice.pinned && (
+              <Pin size={16} role="img" className="text-gray-500" aria-label="Pinned" />
+            )}
+            <button
+              type="button"
+              onClick={() => onDelete(notice.id)}
+              aria-label={`Delete note: ${notice.body.slice(0, 40)}`}
+              data-testid={`notice-delete-${notice.id}`}
+              className="-mr-2 -mt-2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-gray-500 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+            >
+              <X size={16} />
+            </button>
+          </span>
+        </div>
+        <p
+          data-testid={`notice-body-${notice.id}`}
+          className="flex-1 whitespace-pre-wrap break-words text-base font-bold leading-tight text-black"
+        >
+          {notice.body}
+        </p>
+        <div className="border-t-2 border-dashed border-black/20 pt-3">
+          <p
+            data-testid={`notice-author-${notice.id}`}
+            className="text-[10px] font-bold uppercase tracking-wider text-gray-500"
+          >
+            From {notice.authorName ?? 'Family'}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => onDelete(notice.id)}
-          aria-label={`Delete note: ${notice.body.slice(0, 40)}`}
-          data-testid={`notice-delete-${notice.id}`}
-          className="min-h-[44px] min-w-[44px] shrink-0 rounded border-2 border-black bg-white px-2 py-1 text-xs font-bold text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-        >
-          Delete
-        </button>
-      </Card>
+      </div>
     </li>
   );
 }

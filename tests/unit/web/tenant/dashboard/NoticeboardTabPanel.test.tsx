@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-232 — NoticeboardTabPanel.
+// FHS-232 / FHS-266 — NoticeboardTabPanel (Magic Patterns post-it grid).
+// Each note is a coloured card with an emoji icon, optional pin, body, and
+// a "From <author>" footer. Posting opens an inline form with an emoji
+// picker; the POST body carries body + pinned + icon.
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
@@ -14,6 +17,29 @@ vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
 
 import { NoticeboardTabPanel } from '../../../../../apps/web/src/pages/tenant/dashboard/NoticeboardTabPanel';
 import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+
+interface N {
+  id: string;
+  body: string;
+  pinned: boolean;
+  authorMemberId: string | null;
+  authorName: string | null;
+  icon: string | null;
+  createdAt: string;
+}
+
+function notice(over: Partial<N>): N {
+  return {
+    id: 'n1',
+    body: 'Hello',
+    pinned: false,
+    authorMemberId: null,
+    authorName: null,
+    icon: '📌',
+    createdAt: '2026-05-03T10:00:00.000Z',
+    ...over,
+  };
+}
 
 function renderAt(initial: string) {
   return render(
@@ -55,71 +81,44 @@ describe('<NoticeboardTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('notices-error')).toBeInTheDocument());
   });
 
-  it('renders the empty-feed hint when no notices exist', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ notices: [] }),
-    });
+  it('renders the empty hint when no notices exist', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ notices: [] }) });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('notices-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('notices-feed-empty')).toBeInTheDocument();
+    expect(screen.getByTestId('notices-empty')).toBeInTheDocument();
   });
 
-  it('renders pinned notices in the pinned section + others in the feed', async () => {
+  it('renders each notice as a card with its icon + author', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         notices: [
-          {
-            id: 'n1',
-            body: 'Pizza Friday',
-            pinned: true,
-            authorMemberId: null,
-            createdAt: '2026-05-03T10:00:00.000Z',
-          },
-          {
-            id: 'n2',
-            body: 'Reminder: PE kit',
-            pinned: false,
-            authorMemberId: null,
-            createdAt: '2026-05-02T10:00:00.000Z',
-          },
+          notice({ id: 'n1', body: 'Pizza Friday', pinned: true, icon: '🍕', authorName: 'Sarah' }),
+          notice({ id: 'n2', body: 'PE kit', pinned: false, icon: '📅', authorName: null }),
         ],
       }),
     });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('notices-ready')).toBeInTheDocument());
-    const pinned = screen.getByTestId('notices-pinned-list');
-    const feed = screen.getByTestId('notices-feed-list');
-    expect(pinned).toContainElement(screen.getByTestId('notice-row-n1'));
-    expect(feed).toContainElement(screen.getByTestId('notice-row-n2'));
+    const grid = screen.getByTestId('notices-grid');
+    expect(grid).toContainElement(screen.getByTestId('notice-row-n1'));
+    expect(grid).toContainElement(screen.getByTestId('notice-row-n2'));
+    expect(screen.getByTestId('notice-icon-n1').textContent).toBe('🍕');
+    expect(screen.getByTestId('notice-author-n1').textContent).toBe('From Sarah');
+    expect(screen.getByTestId('notice-author-n2').textContent).toBe('From Family');
   });
 
-  it('+ Add opens form; submitting POSTs body+pinned and refetches', async () => {
+  it('+ Add opens form; submitting POSTs body + pinned + icon and refetches', async () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, json: async () => ({ notices: [] }) })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({
-          id: 'n1',
-          body: 'Trip on Sat',
-          pinned: true,
-          authorMemberId: null,
-          createdAt: '2026-05-03T10:00:00.000Z',
-        }),
+        json: async () => notice({ id: 'n1', body: 'Trip on Sat', pinned: true, icon: '🎉' }),
       })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          notices: [
-            {
-              id: 'n1',
-              body: 'Trip on Sat',
-              pinned: true,
-              authorMemberId: null,
-              createdAt: '2026-05-03T10:00:00.000Z',
-            },
-          ],
+          notices: [notice({ id: 'n1', body: 'Trip on Sat', pinned: true, icon: '🎉' })],
         }),
       });
     renderAt('/t/khans/dashboard');
@@ -133,6 +132,7 @@ describe('<NoticeboardTabPanel />', () => {
         target: { value: 'Trip on Sat' },
       });
       fireEvent.click(screen.getByTestId('notices-add-pinned'));
+      fireEvent.click(screen.getByLabelText('Use icon 🎉'));
     });
     await act(async () => {
       fireEvent.click(screen.getByTestId('notices-add-submit'));
@@ -144,26 +144,32 @@ describe('<NoticeboardTabPanel />', () => {
     const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
     expect(postCall).toBeDefined();
     const body = JSON.parse((postCall![1] as RequestInit).body as string);
-    expect(body).toEqual({ body: 'Trip on Sat', pinned: true });
+    expect(body).toEqual({ body: 'Trip on Sat', pinned: true, icon: '🎉' });
+  });
+
+  it('blocks a whitespace-only note without firing a POST', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ notices: [] }) });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('notices-ready')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('notices-add'));
+    });
+    act(() => {
+      fireEvent.change(screen.getByTestId('notices-add-body'), { target: { value: '   ' } });
+    });
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId('notices-add-form'));
+    });
+    expect(screen.getByTestId('notices-add-error')).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
   });
 
   it('Delete fires DELETE /api/notices/:id and refetches', async () => {
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({
-          notices: [
-            {
-              id: 'n1',
-              body: 'Pizza Friday',
-              pinned: true,
-              authorMemberId: null,
-              createdAt: '2026-05-03T10:00:00.000Z',
-            },
-          ],
-        }),
+        json: async () => ({ notices: [notice({ id: 'n1', body: 'Pizza Friday', pinned: true })] }),
       })
-      // DELETE — 204 no body
       .mockResolvedValueOnce({ ok: true, status: 204, json: async () => ({}) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ notices: [] }) });
 
@@ -177,15 +183,11 @@ describe('<NoticeboardTabPanel />', () => {
     const deleteCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'DELETE');
     expect(deleteCall).toBeDefined();
     expect(deleteCall![0]).toBe('http://localhost:3001/api/notices/n1');
-
     await waitFor(() => expect(screen.queryByTestId('notice-row-n1')).toBeNull());
   });
 
   it('passes bearer token + tenant slug', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ notices: [] }),
-    });
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ notices: [] }) });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0]!;
