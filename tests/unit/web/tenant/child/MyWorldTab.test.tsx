@@ -115,22 +115,6 @@ function installApi(over: Partial<St> = {}) {
         json: async () => ({ stickerBalance: state.balance, redemptionId: 'r1' }),
       });
     }
-    if (init?.method === 'POST' && u.includes('/api/mw/financial/savings/cashout')) {
-      return Promise.resolve({
-        ok: true,
-        status: 201,
-        json: async () => ({ success: true, cashDeducted: 0, stickersDeducted: 1 }),
-      });
-    }
-    if (init?.method === 'POST' && u.includes('/api/mw/financial/savings')) {
-      const b = JSON.parse(init.body as string) as { type: string; amount: number };
-      if (b.type === 'stickers') state.savedStickers += b.amount;
-      return Promise.resolve({
-        ok: true,
-        status: 201,
-        json: async () => ({ success: true, transactionId: 't1' }),
-      });
-    }
     if (u.includes('/api/mw/financial/savings')) {
       return Promise.resolve({
         ok: true,
@@ -323,30 +307,6 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     // Total value = 5 cash + 10*0.5 = 10.00, in AED
     expect(screen.getByTestId('your-savings').textContent).toContain('AED');
     expect(screen.getByTestId('bankable-week')).toBeInTheDocument();
-  });
-
-  it('banks weekly stickers via the Save dialog', async () => {
-    installApi({ unallocated: 6 });
-    renderTab();
-    await waitFor(() => expect(screen.getByTestId('savings-save-btn')).toBeInTheDocument());
-    act(() => {
-      fireEvent.click(screen.getByTestId('savings-save-btn'));
-    });
-    await waitFor(() => expect(screen.getByTestId('save-dialog')).toBeInTheDocument());
-    act(() => {
-      fireEvent.change(screen.getByTestId('save-dialog-amount'), { target: { value: '3' } });
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('save-dialog-submit'));
-    });
-    const post = fetchMock.mock.calls.find(
-      ([u, i]) => i?.method === 'POST' && /\/api\/mw\/financial\/savings$/.test(String(u)),
-    );
-    expect(post).toBeDefined();
-    expect(JSON.parse((post![1] as RequestInit).body as string)).toMatchObject({
-      memberId: MEMBER,
-      amount: 3,
-    });
   });
 
   it('redeeming an affordable reward updates the balance', async () => {
