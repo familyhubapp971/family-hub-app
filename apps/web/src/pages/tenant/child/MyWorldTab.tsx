@@ -1,63 +1,35 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pencil, Star, X } from 'lucide-react';
+import React, { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowDownToLine,
+  Award,
+  BarChart2,
+  Banknote,
+  Check,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Edit2,
+  Gift,
+  Heart,
+  Lock,
+  PiggyBank,
+  Plus,
+  RefreshCw,
+  Sparkles,
+  Star,
+  TrendingUp,
+  X,
+  Zap,
+} from 'lucide-react';
 import { Button } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-292 — My World habit grid (typed stickers) + rewards shop.
-//
-// Each habit day holds a sticker TYPE worth 5 (bonus habit) or 1 sticker.
-// Pick a sticker type, tap a day to place it (tap again to remove). The
-// shop spends the resulting balance. Habits can be added / edited /
-// deleted. Week navigation + savings/investments/close-week land in the
-// sibling FHS-293..298 stories.
+// FHS-292 — My World habit grid (legacy HabitTracker UI port).
+// Pixel / behaviour parity with the legacy HabitTracker component.
 
-interface Habit {
-  id: string;
-  name: string;
-  description: string | null;
-  color: string;
-  icon: string | null;
-  isBonus: boolean;
-}
-interface StickerRow {
-  habitId: string;
-  day: number; // 0 = Mon … 6 = Sun
-  sticker: string;
-  stickerValue: number;
-}
-interface WeekInfo {
-  id: string;
-  weekNumber: number;
-  year: number;
-  startDate: string;
-  isFinalized: boolean;
-}
-interface Reward {
-  id: string;
-  name: string;
-  description: string | null;
-  stickerCost: number;
-  icon: string | null;
-}
-
-const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const STICKERS: Array<{ id: string; label: string; emoji: string; bg: string }> = [
-  { id: 'gold-star', label: 'Gold Star', emoji: '⭐', bg: 'bg-yellow-300' },
-  { id: 'heart', label: 'Love Heart', emoji: '❤️', bg: 'bg-pink-300' },
-  { id: 'magic', label: 'Magic', emoji: '✨', bg: 'bg-fuchsia-300' },
-  { id: 'trophy', label: 'Trophy', emoji: '🏆', bg: 'bg-lime-300' },
-];
-const STICKER_EMOJI: Record<string, string> = Object.fromEntries(
-  STICKERS.map((s) => [s.id, s.emoji]),
-);
-
-function cellKey(habitId: string, day: number): string {
-  return `${habitId}|${day}`;
-}
-
-// Re-exported for tests that build the week.
+// ── Re-exported for other modules / tests ────────────────────────────────────
 export function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -67,27 +39,201 @@ export function mondayOfWeek(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + shift));
 }
 
-type Status = 'loading' | 'ready' | 'error';
+// ── Types ────────────────────────────────────────────────────────────────────
+interface ApiHabit {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  icon: string;
+  isBonus: boolean;
+}
+interface ApiSticker {
+  habitId: string;
+  day: number; // 0=Mon … 6=Sun
+  sticker: string;
+  stickerValue: number;
+}
+interface ApiWeek {
+  id: string;
+  weekNumber: number;
+  year: number;
+  startDate: string;
+  isFinalized: boolean;
+  carriedOverStickers?: number;
+  carriedOverCash?: number;
+}
+interface WeekAction {
+  id: number;
+  weekId: string;
+  actionType:
+    | 'claim'
+    | 'cashout'
+    | 'save'
+    | 'auto_save'
+    | 'invest'
+    | 'invest_continue'
+    | 'withdraw';
+  stickersUsed: number | null;
+  cashAmount: number | null;
+  rewardName: string | null;
+  habitId: string | null;
+  habitName: string | null;
+  createdAt: string;
+}
+interface Reward {
+  id: string;
+  name: string;
+  description: string | null;
+  stickerCost: number;
+  icon: string | null;
+}
 
+// ── Local rich-habit model (mirrors legacy HabitTracker Habit interface) ─────
+interface Habit {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  iconName: string; // display name e.g. "Star"
+  color: string;
+  isBonus: boolean;
+  progress: (string | boolean)[]; // length 7; string = sticker id, true = plain tick
+  total: number;
+  target: number;
+  stickers: string[]; // habit-level sticker badges (cosmetic)
+}
+
+interface WeekSummary {
+  totalStickers: number;
+  performance: number;
+  carriedOver: number;
+  cashOut: number;
+  actions?: WeekAction[];
+}
+
+interface WeekData {
+  weekId: string;
+  weekNumber: number;
+  year: number;
+  startDate: string;
+  label: string;
+  isFinalized: boolean;
+  habits: Habit[];
+  summary?: WeekSummary;
+}
+
+// ── Constants ────────────────────────────────────────────────────────────────
+const AVAILABLE_STICKERS: Array<{
+  id: string;
+  name: string;
+  icon: React.ReactElement;
+  color: string;
+}> = [
+  {
+    id: 'gold-star',
+    name: 'Gold Star',
+    icon: <Star className="w-6 h-6" />,
+    color: 'bg-yellow-400',
+  },
+  { id: 'heart', name: 'Heart', icon: <Heart className="w-6 h-6" />, color: 'bg-pink-400' },
+  { id: 'magic', name: 'Magic', icon: <Sparkles className="w-6 h-6" />, color: 'bg-fuchsia-400' },
+  { id: 'trophy', name: 'Trophy', icon: <Award className="w-6 h-6" />, color: 'bg-lime-400' },
+];
+
+const daysShort = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const ICON_MAP: Record<string, React.ReactElement> = {
+  star: <Star className="w-6 h-6" />,
+  heart: <Heart className="w-6 h-6" />,
+  sparkles: <Sparkles className="w-6 h-6" />,
+  zap: <Zap className="w-6 h-6" />,
+  award: <Award className="w-6 h-6" />,
+  checkcircle: <CheckCircle className="w-6 h-6" />,
+};
+
+// Display name → API icon string
+const ICON_NAME_MAP: Record<string, string> = {
+  Star: 'star',
+  Heart: 'heart',
+  Sparkles: 'sparkles',
+  Lightning: 'zap',
+  Trophy: 'award',
+  Check: 'checkcircle',
+};
+
+// API icon string → display name
+const ICON_API_TO_NAME: Record<string, string> = {
+  star: 'Star',
+  heart: 'Heart',
+  sparkles: 'Sparkles',
+  zap: 'Lightning',
+  award: 'Trophy',
+  checkcircle: 'Check',
+};
+
+const iconOptions = [
+  { icon: <Star className="w-6 h-6" />, name: 'Star' },
+  { icon: <Heart className="w-6 h-6" />, name: 'Heart' },
+  { icon: <Sparkles className="w-6 h-6" />, name: 'Sparkles' },
+  { icon: <Zap className="w-6 h-6" />, name: 'Lightning' },
+  { icon: <Award className="w-6 h-6" />, name: 'Trophy' },
+  { icon: <CheckCircle className="w-6 h-6" />, name: 'Check' },
+];
+
+const colorOptions = [
+  { color: 'bg-yellow-400', name: 'Yellow' },
+  { color: 'bg-pink-400', name: 'Pink' },
+  { color: 'bg-lime-400', name: 'Lime' },
+  { color: 'bg-fuchsia-400', name: 'Fuchsia' },
+  { color: 'bg-cyan-400', name: 'Cyan' },
+  { color: 'bg-rose-400', name: 'Rose' },
+  { color: 'bg-purple-400', name: 'Purple' },
+  { color: 'bg-orange-400', name: 'Orange' },
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function mapIconStringToElement(iconStr: string): React.ReactElement {
+  return ICON_MAP[iconStr?.toLowerCase()] ?? <Star className="w-6 h-6" />;
+}
+
+function computeWeekLabel(startDate: string): string {
+  const start = new Date(startDate);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
+function mapApiHabitToLocal(apiHabit: ApiHabit, apiStickers: ApiSticker[]): Habit {
+  const progress: (string | boolean)[] = [false, false, false, false, false, false, false];
+  for (const s of apiStickers) {
+    if (s.habitId === apiHabit.id && s.day >= 0 && s.day <= 6) {
+      progress[s.day] = s.sticker;
+    }
+  }
+  const total = progress.filter((p) => typeof p === 'string' || p === true).length;
+  return {
+    id: String(apiHabit.id),
+    title: apiHabit.name,
+    icon: mapIconStringToElement(apiHabit.icon ?? 'star'),
+    iconName: ICON_API_TO_NAME[apiHabit.icon?.toLowerCase()] ?? 'Star',
+    color: apiHabit.color ?? 'bg-pink-400',
+    isBonus: apiHabit.isBonus ?? false,
+    progress,
+    total,
+    target: 7,
+    stickers: [], // habit-level cosmetic stickers not exposed in API; start empty
+  };
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 export function MyWorldTab({ memberId }: { memberId: string }) {
   const slug = useTenantSlug();
   const { session } = useAuth();
-  const [status, setStatus] = useState<Status>('loading');
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [stickers, setStickers] = useState<Map<string, StickerRow>>(new Map());
-  const [week, setWeek] = useState<WeekInfo | null>(null);
-  const [rewards, setRewards] = useState<Reward[]>([]);
-  const [balance, setBalance] = useState(0);
-  const [announce, setAnnounce] = useState('');
-  const [picked, setPicked] = useState('gold-star');
-  const [adding, setAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState({ name: '', isBonus: false });
-  const stickersRef = useRef<Map<string, StickerRow>>(new Map());
-  const balanceRef = useRef(0);
-  const busyRef = useRef<Set<string>>(new Set());
-  const redeemingRef = useRef<Set<string>>(new Set());
-  const savingRef = useRef(false);
+
+  // Admin = true for this parent-accessed route — all days editable
+  const isAdmin = true;
 
   const headers = useMemo(
     () =>
@@ -95,143 +241,445 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
     [session, slug],
   );
 
-  const load = useCallback(async () => {
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<'habits' | 'analytics'>('habits');
+  const [loading, setLoading] = useState(true);
+  const [weekLoading, setWeekLoading] = useState(false);
+  const [weeks, setWeeks] = useState<WeekData[]>([]);
+  const [weekIndex, setWeekIndex] = useState(0);
+
+  // Rewards shop state
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [balance, setBalance] = useState(0);
+  // Family currency (chosen at registration) for all cash labels.
+  const [currency, setCurrency] = useState('USD');
+
+  // Dialogs
+  const [editHabitId, setEditHabitId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editColor, setEditColor] = useState('bg-pink-400');
+  const [editIconName, setEditIconName] = useState('Star');
+  const [stickerDialogId, setStickerDialogId] = useState<string | null>(null);
+  const [dayStickerDialog, setDayStickerDialog] = useState<{
+    habitId: string;
+    dayIndex: number;
+  } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showAddHabit, setShowAddHabit] = useState(false);
+  const [newHabitTitle, setNewHabitTitle] = useState('');
+  const [newHabitColor, setNewHabitColor] = useState('bg-pink-400');
+  const [newHabitIconName, setNewHabitIconName] = useState('Star');
+
+  const habitsCache = useRef<Map<string, Habit[]>>(new Map());
+  const redeemingRef = useRef<Set<string>>(new Set());
+
+  // ── Data fetch helpers ────────────────────────────────────────────────────
+  const fetchWeekHabits = useCallback(
+    async (weekId: string): Promise<Habit[]> => {
+      const cached = habitsCache.current.get(weekId);
+      if (cached) return cached;
+      if (!headers) return [];
+      const res = await fetch(`${API_BASE}/api/habits?memberId=${memberId}&weekId=${weekId}`, {
+        headers,
+      });
+      if (!res.ok) throw new Error(`habits fetch failed: ${res.status}`);
+      const body = (await res.json()) as {
+        habits: ApiHabit[];
+        stickers: ApiSticker[];
+        balance: number;
+        currency?: string;
+      };
+      const habits = (body.habits ?? []).map((h) => mapApiHabitToLocal(h, body.stickers ?? []));
+      habitsCache.current.set(weekId, habits);
+      // Update balance + currency from the current week
+      setBalance(body.balance ?? 0);
+      if (body.currency) setCurrency(body.currency);
+      return habits;
+    },
+    [headers, memberId],
+  );
+
+  const buildWeekData = useCallback((apiWeek: ApiWeek, habits: Habit[]): WeekData => {
+    const totalStickers = habits.reduce((s, h) => s + h.total, 0);
+    const totalPossible = habits.length * 7;
+    const performance = totalPossible > 0 ? Math.round((totalStickers / totalPossible) * 100) : 0;
+    const data: WeekData = {
+      weekId: apiWeek.id,
+      weekNumber: apiWeek.weekNumber,
+      year: apiWeek.year,
+      startDate: apiWeek.startDate,
+      label: computeWeekLabel(apiWeek.startDate),
+      isFinalized: apiWeek.isFinalized,
+      habits,
+    };
+    if (apiWeek.isFinalized) {
+      data.summary = {
+        totalStickers,
+        performance,
+        carriedOver: apiWeek.carriedOverStickers ?? 0,
+        cashOut: apiWeek.carriedOverCash ?? 0,
+      };
+    }
+    return data;
+  }, []);
+
+  const fetchData = useCallback(async () => {
     if (!headers) return;
-    setStatus('loading');
+    setLoading(true);
+    habitsCache.current.clear();
     try {
-      const [hRes, rRes] = await Promise.all([
-        fetch(`${API_BASE}/api/habits?memberId=${memberId}`, { headers }),
+      // Fetch weeks list + rewards in parallel
+      const [wRes, rRes] = await Promise.all([
+        fetch(`${API_BASE}/api/mw/weeks?memberId=${memberId}`, { headers }),
         fetch(`${API_BASE}/api/rewards?memberId=${memberId}`, { headers }),
       ]);
-      if (!hRes.ok || !rRes.ok) {
-        setStatus('error');
+      if (!wRes.ok) throw new Error(`weeks fetch failed: ${wRes.status}`);
+
+      const wBody = (await wRes.json()) as { weeks: ApiWeek[] };
+      const apiWeeks = [...(wBody.weeks ?? [])].sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        return a.weekNumber - b.weekNumber;
+      });
+
+      if (rRes.ok) {
+        const rBody = (await rRes.json()) as { rewards: Reward[]; stickerBalance?: number };
+        setRewards(rBody.rewards ?? []);
+        if (rBody.stickerBalance !== null && rBody.stickerBalance !== undefined)
+          setBalance(rBody.stickerBalance);
+      }
+
+      if (apiWeeks.length === 0) {
+        setWeeks([]);
+        setLoading(false);
         return;
       }
-      const hBody = (await hRes.json()) as {
-        habits: Habit[];
-        stickers: StickerRow[];
-        week: WeekInfo;
-        balance: number;
-      };
-      const rBody = (await rRes.json()) as { rewards: Reward[]; stickerBalance: number };
-      const map = new Map<string, StickerRow>();
-      for (const s of hBody.stickers ?? []) map.set(cellKey(s.habitId, s.day), s);
-      stickersRef.current = map;
-      balanceRef.current = hBody.balance ?? 0;
-      setHabits(hBody.habits ?? []);
-      setStickers(map);
-      setWeek(hBody.week);
-      setBalance(hBody.balance ?? 0);
-      setRewards(rBody.rewards ?? []);
-      setStatus('ready');
-    } catch {
-      setStatus('error');
+
+      // Find current (non-finalized) week, fall back to last
+      const currentIdx = apiWeeks.findIndex((w) => !w.isFinalized);
+      const idx = currentIdx >= 0 ? currentIdx : apiWeeks.length - 1;
+
+      // Fetch habits only for the active week up front; lazy-load the rest
+      const activeWeek = apiWeeks[idx];
+      if (!activeWeek) {
+        setWeeks([]);
+        setLoading(false);
+        return;
+      }
+      const currentHabits = await fetchWeekHabits(activeWeek.id);
+
+      const weekDataList = apiWeeks.map((apiWeek, i) =>
+        buildWeekData(apiWeek, i === idx ? currentHabits : []),
+      );
+
+      setWeeks(weekDataList);
+      setWeekIndex(idx);
+    } catch (err) {
+      console.error('Failed to fetch My World data:', err);
+      setWeeks([]);
+    } finally {
+      setLoading(false);
     }
-  }, [headers, memberId]);
+  }, [headers, memberId, fetchWeekHabits, buildWeekData]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void fetchData();
+  }, [fetchData]);
 
-  const onCell = useCallback(
-    async (habit: Habit, day: number) => {
-      if (!headers || !week) return;
-      const k = cellKey(habit.id, day);
-      if (busyRef.current.has(k)) return;
-      busyRef.current.add(k);
-      const existing = stickersRef.current.get(k);
-      const value = habit.isBonus ? 5 : 1;
-      const next = new Map(stickersRef.current);
-      if (existing) next.delete(k);
-      else next.set(k, { habitId: habit.id, day, sticker: picked, stickerValue: value });
-      stickersRef.current = next;
-      setStickers(next);
-      const delta = existing ? -existing.stickerValue : value;
-      balanceRef.current += delta;
-      setBalance(balanceRef.current);
-      try {
-        const res = existing
-          ? await fetch(`${API_BASE}/api/habits/${habit.id}/stickers`, {
-              method: 'DELETE',
-              headers: { ...headers, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ memberId, weekId: week.id, day }),
-            })
-          : await fetch(`${API_BASE}/api/habits/${habit.id}/stickers`, {
-              method: 'POST',
-              headers: { ...headers, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ memberId, weekId: week.id, day, sticker: picked }),
-            });
-        if (!res.ok) throw new Error(`status ${res.status}`);
-      } catch {
-        // Revert.
-        const reverted = new Map(stickersRef.current);
-        if (existing) reverted.set(k, existing);
-        else reverted.delete(k);
-        stickersRef.current = reverted;
-        setStickers(reverted);
-        balanceRef.current -= delta;
-        setBalance(balanceRef.current);
-        setAnnounce("Couldn't save that — try again.");
-      } finally {
-        busyRef.current.delete(k);
-      }
+  // Lazy-load habits when navigating to a week with no cached data
+  useEffect(() => {
+    const w = weeks[weekIndex];
+    if (!w || w.habits.length > 0) return;
+    if (habitsCache.current.has(w.weekId)) {
+      const cached = habitsCache.current.get(w.weekId)!;
+      setWeeks((prev) => prev.map((wk, i) => (i === weekIndex ? { ...wk, habits: cached } : wk)));
+      return;
+    }
+
+    let cancelled = false;
+    setWeekLoading(true);
+
+    const habitsPromise = fetchWeekHabits(w.weekId);
+    const actionsPromise: Promise<WeekAction[]> = w.isFinalized
+      ? fetch(`${API_BASE}/api/mw/weeks/${w.weekId}/actions?memberId=${memberId}`, {
+          headers: headers!,
+        })
+          .then((r) => (r.ok ? (r.json() as Promise<{ actions: WeekAction[] }>) : { actions: [] }))
+          .then((b) => b.actions ?? [])
+          .catch(() => [])
+      : Promise.resolve([]);
+
+    Promise.all([habitsPromise, actionsPromise])
+      .then(([habits, actions]) => {
+        if (cancelled) return;
+        setWeeks((prev) =>
+          prev.map((wk, i) => {
+            if (i !== weekIndex) return wk;
+            const totalStickers = habits.reduce((s, h) => s + h.total, 0);
+            const totalPossible = habits.length * 7;
+            const performance =
+              totalPossible > 0 ? Math.round((totalStickers / totalPossible) * 100) : 0;
+            if (wk.isFinalized) {
+              return {
+                ...wk,
+                habits,
+                summary: {
+                  totalStickers,
+                  performance,
+                  carriedOver: wk.summary?.carriedOver ?? 0,
+                  cashOut: wk.summary?.cashOut ?? 0,
+                  actions,
+                },
+              };
+            }
+            return { ...wk, habits };
+          }),
+        );
+      })
+      .catch((err) => console.error('Failed to lazy-load week data:', err))
+      .finally(() => {
+        if (!cancelled) setWeekLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekIndex, weeks.length]);
+
+  // ── Derived week values ───────────────────────────────────────────────────
+  const week = weeks[weekIndex];
+  const isCurrentWeek = week ? !week.isFinalized : false;
+  const canEdit = isAdmin ? (week ? !week.isFinalized : false) : isCurrentWeek;
+
+  const todayDayIndex = (new Date().getDay() + 6) % 7; // Mon=0, Sun=6
+  const canEditDay = (dayIndex: number) => {
+    if (!canEdit) return false;
+    if (isAdmin) return true;
+    return dayIndex === todayDayIndex;
+  };
+
+  const habits = week?.habits ?? [];
+  const totalDone = habits.reduce((s, h) => s + h.total, 0);
+  const totalPossible = habits.length * 7;
+
+  // ── Habit state updater ───────────────────────────────────────────────────
+  const updateWeekHabits = useCallback(
+    (updater: (hs: Habit[]) => Habit[]) => {
+      setWeeks((prev) =>
+        prev.map((w, i) => {
+          if (i !== weekIndex) return w;
+          const updated = updater(w.habits);
+          habitsCache.current.set(w.weekId, updated);
+          return { ...w, habits: updated };
+        }),
+      );
     },
-    [headers, week, picked, memberId],
+    [weekIndex],
   );
 
-  const onAddSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      if (!headers || savingRef.current) return;
-      const name = draft.name.trim();
-      if (!name) return;
-      savingRef.current = true;
-      try {
-        const url = editingId ? `${API_BASE}/api/habits/${editingId}` : `${API_BASE}/api/habits`;
-        const res = await fetch(url, {
-          method: editingId ? 'PUT' : 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ memberId, name, isBonus: draft.isBonus }),
-        });
-        if (res.ok) {
-          setAdding(false);
-          setEditingId(null);
-          setDraft({ name: '', isBonus: false });
-          await load();
-        } else {
-          setAnnounce("Couldn't save that habit — try again.");
-        }
-      } catch {
-        setAnnounce('Network error — try again.');
-      } finally {
-        savingRef.current = false;
-      }
-    },
-    [headers, draft, editingId, memberId, load],
-  );
+  // ── Edit dialog ───────────────────────────────────────────────────────────
+  const openEditDialog = (habit: Habit) => {
+    setEditHabitId(habit.id);
+    setEditTitle(habit.title);
+    setEditColor(habit.color);
+    setEditIconName(habit.iconName);
+  };
+  const closeEditDialog = () => setEditHabitId(null);
 
-  const onDeleteHabit = useCallback(
-    async (id: string, name: string) => {
-      if (!headers) return;
-      // Destructive (stickers cascade) — confirm before deleting.
-      if (typeof window !== 'undefined' && !window.confirm(`Delete "${name}" and its stickers?`)) {
-        return;
-      }
-      try {
-        const res = await fetch(`${API_BASE}/api/habits/${id}`, {
-          method: 'DELETE',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ memberId }),
-        });
-        if (res.ok) await load();
-        else setAnnounce("Couldn't delete that habit — try again.");
-      } catch {
-        setAnnounce('Network error — try again.');
-      }
-    },
-    [headers, memberId, load],
-  );
+  const saveEditHabit = async () => {
+    if (!editHabitId || !editTitle.trim() || !headers) return;
+    const iconString = ICON_NAME_MAP[editIconName] ?? 'star';
+    try {
+      const res = await fetch(`${API_BASE}/api/habits/${editHabitId}`, {
+        method: 'PUT',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId,
+          name: editTitle.trim(),
+          icon: iconString,
+          color: editColor,
+        }),
+      });
+      if (!res.ok) throw new Error(`PUT habits failed: ${res.status}`);
+      updateWeekHabits((hs) =>
+        hs.map((h) =>
+          h.id === editHabitId
+            ? {
+                ...h,
+                title: editTitle.trim(),
+                icon: mapIconStringToElement(iconString),
+                iconName: editIconName,
+                color: editColor,
+              }
+            : h,
+        ),
+      );
+    } catch (err) {
+      console.error('Failed to update habit:', err);
+    }
+    closeEditDialog();
+  };
 
+  // ── Habit-level sticker toggle (cosmetic badges on the card) ─────────────
+  const toggleSticker = (habitId: string, stickerId: string) => {
+    updateWeekHabits((hs) =>
+      hs.map((h) => {
+        if (h.id !== habitId) return h;
+        const has = h.stickers.includes(stickerId);
+        return {
+          ...h,
+          stickers: has ? h.stickers.filter((s) => s !== stickerId) : [...h.stickers, stickerId],
+        };
+      }),
+    );
+  };
+
+  // ── Day sticker placement / removal (optimistic) ─────────────────────────
+  const selectDaySticker = async (habitId: string, dayIndex: number, stickerId: string) => {
+    if (!week || !headers) return;
+    // Capture the prior cell so a failed REPLACE restores the old sticker
+    // rather than wiping the cell (review FHS-293).
+    const previousValue = habits.find((h) => h.id === habitId)?.progress[dayIndex] ?? false;
+    // Optimistic
+    updateWeekHabits((hs) =>
+      hs.map((h) => {
+        if (h.id !== habitId) return h;
+        const np = [...h.progress];
+        np[dayIndex] = stickerId;
+        return {
+          ...h,
+          progress: np,
+          total: np.filter((p) => typeof p === 'string' || p === true).length,
+        };
+      }),
+    );
+    setDayStickerDialog(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/habits/${habitId}/stickers`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId, weekId: week.weekId, day: dayIndex, sticker: stickerId }),
+      });
+      if (!res.ok) throw new Error(`sticker POST failed: ${res.status}`);
+    } catch (err) {
+      console.error('Failed to place sticker:', err);
+      // Revert to the prior value (old sticker or empty).
+      updateWeekHabits((hs) =>
+        hs.map((h) => {
+          if (h.id !== habitId) return h;
+          const np = [...h.progress];
+          np[dayIndex] = previousValue;
+          return {
+            ...h,
+            progress: np,
+            total: np.filter((p) => typeof p === 'string' || p === true).length,
+          };
+        }),
+      );
+    }
+  };
+
+  const clearDay = async (habitId: string, dayIndex: number) => {
+    if (!week || !headers) return;
+    const previousValue = habits.find((h) => h.id === habitId)?.progress[dayIndex];
+    // Optimistic
+    updateWeekHabits((hs) =>
+      hs.map((h) => {
+        if (h.id !== habitId) return h;
+        const np = [...h.progress];
+        np[dayIndex] = false;
+        return {
+          ...h,
+          progress: np,
+          total: np.filter((p) => typeof p === 'string' || p === true).length,
+        };
+      }),
+    );
+    try {
+      const res = await fetch(`${API_BASE}/api/habits/${habitId}/stickers`, {
+        method: 'DELETE',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId, weekId: week.weekId, day: dayIndex }),
+      });
+      if (!res.ok) throw new Error(`sticker DELETE failed: ${res.status}`);
+    } catch (err) {
+      console.error('Failed to clear sticker:', err);
+      // Revert (restore the prior sticker; a non-string/false prior means
+      // nothing to restore).
+      if (previousValue !== undefined && previousValue !== false) {
+        updateWeekHabits((hs) =>
+          hs.map((h) => {
+            if (h.id !== habitId) return h;
+            const np = [...h.progress];
+            np[dayIndex] = previousValue;
+            return {
+              ...h,
+              progress: np,
+              total: np.filter((p) => typeof p === 'string' || p === true).length,
+            };
+          }),
+        );
+      }
+    }
+  };
+
+  // ── Add new habit ─────────────────────────────────────────────────────────
+  const addNewHabit = async () => {
+    if (!newHabitTitle.trim() || !headers) return;
+    const iconString = ICON_NAME_MAP[newHabitIconName] ?? 'star';
+    try {
+      const res = await fetch(`${API_BASE}/api/habits`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId,
+          name: newHabitTitle.trim(),
+          icon: iconString,
+          color: newHabitColor,
+        }),
+      });
+      if (!res.ok) throw new Error(`habit POST failed: ${res.status}`);
+      const body = (await res.json()) as { habit: ApiHabit };
+      const created = body.habit;
+      const newHabit: Habit = {
+        id: String(created.id),
+        title: created.name,
+        icon: mapIconStringToElement(created.icon),
+        iconName: newHabitIconName,
+        color: created.color,
+        isBonus: false,
+        progress: [false, false, false, false, false, false, false],
+        total: 0,
+        target: 7,
+        stickers: [],
+      };
+      updateWeekHabits((hs) => [...hs, newHabit]);
+      setNewHabitTitle('');
+      setNewHabitColor('bg-pink-400');
+      setNewHabitIconName('Star');
+      setShowAddHabit(false);
+    } catch (err) {
+      console.error('Failed to add habit:', err);
+    }
+  };
+
+  // ── Delete habit ──────────────────────────────────────────────────────────
+  const deleteHabit = async (id: string) => {
+    if (!headers) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/habits/${id}`, {
+        method: 'DELETE',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId }),
+      });
+      if (!res.ok) throw new Error(`habit DELETE failed: ${res.status}`);
+      updateWeekHabits((hs) => hs.filter((h) => h.id !== id));
+    } catch (err) {
+      console.error('Failed to delete habit:', err);
+    }
+  };
+
+  // ── Reward redemption ─────────────────────────────────────────────────────
   const onRedeem = useCallback(
     async (reward: Reward) => {
       if (!headers || redeemingRef.current.has(reward.id)) return;
@@ -243,18 +691,11 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ memberId }),
         });
-        if (!res.ok) {
-          setAnnounce(
-            res.status === 409 ? 'Not enough stickers yet!' : "Couldn't redeem — try again.",
-          );
-          return;
-        }
+        if (!res.ok) return;
         const body = (await res.json()) as { stickerBalance: number };
-        balanceRef.current = body.stickerBalance;
         setBalance(body.stickerBalance);
-        setAnnounce(`You got ${reward.name}! 🎉`);
-      } catch {
-        setAnnounce("Couldn't redeem — try again.");
+      } catch (err) {
+        console.error('Failed to redeem reward:', err);
       } finally {
         redeemingRef.current.delete(reward.id);
       }
@@ -262,269 +703,962 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
     [headers, balance, memberId],
   );
 
-  if (status === 'loading') {
+  // ── Dialogs lookup ────────────────────────────────────────────────────────
+  const currentHabit = habits.find((h) => h.id === stickerDialogId);
+  const dayStickerHabit = dayStickerDialog
+    ? habits.find((h) => h.id === dayStickerDialog.habitId)
+    : null;
+
+  // ── Habit card renderer (mirrors legacy renderHabitCard exactly) ──────────
+  const renderHabitCard = (
+    habit: Habit,
+    editEnabled: boolean,
+    editDayFn: (i: number) => boolean,
+    isInvested: boolean,
+  ) => (
+    <div
+      className={`relative ${
+        isInvested
+          ? 'bg-amber-50 border-2 sm:border-3 border-amber-400'
+          : 'bg-white border-2 sm:border-3 border-black'
+      } rounded-2xl p-4 md:p-6 transition-transform ${
+        editEnabled ? 'group-hover:-translate-y-1 group-hover:-translate-x-1' : ''
+      }`}
+    >
+      {isInvested && (
+        <div
+          data-testid={`habit-card-invested-badge-${habit.id}`}
+          className="absolute top-3 right-12 flex items-center gap-1 bg-amber-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-amber-600"
+        >
+          <BarChart2 className="w-3 h-3" /> Invested · 5x
+        </div>
+      )}
+
+      <div className="flex flex-col md:flex-row md:items-center gap-6">
+        {/* LEFT: icon + name + progress + sticker badges */}
+        <div className={`flex items-center gap-4 md:w-1/3 ${editEnabled ? 'pr-8' : ''}`}>
+          <div
+            className={`w-10 h-10 sm:w-14 sm:h-14 flex-shrink-0 ${habit.color} border-2 sm:border-3 border-black rounded-xl flex items-center justify-center shadow-neo`}
+          >
+            {habit.icon}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2">
+              <div className="flex-1 min-w-0">
+                <h3
+                  className="font-black text-lg leading-tight"
+                  data-testid={`habit-card-title-${habit.id}`}
+                >
+                  {habit.title}
+                </h3>
+              </div>
+              {editEnabled && (
+                <button
+                  data-testid={`habit-card-edit-btn-${habit.id}`}
+                  onClick={() => openEditDialog(habit)}
+                  className="text-gray-300 hover:text-pink-500 transition-colors flex-shrink-0"
+                  title="Edit habit"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-gray-200 h-3 rounded-full mt-2 border-2 border-black overflow-hidden">
+              <div
+                className={`h-full ${habit.color}`}
+                style={{ width: `${(habit.total / habit.target) * 100}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-500 font-mono mt-1">
+              Progress this week{' '}
+              <span className="font-black text-gray-700">
+                {habit.total}/{habit.target}
+              </span>
+            </p>
+
+            {/* Habit-level sticker badges */}
+            {habit.stickers.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2">
+                {habit.stickers.map((stickerId) => {
+                  const sticker = AVAILABLE_STICKERS.find((s) => s.id === stickerId);
+                  if (!sticker) return null;
+                  return (
+                    <div
+                      key={stickerId}
+                      className={`${sticker.color} border-2 border-black rounded-lg p-1 flex items-center justify-center`}
+                      title={sticker.name}
+                    >
+                      {cloneElement(sticker.icon, { className: 'w-3 h-3' })}
+                    </div>
+                  );
+                })}
+                {editEnabled && (
+                  <button
+                    onClick={() => setStickerDialogId(habit.id)}
+                    className="text-xs font-bold text-pink-500 hover:text-pink-600 underline ml-1"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+            )}
+            {habit.stickers.length === 0 && editEnabled && (
+              <button
+                onClick={() => setStickerDialogId(habit.id)}
+                className="text-xs font-bold text-gray-400 hover:text-pink-500 mt-2 flex items-center gap-1"
+              >
+                <Star className="w-3 h-3" /> Add stickers
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: 7-day grid */}
+        <div className="flex-1 grid grid-cols-7 gap-2">
+          {daysShort.map((day, index) => {
+            const dayValue = habit.progress[index];
+            const isSticker = typeof dayValue === 'string';
+            const sticker = isSticker ? AVAILABLE_STICKERS.find((s) => s.id === dayValue) : null;
+            return (
+              <div key={index} className="flex flex-col items-center gap-1">
+                <span
+                  className={`text-xs font-black font-mono ${
+                    editDayFn(index) ? 'text-gray-400' : 'text-gray-300'
+                  }`}
+                >
+                  {day}
+                </span>
+                <button
+                  data-testid={`habit-day-cell-${habit.id}-${index}`}
+                  aria-pressed={isSticker}
+                  onClick={() => {
+                    if (!editDayFn(index)) return;
+                    if (isSticker) {
+                      void clearDay(habit.id, index);
+                      return;
+                    }
+                    setDayStickerDialog({ habitId: habit.id, dayIndex: index });
+                  }}
+                  disabled={!editDayFn(index)}
+                  className={`w-full aspect-square rounded-lg border-2 flex items-center justify-center transition-all ${
+                    isSticker && sticker
+                      ? editDayFn(index)
+                        ? `${sticker.color} shadow-neo-xs translate-x-[-2px] translate-y-[-2px] border-black hover:opacity-80`
+                        : `${sticker.color} border-gray-300 opacity-40 cursor-not-allowed grayscale-[30%]`
+                      : dayValue === true
+                        ? `${habit.color} shadow-neo-xs translate-x-[-2px] translate-y-[-2px] border-black`
+                        : editDayFn(index)
+                          ? 'bg-gray-100 hover:bg-pink-50 border-black'
+                          : 'bg-gray-50 border-gray-200 opacity-30 cursor-not-allowed'
+                  }`}
+                >
+                  {isSticker && sticker ? (
+                    cloneElement(sticker.icon, { className: 'w-4 h-4' })
+                  ) : dayValue === true ? (
+                    <Check className="w-5 h-5" />
+                  ) : !editDayFn(index) ? (
+                    <Lock className="w-3 h-3 text-gray-300" />
+                  ) : null}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Delete X — top-right */}
+      {editEnabled && (
+        <button
+          data-testid={`habit-card-delete-btn-${habit.id}`}
+          onClick={() => setDeleteConfirmId(habit.id)}
+          className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors"
+          title="Delete habit"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (loading) {
     return (
-      <p
-        data-testid="my-world-loading"
-        aria-live="polite"
-        aria-busy="true"
-        className="text-sm font-bold text-white"
-      >
-        Loading your world…
-      </p>
-    );
-  }
-  if (status === 'error') {
-    return (
-      <p data-testid="my-world-error" role="alert" className="text-sm font-bold text-red-300">
-        Couldn&rsquo;t load your world — try again.
-      </p>
+      <div className="space-y-6" data-testid="habit-tracker-loading">
+        <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-6 shadow-neo flex items-center justify-center">
+          <div className="text-center">
+            <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-pink-400 mx-auto mb-3 animate-pulse" />
+            <p className="font-black text-gray-700 text-base sm:text-lg uppercase">
+              Loading Habits...
+            </p>
+            <p className="text-sm text-gray-400 mt-1">Fetching your weekly data</p>
+          </div>
+        </div>
+      </div>
     );
   }
 
-  const totalPossible = habits.length * 7;
-  const doneThisWeek = stickers.size;
+  // ── No data / error state ─────────────────────────────────────────────────
+  if (!week || weeks.length === 0) {
+    return (
+      <div className="space-y-6" data-testid="habit-tracker-no-data">
+        <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-6 shadow-neo flex items-center justify-center">
+          <div className="text-center">
+            <Star className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400 mx-auto mb-3" />
+            <p className="font-black text-gray-700 text-base sm:text-lg uppercase">
+              No Weeks Found
+            </p>
+            <p className="text-sm text-gray-400 mt-1">
+              Something went wrong loading your habit data.
+            </p>
+            <button
+              onClick={() => void fetchData()}
+              data-testid="habit-tracker-retry-btn"
+              className="mt-4 bg-pink-400 border-2 border-black text-black font-black text-sm px-6 py-3 rounded-xl shadow-neo-sm hover:brightness-105 active:translate-y-0.5 transition-all"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+        {/* keep error testid for callers that check it */}
+        <p data-testid="my-world-error" className="sr-only">
+          No data
+        </p>
+      </div>
+    );
+  }
 
+  // ── Main render ───────────────────────────────────────────────────────────
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-12" data-testid="my-world">
-      <p aria-live="polite" className="sr-only" data-testid="my-world-announce">
-        {announce}
-      </p>
-
-      {/* Habit tracker (left column) */}
-      <section
-        aria-labelledby="habit-tracker-heading"
-        className="space-y-4 xl:col-span-8"
-        data-testid="habit-tracker"
-      >
-        <h2
-          id="habit-tracker-heading"
-          className="font-heading text-xl uppercase tracking-wide text-white"
-        >
-          My Habits
-        </h2>
-
-        <div
-          data-testid="habits-summary"
-          className="flex items-center justify-between rounded-xl border-2 border-black bg-[#6b21a8] p-4 shadow-neo-sm"
-        >
-          <div className="flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="grid h-10 w-10 place-items-center rounded-lg border-2 border-black bg-pink-400 text-xl"
-            >
-              ⭐
-            </span>
-            <span className="font-heading text-sm uppercase tracking-wide text-white">
-              Weekly Habits
-            </span>
-          </div>
-          <div className="text-right">
-            <span className="font-heading text-3xl text-yellow-300">
-              {doneThisWeek}/{totalPossible}
-            </span>
-            <p className="text-xs font-bold text-white">Habits Done ✨</p>
-          </div>
-        </div>
-
-        {/* Sticker picker */}
-        <div
-          data-testid="sticker-picker"
-          role="group"
-          aria-label="Choose a sticker"
-          className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-black bg-white p-3 shadow-neo-sm"
-        >
-          <span className="mr-1 text-xs font-bold uppercase tracking-wider text-gray-500">
-            Sticker
-          </span>
-          {STICKERS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              data-testid={`sticker-pick-${s.id}`}
-              aria-pressed={picked === s.id}
-              aria-label={s.label}
-              onClick={() => setPicked(s.id)}
-              className={`flex h-10 min-w-[44px] items-center justify-center gap-1 rounded-lg border-2 px-2 text-lg ${
-                picked === s.id ? `border-black ${s.bg} shadow-neo-xs` : 'border-gray-300 bg-white'
-              }`}
-            >
-              {s.emoji}
-            </button>
-          ))}
-        </div>
-
-        {habits.length === 0 ? (
-          <p
-            data-testid="habits-empty"
-            className="rounded-xl border-2 border-black bg-white py-6 text-center text-sm font-bold text-gray-500 shadow-neo-sm"
+      {/* ════════════════════════════════════════════════════════════════════
+          HABIT TRACKER — left column (xl:col-span-8)
+          ════════════════════════════════════════════════════════════════════ */}
+      <div className="space-y-6 xl:col-span-8">
+        {/* ── Day Sticker Dialog ── */}
+        {dayStickerDialog && dayStickerHabit && canEdit && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+          <div
+            data-testid="habit-day-sticker-dialog"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setDayStickerDialog(null)}
           >
-            No habits yet — add the first one.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {habits.map((h) => {
-              const habitDone = DAY_LABELS.filter((_, i) => stickers.has(cellKey(h.id, i))).length;
-              const pct = Math.round((habitDone / 7) * 100);
-              return (
-                <li
-                  key={h.id}
-                  data-testid={`habit-row-${h.id}`}
-                  className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm"
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+            <div
+              className="relative bg-white border-2 sm:border-3 border-black rounded-2xl shadow-neo-lg max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b-2 border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className={`${dayStickerHabit.color} p-2 rounded-lg border-2 border-black`}>
+                    {dayStickerHabit.icon}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black uppercase">Select Sticker</h2>
+                    <p className="text-xs text-gray-500 font-bold">
+                      {days[dayStickerDialog.dayIndex]} – {dayStickerHabit.title}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  data-testid="habit-day-sticker-dialog-close-btn"
+                  onClick={() => setDayStickerDialog(null)}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span
-                        aria-hidden="true"
-                        className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border-2 border-black font-heading text-lg text-black"
-                        style={{ backgroundColor: h.color }}
-                      >
-                        {h.icon ?? [...h.name.trim()][0]?.toUpperCase() ?? '★'}
-                      </span>
-                      <div className="min-w-0">
-                        <span className="flex items-center gap-1.5">
-                          <span
-                            data-testid={`habit-name-${h.id}`}
-                            className="truncate font-heading text-base text-black"
-                          >
-                            {h.name}
-                          </span>
-                          {h.isBonus && (
-                            <span className="rounded-full border border-black bg-amber-200 px-1.5 text-[10px] font-bold">
-                              5×
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            data-testid={`habit-edit-${h.id}`}
-                            aria-label={`Edit ${h.name}`}
-                            onClick={() => {
-                              setEditingId(h.id);
-                              setAdding(true);
-                              setDraft({ name: h.name, isBonus: h.isBonus });
-                            }}
-                            className="text-gray-400 hover:text-black"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                        </span>
-                        <div
-                          data-testid={`habit-progress-${h.id}`}
-                          className="mt-1 h-2.5 w-40 max-w-full overflow-hidden rounded-full border-2 border-black bg-gray-100"
-                        >
-                          <div className="h-full bg-green-400" style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex flex-wrap gap-1.5 sm:flex-nowrap sm:justify-end">
-                        {DAY_LABELS.map((label, i) => {
-                          const placed = stickers.get(cellKey(h.id, i));
-                          return (
-                            <div key={i} className="flex flex-col items-center gap-1">
-                              <span
-                                aria-hidden="true"
-                                className="text-[10px] font-bold text-gray-400"
-                              >
-                                {label}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => onCell(h, i)}
-                                aria-pressed={!!placed}
-                                aria-label={`${h.name} day ${i + 1}: ${placed ? 'has a sticker' : 'empty'}`}
-                                data-testid={`habit-cell-${h.id}-${i}`}
-                                className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black text-lg motion-safe:transition-colors ${
-                                  placed ? 'bg-green-100' : 'bg-gray-50 hover:bg-yellow-100'
-                                }`}
-                              >
-                                {placed ? (STICKER_EMOJI[placed.sticker] ?? '⭐') : ''}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {AVAILABLE_STICKERS.map((sticker) => (
+                    <button
+                      key={sticker.id}
+                      data-testid={`habit-day-sticker-option-${sticker.id}`}
+                      onClick={() =>
+                        void selectDaySticker(
+                          dayStickerDialog.habitId,
+                          dayStickerDialog.dayIndex,
+                          sticker.id,
+                        )
+                      }
+                      className={`${sticker.color} border-2 sm:border-3 border-black rounded-xl p-4 flex flex-col items-center gap-2 transition-all hover:-translate-y-1 hover:shadow-neo`}
+                    >
+                      {sticker.icon}
+                      <span className="text-xs font-black uppercase">{sticker.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Habit-level Sticker Dialog ── */}
+        {stickerDialogId && currentHabit && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+          <div
+            data-testid="habit-sticker-dialog"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setStickerDialogId(null)}
+          >
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+            <div
+              className="relative bg-white border-2 sm:border-3 border-black rounded-2xl shadow-neo-lg max-w-lg w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b-2 border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="bg-pink-400 p-2 rounded-lg border-2 border-black">
+                    <Star className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-xl font-black uppercase">My Stickers 💖</h2>
+                </div>
+                <button
+                  data-testid="habit-sticker-dialog-close-btn"
+                  onClick={() => setStickerDialogId(null)}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-gray-600 font-bold mb-4">
+                  Select stickers for: <span className="text-black">{currentHabit.title}</span>
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {AVAILABLE_STICKERS.map((sticker) => {
+                    const isSelected = currentHabit.stickers.includes(sticker.id);
+                    return (
                       <button
-                        type="button"
-                        data-testid={`habit-delete-${h.id}`}
-                        aria-label={`Delete ${h.name}`}
-                        onClick={() => onDeleteHabit(h.id, h.name)}
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:text-red-600"
+                        key={sticker.id}
+                        onClick={() => toggleSticker(stickerDialogId, sticker.id)}
+                        className={`${sticker.color} border-2 sm:border-3 rounded-xl p-4 flex flex-col items-center gap-2 transition-all relative ${
+                          isSelected
+                            ? 'border-black shadow-neo -translate-y-1'
+                            : 'border-gray-300 hover:border-black'
+                        }`}
                       >
-                        <X size={18} />
+                        {sticker.icon}
+                        <span className="text-xs font-black uppercase">{sticker.name}</span>
+                        {isSelected && (
+                          <Check className="w-5 h-5 absolute top-2 right-2 text-black" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  data-testid="habit-sticker-dialog-done-btn"
+                  onClick={() => setStickerDialogId(null)}
+                  className="w-full mt-6 bg-pink-400 border-2 border-black text-black font-black text-sm px-6 py-3 rounded-xl shadow-neo-sm hover:brightness-105 active:translate-y-0.5 transition-all"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Add New Habit Dialog ── */}
+        {showAddHabit && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+          <div
+            data-testid="habit-add-dialog"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowAddHabit(false)}
+          >
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+            <div
+              className="relative bg-white border-2 sm:border-3 border-black rounded-2xl shadow-neo-lg max-w-lg w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b-2 border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="bg-pink-400 p-2 rounded-lg border-2 border-black">
+                    <Plus className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-xl font-black uppercase">Add New Habit</h2>
+                </div>
+                <button
+                  data-testid="habit-add-dialog-close-btn"
+                  onClick={() => setShowAddHabit(false)}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label
+                    htmlFor="habit-add-title"
+                    className="text-xs font-black text-gray-600 uppercase tracking-widest mb-2 block"
+                  >
+                    Habit Title
+                  </label>
+                  <input
+                    id="habit-add-title"
+                    data-testid="habit-add-title-input"
+                    value={newHabitTitle}
+                    onChange={(e) => setNewHabitTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && void addNewHabit()}
+                    placeholder="e.g., I was kind today"
+                    className="w-full font-bold text-sm border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-pink-400"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="habit-add-icon-group"
+                    className="text-xs font-black text-gray-600 uppercase tracking-widest mb-2 block"
+                  >
+                    Choose Icon
+                  </label>
+                  <div id="habit-add-icon-group" className="grid grid-cols-6 gap-2">
+                    {iconOptions.map((opt, i) => (
+                      <button
+                        key={i}
+                        data-testid={`habit-add-icon-${i}`}
+                        onClick={() => setNewHabitIconName(opt.name)}
+                        className={`w-full aspect-square rounded-lg border-2 flex items-center justify-center transition-all ${
+                          newHabitIconName === opt.name
+                            ? 'border-black bg-pink-50'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {opt.icon}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label
+                    htmlFor="habit-add-color-group"
+                    className="text-xs font-black text-gray-600 uppercase tracking-widest mb-2 block"
+                  >
+                    Choose Color
+                  </label>
+                  <div id="habit-add-color-group" className="grid grid-cols-8 gap-2">
+                    {colorOptions.map((opt) => (
+                      <button
+                        key={opt.color}
+                        data-testid={`habit-add-color-${opt.color}`}
+                        onClick={() => setNewHabitColor(opt.color)}
+                        className={`w-full aspect-square ${opt.color} rounded-lg border-2 transition-all ${
+                          newHabitColor === opt.color ? 'border-black scale-110' : 'border-gray-300'
+                        }`}
+                        title={opt.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    data-testid="habit-add-submit-btn"
+                    onClick={() => void addNewHabit()}
+                    className="flex-1 bg-pink-400 border-2 border-black text-black font-black text-sm px-6 py-3 rounded-xl shadow-neo-sm hover:brightness-105 active:translate-y-0.5 transition-all"
+                  >
+                    Add Habit
+                  </button>
+                  <button
+                    data-testid="habit-add-cancel-btn"
+                    onClick={() => setShowAddHabit(false)}
+                    className="bg-gray-100 border-2 border-black text-gray-600 font-black text-sm px-6 py-3 rounded-xl hover:bg-gray-200 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Delete Confirmation Dialog ── */}
+        {deleteConfirmId &&
+          (() => {
+            const habitToDelete = habits.find((h) => h.id === deleteConfirmId);
+            if (!habitToDelete) return null;
+            return (
+              // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+              <div
+                data-testid="habit-delete-dialog"
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                onClick={() => setDeleteConfirmId(null)}
+              >
+                {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+                <div
+                  className="relative bg-white border-2 sm:border-3 border-black rounded-2xl shadow-neo-lg max-w-sm w-full"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-3 px-6 py-4 border-b-2 border-gray-100">
+                    <div className="bg-red-100 p-2 rounded-lg border-2 border-red-300">
+                      <X className="w-5 h-5 text-red-600" />
+                    </div>
+                    <h2 className="text-lg font-black uppercase text-gray-800">Delete Habit</h2>
+                  </div>
+                  <div className="p-6">
+                    <p className="text-sm text-gray-600 font-bold mb-1">
+                      Are you sure you want to delete
+                    </p>
+                    <div className="flex items-center gap-3 bg-gray-50 border-2 border-gray-200 rounded-xl p-3 mb-4">
+                      <div
+                        className={`w-8 h-8 ${habitToDelete.color} border-2 border-black rounded-lg flex items-center justify-center`}
+                      >
+                        {habitToDelete.icon}
+                      </div>
+                      <span className="font-black text-gray-800">{habitToDelete.title}</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mb-5">
+                      This will remove the habit and all its stickers permanently.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        data-testid="habit-delete-confirm-btn"
+                        onClick={async () => {
+                          await deleteHabit(deleteConfirmId);
+                          setDeleteConfirmId(null);
+                        }}
+                        className="flex-1 bg-red-500 border-2 border-black text-white font-black text-sm px-6 py-3 rounded-xl shadow-neo-sm hover:bg-red-600 active:translate-y-0.5 transition-all"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        data-testid="habit-delete-cancel-btn"
+                        onClick={() => setDeleteConfirmId(null)}
+                        className="flex-1 bg-gray-100 border-2 border-black text-gray-600 font-black text-sm px-6 py-3 rounded-xl hover:bg-gray-200 transition-all"
+                      >
+                        Cancel
                       </button>
                     </div>
                   </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                </div>
+              </div>
+            );
+          })()}
 
-        {adding ? (
-          <form
-            onSubmit={onAddSubmit}
-            data-testid="habit-add-form"
-            className="flex flex-col gap-3 rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm sm:flex-row sm:items-end"
+        {/* ── Edit Habit Dialog ── */}
+        {editHabitId && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+          <div
+            data-testid="habit-edit-dialog"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={closeEditDialog}
           >
-            <label className="flex flex-1 flex-col gap-1 text-sm font-bold text-black">
-              {editingId ? 'Edit habit' : 'New habit'}
-              <input
-                type="text"
-                required
-                maxLength={120}
-                value={draft.name}
-                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                data-testid="habit-add-name"
-                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-sm font-bold text-black">
-              <input
-                type="checkbox"
-                checked={draft.isBonus}
-                onChange={(e) => setDraft({ ...draft, isBonus: e.target.checked })}
-                data-testid="habit-add-bonus"
-                className="h-5 w-5 accent-yellow-400"
-              />
-              Bonus (5×)
-            </label>
-            <div className="flex gap-2">
-              <Button type="submit" variant="primary" size="sm" testId="habit-add-submit">
-                {editingId ? 'Save' : 'Add'}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                testId="habit-add-cancel"
-                onClick={() => {
-                  setAdding(false);
-                  setEditingId(null);
-                  setDraft({ name: '', isBonus: false });
-                }}
-              >
-                Cancel
-              </Button>
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+            <div
+              className="relative bg-white border-2 sm:border-3 border-black rounded-2xl shadow-neo-lg max-w-lg w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b-2 border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="bg-fuchsia-400 p-2 rounded-lg border-2 border-black">
+                    <Edit2 className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-xl font-black uppercase">Edit Habit</h2>
+                </div>
+                <button
+                  data-testid="habit-edit-dialog-close-btn"
+                  onClick={closeEditDialog}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label
+                    htmlFor="habit-edit-title"
+                    className="text-xs font-black text-gray-600 uppercase tracking-widest mb-2 block"
+                  >
+                    Habit Title
+                  </label>
+                  <input
+                    id="habit-edit-title"
+                    data-testid="habit-edit-title-input"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && void saveEditHabit()}
+                    placeholder="e.g., I was kind today"
+                    className="w-full font-bold text-sm border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-pink-400"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="habit-edit-icon-group"
+                    className="text-xs font-black text-gray-600 uppercase tracking-widest mb-2 block"
+                  >
+                    Choose Icon
+                  </label>
+                  <div id="habit-edit-icon-group" className="grid grid-cols-6 gap-2">
+                    {iconOptions.map((opt, i) => (
+                      <button
+                        key={i}
+                        data-testid={`habit-edit-icon-${i}`}
+                        onClick={() => setEditIconName(opt.name)}
+                        className={`w-full aspect-square rounded-lg border-2 flex items-center justify-center transition-all ${
+                          editIconName === opt.name
+                            ? 'border-black bg-pink-50'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {opt.icon}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label
+                    htmlFor="habit-edit-color-group"
+                    className="text-xs font-black text-gray-600 uppercase tracking-widest mb-2 block"
+                  >
+                    Choose Color
+                  </label>
+                  <div id="habit-edit-color-group" className="grid grid-cols-8 gap-2">
+                    {colorOptions.map((opt) => (
+                      <button
+                        key={opt.color}
+                        data-testid={`habit-edit-color-${opt.color}`}
+                        onClick={() => setEditColor(opt.color)}
+                        className={`w-full aspect-square ${opt.color} rounded-lg border-2 transition-all ${
+                          editColor === opt.color ? 'border-black scale-110' : 'border-gray-300'
+                        }`}
+                        title={opt.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    data-testid="habit-edit-submit-btn"
+                    onClick={() => void saveEditHabit()}
+                    className="flex-1 bg-fuchsia-400 border-2 border-black text-black font-black text-sm px-6 py-3 rounded-xl shadow-neo-sm hover:brightness-105 active:translate-y-0.5 transition-all"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    data-testid="habit-edit-cancel-btn"
+                    onClick={closeEditDialog}
+                    className="bg-gray-100 border-2 border-black text-gray-600 font-black text-sm px-6 py-3 rounded-xl hover:bg-gray-200 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
-          </form>
-        ) : (
-          <button
-            type="button"
-            data-testid="habit-add"
-            onClick={() => {
-              setAdding(true);
-              setEditingId(null);
-              setDraft({ name: '', isBonus: false });
-            }}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/60 py-3 font-bold text-white hover:bg-white/10"
-          >
-            + Add New Habit
-          </button>
+          </div>
         )}
-      </section>
 
-      {/* Rewards shop (right column) */}
+        {/* ── Tab Switcher ── */}
+        <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-2 flex gap-2 shadow-neo">
+          <button
+            data-testid="habit-tracker-tab-habits"
+            onClick={() => setActiveTab('habits')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-black text-sm transition-all ${
+              activeTab === 'habits'
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-neo-xs'
+                : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            <CheckCircle className="w-4 h-4" /> Weekly Habits
+          </button>
+          <button
+            data-testid="habit-tracker-tab-analytics"
+            onClick={() => setActiveTab('analytics')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-black text-sm transition-all ${
+              activeTab === 'analytics'
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-neo-xs'
+                : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            <BarChart2 className="w-4 h-4" /> Analytics
+          </button>
+        </div>
+
+        {activeTab === 'analytics' ? (
+          <div data-testid="analytics-placeholder">Analytics coming soon</div>
+        ) : (
+          <>
+            {/* ── Week Navigator ── */}
+            <div className="bg-purple-900 rounded-2xl p-4 sm:p-5 text-white border-2 sm:border-3 border-pink-400/30 relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-32 h-32 bg-pink-400/10 rounded-full -mr-10 -mt-10 blur-2xl" />
+              <div className="relative z-10 flex items-center justify-between">
+                <button
+                  data-testid="habit-tracker-week-prev-btn"
+                  onClick={() => setWeekIndex((i) => Math.max(0, i - 1))}
+                  disabled={weekIndex === 0}
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5 text-white" />
+                </button>
+
+                <div className="text-center flex-1 min-w-0" data-testid="habit-tracker-week-label">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="font-black text-white text-lg sm:text-xl uppercase tracking-wider">
+                      Week {week.weekNumber}, {week.year}
+                    </span>
+                    {isCurrentWeek ? (
+                      <span className="bg-blue-400/20 text-blue-200 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-400/30">
+                        Current
+                      </span>
+                    ) : (
+                      <span className="bg-green-400/20 text-green-200 text-xs font-bold px-2.5 py-1 rounded-full border border-green-400/30 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Finalized
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-pink-300 font-mono text-sm mt-0.5">
+                    {week.label.toUpperCase()}
+                  </p>
+                  <div
+                    className="mt-1 text-xs text-yellow-400 font-black"
+                    data-testid="habit-tracker-total-display"
+                  >
+                    {totalDone}/{totalPossible} DONE ✨
+                  </div>
+                </div>
+
+                <button
+                  data-testid="habit-tracker-week-next-btn"
+                  onClick={() => setWeekIndex((i) => Math.min(weeks.length - 1, i + 1))}
+                  disabled={weekIndex === weeks.length - 1}
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5 text-white" />
+                </button>
+              </div>
+
+              {week.isFinalized && (
+                <div className="relative z-10 mt-3 bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-2 flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                  <p className="text-xs font-bold text-amber-200">
+                    This week is finalized — viewing past records.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* ── Week Loading Spinner ── */}
+            {weekLoading && habits.length === 0 && (
+              <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-6 shadow-neo flex items-center justify-center">
+                <div className="text-center">
+                  <Sparkles className="w-6 h-6 text-pink-400 mx-auto mb-2 animate-pulse" />
+                  <p className="font-bold text-gray-500 text-sm">Loading week data...</p>
+                </div>
+              </div>
+            )}
+
+            {/* ── Invested habits (no investedHabitIds prop here; section renders when empty array) ── */}
+            {/* investedHabitIds is Dashboard-level state; hardcode [] for now — section stays hidden */}
+
+            {/* ── Regular Habit Cards ── */}
+            <div className="grid gap-4 sm:gap-6">
+              {habits.map((habit) => (
+                <div
+                  key={habit.id}
+                  className="relative group"
+                  data-testid={`habit-card-${habit.id}`}
+                >
+                  <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
+                  {renderHabitCard(habit, canEdit, canEditDay, false)}
+                </div>
+              ))}
+            </div>
+
+            {/* ── Add New Habit button ── */}
+            {canEdit && (
+              <button
+                data-testid="habit-tracker-add-habit-btn"
+                onClick={() => setShowAddHabit(true)}
+                className="w-full py-4 sm:py-6 rounded-2xl border-2 sm:border-3 border-dashed border-pink-400/40 text-pink-300/70 font-black text-base sm:text-xl hover:bg-pink-400/5 hover:text-pink-200 hover:border-pink-400 transition-all flex items-center justify-center gap-3 uppercase tracking-widest"
+              >
+                <Plus className="w-6 h-6 sm:w-8 sm:h-8" /> Add New Habit
+              </button>
+            )}
+
+            {/* ── Week Summary (finalized weeks) ── */}
+            {week.isFinalized && week.summary && (
+              <div className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-purple-500" />
+                  <h3 className="font-black text-gray-900 text-lg">
+                    Week {week.weekNumber}, {week.year} – Final Summary
+                  </h3>
+                </div>
+                <div className="p-6 space-y-5">
+                  {/* Weekly Earnings */}
+                  <div className="border-b border-gray-100 pb-5">
+                    <p className="text-sm text-gray-500 font-medium mb-1">Weekly Earnings</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl sm:text-3xl font-black text-purple-600">
+                        {week.summary.totalStickers}
+                      </span>
+                      <span className="text-gray-500 font-medium">
+                        = {currency} {(week.summary.totalStickers * 0.5).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions Taken */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                      Actions Taken
+                    </p>
+                    {(() => {
+                      const displayActions =
+                        week.summary.actions && week.summary.actions.length > 0
+                          ? week.summary.actions
+                          : week.summary.carriedOver > 0
+                            ? [
+                                {
+                                  id: 0,
+                                  weekId: week.weekId,
+                                  actionType: 'auto_save' as const,
+                                  stickersUsed: week.summary.carriedOver,
+                                  cashAmount: week.summary.carriedOver * 0.5,
+                                  rewardName: null,
+                                  habitId: null,
+                                  habitName: null,
+                                  createdAt: '',
+                                },
+                              ]
+                            : [];
+
+                      return displayActions.length > 0 ? (
+                        <div className="space-y-2">
+                          {displayActions.map((action, idx) => (
+                            <div
+                              key={idx}
+                              className={`rounded-xl p-3 flex items-center gap-3 ${
+                                action.actionType === 'claim'
+                                  ? 'bg-pink-50'
+                                  : action.actionType === 'cashout'
+                                    ? 'bg-lime-50'
+                                    : action.actionType === 'save' ||
+                                        action.actionType === 'auto_save'
+                                      ? 'bg-cyan-50'
+                                      : action.actionType === 'invest' ||
+                                          action.actionType === 'invest_continue'
+                                        ? 'bg-yellow-50'
+                                        : 'bg-orange-50'
+                              }`}
+                            >
+                              <div
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                  action.actionType === 'claim'
+                                    ? 'bg-pink-200'
+                                    : action.actionType === 'cashout'
+                                      ? 'bg-lime-200'
+                                      : action.actionType === 'save' ||
+                                          action.actionType === 'auto_save'
+                                        ? 'bg-cyan-200'
+                                        : action.actionType === 'invest' ||
+                                            action.actionType === 'invest_continue'
+                                          ? 'bg-yellow-200'
+                                          : 'bg-orange-200'
+                                }`}
+                              >
+                                {action.actionType === 'claim' && (
+                                  <Gift className="w-4 h-4 text-pink-700" />
+                                )}
+                                {action.actionType === 'cashout' && (
+                                  <Banknote className="w-4 h-4 text-lime-700" />
+                                )}
+                                {(action.actionType === 'save' ||
+                                  action.actionType === 'auto_save') && (
+                                  <PiggyBank className="w-4 h-4 text-cyan-700" />
+                                )}
+                                {action.actionType === 'invest' && (
+                                  <TrendingUp className="w-4 h-4 text-yellow-700" />
+                                )}
+                                {action.actionType === 'invest_continue' && (
+                                  <RefreshCw className="w-4 h-4 text-yellow-700" />
+                                )}
+                                {action.actionType === 'withdraw' && (
+                                  <ArrowDownToLine className="w-4 h-4 text-orange-700" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className={`text-sm font-bold ${
+                                    action.actionType === 'claim'
+                                      ? 'text-pink-800'
+                                      : action.actionType === 'cashout'
+                                        ? 'text-lime-800'
+                                        : action.actionType === 'save' ||
+                                            action.actionType === 'auto_save'
+                                          ? 'text-cyan-800'
+                                          : action.actionType === 'invest' ||
+                                              action.actionType === 'invest_continue'
+                                            ? 'text-yellow-800'
+                                            : 'text-orange-800'
+                                  }`}
+                                >
+                                  {action.actionType === 'claim' &&
+                                    `Claimed: ${action.rewardName ?? 'Reward'}`}
+                                  {action.actionType === 'cashout' &&
+                                    `Cashed Out: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'}`}
+                                  {action.actionType === 'save' &&
+                                    `Saved: ${action.stickersUsed ?? 0} stickers`}
+                                  {action.actionType === 'auto_save' &&
+                                    `Saved to Savings: ${action.stickersUsed ?? 0} stickers`}
+                                  {action.actionType === 'invest' &&
+                                    `Invested: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'} in ${action.habitName ?? 'habit'}`}
+                                  {action.actionType === 'invest_continue' &&
+                                    `Continued: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'} in ${action.habitName ?? 'habit'}`}
+                                  {action.actionType === 'withdraw' &&
+                                    `Withdrawn: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'}`}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {action.actionType === 'claim' &&
+                                    `${action.stickersUsed ?? 0} stickers used`}
+                                  {action.actionType === 'cashout' &&
+                                    `${action.stickersUsed ?? 0} stickers converted`}
+                                  {(action.actionType === 'save' ||
+                                    action.actionType === 'auto_save') &&
+                                    `= AED ${((action.stickersUsed ?? 0) * 0.5).toFixed(2)}`}
+                                  {action.actionType === 'invest' &&
+                                    `${action.stickersUsed ?? Math.round((action.cashAmount ?? 0) / 0.5)} stickers invested`}
+                                  {action.actionType === 'invest_continue' &&
+                                    `${action.stickersUsed ?? Math.round((action.cashAmount ?? 0) / 0.5)} stickers carried forward`}
+                                  {action.actionType === 'withdraw' &&
+                                    action.habitName &&
+                                    `from ${action.habitName}`}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="bg-gray-50 rounded-xl p-4 text-center">
+                          <p className="text-sm text-gray-500">No actions recorded for this week</p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Performance */}
+                  <div className="bg-purple-50 rounded-xl px-5 py-4 flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-purple-700 text-sm">Week Performance</p>
+                      <p className="text-xs text-purple-400">{habits.length} habits tracked</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Star className="w-5 h-5 text-yellow-500 fill-current" />
+                      <span className="text-2xl font-black text-purple-700">
+                        {week.summary.performance}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          REWARDS SHOP — right column (xl:col-span-4) — PRESERVED AS-IS
+          ════════════════════════════════════════════════════════════════════ */}
       <section
         aria-labelledby="rewards-shop-heading"
         className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-6 xl:col-span-4"
@@ -577,7 +1711,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                       type="button"
                       variant="primary"
                       size="sm"
-                      onClick={() => onRedeem(r)}
+                      onClick={() => void onRedeem(r)}
                       disabled={!affordable}
                       testId={`reward-buy-${r.id}`}
                     >

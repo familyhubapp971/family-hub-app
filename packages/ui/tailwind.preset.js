@@ -35,6 +35,12 @@ export default {
         'neo-md': '4px 4px 0px 0px rgba(0,0,0,1)',
         'neo-lg': '6px 6px 0px 0px rgba(0,0,0,1)',
       },
+      // `border-3` (3px) matches the legacy family-hub My World components,
+      // which use `border-2 sm:border-3` pervasively. Tailwind has no
+      // border-3 by default.
+      borderWidth: {
+        3: '3px',
+      },
       colors: {
         // Kingdom is the canonical brand purple. The full scale gives
         // designers room to layer surfaces (ChildWorld uses 700/800/950
