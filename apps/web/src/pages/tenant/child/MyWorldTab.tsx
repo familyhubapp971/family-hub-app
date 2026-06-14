@@ -251,6 +251,8 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   // Rewards shop state
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [balance, setBalance] = useState(0);
+  // Family currency (chosen at registration) for all cash labels.
+  const [currency, setCurrency] = useState('USD');
 
   // Dialogs
   const [editHabitId, setEditHabitId] = useState<string | null>(null);
@@ -285,11 +287,13 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
         habits: ApiHabit[];
         stickers: ApiSticker[];
         balance: number;
+        currency?: string;
       };
       const habits = (body.habits ?? []).map((h) => mapApiHabitToLocal(h, body.stickers ?? []));
       habitsCache.current.set(weekId, habits);
-      // Update balance from the current week
+      // Update balance + currency from the current week
       setBalance(body.balance ?? 0);
+      if (body.currency) setCurrency(body.currency);
       return habits;
     },
     [headers, memberId],
@@ -533,6 +537,9 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   // ── Day sticker placement / removal (optimistic) ─────────────────────────
   const selectDaySticker = async (habitId: string, dayIndex: number, stickerId: string) => {
     if (!week || !headers) return;
+    // Capture the prior cell so a failed REPLACE restores the old sticker
+    // rather than wiping the cell (review FHS-293).
+    const previousValue = habits.find((h) => h.id === habitId)?.progress[dayIndex] ?? false;
     // Optimistic
     updateWeekHabits((hs) =>
       hs.map((h) => {
@@ -556,12 +563,12 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
       if (!res.ok) throw new Error(`sticker POST failed: ${res.status}`);
     } catch (err) {
       console.error('Failed to place sticker:', err);
-      // Revert
+      // Revert to the prior value (old sticker or empty).
       updateWeekHabits((hs) =>
         hs.map((h) => {
           if (h.id !== habitId) return h;
           const np = [...h.progress];
-          np[dayIndex] = false;
+          np[dayIndex] = previousValue;
           return {
             ...h,
             progress: np,
@@ -597,8 +604,9 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
       if (!res.ok) throw new Error(`sticker DELETE failed: ${res.status}`);
     } catch (err) {
       console.error('Failed to clear sticker:', err);
-      // Revert
-      if (previousValue) {
+      // Revert (restore the prior sticker; a non-string/false prior means
+      // nothing to restore).
+      if (previousValue !== undefined && previousValue !== false) {
         updateWeekHabits((hs) =>
           hs.map((h) => {
             if (h.id !== habitId) return h;
@@ -825,6 +833,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                 </span>
                 <button
                   data-testid={`habit-day-cell-${habit.id}-${index}`}
+                  aria-pressed={isSticker}
                   onClick={() => {
                     if (!editDayFn(index)) return;
                     if (isSticker) {
@@ -1484,7 +1493,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                         {week.summary.totalStickers}
                       </span>
                       <span className="text-gray-500 font-medium">
-                        = AED {(week.summary.totalStickers * 0.5).toFixed(2)}
+                        = {currency} {(week.summary.totalStickers * 0.5).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -1587,17 +1596,17 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                                   {action.actionType === 'claim' &&
                                     `Claimed: ${action.rewardName ?? 'Reward'}`}
                                   {action.actionType === 'cashout' &&
-                                    `Cashed Out: AED ${action.cashAmount?.toFixed(2) ?? '0.00'}`}
+                                    `Cashed Out: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'}`}
                                   {action.actionType === 'save' &&
                                     `Saved: ${action.stickersUsed ?? 0} stickers`}
                                   {action.actionType === 'auto_save' &&
                                     `Saved to Savings: ${action.stickersUsed ?? 0} stickers`}
                                   {action.actionType === 'invest' &&
-                                    `Invested: AED ${action.cashAmount?.toFixed(2) ?? '0.00'} in ${action.habitName ?? 'habit'}`}
+                                    `Invested: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'} in ${action.habitName ?? 'habit'}`}
                                   {action.actionType === 'invest_continue' &&
-                                    `Continued: AED ${action.cashAmount?.toFixed(2) ?? '0.00'} in ${action.habitName ?? 'habit'}`}
+                                    `Continued: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'} in ${action.habitName ?? 'habit'}`}
                                   {action.actionType === 'withdraw' &&
-                                    `Withdrawn: AED ${action.cashAmount?.toFixed(2) ?? '0.00'}`}
+                                    `Withdrawn: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'}`}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   {action.actionType === 'claim' &&

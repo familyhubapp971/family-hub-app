@@ -108,7 +108,7 @@ function installApi(over: Partial<St> = {}) {
       });
     }
     if (u.includes('/api/mw/weeks') && u.includes('/actions')) {
-      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ actions: [] }) });
     }
     if (u.includes('/api/mw/weeks')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ weeks: state.weeks }) });
@@ -245,5 +245,64 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     installApi({ balance: 1 }); // reward costs 2
     renderTab();
     await waitFor(() => expect(screen.getByTestId(`reward-buy-${REWARD}`)).toBeDisabled());
+  });
+
+  it('redeeming an affordable reward updates the balance', async () => {
+    installApi({ balance: 5 });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId(`reward-buy-${REWARD}`)).toBeEnabled());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId(`reward-buy-${REWARD}`));
+    });
+    // reward costs 2 → 5 - 2 = 3
+    await waitFor(() => expect(screen.getByTestId('sticker-balance').textContent).toContain('3'));
+  });
+
+  it('add-habit with an empty name does not POST', async () => {
+    installApi();
+    renderTab();
+    await waitFor(() =>
+      expect(screen.getByTestId('habit-tracker-add-habit-btn')).toBeInTheDocument(),
+    );
+    act(() => {
+      fireEvent.click(screen.getByTestId('habit-tracker-add-habit-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('habit-add-title-input')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('habit-add-submit-btn'));
+    });
+    expect(
+      fetchMock.mock.calls.some(
+        ([u, i]) => i?.method === 'POST' && /\/api\/habits$/.test(String(u)),
+      ),
+    ).toBe(false);
+  });
+
+  it('reverts the cell when the sticker POST fails', async () => {
+    installApi({ balance: 0 });
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST' && String(url).includes('/stickers')) {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+      }
+      return base(url, init);
+    });
+    renderTab();
+    await waitFor(() =>
+      expect(screen.getByTestId(`habit-day-cell-${HABIT}-0`)).toBeInTheDocument(),
+    );
+    act(() => {
+      fireEvent.click(screen.getByTestId(`habit-day-cell-${HABIT}-0`));
+    });
+    await waitFor(() => expect(screen.getByTestId('habit-day-sticker-dialog')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('habit-day-sticker-option-gold-star'));
+    });
+    // POST failed → optimistic sticker reverts; cell ends up empty again.
+    await waitFor(() =>
+      expect(screen.getByTestId(`habit-day-cell-${HABIT}-0`).getAttribute('aria-pressed')).toBe(
+        'false',
+      ),
+    );
   });
 });
