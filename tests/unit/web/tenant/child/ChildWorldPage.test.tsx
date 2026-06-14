@@ -35,6 +35,9 @@ function installApi() {
         json: async () => ({ rewards: [], stickerBalance: 0 }),
       });
     }
+    if (u.includes('/api/mw/weeks')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ weeks: [] }) });
+    }
     if (u.includes('/api/journal')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ entries: [] }) });
     }

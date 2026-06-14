@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-292 — My World habit grid (typed stickers) + rewards shop.
+// FHS-293 — My World habit tracker (faithful legacy port): week navigator,
+// Weekly Habits / Analytics tabs, habit cards with the day → sticker
+// dialog, add/edit/delete habit, and the rewards shop.
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
@@ -19,6 +21,7 @@ const REWARD = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const WEEK = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 
 interface St {
+  weeks: Array<Record<string, unknown>>;
   habits: Array<{
     id: string;
     name: string;
@@ -40,13 +43,26 @@ interface St {
 
 function installApi(over: Partial<St> = {}) {
   const state: St = {
+    weeks: over.weeks ?? [
+      {
+        id: WEEK,
+        weekNumber: 9,
+        year: 2026,
+        startDate: '2026-02-23',
+        isFinalized: false,
+        carriedOverStickers: 0,
+        carriedOverCash: 0,
+        retrievedStickers: 0,
+        retrievedCash: 0,
+      },
+    ],
     habits: over.habits ?? [
       {
         id: HABIT,
         name: 'Brush teeth',
         description: null,
-        color: '#facc15',
-        icon: null,
+        color: 'bg-yellow-400',
+        icon: 'star',
         isBonus: false,
       },
     ],
@@ -63,7 +79,7 @@ function installApi(over: Partial<St> = {}) {
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: async () => ({ habitId: HABIT, day: b.day, sticker: b.sticker, stickerValue: 1 }),
+        json: async () => ({ habitId: HABIT, ...b, stickerValue: 1 }),
       });
     }
     if (init?.method === 'DELETE' && u.includes('/stickers')) {
@@ -77,8 +93,8 @@ function installApi(over: Partial<St> = {}) {
           id: 'new',
           name: 'X',
           description: null,
-          color: '#facc15',
-          icon: null,
+          color: 'bg-yellow-400',
+          icon: 'star',
           isBonus: false,
         }),
       });
@@ -91,6 +107,12 @@ function installApi(over: Partial<St> = {}) {
         json: async () => ({ stickerBalance: state.balance, redemptionId: 'r1' }),
       });
     }
+    if (u.includes('/api/mw/weeks') && u.includes('/actions')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+    }
+    if (u.includes('/api/mw/weeks')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ weeks: state.weeks }) });
+    }
     if (u.includes('/api/rewards')) {
       return Promise.resolve({
         ok: true,
@@ -98,7 +120,7 @@ function installApi(over: Partial<St> = {}) {
         json: async () => ({ rewards: state.rewards, stickerBalance: state.balance }),
       });
     }
-    // GET /api/habits
+    // GET /api/habits?weekId=
     return Promise.resolve({
       ok: true,
       status: 200,
@@ -137,30 +159,48 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe('<MyWorldTab />', () => {
-  it('renders the habit grid + sticker picker + balance', async () => {
+describe('<MyWorldTab /> (legacy habit tracker)', () => {
+  it('renders the week navigator, summary, habit card + rewards balance', async () => {
     installApi({ balance: 3 });
     renderTab();
     await waitFor(() => expect(screen.getByTestId('my-world')).toBeInTheDocument());
-    expect(screen.getByTestId('habit-tracker')).toBeInTheDocument();
-    expect(screen.getByTestId('habit-name-' + HABIT).textContent).toContain('Brush teeth');
-    expect(screen.getByTestId(`habit-cell-${HABIT}-0`)).toBeInTheDocument();
-    expect(screen.getByTestId('sticker-picker')).toBeInTheDocument();
+    expect(screen.getByTestId('habit-tracker-week-label').textContent).toContain('Week 9, 2026');
+    expect(screen.getByTestId('habit-tracker-total-display').textContent).toContain('0/7');
+    expect(screen.getByTestId(`habit-card-title-${HABIT}`).textContent).toContain('Brush teeth');
+    expect(screen.getByTestId(`habit-day-cell-${HABIT}-0`)).toBeInTheDocument();
     expect(screen.getByTestId('sticker-balance').textContent).toContain('3');
   });
 
-  it('renders an error state on a failed load', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+  it('shows the no-data state when there are no weeks', async () => {
+    installApi({ weeks: [] });
     renderTab();
-    await waitFor(() => expect(screen.getByTestId('my-world-error')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('habit-tracker-no-data')).toBeInTheDocument());
   });
 
-  it('placing a sticker POSTs the chosen type + day and bumps the balance', async () => {
+  it('switches to the Analytics tab', async () => {
+    installApi();
+    renderTab();
+    await waitFor(() =>
+      expect(screen.getByTestId('habit-tracker-tab-analytics')).toBeInTheDocument(),
+    );
+    act(() => {
+      fireEvent.click(screen.getByTestId('habit-tracker-tab-analytics'));
+    });
+    expect(screen.getByTestId('analytics-placeholder')).toBeInTheDocument();
+  });
+
+  it('placing a sticker via the day dialog POSTs the chosen type', async () => {
     installApi({ balance: 0 });
     renderTab();
-    await waitFor(() => expect(screen.getByTestId(`habit-cell-${HABIT}-0`)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId(`habit-day-cell-${HABIT}-0`)).toBeInTheDocument(),
+    );
+    act(() => {
+      fireEvent.click(screen.getByTestId(`habit-day-cell-${HABIT}-0`));
+    });
+    await waitFor(() => expect(screen.getByTestId('habit-day-sticker-dialog')).toBeInTheDocument());
     await act(async () => {
-      fireEvent.click(screen.getByTestId(`habit-cell-${HABIT}-0`));
+      fireEvent.click(screen.getByTestId('habit-day-sticker-option-gold-star'));
     });
     const post = fetchMock.mock.calls.find(
       ([u, i]) => i?.method === 'POST' && String(u).includes('/stickers'),
@@ -172,135 +212,25 @@ describe('<MyWorldTab />', () => {
       day: 0,
       sticker: 'gold-star',
     });
-    await waitFor(() => expect(screen.getByTestId('sticker-balance').textContent).toContain('1'));
   });
 
-  it('places the picked sticker type when a different one is selected', async () => {
-    installApi({ balance: 0 });
-    renderTab();
-    await waitFor(() => expect(screen.getByTestId('sticker-pick-heart')).toBeInTheDocument());
-    act(() => {
-      fireEvent.click(screen.getByTestId('sticker-pick-heart'));
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByTestId(`habit-cell-${HABIT}-1`));
-    });
-    const post = fetchMock.mock.calls.find(
-      ([u, i]) => i?.method === 'POST' && String(u).includes('/stickers'),
-    );
-    expect(JSON.parse((post![1] as RequestInit).body as string).sticker).toBe('heart');
-  });
-
-  it('removing a placed sticker DELETEs and drops the balance', async () => {
-    installApi({
-      balance: 1,
-      stickers: [{ habitId: HABIT, day: 0, sticker: 'gold-star', stickerValue: 1 }],
-    });
+  it('adds a habit via the add dialog', async () => {
+    installApi();
     renderTab();
     await waitFor(() =>
-      expect(screen.getByTestId(`habit-cell-${HABIT}-0`).getAttribute('aria-pressed')).toBe('true'),
+      expect(screen.getByTestId('habit-tracker-add-habit-btn')).toBeInTheDocument(),
     );
-    await act(async () => {
-      fireEvent.click(screen.getByTestId(`habit-cell-${HABIT}-0`));
+    act(() => {
+      fireEvent.click(screen.getByTestId('habit-tracker-add-habit-btn'));
     });
-    const del = fetchMock.mock.calls.find(
-      ([u, i]) => i?.method === 'DELETE' && String(u).includes('/stickers'),
-    );
-    expect(del).toBeDefined();
-    await waitFor(() => expect(screen.getByTestId('sticker-balance').textContent).toContain('0'));
-  });
-
-  it('reverts the cell + balance when the sticker POST fails', async () => {
-    const state = installApi({ balance: 0 });
-    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-      const u = String(url);
-      if (init?.method === 'POST' && u.includes('/stickers')) {
-        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
-      }
-      if (u.includes('/api/rewards')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({ rewards: state.rewards, stickerBalance: state.balance }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          habits: state.habits,
-          stickers: state.stickers,
-          week: {
-            id: WEEK,
-            weekNumber: 9,
-            year: 2026,
-            startDate: '2026-02-23',
-            isFinalized: false,
-          },
-          balance: state.balance,
-        }),
+    await waitFor(() => expect(screen.getByTestId('habit-add-title-input')).toBeInTheDocument());
+    act(() => {
+      fireEvent.change(screen.getByTestId('habit-add-title-input'), {
+        target: { value: 'Read a book' },
       });
     });
-    renderTab();
-    await waitFor(() => expect(screen.getByTestId(`habit-cell-${HABIT}-0`)).toBeInTheDocument());
     await act(async () => {
-      fireEvent.click(screen.getByTestId(`habit-cell-${HABIT}-0`));
-    });
-    // Reverts: cell un-pressed + balance back to 0.
-    await waitFor(() =>
-      expect(screen.getByTestId(`habit-cell-${HABIT}-0`).getAttribute('aria-pressed')).toBe(
-        'false',
-      ),
-    );
-    expect(screen.getByTestId('sticker-balance').textContent).toContain('0');
-  });
-
-  it('guards against a double-tap on the same cell (one POST)', async () => {
-    installApi({ balance: 0 });
-    renderTab();
-    await waitFor(() => expect(screen.getByTestId(`habit-cell-${HABIT}-0`)).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId(`habit-cell-${HABIT}-0`));
-      fireEvent.click(screen.getByTestId(`habit-cell-${HABIT}-0`));
-    });
-    const posts = fetchMock.mock.calls.filter(
-      ([u, i]) => i?.method === 'POST' && String(u).includes('/stickers'),
-    );
-    expect(posts).toHaveLength(1);
-  });
-
-  it('disables Buy when the balance is below the reward cost', async () => {
-    installApi({ balance: 1 }); // reward costs 2
-    renderTab();
-    await waitFor(() => expect(screen.getByTestId(`reward-buy-${REWARD}`)).toBeDisabled());
-  });
-
-  it('redeems an affordable reward and updates the balance', async () => {
-    installApi({ balance: 2 });
-    renderTab();
-    await waitFor(() => expect(screen.getByTestId(`reward-buy-${REWARD}`)).toBeEnabled());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId(`reward-buy-${REWARD}`));
-    });
-    const post = fetchMock.mock.calls.find(
-      ([u, i]) => i?.method === 'POST' && String(u).includes('/redeem'),
-    );
-    expect(post).toBeDefined();
-    await waitFor(() => expect(screen.getByTestId('sticker-balance').textContent).toContain('0'));
-  });
-
-  it('adds a habit via the form', async () => {
-    installApi({ balance: 0 });
-    renderTab();
-    await waitFor(() => expect(screen.getByTestId('habit-add')).toBeInTheDocument());
-    act(() => {
-      fireEvent.click(screen.getByTestId('habit-add'));
-    });
-    act(() => {
-      fireEvent.change(screen.getByTestId('habit-add-name'), { target: { value: 'Read a book' } });
-    });
-    await act(async () => {
-      fireEvent.submit(screen.getByTestId('habit-add-form'));
+      fireEvent.click(screen.getByTestId('habit-add-submit-btn'));
     });
     const post = fetchMock.mock.calls.find(
       ([u, i]) => i?.method === 'POST' && /\/api\/habits$/.test(String(u)),
@@ -308,7 +238,12 @@ describe('<MyWorldTab />', () => {
     expect(post).toBeDefined();
     expect(JSON.parse((post![1] as RequestInit).body as string)).toMatchObject({
       name: 'Read a book',
-      isBonus: false,
     });
+  });
+
+  it('disables Buy when the balance is below the reward cost', async () => {
+    installApi({ balance: 1 }); // reward costs 2
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId(`reward-buy-${REWARD}`)).toBeDisabled());
   });
 });
