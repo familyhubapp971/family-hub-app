@@ -26,6 +26,7 @@ import { Button } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
+import { CloseWeekDialog } from './CloseWeekDialog';
 
 // FHS-292 — My World habit grid (legacy HabitTracker UI port).
 // Pixel / behaviour parity with the legacy HabitTracker component.
@@ -314,6 +315,9 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
+
+  // ── Close Week dialog state ───────────────────────────────────────────────
+  const [closeWeekOpen, setCloseWeekOpen] = useState(false);
 
   const habitsCache = useRef<Map<string, Habit[]>>(new Map());
   const redeemingRef = useRef<Set<string>>(new Set());
@@ -2770,6 +2774,32 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
             big prizes
           </p>
         </div>
+
+        {/* ── Close Week Banner ── */}
+        {week && !week.isFinalized && (
+          <div data-testid="my-world-close-week-banner" className="mt-2">
+            <div className="bg-yellow-400 border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-neo">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl sm:text-3xl">🗓️</div>
+                <div>
+                  <h3 className="font-black text-black text-base sm:text-lg">
+                    Are you ready to close the week?
+                  </h3>
+                  <p className="text-black/60 text-xs sm:text-sm font-medium">
+                    Review your stickers and choose what to do with them
+                  </p>
+                </div>
+              </div>
+              <button
+                data-testid="my-world-close-week-banner-btn"
+                onClick={() => setCloseWeekOpen(true)}
+                className="flex-shrink-0 bg-black text-yellow-400 font-black px-4 sm:px-6 py-2 sm:py-3 rounded-xl border-2 border-black hover:bg-gray-900 active:translate-y-0.5 transition-all whitespace-nowrap text-sm sm:text-base w-full sm:w-auto text-center"
+              >
+                Close Week →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
@@ -2874,6 +2904,33 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           )}
         </section>
       </div>
+
+      {/* ── Close Week Dialog ── */}
+      {week && !week.isFinalized && headers && (
+        <CloseWeekDialog
+          isOpen={closeWeekOpen}
+          onClose={() => setCloseWeekOpen(false)}
+          isAdmin={isAdmin}
+          weeklyStickers={unallocatedStickers}
+          weekId={week.weekId}
+          memberId={memberId}
+          currency={currency}
+          headers={headers}
+          onWeekFinalized={(nextWeekId) => {
+            setCloseWeekOpen(false);
+            // Refresh all data and jump to the newly-created week
+            void fetchData().then(() => {
+              setWeeks((prev) => {
+                const nextIdx = prev.findIndex((w) => w.weekId === nextWeekId);
+                if (nextIdx >= 0) setWeekIndex(nextIdx);
+                return prev;
+              });
+            });
+            void fetchSavings();
+            void fetchInvestments();
+          }}
+        />
+      )}
     </div>
   );
 }
