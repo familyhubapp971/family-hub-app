@@ -928,8 +928,8 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
         }),
       });
       if (!res.ok) throw new Error(`habit POST failed: ${res.status}`);
-      const body = (await res.json()) as { habit: ApiHabit };
-      const created = body.habit;
+      // The create endpoint returns the habit object directly (not wrapped).
+      const created = (await res.json()) as ApiHabit;
       const newHabit: Habit = {
         id: String(created.id),
         title: created.name,
@@ -1221,11 +1221,11 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
 
   // ── Main render ───────────────────────────────────────────────────────────
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-12" data-testid="my-world">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12" data-testid="my-world">
       {/* ════════════════════════════════════════════════════════════════════
-          HABIT TRACKER — left column (xl:col-span-8)
+          HABIT TRACKER — left column (lg:col-span-8)
           ════════════════════════════════════════════════════════════════════ */}
-      <div className="space-y-6 xl:col-span-8">
+      <div className="space-y-6 lg:col-span-8">
         {/* ── Day Sticker Dialog ── */}
         {dayStickerDialog && dayStickerHabit && canEdit && (
           // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
@@ -2545,268 +2545,173 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
             SAVINGS / BANKING CARDS — below habit tracker
             ════════════════════════════════════════════════════════════════════ */}
 
-        {/* ── Your Savings ── */}
-        <div data-testid="your-savings" className="relative">
-          <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
-          <div className="relative bg-[#6b21a8] border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 text-white overflow-hidden">
-            <div className="absolute right-0 top-0 w-28 h-28 bg-pink-400/10 rounded-full -mr-8 -mt-8 blur-2xl" />
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3">
+        {/* ── Your Savings + Active Investments (side by side) ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <div data-testid="your-savings" className="relative">
+            <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
+            <div className="relative bg-[#6b21a8] border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 text-white overflow-hidden">
+              <div className="absolute right-0 top-0 w-28 h-28 bg-pink-400/10 rounded-full -mr-8 -mt-8 blur-2xl" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-yellow-400 p-2 rounded-lg border-2 border-black">
+                      <PiggyBank className="w-5 h-5 text-black" />
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-black uppercase">Your Savings 🐷</h2>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      data-testid="savings-save-btn"
+                      onClick={() => {
+                        setSaveAmount('');
+                        setSaveType('stickers');
+                        setSaveError(null);
+                        setShowSaveDialog(true);
+                      }}
+                      className="bg-blue-500 border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
+                    >
+                      Save
+                    </button>
+                    <button
+                      data-testid="savings-cashout-btn"
+                      onClick={() => {
+                        setCashoutAmount('');
+                        setCashoutError(null);
+                        setShowCashoutDialog(true);
+                      }}
+                      className="bg-green-500 border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
+                    >
+                      Cash Out
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-4xl font-black text-yellow-400 leading-none">
+                      {savedStickers}
+                    </p>
+                    <p className="text-xs text-purple-300 font-mono mt-1">
+                      {savedStickers} saved + {fromCash} from cash
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-1 font-mono">
+                      Total Value
+                    </p>
+                    <div className="flex items-baseline gap-1 justify-end">
+                      <span className="text-sm font-black text-lime-400">{currency}</span>
+                      <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
+                        {savingsTotal.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Active Investments ── */}
+          <div data-testid="active-investments" className="relative">
+            <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
+            <div className="relative bg-white border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="bg-yellow-400 p-2 rounded-lg border-2 border-black">
-                    <PiggyBank className="w-5 h-5 text-black" />
+                    <TrendingUp className="w-5 h-5 text-black" />
                   </div>
-                  <h2 className="text-lg sm:text-xl font-black uppercase">Your Savings 🐷</h2>
+                  <h2 className="text-lg sm:text-xl font-black uppercase">Active Investments 📈</h2>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    data-testid="savings-save-btn"
-                    onClick={() => {
-                      setSaveAmount('');
-                      setSaveType('stickers');
-                      setSaveError(null);
-                      setShowSaveDialog(true);
-                    }}
-                    className="bg-blue-500 border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
-                  >
-                    Save
-                  </button>
-                  <button
-                    data-testid="savings-cashout-btn"
-                    onClick={() => {
-                      setCashoutAmount('');
-                      setCashoutError(null);
-                      setShowCashoutDialog(true);
-                    }}
-                    className="bg-green-500 border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
-                  >
-                    Cash Out
-                  </button>
-                </div>
+                <button
+                  data-testid="invest-btn"
+                  onClick={() => {
+                    setInvestAmount('');
+                    setInvestHabitId('');
+                    setInvestError(null);
+                    setShowInvestDialog(true);
+                  }}
+                  className="bg-[#6b21a8] border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
+                >
+                  Invest
+                </button>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-4xl font-black text-yellow-400 leading-none">
-                    {savedStickers}
-                  </p>
-                  <p className="text-xs text-purple-300 font-mono mt-1">
-                    {savedStickers} saved + {fromCash} from cash
+              {investments.length === 0 ? (
+                <div className="text-center py-6">
+                  <BarChart2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-gray-400">No active investments</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Invest stickers in a habit to grow your rewards!
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-1 font-mono">
-                    Total Value
-                  </p>
-                  <div className="flex items-baseline gap-1 justify-end">
-                    <span className="text-sm font-black text-lime-400">{currency}</span>
-                    <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
-                      {savingsTotal.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Active Investments ── */}
-        <div data-testid="active-investments" className="relative">
-          <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
-          <div className="relative bg-white border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-yellow-400 p-2 rounded-lg border-2 border-black">
-                  <TrendingUp className="w-5 h-5 text-black" />
-                </div>
-                <h2 className="text-lg sm:text-xl font-black uppercase">Active Investments 📈</h2>
-              </div>
-              <button
-                data-testid="invest-btn"
-                onClick={() => {
-                  setInvestAmount('');
-                  setInvestHabitId('');
-                  setInvestError(null);
-                  setShowInvestDialog(true);
-                }}
-                className="bg-[#6b21a8] border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
-              >
-                Invest
-              </button>
-            </div>
-
-            {investments.length === 0 ? (
-              <div className="text-center py-6">
-                <BarChart2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm font-bold text-gray-400">No active investments</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Invest stickers in a habit to grow your rewards!
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {investments.map((inv) => {
-                  const gain = inv.currentValueStickers - inv.originalInvestedStickers;
-                  return (
-                    <div
-                      key={inv.id}
-                      data-testid={`investment-${inv.id}`}
-                      className="bg-amber-50 border-2 border-amber-400 rounded-xl p-3 flex items-center gap-3"
-                    >
-                      {/* Habit icon + name */}
-                      <div className="flex-shrink-0 w-9 h-9 bg-amber-100 border-2 border-amber-400 rounded-lg flex items-center justify-center text-lg">
-                        {mapIconStringToElement(inv.habitIcon)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-black text-gray-900 text-sm truncate">
-                          {inv.habitName ?? 'Habit'}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          <span className="text-xs font-bold text-amber-700">
-                            {inv.investedStickers}→{inv.currentValueStickers} ⭐
-                          </span>
-                          <span className="text-xs font-bold text-lime-600">
-                            {currency} {inv.currentValue.toFixed(2)}
-                          </span>
-                          {gain > 0 && (
-                            <span className="text-[10px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
-                              +{gain}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
-                            {inv.daysCompleted}d done
-                          </span>
-                          {inv.daysMissed > 0 && (
-                            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
-                              {inv.daysMissed}d missed
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        data-testid={`investment-withdraw-btn-${inv.id}`}
-                        onClick={() => {
-                          setWithdrawInvestment(inv);
-                          setWithdrawAmount(String(inv.currentValueStickers));
-                          setWithdrawError(null);
-                        }}
-                        className="flex-shrink-0 bg-orange-400 border-2 border-black text-black font-black text-xs px-2.5 py-1.5 rounded-lg shadow-neo-xs hover:brightness-105 active:translate-y-0.5 transition-all uppercase"
+              ) : (
+                <div className="space-y-3">
+                  {investments.map((inv) => {
+                    const gain = inv.currentValueStickers - inv.originalInvestedStickers;
+                    return (
+                      <div
+                        key={inv.id}
+                        data-testid={`investment-${inv.id}`}
+                        className="bg-amber-50 border-2 border-amber-400 rounded-xl p-3 flex items-center gap-3"
                       >
-                        Withdraw
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Bankable This Week / Weekly Value ── */}
-        <div data-testid="bankable-week" className="relative">
-          <div className="absolute inset-0 bg-pink-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
-          <div className="relative bg-purple-900 border-2 sm:border-3 border-pink-400/30 rounded-2xl overflow-hidden">
-            <div className="grid grid-cols-2 divide-x-2 sm:divide-x-3 divide-black">
-              <div data-testid="bankable-week-stickers" className="p-5 text-center">
-                <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2 font-mono">
-                  Bankable This Week
-                </p>
-                <p className="text-3xl sm:text-4xl font-black text-yellow-400 leading-none mb-2">
-                  {unallocatedStickers}
-                </p>
-                <div className="flex justify-center gap-1 text-base">
-                  <span>⭐</span>
-                  <span>💖</span>
-                  <span>✨</span>
+                        {/* Habit icon + name */}
+                        <div className="flex-shrink-0 w-9 h-9 bg-amber-100 border-2 border-amber-400 rounded-lg flex items-center justify-center text-lg">
+                          {mapIconStringToElement(inv.habitIcon)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-black text-gray-900 text-sm truncate">
+                            {inv.habitName ?? 'Habit'}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <span className="text-xs font-bold text-amber-700">
+                              {inv.investedStickers}→{inv.currentValueStickers} ⭐
+                            </span>
+                            <span className="text-xs font-bold text-lime-600">
+                              {currency} {inv.currentValue.toFixed(2)}
+                            </span>
+                            {gain > 0 && (
+                              <span className="text-[10px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                                +{gain}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                              {inv.daysCompleted}d done
+                            </span>
+                            {inv.daysMissed > 0 && (
+                              <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                                {inv.daysMissed}d missed
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          data-testid={`investment-withdraw-btn-${inv.id}`}
+                          onClick={() => {
+                            setWithdrawInvestment(inv);
+                            setWithdrawAmount(String(inv.currentValueStickers));
+                            setWithdrawError(null);
+                          }}
+                          className="flex-shrink-0 bg-orange-400 border-2 border-black text-black font-black text-xs px-2.5 py-1.5 rounded-lg shadow-neo-xs hover:brightness-105 active:translate-y-0.5 transition-all uppercase"
+                        >
+                          Withdraw
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className="text-[10px] text-purple-400 mt-2 font-mono">
-                  Excludes invested habits
-                </p>
-              </div>
-              <div data-testid="bankable-week-value" className="p-5 text-center">
-                <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-2 font-mono">
-                  Weekly Value
-                </p>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-sm font-black text-lime-400">{currency}</span>
-                  <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
-                    {weeklyValue}
-                  </span>
-                </div>
-                <p className="text-[10px] text-purple-400 mt-2 font-mono">
-                  Each star = 0.5 {currency}
-                </p>
-              </div>
+              )}
             </div>
           </div>
         </div>
-
-        {/* ── Saving Stickers for Big Rewards ── */}
-        <div
-          data-testid="saving-big-rewards"
-          className="bg-purple-900 rounded-2xl p-4 sm:p-5 text-center border-2 sm:border-3 border-pink-400/30"
-        >
-          <h3 className="text-white font-black uppercase mb-1">
-            Saving Stickers for Big Rewards 💖
-          </h3>
-          <p className="text-purple-300 text-xs font-mono mb-4">
-            Invest your stars across weeks to unlock bigger prizes!
-          </p>
-          <div className="flex items-center justify-center gap-2 text-white font-mono text-sm">
-            <div className="bg-lime-400 text-black px-2 py-1 rounded border-2 border-black font-black">
-              WK 1
-            </div>
-            <span className="text-purple-300">+</span>
-            <div className="bg-purple-700 px-2 py-1 rounded border-2 border-purple-500">WK 2</div>
-            <span className="text-purple-300">=</span>
-            <Gift className="w-6 h-6 text-yellow-400 animate-bounce" />
-            <span className="text-yellow-400 font-black text-xs">BIG PRIZE!</span>
-          </div>
-          <div className="w-full bg-purple-800 h-4 rounded-full mt-4 border-2 border-purple-600 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-pink-400 to-yellow-400"
-              style={{ width: `${bigRewardProgress}%` }}
-            />
-          </div>
-          <p className="text-purple-400 text-xs font-mono mt-2">
-            {savedStickers} stickers saved ({currency} {(savedStickers * 0.5).toFixed(2)}) towards
-            big prizes
-          </p>
-        </div>
-
-        {/* ── Close Week Banner ── */}
-        {week && !week.isFinalized && (
-          <div data-testid="my-world-close-week-banner" className="mt-2">
-            <div className="bg-yellow-400 border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-neo">
-              <div className="flex items-center gap-3">
-                <div className="text-2xl sm:text-3xl">🗓️</div>
-                <div>
-                  <h3 className="font-black text-black text-base sm:text-lg">
-                    Are you ready to close the week?
-                  </h3>
-                  <p className="text-black/60 text-xs sm:text-sm font-medium">
-                    Review your stickers and choose what to do with them
-                  </p>
-                </div>
-              </div>
-              <button
-                data-testid="my-world-close-week-banner-btn"
-                onClick={() => setCloseWeekOpen(true)}
-                className="flex-shrink-0 bg-black text-yellow-400 font-black px-4 sm:px-6 py-2 sm:py-3 rounded-xl border-2 border-black hover:bg-gray-900 active:translate-y-0.5 transition-all whitespace-nowrap text-sm sm:text-base w-full sm:w-auto text-center"
-              >
-                Close Week →
-              </button>
-            </div>
-          </div>
-        )}
+        {/* end side-by-side savings/investments grid */}
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
-          RIGHT COLUMN (xl:col-span-4) — My Stickers + Rewards Shop
+          RIGHT COLUMN (lg:col-span-4) — My Stickers + Rewards Shop + Bankable + Saving Stickers
           ════════════════════════════════════════════════════════════════════ */}
-      <div className="space-y-4 xl:col-span-4">
+      <div className="space-y-4 lg:col-span-4">
         {/* My Stickers — the sticker types a child can earn (FHS-294) */}
         <section
           aria-labelledby="my-stickers-heading"
@@ -2904,7 +2809,107 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
             </ul>
           )}
         </section>
+
+        {/* ── Bankable This Week / Weekly Value ── */}
+        <div data-testid="bankable-week" className="relative">
+          <div className="absolute inset-0 bg-pink-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
+          <div className="relative bg-purple-900 border-2 sm:border-3 border-pink-400/30 rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-2 divide-x-2 sm:divide-x-3 divide-black">
+              <div data-testid="bankable-week-stickers" className="p-5 text-center">
+                <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2 font-mono">
+                  Bankable This Week
+                </p>
+                <p className="text-3xl sm:text-4xl font-black text-yellow-400 leading-none mb-2">
+                  {unallocatedStickers}
+                </p>
+                <div className="flex justify-center gap-1 text-base">
+                  <span>⭐</span>
+                  <span>💖</span>
+                  <span>✨</span>
+                </div>
+                <p className="text-[10px] text-purple-400 mt-2 font-mono">
+                  Excludes invested habits
+                </p>
+              </div>
+              <div data-testid="bankable-week-value" className="p-5 text-center">
+                <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-2 font-mono">
+                  Weekly Value
+                </p>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-sm font-black text-lime-400">{currency}</span>
+                  <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
+                    {weeklyValue}
+                  </span>
+                </div>
+                <p className="text-[10px] text-purple-400 mt-2 font-mono">
+                  Each star = 0.5 {currency}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Saving Stickers for Big Rewards ── */}
+        <div
+          data-testid="saving-big-rewards"
+          className="bg-purple-900 rounded-2xl p-4 sm:p-5 text-center border-2 sm:border-3 border-pink-400/30"
+        >
+          <h3 className="text-white font-black uppercase mb-1">
+            Saving Stickers for Big Rewards 💖
+          </h3>
+          <p className="text-purple-300 text-xs font-mono mb-4">
+            Invest your stars across weeks to unlock bigger prizes!
+          </p>
+          <div className="flex items-center justify-center gap-2 text-white font-mono text-sm">
+            <div className="bg-lime-400 text-black px-2 py-1 rounded border-2 border-black font-black">
+              WK 1
+            </div>
+            <span className="text-purple-300">+</span>
+            <div className="bg-purple-700 px-2 py-1 rounded border-2 border-purple-500">WK 2</div>
+            <span className="text-purple-300">=</span>
+            <Gift className="w-6 h-6 text-yellow-400 animate-bounce" />
+            <span className="text-yellow-400 font-black text-xs">BIG PRIZE!</span>
+          </div>
+          <div className="w-full bg-purple-800 h-4 rounded-full mt-4 border-2 border-purple-600 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-pink-400 to-yellow-400"
+              style={{ width: `${bigRewardProgress}%` }}
+            />
+          </div>
+          <p className="text-purple-400 text-xs font-mono mt-2">
+            {savedStickers} stickers saved ({currency} {(savedStickers * 0.5).toFixed(2)}) towards
+            big prizes
+          </p>
+        </div>
       </div>
+
+      {/* ── Close Week Banner — full width ── */}
+      {week && !week.isFinalized && (
+        <div className="lg:col-span-12">
+          <div data-testid="my-world-close-week-banner" className="mt-2">
+            <div className="bg-yellow-400 border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-neo">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl sm:text-3xl">🗓️</div>
+                <div>
+                  <h3 className="font-black text-black text-base sm:text-lg">
+                    Are you ready to close the week?
+                  </h3>
+                  <p className="text-black/60 text-xs sm:text-sm font-medium">
+                    Review your stickers and choose what to do with them
+                  </p>
+                </div>
+              </div>
+              <button
+                data-testid="my-world-close-week-banner-btn"
+                onClick={() => setCloseWeekOpen(true)}
+                className="flex-shrink-0 bg-black text-yellow-400 font-black px-4 sm:px-6 py-2 sm:py-3 rounded-xl border-2 border-black hover:bg-gray-900 active:translate-y-0.5 transition-all whitespace-nowrap text-sm sm:text-base w-full sm:w-auto text-center"
+              >
+                Close Week →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Close Week Dialog ── */}
       {week && !week.isFinalized && headers && (

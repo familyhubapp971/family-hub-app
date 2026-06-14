@@ -92,15 +92,17 @@ function installApi(over: Partial<St> = {}) {
       return Promise.resolve({ ok: true, status: 204, json: async () => ({}) });
     }
     if (init?.method === 'POST' && /\/api\/habits$/.test(u)) {
+      // The real endpoint returns the created habit object DIRECTLY (not wrapped).
+      const b = JSON.parse(init.body as string) as { name: string; color?: string; icon?: string };
       return Promise.resolve({
         ok: true,
         status: 201,
         json: async () => ({
-          id: 'new',
-          name: 'X',
+          id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+          name: b.name,
           description: null,
-          color: 'bg-yellow-400',
-          icon: 'star',
+          color: b.color ?? 'bg-yellow-400',
+          icon: b.icon ?? 'star',
           isBonus: false,
         }),
       });
@@ -297,6 +299,15 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     expect(JSON.parse((post![1] as RequestInit).body as string)).toMatchObject({
       name: 'Read a book',
     });
+    // The created habit must appear in the list (regression: the UI used to read
+    // a wrongly-wrapped response, so the habit saved but never showed + the
+    // dialog stayed open).
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('habit-card-title-eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee').textContent,
+      ).toContain('Read a book'),
+    );
+    expect(screen.queryByTestId('habit-add-title-input')).toBeNull();
   });
 
   it('disables Buy when the balance is below the reward cost', async () => {
