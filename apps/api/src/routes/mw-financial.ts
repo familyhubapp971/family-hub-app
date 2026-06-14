@@ -65,8 +65,8 @@ async function memberInTenant(
     .limit(1);
   return rows.length > 0;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function guard(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   c: any,
   member: string,
 ): Promise<{ db: ReturnType<typeof getDb>; tenantId: string } | { res: Response }> {
@@ -152,6 +152,10 @@ export const mwFinancialRouter = new Hono()
       if (stickersNeeded > available) return { ok: false as const, available };
 
       const allocateIds: string[] = [];
+      // `covered` is the ACTUAL sticker-value banked (a bonus sticker is
+      // worth 5). We credit savings by `covered`, not the requested amount,
+      // so a value-5 sticker spent on a 1-sticker save banks the full 5 —
+      // no value is destroyed (conserves the economy).
       let covered = 0;
       for (const r of unallocated) {
         if (covered >= stickersNeeded) break;
@@ -165,17 +169,20 @@ export const mwFinancialRouter = new Hono()
           and(
             eq(habitStickers.tenantId, tenantId),
             eq(habitStickers.memberId, memberId),
+            eq(habitStickers.isAllocated, false),
             inArray(habitStickers.id, allocateIds),
           ),
         );
+      const bankedStickers = type === 'stickers' ? covered : 0;
+      const bankedCash = type === 'cash' ? covered * STICKER_TO_CASH : 0;
       const [txnRow] = await tx
         .insert(mwSavingsTransactions)
         .values({
           tenantId,
           memberId,
           transactionType: type,
-          amount: String(amount),
-          stickerCount: stickersNeeded,
+          amount: String(type === 'cash' ? bankedCash : covered),
+          stickerCount: covered,
         })
         .returning({ id: mwSavingsTransactions.id });
       if (allocateIds.length > 0) {
@@ -187,14 +194,14 @@ export const mwFinancialRouter = new Hono()
         await tx
           .update(mwSavings)
           .set({
-            savedStickers: sql`${mwSavings.savedStickers} + ${amount}`,
+            savedStickers: sql`${mwSavings.savedStickers} + ${bankedStickers}`,
             updatedAt: new Date(),
           })
           .where(and(eq(mwSavings.tenantId, tenantId), eq(mwSavings.memberId, memberId)));
       } else {
         await tx
           .update(mwSavings)
-          .set({ savedCash: sql`${mwSavings.savedCash} + ${amount}`, updatedAt: new Date() })
+          .set({ savedCash: sql`${mwSavings.savedCash} + ${bankedCash}`, updatedAt: new Date() })
           .where(and(eq(mwSavings.tenantId, tenantId), eq(mwSavings.memberId, memberId)));
       }
       await tx.insert(mwWeekActions).values({
@@ -202,8 +209,8 @@ export const mwFinancialRouter = new Hono()
         memberId,
         weekId: week.id,
         actionType: 'save',
-        stickersUsed: stickersNeeded,
-        cashAmount: type === 'cash' ? String(amount) : null,
+        stickersUsed: covered,
+        cashAmount: type === 'cash' ? String(bankedCash) : null,
       });
       return { ok: true as const, transactionId: txnRow!.id };
     });
@@ -248,14 +255,19 @@ export const mwFinancialRouter = new Hono()
       const cashDeducted = Math.min(remaining, s.savedCash);
       remaining -= cashDeducted;
       let stickersDeducted = 0;
+      let refundCash = 0;
       if (remaining > 0 && s.savedStickers > 0) {
+        // Stickers come in 0.5 units; if the remainder isn't a whole
+        // multiple, the rounded-up sticker over-delivers — refund that
+        // surplus back to saved cash so no value is destroyed.
         stickersDeducted = Math.min(Math.ceil(remaining / STICKER_TO_CASH), s.savedStickers);
+        refundCash = stickersDeducted * STICKER_TO_CASH - remaining;
         remaining = 0;
       }
       await tx
         .update(mwSavings)
         .set({
-          savedCash: sql`${mwSavings.savedCash} - ${cashDeducted}`,
+          savedCash: sql`${mwSavings.savedCash} - ${cashDeducted} + ${refundCash}`,
           savedStickers: sql`${mwSavings.savedStickers} - ${stickersDeducted}`,
           updatedAt: new Date(),
         })
