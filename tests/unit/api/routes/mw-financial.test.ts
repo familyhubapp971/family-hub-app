@@ -177,3 +177,27 @@ describe('FHS-296 — POST /api/mw/financial/investments/:id/withdraw guards', (
     expect(res.status).toBe(403);
   });
 });
+
+// FIX 1 — invest in another child's habit returns 404
+describe('FHS-296 — FIX 1: habit must belong to the requesting member', () => {
+  it('404 when the habit exists in the tenant but belongs to a different child', async () => {
+    // Queue: [callerRow], [memberExistsRow], habit lookup returns [] (not found for this member)
+    const res = await buildApp({
+      memberChecks: [
+        [{ id: 'admin-member-id', role: 'admin' }], // loadCaller
+        [{ id: MEMBER_ID }], // memberInTenant
+        [], // habit lookup scoped to memberId → empty
+      ],
+    }).request(
+      '/api/mw/financial/investments',
+      json({
+        memberId: MEMBER_ID,
+        habitId: '22222222-2222-4222-8222-222222222222',
+        stickerCount: 10,
+      }),
+    );
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.detail).toMatch(/member/);
+  });
+});

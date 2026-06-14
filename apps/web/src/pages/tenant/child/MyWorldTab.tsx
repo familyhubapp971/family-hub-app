@@ -93,8 +93,10 @@ interface Reward {
 interface Investment {
   id: string;
   habitId: string;
-  habitName: string;
-  habitIcon: string;
+  // Nullable: the habit can be deleted while an investment is still active,
+  // in which case the GET's LEFT JOIN returns null for these.
+  habitName: string | null;
+  habitIcon: string | null;
   investedStickers: number;
   originalInvestedStickers: number;
   currentValue: number;
@@ -207,8 +209,8 @@ const colorOptions = [
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function mapIconStringToElement(iconStr: string): React.ReactElement {
-  return ICON_MAP[iconStr?.toLowerCase()] ?? <Star className="w-6 h-6" />;
+function mapIconStringToElement(iconStr: string | null | undefined): React.ReactElement {
+  return ICON_MAP[iconStr?.toLowerCase() ?? ''] ?? <Star className="w-6 h-6" />;
 }
 
 function computeWeekLabel(startDate: string): string {
@@ -1855,7 +1857,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                       Withdraw Investment
                     </h2>
                     <p className="text-purple-200 text-xs font-bold mt-0.5">
-                      {withdrawInvestment.habitName}
+                      {withdrawInvestment.habitName ?? 'Habit'}
                     </p>
                   </div>
                 </div>
@@ -2651,7 +2653,9 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                         {mapIconStringToElement(inv.habitIcon)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-black text-gray-900 text-sm truncate">{inv.habitName}</p>
+                        <p className="font-black text-gray-900 text-sm truncate">
+                          {inv.habitName ?? 'Habit'}
+                        </p>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="text-xs font-bold text-amber-700">
                             {inv.investedStickers}→{inv.currentValueStickers} ⭐

@@ -244,9 +244,12 @@ export const mwFinancialRouter = new Hono()
   // by savings/cashout above. Create + withdraw run inside an advisory-locked
   // transaction so concurrent requests can't double-spend stickers.
 
-  // GET active investments. For each one, recalculates value in-place
-  // (completed days from habit_stickers, missed days from elapsed time),
-  // persists the fresh values, and returns them in the response.
+  // GET active investments. For each one, recalculates value on the fly
+  // (completed days from habit_stickers, missed days from elapsed time) and
+  // returns it. This is a read-only path — it does NOT persist the recomputed
+  // values, so it can't race a concurrent withdraw and clobber its principal
+  // update. The authoritative state is owned by the create/withdraw paths,
+  // and value is always derived, never trusted from the stored cache.
   .get('/investments', async (c) => {
     const parsed = memberQuerySchema.safeParse({ memberId: c.req.query('memberId') });
     if (!parsed.success) {
@@ -308,7 +311,8 @@ export const mwFinancialRouter = new Hono()
               eq(habitStickers.weekId, inv.weekId),
             ),
           );
-        const completedDays = completedRow?.n ?? 0;
+        // FIX 6: cap to elapsed so future-day stickers don't inflate gains early.
+        const completedDays = Math.min(completedRow?.n ?? 0, elapsed);
 
         // Stickers placed only on days that have already fully passed.
         const [pastRow] = await db
@@ -331,16 +335,6 @@ export const mwFinancialRouter = new Hono()
           completedDays,
           missedDays,
         });
-
-        // Persist the fresh values back so the DB stays in sync.
-        await db
-          .update(mwInvestments)
-          .set({
-            currentValue: String(currentValueCash),
-            daysCompleted: completedDays,
-            daysMissed: missedDays,
-          })
-          .where(eq(mwInvestments.id, inv.id));
 
         return {
           id: inv.id,
@@ -390,40 +384,19 @@ export const mwFinancialRouter = new Hono()
     if ('res' in g) return g.res;
     const { db, tenantId } = g;
 
-    // Verify the habit exists in this tenant.
+    // Verify the habit exists in this tenant AND belongs to this member.
+    // (FIX 1: scope to memberId so child A cannot invest in child B's habit)
     const habitRows = await db
       .select({ id: habits.id, name: habits.name })
       .from(habits)
-      .where(and(eq(habits.tenantId, tenantId), eq(habits.id, habitId)))
-      .limit(1);
-    if (!habitRows[0]) {
-      return c.json({ error: 'not found', detail: 'habit not found in this tenant' }, 404);
-    }
-    const habitName = habitRows[0].name;
-
-    // Reject if an active investment already exists for this habit.
-    const existingRows = await db
-      .select({ id: mwInvestments.id })
-      .from(mwInvestments)
       .where(
-        and(
-          eq(mwInvestments.tenantId, tenantId),
-          eq(mwInvestments.memberId, memberId),
-          eq(mwInvestments.habitId, habitId),
-          eq(mwInvestments.isActive, true),
-        ),
+        and(eq(habits.tenantId, tenantId), eq(habits.memberId, memberId), eq(habits.id, habitId)),
       )
       .limit(1);
-    if (existingRows[0]) {
-      return c.json(
-        {
-          error: 'conflict',
-          errorCode: 'ACTIVE_INVESTMENT_EXISTS',
-          detail: 'an active investment for this habit already exists',
-        },
-        409,
-      );
+    if (!habitRows[0]) {
+      return c.json({ error: 'not found', detail: 'habit not found for this member' }, 404);
     }
+    const habitName = habitRows[0].name;
 
     const week = await getOrCreateCurrentWeek(db, tenantId, memberId);
 
@@ -431,6 +404,27 @@ export const mwFinancialRouter = new Hono()
       await tx.execute(
         sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${tenantId}:${memberId}`}, 0))`,
       );
+
+      // FIX 3: duplicate-active check moved inside the advisory-locked tx so
+      // two concurrent requests on the same habit both see the same state.
+      const existingRows = await tx
+        .select({ id: mwInvestments.id })
+        .from(mwInvestments)
+        .where(
+          and(
+            eq(mwInvestments.tenantId, tenantId),
+            eq(mwInvestments.memberId, memberId),
+            eq(mwInvestments.habitId, habitId),
+            eq(mwInvestments.isActive, true),
+          ),
+        )
+        .limit(1);
+      if (existingRows[0]) {
+        return {
+          ok: false as const,
+          conflict: true as const,
+        };
+      }
 
       const s = await getOrCreateSavings(tx, tenantId, memberId);
 
@@ -451,7 +445,7 @@ export const mwFinancialRouter = new Hono()
       const available = weekValue + s.savedStickers + cashAsStickers(s.savedCash);
 
       if (stickerCount > available) {
-        return { ok: false as const, available };
+        return { ok: false as const, conflict: false as const, available };
       }
 
       // Allocate savings-first: savedStickers → savedCash → week stickers.
@@ -536,6 +530,16 @@ export const mwFinancialRouter = new Hono()
     });
 
     if (!outcome.ok) {
+      if (outcome.conflict) {
+        return c.json(
+          {
+            error: 'conflict',
+            errorCode: 'ACTIVE_INVESTMENT_EXISTS',
+            detail: 'an active investment for this habit already exists',
+          },
+          409,
+        );
+      }
       return c.json(
         {
           error: 'not enough stickers',
@@ -571,93 +575,94 @@ export const mwFinancialRouter = new Hono()
     const g = await guard(c, memberId);
     if ('res' in g) return g.res;
     const { db, tenantId } = g;
-
-    // Verify the investment exists, is active, and belongs to this member.
-    const invRows = await db
-      .select()
-      .from(mwInvestments)
-      .where(
-        and(
-          eq(mwInvestments.tenantId, tenantId),
-          eq(mwInvestments.memberId, memberId),
-          eq(mwInvestments.id, investmentId),
-          eq(mwInvestments.isActive, true),
-        ),
-      )
-      .limit(1);
-    if (!invRows[0]) {
-      return c.json({ error: 'not found', detail: 'investment not found or not active' }, 404);
-    }
-    const inv = invRows[0];
-
-    // Load the habit name for the week action.
-    const habitRows = await db
-      .select({ name: habits.name })
-      .from(habits)
-      .where(eq(habits.id, inv.habitId))
-      .limit(1);
-    const habitName = habitRows[0]?.name ?? null;
-
-    // Load week to compute current value (same recalc logic as GET).
-    const weekRows = await db
-      .select({ isFinalized: mwWeeks.isFinalized, startDate: mwWeeks.startDate })
-      .from(mwWeeks)
-      .where(eq(mwWeeks.id, inv.weekId))
-      .limit(1);
-    const week = weekRows[0];
     const now = new Date();
-    const elapsed = week
-      ? elapsedDaysForWeek({ isFinalized: week.isFinalized, startDate: week.startDate }, now)
-      : 0;
 
-    const [completedRow] = await db
-      .select({ n: count() })
-      .from(habitStickers)
-      .where(
-        and(
-          eq(habitStickers.tenantId, tenantId),
-          eq(habitStickers.memberId, memberId),
-          eq(habitStickers.habitId, inv.habitId),
-          eq(habitStickers.weekId, inv.weekId),
-        ),
-      );
-    const completedDays = completedRow?.n ?? 0;
-
-    const [pastRow] = await db
-      .select({ n: count() })
-      .from(habitStickers)
-      .where(
-        and(
-          eq(habitStickers.tenantId, tenantId),
-          eq(habitStickers.memberId, memberId),
-          eq(habitStickers.habitId, inv.habitId),
-          eq(habitStickers.weekId, inv.weekId),
-          lt(habitStickers.day, elapsed),
-        ),
-      );
-    const stickersOnPastDays = pastRow?.n ?? 0;
-    const missedDays = Math.max(0, elapsed - stickersOnPastDays);
-
-    const { currentValueStickers } = investmentValue({
-      investedStickers: inv.investedStickers,
-      completedDays,
-      missedDays,
-    });
-
-    const total = currentValueStickers;
-    if (requestedStickers !== undefined && requestedStickers > total) {
-      return c.json(
-        { error: 'cannot withdraw more stickers than available', available: total },
-        400,
-      );
-    }
-    const toWithdraw = requestedStickers ?? total;
-    const isPartial = toWithdraw < total;
-
+    // Everything that decides the payout — re-reading the investment, recomputing
+    // its current value, and the limit check — happens INSIDE the advisory lock.
+    // If the value + limit check ran before the lock (as they used to), two
+    // concurrent withdraws could both pass against a stale, higher value and
+    // double-spend. Re-reading the row with isActive=true inside the lock also
+    // makes a second (already-resolved) withdraw 404 instead of paying out twice.
     const outcome = await db.transaction(async (tx) => {
       await tx.execute(
         sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${tenantId}:${memberId}`}, 0))`,
       );
+
+      const invRows = await tx
+        .select()
+        .from(mwInvestments)
+        .where(
+          and(
+            eq(mwInvestments.tenantId, tenantId),
+            eq(mwInvestments.memberId, memberId),
+            eq(mwInvestments.id, investmentId),
+            eq(mwInvestments.isActive, true),
+          ),
+        )
+        .limit(1);
+      if (!invRows[0]) return { ok: false as const, notFound: true as const };
+      const inv = invRows[0];
+
+      // Habit name for the week-action label.
+      const habitRows = await tx
+        .select({ name: habits.name })
+        .from(habits)
+        .where(eq(habits.id, inv.habitId))
+        .limit(1);
+      const habitName = habitRows[0]?.name ?? null;
+
+      // Recompute current value from week elapsed + placed stickers.
+      const weekRows = await tx
+        .select({ isFinalized: mwWeeks.isFinalized, startDate: mwWeeks.startDate })
+        .from(mwWeeks)
+        .where(eq(mwWeeks.id, inv.weekId))
+        .limit(1);
+      const week = weekRows[0];
+      const elapsed = week
+        ? elapsedDaysForWeek({ isFinalized: week.isFinalized, startDate: week.startDate }, now)
+        : 0;
+
+      const [completedRow] = await tx
+        .select({ n: count() })
+        .from(habitStickers)
+        .where(
+          and(
+            eq(habitStickers.tenantId, tenantId),
+            eq(habitStickers.memberId, memberId),
+            eq(habitStickers.habitId, inv.habitId),
+            eq(habitStickers.weekId, inv.weekId),
+          ),
+        );
+      // Cap to elapsed so future-day stickers don't pre-inflate value.
+      const completedDays = Math.min(completedRow?.n ?? 0, elapsed);
+
+      const [pastRow] = await tx
+        .select({ n: count() })
+        .from(habitStickers)
+        .where(
+          and(
+            eq(habitStickers.tenantId, tenantId),
+            eq(habitStickers.memberId, memberId),
+            eq(habitStickers.habitId, inv.habitId),
+            eq(habitStickers.weekId, inv.weekId),
+            lt(habitStickers.day, elapsed),
+          ),
+        );
+      const stickersOnPastDays = pastRow?.n ?? 0;
+      const missedDays = Math.max(0, elapsed - stickersOnPastDays);
+
+      const { currentValueStickers } = investmentValue({
+        investedStickers: inv.investedStickers,
+        completedDays,
+        missedDays,
+      });
+
+      const total = currentValueStickers;
+      if (requestedStickers !== undefined && requestedStickers > total) {
+        return { ok: false as const, overLimit: true as const, available: total };
+      }
+      const toWithdraw = requestedStickers ?? total;
+      const isPartial = toWithdraw < total;
 
       // Credit savedStickers.
       await tx
@@ -669,14 +674,26 @@ export const mwFinancialRouter = new Hono()
         .where(and(eq(mwSavings.tenantId, tenantId), eq(mwSavings.memberId, memberId)));
 
       if (isPartial) {
-        const remaining = total - toWithdraw;
+        // Reduce the PRINCIPAL by the withdrawn amount. Current value is
+        // re-derived as max(0, principal + completed*5 - missed*2) on every
+        // read, so when growth pushed value above the original stake the
+        // principal can legitimately go negative — that keeps the formula equal
+        // to the true remaining value. Do NOT clamp it to 0: that would re-add
+        // the withdrawn growth for free on the next recalc.
+        const newPrincipal = inv.investedStickers - toWithdraw;
         await tx
           .update(mwInvestments)
           .set({
-            investedStickers: remaining,
-            currentValue: String(remaining * STICKER_TO_CASH),
+            investedStickers: newPrincipal,
+            currentValue: String((currentValueStickers - toWithdraw) * STICKER_TO_CASH),
           })
-          .where(eq(mwInvestments.id, investmentId));
+          .where(
+            and(
+              eq(mwInvestments.id, investmentId),
+              eq(mwInvestments.tenantId, tenantId),
+              eq(mwInvestments.memberId, memberId),
+            ),
+          );
       } else {
         await tx
           .update(mwInvestments)
@@ -685,7 +702,13 @@ export const mwFinancialRouter = new Hono()
             isResolved: true,
             finalReturn: String(toWithdraw * STICKER_TO_CASH),
           })
-          .where(eq(mwInvestments.id, investmentId));
+          .where(
+            and(
+              eq(mwInvestments.id, investmentId),
+              eq(mwInvestments.tenantId, tenantId),
+              eq(mwInvestments.memberId, memberId),
+            ),
+          );
       }
 
       const currentWeek = await getOrCreateCurrentWeek(tx, tenantId, memberId, now);
@@ -700,17 +723,23 @@ export const mwFinancialRouter = new Hono()
         cashAmount: String(toWithdraw * STICKER_TO_CASH),
       });
 
-      return { ok: true as const };
+      return { ok: true as const, toWithdraw, remaining: total - toWithdraw };
     });
 
     if (!outcome.ok) {
-      return c.json({ error: 'withdraw transaction failed' }, 500);
+      if (outcome.notFound) {
+        return c.json({ error: 'not found', detail: 'investment not found or not active' }, 404);
+      }
+      return c.json(
+        { error: 'cannot withdraw more stickers than available', available: outcome.available },
+        400,
+      );
     }
 
     return c.json({
       success: true,
-      withdrawnStickers: toWithdraw,
-      remainingStickers: total - toWithdraw,
+      withdrawnStickers: outcome.toWithdraw,
+      remainingStickers: outcome.remaining,
     });
   })
 
