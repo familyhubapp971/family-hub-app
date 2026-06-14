@@ -627,6 +627,9 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
             : h,
         ),
       );
+      // The investment card shows the habit name live (server JOIN), so refresh
+      // the investments list after a rename or its card keeps the old name.
+      void fetchInvestments();
     } catch (err) {
       console.error('Failed to update habit:', err);
     }
@@ -674,6 +677,10 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
         body: JSON.stringify({ memberId, weekId: week.weekId, day: dayIndex, sticker: stickerId }),
       });
       if (!res.ok) throw new Error(`sticker POST failed: ${res.status}`);
+      // Refresh the dependent cards immediately: Bankable This Week (week
+      // stats) and Active Investments (value tracks completed/missed days).
+      void fetchWeekStats(week.weekId);
+      void fetchInvestments();
     } catch (err) {
       console.error('Failed to place sticker:', err);
       // Revert to the prior value (old sticker or empty).
@@ -715,6 +722,9 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
         body: JSON.stringify({ memberId, weekId: week.weekId, day: dayIndex }),
       });
       if (!res.ok) throw new Error(`sticker DELETE failed: ${res.status}`);
+      // Refresh the dependent cards immediately (Bankable + Active Investments).
+      void fetchWeekStats(week.weekId);
+      void fetchInvestments();
     } catch (err) {
       console.error('Failed to clear sticker:', err);
       // Revert (restore the prior sticker; a non-string/false prior means
