@@ -256,6 +256,14 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
       day: 0,
       sticker: 'gold-star',
     });
+    // Placing a sticker must refresh the dependent cards: investments are
+    // re-fetched (once on mount + once after the change).
+    await waitFor(() => {
+      const invCalls = fetchMock.mock.calls.filter(([u]) =>
+        String(u).includes('/api/mw/financial/investments'),
+      ).length;
+      expect(invCalls).toBeGreaterThanOrEqual(2);
+    });
   });
 
   it('adds a habit via the add dialog', async () => {

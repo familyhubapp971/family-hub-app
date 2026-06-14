@@ -25,6 +25,17 @@ interface CalEvent {
 
 type Status = 'loading' | 'ready' | 'error';
 
+// Current week's Monday as YYYY-MM-DD. GET /api/events requires a weekStart.
+function mondayOf(d: Date): string {
+  const copy = new Date(d);
+  const offset = (copy.getDay() + 6) % 7; // 0 = Monday
+  copy.setDate(copy.getDate() - offset);
+  const y = copy.getFullYear();
+  const m = String(copy.getMonth() + 1).padStart(2, '0');
+  const day = String(copy.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // Rotating pastel header band per day column.
 const DAY_TINT = [
   'bg-yellow-300',
@@ -56,17 +67,23 @@ export function CalendarTab({ memberId }: { memberId: string }) {
   const [status, setStatus] = useState<Status>('loading');
   const [events, setEvents] = useState<CalEvent[]>([]);
 
+  // Key on the token string so a Supabase refocus event (new session object,
+  // same token) doesn't re-run the load.
+  const accessToken = session?.access_token ?? null;
   const headers = useMemo(
-    () =>
-      session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
-    [session, slug],
+    () => (accessToken ? { Authorization: `Bearer ${accessToken}`, 'x-tenant-slug': slug } : null),
+    [accessToken, slug],
   );
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
       if (!headers) return;
       try {
-        const res = await fetch(`${API_BASE}/api/events`, { headers, signal: signal ?? null });
+        const weekStart = mondayOf(new Date());
+        const res = await fetch(`${API_BASE}/api/events?weekStart=${weekStart}`, {
+          headers,
+          signal: signal ?? null,
+        });
         if (!res.ok) {
           setStatus('error');
           return;

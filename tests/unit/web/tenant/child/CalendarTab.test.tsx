@@ -80,6 +80,10 @@ describe('<CalendarTab />', () => {
     expect(screen.getByTestId('cal-event-e1')).toBeInTheDocument();
     expect(screen.getByTestId('cal-event-e2')).toBeInTheDocument();
     expect(screen.queryByTestId('cal-event-e3')).not.toBeInTheDocument();
+    // GET /api/events requires a weekStart — without it the API 400s and the
+    // calendar shows the error state (regression: the tab used to omit it).
+    const url = String(fetchMock.mock.calls[0]?.[0] ?? '');
+    expect(url).toMatch(/\/api\/events\?weekStart=\d{4}-\d{2}-\d{2}/);
   });
 
   it('renders an error state on a failed load', async () => {
