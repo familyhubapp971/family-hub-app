@@ -42,6 +42,13 @@ Feature: ChildWorld habits + sticker economy (FHS-292)
     Then exactly one redeem succeeds and one is rejected
     And "Ali" has a sticker balance of 0 in tenant "khan"
 
+  Scenario: Two children share a habit but keep their own stickers
+    Given the "khan" tenant has a child member "Bilal"
+    And the caller places a sticker on "Brush teeth" day 0 for "Ali"
+    And the caller also places a sticker on "Brush teeth" day 0 for "Bilal"
+    Then "Ali" has a sticker balance of 1 in tenant "khan"
+    And "Bilal" has a sticker balance of 1 in tenant "khan"
+
   Scenario: Bonus habit earns 5 stickers per day
     Given the "khan" tenant has a bonus habit "Help out"
     When the caller places a sticker on "Help out" day 0 for "Ali"

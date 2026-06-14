@@ -210,6 +210,65 @@ describe('<MyWorldTab />', () => {
     await waitFor(() => expect(screen.getByTestId('sticker-balance').textContent).toContain('0'));
   });
 
+  it('reverts the cell + balance when the sticker POST fails', async () => {
+    const state = installApi({ balance: 0 });
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (init?.method === 'POST' && u.includes('/stickers')) {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+      }
+      if (u.includes('/api/rewards')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ rewards: state.rewards, stickerBalance: state.balance }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          habits: state.habits,
+          stickers: state.stickers,
+          week: {
+            id: WEEK,
+            weekNumber: 9,
+            year: 2026,
+            startDate: '2026-02-23',
+            isFinalized: false,
+          },
+          balance: state.balance,
+        }),
+      });
+    });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId(`habit-cell-${HABIT}-0`)).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId(`habit-cell-${HABIT}-0`));
+    });
+    // Reverts: cell un-pressed + balance back to 0.
+    await waitFor(() =>
+      expect(screen.getByTestId(`habit-cell-${HABIT}-0`).getAttribute('aria-pressed')).toBe(
+        'false',
+      ),
+    );
+    expect(screen.getByTestId('sticker-balance').textContent).toContain('0');
+  });
+
+  it('guards against a double-tap on the same cell (one POST)', async () => {
+    installApi({ balance: 0 });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId(`habit-cell-${HABIT}-0`)).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId(`habit-cell-${HABIT}-0`));
+      fireEvent.click(screen.getByTestId(`habit-cell-${HABIT}-0`));
+    });
+    const posts = fetchMock.mock.calls.filter(
+      ([u, i]) => i?.method === 'POST' && String(u).includes('/stickers'),
+    );
+    expect(posts).toHaveLength(1);
+  });
+
   it('disables Buy when the balance is below the reward cost', async () => {
     installApi({ balance: 1 }); // reward costs 2
     renderTab();

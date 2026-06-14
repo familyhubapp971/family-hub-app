@@ -81,7 +81,9 @@ export async function getOrCreateCurrentWeek(
       ),
     )
     .limit(1);
-  return reread[0]!;
+  if (!reread[0])
+    throw new Error('mw_weeks get-or-create: re-read after conflict returned nothing');
+  return reread[0];
 }
 
 /**

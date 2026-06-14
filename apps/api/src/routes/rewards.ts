@@ -4,15 +4,16 @@ import { and, asc, eq, isNull, sql, sum } from 'drizzle-orm';
 import { getDb } from '../db/client.js';
 import { rewards, rewardRedemptions, habitStickers, members } from '../db/schema.js';
 import { getAuthenticatedUser } from '../middleware/auth.js';
+import { stickerBalance } from '../lib/myworld.js';
 
-// FHS-268 — GET /api/rewards, POST /api/rewards/:id/redeem.
+// FHS-268 / FHS-292 — GET /api/rewards, POST /api/rewards/:id/redeem.
 //
 // The kid Rewards Shop. GET returns the family's (non-archived) rewards
 // plus the chosen member's sticker balance; POST spends stickers on a
 // reward and records the redemption. Balance =
-//   count(habit_logs for member) − sum(reward_redemptions.sticker_cost).
-// Accessed by a parent viewing a child's world (standard parent auth);
-// memberId is passed explicitly and validated against the tenant.
+//   sum(habit_stickers.sticker_value) − sum(reward_redemptions.sticker_cost),
+// shared with the habits route via lib/myworld.ts. Accessed by a parent
+// viewing a child's world; memberId is validated against the tenant.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -61,29 +62,6 @@ async function memberInTenant(
     .where(and(eq(members.tenantId, tenantId), eq(members.id, memberId)))
     .limit(1);
   return rows.length > 0;
-}
-
-// Sticker balance (FHS-292): stickers earned = sum of habit-sticker values
-// (5 for bonus habits, else 1); minus what's been spent on rewards.
-// Postgres SUM comes back as a string, so coerce.
-async function stickerBalance(
-  db: ReturnType<typeof getDb>,
-  tenantId: string,
-  memberId: string,
-): Promise<number> {
-  const [earnedRow, spentRow] = await Promise.all([
-    db
-      .select({ s: sum(habitStickers.stickerValue) })
-      .from(habitStickers)
-      .where(and(eq(habitStickers.tenantId, tenantId), eq(habitStickers.memberId, memberId))),
-    db
-      .select({ s: sum(rewardRedemptions.stickerCost) })
-      .from(rewardRedemptions)
-      .where(
-        and(eq(rewardRedemptions.tenantId, tenantId), eq(rewardRedemptions.memberId, memberId)),
-      ),
-  ]);
-  return Number(earnedRow[0]?.s ?? 0) - Number(spentRow[0]?.s ?? 0);
 }
 
 export const rewardsRouter = new Hono()

@@ -286,6 +286,7 @@ export const habitsRouter = new Hono()
       .onConflictDoUpdate({
         target: [
           habitStickers.tenantId,
+          habitStickers.memberId,
           habitStickers.habitId,
           habitStickers.weekId,
           habitStickers.day,
@@ -304,12 +305,13 @@ export const habitsRouter = new Hono()
     }
     const { db, tenantId, parsed } = await parseBody(c, ctx, removeStickerSchema);
     if ('res' in parsed) return parsed.res;
-    const { weekId, day } = parsed.data;
+    const { memberId, weekId, day } = parsed.data;
     await db
       .delete(habitStickers)
       .where(
         and(
           eq(habitStickers.tenantId, tenantId),
+          eq(habitStickers.memberId, memberId),
           eq(habitStickers.habitId, habitId),
           eq(habitStickers.weekId, weekId),
           eq(habitStickers.day, day),

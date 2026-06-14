@@ -198,7 +198,11 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           setEditingId(null);
           setDraft({ name: '', isBonus: false });
           await load();
+        } else {
+          setAnnounce("Couldn't save that habit — try again.");
         }
+      } catch {
+        setAnnounce('Network error — try again.');
       } finally {
         savingRef.current = false;
       }
@@ -207,14 +211,23 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   );
 
   const onDeleteHabit = useCallback(
-    async (id: string) => {
+    async (id: string, name: string) => {
       if (!headers) return;
-      const res = await fetch(`${API_BASE}/api/habits/${id}`, {
-        method: 'DELETE',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId }),
-      });
-      if (res.ok) await load();
+      // Destructive (stickers cascade) — confirm before deleting.
+      if (typeof window !== 'undefined' && !window.confirm(`Delete "${name}" and its stickers?`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/habits/${id}`, {
+          method: 'DELETE',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId }),
+        });
+        if (res.ok) await load();
+        else setAnnounce("Couldn't delete that habit — try again.");
+      } catch {
+        setAnnounce('Network error — try again.');
+      }
     },
     [headers, memberId, load],
   );
@@ -435,7 +448,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                         type="button"
                         data-testid={`habit-delete-${h.id}`}
                         aria-label={`Delete ${h.name}`}
-                        onClick={() => onDeleteHabit(h.id)}
+                        onClick={() => onDeleteHabit(h.id, h.name)}
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:text-red-600"
                       >
                         <X size={18} />

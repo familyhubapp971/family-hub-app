@@ -355,6 +355,39 @@ describeFeature(feature, ({ Background, Scenario }) => {
     },
   );
 
+  Scenario('Two children share a habit but keep their own stickers', ({ Given, And, Then }) => {
+    Given(
+      'the {string} tenant has a child member {string}',
+      async (_c, slug: string, name: string) => {
+        await seedChild(slug, name);
+      },
+    );
+    And(
+      'the caller places a sticker on {string} day {int} for {string}',
+      async (_c, h: string, day: number, m: string) => {
+        await placeSticker('khan', h, m, day);
+      },
+    );
+    And(
+      'the caller also places a sticker on {string} day {int} for {string}',
+      async (_c, h: string, day: number, m: string) => {
+        await placeSticker('khan', h, m, day);
+      },
+    );
+    Then(
+      '{string} has a sticker balance of {int} in tenant {string}',
+      async (_c, m: string, n: number) => {
+        expect(await getBalance('khan', m)).toBe(n);
+      },
+    );
+    And(
+      '{string} has a sticker balance of {int} in tenant {string}',
+      async (_c, m: string, n: number) => {
+        expect(await getBalance('khan', m)).toBe(n);
+      },
+    );
+  });
+
   Scenario('Bonus habit earns 5 stickers per day', ({ Given, When, Then, And }) => {
     let res: Response;
     Given(
