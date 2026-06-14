@@ -211,7 +211,13 @@ export const rewardsRouter = new Hono()
         await tx
           .update(habitStickers)
           .set({ isAllocated: true })
-          .where(inArray(habitStickers.id, toAllocate));
+          .where(
+            and(
+              eq(habitStickers.tenantId, tenantId),
+              eq(habitStickers.memberId, memberId),
+              inArray(habitStickers.id, toAllocate),
+            ),
+          );
       }
       if (fromSavedStickers > 0 || fromSavedCash > 0) {
         await tx
