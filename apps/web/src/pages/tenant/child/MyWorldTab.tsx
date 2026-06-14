@@ -1,28 +1,38 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Star } from 'lucide-react';
+import { Pencil, Star, X } from 'lucide-react';
 import { Button } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-268 — My World tab: weekly habit tracker + rewards shop.
+// FHS-292 — My World habit grid (typed stickers) + rewards shop.
 //
-// The habit tracker is a grid (rows = habits, columns = Mon-Sun). Each
-// tick writes a habit_log worth one sticker; the rewards shop spends that
-// balance. Toggles are optimistic with a revert on failure, and the
-// sticker balance moves locally (+1 / -1) so the shop reacts instantly.
+// Each habit day holds a sticker TYPE worth 5 (bonus habit) or 1 sticker.
+// Pick a sticker type, tap a day to place it (tap again to remove). The
+// shop spends the resulting balance. Habits can be added / edited /
+// deleted. Week navigation + savings/investments/close-week land in the
+// sibling FHS-293..298 stories.
 
 interface Habit {
   id: string;
   name: string;
   description: string | null;
-  cadence: string;
-  targetCount: number;
   color: string;
+  icon: string | null;
+  isBonus: boolean;
 }
-interface HabitLog {
+interface StickerRow {
   habitId: string;
-  logDate: string;
+  day: number; // 0 = Mon … 6 = Sun
+  sticker: string;
+  stickerValue: number;
+}
+interface WeekInfo {
+  id: string;
+  weekNumber: number;
+  year: number;
+  startDate: string;
+  isFinalized: boolean;
 }
 interface Reward {
   id: string;
@@ -32,28 +42,29 @@ interface Reward {
   icon: string | null;
 }
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const STICKERS: Array<{ id: string; label: string; emoji: string; bg: string }> = [
+  { id: 'gold-star', label: 'Gold Star', emoji: '⭐', bg: 'bg-yellow-300' },
+  { id: 'heart', label: 'Love Heart', emoji: '❤️', bg: 'bg-pink-300' },
+  { id: 'magic', label: 'Magic', emoji: '✨', bg: 'bg-fuchsia-300' },
+  { id: 'trophy', label: 'Trophy', emoji: '🏆', bg: 'bg-lime-300' },
+];
+const STICKER_EMOJI: Record<string, string> = Object.fromEntries(
+  STICKERS.map((s) => [s.id, s.emoji]),
+);
 
+function cellKey(habitId: string, day: number): string {
+  return `${habitId}|${day}`;
+}
+
+// Re-exported for tests that build the week.
 export function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
-
-// Monday of the week containing `d` (UTC, Monday-anchored to match the
-// rest of the schema).
 export function mondayOfWeek(d: Date): Date {
-  const day = d.getUTCDay(); // 0=Sun..6=Sat
+  const day = d.getUTCDay();
   const shift = day === 0 ? -6 : 1 - day;
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + shift));
-}
-
-function addDaysIso(base: Date, days: number): string {
-  return isoDate(
-    new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate() + days)),
-  );
-}
-
-function key(habitId: string, dayIso: string): string {
-  return `${habitId}|${dayIso}`;
 }
 
 type Status = 'loading' | 'ready' | 'error';
@@ -63,16 +74,20 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const { session } = useAuth();
   const [status, setStatus] = useState<Status>('loading');
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [logged, setLogged] = useState<Set<string>>(new Set());
+  const [stickers, setStickers] = useState<Map<string, StickerRow>>(new Map());
+  const [week, setWeek] = useState<WeekInfo | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
-  const [balance, setBalance] = useState<number>(0);
+  const [balance, setBalance] = useState(0);
   const [announce, setAnnounce] = useState('');
-  const togglingRef = useRef<Set<string>>(new Set());
+  const [picked, setPicked] = useState('gold-star');
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState({ name: '', isBonus: false });
+  const stickersRef = useRef<Map<string, StickerRow>>(new Map());
+  const balanceRef = useRef(0);
+  const busyRef = useRef<Set<string>>(new Set());
   const redeemingRef = useRef<Set<string>>(new Set());
-  // Synchronous mirror of `logged` so a toggle reads the latest committed
-  // ticks without racing React's commit (two fast taps on different cells
-  // each compose correctly).
-  const loggedRef = useRef<Set<string>>(new Set());
+  const savingRef = useRef(false);
 
   const headers = useMemo(
     () =>
@@ -80,83 +95,141 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
     [session, slug],
   );
 
-  // The week is anchored to "today" — fixed for the component's lifetime
-  // so a render at midnight doesn't reshuffle columns mid-interaction.
-  const week = useMemo(() => {
-    const monday = mondayOfWeek(new Date());
-    const weekStart = isoDate(monday);
-    const days = DAY_LABELS.map((label, i) => ({ label, iso: addDaysIso(monday, i) }));
-    return { weekStart, days };
-  }, []);
-
   const load = useCallback(async () => {
     if (!headers) return;
     setStatus('loading');
     try {
       const [hRes, rRes] = await Promise.all([
-        fetch(`${API_BASE}/api/habits?memberId=${memberId}&weekStart=${week.weekStart}`, {
-          headers,
-        }),
+        fetch(`${API_BASE}/api/habits?memberId=${memberId}`, { headers }),
         fetch(`${API_BASE}/api/rewards?memberId=${memberId}`, { headers }),
       ]);
       if (!hRes.ok || !rRes.ok) {
         setStatus('error');
         return;
       }
-      const hBody = (await hRes.json()) as { habits: Habit[]; logs: HabitLog[] };
+      const hBody = (await hRes.json()) as {
+        habits: Habit[];
+        stickers: StickerRow[];
+        week: WeekInfo;
+        balance: number;
+      };
       const rBody = (await rRes.json()) as { rewards: Reward[]; stickerBalance: number };
-      const loggedSet = new Set((hBody.logs ?? []).map((l) => key(l.habitId, l.logDate)));
-      loggedRef.current = loggedSet;
+      const map = new Map<string, StickerRow>();
+      for (const s of hBody.stickers ?? []) map.set(cellKey(s.habitId, s.day), s);
+      stickersRef.current = map;
+      balanceRef.current = hBody.balance ?? 0;
       setHabits(hBody.habits ?? []);
-      setLogged(loggedSet);
+      setStickers(map);
+      setWeek(hBody.week);
+      setBalance(hBody.balance ?? 0);
       setRewards(rBody.rewards ?? []);
-      setBalance(rBody.stickerBalance ?? 0);
       setStatus('ready');
     } catch {
       setStatus('error');
     }
-  }, [headers, memberId, week.weekStart]);
+  }, [headers, memberId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const onToggle = useCallback(
-    async (habitId: string, dayIso: string) => {
-      if (!headers) return;
-      const k = key(habitId, dayIso);
-      if (togglingRef.current.has(k)) return;
-      togglingRef.current.add(k);
-      // Read + write the synchronous ref so the prior state is correct
-      // even when the network resolves before React commits.
-      const nextDone = !loggedRef.current.has(k);
-      const optimistic = new Set(loggedRef.current);
-      if (nextDone) optimistic.add(k);
-      else optimistic.delete(k);
-      loggedRef.current = optimistic;
-      setLogged(optimistic);
-      setBalance((b) => b + (nextDone ? 1 : -1));
+  const onCell = useCallback(
+    async (habit: Habit, day: number) => {
+      if (!headers || !week) return;
+      const k = cellKey(habit.id, day);
+      if (busyRef.current.has(k)) return;
+      busyRef.current.add(k);
+      const existing = stickersRef.current.get(k);
+      const value = habit.isBonus ? 5 : 1;
+      const next = new Map(stickersRef.current);
+      if (existing) next.delete(k);
+      else next.set(k, { habitId: habit.id, day, sticker: picked, stickerValue: value });
+      stickersRef.current = next;
+      setStickers(next);
+      const delta = existing ? -existing.stickerValue : value;
+      balanceRef.current += delta;
+      setBalance(balanceRef.current);
       try {
-        const res = await fetch(`${API_BASE}/api/habits/${habitId}/log`, {
-          method: 'PATCH',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ memberId, date: dayIso, done: nextDone }),
-        });
+        const res = existing
+          ? await fetch(`${API_BASE}/api/habits/${habit.id}/stickers`, {
+              method: 'DELETE',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ memberId, weekId: week.id, day }),
+            })
+          : await fetch(`${API_BASE}/api/habits/${habit.id}/stickers`, {
+              method: 'POST',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ memberId, weekId: week.id, day, sticker: picked }),
+            });
         if (!res.ok) throw new Error(`status ${res.status}`);
       } catch {
-        // Revert both the tick and the balance.
-        const reverted = new Set(loggedRef.current);
-        if (nextDone) reverted.delete(k);
-        else reverted.add(k);
-        loggedRef.current = reverted;
-        setLogged(reverted);
-        setBalance((b) => b + (nextDone ? -1 : 1));
+        // Revert.
+        const reverted = new Map(stickersRef.current);
+        if (existing) reverted.set(k, existing);
+        else reverted.delete(k);
+        stickersRef.current = reverted;
+        setStickers(reverted);
+        balanceRef.current -= delta;
+        setBalance(balanceRef.current);
         setAnnounce("Couldn't save that — try again.");
       } finally {
-        togglingRef.current.delete(k);
+        busyRef.current.delete(k);
       }
     },
-    [headers, memberId],
+    [headers, week, picked, memberId],
+  );
+
+  const onAddSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (!headers || savingRef.current) return;
+      const name = draft.name.trim();
+      if (!name) return;
+      savingRef.current = true;
+      try {
+        const url = editingId ? `${API_BASE}/api/habits/${editingId}` : `${API_BASE}/api/habits`;
+        const res = await fetch(url, {
+          method: editingId ? 'PUT' : 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId, name, isBonus: draft.isBonus }),
+        });
+        if (res.ok) {
+          setAdding(false);
+          setEditingId(null);
+          setDraft({ name: '', isBonus: false });
+          await load();
+        } else {
+          setAnnounce("Couldn't save that habit — try again.");
+        }
+      } catch {
+        setAnnounce('Network error — try again.');
+      } finally {
+        savingRef.current = false;
+      }
+    },
+    [headers, draft, editingId, memberId, load],
+  );
+
+  const onDeleteHabit = useCallback(
+    async (id: string, name: string) => {
+      if (!headers) return;
+      // Destructive (stickers cascade) — confirm before deleting.
+      if (typeof window !== 'undefined' && !window.confirm(`Delete "${name}" and its stickers?`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/habits/${id}`, {
+          method: 'DELETE',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId }),
+        });
+        if (res.ok) await load();
+        else setAnnounce("Couldn't delete that habit — try again.");
+      } catch {
+        setAnnounce('Network error — try again.');
+      }
+    },
+    [headers, memberId, load],
   );
 
   const onRedeem = useCallback(
@@ -177,6 +250,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           return;
         }
         const body = (await res.json()) as { stickerBalance: number };
+        balanceRef.current = body.stickerBalance;
         setBalance(body.stickerBalance);
         setAnnounce(`You got ${reward.name}! 🎉`);
       } catch {
@@ -208,12 +282,8 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
     );
   }
 
-  // This week's completion, for the habit progress bars + summary banner.
-  const totalPossible = habits.length * week.days.length;
-  const doneThisWeek = habits.reduce(
-    (sum, h) => sum + week.days.filter((d) => logged.has(key(h.id, d.iso))).length,
-    0,
-  );
+  const totalPossible = habits.length * 7;
+  const doneThisWeek = stickers.size;
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-12" data-testid="my-world">
@@ -234,7 +304,6 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           My Habits
         </h2>
 
-        {/* Weekly summary banner */}
         <div
           data-testid="habits-summary"
           className="flex items-center justify-between rounded-xl border-2 border-black bg-[#6b21a8] p-4 shadow-neo-sm"
@@ -242,9 +311,9 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           <div className="flex items-center gap-3">
             <span
               aria-hidden="true"
-              className="grid h-10 w-10 place-items-center rounded-lg border-2 border-black bg-pink-400 text-black"
+              className="grid h-10 w-10 place-items-center rounded-lg border-2 border-black bg-pink-400 text-xl"
             >
-              <Check size={20} strokeWidth={3} />
+              ⭐
             </span>
             <span className="font-heading text-sm uppercase tracking-wide text-white">
               Weekly Habits
@@ -258,18 +327,45 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           </div>
         </div>
 
+        {/* Sticker picker */}
+        <div
+          data-testid="sticker-picker"
+          role="group"
+          aria-label="Choose a sticker"
+          className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-black bg-white p-3 shadow-neo-sm"
+        >
+          <span className="mr-1 text-xs font-bold uppercase tracking-wider text-gray-500">
+            Sticker
+          </span>
+          {STICKERS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              data-testid={`sticker-pick-${s.id}`}
+              aria-pressed={picked === s.id}
+              aria-label={s.label}
+              onClick={() => setPicked(s.id)}
+              className={`flex h-10 min-w-[44px] items-center justify-center gap-1 rounded-lg border-2 px-2 text-lg ${
+                picked === s.id ? `border-black ${s.bg} shadow-neo-xs` : 'border-gray-300 bg-white'
+              }`}
+            >
+              {s.emoji}
+            </button>
+          ))}
+        </div>
+
         {habits.length === 0 ? (
           <p
             data-testid="habits-empty"
             className="rounded-xl border-2 border-black bg-white py-6 text-center text-sm font-bold text-gray-500 shadow-neo-sm"
           >
-            No habits yet — a grown-up can add some.
+            No habits yet — add the first one.
           </p>
         ) : (
           <ul className="space-y-3">
             {habits.map((h) => {
-              const habitDone = week.days.filter((d) => logged.has(key(h.id, d.iso))).length;
-              const pct = Math.round((habitDone / week.days.length) * 100);
+              const habitDone = DAY_LABELS.filter((_, i) => stickers.has(cellKey(h.id, i))).length;
+              const pct = Math.round((habitDone / 7) * 100);
               return (
                 <li
                   key={h.id}
@@ -283,52 +379,148 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                         className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border-2 border-black font-heading text-lg text-black"
                         style={{ backgroundColor: h.color }}
                       >
-                        {[...h.name.trim()][0]?.toUpperCase() ?? '★'}
+                        {h.icon ?? [...h.name.trim()][0]?.toUpperCase() ?? '★'}
                       </span>
                       <div className="min-w-0">
-                        <span
-                          data-testid={`habit-name-${h.id}`}
-                          className="block truncate font-heading text-base text-black"
-                        >
-                          {h.name}
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            data-testid={`habit-name-${h.id}`}
+                            className="truncate font-heading text-base text-black"
+                          >
+                            {h.name}
+                          </span>
+                          {h.isBonus && (
+                            <span className="rounded-full border border-black bg-amber-200 px-1.5 text-[10px] font-bold">
+                              5×
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            data-testid={`habit-edit-${h.id}`}
+                            aria-label={`Edit ${h.name}`}
+                            onClick={() => {
+                              setEditingId(h.id);
+                              setAdding(true);
+                              setDraft({ name: h.name, isBonus: h.isBonus });
+                            }}
+                            className="text-gray-400 hover:text-black"
+                          >
+                            <Pencil size={14} />
+                          </button>
                         </span>
-                        <div className="mt-1 h-2.5 w-40 max-w-full overflow-hidden rounded-full border-2 border-black bg-gray-100">
+                        <div
+                          data-testid={`habit-progress-${h.id}`}
+                          className="mt-1 h-2.5 w-40 max-w-full overflow-hidden rounded-full border-2 border-black bg-gray-100"
+                        >
                           <div className="h-full bg-green-400" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-1.5 sm:flex-nowrap sm:justify-end">
-                      {week.days.map((d, i) => {
-                        const isOn = logged.has(key(h.id, d.iso));
-                        return (
-                          <div key={d.iso} className="flex flex-col items-center gap-1">
-                            <span
-                              aria-hidden="true"
-                              className="text-[10px] font-bold text-gray-400"
-                            >
-                              {DAY_LABELS[i]![0]}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => onToggle(h.id, d.iso)}
-                              aria-pressed={isOn}
-                              aria-label={`${h.name} on ${d.label}: ${isOn ? 'done' : 'not done'}`}
-                              data-testid={`habit-cell-${h.id}-${d.iso}`}
-                              className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black motion-safe:transition-colors ${
-                                isOn ? 'bg-green-400' : 'bg-gray-50 hover:bg-yellow-100'
-                              }`}
-                            >
-                              {isOn && <Check size={16} strokeWidth={3} aria-hidden="true" />}
-                            </button>
-                          </div>
-                        );
-                      })}
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap gap-1.5 sm:flex-nowrap sm:justify-end">
+                        {DAY_LABELS.map((label, i) => {
+                          const placed = stickers.get(cellKey(h.id, i));
+                          return (
+                            <div key={i} className="flex flex-col items-center gap-1">
+                              <span
+                                aria-hidden="true"
+                                className="text-[10px] font-bold text-gray-400"
+                              >
+                                {label}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => onCell(h, i)}
+                                aria-pressed={!!placed}
+                                aria-label={`${h.name} day ${i + 1}: ${placed ? 'has a sticker' : 'empty'}`}
+                                data-testid={`habit-cell-${h.id}-${i}`}
+                                className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black text-lg motion-safe:transition-colors ${
+                                  placed ? 'bg-green-100' : 'bg-gray-50 hover:bg-yellow-100'
+                                }`}
+                              >
+                                {placed ? (STICKER_EMOJI[placed.sticker] ?? '⭐') : ''}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        data-testid={`habit-delete-${h.id}`}
+                        aria-label={`Delete ${h.name}`}
+                        onClick={() => onDeleteHabit(h.id, h.name)}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:text-red-600"
+                      >
+                        <X size={18} />
+                      </button>
                     </div>
                   </div>
                 </li>
               );
             })}
           </ul>
+        )}
+
+        {adding ? (
+          <form
+            onSubmit={onAddSubmit}
+            data-testid="habit-add-form"
+            className="flex flex-col gap-3 rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm sm:flex-row sm:items-end"
+          >
+            <label className="flex flex-1 flex-col gap-1 text-sm font-bold text-black">
+              {editingId ? 'Edit habit' : 'New habit'}
+              <input
+                type="text"
+                required
+                maxLength={120}
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                data-testid="habit-add-name"
+                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </label>
+            <label className="flex items-center gap-2 text-sm font-bold text-black">
+              <input
+                type="checkbox"
+                checked={draft.isBonus}
+                onChange={(e) => setDraft({ ...draft, isBonus: e.target.checked })}
+                data-testid="habit-add-bonus"
+                className="h-5 w-5 accent-yellow-400"
+              />
+              Bonus (5×)
+            </label>
+            <div className="flex gap-2">
+              <Button type="submit" variant="primary" size="sm" testId="habit-add-submit">
+                {editingId ? 'Save' : 'Add'}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                testId="habit-add-cancel"
+                onClick={() => {
+                  setAdding(false);
+                  setEditingId(null);
+                  setDraft({ name: '', isBonus: false });
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <button
+            type="button"
+            data-testid="habit-add"
+            onClick={() => {
+              setAdding(true);
+              setEditingId(null);
+              setDraft({ name: '', isBonus: false });
+            }}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/60 py-3 font-bold text-white hover:bg-white/10"
+          >
+            + Add New Habit
+          </button>
         )}
       </section>
 
@@ -365,31 +557,33 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                 <li
                   key={r.id}
                   data-testid={`reward-card-${r.id}`}
-                  className={`flex flex-col gap-2 rounded-xl border-2 border-black p-3 shadow-neo-xs ${
-                    affordable ? 'bg-violet-50' : 'bg-gray-100 opacity-70'
+                  className={`flex items-center justify-between gap-2 rounded-lg border-2 border-black p-2.5 ${
+                    affordable ? 'bg-white' : 'bg-gray-100 opacity-70'
                   }`}
                 >
-                  <span aria-hidden="true" className="text-3xl">
-                    {r.icon ?? '🎁'}
+                  <span className="min-w-0 truncate text-sm font-bold text-black">
+                    {r.icon ? `${r.icon} ` : ''}
+                    {r.name}
                   </span>
-                  <p className="font-heading text-sm text-black">{r.name}</p>
-                  <span
-                    data-testid={`reward-cost-${r.id}`}
-                    className="flex items-center gap-1 text-xs font-bold text-purple-700"
-                  >
-                    <Star size={12} className="fill-yellow-500" aria-hidden="true" />{' '}
-                    {r.stickerCost}
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span
+                      data-testid={`reward-cost-${r.id}`}
+                      className="flex items-center gap-1 text-xs font-bold text-purple-700"
+                    >
+                      <Star size={12} className="fill-yellow-500" aria-hidden="true" />{' '}
+                      {r.stickerCost}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => onRedeem(r)}
+                      disabled={!affordable}
+                      testId={`reward-buy-${r.id}`}
+                    >
+                      {affordable ? 'Buy' : 'Locked'}
+                    </Button>
                   </span>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => onRedeem(r)}
-                    disabled={!affordable}
-                    testId={`reward-buy-${r.id}`}
-                  >
-                    {affordable ? 'Buy' : 'Locked'}
-                  </Button>
                 </li>
               );
             })}

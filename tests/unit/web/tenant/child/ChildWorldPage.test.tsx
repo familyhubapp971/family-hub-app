@@ -42,7 +42,16 @@ function installApi() {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ subjects: [] }) });
     }
     // /api/habits
-    return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: [], logs: [] }) });
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        habits: [],
+        stickers: [],
+        week: { id: 'wk1', weekNumber: 9, year: 2026, startDate: '2026-02-23', isFinalized: false },
+        balance: 0,
+      }),
+    });
   });
 }
 
