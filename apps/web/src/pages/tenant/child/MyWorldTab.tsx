@@ -8,10 +8,10 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Coins,
   Edit2,
   Gift,
   Heart,
-  Loader2,
   Lock,
   PiggyBank,
   Plus,
@@ -19,6 +19,7 @@ import {
   Sparkles,
   Star,
   TrendingUp,
+  Wallet,
   X,
   Zap,
 } from 'lucide-react';
@@ -292,30 +293,9 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const [savedStickers, setSavedStickers] = useState(0);
   const [savedCash, setSavedCash] = useState(0);
   const [unallocatedStickers, setUnallocatedStickers] = useState(0);
-  // Save dialog
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [saveType, setSaveType] = useState<'stickers' | 'cash'>('stickers');
-  const [saveAmount, setSaveAmount] = useState('');
-  const [savingAction, setSavingAction] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  // CashOut dialog
-  const [showCashoutDialog, setShowCashoutDialog] = useState(false);
-  const [cashoutAmount, setCashoutAmount] = useState('');
-  const [cashingOut, setCashingOut] = useState(false);
-  const [cashoutError, setCashoutError] = useState<string | null>(null);
 
   // ── Investments state ─────────────────────────────────────────────────────
   const [investments, setInvestments] = useState<Investment[]>([]);
-  const [showInvestDialog, setShowInvestDialog] = useState(false);
-  const [investHabitId, setInvestHabitId] = useState('');
-  const [investAmount, setInvestAmount] = useState('');
-  const [investing, setInvesting] = useState(false);
-  const [investError, setInvestError] = useState<string | null>(null);
-  // Withdraw dialog state — one investment at a time
-  const [withdrawInvestment, setWithdrawInvestment] = useState<Investment | null>(null);
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawing, setWithdrawing] = useState(false);
-  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   // ── Close Week dialog state ───────────────────────────────────────────────
   const [closeWeekOpen, setCloseWeekOpen] = useState(false);
@@ -504,164 +484,6 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
     }
   }, [weekIndex, weeks, fetchWeekStats]);
 
-  // ── Save action ───────────────────────────────────────────────────────────
-  const handleSave = useCallback(async () => {
-    const num = Number(saveAmount);
-    if (!num || num <= 0 || !headers) return;
-    setSavingAction(true);
-    setSaveError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/mw/financial/savings`, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          memberId,
-          type: saveType,
-          amount: saveType === 'cash' ? num * 0.5 : num,
-        }),
-      });
-      if (res.status === 409) {
-        setSaveError('Not enough weekly stickers to save.');
-        return;
-      }
-      if (!res.ok) {
-        setSaveError(`Save failed (${res.status})`);
-        return;
-      }
-      setShowSaveDialog(false);
-      setSaveAmount('');
-      setSaveType('stickers');
-      // Refresh savings + current week stats
-      void fetchSavings();
-      const w = weeks[weekIndex];
-      if (w) void fetchWeekStats(w.weekId);
-    } catch {
-      setSaveError('Network error — try again.');
-    } finally {
-      setSavingAction(false);
-    }
-  }, [saveAmount, saveType, headers, memberId, fetchSavings, fetchWeekStats, weeks, weekIndex]);
-
-  // ── Cash Out action ───────────────────────────────────────────────────────
-  const handleCashout = useCallback(async () => {
-    const num = Number(cashoutAmount);
-    if (!num || num <= 0 || !headers) return;
-    setCashingOut(true);
-    setCashoutError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/mw/financial/savings/cashout`, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId, amount: num }),
-      });
-      if (res.status === 409) {
-        setCashoutError('Not enough savings to cash out that amount.');
-        return;
-      }
-      if (!res.ok) {
-        setCashoutError(`Cashout failed (${res.status})`);
-        return;
-      }
-      setShowCashoutDialog(false);
-      setCashoutAmount('');
-      void fetchSavings();
-    } catch {
-      setCashoutError('Network error — try again.');
-    } finally {
-      setCashingOut(false);
-    }
-  }, [cashoutAmount, headers, memberId, fetchSavings]);
-
-  // ── Invest action ─────────────────────────────────────────────────────────
-  const handleInvest = useCallback(async () => {
-    const num = Number(investAmount);
-    if (!num || num < 10 || !investHabitId || !headers) return;
-    setInvesting(true);
-    setInvestError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/mw/financial/investments`, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId, habitId: investHabitId, stickerCount: num }),
-      });
-      if (res.status === 409) {
-        const body = (await res.json()) as { error?: string };
-        setInvestError(body.error ?? 'Not enough stickers or already invested in this habit.');
-        return;
-      }
-      if (!res.ok) {
-        setInvestError(`Invest failed (${res.status})`);
-        return;
-      }
-      setShowInvestDialog(false);
-      setInvestAmount('');
-      setInvestHabitId('');
-      // Refresh investments + savings + week stats
-      void fetchInvestments();
-      void fetchSavings();
-      const w = weeks[weekIndex];
-      if (w) void fetchWeekStats(w.weekId);
-    } catch {
-      setInvestError('Network error — try again.');
-    } finally {
-      setInvesting(false);
-    }
-  }, [
-    investAmount,
-    investHabitId,
-    headers,
-    memberId,
-    fetchInvestments,
-    fetchSavings,
-    fetchWeekStats,
-    weeks,
-    weekIndex,
-  ]);
-
-  // ── Withdraw action ───────────────────────────────────────────────────────
-  const handleWithdraw = useCallback(async () => {
-    if (!withdrawInvestment || !headers) return;
-    const num = withdrawAmount === '' ? undefined : Number(withdrawAmount);
-    setWithdrawing(true);
-    setWithdrawError(null);
-    try {
-      const body: Record<string, unknown> = { memberId };
-      if (num !== undefined && num > 0) body.stickers = num;
-      const res = await fetch(
-        `${API_BASE}/api/mw/financial/investments/${withdrawInvestment.id}/withdraw`,
-        {
-          method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-      );
-      if (!res.ok) {
-        setWithdrawError(`Withdraw failed (${res.status})`);
-        return;
-      }
-      setWithdrawInvestment(null);
-      setWithdrawAmount('');
-      void fetchInvestments();
-      void fetchSavings();
-      const w = weeks[weekIndex];
-      if (w) void fetchWeekStats(w.weekId);
-    } catch {
-      setWithdrawError('Network error — try again.');
-    } finally {
-      setWithdrawing(false);
-    }
-  }, [
-    withdrawInvestment,
-    withdrawAmount,
-    headers,
-    memberId,
-    fetchInvestments,
-    fetchSavings,
-    fetchWeekStats,
-    weeks,
-    weekIndex,
-  ]);
-
   // Lazy-load habits when navigating to a week with no cached data
   useEffect(() => {
     const w = weeks[weekIndex];
@@ -746,8 +568,6 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   );
 
   // ── Savings derived values ────────────────────────────────────────────────
-  const fromCash = Math.floor(savedCash / 0.5);
-  const savingsTotal = savedCash + savedStickers * 0.5;
   const weeklyValue = (unallocatedStickers * 0.5).toFixed(2);
   const bigRewardProgress = Math.min(100, (savedStickers / 100) * 100);
 
@@ -1637,603 +1457,6 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           </div>
         )}
 
-        {/* ── Invest Dialog ── */}
-        {showInvestDialog && (
-          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
-          <div
-            data-testid="invest-dialog"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => {
-              setShowInvestDialog(false);
-              setInvestAmount('');
-              setInvestHabitId('');
-              setInvestError(null);
-            }}
-          >
-            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
-            <div
-              className="relative bg-purple-900 border-2 sm:border-3 border-black rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="p-6 pb-4 border-b-2 sm:border-b-3 border-black bg-purple-900 relative">
-                <button
-                  onClick={() => {
-                    setShowInvestDialog(false);
-                    setInvestAmount('');
-                    setInvestHabitId('');
-                    setInvestError(null);
-                  }}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-purple-800 border-2 border-black rounded-full text-white hover:bg-purple-700 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <div className="flex items-center gap-3">
-                  <div className="bg-yellow-400 p-2 rounded-xl border-2 border-black">
-                    <TrendingUp className="w-6 h-6 text-black" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-white uppercase tracking-wide">
-                      Invest &amp; Grow
-                    </h2>
-                    <p className="text-purple-200 text-xs font-bold mt-0.5">
-                      Risk it to get the biscuit! 🍪
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-6 max-h-[65vh] overflow-y-auto space-y-5 bg-purple-50">
-                {/* How it works */}
-                <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-4 space-y-3 shadow-neo">
-                  <p className="font-black text-black text-sm flex items-center gap-2 uppercase tracking-wide border-b-2 border-gray-100 pb-2">
-                    How It Works
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3 bg-green-50 p-2 rounded-lg border border-green-200">
-                      <span className="bg-green-500 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black uppercase">
-                        +5/day
-                      </span>
-                      <p className="text-xs font-bold text-green-800">
-                        Each completed day adds 5 stickers to your investment
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 bg-red-50 p-2 rounded-lg border border-red-200">
-                      <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black uppercase">
-                        -2/day
-                      </span>
-                      <p className="text-xs font-bold text-red-800">
-                        Miss a day = lose 2 stickers from your total
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 bg-blue-50 p-2 rounded-lg border border-blue-200">
-                      <span className="bg-blue-500 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black uppercase">
-                        Auto
-                      </span>
-                      <p className="text-xs font-bold text-blue-800">
-                        Returns go to savings automatically
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Habit picker */}
-                <div>
-                  <label
-                    htmlFor="invest-dialog-habit"
-                    className="font-black text-gray-900 uppercase tracking-wider text-sm mb-2 block"
-                  >
-                    🎯 Choose Habit
-                  </label>
-                  <select
-                    id="invest-dialog-habit"
-                    data-testid="invest-dialog-habit"
-                    value={investHabitId}
-                    onChange={(e) => {
-                      setInvestHabitId(e.target.value);
-                      setInvestError(null);
-                    }}
-                    className="w-full border-2 sm:border-3 border-black rounded-xl px-4 py-3 font-bold text-sm outline-none focus:bg-yellow-50 bg-white"
-                  >
-                    <option value="">Select a habit…</option>
-                    {habits.map((h) => (
-                      <option key={h.id} value={h.id} disabled={investedHabitIds.has(h.id)}>
-                        {h.title}
-                        {investedHabitIds.has(h.id) ? ' (already invested)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Amount */}
-                <div>
-                  <label
-                    htmlFor="invest-dialog-amount"
-                    className="font-black text-gray-900 uppercase tracking-wider text-sm mb-2 block"
-                  >
-                    Investment Amount (stickers, min 10)
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="invest-dialog-amount"
-                      data-testid="invest-dialog-amount"
-                      type="number"
-                      placeholder="10"
-                      min={10}
-                      value={investAmount}
-                      onChange={(e) => {
-                        setInvestAmount(e.target.value);
-                        setInvestError(null);
-                      }}
-                      className={`w-full border-2 sm:border-3 rounded-xl px-4 py-3 text-xl font-black outline-none transition-colors ${
-                        investError
-                          ? 'border-red-500 bg-red-50'
-                          : 'border-black focus:bg-yellow-50 focus:border-yellow-400'
-                      }`}
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black bg-lime-400 px-2 py-1 rounded border-2 border-black text-black">
-                      MIN: 10
-                    </div>
-                  </div>
-                  {(() => {
-                    const num = Number(investAmount) || 0;
-                    if (num >= 10) {
-                      return (
-                        <p className="text-xs text-gray-500 font-bold mt-1">
-                          = {currency} {(num * 0.5).toFixed(2)} invested, worth {currency}{' '}
-                          {(num * 0.5 + num * 5 * 0.5).toFixed(2)} at +5/day (7 days)
-                        </p>
-                      );
-                    }
-                    return null;
-                  })()}
-                  {investError && (
-                    <p className="text-xs text-red-500 font-bold mt-1">{investError}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="p-4 border-t-2 sm:border-t-3 border-black bg-purple-900 grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => {
-                    setShowInvestDialog(false);
-                    setInvestAmount('');
-                    setInvestHabitId('');
-                    setInvestError(null);
-                  }}
-                  className="bg-purple-800 border-2 border-black text-white font-black py-3 rounded-xl hover:bg-purple-700 transition-all uppercase text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  data-testid="invest-dialog-submit"
-                  onClick={() => void handleInvest()}
-                  disabled={!investHabitId || Number(investAmount) < 10 || investing}
-                  className="bg-yellow-400 border-2 border-black text-black font-black py-3 rounded-xl shadow-neo hover:translate-y-0.5 hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
-                >
-                  {investing ? (
-                    <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                  ) : (
-                    `Invest ${Number(investAmount) >= 10 ? `${investAmount} stickers` : ''}`
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Withdraw Dialog ── */}
-        {withdrawInvestment && (
-          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
-          <div
-            data-testid="withdraw-dialog"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => {
-              setWithdrawInvestment(null);
-              setWithdrawAmount('');
-              setWithdrawError(null);
-            }}
-          >
-            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
-            <div
-              className="relative bg-purple-900 border-2 sm:border-3 border-black rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="p-6 pb-4 border-b-2 sm:border-b-3 border-black bg-purple-900 relative">
-                <button
-                  onClick={() => {
-                    setWithdrawInvestment(null);
-                    setWithdrawAmount('');
-                    setWithdrawError(null);
-                  }}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-purple-800 border-2 border-black rounded-full text-white hover:bg-purple-700 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <div className="flex items-center gap-3">
-                  <div className="bg-orange-400 p-2 rounded-xl border-2 border-black">
-                    <ArrowDownToLine className="w-6 h-6 text-black" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-white uppercase tracking-wide">
-                      Withdraw Investment
-                    </h2>
-                    <p className="text-purple-200 text-xs font-bold mt-0.5">
-                      {withdrawInvestment.habitName ?? 'Habit'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-6 space-y-5 bg-purple-50">
-                {/* Current value summary */}
-                <div className="bg-white border-2 border-black rounded-2xl p-4 shadow-neo">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-black text-gray-500 uppercase tracking-wide">
-                      Current Value
-                    </span>
-                    <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded">
-                      {withdrawInvestment.daysCompleted}d done
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-orange-500">
-                      {withdrawInvestment.currentValueStickers}
-                    </span>
-                    <span className="text-sm font-bold text-gray-500">stickers</span>
-                    <span className="text-sm font-black text-orange-400 ml-2">
-                      = {currency} {withdrawInvestment.currentValue.toFixed(2)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1 font-mono">
-                    Originally invested: {withdrawInvestment.originalInvestedStickers} stickers
-                    {withdrawInvestment.daysMissed > 0 &&
-                      ` · ${withdrawInvestment.daysMissed} missed`}
-                  </p>
-                </div>
-
-                {/* Amount input */}
-                <div>
-                  <label
-                    htmlFor="withdraw-dialog-amount"
-                    className="font-black text-gray-900 uppercase tracking-wider text-sm mb-2 block"
-                  >
-                    Stickers to Withdraw (leave blank for full)
-                  </label>
-                  <input
-                    id="withdraw-dialog-amount"
-                    data-testid="withdraw-dialog-amount"
-                    type="number"
-                    placeholder={String(withdrawInvestment.currentValueStickers)}
-                    min={1}
-                    max={withdrawInvestment.currentValueStickers}
-                    value={withdrawAmount}
-                    onChange={(e) => {
-                      setWithdrawAmount(e.target.value);
-                      setWithdrawError(null);
-                    }}
-                    className="w-full border-2 sm:border-3 border-black rounded-xl px-4 py-3 text-xl font-black outline-none focus:bg-orange-50"
-                  />
-                  {withdrawError && (
-                    <p className="text-xs text-red-500 font-bold mt-1">{withdrawError}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="p-4 border-t-2 sm:border-t-3 border-black bg-purple-900 grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => {
-                    setWithdrawInvestment(null);
-                    setWithdrawAmount('');
-                    setWithdrawError(null);
-                  }}
-                  className="bg-purple-800 border-2 border-black text-white font-black py-3 rounded-xl hover:bg-purple-700 transition-all uppercase text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  data-testid="withdraw-dialog-submit"
-                  onClick={() => void handleWithdraw()}
-                  disabled={withdrawing}
-                  className="bg-orange-400 border-2 border-black text-black font-black py-3 rounded-xl shadow-neo hover:translate-y-0.5 hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
-                >
-                  {withdrawing ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Withdraw'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Save Dialog ── */}
-        {showSaveDialog && (
-          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
-          <div
-            data-testid="save-dialog"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => {
-              setShowSaveDialog(false);
-              setSaveAmount('');
-              setSaveError(null);
-            }}
-          >
-            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
-            <div
-              className="relative bg-white border-2 sm:border-3 border-black rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="p-6 pb-4 border-b-2 sm:border-b-3 border-black bg-blue-50 relative">
-                <button
-                  onClick={() => {
-                    setShowSaveDialog(false);
-                    setSaveAmount('');
-                    setSaveError(null);
-                  }}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-blue-100 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="bg-blue-400 p-2 rounded-xl border-2 border-black">
-                    <PiggyBank className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black uppercase tracking-wide">Save for Later</h2>
-                    <p className="text-blue-600/80 text-xs font-bold">
-                      Stack up for bigger rewards!
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-6 space-y-6">
-                {/* Type toggle */}
-                <div>
-                  <p className="font-black text-gray-900 uppercase tracking-wider text-sm mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs">
-                      1
-                    </span>
-                    What to save?
-                  </p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      data-testid="save-dialog-type-stickers"
-                      onClick={() => setSaveType('stickers')}
-                      className={`p-4 rounded-2xl border-2 sm:border-3 text-left transition-all relative overflow-hidden ${saveType === 'stickers' ? 'border-black bg-yellow-50 shadow-neo -translate-y-1' : 'border-gray-200 hover:border-black hover:bg-gray-50'}`}
-                    >
-                      <div className="bg-yellow-400 w-10 h-10 rounded-xl border-2 border-black flex items-center justify-center mb-3">
-                        <Star className="w-5 h-5 text-black fill-current" />
-                      </div>
-                      <p className="font-black text-gray-900 text-sm uppercase">Stickers</p>
-                      <p className="text-xs text-gray-500 font-bold mt-1">For rewards</p>
-                      {saveType === 'stickers' && (
-                        <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-0.5 border-2 border-black">
-                          <Check className="w-3 h-3" />
-                        </div>
-                      )}
-                    </button>
-                    <button
-                      data-testid="save-dialog-type-cash"
-                      onClick={() => setSaveType('cash')}
-                      className={`p-4 rounded-2xl border-2 sm:border-3 text-left transition-all relative overflow-hidden ${saveType === 'cash' ? 'border-black bg-emerald-50 shadow-neo -translate-y-1' : 'border-gray-200 hover:border-black hover:bg-gray-50'}`}
-                    >
-                      <div className="bg-emerald-400 w-10 h-10 rounded-xl border-2 border-black flex items-center justify-center mb-3">
-                        <Banknote className="w-5 h-5 text-white" />
-                      </div>
-                      <p className="font-black text-gray-900 text-sm uppercase">
-                        Cash ({currency})
-                      </p>
-                      <p className="text-xs text-gray-500 font-bold mt-1">For money</p>
-                      {saveType === 'cash' && (
-                        <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-0.5 border-2 border-black">
-                          <Check className="w-3 h-3" />
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Amount */}
-                <div>
-                  <p className="font-black text-gray-900 uppercase tracking-wider text-sm mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs">
-                      2
-                    </span>
-                    How much?
-                  </p>
-                  <div className="relative">
-                    <input
-                      data-testid="save-dialog-amount"
-                      type="number"
-                      placeholder="0"
-                      min={0}
-                      value={saveAmount}
-                      onChange={(e) => {
-                        setSaveAmount(e.target.value);
-                        setSaveError(null);
-                      }}
-                      className="w-full border-2 sm:border-3 border-black rounded-xl px-4 py-4 text-xl font-black outline-none focus:bg-blue-50"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black bg-gray-200 px-2 py-1 rounded border-2 border-black">
-                      MAX: {unallocatedStickers}
-                    </div>
-                  </div>
-                  {saveError && <p className="text-xs text-red-500 font-bold mt-2">{saveError}</p>}
-                </div>
-
-                {/* Savings goals */}
-                <div className="bg-purple-100 border-2 sm:border-3 border-black rounded-2xl p-5 relative">
-                  <div className="absolute -top-3 left-4 bg-purple-500 text-white text-xs font-black px-3 py-1 rounded-full border-2 border-black uppercase">
-                    Savings Goals
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center mt-2">
-                    {[
-                      { icon: '🎁', label: 'Small', cost: '50 ⭐' },
-                      { icon: '🎮', label: 'Medium', cost: '100 ⭐' },
-                      { icon: '🚲', label: 'Big', cost: '200 ⭐' },
-                    ].map((goal) => (
-                      <div
-                        key={goal.label}
-                        className="bg-white rounded-xl p-2 border-2 border-black"
-                      >
-                        <div className="text-xl mb-1">{goal.icon}</div>
-                        <p className="text-[10px] font-black uppercase text-gray-500">
-                          {goal.label}
-                        </p>
-                        <p className="text-xs font-black text-purple-600">{goal.cost}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="p-4 border-t-2 sm:border-t-3 border-black bg-gray-50 grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => {
-                    setShowSaveDialog(false);
-                    setSaveAmount('');
-                    setSaveError(null);
-                  }}
-                  className="bg-white border-2 border-black text-black font-black py-3 rounded-xl hover:bg-gray-100 transition-all uppercase text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  data-testid="save-dialog-submit"
-                  onClick={() => void handleSave()}
-                  disabled={!saveAmount || Number(saveAmount) <= 0 || savingAction}
-                  className="bg-blue-500 border-2 border-black text-white font-black py-3 rounded-xl shadow-neo hover:translate-y-0.5 hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
-                >
-                  {savingAction ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Save It!'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── CashOut Dialog ── */}
-        {showCashoutDialog && (
-          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
-          <div
-            data-testid="cashout-dialog"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => {
-              setShowCashoutDialog(false);
-              setCashoutAmount('');
-              setCashoutError(null);
-            }}
-          >
-            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
-            <div
-              className="relative bg-yellow-50 border-2 sm:border-3 border-black rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="p-6 pb-4 text-center relative border-b-2 sm:border-b-3 border-black bg-yellow-400">
-                <button
-                  onClick={() => {
-                    setShowCashoutDialog(false);
-                    setCashoutAmount('');
-                    setCashoutError(null);
-                  }}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-yellow-100 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <div className="w-12 h-12 bg-white border-2 border-black rounded-xl flex items-center justify-center mx-auto mb-2">
-                  <span className="text-2xl">💰</span>
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide">Cash Out</h2>
-              </div>
-
-              {/* Body */}
-              <div className="p-6 space-y-6">
-                {savedStickers === 0 && savedCash === 0 ? (
-                  <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
-                    <p className="text-sm font-bold text-amber-800 mb-1">No savings available</p>
-                    <p className="text-xs text-amber-700">
-                      Cash out only works from savings. Save your weekly stickers first!
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-6 shadow-neo">
-                      <p className="text-center text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
-                        Amount to Cash Out ({currency})
-                      </p>
-                      <div className="relative mb-4">
-                        <input
-                          data-testid="cashout-dialog-amount"
-                          type="number"
-                          min={0}
-                          max={savingsTotal}
-                          step={0.5}
-                          value={cashoutAmount}
-                          onChange={(e) => {
-                            setCashoutAmount(e.target.value);
-                            setCashoutError(null);
-                          }}
-                          className="w-full text-center text-3xl sm:text-5xl font-black border-b-2 sm:border-b-3 border-black py-4 outline-none focus:border-yellow-500 bg-transparent"
-                        />
-                        <span className="absolute right-0 bottom-4 text-sm font-black text-gray-400">
-                          {currency}
-                        </span>
-                      </div>
-                      <div className="bg-green-100 border-2 border-black rounded-xl py-3 text-center">
-                        <span className="text-green-800 text-xs font-bold uppercase mr-2">
-                          You Receive:
-                        </span>
-                        <span className="text-2xl font-black text-green-600">
-                          {currency} {Number(cashoutAmount || 0).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-center text-xs font-bold text-gray-500 bg-white border-2 border-black rounded-lg py-2 px-4">
-                      Savings balance: {currency} {savingsTotal.toFixed(2)}
-                    </p>
-                  </>
-                )}
-                {cashoutError && (
-                  <p className="text-xs text-red-500 font-bold text-center">{cashoutError}</p>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => {
-                      setShowCashoutDialog(false);
-                      setCashoutAmount('');
-                      setCashoutError(null);
-                    }}
-                    className="bg-white border-2 border-black text-black font-black py-3 rounded-xl hover:bg-gray-100 transition-all uppercase text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    data-testid="cashout-dialog-submit"
-                    onClick={() => void handleCashout()}
-                    disabled={
-                      !cashoutAmount ||
-                      Number(cashoutAmount) <= 0 ||
-                      cashingOut ||
-                      (savedStickers === 0 && savedCash === 0)
-                    }
-                    className="bg-green-500 border-2 border-black text-white font-black py-3 rounded-xl shadow-neo hover:translate-y-0.5 hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
-                  >
-                    {cashingOut ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Confirm'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* ── Tab Switcher ── */}
         <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-2 flex gap-2 shadow-neo">
           <button
@@ -2545,161 +1768,137 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
             SAVINGS / BANKING CARDS — below habit tracker
             ════════════════════════════════════════════════════════════════════ */}
 
-        {/* ── Your Savings + Active Investments (side by side) ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {/* ── Your Savings + Active Investments (side by side) — FHS-300 legacy port ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+          {/* ── Your Savings ── */}
           <div data-testid="your-savings" className="relative">
-            <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
-            <div className="relative bg-[#6b21a8] border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 text-white overflow-hidden">
-              <div className="absolute right-0 top-0 w-28 h-28 bg-pink-400/10 rounded-full -mr-8 -mt-8 blur-2xl" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-yellow-400 p-2 rounded-lg border-2 border-black">
-                      <PiggyBank className="w-5 h-5 text-black" />
-                    </div>
-                    <h2 className="text-lg sm:text-xl font-black uppercase">Your Savings 🐷</h2>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      data-testid="savings-save-btn"
-                      onClick={() => {
-                        setSaveAmount('');
-                        setSaveType('stickers');
-                        setSaveError(null);
-                        setShowSaveDialog(true);
-                      }}
-                      className="bg-blue-500 border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
-                    >
-                      Save
-                    </button>
-                    <button
-                      data-testid="savings-cashout-btn"
-                      onClick={() => {
-                        setCashoutAmount('');
-                        setCashoutError(null);
-                        setShowCashoutDialog(true);
-                      }}
-                      className="bg-green-500 border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
-                    >
-                      Cash Out
-                    </button>
-                  </div>
+            <div className="absolute inset-0 bg-pink-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
+            <div className="relative bg-purple-900 border-2 sm:border-3 border-pink-400/30 rounded-2xl p-4 sm:p-5">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4">
+                <div className="bg-pink-400 p-1.5 sm:p-2 rounded-lg border-2 border-black text-black">
+                  <Wallet className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-4xl font-black text-yellow-400 leading-none">
-                      {savedStickers}
-                    </p>
-                    <p className="text-xs text-purple-300 font-mono mt-1">
-                      {savedStickers} saved + {fromCash} from cash
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-1 font-mono">
-                      Total Value
-                    </p>
-                    <div className="flex items-baseline gap-1 justify-end">
-                      <span className="text-sm font-black text-lime-400">{currency}</span>
-                      <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
-                        {savingsTotal.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
+                <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wide">
+                  Your Savings
+                </h3>
+              </div>
+              <div className="flex justify-between items-center py-2 sm:py-3 border-b border-white/10">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 fill-current" />
+                  <span className="text-slate-300 font-bold text-sm sm:text-base">Stickers</span>
                 </div>
+                <div className="text-right">
+                  <span className="text-2xl sm:text-3xl font-black text-yellow-400">
+                    {savedStickers + Math.floor(savedCash / 0.5)}
+                  </span>
+                  {savedCash > 0 && savedStickers > 0 && (
+                    <p className="text-[10px] text-purple-300 font-bold mt-0.5">
+                      {savedStickers} saved + {Math.floor(savedCash / 0.5)} from cash
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-between items-center pt-3 sm:pt-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-lime-400 border-2 border-black text-black flex items-center justify-center text-xs font-black">
+                    $
+                  </div>
+                  <span className="text-slate-300 font-bold text-sm sm:text-base">Total Value</span>
+                </div>
+                <span className="text-2xl sm:text-3xl font-black text-lime-400">
+                  {currency} {(savedStickers * 0.5 + savedCash).toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
 
           {/* ── Active Investments ── */}
           <div data-testid="active-investments" className="relative">
-            <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
-            <div className="relative bg-white border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-yellow-400 p-2 rounded-lg border-2 border-black">
-                    <TrendingUp className="w-5 h-5 text-black" />
-                  </div>
-                  <h2 className="text-lg sm:text-xl font-black uppercase">Active Investments 📈</h2>
+            <div className="absolute inset-0 bg-fuchsia-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
+            <div className="relative bg-purple-900 border-2 sm:border-3 border-fuchsia-400/30 rounded-2xl p-4 sm:p-5">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4">
+                <div className="bg-fuchsia-400 p-1.5 sm:p-2 rounded-lg border-2 border-black text-black">
+                  <Coins className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <button
-                  data-testid="invest-btn"
-                  onClick={() => {
-                    setInvestAmount('');
-                    setInvestHabitId('');
-                    setInvestError(null);
-                    setShowInvestDialog(true);
-                  }}
-                  className="bg-[#6b21a8] border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
-                >
-                  Invest
-                </button>
+                <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wide">
+                  Active Investments
+                </h3>
               </div>
-
-              {investments.length === 0 ? (
-                <div className="text-center py-6">
-                  <BarChart2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm font-bold text-gray-400">No active investments</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Invest stickers in a habit to grow your rewards!
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {investments.map((inv) => {
-                    const gain = inv.currentValueStickers - inv.originalInvestedStickers;
-                    return (
-                      <div
-                        key={inv.id}
-                        data-testid={`investment-${inv.id}`}
-                        className="bg-amber-50 border-2 border-amber-400 rounded-xl p-3 flex items-center gap-3"
-                      >
-                        {/* Habit icon + name */}
-                        <div className="flex-shrink-0 w-9 h-9 bg-amber-100 border-2 border-amber-400 rounded-lg flex items-center justify-center text-lg">
-                          {mapIconStringToElement(inv.habitIcon)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-black text-gray-900 text-sm truncate">
-                            {inv.habitName ?? 'Habit'}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            <span className="text-xs font-bold text-amber-700">
-                              {inv.investedStickers}→{inv.currentValueStickers} ⭐
-                            </span>
-                            <span className="text-xs font-bold text-lime-600">
-                              {currency} {inv.currentValue.toFixed(2)}
-                            </span>
-                            {gain > 0 && (
-                              <span className="text-[10px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
-                                +{gain}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
-                              {inv.daysCompleted}d done
-                            </span>
-                            {inv.daysMissed > 0 && (
-                              <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
-                                {inv.daysMissed}d missed
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          data-testid={`investment-withdraw-btn-${inv.id}`}
-                          onClick={() => {
-                            setWithdrawInvestment(inv);
-                            setWithdrawAmount(String(inv.currentValueStickers));
-                            setWithdrawError(null);
-                          }}
-                          className="flex-shrink-0 bg-orange-400 border-2 border-black text-black font-black text-xs px-2.5 py-1.5 rounded-lg shadow-neo-xs hover:brightness-105 active:translate-y-0.5 transition-all uppercase"
+              {investments.length > 0 ? (
+                investments.map((inv) => {
+                  const delta = inv.currentValueStickers - inv.investedStickers;
+                  const showOriginally =
+                    inv.originalInvestedStickers !== null &&
+                    inv.originalInvestedStickers !== undefined &&
+                    inv.originalInvestedStickers !== inv.investedStickers;
+                  return (
+                    <div
+                      key={inv.id}
+                      data-testid={`investment-card-${inv.id}`}
+                      className="bg-white/10 border-2 border-white/20 rounded-xl p-4 mb-2 last:mb-0"
+                    >
+                      <p className="text-sm font-bold text-slate-200 leading-snug mb-3">
+                        {inv.habitName ?? `Investment #${inv.id}`}
+                      </p>
+                      {showOriginally && (
+                        <div
+                          className="flex justify-between text-xs font-mono mb-1.5"
+                          data-testid="investment-original"
                         >
-                          Withdraw
-                        </button>
+                          <span className="text-slate-400">Originally</span>
+                          <span className="text-slate-200 font-bold">
+                            {inv.originalInvestedStickers} stickers ({currency}{' '}
+                            {(inv.originalInvestedStickers! * 0.5).toFixed(2)})
+                          </span>
+                        </div>
+                      )}
+                      <div
+                        className="flex justify-between text-xs font-mono mb-1.5"
+                        data-testid="investment-invested"
+                      >
+                        <span className="text-slate-400">Invested</span>
+                        <span className="text-yellow-400 font-bold">
+                          {inv.investedStickers} stickers ({currency}{' '}
+                          {(inv.investedStickers * 0.5).toFixed(2)})
+                        </span>
                       </div>
-                    );
-                  })}
+                      <div
+                        className="flex justify-between text-xs font-mono mb-2"
+                        data-testid="investment-current"
+                      >
+                        <span className="text-slate-400">
+                          Now ({inv.daysCompleted}/7 done
+                          {inv.daysMissed > 0 && (
+                            <span className="text-red-400 ml-1">· {inv.daysMissed} missed</span>
+                          )}
+                          )
+                        </span>
+                        <span className="font-black text-fuchsia-300">
+                          {inv.currentValueStickers} stickers ({currency}{' '}
+                          {inv.currentValue.toFixed(2)})
+                          {delta !== 0 && (
+                            <span
+                              data-testid="investment-delta"
+                              className={`ml-1.5 font-mono text-[10px] ${delta > 0 ? 'text-emerald-300' : 'text-red-400'}`}
+                            >
+                              ({delta > 0 ? '+' : ''}
+                              {delta})
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="w-full bg-white/10 h-2 rounded-full border border-white/10 overflow-hidden">
+                        <div
+                          className="h-full bg-fuchsia-400 rounded-full"
+                          style={{ width: `${(inv.daysCompleted / 7) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="bg-white/10 border-2 border-white/20 rounded-xl p-4 text-center">
+                  <p className="text-sm text-slate-400 font-medium">No active investments</p>
                 </div>
               )}
             </div>
