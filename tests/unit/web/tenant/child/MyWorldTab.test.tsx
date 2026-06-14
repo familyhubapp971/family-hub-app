@@ -153,6 +153,13 @@ function installApi(over: Partial<St> = {}) {
         }),
       });
     }
+    if (u.includes('/api/mw/analytics')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ stickersPerWeek: [], habitStats: [] }),
+      });
+    }
     if (u.includes('/api/mw/weeks') && u.includes('/actions')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ actions: [] }) });
     }
@@ -235,7 +242,9 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     act(() => {
       fireEvent.click(screen.getByTestId('habit-tracker-tab-analytics'));
     });
-    expect(screen.getByTestId('analytics-placeholder')).toBeInTheDocument();
+    // The Analytics sub-tab now renders the real AnalyticsView (FHS-298),
+    // which loads then shows its summary + chart + leaderboard.
+    await waitFor(() => expect(screen.getByTestId('analytics-view')).toBeInTheDocument());
   });
 
   it('placing a sticker via the day dialog POSTs the chosen type', async () => {
