@@ -90,6 +90,21 @@ interface Reward {
   icon: string | null;
 }
 
+interface Investment {
+  id: string;
+  habitId: string;
+  // Nullable: the habit can be deleted while an investment is still active,
+  // in which case the GET's LEFT JOIN returns null for these.
+  habitName: string | null;
+  habitIcon: string | null;
+  investedStickers: number;
+  originalInvestedStickers: number;
+  currentValue: number;
+  currentValueStickers: number;
+  daysCompleted: number;
+  daysMissed: number;
+}
+
 // ── Local rich-habit model (mirrors legacy HabitTracker Habit interface) ─────
 interface Habit {
   id: string;
@@ -194,8 +209,8 @@ const colorOptions = [
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function mapIconStringToElement(iconStr: string): React.ReactElement {
-  return ICON_MAP[iconStr?.toLowerCase()] ?? <Star className="w-6 h-6" />;
+function mapIconStringToElement(iconStr: string | null | undefined): React.ReactElement {
+  return ICON_MAP[iconStr?.toLowerCase() ?? ''] ?? <Star className="w-6 h-6" />;
 }
 
 function computeWeekLabel(startDate: string): string {
@@ -286,6 +301,19 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const [cashoutAmount, setCashoutAmount] = useState('');
   const [cashingOut, setCashingOut] = useState(false);
   const [cashoutError, setCashoutError] = useState<string | null>(null);
+
+  // ── Investments state ─────────────────────────────────────────────────────
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  const [showInvestDialog, setShowInvestDialog] = useState(false);
+  const [investHabitId, setInvestHabitId] = useState('');
+  const [investAmount, setInvestAmount] = useState('');
+  const [investing, setInvesting] = useState(false);
+  const [investError, setInvestError] = useState<string | null>(null);
+  // Withdraw dialog state — one investment at a time
+  const [withdrawInvestment, setWithdrawInvestment] = useState<Investment | null>(null);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   const habitsCache = useRef<Map<string, Habit[]>>(new Map());
   const redeemingRef = useRef<Set<string>>(new Set());
@@ -440,9 +468,28 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
     [headers, memberId],
   );
 
+  // ── Investments fetch ─────────────────────────────────────────────────────
+  const fetchInvestments = useCallback(async () => {
+    if (!headers) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/mw/financial/investments?memberId=${memberId}`, {
+        headers,
+      });
+      if (!res.ok) return;
+      const body = (await res.json()) as { investments: Investment[] };
+      setInvestments(body.investments ?? []);
+    } catch {
+      // Non-fatal
+    }
+  }, [headers, memberId]);
+
   useEffect(() => {
     void fetchSavings();
   }, [fetchSavings]);
+
+  useEffect(() => {
+    void fetchInvestments();
+  }, [fetchInvestments]);
 
   // Fetch week stats whenever the active week changes
   useEffect(() => {
@@ -520,6 +567,96 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
     }
   }, [cashoutAmount, headers, memberId, fetchSavings]);
 
+  // ── Invest action ─────────────────────────────────────────────────────────
+  const handleInvest = useCallback(async () => {
+    const num = Number(investAmount);
+    if (!num || num < 10 || !investHabitId || !headers) return;
+    setInvesting(true);
+    setInvestError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/mw/financial/investments`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId, habitId: investHabitId, stickerCount: num }),
+      });
+      if (res.status === 409) {
+        const body = (await res.json()) as { error?: string };
+        setInvestError(body.error ?? 'Not enough stickers or already invested in this habit.');
+        return;
+      }
+      if (!res.ok) {
+        setInvestError(`Invest failed (${res.status})`);
+        return;
+      }
+      setShowInvestDialog(false);
+      setInvestAmount('');
+      setInvestHabitId('');
+      // Refresh investments + savings + week stats
+      void fetchInvestments();
+      void fetchSavings();
+      const w = weeks[weekIndex];
+      if (w) void fetchWeekStats(w.weekId);
+    } catch {
+      setInvestError('Network error — try again.');
+    } finally {
+      setInvesting(false);
+    }
+  }, [
+    investAmount,
+    investHabitId,
+    headers,
+    memberId,
+    fetchInvestments,
+    fetchSavings,
+    fetchWeekStats,
+    weeks,
+    weekIndex,
+  ]);
+
+  // ── Withdraw action ───────────────────────────────────────────────────────
+  const handleWithdraw = useCallback(async () => {
+    if (!withdrawInvestment || !headers) return;
+    const num = withdrawAmount === '' ? undefined : Number(withdrawAmount);
+    setWithdrawing(true);
+    setWithdrawError(null);
+    try {
+      const body: Record<string, unknown> = { memberId };
+      if (num !== undefined && num > 0) body.stickers = num;
+      const res = await fetch(
+        `${API_BASE}/api/mw/financial/investments/${withdrawInvestment.id}/withdraw`,
+        {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      );
+      if (!res.ok) {
+        setWithdrawError(`Withdraw failed (${res.status})`);
+        return;
+      }
+      setWithdrawInvestment(null);
+      setWithdrawAmount('');
+      void fetchInvestments();
+      void fetchSavings();
+      const w = weeks[weekIndex];
+      if (w) void fetchWeekStats(w.weekId);
+    } catch {
+      setWithdrawError('Network error — try again.');
+    } finally {
+      setWithdrawing(false);
+    }
+  }, [
+    withdrawInvestment,
+    withdrawAmount,
+    headers,
+    memberId,
+    fetchInvestments,
+    fetchSavings,
+    fetchWeekStats,
+    weeks,
+    weekIndex,
+  ]);
+
   // Lazy-load habits when navigating to a week with no cached data
   useEffect(() => {
     const w = weeks[weekIndex];
@@ -596,6 +733,12 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const habits = week?.habits ?? [];
   const totalDone = habits.reduce((s, h) => s + h.total, 0);
   const totalPossible = habits.length * 7;
+
+  // ── Investment derived values ─────────────────────────────────────────────
+  const investedHabitIds = useMemo(
+    () => new Set(investments.map((inv) => inv.habitId)),
+    [investments],
+  );
 
   // ── Savings derived values ────────────────────────────────────────────────
   const fromCash = Math.floor(savedCash / 0.5);
@@ -1489,6 +1632,318 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           </div>
         )}
 
+        {/* ── Invest Dialog ── */}
+        {showInvestDialog && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+          <div
+            data-testid="invest-dialog"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              setShowInvestDialog(false);
+              setInvestAmount('');
+              setInvestHabitId('');
+              setInvestError(null);
+            }}
+          >
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+            <div
+              className="relative bg-purple-900 border-2 sm:border-3 border-black rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-6 pb-4 border-b-2 sm:border-b-3 border-black bg-purple-900 relative">
+                <button
+                  onClick={() => {
+                    setShowInvestDialog(false);
+                    setInvestAmount('');
+                    setInvestHabitId('');
+                    setInvestError(null);
+                  }}
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-purple-800 border-2 border-black rounded-full text-white hover:bg-purple-700 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="bg-yellow-400 p-2 rounded-xl border-2 border-black">
+                    <TrendingUp className="w-6 h-6 text-black" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-white uppercase tracking-wide">
+                      Invest &amp; Grow
+                    </h2>
+                    <p className="text-purple-200 text-xs font-bold mt-0.5">
+                      Risk it to get the biscuit! 🍪
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 max-h-[65vh] overflow-y-auto space-y-5 bg-purple-50">
+                {/* How it works */}
+                <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-4 space-y-3 shadow-neo">
+                  <p className="font-black text-black text-sm flex items-center gap-2 uppercase tracking-wide border-b-2 border-gray-100 pb-2">
+                    How It Works
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 bg-green-50 p-2 rounded-lg border border-green-200">
+                      <span className="bg-green-500 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black uppercase">
+                        +5/day
+                      </span>
+                      <p className="text-xs font-bold text-green-800">
+                        Each completed day adds 5 stickers to your investment
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 bg-red-50 p-2 rounded-lg border border-red-200">
+                      <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black uppercase">
+                        -2/day
+                      </span>
+                      <p className="text-xs font-bold text-red-800">
+                        Miss a day = lose 2 stickers from your total
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 bg-blue-50 p-2 rounded-lg border border-blue-200">
+                      <span className="bg-blue-500 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black uppercase">
+                        Auto
+                      </span>
+                      <p className="text-xs font-bold text-blue-800">
+                        Returns go to savings automatically
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Habit picker */}
+                <div>
+                  <label
+                    htmlFor="invest-dialog-habit"
+                    className="font-black text-gray-900 uppercase tracking-wider text-sm mb-2 block"
+                  >
+                    🎯 Choose Habit
+                  </label>
+                  <select
+                    id="invest-dialog-habit"
+                    data-testid="invest-dialog-habit"
+                    value={investHabitId}
+                    onChange={(e) => {
+                      setInvestHabitId(e.target.value);
+                      setInvestError(null);
+                    }}
+                    className="w-full border-2 sm:border-3 border-black rounded-xl px-4 py-3 font-bold text-sm outline-none focus:bg-yellow-50 bg-white"
+                  >
+                    <option value="">Select a habit…</option>
+                    {habits.map((h) => (
+                      <option key={h.id} value={h.id} disabled={investedHabitIds.has(h.id)}>
+                        {h.title}
+                        {investedHabitIds.has(h.id) ? ' (already invested)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <label
+                    htmlFor="invest-dialog-amount"
+                    className="font-black text-gray-900 uppercase tracking-wider text-sm mb-2 block"
+                  >
+                    Investment Amount (stickers, min 10)
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="invest-dialog-amount"
+                      data-testid="invest-dialog-amount"
+                      type="number"
+                      placeholder="10"
+                      min={10}
+                      value={investAmount}
+                      onChange={(e) => {
+                        setInvestAmount(e.target.value);
+                        setInvestError(null);
+                      }}
+                      className={`w-full border-2 sm:border-3 rounded-xl px-4 py-3 text-xl font-black outline-none transition-colors ${
+                        investError
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-black focus:bg-yellow-50 focus:border-yellow-400'
+                      }`}
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black bg-lime-400 px-2 py-1 rounded border-2 border-black text-black">
+                      MIN: 10
+                    </div>
+                  </div>
+                  {(() => {
+                    const num = Number(investAmount) || 0;
+                    if (num >= 10) {
+                      return (
+                        <p className="text-xs text-gray-500 font-bold mt-1">
+                          = {currency} {(num * 0.5).toFixed(2)} invested, worth {currency}{' '}
+                          {(num * 0.5 + num * 5 * 0.5).toFixed(2)} at +5/day (7 days)
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
+                  {investError && (
+                    <p className="text-xs text-red-500 font-bold mt-1">{investError}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t-2 sm:border-t-3 border-black bg-purple-900 grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    setShowInvestDialog(false);
+                    setInvestAmount('');
+                    setInvestHabitId('');
+                    setInvestError(null);
+                  }}
+                  className="bg-purple-800 border-2 border-black text-white font-black py-3 rounded-xl hover:bg-purple-700 transition-all uppercase text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  data-testid="invest-dialog-submit"
+                  onClick={() => void handleInvest()}
+                  disabled={!investHabitId || Number(investAmount) < 10 || investing}
+                  className="bg-yellow-400 border-2 border-black text-black font-black py-3 rounded-xl shadow-neo hover:translate-y-0.5 hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
+                >
+                  {investing ? (
+                    <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                  ) : (
+                    `Invest ${Number(investAmount) >= 10 ? `${investAmount} stickers` : ''}`
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Withdraw Dialog ── */}
+        {withdrawInvestment && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+          <div
+            data-testid="withdraw-dialog"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              setWithdrawInvestment(null);
+              setWithdrawAmount('');
+              setWithdrawError(null);
+            }}
+          >
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+            <div
+              className="relative bg-purple-900 border-2 sm:border-3 border-black rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-6 pb-4 border-b-2 sm:border-b-3 border-black bg-purple-900 relative">
+                <button
+                  onClick={() => {
+                    setWithdrawInvestment(null);
+                    setWithdrawAmount('');
+                    setWithdrawError(null);
+                  }}
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-purple-800 border-2 border-black rounded-full text-white hover:bg-purple-700 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="bg-orange-400 p-2 rounded-xl border-2 border-black">
+                    <ArrowDownToLine className="w-6 h-6 text-black" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-white uppercase tracking-wide">
+                      Withdraw Investment
+                    </h2>
+                    <p className="text-purple-200 text-xs font-bold mt-0.5">
+                      {withdrawInvestment.habitName ?? 'Habit'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-5 bg-purple-50">
+                {/* Current value summary */}
+                <div className="bg-white border-2 border-black rounded-2xl p-4 shadow-neo">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-black text-gray-500 uppercase tracking-wide">
+                      Current Value
+                    </span>
+                    <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded">
+                      {withdrawInvestment.daysCompleted}d done
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-orange-500">
+                      {withdrawInvestment.currentValueStickers}
+                    </span>
+                    <span className="text-sm font-bold text-gray-500">stickers</span>
+                    <span className="text-sm font-black text-orange-400 ml-2">
+                      = {currency} {withdrawInvestment.currentValue.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 font-mono">
+                    Originally invested: {withdrawInvestment.originalInvestedStickers} stickers
+                    {withdrawInvestment.daysMissed > 0 &&
+                      ` · ${withdrawInvestment.daysMissed} missed`}
+                  </p>
+                </div>
+
+                {/* Amount input */}
+                <div>
+                  <label
+                    htmlFor="withdraw-dialog-amount"
+                    className="font-black text-gray-900 uppercase tracking-wider text-sm mb-2 block"
+                  >
+                    Stickers to Withdraw (leave blank for full)
+                  </label>
+                  <input
+                    id="withdraw-dialog-amount"
+                    data-testid="withdraw-dialog-amount"
+                    type="number"
+                    placeholder={String(withdrawInvestment.currentValueStickers)}
+                    min={1}
+                    max={withdrawInvestment.currentValueStickers}
+                    value={withdrawAmount}
+                    onChange={(e) => {
+                      setWithdrawAmount(e.target.value);
+                      setWithdrawError(null);
+                    }}
+                    className="w-full border-2 sm:border-3 border-black rounded-xl px-4 py-3 text-xl font-black outline-none focus:bg-orange-50"
+                  />
+                  {withdrawError && (
+                    <p className="text-xs text-red-500 font-bold mt-1">{withdrawError}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t-2 sm:border-t-3 border-black bg-purple-900 grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    setWithdrawInvestment(null);
+                    setWithdrawAmount('');
+                    setWithdrawError(null);
+                  }}
+                  className="bg-purple-800 border-2 border-black text-white font-black py-3 rounded-xl hover:bg-purple-700 transition-all uppercase text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  data-testid="withdraw-dialog-submit"
+                  onClick={() => void handleWithdraw()}
+                  disabled={withdrawing}
+                  className="bg-orange-400 border-2 border-black text-black font-black py-3 rounded-xl shadow-neo hover:translate-y-0.5 hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
+                >
+                  {withdrawing ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Withdraw'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Save Dialog ── */}
         {showSaveDialog && (
           // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
@@ -1885,7 +2340,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                   data-testid={`habit-card-${habit.id}`}
                 >
                   <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
-                  {renderHabitCard(habit, canEdit, canEditDay, false)}
+                  {renderHabitCard(habit, canEdit, canEditDay, investedHabitIds.has(habit.id))}
                 </div>
               ))}
             </div>
@@ -2147,6 +2602,100 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ── Active Investments ── */}
+        <div data-testid="active-investments" className="relative">
+          <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
+          <div className="relative bg-white border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-yellow-400 p-2 rounded-lg border-2 border-black">
+                  <TrendingUp className="w-5 h-5 text-black" />
+                </div>
+                <h2 className="text-lg sm:text-xl font-black uppercase">Active Investments 📈</h2>
+              </div>
+              <button
+                data-testid="invest-btn"
+                onClick={() => {
+                  setInvestAmount('');
+                  setInvestHabitId('');
+                  setInvestError(null);
+                  setShowInvestDialog(true);
+                }}
+                className="bg-[#6b21a8] border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
+              >
+                Invest
+              </button>
+            </div>
+
+            {investments.length === 0 ? (
+              <div className="text-center py-6">
+                <BarChart2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm font-bold text-gray-400">No active investments</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Invest stickers in a habit to grow your rewards!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {investments.map((inv) => {
+                  const gain = inv.currentValueStickers - inv.originalInvestedStickers;
+                  return (
+                    <div
+                      key={inv.id}
+                      data-testid={`investment-${inv.id}`}
+                      className="bg-amber-50 border-2 border-amber-400 rounded-xl p-3 flex items-center gap-3"
+                    >
+                      {/* Habit icon + name */}
+                      <div className="flex-shrink-0 w-9 h-9 bg-amber-100 border-2 border-amber-400 rounded-lg flex items-center justify-center text-lg">
+                        {mapIconStringToElement(inv.habitIcon)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-gray-900 text-sm truncate">
+                          {inv.habitName ?? 'Habit'}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span className="text-xs font-bold text-amber-700">
+                            {inv.investedStickers}→{inv.currentValueStickers} ⭐
+                          </span>
+                          <span className="text-xs font-bold text-lime-600">
+                            {currency} {inv.currentValue.toFixed(2)}
+                          </span>
+                          {gain > 0 && (
+                            <span className="text-[10px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                              +{gain}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                            {inv.daysCompleted}d done
+                          </span>
+                          {inv.daysMissed > 0 && (
+                            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                              {inv.daysMissed}d missed
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        data-testid={`investment-withdraw-btn-${inv.id}`}
+                        onClick={() => {
+                          setWithdrawInvestment(inv);
+                          setWithdrawAmount(String(inv.currentValueStickers));
+                          setWithdrawError(null);
+                        }}
+                        className="flex-shrink-0 bg-orange-400 border-2 border-black text-black font-black text-xs px-2.5 py-1.5 rounded-lg shadow-neo-xs hover:brightness-105 active:translate-y-0.5 transition-all uppercase"
+                      >
+                        Withdraw
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
