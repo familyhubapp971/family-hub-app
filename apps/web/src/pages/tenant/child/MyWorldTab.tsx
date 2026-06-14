@@ -254,10 +254,14 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   // Admin = true for this parent-accessed route — all days editable
   const isAdmin = true;
 
+  // Key on the token STRING, not the session object. Supabase re-fires
+  // onAuthStateChange with a fresh session object on window/tab refocus; if
+  // `headers` depended on the object it would change identity every refocus,
+  // re-running fetchData and flashing the loading screen ("reloads on tab switch").
+  const accessToken = session?.access_token ?? null;
   const headers = useMemo(
-    () =>
-      session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
-    [session, slug],
+    () => (accessToken ? { Authorization: `Bearer ${accessToken}`, 'x-tenant-slug': slug } : null),
+    [accessToken, slug],
   );
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -1842,38 +1846,38 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
                       </p>
                       {showOriginally && (
                         <div
-                          className="flex justify-between text-xs font-mono mb-1.5"
+                          className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-1.5"
                           data-testid="investment-original"
                         >
                           <span className="text-slate-400">Originally</span>
-                          <span className="text-slate-200 font-bold">
+                          <span className="text-slate-200 font-bold ml-auto whitespace-nowrap">
                             {inv.originalInvestedStickers} stickers ({currency}{' '}
                             {(inv.originalInvestedStickers! * 0.5).toFixed(2)})
                           </span>
                         </div>
                       )}
                       <div
-                        className="flex justify-between text-xs font-mono mb-1.5"
+                        className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-1.5"
                         data-testid="investment-invested"
                       >
                         <span className="text-slate-400">Invested</span>
-                        <span className="text-yellow-400 font-bold">
+                        <span className="text-yellow-400 font-bold ml-auto whitespace-nowrap">
                           {inv.investedStickers} stickers ({currency}{' '}
                           {(inv.investedStickers * 0.5).toFixed(2)})
                         </span>
                       </div>
                       <div
-                        className="flex justify-between text-xs font-mono mb-2"
+                        className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-2"
                         data-testid="investment-current"
                       >
-                        <span className="text-slate-400">
+                        <span className="text-slate-400 whitespace-nowrap">
                           Now ({inv.daysCompleted}/7 done
                           {inv.daysMissed > 0 && (
                             <span className="text-red-400 ml-1">· {inv.daysMissed} missed</span>
                           )}
                           )
                         </span>
-                        <span className="font-black text-fuchsia-300">
+                        <span className="font-black text-fuchsia-300 ml-auto whitespace-nowrap">
                           {inv.currentValueStickers} stickers ({currency}{' '}
                           {inv.currentValue.toFixed(2)})
                           {delta !== 0 && (
