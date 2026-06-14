@@ -27,6 +27,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 import { CloseWeekDialog } from './CloseWeekDialog';
+import { AnalyticsView } from './AnalyticsView';
 
 // FHS-292 — My World habit grid (legacy HabitTracker UI port).
 // Pixel / behaviour parity with the legacy HabitTracker component.
@@ -2260,7 +2261,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
         </div>
 
         {activeTab === 'analytics' ? (
-          <div data-testid="analytics-placeholder">Analytics coming soon</div>
+          <AnalyticsView memberId={memberId} headers={headers} />
         ) : (
           <>
             {/* ── Week Navigator ── */}
