@@ -169,6 +169,9 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     expect(screen.getByTestId(`habit-card-title-${HABIT}`).textContent).toContain('Brush teeth');
     expect(screen.getByTestId(`habit-day-cell-${HABIT}-0`)).toBeInTheDocument();
     expect(screen.getByTestId('sticker-balance').textContent).toContain('3');
+    // My Stickers grid (sticker types)
+    expect(screen.getByTestId('my-sticker-gold-star')).toBeInTheDocument();
+    expect(screen.getByTestId('my-sticker-trophy')).toBeInTheDocument();
   });
 
   it('shows the no-data state when there are no weeks', async () => {

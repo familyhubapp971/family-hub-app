@@ -1657,73 +1657,107 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
-          REWARDS SHOP — right column (xl:col-span-4) — PRESERVED AS-IS
+          RIGHT COLUMN (xl:col-span-4) — My Stickers + Rewards Shop
           ════════════════════════════════════════════════════════════════════ */}
-      <section
-        aria-labelledby="rewards-shop-heading"
-        className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-6 xl:col-span-4"
-        data-testid="rewards-shop"
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 id="rewards-shop-heading" className="font-heading text-xl text-black">
-            Rewards Shop
+      <div className="space-y-4 xl:col-span-4">
+        {/* My Stickers — the sticker types a child can earn (FHS-294) */}
+        <section
+          aria-labelledby="my-stickers-heading"
+          className="rounded-2xl border-2 border-black bg-white p-4 shadow-neo sm:border-3"
+          data-testid="my-stickers"
+        >
+          <h2
+            id="my-stickers-heading"
+            className="mb-3 flex items-center gap-2 text-xl font-black uppercase text-black"
+          >
+            <span
+              aria-hidden="true"
+              className="grid h-8 w-8 place-items-center rounded-lg border-2 border-black bg-pink-400"
+            >
+              <Star className="h-4 w-4" />
+            </span>
+            My Stickers 💖
           </h2>
-          <span
-            data-testid="sticker-balance"
-            className="flex items-center gap-1.5 rounded-full border-2 border-black bg-black px-3 py-1.5 font-heading text-sm text-white shadow-neo-xs"
-          >
-            <Star size={14} className="fill-yellow-300 text-yellow-300" aria-hidden="true" />
-            {balance} Stars
-          </span>
-        </div>
-        {rewards.length === 0 ? (
-          <p
-            data-testid="rewards-empty"
-            className="py-3 text-center text-sm font-bold text-gray-500"
-          >
-            No rewards yet — a grown-up can add some.
-          </p>
-        ) : (
-          <ul className="grid grid-cols-1 gap-3" data-testid="rewards-grid">
-            {rewards.map((r) => {
-              const affordable = balance >= r.stickerCost;
-              return (
-                <li
-                  key={r.id}
-                  data-testid={`reward-card-${r.id}`}
-                  className={`flex items-center justify-between gap-2 rounded-lg border-2 border-black p-2.5 ${
-                    affordable ? 'bg-white' : 'bg-gray-100 opacity-70'
-                  }`}
-                >
-                  <span className="min-w-0 truncate text-sm font-bold text-black">
-                    {r.icon ? `${r.icon} ` : ''}
-                    {r.name}
-                  </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <span
-                      data-testid={`reward-cost-${r.id}`}
-                      className="flex items-center gap-1 text-xs font-bold text-purple-700"
-                    >
-                      <Star size={12} className="fill-yellow-500" aria-hidden="true" />{' '}
-                      {r.stickerCost}
+          <div className="grid grid-cols-2 gap-3">
+            {AVAILABLE_STICKERS.map((s) => (
+              <div
+                key={s.id}
+                data-testid={`my-sticker-${s.id}`}
+                className={`flex flex-col items-center gap-1 rounded-xl border-2 border-black p-3 shadow-neo-xs ${s.color}`}
+              >
+                <span aria-hidden="true">{s.icon}</span>
+                <span className="text-xs font-black uppercase text-black">{s.name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="rewards-shop-heading"
+          className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-6"
+          data-testid="rewards-shop"
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h2 id="rewards-shop-heading" className="font-heading text-xl text-black">
+              Rewards Shop
+            </h2>
+            <span
+              data-testid="sticker-balance"
+              className="flex items-center gap-1.5 rounded-full border-2 border-black bg-black px-3 py-1.5 font-heading text-sm text-white shadow-neo-xs"
+            >
+              <Star size={14} className="fill-yellow-300 text-yellow-300" aria-hidden="true" />
+              {balance} Stars
+            </span>
+          </div>
+          {rewards.length === 0 ? (
+            <p
+              data-testid="rewards-empty"
+              className="py-3 text-center text-sm font-bold text-gray-500"
+            >
+              No rewards yet — a grown-up can add some.
+            </p>
+          ) : (
+            <ul className="grid grid-cols-1 gap-3" data-testid="rewards-grid">
+              {rewards.map((r) => {
+                const affordable = balance >= r.stickerCost;
+                return (
+                  <li
+                    key={r.id}
+                    data-testid={`reward-card-${r.id}`}
+                    className={`flex items-center justify-between gap-2 rounded-lg border-2 border-black p-2.5 ${
+                      affordable ? 'bg-white' : 'bg-gray-100 opacity-70'
+                    }`}
+                  >
+                    <span className="min-w-0 truncate text-sm font-bold text-black">
+                      {r.icon ? `${r.icon} ` : ''}
+                      {r.name}
                     </span>
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      onClick={() => void onRedeem(r)}
-                      disabled={!affordable}
-                      testId={`reward-buy-${r.id}`}
-                    >
-                      {affordable ? 'Buy' : 'Locked'}
-                    </Button>
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span
+                        data-testid={`reward-cost-${r.id}`}
+                        className="flex items-center gap-1 text-xs font-bold text-purple-700"
+                      >
+                        <Star size={12} className="fill-yellow-500" aria-hidden="true" />{' '}
+                        {r.stickerCost}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        onClick={() => void onRedeem(r)}
+                        disabled={!affordable}
+                        testId={`reward-buy-${r.id}`}
+                      >
+                        {affordable ? 'Buy' : 'Locked'}
+                      </Button>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
