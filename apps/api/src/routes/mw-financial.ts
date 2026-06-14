@@ -1,17 +1,24 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, lt, sql } from 'drizzle-orm';
 import { getDb } from '../db/client.js';
 import {
+  habits,
   habitStickers,
   members,
+  mwInvestments,
   mwSavings,
   mwSavingsTransactions,
   mwTransactionStickers,
   mwWeekActions,
+  mwWeeks,
 } from '../db/schema.js';
 import { getAuthenticatedUser } from '../middleware/auth.js';
 import {
+  cashAsStickers,
+  elapsedDaysForWeek,
+  INVEST_MIN_STICKERS,
+  investmentValue,
   STICKER_TO_CASH,
   getOrCreateCurrentWeek,
   getOrCreateSavings,
@@ -226,6 +233,487 @@ export const mwFinancialRouter = new Hono()
     }
     return c.json({ success: true, transactionId: outcome.transactionId }, 201);
   })
+  // ── INVESTMENTS (FHS-296) ──────────────────────────────────────────────────
+  //
+  // Ported from legacy family-hub. Three routes:
+  //   GET  /investments?memberId=  — active investments for this child
+  //   POST /investments            — create a new investment
+  //   POST /investments/:id/withdraw — full or partial withdrawal
+  //
+  // All are per (tenant, member) and gate through the same `guard` helper used
+  // by savings/cashout above. Create + withdraw run inside an advisory-locked
+  // transaction so concurrent requests can't double-spend stickers.
+
+  // GET active investments. For each one, recalculates value in-place
+  // (completed days from habit_stickers, missed days from elapsed time),
+  // persists the fresh values, and returns them in the response.
+  .get('/investments', async (c) => {
+    const parsed = memberQuerySchema.safeParse({ memberId: c.req.query('memberId') });
+    if (!parsed.success) {
+      return c.json({ error: 'invalid request', detail: 'memberId (uuid) required' }, 400);
+    }
+    const g = await guard(c, parsed.data.memberId);
+    if ('res' in g) return g.res;
+    const { db, tenantId } = g;
+    const { memberId } = parsed.data;
+    const now = new Date();
+
+    // Load every active investment joined to its habit + week.
+    const rows = await db
+      .select({
+        id: mwInvestments.id,
+        habitId: mwInvestments.habitId,
+        weekId: mwInvestments.weekId,
+        investedStickers: mwInvestments.investedStickers,
+        originalInvestedStickers: mwInvestments.originalInvestedStickers,
+        currentValue: mwInvestments.currentValue,
+        daysCompleted: mwInvestments.daysCompleted,
+        daysMissed: mwInvestments.daysMissed,
+        habitName: habits.name,
+        habitIcon: habits.icon,
+        weekIsFinalized: mwWeeks.isFinalized,
+        weekStartDate: mwWeeks.startDate,
+      })
+      .from(mwInvestments)
+      .leftJoin(habits, eq(mwInvestments.habitId, habits.id))
+      .leftJoin(mwWeeks, eq(mwInvestments.weekId, mwWeeks.id))
+      .where(
+        and(
+          eq(mwInvestments.tenantId, tenantId),
+          eq(mwInvestments.memberId, memberId),
+          eq(mwInvestments.isActive, true),
+        ),
+      );
+
+    // Recalculate value for each investment and persist fresh values.
+    const investments = await Promise.all(
+      rows.map(async (inv) => {
+        const elapsed = elapsedDaysForWeek(
+          {
+            isFinalized: inv.weekIsFinalized ?? false,
+            startDate: inv.weekStartDate ?? new Date().toISOString().slice(0, 10),
+          },
+          now,
+        );
+
+        // Count stickers the child placed on this habit in this week.
+        const [completedRow] = await db
+          .select({ n: count() })
+          .from(habitStickers)
+          .where(
+            and(
+              eq(habitStickers.tenantId, tenantId),
+              eq(habitStickers.memberId, memberId),
+              eq(habitStickers.habitId, inv.habitId),
+              eq(habitStickers.weekId, inv.weekId),
+            ),
+          );
+        const completedDays = completedRow?.n ?? 0;
+
+        // Stickers placed only on days that have already fully passed.
+        const [pastRow] = await db
+          .select({ n: count() })
+          .from(habitStickers)
+          .where(
+            and(
+              eq(habitStickers.tenantId, tenantId),
+              eq(habitStickers.memberId, memberId),
+              eq(habitStickers.habitId, inv.habitId),
+              eq(habitStickers.weekId, inv.weekId),
+              lt(habitStickers.day, elapsed),
+            ),
+          );
+        const stickersOnPastDays = pastRow?.n ?? 0;
+        const missedDays = Math.max(0, elapsed - stickersOnPastDays);
+
+        const { currentValueStickers, currentValueCash } = investmentValue({
+          investedStickers: inv.investedStickers,
+          completedDays,
+          missedDays,
+        });
+
+        // Persist the fresh values back so the DB stays in sync.
+        await db
+          .update(mwInvestments)
+          .set({
+            currentValue: String(currentValueCash),
+            daysCompleted: completedDays,
+            daysMissed: missedDays,
+          })
+          .where(eq(mwInvestments.id, inv.id));
+
+        return {
+          id: inv.id,
+          habitId: inv.habitId,
+          habitName: inv.habitName,
+          habitIcon: inv.habitIcon,
+          investedStickers: inv.investedStickers,
+          originalInvestedStickers: inv.originalInvestedStickers,
+          currentValue: currentValueCash,
+          currentValueStickers,
+          daysCompleted: completedDays,
+          daysMissed: missedDays,
+        };
+      }),
+    );
+
+    return c.json({ investments });
+  })
+
+  // POST create investment. Checks availability (savings-first), allocates
+  // stickers, inserts the investment row, and records a week action.
+  .post('/investments', async (c) => {
+    const body = (await c.req.json().catch(() => null)) as unknown;
+    const parsed = z
+      .object({
+        memberId: z.string().uuid(),
+        habitId: z.string().uuid(),
+        stickerCount: z
+          .number()
+          .int()
+          .min(INVEST_MIN_STICKERS, {
+            message: `Minimum ${INVEST_MIN_STICKERS} stickers required to invest`,
+          }),
+      })
+      .safeParse(body);
+    if (!parsed.success) {
+      return c.json(
+        {
+          error: 'invalid request',
+          issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+        },
+        400,
+      );
+    }
+    const { memberId, habitId, stickerCount } = parsed.data;
+    const g = await guard(c, memberId);
+    if ('res' in g) return g.res;
+    const { db, tenantId } = g;
+
+    // Verify the habit exists in this tenant.
+    const habitRows = await db
+      .select({ id: habits.id, name: habits.name })
+      .from(habits)
+      .where(and(eq(habits.tenantId, tenantId), eq(habits.id, habitId)))
+      .limit(1);
+    if (!habitRows[0]) {
+      return c.json({ error: 'not found', detail: 'habit not found in this tenant' }, 404);
+    }
+    const habitName = habitRows[0].name;
+
+    // Reject if an active investment already exists for this habit.
+    const existingRows = await db
+      .select({ id: mwInvestments.id })
+      .from(mwInvestments)
+      .where(
+        and(
+          eq(mwInvestments.tenantId, tenantId),
+          eq(mwInvestments.memberId, memberId),
+          eq(mwInvestments.habitId, habitId),
+          eq(mwInvestments.isActive, true),
+        ),
+      )
+      .limit(1);
+    if (existingRows[0]) {
+      return c.json(
+        {
+          error: 'conflict',
+          errorCode: 'ACTIVE_INVESTMENT_EXISTS',
+          detail: 'an active investment for this habit already exists',
+        },
+        409,
+      );
+    }
+
+    const week = await getOrCreateCurrentWeek(db, tenantId, memberId);
+
+    const outcome = await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${tenantId}:${memberId}`}, 0))`,
+      );
+
+      const s = await getOrCreateSavings(tx, tenantId, memberId);
+
+      // Available = unallocated week sticker value + saved stickers + cash-as-stickers.
+      const unallocated = await tx
+        .select({ id: habitStickers.id, value: habitStickers.stickerValue })
+        .from(habitStickers)
+        .where(
+          and(
+            eq(habitStickers.tenantId, tenantId),
+            eq(habitStickers.memberId, memberId),
+            eq(habitStickers.weekId, week.id),
+            eq(habitStickers.isAllocated, false),
+          ),
+        )
+        .orderBy(asc(habitStickers.stickerValue));
+      const weekValue = unallocated.reduce((acc, r) => acc + r.value, 0);
+      const available = weekValue + s.savedStickers + cashAsStickers(s.savedCash);
+
+      if (stickerCount > available) {
+        return { ok: false as const, available };
+      }
+
+      // Allocate savings-first: savedStickers → savedCash → week stickers.
+      let remaining = stickerCount;
+
+      if (remaining > 0 && s.savedStickers > 0) {
+        const fromStickers = Math.min(remaining, s.savedStickers);
+        await tx
+          .update(mwSavings)
+          .set({
+            savedStickers: sql`${mwSavings.savedStickers} - ${fromStickers}`,
+            updatedAt: new Date(),
+          })
+          .where(and(eq(mwSavings.tenantId, tenantId), eq(mwSavings.memberId, memberId)));
+        remaining -= fromStickers;
+      }
+
+      if (remaining > 0 && s.savedCash > 0) {
+        const fromCashStickers = Math.min(remaining, cashAsStickers(s.savedCash));
+        const cashToDeduct = fromCashStickers * STICKER_TO_CASH;
+        await tx
+          .update(mwSavings)
+          .set({ savedCash: sql`${mwSavings.savedCash} - ${cashToDeduct}`, updatedAt: new Date() })
+          .where(and(eq(mwSavings.tenantId, tenantId), eq(mwSavings.memberId, memberId)));
+        remaining -= fromCashStickers;
+      }
+
+      if (remaining > 0) {
+        // Mark week stickers as allocated (smallest value first).
+        const allocateIds: string[] = [];
+        let covered = 0;
+        for (const r of unallocated) {
+          if (covered >= remaining) break;
+          allocateIds.push(r.id);
+          covered += r.value;
+        }
+        if (allocateIds.length > 0) {
+          await tx
+            .update(habitStickers)
+            .set({ isAllocated: true })
+            .where(
+              and(
+                eq(habitStickers.tenantId, tenantId),
+                eq(habitStickers.memberId, memberId),
+                eq(habitStickers.isAllocated, false),
+                inArray(habitStickers.id, allocateIds),
+              ),
+            );
+        }
+      }
+
+      const [investment] = await tx
+        .insert(mwInvestments)
+        .values({
+          tenantId,
+          memberId,
+          habitId,
+          weekId: week.id,
+          investedStickers: stickerCount,
+          originalInvestedStickers: stickerCount,
+          investedAmount: String(stickerCount * STICKER_TO_CASH),
+          currentValue: String(stickerCount * STICKER_TO_CASH),
+          daysCompleted: 0,
+          daysMissed: 0,
+          isActive: true,
+          isResolved: false,
+        })
+        .returning();
+
+      await tx.insert(mwWeekActions).values({
+        tenantId,
+        memberId,
+        weekId: week.id,
+        actionType: 'invest',
+        stickersUsed: stickerCount,
+        habitId,
+        habitName,
+        cashAmount: String(stickerCount * STICKER_TO_CASH),
+      });
+
+      return { ok: true as const, investment };
+    });
+
+    if (!outcome.ok) {
+      return c.json(
+        {
+          error: 'not enough stickers',
+          errorCode: 'INSUFFICIENT_STICKERS',
+          available: outcome.available,
+        },
+        409,
+      );
+    }
+    return c.json(outcome.investment, 201);
+  })
+
+  // POST withdraw from an active investment (full or partial).
+  .post('/investments/:id/withdraw', async (c) => {
+    const investmentId = c.req.param('id');
+    const body = (await c.req.json().catch(() => null)) as unknown;
+    const parsed = z
+      .object({
+        memberId: z.string().uuid(),
+        stickers: z.number().int().min(1).optional(),
+      })
+      .safeParse(body);
+    if (!parsed.success) {
+      return c.json(
+        {
+          error: 'invalid request',
+          issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+        },
+        400,
+      );
+    }
+    const { memberId, stickers: requestedStickers } = parsed.data;
+    const g = await guard(c, memberId);
+    if ('res' in g) return g.res;
+    const { db, tenantId } = g;
+
+    // Verify the investment exists, is active, and belongs to this member.
+    const invRows = await db
+      .select()
+      .from(mwInvestments)
+      .where(
+        and(
+          eq(mwInvestments.tenantId, tenantId),
+          eq(mwInvestments.memberId, memberId),
+          eq(mwInvestments.id, investmentId),
+          eq(mwInvestments.isActive, true),
+        ),
+      )
+      .limit(1);
+    if (!invRows[0]) {
+      return c.json({ error: 'not found', detail: 'investment not found or not active' }, 404);
+    }
+    const inv = invRows[0];
+
+    // Load the habit name for the week action.
+    const habitRows = await db
+      .select({ name: habits.name })
+      .from(habits)
+      .where(eq(habits.id, inv.habitId))
+      .limit(1);
+    const habitName = habitRows[0]?.name ?? null;
+
+    // Load week to compute current value (same recalc logic as GET).
+    const weekRows = await db
+      .select({ isFinalized: mwWeeks.isFinalized, startDate: mwWeeks.startDate })
+      .from(mwWeeks)
+      .where(eq(mwWeeks.id, inv.weekId))
+      .limit(1);
+    const week = weekRows[0];
+    const now = new Date();
+    const elapsed = week
+      ? elapsedDaysForWeek({ isFinalized: week.isFinalized, startDate: week.startDate }, now)
+      : 0;
+
+    const [completedRow] = await db
+      .select({ n: count() })
+      .from(habitStickers)
+      .where(
+        and(
+          eq(habitStickers.tenantId, tenantId),
+          eq(habitStickers.memberId, memberId),
+          eq(habitStickers.habitId, inv.habitId),
+          eq(habitStickers.weekId, inv.weekId),
+        ),
+      );
+    const completedDays = completedRow?.n ?? 0;
+
+    const [pastRow] = await db
+      .select({ n: count() })
+      .from(habitStickers)
+      .where(
+        and(
+          eq(habitStickers.tenantId, tenantId),
+          eq(habitStickers.memberId, memberId),
+          eq(habitStickers.habitId, inv.habitId),
+          eq(habitStickers.weekId, inv.weekId),
+          lt(habitStickers.day, elapsed),
+        ),
+      );
+    const stickersOnPastDays = pastRow?.n ?? 0;
+    const missedDays = Math.max(0, elapsed - stickersOnPastDays);
+
+    const { currentValueStickers } = investmentValue({
+      investedStickers: inv.investedStickers,
+      completedDays,
+      missedDays,
+    });
+
+    const total = currentValueStickers;
+    if (requestedStickers !== undefined && requestedStickers > total) {
+      return c.json(
+        { error: 'cannot withdraw more stickers than available', available: total },
+        400,
+      );
+    }
+    const toWithdraw = requestedStickers ?? total;
+    const isPartial = toWithdraw < total;
+
+    const outcome = await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${tenantId}:${memberId}`}, 0))`,
+      );
+
+      // Credit savedStickers.
+      await tx
+        .update(mwSavings)
+        .set({
+          savedStickers: sql`${mwSavings.savedStickers} + ${toWithdraw}`,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(mwSavings.tenantId, tenantId), eq(mwSavings.memberId, memberId)));
+
+      if (isPartial) {
+        const remaining = total - toWithdraw;
+        await tx
+          .update(mwInvestments)
+          .set({
+            investedStickers: remaining,
+            currentValue: String(remaining * STICKER_TO_CASH),
+          })
+          .where(eq(mwInvestments.id, investmentId));
+      } else {
+        await tx
+          .update(mwInvestments)
+          .set({
+            isActive: false,
+            isResolved: true,
+            finalReturn: String(toWithdraw * STICKER_TO_CASH),
+          })
+          .where(eq(mwInvestments.id, investmentId));
+      }
+
+      const currentWeek = await getOrCreateCurrentWeek(tx, tenantId, memberId, now);
+      await tx.insert(mwWeekActions).values({
+        tenantId,
+        memberId,
+        weekId: currentWeek.id,
+        actionType: 'withdraw',
+        stickersUsed: toWithdraw,
+        habitId: inv.habitId,
+        habitName,
+        cashAmount: String(toWithdraw * STICKER_TO_CASH),
+      });
+
+      return { ok: true as const };
+    });
+
+    if (!outcome.ok) {
+      return c.json({ error: 'withdraw transaction failed' }, 500);
+    }
+
+    return c.json({
+      success: true,
+      withdrawnStickers: toWithdraw,
+      remainingStickers: total - toWithdraw,
+    });
+  })
+
   // Cash out from combined savings (cash first, then saved stickers).
   .post('/savings/cashout', async (c) => {
     const body = (await c.req.json().catch(() => null)) as unknown;

@@ -63,6 +63,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
   const tenantIds: Record<string, string> = {};
   const memberIds: Record<string, string> = {};
   const habitIds: Record<string, string> = {};
+  const lastChildByTenant: Record<string, string> = {};
   const rewardIds: Record<string, string> = {};
 
   function headers(slug: string) {
@@ -122,12 +123,13 @@ describeFeature(feature, ({ Background, Scenario }) => {
       })
       .returning();
     memberIds[name] = row!.id;
+    lastChildByTenant[slug] = row!.id; // habits seeded next belong to this child
   }
 
   async function seedHabit(slug: string, name: string, isBonus = false) {
     const [row] = await db
       .insert(habits)
-      .values({ tenantId: tenantIds[slug]!, name, isBonus })
+      .values({ tenantId: tenantIds[slug]!, memberId: lastChildByTenant[slug]!, name, isBonus })
       .returning();
     habitIds[name] = row!.id;
   }
@@ -456,4 +458,32 @@ describeFeature(feature, ({ Background, Scenario }) => {
       );
     },
   );
+
+  Scenario('Each child sees only their own habits (multi-child)', ({ Given, And, When, Then }) => {
+    let res: Response;
+    let body: { habits: unknown[]; stickers: unknown[] };
+    Given(
+      'the {string} tenant has a child member {string}',
+      async (_c, slug: string, name: string) => {
+        await seedChild(slug, name);
+      },
+    );
+    And('the {string} tenant has a habit {string}', async (_c, slug: string, name: string) => {
+      await seedHabit(slug, name);
+    });
+    When(
+      'the caller GETs habits for {string} in tenant {string}',
+      async (_c, m: string, slug: string) => {
+        res = await app.request(`/api/habits?memberId=${memberIds[m]!}`, {
+          method: 'GET',
+          headers: headers(slug),
+        });
+        body = (await res.json()) as { habits: unknown[]; stickers: unknown[] };
+      },
+    );
+    Then('the habits response status is 200', () => expect(res.status).toBe(200));
+    And('the habits response has {int} habits', (_c, n: number) =>
+      expect(body.habits).toHaveLength(n),
+    );
+  });
 });

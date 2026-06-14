@@ -169,7 +169,13 @@ export const habitsRouter = new Hono()
           isBonus: habits.isBonus,
         })
         .from(habits)
-        .where(and(eq(habits.tenantId, tenantId), isNull(habits.archivedAt)))
+        .where(
+          and(
+            eq(habits.tenantId, tenantId),
+            eq(habits.memberId, memberId),
+            isNull(habits.archivedAt),
+          ),
+        )
         .orderBy(asc(habits.createdAt)),
       db
         .select({
@@ -212,11 +218,11 @@ export const habitsRouter = new Hono()
     const { db, tenantId, parsed } = await parseBody(c, ctx, createSchema);
     if ('res' in parsed) return parsed.res;
     const { memberId, name, icon, color, isBonus } = parsed.data;
-    void memberId;
     const [row] = await db
       .insert(habits)
       .values({
         tenantId,
+        memberId,
         name,
         icon: icon ?? null,
         color: color ?? '#facc15',

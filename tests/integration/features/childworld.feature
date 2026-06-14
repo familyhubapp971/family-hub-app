@@ -64,3 +64,10 @@ Feature: ChildWorld habits + sticker economy (FHS-292)
     Then the habits response status is 200
     And the habits response has 1 habits
     And the habits response has 0 stickers
+
+  Scenario: Each child sees only their own habits (multi-child)
+    Given the "khan" tenant has a child member "Bilal"
+    And the "khan" tenant has a habit "Read book"
+    When the caller GETs habits for "Ali" in tenant "khan"
+    Then the habits response status is 200
+    And the habits response has 1 habits
