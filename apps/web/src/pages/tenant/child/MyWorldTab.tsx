@@ -11,6 +11,7 @@ import {
   Edit2,
   Gift,
   Heart,
+  Loader2,
   Lock,
   PiggyBank,
   Plus,
@@ -270,6 +271,22 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const [newHabitColor, setNewHabitColor] = useState('bg-pink-400');
   const [newHabitIconName, setNewHabitIconName] = useState('Star');
 
+  // ── Savings / banking state ───────────────────────────────────────────────
+  const [savedStickers, setSavedStickers] = useState(0);
+  const [savedCash, setSavedCash] = useState(0);
+  const [unallocatedStickers, setUnallocatedStickers] = useState(0);
+  // Save dialog
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saveType, setSaveType] = useState<'stickers' | 'cash'>('stickers');
+  const [saveAmount, setSaveAmount] = useState('');
+  const [savingAction, setSavingAction] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // CashOut dialog
+  const [showCashoutDialog, setShowCashoutDialog] = useState(false);
+  const [cashoutAmount, setCashoutAmount] = useState('');
+  const [cashingOut, setCashingOut] = useState(false);
+  const [cashoutError, setCashoutError] = useState<string | null>(null);
+
   const habitsCache = useRef<Map<string, Habit[]>>(new Map());
   const redeemingRef = useRef<Set<string>>(new Set());
 
@@ -385,6 +402,124 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
     void fetchData();
   }, [fetchData]);
 
+  // ── Savings fetch ─────────────────────────────────────────────────────────
+  const fetchSavings = useCallback(async () => {
+    if (!headers) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/mw/financial/savings?memberId=${memberId}`, {
+        headers,
+      });
+      if (!res.ok) return;
+      const body = (await res.json()) as {
+        savedStickers: number;
+        savedCash: number;
+        currency?: string;
+      };
+      setSavedStickers(body.savedStickers ?? 0);
+      setSavedCash(body.savedCash ?? 0);
+      if (body.currency) setCurrency(body.currency);
+    } catch {
+      // Non-fatal; leave prior values
+    }
+  }, [headers, memberId]);
+
+  const fetchWeekStats = useCallback(
+    async (weekId: string) => {
+      if (!headers) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/mw/weeks/${weekId}/stats?memberId=${memberId}`, {
+          headers,
+        });
+        if (!res.ok) return;
+        const body = (await res.json()) as { unallocatedStickers?: number };
+        setUnallocatedStickers(body.unallocatedStickers ?? 0);
+      } catch {
+        // Non-fatal
+      }
+    },
+    [headers, memberId],
+  );
+
+  useEffect(() => {
+    void fetchSavings();
+  }, [fetchSavings]);
+
+  // Fetch week stats whenever the active week changes
+  useEffect(() => {
+    const w = weeks[weekIndex];
+    if (w && !w.isFinalized) {
+      void fetchWeekStats(w.weekId);
+    }
+  }, [weekIndex, weeks, fetchWeekStats]);
+
+  // ── Save action ───────────────────────────────────────────────────────────
+  const handleSave = useCallback(async () => {
+    const num = Number(saveAmount);
+    if (!num || num <= 0 || !headers) return;
+    setSavingAction(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/mw/financial/savings`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId,
+          type: saveType,
+          amount: saveType === 'cash' ? num * 0.5 : num,
+        }),
+      });
+      if (res.status === 409) {
+        setSaveError('Not enough weekly stickers to save.');
+        return;
+      }
+      if (!res.ok) {
+        setSaveError(`Save failed (${res.status})`);
+        return;
+      }
+      setShowSaveDialog(false);
+      setSaveAmount('');
+      setSaveType('stickers');
+      // Refresh savings + current week stats
+      void fetchSavings();
+      const w = weeks[weekIndex];
+      if (w) void fetchWeekStats(w.weekId);
+    } catch {
+      setSaveError('Network error — try again.');
+    } finally {
+      setSavingAction(false);
+    }
+  }, [saveAmount, saveType, headers, memberId, fetchSavings, fetchWeekStats, weeks, weekIndex]);
+
+  // ── Cash Out action ───────────────────────────────────────────────────────
+  const handleCashout = useCallback(async () => {
+    const num = Number(cashoutAmount);
+    if (!num || num <= 0 || !headers) return;
+    setCashingOut(true);
+    setCashoutError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/mw/financial/savings/cashout`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId, amount: num }),
+      });
+      if (res.status === 409) {
+        setCashoutError('Not enough savings to cash out that amount.');
+        return;
+      }
+      if (!res.ok) {
+        setCashoutError(`Cashout failed (${res.status})`);
+        return;
+      }
+      setShowCashoutDialog(false);
+      setCashoutAmount('');
+      void fetchSavings();
+    } catch {
+      setCashoutError('Network error — try again.');
+    } finally {
+      setCashingOut(false);
+    }
+  }, [cashoutAmount, headers, memberId, fetchSavings]);
+
   // Lazy-load habits when navigating to a week with no cached data
   useEffect(() => {
     const w = weeks[weekIndex];
@@ -461,6 +596,12 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const habits = week?.habits ?? [];
   const totalDone = habits.reduce((s, h) => s + h.total, 0);
   const totalPossible = habits.length * 7;
+
+  // ── Savings derived values ────────────────────────────────────────────────
+  const fromCash = Math.floor(savedCash / 0.5);
+  const savingsTotal = savedCash + savedStickers * 0.5;
+  const weeklyValue = (unallocatedStickers * 0.5).toFixed(2);
+  const bigRewardProgress = Math.min(100, (savedStickers / 100) * 100);
 
   // ── Habit state updater ───────────────────────────────────────────────────
   const updateWeekHabits = useCallback(
@@ -1348,6 +1489,291 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
           </div>
         )}
 
+        {/* ── Save Dialog ── */}
+        {showSaveDialog && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+          <div
+            data-testid="save-dialog"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              setShowSaveDialog(false);
+              setSaveAmount('');
+              setSaveError(null);
+            }}
+          >
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+            <div
+              className="relative bg-white border-2 sm:border-3 border-black rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-6 pb-4 border-b-2 sm:border-b-3 border-black bg-blue-50 relative">
+                <button
+                  onClick={() => {
+                    setShowSaveDialog(false);
+                    setSaveAmount('');
+                    setSaveError(null);
+                  }}
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-blue-100 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="bg-blue-400 p-2 rounded-xl border-2 border-black">
+                    <PiggyBank className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black uppercase tracking-wide">Save for Later</h2>
+                    <p className="text-blue-600/80 text-xs font-bold">
+                      Stack up for bigger rewards!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-6">
+                {/* Type toggle */}
+                <div>
+                  <p className="font-black text-gray-900 uppercase tracking-wider text-sm mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs">
+                      1
+                    </span>
+                    What to save?
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      data-testid="save-dialog-type-stickers"
+                      onClick={() => setSaveType('stickers')}
+                      className={`p-4 rounded-2xl border-2 sm:border-3 text-left transition-all relative overflow-hidden ${saveType === 'stickers' ? 'border-black bg-yellow-50 shadow-neo -translate-y-1' : 'border-gray-200 hover:border-black hover:bg-gray-50'}`}
+                    >
+                      <div className="bg-yellow-400 w-10 h-10 rounded-xl border-2 border-black flex items-center justify-center mb-3">
+                        <Star className="w-5 h-5 text-black fill-current" />
+                      </div>
+                      <p className="font-black text-gray-900 text-sm uppercase">Stickers</p>
+                      <p className="text-xs text-gray-500 font-bold mt-1">For rewards</p>
+                      {saveType === 'stickers' && (
+                        <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-0.5 border-2 border-black">
+                          <Check className="w-3 h-3" />
+                        </div>
+                      )}
+                    </button>
+                    <button
+                      data-testid="save-dialog-type-cash"
+                      onClick={() => setSaveType('cash')}
+                      className={`p-4 rounded-2xl border-2 sm:border-3 text-left transition-all relative overflow-hidden ${saveType === 'cash' ? 'border-black bg-emerald-50 shadow-neo -translate-y-1' : 'border-gray-200 hover:border-black hover:bg-gray-50'}`}
+                    >
+                      <div className="bg-emerald-400 w-10 h-10 rounded-xl border-2 border-black flex items-center justify-center mb-3">
+                        <Banknote className="w-5 h-5 text-white" />
+                      </div>
+                      <p className="font-black text-gray-900 text-sm uppercase">
+                        Cash ({currency})
+                      </p>
+                      <p className="text-xs text-gray-500 font-bold mt-1">For money</p>
+                      {saveType === 'cash' && (
+                        <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-0.5 border-2 border-black">
+                          <Check className="w-3 h-3" />
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <p className="font-black text-gray-900 uppercase tracking-wider text-sm mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs">
+                      2
+                    </span>
+                    How much?
+                  </p>
+                  <div className="relative">
+                    <input
+                      data-testid="save-dialog-amount"
+                      type="number"
+                      placeholder="0"
+                      min={0}
+                      value={saveAmount}
+                      onChange={(e) => {
+                        setSaveAmount(e.target.value);
+                        setSaveError(null);
+                      }}
+                      className="w-full border-2 sm:border-3 border-black rounded-xl px-4 py-4 text-xl font-black outline-none focus:bg-blue-50"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black bg-gray-200 px-2 py-1 rounded border-2 border-black">
+                      MAX: {unallocatedStickers}
+                    </div>
+                  </div>
+                  {saveError && <p className="text-xs text-red-500 font-bold mt-2">{saveError}</p>}
+                </div>
+
+                {/* Savings goals */}
+                <div className="bg-purple-100 border-2 sm:border-3 border-black rounded-2xl p-5 relative">
+                  <div className="absolute -top-3 left-4 bg-purple-500 text-white text-xs font-black px-3 py-1 rounded-full border-2 border-black uppercase">
+                    Savings Goals
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center mt-2">
+                    {[
+                      { icon: '🎁', label: 'Small', cost: '50 ⭐' },
+                      { icon: '🎮', label: 'Medium', cost: '100 ⭐' },
+                      { icon: '🚲', label: 'Big', cost: '200 ⭐' },
+                    ].map((goal) => (
+                      <div
+                        key={goal.label}
+                        className="bg-white rounded-xl p-2 border-2 border-black"
+                      >
+                        <div className="text-xl mb-1">{goal.icon}</div>
+                        <p className="text-[10px] font-black uppercase text-gray-500">
+                          {goal.label}
+                        </p>
+                        <p className="text-xs font-black text-purple-600">{goal.cost}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t-2 sm:border-t-3 border-black bg-gray-50 grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => {
+                    setShowSaveDialog(false);
+                    setSaveAmount('');
+                    setSaveError(null);
+                  }}
+                  className="bg-white border-2 border-black text-black font-black py-3 rounded-xl hover:bg-gray-100 transition-all uppercase text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  data-testid="save-dialog-submit"
+                  onClick={() => void handleSave()}
+                  disabled={!saveAmount || Number(saveAmount) <= 0 || savingAction}
+                  className="bg-blue-500 border-2 border-black text-white font-black py-3 rounded-xl shadow-neo hover:translate-y-0.5 hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
+                >
+                  {savingAction ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Save It!'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── CashOut Dialog ── */}
+        {showCashoutDialog && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+          <div
+            data-testid="cashout-dialog"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              setShowCashoutDialog(false);
+              setCashoutAmount('');
+              setCashoutError(null);
+            }}
+          >
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+            <div
+              className="relative bg-yellow-50 border-2 sm:border-3 border-black rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-6 pb-4 text-center relative border-b-2 sm:border-b-3 border-black bg-yellow-400">
+                <button
+                  onClick={() => {
+                    setShowCashoutDialog(false);
+                    setCashoutAmount('');
+                    setCashoutError(null);
+                  }}
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-yellow-100 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="w-12 h-12 bg-white border-2 border-black rounded-xl flex items-center justify-center mx-auto mb-2">
+                  <span className="text-2xl">💰</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide">Cash Out</h2>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-6">
+                {savedStickers === 0 && savedCash === 0 ? (
+                  <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
+                    <p className="text-sm font-bold text-amber-800 mb-1">No savings available</p>
+                    <p className="text-xs text-amber-700">
+                      Cash out only works from savings. Save your weekly stickers first!
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-6 shadow-neo">
+                      <p className="text-center text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
+                        Amount to Cash Out ({currency})
+                      </p>
+                      <div className="relative mb-4">
+                        <input
+                          data-testid="cashout-dialog-amount"
+                          type="number"
+                          min={0}
+                          max={savingsTotal}
+                          step={0.5}
+                          value={cashoutAmount}
+                          onChange={(e) => {
+                            setCashoutAmount(e.target.value);
+                            setCashoutError(null);
+                          }}
+                          className="w-full text-center text-3xl sm:text-5xl font-black border-b-2 sm:border-b-3 border-black py-4 outline-none focus:border-yellow-500 bg-transparent"
+                        />
+                        <span className="absolute right-0 bottom-4 text-sm font-black text-gray-400">
+                          {currency}
+                        </span>
+                      </div>
+                      <div className="bg-green-100 border-2 border-black rounded-xl py-3 text-center">
+                        <span className="text-green-800 text-xs font-bold uppercase mr-2">
+                          You Receive:
+                        </span>
+                        <span className="text-2xl font-black text-green-600">
+                          {currency} {Number(cashoutAmount || 0).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-center text-xs font-bold text-gray-500 bg-white border-2 border-black rounded-lg py-2 px-4">
+                      Savings balance: {currency} {savingsTotal.toFixed(2)}
+                    </p>
+                  </>
+                )}
+                {cashoutError && (
+                  <p className="text-xs text-red-500 font-bold text-center">{cashoutError}</p>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => {
+                      setShowCashoutDialog(false);
+                      setCashoutAmount('');
+                      setCashoutError(null);
+                    }}
+                    className="bg-white border-2 border-black text-black font-black py-3 rounded-xl hover:bg-gray-100 transition-all uppercase text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    data-testid="cashout-dialog-submit"
+                    onClick={() => void handleCashout()}
+                    disabled={
+                      !cashoutAmount ||
+                      Number(cashoutAmount) <= 0 ||
+                      cashingOut ||
+                      (savedStickers === 0 && savedCash === 0)
+                    }
+                    className="bg-green-500 border-2 border-black text-white font-black py-3 rounded-xl shadow-neo hover:translate-y-0.5 hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
+                  >
+                    {cashingOut ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Confirm'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Tab Switcher ── */}
         <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-2 flex gap-2 shadow-neo">
           <button
@@ -1654,6 +2080,147 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
             )}
           </>
         )}
+
+        {/* ════════════════════════════════════════════════════════════════════
+            SAVINGS / BANKING CARDS — below habit tracker
+            ════════════════════════════════════════════════════════════════════ */}
+
+        {/* ── Your Savings ── */}
+        <div data-testid="your-savings" className="relative">
+          <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
+          <div className="relative bg-[#6b21a8] border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 text-white overflow-hidden">
+            <div className="absolute right-0 top-0 w-28 h-28 bg-pink-400/10 rounded-full -mr-8 -mt-8 blur-2xl" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="bg-yellow-400 p-2 rounded-lg border-2 border-black">
+                    <PiggyBank className="w-5 h-5 text-black" />
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-black uppercase">Your Savings 🐷</h2>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    data-testid="savings-save-btn"
+                    onClick={() => {
+                      setSaveAmount('');
+                      setSaveType('stickers');
+                      setSaveError(null);
+                      setShowSaveDialog(true);
+                    }}
+                    className="bg-blue-500 border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
+                  >
+                    Save
+                  </button>
+                  <button
+                    data-testid="savings-cashout-btn"
+                    onClick={() => {
+                      setCashoutAmount('');
+                      setCashoutError(null);
+                      setShowCashoutDialog(true);
+                    }}
+                    className="bg-green-500 border-2 border-black text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-neo-xs hover:brightness-110 active:translate-y-0.5 transition-all uppercase"
+                  >
+                    Cash Out
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-4xl font-black text-yellow-400 leading-none">
+                    {savedStickers}
+                  </p>
+                  <p className="text-xs text-purple-300 font-mono mt-1">
+                    {savedStickers} saved + {fromCash} from cash
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-1 font-mono">
+                    Total Value
+                  </p>
+                  <div className="flex items-baseline gap-1 justify-end">
+                    <span className="text-sm font-black text-lime-400">{currency}</span>
+                    <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
+                      {savingsTotal.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Bankable This Week / Weekly Value ── */}
+        <div data-testid="bankable-week" className="relative">
+          <div className="absolute inset-0 bg-pink-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
+          <div className="relative bg-purple-900 border-2 sm:border-3 border-pink-400/30 rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-2 divide-x-2 sm:divide-x-3 divide-black">
+              <div data-testid="bankable-week-stickers" className="p-5 text-center">
+                <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2 font-mono">
+                  Bankable This Week
+                </p>
+                <p className="text-3xl sm:text-4xl font-black text-yellow-400 leading-none mb-2">
+                  {unallocatedStickers}
+                </p>
+                <div className="flex justify-center gap-1 text-base">
+                  <span>⭐</span>
+                  <span>💖</span>
+                  <span>✨</span>
+                </div>
+                <p className="text-[10px] text-purple-400 mt-2 font-mono">
+                  Excludes invested habits
+                </p>
+              </div>
+              <div data-testid="bankable-week-value" className="p-5 text-center">
+                <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-2 font-mono">
+                  Weekly Value
+                </p>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-sm font-black text-lime-400">{currency}</span>
+                  <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
+                    {weeklyValue}
+                  </span>
+                </div>
+                <p className="text-[10px] text-purple-400 mt-2 font-mono">
+                  Each star = 0.5 {currency}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Saving Stickers for Big Rewards ── */}
+        <div
+          data-testid="saving-big-rewards"
+          className="bg-purple-900 rounded-2xl p-4 sm:p-5 text-center border-2 sm:border-3 border-pink-400/30"
+        >
+          <h3 className="text-white font-black uppercase mb-1">
+            Saving Stickers for Big Rewards 💖
+          </h3>
+          <p className="text-purple-300 text-xs font-mono mb-4">
+            Invest your stars across weeks to unlock bigger prizes!
+          </p>
+          <div className="flex items-center justify-center gap-2 text-white font-mono text-sm">
+            <div className="bg-lime-400 text-black px-2 py-1 rounded border-2 border-black font-black">
+              WK 1
+            </div>
+            <span className="text-purple-300">+</span>
+            <div className="bg-purple-700 px-2 py-1 rounded border-2 border-purple-500">WK 2</div>
+            <span className="text-purple-300">=</span>
+            <Gift className="w-6 h-6 text-yellow-400 animate-bounce" />
+            <span className="text-yellow-400 font-black text-xs">BIG PRIZE!</span>
+          </div>
+          <div className="w-full bg-purple-800 h-4 rounded-full mt-4 border-2 border-purple-600 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-pink-400 to-yellow-400"
+              style={{ width: `${bigRewardProgress}%` }}
+            />
+          </div>
+          <p className="text-purple-400 text-xs font-mono mt-2">
+            {savedStickers} stickers saved ({currency} {(savedStickers * 0.5).toFixed(2)}) towards
+            big prizes
+          </p>
+        </div>
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════

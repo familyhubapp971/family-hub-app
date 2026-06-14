@@ -32,6 +32,9 @@ interface St {
   }>;
   stickers: Array<{ habitId: string; day: number; sticker: string; stickerValue: number }>;
   balance: number;
+  savedStickers: number;
+  savedCash: number;
+  unallocated: number;
   rewards: Array<{
     id: string;
     name: string;
@@ -68,6 +71,9 @@ function installApi(over: Partial<St> = {}) {
     ],
     stickers: over.stickers ?? [],
     balance: over.balance ?? 0,
+    savedStickers: over.savedStickers ?? 0,
+    savedCash: over.savedCash ?? 0,
+    unallocated: over.unallocated ?? 0,
     rewards: over.rewards ?? [
       { id: REWARD, name: 'Ice cream', description: null, stickerCost: 2, icon: '🍦' },
     ],
@@ -105,6 +111,46 @@ function installApi(over: Partial<St> = {}) {
         ok: true,
         status: 201,
         json: async () => ({ stickerBalance: state.balance, redemptionId: 'r1' }),
+      });
+    }
+    if (init?.method === 'POST' && u.includes('/api/mw/financial/savings/cashout')) {
+      return Promise.resolve({
+        ok: true,
+        status: 201,
+        json: async () => ({ success: true, cashDeducted: 0, stickersDeducted: 1 }),
+      });
+    }
+    if (init?.method === 'POST' && u.includes('/api/mw/financial/savings')) {
+      const b = JSON.parse(init.body as string) as { type: string; amount: number };
+      if (b.type === 'stickers') state.savedStickers += b.amount;
+      return Promise.resolve({
+        ok: true,
+        status: 201,
+        json: async () => ({ success: true, transactionId: 't1' }),
+      });
+    }
+    if (u.includes('/api/mw/financial/savings')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          savedStickers: state.savedStickers,
+          savedCash: state.savedCash,
+          currency: 'AED',
+        }),
+      });
+    }
+    if (u.includes('/api/mw/weeks') && u.includes('/stats')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          weekId: WEEK,
+          totalStickers: 0,
+          unallocatedStickers: state.unallocated,
+          allocatedStickers: 0,
+          cashValue: state.unallocated * 0.5,
+        }),
       });
     }
     if (u.includes('/api/mw/weeks') && u.includes('/actions')) {
@@ -248,6 +294,39 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     installApi({ balance: 1 }); // reward costs 2
     renderTab();
     await waitFor(() => expect(screen.getByTestId(`reward-buy-${REWARD}`)).toBeDisabled());
+  });
+
+  it('shows the Your Savings + Bankable cards with the family currency', async () => {
+    installApi({ savedStickers: 10, savedCash: 5, unallocated: 4 });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('your-savings')).toBeInTheDocument());
+    // Total value = 5 cash + 10*0.5 = 10.00, in AED
+    expect(screen.getByTestId('your-savings').textContent).toContain('AED');
+    expect(screen.getByTestId('bankable-week')).toBeInTheDocument();
+  });
+
+  it('banks weekly stickers via the Save dialog', async () => {
+    installApi({ unallocated: 6 });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('savings-save-btn')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('savings-save-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('save-dialog')).toBeInTheDocument());
+    act(() => {
+      fireEvent.change(screen.getByTestId('save-dialog-amount'), { target: { value: '3' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('save-dialog-submit'));
+    });
+    const post = fetchMock.mock.calls.find(
+      ([u, i]) => i?.method === 'POST' && /\/api\/mw\/financial\/savings$/.test(String(u)),
+    );
+    expect(post).toBeDefined();
+    expect(JSON.parse((post![1] as RequestInit).body as string)).toMatchObject({
+      memberId: MEMBER,
+      amount: 3,
+    });
   });
 
   it('redeeming an affordable reward updates the balance', async () => {
