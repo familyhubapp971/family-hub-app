@@ -273,6 +273,35 @@ describe('<MealsTabPanel />', () => {
     });
   });
 
+  it('the snack add button pre-sets slot=snack and saves a snack (FHS-317)', async () => {
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-snack-tue'));
+    });
+    // Editor opens already targeting snack — no dropdown change needed.
+    expect(screen.getByTestId('meals-editor')).toBeInTheDocument();
+    expect((screen.getByTestId('meals-editor-slot') as HTMLSelectElement).value).toBe('snack');
+    act(() => {
+      fireEvent.change(screen.getByTestId('meals-editor-name'), {
+        target: { value: 'Apple slices' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('meals-editor-save'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Apple slices')).toBeInTheDocument());
+    const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
+    expect(JSON.parse((postCall![1] as RequestInit).body as string)).toMatchObject({
+      dayOfWeek: 'tue',
+      slot: 'snack',
+      name: 'Apple slices',
+    });
+  });
+
   it('clicking a meal opens the editor pre-filled and saves an edit', async () => {
     installApi({
       members: MEMBERS,
