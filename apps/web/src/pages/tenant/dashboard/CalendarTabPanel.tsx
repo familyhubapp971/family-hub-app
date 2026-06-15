@@ -6,8 +6,10 @@ import {
   Clock,
   Home,
   MapPin,
+  Pencil,
   Plus,
   Save,
+  Trash2,
   X,
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
@@ -170,6 +172,7 @@ export function CalendarTabPanel() {
   const [filter, setFilter] = useState<string>('all'); // 'all' | memberId
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [draft, setDraft] = useState<DraftForm | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -230,6 +233,7 @@ export function CalendarTabPanel() {
     setStatus({ kind: 'loading' });
     // Navigating weeks closes any open form — its day card is gone.
     setDraft(null);
+    setEditingId(null);
     setSaveError(null);
     const ac = new AbortController();
     void load(weekStart, ac.signal);
@@ -250,25 +254,31 @@ export function CalendarTabPanel() {
     setSaving(true);
     setSaveError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/events`, {
-        method: 'POST',
+      const body = JSON.stringify({
+        date: draft.date,
+        title,
+        startTime: draft.startTime || null,
+        endTime: null,
+        memberId,
+        type: draft.type,
+        location: draft.location.trim() || null,
+        wear: draft.wear.trim() || null,
+        notes: null,
+      });
+      const url = editingId ? `${API_BASE}/api/events/${editingId}` : `${API_BASE}/api/events`;
+      const method = editingId ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: draft.date,
-          title,
-          startTime: draft.startTime || null,
-          memberId,
-          type: draft.type,
-          location: draft.location.trim() || null,
-          wear: draft.wear.trim() || null,
-        }),
+        body,
       });
       if (!res.ok) {
         setSaveError(`Couldn't save (server returned ${res.status})`);
         return;
       }
       setDraft(null);
-      setAnnouncement(`${title} added`);
+      setEditingId(null);
+      setAnnouncement(editingId ? `${title} updated` : `${title} added`);
       await load(weekStart);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
@@ -276,7 +286,30 @@ export function CalendarTabPanel() {
       savingRef.current = false;
       setSaving(false);
     }
-  }, [draft, headers, weekStart, load]);
+  }, [draft, editingId, headers, weekStart, load]);
+
+  const onDelete = useCallback(
+    async (evId: string, evTitle: string) => {
+      if (!headers) return;
+      if (!window.confirm(`Delete "${evTitle}"?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/events/${evId}`, {
+          method: 'DELETE',
+          headers,
+        });
+        if (!res.ok && res.status !== 204) {
+          // Surface error but don't block reload
+          setAnnouncement(`Couldn't delete (server ${res.status})`);
+          return;
+        }
+        setAnnouncement(`${evTitle} deleted`);
+        await load(weekStart);
+      } catch (err) {
+        setAnnouncement(err instanceof Error ? err.message : 'Network error — try again.');
+      }
+    },
+    [headers, weekStart, load],
+  );
 
   if (status.kind === 'loading') {
     return (
@@ -301,8 +334,8 @@ export function CalendarTabPanel() {
   const visible = events.filter((e) => {
     if (e.type !== subTab) return false;
     if (filter === 'all') return true;
-    // A member pill shows their events plus whole-family ones.
-    return e.memberId === filter || e.memberId === null;
+    if (filter === 'family') return e.memberId === null;
+    return e.memberId === filter;
   });
 
   return (
@@ -397,6 +430,12 @@ export function CalendarTabPanel() {
             onClick={() => setFilter('all')}
             label="All"
           />
+          <FilterPill
+            testId="calendar-filter-family"
+            active={filter === 'family'}
+            onClick={() => setFilter('family')}
+            label="Family"
+          />
           {children.map((c) => (
             <FilterPill
               key={c.id}
@@ -464,7 +503,8 @@ export function CalendarTabPanel() {
                       <div className="col-span-4">Who &amp; Activity</div>
                       <div className="col-span-2">When</div>
                       <div className="col-span-3">Where</div>
-                      <div className="col-span-3">What to wear</div>
+                      <div className="col-span-2">What to wear</div>
+                      <div className="col-span-1" />
                     </div>
                     <ul className="space-y-3">
                       {dayEvents.map((ev) => {
@@ -527,13 +567,46 @@ export function CalendarTabPanel() {
                                 {ev.location ?? '—'}
                               </span>
                             </div>
-                            <div className="sm:col-span-3">
+                            <div className="sm:col-span-2">
                               <span
                                 className="inline-block rounded border-2 border-black/10 bg-white px-2 py-1 text-[10px] font-bold text-gray-700"
                                 data-testid={`calendar-event-${ev.id}-wear`}
                               >
                                 {ev.wear ?? '—'}
                               </span>
+                            </div>
+                            <div className="flex items-center justify-end gap-1 sm:col-span-1">
+                              <button
+                                type="button"
+                                aria-label={`Edit ${ev.title}`}
+                                data-testid={`calendar-edit-${ev.id}`}
+                                onClick={() => {
+                                  setSaveError(null);
+                                  setEditingId(ev.id);
+                                  setDraft({
+                                    date: ev.date,
+                                    type: ev.type,
+                                    memberIds:
+                                      ev.memberId !== null ? new Set([ev.memberId]) : new Set(),
+                                    title: ev.title,
+                                    startTime: ev.startTime ?? '',
+                                    location: ev.location ?? '',
+                                    wear: ev.wear ?? '',
+                                  });
+                                }}
+                                className="flex h-7 w-7 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-black hover:text-black"
+                              >
+                                <Pencil size={12} aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`Delete ${ev.title}`}
+                                data-testid={`calendar-delete-${ev.id}`}
+                                onClick={() => void onDelete(ev.id, ev.title)}
+                                className="flex h-7 w-7 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-red-500 hover:text-red-600"
+                              >
+                                <Trash2 size={12} aria-hidden="true" />
+                              </button>
                             </div>
                           </li>
                         );
@@ -561,6 +634,7 @@ export function CalendarTabPanel() {
                   {formOpen ? (
                     <ActivityForm
                       draft={draft}
+                      editingId={editingId}
                       childrenList={children}
                       saving={saving}
                       saveError={saveError}
@@ -568,6 +642,7 @@ export function CalendarTabPanel() {
                       onSave={() => void onSave()}
                       onClose={() => {
                         setDraft(null);
+                        setEditingId(null);
                         setSaveError(null);
                       }}
                     />
@@ -664,6 +739,7 @@ function FilterPill({
 
 function ActivityForm({
   draft,
+  editingId,
   childrenList,
   saving,
   saveError,
@@ -672,6 +748,7 @@ function ActivityForm({
   onClose,
 }: {
   draft: DraftForm;
+  editingId: string | null;
   childrenList: MemberLite[];
   saving: boolean;
   saveError: string | null;
@@ -690,10 +767,10 @@ function ActivityForm({
       className="mt-2 rounded-xl border-2 border-black bg-white p-5 shadow-neo-xs"
       data-testid="calendar-add-form"
       role="group"
-      aria-label="Add new activity"
+      aria-label={editingId ? 'Edit activity' : 'Add new activity'}
     >
       <div className="mb-4 flex items-center justify-between border-b-2 border-gray-100 pb-3">
-        <h4 className="font-heading text-lg">Add New Activity</h4>
+        <h4 className="font-heading text-lg">{editingId ? 'Edit Activity' : 'Add New Activity'}</h4>
         <button
           type="button"
           aria-label="Close"
@@ -841,7 +918,8 @@ function ActivityForm({
             disabled={saving || draft.title.trim().length === 0}
             className="flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-black bg-pink-400 px-6 py-2 font-bold shadow-neo-xs transition-all hover:translate-y-[2px] hover:shadow-none disabled:opacity-50"
           >
-            <Save size={16} aria-hidden="true" /> {saving ? 'Saving…' : 'Save Activity'}
+            <Save size={16} aria-hidden="true" />{' '}
+            {saving ? 'Saving…' : editingId ? 'Update Activity' : 'Save Activity'}
           </button>
         </div>
       </div>

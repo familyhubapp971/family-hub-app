@@ -88,6 +88,20 @@ function installApi(opts: { events?: Ev[]; members?: Member[]; eventsOk?: boolea
       state.events.push(row);
       return Promise.resolve({ ok: true, status: 201, json: async () => row });
     }
+    if (init?.method === 'PUT') {
+      const idMatch = u.match(/\/api\/events\/([^?]+)/);
+      const id = idMatch?.[1];
+      const body = JSON.parse(init.body as string) as Partial<Ev>;
+      const idx = state.events.findIndex((e) => e.id === id);
+      if (idx >= 0) state.events[idx] = { ...state.events[idx]!, ...body };
+      return Promise.resolve({ ok: true, status: 200, json: async () => state.events[idx] });
+    }
+    if (init?.method === 'DELETE') {
+      const idMatch = u.match(/\/api\/events\/([^?]+)/);
+      const id = idMatch?.[1];
+      state.events = state.events.filter((e) => e.id !== id);
+      return Promise.resolve({ ok: true, status: 204, json: async () => ({}) });
+    }
     if (u.includes('/api/members')) {
       return Promise.resolve({
         ok: true,
@@ -152,6 +166,7 @@ describe('<CalendarTabPanel />', () => {
     expect(screen.getByTestId('calendar-subtab-home')).toBeInTheDocument();
     expect(screen.getByTestId('calendar-legend')).toBeInTheDocument();
     expect(screen.getByTestId('calendar-filter-all')).toBeInTheDocument();
+    expect(screen.getByTestId('calendar-filter-family')).toBeInTheDocument();
     expect(screen.getByTestId(`calendar-filter-${AMINA}`)).toBeInTheDocument();
     // Only kids get filter pills — the admin doesn't.
     expect(screen.queryByTestId('calendar-filter-p1')).not.toBeInTheDocument();
@@ -201,7 +216,7 @@ describe('<CalendarTabPanel />', () => {
     expect(screen.getByTestId('calendar-event-hom')).toBeInTheDocument();
   });
 
-  it('member filter pills show their events plus whole-family ones', async () => {
+  it('member filter pill narrows to only that member — excludes family events', async () => {
     installApi({
       events: [
         ev({ id: 'am', title: 'Amina swim', memberId: AMINA }),
@@ -216,8 +231,26 @@ describe('<CalendarTabPanel />', () => {
       fireEvent.click(screen.getByTestId(`calendar-filter-${AMINA}`));
     });
     expect(screen.getByTestId('calendar-event-am')).toBeInTheDocument();
-    expect(screen.getByTestId('calendar-event-fam')).toBeInTheDocument();
+    // family event must NOT show under a member-specific filter
+    expect(screen.queryByTestId('calendar-event-fam')).not.toBeInTheDocument();
     expect(screen.queryByTestId('calendar-event-ib')).not.toBeInTheDocument();
+  });
+
+  it('Family filter pill shows only family-wide events', async () => {
+    installApi({
+      events: [
+        ev({ id: 'am', title: 'Amina swim', memberId: AMINA }),
+        ev({ id: 'fam', title: 'Family picnic', memberId: null }),
+      ],
+    });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('calendar-filter-family'));
+    });
+    expect(screen.getByTestId('calendar-event-fam')).toBeInTheDocument();
+    expect(screen.queryByTestId('calendar-event-am')).not.toBeInTheDocument();
   });
 
   it('adding an activity POSTs date/title/time/member/type/location/wear and shows it', async () => {
@@ -253,10 +286,12 @@ describe('<CalendarTabPanel />', () => {
       date: monday,
       title: 'Swimming Lesson',
       startTime: '15:00',
+      endTime: null,
       memberId: AMINA,
       type: 'school',
       location: 'Leisure Centre',
       wear: 'Swimsuit',
+      notes: null,
     });
   });
 
@@ -282,6 +317,66 @@ describe('<CalendarTabPanel />', () => {
 
     const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
     expect(JSON.parse((postCall![1] as RequestInit).body as string).memberId).toBeNull();
+  });
+
+  it('edit button pre-fills the form and save issues a PUT', async () => {
+    const existingEv = ev({
+      id: 'e-edit',
+      title: 'Old Title',
+      memberId: AMINA,
+      startTime: '10:00',
+      location: 'School',
+      wear: 'Uniform',
+    });
+    installApi({ events: [existingEv] });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('calendar-edit-e-edit'));
+    });
+    // Form should be open with pre-filled title
+    expect(screen.getByTestId('calendar-add-form')).toBeInTheDocument();
+    expect((screen.getByTestId('calendar-form-title') as HTMLInputElement).value).toBe('Old Title');
+
+    act(() => {
+      fireEvent.change(screen.getByTestId('calendar-form-title'), {
+        target: { value: 'New Title' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('calendar-form-save'));
+    });
+
+    const putCall = fetchMock.mock.calls.find(
+      ([url, init]) => String(url).includes('/api/events/e-edit') && init?.method === 'PUT',
+    );
+    expect(putCall).toBeTruthy();
+    expect(JSON.parse((putCall![1] as RequestInit).body as string).title).toBe('New Title');
+  });
+
+  it('delete button calls DELETE /api/events/:id and reloads', async () => {
+    const existingEv = ev({ id: 'e-del', title: 'To Delete', memberId: AMINA });
+    installApi({ events: [existingEv] });
+    vi.stubGlobal('confirm', () => true);
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+    fetchMock.mockImplementationOnce((url: string, init?: RequestInit) => {
+      if (String(url).includes('/api/events/e-del') && init?.method === 'DELETE') {
+        return Promise.resolve({ ok: true, status: 204, json: async () => ({}) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ events: [] }) });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('calendar-delete-e-del'));
+    });
+
+    const deleteCall = fetchMock.mock.calls.find(
+      ([url, init]) => String(url).includes('/api/events/e-del') && init?.method === 'DELETE',
+    );
+    expect(deleteCall).toBeTruthy();
   });
 
   it('the saved event type follows the active sub-tab', async () => {
