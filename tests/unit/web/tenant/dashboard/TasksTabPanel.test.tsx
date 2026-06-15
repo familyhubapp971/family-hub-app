@@ -143,7 +143,7 @@ describe('<TasksTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('tasks-ready')).toBeInTheDocument());
     expect(screen.getByTestId(`tasks-column-${CALLER}`)).toBeInTheDocument();
     expect(screen.getByTestId(`tasks-column-empty-${CALLER}`)).toBeInTheDocument();
-    expect(screen.getByTestId(`tasks-column-badge-${CALLER}`).textContent).toBe('0/0');
+    expect(screen.getByTestId(`tasks-column-badge-${CALLER}`).textContent).toBe('0/0 Done');
   });
 
   it('renders one column per member with a done/total badge', async () => {
@@ -158,8 +158,8 @@ describe('<TasksTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('tasks-ready')).toBeInTheDocument());
     expect(screen.getByTestId(`tasks-column-name-${CALLER}`).textContent).toContain('Sarah');
     expect(screen.getByTestId(`tasks-column-name-${OTHER}`).textContent).toContain('Bilal');
-    expect(screen.getByTestId(`tasks-column-badge-${CALLER}`).textContent).toBe('1/2');
-    expect(screen.getByTestId(`tasks-column-badge-${OTHER}`).textContent).toBe('0/1');
+    expect(screen.getByTestId(`tasks-column-badge-${CALLER}`).textContent).toBe('1/2 Done');
+    expect(screen.getByTestId(`tasks-column-badge-${OTHER}`).textContent).toBe('0/1 Done');
   });
 
   it('shows toggle + delete + add only in the caller column', async () => {
@@ -193,7 +193,7 @@ describe('<TasksTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('tasks-ready')).toBeInTheDocument());
     // Two different deleted members → ONE Family column, not two.
     expect(screen.getByTestId('tasks-column-name-__family__').textContent).toContain('Family');
-    expect(screen.getByTestId('tasks-column-badge-__family__').textContent).toBe('0/2');
+    expect(screen.getByTestId('tasks-column-badge-__family__').textContent).toBe('0/2 Done');
     expect(screen.getByTestId('task-title-t9').textContent).toBe('Orphan A');
     expect(screen.getByTestId('task-title-t8').textContent).toBe('Orphan B');
   });
