@@ -8,12 +8,19 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 // History reopen via ConfirmDialog, App Info PUT.
 
 const fetchMock = vi.fn();
-const authState: { session: { access_token?: string } | null } = {
+const authState: {
+  session: { access_token?: string } | null;
+  user: { email?: string; id?: string; user_metadata?: Record<string, unknown> } | null;
+} = {
   session: { access_token: 'tok-admin' },
+  user: { email: 'sarah@example.com', id: 'u-admin', user_metadata: {} },
 };
 
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
+  signOutAll: vi.fn().mockResolvedValue({ error: null }),
+  getKidToken: () => null,
+  clearKidToken: vi.fn(),
 }));
 
 import { AdminPanelPage } from '../../../../apps/web/src/pages/tenant/AdminPanelPage';
@@ -81,6 +88,31 @@ const APP_SETTINGS = { appName: 'Iman World', appSubtitle: 'Track habits and ear
 function installApi() {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url);
+
+    // AppHeader self-fetches these two on mount.
+    // Use exact-path match (/api/me) to avoid catching /api/members.
+    if (/\/api\/me(\?|$)/.test(u)) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          id: 'u-admin',
+          email: 'sarah@example.com',
+          tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'admin' }],
+        }),
+      });
+    }
+    if (u.includes('/api/dashboard/today')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          date: '2026-06-15',
+          callerMemberId: 'admin-1',
+          members: [],
+        }),
+      });
+    }
 
     if (u.includes('/api/members')) {
       return Promise.resolve({
@@ -164,6 +196,7 @@ beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
   authState.session = { access_token: 'tok-admin' };
+  authState.user = { email: 'sarah@example.com', id: 'u-admin', user_metadata: {} };
   installApi();
 });
 
@@ -200,6 +233,12 @@ describe('<AdminPanelPage />', () => {
     await waitFor(() =>
       expect(screen.getByTestId(`admin-child-selector-${CHILD_ID}`)).toBeInTheDocument(),
     );
+  });
+
+  it('shows the global app header (brand home button) on the admin panel', async () => {
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('admin-panel')).toBeInTheDocument());
+    expect(screen.getByTestId('dashboard-brand-home')).toBeInTheDocument();
   });
 
   it('Balance tab shows available stickers and cash value for the selected child', async () => {
