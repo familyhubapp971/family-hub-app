@@ -1633,23 +1633,14 @@ function UsersTab({ headers, slug }: { headers: Record<string, string> | null; s
       data-testid="admin-users-ready"
       className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-sm">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-xl font-black text-white">Family Members</h3>
-            <p className="text-sm text-indigo-400 font-medium">Read-only roster</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-sm">
+          <Users className="w-5 h-5" />
         </div>
-        <Link
-          to={`/t/${slug}/members`}
-          data-testid="admin-users-manage-link"
-          className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 hover:border-gray-300 min-h-[44px] flex items-center transition-colors"
-        >
-          Manage in Members →
-        </Link>
+        <div>
+          <h3 className="text-xl font-black text-white">Family Members</h3>
+          <p className="text-sm text-indigo-400 font-medium">Read-only roster</p>
+        </div>
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-2 items-start">
