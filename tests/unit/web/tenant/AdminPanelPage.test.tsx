@@ -90,7 +90,9 @@ function installApi() {
       });
     }
     if (u.includes('/api/mw/weeks/current')) {
-      return Promise.resolve({ ok: true, status: 200, json: async () => CURRENT_WEEK });
+      // Real API wraps the week: { week: {...} } — mock must match or the
+      // Balance tab's unwrap regression slips through (FHS-311).
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ week: CURRENT_WEEK }) });
     }
     if (u.includes('/api/mw/weeks/') && u.includes('/stats')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => WEEK_STATS });
@@ -393,7 +395,11 @@ describe('<AdminPanelPage />', () => {
         });
       }
       if (u.includes('/api/mw/weeks/current')) {
-        return Promise.resolve({ ok: true, status: 200, json: async () => CURRENT_WEEK });
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ week: CURRENT_WEEK }),
+        });
       }
       if (u.includes('/stats')) {
         return Promise.resolve({ ok: true, status: 200, json: async () => WEEK_STATS });
