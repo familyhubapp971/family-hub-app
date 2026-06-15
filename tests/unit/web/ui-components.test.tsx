@@ -11,6 +11,7 @@ import {
   FeatureCard,
   PricingCard,
   FloatingDecorations,
+  ConfirmDialog,
 } from '../../../packages/ui/src';
 
 // Sanity tests for the FHS-242 design-system extensions:
@@ -357,5 +358,58 @@ describe('FloatingDecorations', () => {
   it('marks the wrapper aria-hidden so it is invisible to screen readers', () => {
     render(<FloatingDecorations elements={[{ icon: '📅', top: '15%' }]} testId="fd" />);
     expect(screen.getByTestId('fd')).toHaveAttribute('aria-hidden', 'true');
+  });
+});
+
+describe('ConfirmDialog', () => {
+  const noop = () => {};
+
+  it('renders nothing when closed', () => {
+    render(
+      <ConfirmDialog isOpen={false} title="Delete?" onConfirm={noop} onCancel={noop} testId="cd" />,
+    );
+    expect(screen.queryByTestId('cd')).toBeNull();
+  });
+
+  it('shows the title + message and is a role=dialog when open', () => {
+    render(
+      <ConfirmDialog
+        isOpen
+        title="Delete Playdate?"
+        message="This will be removed."
+        onConfirm={noop}
+        onCancel={noop}
+        testId="cd"
+      />,
+    );
+    expect(screen.getByTestId('cd')).toHaveAttribute('role', 'dialog');
+    expect(screen.getByTestId('cd').textContent).toContain('Delete Playdate?');
+    expect(screen.getByTestId('cd-message').textContent).toContain('This will be removed.');
+  });
+
+  it('fires onConfirm / onCancel from the buttons', () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    render(
+      <ConfirmDialog
+        isOpen
+        title="Delete?"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+        testId="cd"
+      />,
+    );
+    fireEvent.click(screen.getByTestId('cd-confirm'));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId('cd-cancel'));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables both buttons while busy', () => {
+    render(
+      <ConfirmDialog isOpen busy title="Delete?" onConfirm={noop} onCancel={noop} testId="cd" />,
+    );
+    expect(screen.getByTestId('cd-confirm')).toBeDisabled();
+    expect(screen.getByTestId('cd-cancel')).toBeDisabled();
   });
 });

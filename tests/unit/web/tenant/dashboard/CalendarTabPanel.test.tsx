@@ -355,10 +355,9 @@ describe('<CalendarTabPanel />', () => {
     expect(JSON.parse((putCall![1] as RequestInit).body as string).title).toBe('New Title');
   });
 
-  it('delete button calls DELETE /api/events/:id and reloads', async () => {
+  it('delete button opens the app confirm dialog and DELETEs on confirm', async () => {
     const existingEv = ev({ id: 'e-del', title: 'To Delete', memberId: AMINA });
     installApi({ events: [existingEv] });
-    vi.stubGlobal('confirm', () => true);
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
 
@@ -369,8 +368,13 @@ describe('<CalendarTabPanel />', () => {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ events: [] }) });
     });
 
-    await act(async () => {
+    // Clicking delete opens the in-app confirm dialog (not window.confirm).
+    act(() => {
       fireEvent.click(screen.getByTestId('calendar-delete-e-del'));
+    });
+    await waitFor(() => expect(screen.getByTestId('calendar-delete-confirm')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('calendar-delete-confirm-confirm'));
     });
 
     const deleteCall = fetchMock.mock.calls.find(
