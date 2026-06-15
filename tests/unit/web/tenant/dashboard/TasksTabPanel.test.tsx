@@ -246,6 +246,19 @@ describe('<TasksTabPanel />', () => {
     );
   });
 
+  it('fires the dashboard-stale signal after a successful toggle (FHS-309)', async () => {
+    installApi({ tasks: [task({ id: 't1', title: 'Buy milk', memberId: CALLER })] });
+    const onStale = vi.fn();
+    window.addEventListener('fh:dashboard-stale', onStale);
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('task-toggle-t1')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('task-toggle-t1'));
+    });
+    await waitFor(() => expect(onStale).toHaveBeenCalled());
+    window.removeEventListener('fh:dashboard-stale', onStale);
+  });
+
   it('blocks a whitespace-only title without firing a POST', async () => {
     installApi({ tasks: [] });
     renderAt('/t/khans/dashboard');
