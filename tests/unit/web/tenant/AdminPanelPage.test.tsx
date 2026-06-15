@@ -347,7 +347,7 @@ describe('<AdminPanelPage />', () => {
     });
   });
 
-  it('Users tab shows a read-only roster with a Manage in Members link', async () => {
+  it('Users tab shows a read-only roster (no duplicate Manage button)', async () => {
     renderAt();
     await waitFor(() => expect(screen.getByTestId('admin-panel-tab-users')).toBeInTheDocument());
     act(() => {
@@ -355,7 +355,9 @@ describe('<AdminPanelPage />', () => {
     });
     await waitFor(() => expect(screen.getByTestId('admin-users-ready')).toBeInTheDocument());
     expect(screen.getByTestId('admin-users-list')).toBeInTheDocument();
-    expect(screen.getByTestId('admin-users-manage-link')).toBeInTheDocument();
+    // FHS-315 — the redundant header "Manage in Members" button was removed
+    // (the same link still lives in the info box below the roster).
+    expect(screen.queryByTestId('admin-users-manage-link')).not.toBeInTheDocument();
     // No add-user button — divergence from legacy
     expect(screen.queryByTestId('admin-users-add-btn')).not.toBeInTheDocument();
   });
