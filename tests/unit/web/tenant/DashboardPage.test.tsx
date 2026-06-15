@@ -194,6 +194,14 @@ describe('<DashboardPage /> — tab framework', () => {
     expect(screen.getByTestId('meals-loading')).toBeInTheDocument();
   });
 
+  it('renders the Meals tab unwrapped — not inside the white card (FHS-318)', () => {
+    renderAt('/t/khans/dashboard?tab=meals');
+    // The Meals header uses white text for the purple page; if it were still
+    // wrapped in the white card the heading would be invisible. Assert it has
+    // no white-card ancestor (Home/Calendar render the same way).
+    expect(screen.getByTestId('meals-loading').closest('.bg-white')).toBeNull();
+  });
+
   it('falls back to the default panel when ?tab is unknown', () => {
     renderAt('/t/khans/dashboard?tab=does-not-exist');
     expect(screen.getByTestId('dashboard-panel-home')).toBeInTheDocument();

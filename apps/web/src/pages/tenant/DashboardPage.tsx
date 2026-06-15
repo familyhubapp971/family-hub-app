@@ -571,11 +571,14 @@ function ParentDashboard() {
             <TodayTabPanel />
           ) : active.id === 'calendar' ? (
             <CalendarTabPanel />
+          ) : active.id === 'meals' ? (
+            // FHS-318 — Meals was redesigned (FHS-304) to render on the purple
+            // page with its own white cards + white header text; the leftover
+            // white Card wrapper made the header invisible (white-on-white).
+            <MealsTabPanel />
           ) : (
             <Card className="bg-white p-6 text-gray-900 md:p-8">
-              {active.id === 'meals' ? (
-                <MealsTabPanel />
-              ) : active.id === 'assignments' ? (
+              {active.id === 'assignments' ? (
                 <AssignmentsTabPanel />
               ) : active.id === 'noticeboard' ? (
                 <NoticeboardTabPanel />
