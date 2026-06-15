@@ -7,14 +7,68 @@ import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
 // FHS-108 — Lists tenant members with role + status badges. Tests
 // cover loading / error / empty / populated states + the active vs
 // unclaimed status derivation.
+//
+// FHS-322 — AppHeader added to MembersPage. Fetch mock is now URL-aware
+// so AppHeader's self-fetches (/api/me, /api/dashboard/today) don't
+// consume or pollute the /api/members call ordering.
 
 const fetchMock = vi.fn();
-const authState: { session: { access_token?: string } | null } = {
+const authState: {
+  session: { access_token?: string } | null;
+  user: { email?: string; id?: string; user_metadata?: Record<string, unknown> } | null;
+} = {
   session: { access_token: 'fake-jwt' },
+  user: { email: 'sarah@example.com', id: 'u-1', user_metadata: {} },
 };
+
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
+  signOutAll: vi.fn().mockResolvedValue({ error: null }),
+  getKidToken: vi.fn(() => null),
+  clearKidToken: vi.fn(),
 }));
+
+// ── Per-test response slot ────────────────────────────────────────────────────
+// Each test sets membersResponse before rendering; the URL-aware mock
+// routes /api/members GET to it. Mutation calls (PUT/DELETE) are handled
+// via extra mockResolvedValueOnce calls appended by the test.
+
+let membersResponse: { ok: boolean; status?: number; json: () => Promise<unknown> } | null = null;
+
+function installApi() {
+  fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    const u = String(url);
+
+    // AppHeader self-fetches these two on mount.
+    // Use exact-path match (/api/me) to avoid catching /api/members.
+    if (/\/api\/me(\?|$)/.test(u)) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ tenants: [] }),
+      });
+    }
+    if (u.includes('/api/dashboard/today')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ members: [], callerMemberId: null, counts: {} }),
+      });
+    }
+
+    // /api/members GET — return whatever the test has set.
+    if (u.includes('/api/members') && (!init?.method || init.method === 'GET')) {
+      return Promise.resolve(
+        membersResponse ?? { ok: true, status: 200, json: async () => ({ members: [] }) },
+      );
+    }
+
+    // Pass-through for any test-appended mockResolvedValueOnce calls
+    // (PUT /pin, DELETE /pin, GET reload after mutation, etc.).
+    // The mock queue drains before this default fires.
+    return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+  });
+}
 
 function renderAt(initial: string) {
   return render(
@@ -34,9 +88,12 @@ function renderAt(initial: string) {
 }
 
 beforeEach(() => {
+  membersResponse = null;
   fetchMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
   authState.session = { access_token: 'fake-jwt' };
+  authState.user = { email: 'sarah@example.com', id: 'u-1', user_metadata: {} };
+  installApi();
 });
 
 afterEach(() => {
@@ -45,28 +102,37 @@ afterEach(() => {
 
 describe('<MembersPage />', () => {
   it('renders a loading hint while the request is in flight', () => {
-    fetchMock.mockReturnValue(new Promise(() => {}));
+    // Override just the /api/members call to hang forever.
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/api/members')) return new Promise(() => {});
+      if (/\/api\/me(\?|$)/.test(String(url)))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ tenants: [] }) });
+      if (String(url).includes('/api/dashboard/today'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ members: [], callerMemberId: null, counts: {} }),
+        });
+      return new Promise(() => {});
+    });
     renderAt('/t/khans/members');
     expect(screen.getByTestId('members-loading')).toBeInTheDocument();
   });
 
   it('renders the empty state when the tenant has no members', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ members: [] }),
-    });
+    membersResponse = { ok: true, json: async () => ({ members: [] }) };
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-empty')).toBeInTheDocument());
   });
 
   it('renders the inline error when the API returns a non-2xx', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) });
+    membersResponse = { ok: false, status: 500, json: async () => ({}) };
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-error')).toBeInTheDocument());
   });
 
   it('renders one row per member with role + status badges', async () => {
-    fetchMock.mockResolvedValueOnce({
+    membersResponse = {
       ok: true,
       json: async () => ({
         members: [
@@ -88,7 +154,7 @@ describe('<MembersPage />', () => {
           },
         ],
       }),
-    });
+    };
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
 
@@ -105,7 +171,7 @@ describe('<MembersPage />', () => {
   });
 
   it('shows the pending box + resend on an unclaimed parent seat (FHS-276)', async () => {
-    fetchMock.mockResolvedValueOnce({
+    membersResponse = {
       ok: true,
       json: async () => ({
         callerRole: 'admin',
@@ -138,7 +204,7 @@ describe('<MembersPage />', () => {
           },
         ],
       }),
-    });
+    };
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
     const pending = screen.getByTestId('members-row-1-pending');
@@ -154,7 +220,7 @@ describe('<MembersPage />', () => {
   });
 
   it('admin toggle is disabled for the last admin and shown only on parent rows (FHS-276)', async () => {
-    fetchMock.mockResolvedValueOnce({
+    membersResponse = {
       ok: true,
       json: async () => ({
         callerRole: 'admin',
@@ -200,7 +266,7 @@ describe('<MembersPage />', () => {
           },
         ],
       }),
-    });
+    };
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
     // Sole admin: toggle disabled. Other parent: "Make admin" enabled.
@@ -216,18 +282,25 @@ describe('<MembersPage />', () => {
   });
 
   it('passes the tenant slug + bearer token on the request', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ members: [] }),
-    });
+    membersResponse = { ok: true, json: async () => ({ members: [] }) };
     renderAt('/t/khans/members');
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const [url, init] = fetchMock.mock.calls[0]!;
+    // Find the /api/members call — AppHeader's /api/me and /api/dashboard/today fire first.
+    const membersCall = fetchMock.mock.calls.find(([u]) => String(u).includes('/api/members'));
+    expect(membersCall).toBeDefined();
+    const [url, init] = membersCall!;
     expect(url).toBe('http://localhost:3001/api/members');
     expect(init.headers).toMatchObject({
       Authorization: 'Bearer fake-jwt',
       'x-tenant-slug': 'khans',
     });
+  });
+
+  it('shows the global app header (brand home button) on the members page', async () => {
+    membersResponse = { ok: true, json: async () => ({ members: [] }) };
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-empty')).toBeInTheDocument());
+    expect(screen.getByTestId('dashboard-brand-home')).toBeInTheDocument();
   });
 
   // FHS-252 — admin/adult-only PIN management on the members page.
@@ -265,7 +338,7 @@ describe('<MembersPage />', () => {
   }
 
   it('admin sees a "Set PIN" toggle on a kid row + can submit a fresh PIN', async () => {
-    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: false }));
+    membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: false });
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-row-1-pin-toggle')).toBeInTheDocument());
     expect(screen.getByTestId('members-row-1-pin-toggle').textContent).toBe('Set PIN');
@@ -280,7 +353,8 @@ describe('<MembersPage />', () => {
     });
 
     // PUT call returns success → form re-fetches the list. Mock the
-    // PUT + the follow-up GET.
+    // PUT + the follow-up GET via mockResolvedValueOnce (drains before
+    // the URL-aware default fires).
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -302,7 +376,7 @@ describe('<MembersPage />', () => {
   });
 
   it('mismatched PIN + Confirm shows inline error and does NOT call the API', async () => {
-    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: false }));
+    membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: false });
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-row-1-pin-toggle')).toBeInTheDocument());
 
@@ -314,12 +388,15 @@ describe('<MembersPage />', () => {
     fireEvent.click(screen.getByTestId('members-row-1-pin-save'));
 
     expect(screen.getByTestId('members-row-1-pin-error').textContent).toMatch(/don.t match/i);
-    // No PUT was fired (only the initial GET).
-    expect(fetchMock.mock.calls).toHaveLength(1);
+    // No PUT was fired — only the initial /api/me + /api/dashboard/today + /api/members GETs.
+    const putCalls = fetchMock.mock.calls.filter(
+      (c) => c[1]?.method === 'PUT' || c[1]?.method === 'DELETE',
+    );
+    expect(putCalls).toHaveLength(0);
   });
 
   it('"Remove kid login" DELETEs the PIN and reloads the list', async () => {
-    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: true }));
+    membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: true });
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-row-1-pin-toggle')).toBeInTheDocument());
     expect(screen.getByTestId('members-row-1-pin-toggle').textContent).toBe('Reset PIN');
@@ -345,7 +422,7 @@ describe('<MembersPage />', () => {
   });
 
   it('a child role caller does NOT see the PIN toggle (admin/adult only)', async () => {
-    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'child', kidHasPin: false }));
+    membersResponse = listWithKid({ callerRole: 'child', kidHasPin: false });
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
     expect(screen.queryByTestId('members-row-1-pin-toggle')).toBeNull();
@@ -354,7 +431,7 @@ describe('<MembersPage />', () => {
   // FHS-252 — symmetry: teen role caller also blocked, locked in
   // so a future ADMIN_OR_ADULT loosening can't sneak teens in.
   it('a teen role caller does NOT see the PIN toggle either', async () => {
-    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'teen', kidHasPin: false }));
+    membersResponse = listWithKid({ callerRole: 'teen', kidHasPin: false });
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-list')).toBeInTheDocument());
     expect(screen.queryByTestId('members-row-1-pin-toggle')).toBeNull();
@@ -364,7 +441,7 @@ describe('<MembersPage />', () => {
   // surfaces to the kid's adult, not the bare `error` keyword.
   // FHS-308 — Admin Panel button appears on the admin's own card.
   it('renders the Admin Panel button on the admin card and navigates on click', async () => {
-    fetchMock.mockResolvedValueOnce({
+    membersResponse = {
       ok: true,
       json: async () => ({
         callerRole: 'admin',
@@ -384,7 +461,7 @@ describe('<MembersPage />', () => {
           },
         ],
       }),
-    });
+    };
     const { container } = render(
       <MemoryRouter initialEntries={['/t/khans/members']}>
         <Routes>
@@ -408,7 +485,7 @@ describe('<MembersPage />', () => {
   });
 
   it('shows the server detail message (not just "forbidden") when a 403 fires', async () => {
-    fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: false }));
+    membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: false });
     renderAt('/t/khans/members');
     await waitFor(() => expect(screen.getByTestId('members-row-1-pin-toggle')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('members-row-1-pin-toggle'));

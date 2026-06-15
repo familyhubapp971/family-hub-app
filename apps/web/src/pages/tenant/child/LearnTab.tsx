@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BookOpen, Book, Check, X } from 'lucide-react';
+import { BookOpen, Book, Check, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
+import { WorldFlagsLearn } from './learn/WorldFlagsLearn';
 
 // Learn Phase 1 — ChildWorld Learn tab.
 //
 // Left: a 2-col grid of subject cards with progress bars (GET /api/learn).
 // Right: a Reading Log panel — add books, mark finished, delete
 //        (GET/POST/PATCH/DELETE /api/reading-log).
+//
+// Learn Phase 2a — World Flags Explore (subject routing):
+// Clicking a subject card drills into its detail view. World Flags shows the
+// Explore experience (WorldFlagsLearn). Other subjects show "Coming soon."
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,6 +31,7 @@ interface Book {
 }
 
 type Status = 'loading' | 'ready' | 'error';
+type SelectedSubject = string | null;
 
 // ─── Subject catalogue ────────────────────────────────────────────────────────
 
@@ -42,6 +48,9 @@ const FALLBACK_STYLE = { emoji: '⭐', bg: 'bg-gray-300' };
 export function LearnTab({ memberId }: { memberId: string }) {
   const slug = useTenantSlug();
   const { session } = useAuth();
+
+  // Subject routing state — null = overview, string = subject detail
+  const [selectedSubject, setSelectedSubject] = useState<SelectedSubject>(null);
 
   // Learn subjects state
   const [learnStatus, setLearnStatus] = useState<Status>('loading');
@@ -183,6 +192,38 @@ export function LearnTab({ memberId }: { memberId: string }) {
     [headers, memberId],
   );
 
+  // ── Subject detail views ───────────────────────────────────────────────────
+
+  if (selectedSubject !== null) {
+    return (
+      <div className="flex flex-col gap-4" data-testid="learn-subject-detail">
+        {/* Back button */}
+        <button
+          data-testid="learn-back"
+          type="button"
+          onClick={() => setSelectedSubject(null)}
+          className="flex min-h-[44px] w-fit items-center gap-2 rounded-xl border-2 border-black bg-white px-4 py-2 text-sm font-black shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5"
+        >
+          <ArrowLeft size={16} aria-hidden="true" />
+          Back to subjects
+        </button>
+
+        {selectedSubject === 'World Flags' ? (
+          <WorldFlagsLearn memberId={memberId} />
+        ) : (
+          /* Coming soon card for subjects not yet built */
+          <div className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm">
+            <p className="text-4xl">{SUBJECT_STYLE[selectedSubject]?.emoji ?? '⭐'}</p>
+            <h3 className="mt-3 font-heading text-2xl uppercase">{selectedSubject}</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              This subject is coming soon. Check back later!
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // ── Loading / error (whole-tab) ────────────────────────────────────────────
 
   if (learnStatus === 'loading' && booksStatus === 'loading') {
@@ -231,11 +272,12 @@ export function LearnTab({ memberId }: { memberId: string }) {
                 // Slug for testid: lowercase, spaces → hyphens
                 const slug = s.subject.toLowerCase().replace(/\s+/g, '-');
                 return (
-                  <div
+                  <button
                     key={s.subject}
+                    type="button"
                     data-testid={`learn-subject-${slug}`}
+                    onClick={() => setSelectedSubject(s.subject)}
                     className={`flex flex-col gap-4 rounded-xl border-2 border-black p-5 text-left shadow-neo-xs motion-safe:hover:-translate-y-1 ${style.bg} transition-transform`}
-                    title="Coming soon"
                   >
                     {/* Icon + progress pill */}
                     <div className="flex items-center justify-between">
@@ -260,7 +302,7 @@ export function LearnTab({ memberId }: { memberId: string }) {
                     >
                       <div className="h-full bg-black" style={{ width: `${pct}%` }} />
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>

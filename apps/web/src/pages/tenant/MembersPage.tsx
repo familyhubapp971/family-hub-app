@@ -5,6 +5,8 @@ import { Button, Card, Input, Label } from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
+import { AppHeader } from './AppHeader';
+import { DEFAULT_TAB } from './dashboard-tabs';
 
 // FHS-108 / FHS-252 / FHS-276 — /t/:slug/members, rebuilt to the Magic
 // Patterns "Manage Members" design: header CTAs (Invite Parent / Add
@@ -64,6 +66,13 @@ export function MembersPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
+  // FHS-322 — render the shared app header; nav tabs route to the dashboard.
+  const onHeaderTabChange = useCallback(
+    (tabId: string) => {
+      navigate(`/t/${slug}/dashboard${tabId === DEFAULT_TAB ? '' : `?tab=${tabId}`}`);
+    },
+    [navigate, slug],
+  );
   // Which header form is open ('none' | 'parent' | 'child'). The
   // dashboard dropdown's Add Child deep-links here with ?add=child.
   const [activeForm, setActiveForm] = useState<'none' | 'parent' | 'child'>(
@@ -136,8 +145,9 @@ export function MembersPage() {
   const adminCount = ready ? status.members.filter((m) => m.role === 'admin').length : 0;
 
   return (
-    <div className="flex min-h-screen flex-col bg-kingdom-bg p-6 font-body text-gray-900">
-      <div className="mx-auto w-full max-w-7xl">
+    <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-gray-900">
+      <AppHeader activeTab={null} onTabChange={onHeaderTabChange} />
+      <div className="mx-auto w-full max-w-7xl p-6">
         <div className="mb-2">
           <Link
             to={`/t/${slug}/dashboard`}
