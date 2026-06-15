@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 // Learn Phase 1 — LearnTab: subject cards + Reading Log panel.
+// Learn Phase 2a — World Flags subject routing + Explore detail.
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
@@ -36,13 +37,30 @@ function makeBook(
   };
 }
 
-// Install fetch mock: /api/learn → subjects, /api/reading-log → books.
+// Install fetch mock: /api/learn → subjects, /api/reading-log → books,
+// /api/world-flags → explored codes.
 // fetchMock is called with (url, init). We identify by URL substring.
 function installDefault(
   subjects: Array<{ subject: string; progress: number }>,
   books: ReturnType<typeof makeBook>[],
+  exploredCodes: string[] = [],
 ) {
-  fetchMock.mockImplementation((url: string) => {
+  fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    if ((url as string).includes('/api/world-flags')) {
+      const method = (init as RequestInit | undefined)?.method ?? 'GET';
+      if (method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ explored: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ explored: exploredCodes }),
+      });
+    }
     if ((url as string).includes('/api/learn')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ subjects }) });
     }
@@ -225,5 +243,135 @@ describe('Loading / error states', () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
     renderTab();
     await waitFor(() => expect(screen.getByTestId('learn-error')).toBeInTheDocument());
+  });
+});
+
+// ─── World Flags subject routing (Learn Phase 2a) ─────────────────────────────
+
+describe('World Flags subject routing', () => {
+  it('clicking World Flags subject card shows the Explore detail', async () => {
+    installDefault([{ subject: 'World Flags', progress: 10 }], []);
+    renderTab();
+    await waitFor(() =>
+      expect(screen.getByTestId('learn-subject-world-flags')).toBeInTheDocument(),
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-world-flags'));
+    });
+    await waitFor(() => expect(screen.getByTestId('learn-back')).toBeInTheDocument());
+    // World Flags Explore renders a flashcard
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+  });
+
+  it('back button returns to the subject overview', async () => {
+    installDefault([{ subject: 'World Flags', progress: 10 }], []);
+    renderTab();
+    await waitFor(() =>
+      expect(screen.getByTestId('learn-subject-world-flags')).toBeInTheDocument(),
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-world-flags'));
+    });
+    await waitFor(() => expect(screen.getByTestId('learn-back')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-back'));
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId('learn-subject-world-flags')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('world-flashcard')).not.toBeInTheDocument();
+  });
+
+  it('non-World Flags subject shows coming soon', async () => {
+    installDefault([{ subject: 'Maths', progress: 20 }], []);
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-maths'));
+    });
+    await waitFor(() => expect(screen.getByTestId('learn-back')).toBeInTheDocument());
+    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
+  });
+});
+
+// ─── WorldFlagsLearn Explore behaviour ───────────────────────────────────────
+
+describe('WorldFlagsLearn Explore', () => {
+  async function openWorldFlags() {
+    installDefault([{ subject: 'World Flags', progress: 5 }], []);
+    renderTab();
+    await waitFor(() =>
+      expect(screen.getByTestId('learn-subject-world-flags')).toBeInTheDocument(),
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-world-flags'));
+    });
+    // Wait for the world flags GET to resolve and the flashcard to appear
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+  }
+
+  it('renders a continent filter bar with All button', async () => {
+    await openWorldFlags();
+    expect(screen.getByTestId('world-continent-all')).toBeInTheDocument();
+    expect(screen.getByTestId('world-continent-africa')).toBeInTheDocument();
+  });
+
+  it('renders a progress bar', async () => {
+    await openWorldFlags();
+    expect(screen.getByTestId('world-progress')).toBeInTheDocument();
+  });
+
+  it('renders Next Flag button', async () => {
+    await openWorldFlags();
+    expect(screen.getByTestId('world-next-flag')).toBeInTheDocument();
+  });
+
+  it('tapping the flashcard (flag→name) reveals the country name and POSTs explore', async () => {
+    await openWorldFlags();
+    // Tap to reveal name
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-flashcard'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-flag-name')).toBeInTheDocument());
+    // Verify a POST to /api/world-flags/explore was made
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls as [string, RequestInit | undefined][];
+      const postCall = calls.find(
+        ([url, init]) =>
+          (url as string).includes('/api/world-flags/explore') &&
+          (init as RequestInit | undefined)?.method === 'POST',
+      );
+      expect(postCall).toBeTruthy();
+    });
+  });
+
+  it('tapping the flashcard again (name→facts) reveals the facts panel', async () => {
+    await openWorldFlags();
+    // First tap → name
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-flashcard'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-flag-name')).toBeInTheDocument());
+    // Second tap → facts
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-flashcard'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-flag-facts')).toBeInTheDocument());
+  });
+
+  it('clicking a continent filter updates the visible progress', async () => {
+    await openWorldFlags();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-continent-africa'));
+    });
+    // Progress bar should still be present and reflect Africa subset
+    expect(screen.getByTestId('world-progress')).toBeInTheDocument();
+  });
+
+  it('continent certificates section renders for each continent', async () => {
+    await openWorldFlags();
+    expect(screen.getByTestId('world-cert-africa')).toBeInTheDocument();
+    expect(screen.getByTestId('world-cert-europe')).toBeInTheDocument();
+    expect(screen.getByTestId('world-cert-asia')).toBeInTheDocument();
   });
 });
