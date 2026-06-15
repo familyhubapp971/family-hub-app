@@ -131,7 +131,7 @@ export function ChildWorldPage() {
         testId="child-world-nav"
       />
 
-      <main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 md:px-6">
+      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-6">
         <section
           id={`child-panel-${active.id}`}
           role="tabpanel"
