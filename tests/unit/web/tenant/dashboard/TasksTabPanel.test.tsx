@@ -76,6 +76,18 @@ function installApi(opts: { tasks?: T[]; tOk?: boolean; tStatus?: number }) {
       state.tasks = state.tasks.filter((t) => t.id !== id);
       return Promise.resolve({ ok: true, status: 204, json: async () => ({}) });
     }
+    if (init?.method === 'PUT') {
+      const idMatch = u.match(/\/api\/tasks\/([^?]+)/);
+      const id = idMatch?.[1];
+      const patch = JSON.parse(init.body as string) as Partial<T>;
+      const idx = state.tasks.findIndex((t) => t.id === id);
+      if (idx >= 0) state.tasks[idx] = { ...state.tasks[idx]!, ...patch };
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => state.tasks[idx],
+      });
+    }
     return Promise.resolve({
       ok: opts.tOk ?? true,
       status: opts.tStatus ?? 200,
@@ -374,5 +386,35 @@ describe('<TasksTabPanel />', () => {
       Authorization: 'Bearer tok-abc',
       'x-tenant-slug': 'khans',
     });
+  });
+
+  it('edit button pre-fills the form and save issues a PUT', async () => {
+    // The edit button only appears on the caller's own column rows.
+    const callerTask = task({ id: 't-edit', title: 'Old task', memberId: CALLER, dueDate: null });
+    installApi({ tasks: [callerTask] });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('tasks-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('task-edit-t-edit'));
+    });
+    // Form opens pre-filled with the existing title
+    expect(screen.getByTestId('tasks-add-form')).toBeInTheDocument();
+    expect((screen.getByTestId('tasks-add-title') as HTMLInputElement).value).toBe('Old task');
+
+    act(() => {
+      fireEvent.change(screen.getByTestId('tasks-add-title'), {
+        target: { value: 'New task' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('tasks-add-submit'));
+    });
+
+    const putCall = fetchMock.mock.calls.find(
+      ([url, init]) => String(url).includes('/api/tasks/t-edit') && init?.method === 'PUT',
+    );
+    expect(putCall).toBeTruthy();
+    expect(JSON.parse((putCall![1] as RequestInit).body as string).title).toBe('New task');
   });
 });

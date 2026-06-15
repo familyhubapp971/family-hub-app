@@ -197,4 +197,55 @@ describe('<NoticeboardTabPanel />', () => {
       'x-tenant-slug': 'khans',
     });
   });
+
+  it('edit button pre-fills the form and save issues a PUT', async () => {
+    const existing = notice({ id: 'n-edit', body: 'Old body', pinned: false, icon: '📌' });
+    const state = { notices: [existing] };
+
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (init?.method === 'PUT') {
+        const idMatch = u.match(/\/api\/notices\/([^?]+)/);
+        const id = idMatch?.[1];
+        const patch = JSON.parse(init.body as string) as Partial<N>;
+        const idx = state.notices.findIndex((n) => n.id === id);
+        if (idx >= 0) state.notices[idx] = { ...state.notices[idx]!, ...patch };
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => state.notices[idx],
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ notices: state.notices }),
+      });
+    });
+
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('notices-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('notice-edit-n-edit'));
+    });
+    // Form opens pre-filled with existing body
+    expect(screen.getByTestId('notices-add-form')).toBeInTheDocument();
+    expect((screen.getByTestId('notices-add-body') as HTMLTextAreaElement).value).toBe('Old body');
+
+    act(() => {
+      fireEvent.change(screen.getByTestId('notices-add-body'), {
+        target: { value: 'New body' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('notices-add-submit'));
+    });
+
+    const putCall = fetchMock.mock.calls.find(
+      ([url, init]) => String(url).includes('/api/notices/n-edit') && init?.method === 'PUT',
+    );
+    expect(putCall).toBeTruthy();
+    expect(JSON.parse((putCall![1] as RequestInit).body as string).body).toBe('New body');
+  });
 });

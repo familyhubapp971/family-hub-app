@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Megaphone, Pin, X } from 'lucide-react';
+import { Megaphone, Pencil, Pin, X } from 'lucide-react';
 import { Button } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
@@ -49,6 +49,7 @@ export function NoticeboardTabPanel() {
   const { session } = useAuth();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ body: string; pinned: boolean; icon: string }>({
     body: '',
     pinned: false,
@@ -123,13 +124,16 @@ export function NoticeboardTabPanel() {
 
   const onAddOpen = useCallback(() => {
     setAdding(true);
+    setEditingId(null);
     setSaveError(null);
     setDraft({ body: '', pinned: false, icon: '📌' });
   }, []);
 
   const onAddCancel = useCallback(() => {
     setAdding(false);
+    setEditingId(null);
     setSaveError(null);
+    setDraft({ body: '', pinned: false, icon: '📌' });
     requestAnimationFrame(() => addButtonRef.current?.focus());
   }, []);
 
@@ -146,8 +150,10 @@ export function NoticeboardTabPanel() {
       setSaving(true);
       setSaveError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/notices`, {
-          method: 'POST',
+        const url = editingId ? `${API_BASE}/api/notices/${editingId}` : `${API_BASE}/api/notices`;
+        const method = editingId ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ body: trimmed, pinned: draft.pinned, icon: draft.icon }),
         });
@@ -169,7 +175,10 @@ export function NoticeboardTabPanel() {
           return;
         }
         setAdding(false);
-        setStatusAnnouncement(draft.pinned ? 'Pinned note added' : 'Note added');
+        setEditingId(null);
+        setStatusAnnouncement(
+          editingId ? 'Note updated' : draft.pinned ? 'Pinned note added' : 'Note added',
+        );
         setErrorAnnouncement('');
         await refetch();
         requestAnimationFrame(() => addButtonRef.current?.focus());
@@ -180,7 +189,7 @@ export function NoticeboardTabPanel() {
         setSaving(false);
       }
     },
-    [headers, draft, refetch],
+    [headers, draft, editingId, refetch],
   );
 
   const onDelete = useCallback(
@@ -210,6 +219,13 @@ export function NoticeboardTabPanel() {
     },
     [headers, refetch],
   );
+
+  const onEditClick = useCallback((n: Notice) => {
+    setSaveError(null);
+    setEditingId(n.id);
+    setAdding(true);
+    setDraft({ body: n.body, pinned: n.pinned, icon: n.icon ?? '📌' });
+  }, []);
 
   if (status.kind === 'loading') {
     return (
@@ -257,7 +273,11 @@ export function NoticeboardTabPanel() {
             onSubmit={onAddSubmit}
             className="mb-6 flex flex-col gap-3 rounded-md border-2 border-black bg-white p-4"
             data-testid="notices-add-form"
+            aria-label={editingId ? 'Edit note' : 'Post new note'}
           >
+            <p className="text-sm font-bold text-black">
+              {editingId ? 'Edit note' : 'Post new note'}
+            </p>
             <label className="flex flex-col gap-1 text-sm font-bold text-black">
               Note
               <textarea
@@ -314,7 +334,7 @@ export function NoticeboardTabPanel() {
                 disabled={saving}
                 testId="notices-add-submit"
               >
-                {saving ? 'Saving…' : 'Post note'}
+                {saving ? 'Saving…' : editingId ? 'Update note' : 'Post note'}
               </Button>
               <Button
                 type="button"
@@ -348,6 +368,7 @@ export function NoticeboardTabPanel() {
                 notice={n}
                 color={CARD_COLORS[i % CARD_COLORS.length]!}
                 onDelete={onDelete}
+                onEdit={onEditClick}
               />
             ))}
           </ul>
@@ -373,10 +394,12 @@ function NoticeCard({
   notice,
   color,
   onDelete,
+  onEdit,
 }: {
   notice: Notice;
   color: string;
   onDelete: (id: string) => void;
+  onEdit: (n: Notice) => void;
 }) {
   return (
     <li data-testid={`notice-row-${notice.id}`}>
@@ -391,16 +414,25 @@ function NoticeCard({
           >
             {notice.icon ?? '📌'}
           </span>
-          <span className="flex items-center gap-2">
+          <span className="flex flex-wrap items-center gap-1">
             {notice.pinned && (
               <Pin size={16} role="img" className="text-gray-500" aria-label="Pinned" />
             )}
             <button
               type="button"
+              onClick={() => onEdit(notice)}
+              aria-label={`Edit note: ${notice.body.slice(0, 40)}`}
+              data-testid={`notice-edit-${notice.id}`}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+            >
+              <Pencil size={14} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
               onClick={() => onDelete(notice.id)}
               aria-label={`Delete note: ${notice.body.slice(0, 40)}`}
               data-testid={`notice-delete-${notice.id}`}
-              className="-mr-2 -mt-2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-gray-500 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+              className="-mr-2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-gray-500 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
             >
               <X size={16} />
             </button>
