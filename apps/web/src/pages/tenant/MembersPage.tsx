@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Edit2, Key, Mail, Plus, Shield, Trash2, X } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Edit2, Key, Mail, Plus, Settings2, Shield, Trash2, X } from 'lucide-react';
 import { Button, Card, Input, Label } from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
@@ -61,6 +61,7 @@ const PIN_ELIGIBLE_ROLES = new Set(['child', 'teen']);
 export function MembersPage() {
   const slug = useTenantSlug();
   const { session } = useAuth();
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   // Which header form is open ('none' | 'parent' | 'child'). The
@@ -391,6 +392,17 @@ export function MembersPage() {
                         </button>
                       )}
                       <div className="flex-1" />
+                      {/* FHS-308 — Admin Panel button on the admin's own card */}
+                      {callerIsAdmin && m.role === 'admin' && (
+                        <button
+                          type="button"
+                          data-testid="members-admin-panel-btn"
+                          onClick={() => navigate(`/t/${slug}/admin`)}
+                          className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-orange-600 transition-colors hover:bg-orange-50 hover:text-orange-800"
+                        >
+                          <Settings2 size={14} aria-hidden="true" /> Admin Panel
+                        </button>
+                      )}
                       {callerIsAdmin && (
                         <RemoveButton
                           rowIdx={idx}

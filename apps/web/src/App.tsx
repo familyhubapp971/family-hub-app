@@ -13,6 +13,7 @@ import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/tenant/DashboardPage';
 import { ChildWorldPage } from './pages/tenant/child/ChildWorldPage';
 import { LegacyDashboardRedirect } from './pages/redirects/LegacyDashboardRedirect';
+import { AdminPanelPage } from './pages/tenant/AdminPanelPage';
 import { MembersPage } from './pages/tenant/MembersPage';
 import { MePage } from './pages/tenant/MePage';
 import { OnboardingPage } from './pages/tenant/OnboardingPage';
@@ -91,6 +92,17 @@ export function App() {
               <ProtectedRoute>
                 <TenantProvider>
                   <MePage />
+                </TenantProvider>
+              </ProtectedRoute>
+            }
+          />
+          {/* FHS-308 — Admin Panel */}
+          <Route
+            path="/t/:slug/admin"
+            element={
+              <ProtectedRoute>
+                <TenantProvider>
+                  <AdminPanelPage />
                 </TenantProvider>
               </ProtectedRoute>
             }
