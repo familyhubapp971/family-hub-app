@@ -34,6 +34,8 @@ import { Button, Card, ConfirmDialog } from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
+import { AppHeader } from './AppHeader';
+import { DEFAULT_TAB } from './dashboard-tabs';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -1946,6 +1948,14 @@ export function AdminPanelPage() {
   const childScopedTab =
     activeTab === 'balance' || activeTab === 'savings' || activeTab === 'history';
 
+  // Must be defined before any early return so hooks count stays stable.
+  const onHeaderTabChange = useCallback(
+    (tabId: string) => {
+      navigate(`/t/${slug}/dashboard${tabId === DEFAULT_TAB ? '' : `?tab=${tabId}`}`);
+    },
+    [navigate, slug],
+  );
+
   // Still waiting for role from the API — show a minimal loading state.
   if (callerRole === null) {
     return (
@@ -1961,97 +1971,102 @@ export function AdminPanelPage() {
   return (
     <div
       data-testid="admin-panel"
-      className="flex min-h-screen flex-col bg-kingdom-bg p-4 sm:p-6 font-body text-gray-900"
+      className="flex min-h-screen flex-col bg-kingdom-bg font-body text-gray-900"
     >
-      <div className="mx-auto w-full max-w-5xl space-y-6">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm">
-          <button
-            type="button"
-            onClick={() => navigate(`/t/${slug}/members`)}
-            className="font-bold text-purple-200 hover:text-yellow-300 transition-colors"
-          >
-            ← Back to Manage Members
-          </button>
-        </div>
+      {/* Global app header — same as dashboard; no tab is active on this page */}
+      <AppHeader activeTab={null} onTabChange={onHeaderTabChange} />
 
-        {/* Header — orange→pink gradient */}
-        <div className="bg-gradient-to-r from-orange-500 to-pink-500 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="bg-white/20 p-2 sm:p-3 rounded-xl backdrop-blur-sm">
-              <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black">Admin Panel</h1>
-              <p className="text-white/80 font-medium text-sm">
-                Manage settings, balances, and members
-              </p>
+      <div className="p-4 sm:p-6">
+        <div className="mx-auto w-full max-w-5xl space-y-6">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm">
+            <button
+              type="button"
+              onClick={() => navigate(`/t/${slug}/members`)}
+              className="font-bold text-purple-200 hover:text-yellow-300 transition-colors"
+            >
+              ← Back to Manage Members
+            </button>
+          </div>
+
+          {/* Header — orange→pink gradient */}
+          <div className="bg-gradient-to-r from-orange-500 to-pink-500 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="bg-white/20 p-2 sm:p-3 rounded-xl backdrop-blur-sm">
+                <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black">Admin Panel</h1>
+                <p className="text-white/80 font-medium text-sm">
+                  Manage settings, balances, and members
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Child selector — visible on Balance / Savings / History tabs */}
-        {childScopedTab && (
-          <ChildSelector
-            kids={children}
-            selectedId={selectedChildId}
-            onSelect={handleChildSelect}
-          />
-        )}
-
-        {/* Tab bar — scrollable on mobile */}
-        <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 shadow-inner overflow-x-auto">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              aria-label={t.label}
-              data-testid={`admin-panel-tab-${t.key}`}
-              onClick={() => setActiveTab(t.key)}
-              className={[
-                'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap min-h-[44px]',
-                activeTab === t.key
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50',
-              ].join(' ')}
-            >
-              {t.icon}
-              <span className="hidden xs:inline sm:inline">{t.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Tab content */}
-        <div className="min-h-[400px]">
-          {childScopedTab && !selectedChildId && children.length === 0 && (
-            <p className="text-sm text-purple-200">
-              No children in this family. Add one from{' '}
-              <Link to={`/t/${slug}/members`} className="underline font-bold text-yellow-300">
-                Manage Members
-              </Link>
-              .
-            </p>
-          )}
-
-          {activeTab === 'balance' && selectedChildId && (
-            <BalanceTab
-              memberId={selectedChildId}
-              currentWeekId={currentWeek?.id ?? null}
-              headers={headers}
+          {/* Child selector — visible on Balance / Savings / History tabs */}
+          {childScopedTab && (
+            <ChildSelector
+              kids={children}
+              selectedId={selectedChildId}
+              onSelect={handleChildSelect}
             />
           )}
 
-          {activeTab === 'savings' && selectedChildId && (
-            <SavingsTab memberId={selectedChildId} headers={headers} />
-          )}
+          {/* Tab bar — scrollable on mobile */}
+          <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 shadow-inner overflow-x-auto">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                aria-label={t.label}
+                data-testid={`admin-panel-tab-${t.key}`}
+                onClick={() => setActiveTab(t.key)}
+                className={[
+                  'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap min-h-[44px]',
+                  activeTab === t.key
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50',
+                ].join(' ')}
+              >
+                {t.icon}
+                <span className="hidden xs:inline sm:inline">{t.label}</span>
+              </button>
+            ))}
+          </div>
 
-          {activeTab === 'history' && selectedChildId && (
-            <HistoryTab memberId={selectedChildId} headers={headers} />
-          )}
+          {/* Tab content */}
+          <div className="min-h-[400px]">
+            {childScopedTab && !selectedChildId && children.length === 0 && (
+              <p className="text-sm text-purple-200">
+                No children in this family. Add one from{' '}
+                <Link to={`/t/${slug}/members`} className="underline font-bold text-yellow-300">
+                  Manage Members
+                </Link>
+                .
+              </p>
+            )}
 
-          {activeTab === 'users' && <UsersTab headers={headers} slug={slug} />}
+            {activeTab === 'balance' && selectedChildId && (
+              <BalanceTab
+                memberId={selectedChildId}
+                currentWeekId={currentWeek?.id ?? null}
+                headers={headers}
+              />
+            )}
 
-          {activeTab === 'app-info' && <AppInfoTab headers={headers} />}
+            {activeTab === 'savings' && selectedChildId && (
+              <SavingsTab memberId={selectedChildId} headers={headers} />
+            )}
+
+            {activeTab === 'history' && selectedChildId && (
+              <HistoryTab memberId={selectedChildId} headers={headers} />
+            )}
+
+            {activeTab === 'users' && <UsersTab headers={headers} slug={slug} />}
+
+            {activeTab === 'app-info' && <AppInfoTab headers={headers} />}
+          </div>
         </div>
       </div>
     </div>
