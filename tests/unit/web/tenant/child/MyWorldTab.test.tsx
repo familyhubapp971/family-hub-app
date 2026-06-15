@@ -196,7 +196,10 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   authState.session = { access_token: 'tok-abc' };
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe('<MyWorldTab /> (legacy habit tracker)', () => {
   it('renders the week navigator, summary, habit card + rewards balance', async () => {
@@ -379,6 +382,27 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     });
     // reward costs 2 → 5 - 2 = 3
     await waitFor(() => expect(screen.getByTestId('sticker-balance').textContent).toContain('3'));
+  });
+
+  it('shows the Close Week banner only from the last day of the week (FHS-319)', async () => {
+    // Default week starts Mon 2026-02-23 → its last day (Sunday) is 2026-03-01.
+    // Fake only Date so async fetch/waitFor still run on real timers.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-03-01T10:00:00')); // Sunday = last day
+    installApi();
+    renderTab();
+    await waitFor(() =>
+      expect(screen.getByTestId('my-world-close-week-banner')).toBeInTheDocument(),
+    );
+  });
+
+  it('hides the Close Week banner mid-week (FHS-319)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-02-25T10:00:00')); // Wednesday, within the week
+    installApi();
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('habit-tracker-week-label')).toBeInTheDocument());
+    expect(screen.queryByTestId('my-world-close-week-banner')).not.toBeInTheDocument();
   });
 
   it('add-habit with an empty name does not POST', async () => {
