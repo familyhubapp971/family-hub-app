@@ -1057,9 +1057,11 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12" data-testid="my-world">
       {/* ════════════════════════════════════════════════════════════════════
-          HABIT TRACKER — left column (lg:col-span-8)
+          HABIT TRACKER — left column (lg:col-span-8). On a finalised week the
+          live right-column widgets are hidden, so the left column goes
+          full-width (FHS-316).
           ════════════════════════════════════════════════════════════════════ */}
-      <div className="space-y-6 lg:col-span-8">
+      <div className={`space-y-6 ${isCurrentWeek ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
         {/* ── Day Sticker Dialog ── */}
         {dayStickerDialog && dayStickerHabit && canEdit && (
           // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
@@ -1782,319 +1784,328 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
             SAVINGS / BANKING CARDS — below habit tracker
             ════════════════════════════════════════════════════════════════════ */}
 
-        {/* ── Your Savings + Active Investments (side by side) — FHS-300 legacy port ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-          {/* ── Your Savings ── */}
-          <div data-testid="your-savings" className="relative">
-            <div className="absolute inset-0 bg-pink-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
-            <div className="relative bg-purple-900 border-2 sm:border-3 border-pink-400/30 rounded-2xl p-4 sm:p-5">
-              <div className="flex items-center gap-2 sm:gap-3 mb-4">
-                <div className="bg-pink-400 p-1.5 sm:p-2 rounded-lg border-2 border-black text-black">
-                  <Wallet className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wide">
-                  Your Savings
-                </h3>
-              </div>
-              <div className="flex justify-between items-center py-2 sm:py-3 border-b border-white/10">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 fill-current" />
-                  <span className="text-slate-300 font-bold text-sm sm:text-base">Stickers</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl sm:text-3xl font-black text-yellow-400">
-                    {savedStickers + Math.floor(savedCash / 0.5)}
-                  </span>
-                  {savedCash > 0 && savedStickers > 0 && (
-                    <p className="text-[10px] text-purple-300 font-bold mt-0.5">
-                      {savedStickers} saved + {Math.floor(savedCash / 0.5)} from cash
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex justify-between items-center pt-3 sm:pt-4">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-lime-400 border-2 border-black text-black flex items-center justify-center text-xs font-black">
-                    $
+        {/* ── Your Savings + Active Investments (side by side) — FHS-300 legacy
+            port. Current week only: a closed week shows just its records (FHS-316). ── */}
+        {isCurrentWeek && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            {/* ── Your Savings ── */}
+            <div data-testid="your-savings" className="relative">
+              <div className="absolute inset-0 bg-pink-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
+              <div className="relative bg-purple-900 border-2 sm:border-3 border-pink-400/30 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center gap-2 sm:gap-3 mb-4">
+                  <div className="bg-pink-400 p-1.5 sm:p-2 rounded-lg border-2 border-black text-black">
+                    <Wallet className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <span className="text-slate-300 font-bold text-sm sm:text-base">Total Value</span>
+                  <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wide">
+                    Your Savings
+                  </h3>
                 </div>
-                <span className="text-2xl sm:text-3xl font-black text-lime-400">
-                  {currency} {(savedStickers * 0.5 + savedCash).toFixed(2)}
-                </span>
+                <div className="flex justify-between items-center py-2 sm:py-3 border-b border-white/10">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 fill-current" />
+                    <span className="text-slate-300 font-bold text-sm sm:text-base">Stickers</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl sm:text-3xl font-black text-yellow-400">
+                      {savedStickers + Math.floor(savedCash / 0.5)}
+                    </span>
+                    {savedCash > 0 && savedStickers > 0 && (
+                      <p className="text-[10px] text-purple-300 font-bold mt-0.5">
+                        {savedStickers} saved + {Math.floor(savedCash / 0.5)} from cash
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between items-center pt-3 sm:pt-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-lime-400 border-2 border-black text-black flex items-center justify-center text-xs font-black">
+                      $
+                    </div>
+                    <span className="text-slate-300 font-bold text-sm sm:text-base">
+                      Total Value
+                    </span>
+                  </div>
+                  <span className="text-2xl sm:text-3xl font-black text-lime-400">
+                    {currency} {(savedStickers * 0.5 + savedCash).toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* ── Active Investments ── */}
-          <div data-testid="active-investments" className="relative">
-            <div className="absolute inset-0 bg-fuchsia-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
-            <div className="relative bg-purple-900 border-2 sm:border-3 border-fuchsia-400/30 rounded-2xl p-4 sm:p-5">
-              <div className="flex items-center gap-2 sm:gap-3 mb-4">
-                <div className="bg-fuchsia-400 p-1.5 sm:p-2 rounded-lg border-2 border-black text-black">
-                  <Coins className="w-4 h-4 sm:w-5 sm:h-5" />
+            {/* ── Active Investments ── */}
+            <div data-testid="active-investments" className="relative">
+              <div className="absolute inset-0 bg-fuchsia-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
+              <div className="relative bg-purple-900 border-2 sm:border-3 border-fuchsia-400/30 rounded-2xl p-4 sm:p-5">
+                <div className="flex items-center gap-2 sm:gap-3 mb-4">
+                  <div className="bg-fuchsia-400 p-1.5 sm:p-2 rounded-lg border-2 border-black text-black">
+                    <Coins className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wide">
+                    Active Investments
+                  </h3>
                 </div>
-                <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wide">
-                  Active Investments
-                </h3>
-              </div>
-              {investments.length > 0 ? (
-                investments.map((inv) => {
-                  const delta = inv.currentValueStickers - inv.investedStickers;
-                  const showOriginally =
-                    inv.originalInvestedStickers !== null &&
-                    inv.originalInvestedStickers !== undefined &&
-                    inv.originalInvestedStickers !== inv.investedStickers;
-                  return (
-                    <div
-                      key={inv.id}
-                      data-testid={`investment-card-${inv.id}`}
-                      className="bg-white/10 border-2 border-white/20 rounded-xl p-4 mb-2 last:mb-0"
-                    >
-                      <p className="text-sm font-bold text-slate-200 leading-snug mb-3">
-                        {inv.habitName ?? `Investment #${inv.id}`}
-                      </p>
-                      {showOriginally && (
+                {investments.length > 0 ? (
+                  investments.map((inv) => {
+                    const delta = inv.currentValueStickers - inv.investedStickers;
+                    const showOriginally =
+                      inv.originalInvestedStickers !== null &&
+                      inv.originalInvestedStickers !== undefined &&
+                      inv.originalInvestedStickers !== inv.investedStickers;
+                    return (
+                      <div
+                        key={inv.id}
+                        data-testid={`investment-card-${inv.id}`}
+                        className="bg-white/10 border-2 border-white/20 rounded-xl p-4 mb-2 last:mb-0"
+                      >
+                        <p className="text-sm font-bold text-slate-200 leading-snug mb-3">
+                          {inv.habitName ?? `Investment #${inv.id}`}
+                        </p>
+                        {showOriginally && (
+                          <div
+                            className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-1.5"
+                            data-testid="investment-original"
+                          >
+                            <span className="text-slate-400">Originally</span>
+                            <span className="text-slate-200 font-bold ml-auto whitespace-nowrap">
+                              {inv.originalInvestedStickers} stickers ({currency}{' '}
+                              {(inv.originalInvestedStickers! * 0.5).toFixed(2)})
+                            </span>
+                          </div>
+                        )}
                         <div
                           className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-1.5"
-                          data-testid="investment-original"
+                          data-testid="investment-invested"
                         >
-                          <span className="text-slate-400">Originally</span>
-                          <span className="text-slate-200 font-bold ml-auto whitespace-nowrap">
-                            {inv.originalInvestedStickers} stickers ({currency}{' '}
-                            {(inv.originalInvestedStickers! * 0.5).toFixed(2)})
+                          <span className="text-slate-400">Invested</span>
+                          <span className="text-yellow-400 font-bold ml-auto whitespace-nowrap">
+                            {inv.investedStickers} stickers ({currency}{' '}
+                            {(inv.investedStickers * 0.5).toFixed(2)})
                           </span>
                         </div>
-                      )}
-                      <div
-                        className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-1.5"
-                        data-testid="investment-invested"
-                      >
-                        <span className="text-slate-400">Invested</span>
-                        <span className="text-yellow-400 font-bold ml-auto whitespace-nowrap">
-                          {inv.investedStickers} stickers ({currency}{' '}
-                          {(inv.investedStickers * 0.5).toFixed(2)})
-                        </span>
-                      </div>
-                      <div
-                        className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-2"
-                        data-testid="investment-current"
-                      >
-                        <span className="text-slate-400 whitespace-nowrap">
-                          Now ({inv.daysCompleted}/7 done
-                          {inv.daysMissed > 0 && (
-                            <span className="text-red-400 ml-1">· {inv.daysMissed} missed</span>
-                          )}
-                          )
-                        </span>
-                        <span className="font-black text-fuchsia-300 ml-auto whitespace-nowrap">
-                          {inv.currentValueStickers} stickers ({currency}{' '}
-                          {inv.currentValue.toFixed(2)})
-                          {delta !== 0 && (
-                            <span
-                              data-testid="investment-delta"
-                              className={`ml-1.5 font-mono text-[10px] ${delta > 0 ? 'text-emerald-300' : 'text-red-400'}`}
-                            >
-                              ({delta > 0 ? '+' : ''}
-                              {delta})
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                      <div className="w-full bg-white/10 h-2 rounded-full border border-white/10 overflow-hidden">
                         <div
-                          className="h-full bg-fuchsia-400 rounded-full"
-                          style={{ width: `${(inv.daysCompleted / 7) * 100}%` }}
-                        />
+                          className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-2"
+                          data-testid="investment-current"
+                        >
+                          <span className="text-slate-400 whitespace-nowrap">
+                            Now ({inv.daysCompleted}/7 done
+                            {inv.daysMissed > 0 && (
+                              <span className="text-red-400 ml-1">· {inv.daysMissed} missed</span>
+                            )}
+                            )
+                          </span>
+                          <span className="font-black text-fuchsia-300 ml-auto whitespace-nowrap">
+                            {inv.currentValueStickers} stickers ({currency}{' '}
+                            {inv.currentValue.toFixed(2)})
+                            {delta !== 0 && (
+                              <span
+                                data-testid="investment-delta"
+                                className={`ml-1.5 font-mono text-[10px] ${delta > 0 ? 'text-emerald-300' : 'text-red-400'}`}
+                              >
+                                ({delta > 0 ? '+' : ''}
+                                {delta})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="w-full bg-white/10 h-2 rounded-full border border-white/10 overflow-hidden">
+                          <div
+                            className="h-full bg-fuchsia-400 rounded-full"
+                            style={{ width: `${(inv.daysCompleted / 7) * 100}%` }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="bg-white/10 border-2 border-white/20 rounded-xl p-4 text-center">
-                  <p className="text-sm text-slate-400 font-medium">No active investments</p>
-                </div>
-              )}
+                    );
+                  })
+                ) : (
+                  <div className="bg-white/10 border-2 border-white/20 rounded-xl p-4 text-center">
+                    <p className="text-sm text-slate-400 font-medium">No active investments</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
         {/* end side-by-side savings/investments grid */}
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
-          RIGHT COLUMN (lg:col-span-4) — My Stickers + Rewards Shop + Bankable + Saving Stickers
+          RIGHT COLUMN (lg:col-span-4) — My Stickers + Rewards Shop + Bankable +
+          Saving Stickers. These are live, current-week-only controls; a
+          finalised week hides the whole column (FHS-316).
           ════════════════════════════════════════════════════════════════════ */}
-      <div className="space-y-4 lg:col-span-4">
-        {/* My Stickers — the sticker types a child can earn (FHS-294) */}
-        <section
-          aria-labelledby="my-stickers-heading"
-          className="rounded-2xl border-2 border-black bg-white p-4 shadow-neo sm:border-3"
-          data-testid="my-stickers"
-        >
-          <h2
-            id="my-stickers-heading"
-            className="mb-3 flex items-center gap-2 text-xl font-black uppercase text-black"
+      {isCurrentWeek && (
+        <div className="space-y-4 lg:col-span-4">
+          {/* My Stickers — the sticker types a child can earn (FHS-294) */}
+          <section
+            aria-labelledby="my-stickers-heading"
+            className="rounded-2xl border-2 border-black bg-white p-4 shadow-neo sm:border-3"
+            data-testid="my-stickers"
           >
-            <span
-              aria-hidden="true"
-              className="grid h-8 w-8 place-items-center rounded-lg border-2 border-black bg-pink-400"
+            <h2
+              id="my-stickers-heading"
+              className="mb-3 flex items-center gap-2 text-xl font-black uppercase text-black"
             >
-              <Star className="h-4 w-4" />
-            </span>
-            My Stickers 💖
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {AVAILABLE_STICKERS.map((s) => (
-              <div
-                key={s.id}
-                data-testid={`my-sticker-${s.id}`}
-                className={`flex flex-col items-center gap-1 rounded-xl border-2 border-black p-3 shadow-neo-xs ${s.color}`}
+              <span
+                aria-hidden="true"
+                className="grid h-8 w-8 place-items-center rounded-lg border-2 border-black bg-pink-400"
               >
-                <span aria-hidden="true">{s.icon}</span>
-                <span className="text-xs font-black uppercase text-black">{s.name}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section
-          aria-labelledby="rewards-shop-heading"
-          className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-6"
-          data-testid="rewards-shop"
-        >
-          <div className="mb-4 flex items-center justify-between">
-            <h2 id="rewards-shop-heading" className="font-heading text-xl text-black">
-              Rewards Shop
+                <Star className="h-4 w-4" />
+              </span>
+              My Stickers 💖
             </h2>
-            <span
-              data-testid="sticker-balance"
-              className="flex items-center gap-1.5 rounded-full border-2 border-black bg-black px-3 py-1.5 font-heading text-sm text-white shadow-neo-xs"
-            >
-              <Star size={14} className="fill-yellow-300 text-yellow-300" aria-hidden="true" />
-              {balance} Stars
-            </span>
-          </div>
-          {rewards.length === 0 ? (
-            <p
-              data-testid="rewards-empty"
-              className="py-3 text-center text-sm font-bold text-gray-500"
-            >
-              No rewards yet — a grown-up can add some.
-            </p>
-          ) : (
-            <ul className="grid grid-cols-1 gap-3" data-testid="rewards-grid">
-              {rewards.map((r) => {
-                const affordable = balance >= r.stickerCost;
-                return (
-                  <li
-                    key={r.id}
-                    data-testid={`reward-card-${r.id}`}
-                    className={`flex items-center justify-between gap-2 rounded-lg border-2 border-black p-2.5 ${
-                      affordable ? 'bg-white' : 'bg-gray-100 opacity-70'
-                    }`}
-                  >
-                    <span className="min-w-0 truncate text-sm font-bold text-black">
-                      {r.icon ? `${r.icon} ` : ''}
-                      {r.name}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      <span
-                        data-testid={`reward-cost-${r.id}`}
-                        className="flex items-center gap-1 text-xs font-bold text-purple-700"
-                      >
-                        <Star size={12} className="fill-yellow-500" aria-hidden="true" />{' '}
-                        {r.stickerCost}
+            <div className="grid grid-cols-2 gap-3">
+              {AVAILABLE_STICKERS.map((s) => (
+                <div
+                  key={s.id}
+                  data-testid={`my-sticker-${s.id}`}
+                  className={`flex flex-col items-center gap-1 rounded-xl border-2 border-black p-3 shadow-neo-xs ${s.color}`}
+                >
+                  <span aria-hidden="true">{s.icon}</span>
+                  <span className="text-xs font-black uppercase text-black">{s.name}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section
+            aria-labelledby="rewards-shop-heading"
+            className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm md:p-6"
+            data-testid="rewards-shop"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 id="rewards-shop-heading" className="font-heading text-xl text-black">
+                Rewards Shop
+              </h2>
+              <span
+                data-testid="sticker-balance"
+                className="flex items-center gap-1.5 rounded-full border-2 border-black bg-black px-3 py-1.5 font-heading text-sm text-white shadow-neo-xs"
+              >
+                <Star size={14} className="fill-yellow-300 text-yellow-300" aria-hidden="true" />
+                {balance} Stars
+              </span>
+            </div>
+            {rewards.length === 0 ? (
+              <p
+                data-testid="rewards-empty"
+                className="py-3 text-center text-sm font-bold text-gray-500"
+              >
+                No rewards yet — a grown-up can add some.
+              </p>
+            ) : (
+              <ul className="grid grid-cols-1 gap-3" data-testid="rewards-grid">
+                {rewards.map((r) => {
+                  const affordable = balance >= r.stickerCost;
+                  return (
+                    <li
+                      key={r.id}
+                      data-testid={`reward-card-${r.id}`}
+                      className={`flex items-center justify-between gap-2 rounded-lg border-2 border-black p-2.5 ${
+                        affordable ? 'bg-white' : 'bg-gray-100 opacity-70'
+                      }`}
+                    >
+                      <span className="min-w-0 truncate text-sm font-bold text-black">
+                        {r.icon ? `${r.icon} ` : ''}
+                        {r.name}
                       </span>
-                      <Button
-                        type="button"
-                        variant="primary"
-                        size="sm"
-                        onClick={() => void onRedeem(r)}
-                        disabled={!affordable}
-                        testId={`reward-buy-${r.id}`}
-                      >
-                        {affordable ? 'Buy' : 'Locked'}
-                      </Button>
+                      <span className="flex shrink-0 items-center gap-2">
+                        <span
+                          data-testid={`reward-cost-${r.id}`}
+                          className="flex items-center gap-1 text-xs font-bold text-purple-700"
+                        >
+                          <Star size={12} className="fill-yellow-500" aria-hidden="true" />{' '}
+                          {r.stickerCost}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          onClick={() => void onRedeem(r)}
+                          disabled={!affordable}
+                          testId={`reward-buy-${r.id}`}
+                        >
+                          {affordable ? 'Buy' : 'Locked'}
+                        </Button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          {/* ── Bankable This Week / Weekly Value ── */}
+          <div data-testid="bankable-week" className="relative">
+            <div className="absolute inset-0 bg-pink-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
+            <div className="relative bg-purple-900 border-2 sm:border-3 border-pink-400/30 rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-2 divide-x-2 sm:divide-x-3 divide-black">
+                <div data-testid="bankable-week-stickers" className="p-5 text-center">
+                  <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2 font-mono">
+                    Bankable This Week
+                  </p>
+                  <p className="text-3xl sm:text-4xl font-black text-yellow-400 leading-none mb-2">
+                    {unallocatedStickers}
+                  </p>
+                  <div className="flex justify-center gap-1 text-base">
+                    <span>⭐</span>
+                    <span>💖</span>
+                    <span>✨</span>
+                  </div>
+                  <p className="text-[10px] text-purple-400 mt-2 font-mono">
+                    Excludes invested habits
+                  </p>
+                </div>
+                <div data-testid="bankable-week-value" className="p-5 text-center">
+                  <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-2 font-mono">
+                    Weekly Value
+                  </p>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-sm font-black text-lime-400">{currency}</span>
+                    <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
+                      {weeklyValue}
                     </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        {/* ── Bankable This Week / Weekly Value ── */}
-        <div data-testid="bankable-week" className="relative">
-          <div className="absolute inset-0 bg-pink-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
-          <div className="relative bg-purple-900 border-2 sm:border-3 border-pink-400/30 rounded-2xl overflow-hidden">
-            <div className="grid grid-cols-2 divide-x-2 sm:divide-x-3 divide-black">
-              <div data-testid="bankable-week-stickers" className="p-5 text-center">
-                <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2 font-mono">
-                  Bankable This Week
-                </p>
-                <p className="text-3xl sm:text-4xl font-black text-yellow-400 leading-none mb-2">
-                  {unallocatedStickers}
-                </p>
-                <div className="flex justify-center gap-1 text-base">
-                  <span>⭐</span>
-                  <span>💖</span>
-                  <span>✨</span>
+                  </div>
+                  <p className="text-[10px] text-purple-400 mt-2 font-mono">
+                    Each star = 0.5 {currency}
+                  </p>
                 </div>
-                <p className="text-[10px] text-purple-400 mt-2 font-mono">
-                  Excludes invested habits
-                </p>
-              </div>
-              <div data-testid="bankable-week-value" className="p-5 text-center">
-                <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-2 font-mono">
-                  Weekly Value
-                </p>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-sm font-black text-lime-400">{currency}</span>
-                  <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
-                    {weeklyValue}
-                  </span>
-                </div>
-                <p className="text-[10px] text-purple-400 mt-2 font-mono">
-                  Each star = 0.5 {currency}
-                </p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* ── Saving Stickers for Big Rewards ── */}
-        <div
-          data-testid="saving-big-rewards"
-          className="bg-purple-900 rounded-2xl p-4 sm:p-5 text-center border-2 sm:border-3 border-pink-400/30"
-        >
-          <h3 className="text-white font-black uppercase mb-1">
-            Saving Stickers for Big Rewards 💖
-          </h3>
-          <p className="text-purple-300 text-xs font-mono mb-4">
-            Invest your stars across weeks to unlock bigger prizes!
-          </p>
-          <div className="flex items-center justify-center gap-2 text-white font-mono text-sm">
-            <div className="bg-lime-400 text-black px-2 py-1 rounded border-2 border-black font-black">
-              WK 1
+          {/* ── Saving Stickers for Big Rewards ── */}
+          <div
+            data-testid="saving-big-rewards"
+            className="bg-purple-900 rounded-2xl p-4 sm:p-5 text-center border-2 sm:border-3 border-pink-400/30"
+          >
+            <h3 className="text-white font-black uppercase mb-1">
+              Saving Stickers for Big Rewards 💖
+            </h3>
+            <p className="text-purple-300 text-xs font-mono mb-4">
+              Invest your stars across weeks to unlock bigger prizes!
+            </p>
+            <div className="flex items-center justify-center gap-2 text-white font-mono text-sm">
+              <div className="bg-lime-400 text-black px-2 py-1 rounded border-2 border-black font-black">
+                WK 1
+              </div>
+              <span className="text-purple-300">+</span>
+              <div className="bg-purple-700 px-2 py-1 rounded border-2 border-purple-500">WK 2</div>
+              <span className="text-purple-300">=</span>
+              <Gift className="w-6 h-6 text-yellow-400 animate-bounce" />
+              <span className="text-yellow-400 font-black text-xs">BIG PRIZE!</span>
             </div>
-            <span className="text-purple-300">+</span>
-            <div className="bg-purple-700 px-2 py-1 rounded border-2 border-purple-500">WK 2</div>
-            <span className="text-purple-300">=</span>
-            <Gift className="w-6 h-6 text-yellow-400 animate-bounce" />
-            <span className="text-yellow-400 font-black text-xs">BIG PRIZE!</span>
+            <div className="w-full bg-purple-800 h-4 rounded-full mt-4 border-2 border-purple-600 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-pink-400 to-yellow-400"
+                style={{ width: `${bigRewardProgress}%` }}
+              />
+            </div>
+            <p className="text-purple-400 text-xs font-mono mt-2">
+              {savedStickers} stickers saved ({currency} {(savedStickers * 0.5).toFixed(2)}) towards
+              big prizes
+            </p>
           </div>
-          <div className="w-full bg-purple-800 h-4 rounded-full mt-4 border-2 border-purple-600 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-pink-400 to-yellow-400"
-              style={{ width: `${bigRewardProgress}%` }}
-            />
-          </div>
-          <p className="text-purple-400 text-xs font-mono mt-2">
-            {savedStickers} stickers saved ({currency} {(savedStickers * 0.5).toFixed(2)}) towards
-            big prizes
-          </p>
         </div>
-      </div>
+      )}
 
       {/* ── Close Week Banner — full width ── */}
       {week && !week.isFinalized && (
