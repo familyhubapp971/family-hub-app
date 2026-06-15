@@ -33,13 +33,15 @@ type Status =
   | { kind: 'ready'; tasks: Task[]; members: MemberLite[]; callerMemberId: string }
   | { kind: 'error'; message: string };
 
-const COLUMN_COLORS = [
-  'bg-sky-50',
-  'bg-rose-50',
-  'bg-amber-50',
-  'bg-violet-50',
-  'bg-emerald-50',
-  'bg-orange-50',
+// Each entry: disc = avatar circle colour, badge = badge background colour.
+// Member 0 = pink (MP "Sarah"), member 1 = cyan (MP "Yusuf"), etc.
+const COLUMN_COLORS: Array<{ disc: string; badge: string }> = [
+  { disc: 'bg-pink-300', badge: 'bg-pink-200' },
+  { disc: 'bg-cyan-300', badge: 'bg-cyan-200' },
+  { disc: 'bg-yellow-300', badge: 'bg-yellow-200' },
+  { disc: 'bg-purple-300', badge: 'bg-purple-200' },
+  { disc: 'bg-lime-300', badge: 'bg-lime-200' },
+  { disc: 'bg-orange-300', badge: 'bg-orange-200' },
 ];
 
 // Synthetic column key collecting tasks whose assigned member was
@@ -333,13 +335,10 @@ export function TasksTabPanel() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4" data-testid="tasks-ready">
-      <header className="flex flex-col items-start gap-1">
-        <h2 className="font-heading text-2xl tracking-wide text-white">Tasks</h2>
-        <p className="text-sm font-bold text-white/80">
-          Everyone&rsquo;s lists side by side — you can only tick off your own.
-        </p>
-      </header>
+    <div className="mx-auto max-w-4xl space-y-6" data-testid="tasks-ready">
+      <div className="flex justify-between items-end mb-4">
+        <h2 className="font-heading text-2xl tracking-wide text-white">My Tasks</h2>
+      </div>
 
       <p aria-live="polite" className="sr-only" data-testid="tasks-status-announcement">
         {statusAnnouncement}
@@ -353,10 +352,7 @@ export function TasksTabPanel() {
         {errorAnnouncement}
       </p>
 
-      <div
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
-        data-testid="tasks-board"
-      >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6" data-testid="tasks-board">
         {orderedColumnIds.map((memberId, i) => {
           const member = memberId === ORPHAN_KEY ? undefined : memberById.get(memberId);
           const colTasks = byColumn.get(memberId) ?? [];
@@ -367,8 +363,7 @@ export function TasksTabPanel() {
               key={memberId}
               memberId={memberId}
               name={member?.displayName ?? 'Family'}
-              avatar={member?.avatarEmoji ?? null}
-              color={COLUMN_COLORS[i % COLUMN_COLORS.length]!}
+              color={COLUMN_COLORS[i % COLUMN_COLORS.length] ?? COLUMN_COLORS[0]!}
               tasks={colTasks}
               doneCount={doneCount}
               isOwn={isOwn}
@@ -396,8 +391,7 @@ export function TasksTabPanel() {
 function TaskColumn(props: {
   memberId: string;
   name: string;
-  avatar: string | null;
-  color: string;
+  color: { disc: string; badge: string };
   tasks: Task[];
   doneCount: number;
   isOwn: boolean;
@@ -418,7 +412,6 @@ function TaskColumn(props: {
   const {
     memberId,
     name,
-    avatar,
     color,
     tasks,
     doneCount,
@@ -442,20 +435,20 @@ function TaskColumn(props: {
     <section
       data-testid={`tasks-column-${memberId}`}
       aria-labelledby={`tasks-column-name-${memberId}`}
-      className={`flex flex-col gap-3 rounded-xl border-2 border-black p-4 shadow-neo-sm ${color}`}
+      className="flex flex-col gap-3 rounded-xl border-2 border-black p-4 shadow-neo-sm bg-white"
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="flex items-center justify-between mb-5 pb-4 border-b-2 border-black">
+        <div className="flex items-center gap-3">
           <span
             aria-hidden="true"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white text-sm"
+            className={`w-10 h-10 rounded-full border-2 border-black flex items-center justify-center font-heading text-lg shadow-neo-xs ${color.disc}`}
           >
-            {avatar ?? initials(name)}
+            {initials(name)}
           </span>
           <h3
             id={`tasks-column-name-${memberId}`}
             data-testid={`tasks-column-name-${memberId}`}
-            className="truncate font-heading text-lg text-black"
+            className="font-heading text-xl text-black"
           >
             {name}
             {isOwn && <span className="ml-1 text-xs font-bold text-gray-500">(you)</span>}
@@ -464,9 +457,9 @@ function TaskColumn(props: {
         <span
           data-testid={`tasks-column-badge-${memberId}`}
           aria-label={`${doneCount} of ${tasks.length} done`}
-          className="shrink-0 rounded-full border-2 border-black bg-white px-2 py-0.5 text-xs font-bold text-black"
+          className={`inline-flex rounded-full border-2 border-black px-3 py-0.5 text-xs font-bold text-black ${color.badge}`}
         >
-          {doneCount}/{tasks.length}
+          {doneCount}/{tasks.length} Done
         </span>
       </div>
 
@@ -478,7 +471,7 @@ function TaskColumn(props: {
           {isOwn ? 'Nothing yet — add your first task.' : 'Nothing here yet.'}
         </p>
       ) : (
-        <ul className="space-y-2" data-testid={`tasks-column-list-${memberId}`}>
+        <ul className="space-y-3 mb-6" data-testid={`tasks-column-list-${memberId}`}>
           {tasks.map((t) => (
             <TaskRow
               key={t.id}
@@ -555,15 +548,17 @@ function TaskColumn(props: {
             </div>
           </form>
         ) : (
-          <button
+          <Button
             type="button"
             ref={addButtonRef}
+            variant="secondary"
+            fullWidth
+            testId="tasks-add"
             onClick={onAddOpen}
-            data-testid="tasks-add"
-            className="mt-auto flex w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-gray-400 py-2 font-bold text-gray-600 hover:border-black hover:bg-white hover:text-black motion-safe:transition-colors"
+            className="mt-auto border-dashed !border-gray-400 text-gray-500 hover:text-black hover:!border-black hover:bg-gray-50 gap-2"
           >
-            <Plus size={16} aria-hidden="true" /> Add task
-          </button>
+            <Plus size={18} aria-hidden="true" /> Add Task
+          </Button>
         ))}
     </section>
   );
@@ -585,68 +580,70 @@ function TaskRow({
   return (
     <li data-testid={`task-row-${task.id}`}>
       <div
-        className={`flex flex-wrap items-center gap-2 rounded-lg border-2 border-black p-2.5 shadow-neo-xs motion-safe:transition-colors ${
-          task.done ? 'bg-gray-100 opacity-70' : 'bg-white'
+        className={`flex items-center justify-between p-3 border-2 border-black rounded-lg shadow-neo-xs motion-safe:transition-colors ${
+          task.done ? 'bg-gray-100 opacity-70' : 'bg-white hover:bg-gray-50'
         }`}
       >
-        {editable ? (
-          <button
-            type="button"
-            onClick={() => onToggle(task.id, !task.done)}
-            aria-label={`Mark "${task.title}" ${task.done ? 'not done' : 'done'}`}
-            data-testid={`task-toggle-${task.id}`}
-            className="shrink-0 text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-          >
-            {task.done ? (
-              <CheckCircle2 size={20} className="fill-green-400" />
-            ) : (
-              <Circle size={20} />
-            )}
-          </button>
-        ) : (
-          <span aria-hidden="true" className="shrink-0 text-gray-500">
-            {task.done ? (
-              <CheckCircle2 size={20} className="fill-green-300" />
-            ) : (
-              <Circle size={20} />
-            )}
-          </span>
-        )}
-        <div className="min-w-0 flex-1">
-          <p
-            className={`font-heading text-sm text-black ${task.done ? 'line-through text-gray-500' : ''}`}
-            data-testid={`task-title-${task.id}`}
-          >
-            {task.title}
-          </p>
-          <span
-            className="flex items-center gap-1 text-xs font-bold text-red-500"
-            data-testid={`task-due-${task.id}`}
-          >
-            <Clock size={11} aria-hidden="true" /> {formatDueDate(task.dueDate)}
-          </span>
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {editable ? (
+            <button
+              type="button"
+              onClick={() => onToggle(task.id, !task.done)}
+              aria-label={`Mark "${task.title}" ${task.done ? 'not done' : 'done'}`}
+              data-testid={`task-toggle-${task.id}`}
+              className="shrink-0 text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+            >
+              {task.done ? (
+                <CheckCircle2 size={20} className="fill-green-400" />
+              ) : (
+                <Circle size={20} />
+              )}
+            </button>
+          ) : (
+            <span aria-hidden="true" className="shrink-0 text-gray-500">
+              {task.done ? (
+                <CheckCircle2 size={20} className="fill-green-300" />
+              ) : (
+                <Circle size={20} />
+              )}
+            </span>
+          )}
+          <div className="min-w-0">
+            <p
+              className={`font-bold text-sm text-black ${task.done ? 'line-through text-gray-500' : ''}`}
+              data-testid={`task-title-${task.id}`}
+            >
+              {task.title}
+            </p>
+            <span
+              className="flex items-center gap-1 text-xs font-bold text-red-500"
+              data-testid={`task-due-${task.id}`}
+            >
+              <Clock size={11} aria-hidden="true" /> {formatDueDate(task.dueDate)}
+            </span>
+          </div>
         </div>
         {editable && (
-          <button
-            type="button"
-            onClick={() => onEdit(task)}
-            aria-label={`Edit task: ${task.title.slice(0, 40)}`}
-            data-testid={`task-edit-${task.id}`}
-            className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-black hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-          >
-            <Pencil size={14} aria-hidden="true" />
-          </button>
-        )}
-        {editable && (
-          <button
-            type="button"
-            onClick={() => onDelete(task.id)}
-            aria-label={`Delete task: ${task.title.slice(0, 40)}`}
-            data-testid={`task-delete-${task.id}`}
-            className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded text-gray-500 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-          >
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => onEdit(task)}
+              aria-label={`Edit task: ${task.title.slice(0, 40)}`}
+              data-testid={`task-edit-${task.id}`}
+              className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-black hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+            >
+              <Pencil size={14} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(task.id)}
+              aria-label={`Delete task: ${task.title.slice(0, 40)}`}
+              data-testid={`task-delete-${task.id}`}
+              className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded text-gray-500 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+            >
+              <X size={16} />
+            </button>
+          </div>
         )}
       </div>
     </li>
