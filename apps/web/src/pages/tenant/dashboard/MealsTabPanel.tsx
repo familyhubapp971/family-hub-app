@@ -506,7 +506,7 @@ export function MealsTabPanel() {
                   >
                     {SLOT_META.snack.emoji} {SLOT_META.snack.label}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     {dayMeals
                       .filter((m) => m.slot === 'snack')
                       .map((meal) => (
@@ -527,6 +527,26 @@ export function MealsTabPanel() {
                           }}
                         />
                       ))}
+                    {/* Dedicated snack add — pre-sets slot='snack' so a snack
+                        saved from here lands in the snack row, not dinner (FHS-317). */}
+                    <button
+                      type="button"
+                      data-testid={`meals-add-snack-${day}`}
+                      onClick={() => {
+                        setSaveError(null);
+                        setEditor({
+                          day,
+                          mealId: null,
+                          slot: 'snack',
+                          name: '',
+                          memberId: filter === 'all' || filter === 'family' ? null : filter,
+                          recurring: false,
+                        });
+                      }}
+                      className="flex min-h-[36px] items-center gap-1 rounded-lg border-2 border-dashed border-gray-300 px-3 py-1 text-xs font-bold text-gray-500 hover:border-black hover:text-black motion-safe:transition-colors"
+                    >
+                      + Add snack
+                    </button>
                   </div>
                 </div>
               </div>
