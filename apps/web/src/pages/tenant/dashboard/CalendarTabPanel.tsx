@@ -12,6 +12,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { ConfirmDialog } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -288,28 +289,31 @@ export function CalendarTabPanel() {
     }
   }, [draft, editingId, headers, weekStart, load]);
 
-  const onDelete = useCallback(
-    async (evId: string, evTitle: string) => {
-      if (!headers) return;
-      if (!window.confirm(`Delete "${evTitle}"?`)) return;
-      try {
-        const res = await fetch(`${API_BASE}/api/events/${evId}`, {
-          method: 'DELETE',
-          headers,
-        });
-        if (!res.ok && res.status !== 204) {
-          // Surface error but don't block reload
-          setAnnouncement(`Couldn't delete (server ${res.status})`);
-          return;
-        }
-        setAnnouncement(`${evTitle} deleted`);
-        await load(weekStart);
-      } catch (err) {
-        setAnnouncement(err instanceof Error ? err.message : 'Network error — try again.');
+  // App-styled delete confirmation (replaces window.confirm).
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDelete = useCallback(async () => {
+    if (!headers || !pendingDelete) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/events/${pendingDelete.id}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (!res.ok && res.status !== 204) {
+        setAnnouncement(`Couldn't delete (server ${res.status})`);
+        return;
       }
-    },
-    [headers, weekStart, load],
-  );
+      setAnnouncement(`${pendingDelete.title} deleted`);
+      await load(weekStart);
+      setPendingDelete(null);
+    } catch (err) {
+      setAnnouncement(err instanceof Error ? err.message : 'Network error — try again.');
+    } finally {
+      setDeleting(false);
+    }
+  }, [headers, pendingDelete, weekStart, load]);
 
   if (status.kind === 'loading') {
     return (
@@ -602,7 +606,7 @@ export function CalendarTabPanel() {
                                 type="button"
                                 aria-label={`Delete ${ev.title}`}
                                 data-testid={`calendar-delete-${ev.id}`}
-                                onClick={() => void onDelete(ev.id, ev.title)}
+                                onClick={() => setPendingDelete({ id: ev.id, title: ev.title })}
                                 className="flex h-7 w-7 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-red-500 hover:text-red-600"
                               >
                                 <Trash2 size={12} aria-hidden="true" />
@@ -677,6 +681,17 @@ export function CalendarTabPanel() {
           );
         })}
       </div>
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        title={pendingDelete ? `Delete "${pendingDelete.title}"?` : ''}
+        message="This activity will be removed from the calendar."
+        confirmLabel="Delete"
+        variant="danger"
+        busy={deleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+        testId="calendar-delete-confirm"
+      />
     </div>
   );
 }

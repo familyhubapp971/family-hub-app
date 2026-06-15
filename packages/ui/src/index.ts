@@ -4,6 +4,7 @@ export { Input, Textarea } from './Input';
 export { Select } from './Select';
 export { Badge } from './Badge';
 export { Dialog } from './Dialog';
+export { ConfirmDialog } from './ConfirmDialog';
 export { Label } from './Label';
 export { ToastProvider, useToast } from './Toast';
 export { TopNav, type TopNavTab } from './TopNav';
