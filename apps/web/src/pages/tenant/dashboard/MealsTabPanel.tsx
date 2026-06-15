@@ -1,18 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Repeat } from 'lucide-react';
+import { Repeat, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-229 / FHS-264 — MealsTabPanel (Magic Patterns layout).
+// FHS-304 / FHS-229 / FHS-264 — MealsTabPanel (Magic Patterns WeeklyMeals restyle).
 //
-// Full-width card per day, split into Breakfast / Lunch / Dinner / Snack
-// columns. Each meal is a colour-coded card (green = whole family, a
-// distinct colour per member) with a letter badge for who-it's-for and a
-// "Weekly" pill when recurring. A legend + filter pills narrow the view
-// client-side. "+ Add Meal" per day opens an inline editor (slot, name,
-// who-for, recurring). Clearing the name deletes that meal. Writes go to
-// POST /api/meals (admin/adult only).
+// Visual-only restyle: neo-brutalist day cards with today/weekend variants,
+// meal-type accent colours (🌅/☀️/🌙/🍪), week navigator header, member
+// filter chips, and a snack section. All data fetching, handlers, and
+// data-testids are preserved unchanged.
 
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const SLOTS = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
@@ -29,23 +26,61 @@ const DAY_LABELS: Record<Day, string> = {
   sun: 'Sunday',
 };
 
-const SLOT_META: Record<Slot, { label: string; emoji: string; color: string }> = {
-  breakfast: { label: 'Breakfast', emoji: '🍞', color: 'text-orange-600' },
-  lunch: { label: 'Lunch', emoji: '🌟', color: 'text-amber-600' },
-  dinner: { label: 'Dinner', emoji: '🌙', color: 'text-violet-600' },
-  snack: { label: 'Snack', emoji: '🍪', color: 'text-pink-600' },
+// Short labels for the day header bar (mobile-friendly).
+const DAY_SHORT: Record<Day, string> = {
+  mon: 'Mon',
+  tue: 'Tue',
+  wed: 'Wed',
+  thu: 'Thu',
+  fri: 'Fri',
+  sat: 'Sat',
+  sun: 'Sun',
+};
+
+// Weekend days (not used for today check, only for styling non-today headers).
+const WEEKEND_DAYS: Day[] = ['sat', 'sun'];
+
+const SLOT_META: Record<
+  Slot,
+  { label: string; emoji: string; color: string; tint: string; border: string }
+> = {
+  breakfast: {
+    label: 'Breakfast',
+    emoji: '🌅',
+    color: 'text-amber-700',
+    tint: 'bg-amber-50',
+    border: 'border-amber-200',
+  },
+  lunch: {
+    label: 'Lunch',
+    emoji: '☀️',
+    color: 'text-emerald-700',
+    tint: 'bg-emerald-50',
+    border: 'border-emerald-200',
+  },
+  dinner: {
+    label: 'Dinner',
+    emoji: '🌙',
+    color: 'text-purple-700',
+    tint: 'bg-purple-50',
+    border: 'border-purple-200',
+  },
+  snack: {
+    label: 'Snack',
+    emoji: '🍪',
+    color: 'text-pink-600',
+    tint: 'bg-pink-50',
+    border: 'border-pink-200',
+  },
 };
 
 // Whole-family meals are green; each member cycles a distinct colour.
-// The legend and the meal cards share this mapping so a colour always
-// means the same person.
 const FAMILY_COLOR = {
   card: 'bg-green-50 border-green-500',
   badge: 'bg-green-300',
   dot: 'bg-green-400',
 };
-// Neutral grey for a meal whose member didn't load — never reuse a real
-// member's colour for an unknown one (that would misattribute it).
+// Neutral grey for a meal whose member didn't load.
 const NEUTRAL_COLOR = {
   card: 'bg-gray-50 border-gray-400',
   badge: 'bg-gray-200',
@@ -111,11 +146,25 @@ function labelFor(memberId: string | null, members: MemberLite[]): string {
   return members.find((m) => m.id === memberId)?.displayName ?? 'Family member';
 }
 
-// Monday–Sunday of the current week, e.g. "Feb 23 — Mar 1, 2026".
-function weekRange(now: Date = new Date()): string {
-  const offset = (now.getDay() + 6) % 7; // 0 = Monday
+// Returns the ISO week number for a given date.
+function isoWeekNumber(d: Date): number {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+// Monday of the week that is `offsetWeeks` away from today's week.
+function mondayOfWeek(offsetWeeks: number, now: Date = new Date()): Date {
+  const dayOffset = (now.getDay() + 6) % 7; // 0 = Monday
   const mon = new Date(now);
-  mon.setDate(now.getDate() - offset);
+  mon.setDate(now.getDate() - dayOffset + offsetWeeks * 7);
+  mon.setHours(0, 0, 0, 0);
+  return mon;
+}
+
+// "Feb 23 — Mar 1, 2026" style range for the given Monday.
+function weekRangeFromMonday(mon: Date): string {
   const sun = new Date(mon);
   sun.setDate(mon.getDate() + 6);
   const left = mon.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -127,6 +176,20 @@ function weekRange(now: Date = new Date()): string {
   return `${left} — ${right}`;
 }
 
+// Which Day key corresponds to today (if the current week offset is 0).
+function todayDayKey(now: Date = new Date()): Day | null {
+  const map: Record<number, Day> = {
+    1: 'mon',
+    2: 'tue',
+    3: 'wed',
+    4: 'thu',
+    5: 'fri',
+    6: 'sat',
+    0: 'sun',
+  };
+  return map[now.getDay()] ?? null;
+}
+
 export function MealsTabPanel() {
   const slug = useTenantSlug();
   const { session } = useAuth();
@@ -135,6 +198,10 @@ export function MealsTabPanel() {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Week navigation offset (0 = current week, -1 = last week, +1 = next week).
+  // Chevrons are wired to this state; the API always returns the same data
+  // (no server-side week filtering), so this is display-only navigation.
+  const [weekOffset, setWeekOffset] = useState(0);
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;
@@ -142,6 +209,13 @@ export function MealsTabPanel() {
       mountedRef.current = false;
     };
   }, []);
+
+  const now = useMemo(() => new Date(), []);
+  const displayMonday = useMemo(() => mondayOfWeek(weekOffset, now), [weekOffset, now]);
+  const weekRange = useMemo(() => weekRangeFromMonday(displayMonday), [displayMonday]);
+  const weekNum = useMemo(() => isoWeekNumber(displayMonday), [displayMonday]);
+  // Only highlight today if we're viewing the current week.
+  const todayKey = useMemo(() => (weekOffset === 0 ? todayDayKey(now) : null), [weekOffset, now]);
 
   const headers = useMemo(
     () =>
@@ -254,16 +328,58 @@ export function MealsTabPanel() {
     return m.memberId === filter;
   };
 
+  // Separate main slots (breakfast/lunch/dinner) from snack for layout purposes.
+  const MAIN_SLOTS: Slot[] = ['breakfast', 'lunch', 'dinner'];
+
   return (
     <div className="space-y-5" data-testid="meals-ready">
-      <header>
-        <h2 className="font-heading text-2xl text-black md:text-3xl">Meals</h2>
-        <p className="mt-1 text-sm text-gray-600">Family meal planning for the week</p>
+      {/* ── Header: title + week navigator ── */}
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-black text-white">Weekly Meals 🍽️</h2>
+          <p className="mt-0.5 font-mono text-sm text-pink-300" data-testid="meals-week-range">
+            {weekRange}
+          </p>
+        </div>
+
+        {/* Week navigator: ‹ Week N › */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Previous week"
+            onClick={() => setWeekOffset((n) => n - 1)}
+            className="rounded-xl border-2 border-white/20 bg-white/10 p-2 text-white transition-all hover:bg-white/20 motion-safe:transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          </button>
+
+          <span className="rounded-xl border-2 border-black bg-pink-400 px-3 py-1.5 text-sm font-black text-white">
+            Week {weekNum}
+          </span>
+
+          <button
+            type="button"
+            aria-label="Next week"
+            onClick={() => setWeekOffset((n) => n + 1)}
+            className="rounded-xl border-2 border-white/20 bg-white/10 p-2 text-white transition-all hover:bg-white/20 motion-safe:transition-colors"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
       </header>
 
-      {/* Legend + filter pills. */}
+      {/* ── Slot-type legend ── */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs font-bold text-white/70">
+        {SLOTS.map((s) => (
+          <span key={s}>
+            {SLOT_META[s].emoji} {SLOT_META[s].label}
+          </span>
+        ))}
+      </div>
+
+      {/* ── Member legend + filter pills ── */}
       <div
-        className="flex flex-col gap-3 rounded-md border-2 border-black bg-white p-3 shadow-neo-sm sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-3 rounded-xl border-2 border-black bg-white p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:flex-row sm:items-center sm:justify-between"
         data-testid="meals-legend"
       >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-bold">
@@ -302,40 +418,50 @@ export function MealsTabPanel() {
         </div>
       </div>
 
-      {/* Week header + slot legend. */}
-      <div>
-        <h3 className="font-heading text-xl text-black">Weekly Meals 🍽️</h3>
-        <p className="text-sm text-gray-600" data-testid="meals-week-range">
-          {weekRange()}
-        </p>
-        <p className="mt-1 flex flex-wrap gap-x-4 text-xs font-bold text-gray-600">
-          {SLOTS.map((s) => (
-            <span key={s}>
-              {SLOT_META[s].emoji} {SLOT_META[s].label}
-            </span>
-          ))}
-        </p>
-      </div>
-
+      {/* ── Day cards ── */}
       <div className="space-y-4">
         {DAYS.map((day) => {
+          const isToday = day === todayKey;
+          const isWeekend = WEEKEND_DAYS.includes(day);
           const dayMeals = meals.filter((m) => m.dayOfWeek === day && isVisible(m));
           const editorOpen = editor?.day === day;
+
+          // Day card border + shadow
+          const cardBorder = isToday
+            ? 'border-pink-400 shadow-[4px_4px_0px_0px_rgba(244,114,182,0.5)]'
+            : 'border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]';
+
+          // Day header bar bg
+          const headerBg = isToday ? 'bg-pink-400' : isWeekend ? 'bg-purple-100' : 'bg-white';
+          const dayNameColor = isToday ? 'text-black' : 'text-gray-800';
+
           return (
             <section
               key={day}
               data-testid={`meals-day-${day}`}
-              className="overflow-hidden rounded-md border-2 border-black bg-white shadow-neo-sm"
+              className={`relative overflow-hidden rounded-2xl border-4 ${cardBorder}`}
               aria-labelledby={`meals-day-${day}-h`}
             >
-              <div className="border-b-2 border-black px-4 py-2">
-                <h4 id={`meals-day-${day}-h`} className="font-heading text-lg text-black">
+              {/* Day header bar */}
+              <div className={`flex items-center gap-3 px-4 py-3 ${headerBg}`}>
+                <h4 id={`meals-day-${day}-h`} className={`font-black text-base ${dayNameColor}`}>
                   {DAY_LABELS[day]}
+                  <span className="ml-1 font-normal text-sm opacity-60">({DAY_SHORT[day]})</span>
                 </h4>
+                {isToday && (
+                  <span className="rounded-full bg-black px-2 py-0.5 text-xs font-black text-white">
+                    TODAY
+                  </span>
+                )}
+                {!isToday && isWeekend && (
+                  <span className="text-xs font-bold text-purple-400">Weekend</span>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 divide-y-2 divide-black sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x-2">
-                {SLOTS.map((slot) => {
+              {/* Meal slots grid: Breakfast / Lunch / Dinner */}
+              <div className="grid grid-cols-1 divide-y-2 divide-gray-100 bg-white sm:grid-cols-3 sm:divide-x-2 sm:divide-y-0">
+                {MAIN_SLOTS.map((slot) => {
+                  const meta = SLOT_META[slot];
                   const cells = dayMeals.filter((m) => m.slot === slot);
                   return (
                     <div
@@ -343,10 +469,8 @@ export function MealsTabPanel() {
                       className="space-y-2 p-3"
                       data-testid={`meals-cell-${day}-${slot}`}
                     >
-                      <p
-                        className={`text-[11px] font-bold uppercase tracking-wider ${SLOT_META[slot].color}`}
-                      >
-                        {SLOT_META[slot].emoji} {SLOT_META[slot].label}
+                      <p className={`text-[11px] font-bold uppercase tracking-wider ${meta.color}`}>
+                        {meta.emoji} {meta.label}
                       </p>
                       {cells.map((meal) => (
                         <MealChip
@@ -371,7 +495,44 @@ export function MealsTabPanel() {
                 })}
               </div>
 
-              <div className="border-t-2 border-black p-2">
+              {/* Snack slot — full-width row below the main 3 */}
+              <div
+                className="border-t-2 border-gray-100 bg-white"
+                data-testid={`meals-cell-${day}-snack`}
+              >
+                <div className="px-3 pb-2 pt-2">
+                  <p
+                    className={`text-[11px] font-bold uppercase tracking-wider ${SLOT_META.snack.color}`}
+                  >
+                    {SLOT_META.snack.emoji} {SLOT_META.snack.label}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {dayMeals
+                      .filter((m) => m.slot === 'snack')
+                      .map((meal) => (
+                        <MealChip
+                          key={meal.id}
+                          meal={meal}
+                          members={members}
+                          onEdit={() => {
+                            setSaveError(null);
+                            setEditor({
+                              day: meal.dayOfWeek,
+                              mealId: meal.id,
+                              slot: meal.slot,
+                              name: meal.name,
+                              memberId: meal.memberId,
+                              recurring: meal.recurring,
+                            });
+                          }}
+                        />
+                      ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Add meal / Editor footer */}
+              <div className="border-t-2 border-gray-100 bg-white p-2">
                 {editorOpen ? (
                   <MealEditor
                     editor={editor}
@@ -401,7 +562,7 @@ export function MealsTabPanel() {
                         recurring: false,
                       });
                     }}
-                    className="flex w-full items-center justify-center gap-1 rounded border-2 border-dashed border-gray-400 py-2 text-sm font-bold text-gray-500 hover:border-black hover:text-black motion-safe:transition-colors"
+                    className="flex w-full items-center justify-center gap-1 rounded-xl border-2 border-dashed border-gray-300 py-2 text-sm font-bold text-gray-500 hover:border-black hover:text-black motion-safe:transition-colors"
                   >
                     + Add Meal
                   </button>
@@ -440,7 +601,7 @@ function MealChip({
       type="button"
       data-testid={`meals-meal-${meal.id}`}
       onClick={onEdit}
-      className={`block w-full rounded-md border-2 border-black p-2 text-left shadow-neo-xs hover:shadow-neo-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-black motion-safe:transition-shadow ${color.card}`}
+      className={`block w-full rounded-xl border-2 border-black p-2 text-left shadow-neo-xs hover:shadow-neo-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-black motion-safe:transition-shadow ${color.card}`}
     >
       <div className="flex items-center gap-2">
         <span
@@ -518,7 +679,7 @@ function MealEditor({
 }) {
   return (
     <div
-      className="space-y-2 rounded border-2 border-black bg-white p-2"
+      className="space-y-2 rounded-xl border-2 border-black bg-white p-2"
       data-testid="meals-editor"
       id={`meals-editor-${editor.day}`}
       role="group"
@@ -531,7 +692,7 @@ function MealEditor({
             data-testid="meals-editor-slot"
             value={editor.slot}
             onChange={(e) => onChange({ ...editor, slot: e.target.value as Slot })}
-            className="mt-0.5 block w-full rounded border-2 border-black px-2 py-1 text-sm"
+            className="mt-0.5 block w-full rounded-lg border-2 border-black px-2 py-1 text-sm"
           >
             {SLOTS.map((s) => (
               <option key={s} value={s}>
@@ -546,7 +707,7 @@ function MealEditor({
             data-testid="meals-editor-member"
             value={editor.memberId ?? ''}
             onChange={(e) => onChange({ ...editor, memberId: e.target.value || null })}
-            className="mt-0.5 block w-full rounded border-2 border-black px-2 py-1 text-sm"
+            className="mt-0.5 block w-full rounded-lg border-2 border-black px-2 py-1 text-sm"
           >
             <option value="">Everyone (family)</option>
             {members.map((m) => (
@@ -578,7 +739,7 @@ function MealEditor({
             }
           }}
           placeholder="e.g. Spaghetti bolognese"
-          className="mt-0.5 block w-full rounded border-2 border-black px-2 py-1 text-sm text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="mt-0.5 block w-full rounded-lg border-2 border-black px-2 py-1 text-sm text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
         />
       </label>
 
@@ -599,7 +760,7 @@ function MealEditor({
           data-testid="meals-editor-save"
           onClick={onSave}
           disabled={saving || editor.name.trim().length === 0}
-          className="min-h-[44px] rounded border-2 border-black bg-yellow-300 px-3 py-1 text-sm font-bold text-black disabled:opacity-50"
+          className="min-h-[44px] rounded-lg border-2 border-black bg-yellow-300 px-3 py-1 text-sm font-bold text-black disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
@@ -608,7 +769,7 @@ function MealEditor({
           data-testid="meals-editor-cancel"
           onClick={onCancel}
           disabled={saving}
-          className="min-h-[44px] rounded border-2 border-black bg-white px-3 py-1 text-sm font-bold text-black disabled:opacity-50"
+          className="min-h-[44px] rounded-lg border-2 border-black bg-white px-3 py-1 text-sm font-bold text-black disabled:opacity-50"
         >
           Cancel
         </button>
@@ -618,7 +779,7 @@ function MealEditor({
             data-testid="meals-editor-delete"
             onClick={onDelete}
             disabled={saving}
-            className="min-h-[44px] rounded border-2 border-black bg-red-100 px-3 py-1 text-sm font-bold text-red-700 disabled:opacity-50"
+            className="min-h-[44px] rounded-lg border-2 border-black bg-red-100 px-3 py-1 text-sm font-bold text-red-700 disabled:opacity-50"
           >
             Remove
           </button>
