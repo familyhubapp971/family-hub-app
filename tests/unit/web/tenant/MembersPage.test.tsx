@@ -362,6 +362,51 @@ describe('<MembersPage />', () => {
 
   // FHS-252 (qa-expert blocker #3) — server-side `detail` message
   // surfaces to the kid's adult, not the bare `error` keyword.
+  // FHS-308 — Admin Panel button appears on the admin's own card.
+  it('renders the Admin Panel button on the admin card and navigates on click', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        callerRole: 'admin',
+        members: [
+          {
+            id: 'admin-1',
+            displayName: 'Sarah Khan',
+            role: 'admin',
+            avatarEmoji: '👩',
+            status: 'active',
+            createdAt: '2026-05-02T00:00:00.000Z',
+            isChild: false,
+            hasPin: false,
+            age: null,
+            inviteEmail: null,
+            inviteId: null,
+          },
+        ],
+      }),
+    });
+    const { container } = render(
+      <MemoryRouter initialEntries={['/t/khans/members']}>
+        <Routes>
+          <Route
+            path="/t/:slug/members"
+            element={
+              <TenantProvider>
+                <MembersPage />
+              </TenantProvider>
+            }
+          />
+          <Route path="/t/:slug/admin" element={<div data-testid="admin-panel-page" />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByTestId('members-admin-panel-btn')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('members-admin-panel-btn'));
+    await waitFor(() => expect(screen.getByTestId('admin-panel-page')).toBeInTheDocument());
+    // Suppress unused-var warning for container
+    expect(container).toBeTruthy();
+  });
+
   it('shows the server detail message (not just "forbidden") when a 403 fires', async () => {
     fetchMock.mockResolvedValueOnce(listWithKid({ callerRole: 'admin', kidHasPin: false }));
     renderAt('/t/khans/members');
