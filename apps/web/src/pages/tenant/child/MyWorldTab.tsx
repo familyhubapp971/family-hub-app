@@ -1070,11 +1070,12 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12" data-testid="my-world">
       {/* ════════════════════════════════════════════════════════════════════
-          HABIT TRACKER — left column (lg:col-span-8). On a finalised week the
+          HABIT TRACKER — left column (lg:col-span-7). On a finalised week the
           live right-column widgets are hidden, so the left column goes
-          full-width (FHS-316).
+          full-width (FHS-316). 7/5 split gives the right column more room
+          (FHS-324).
           ════════════════════════════════════════════════════════════════════ */}
-      <div className={`space-y-6 ${isCurrentWeek ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+      <div className={`space-y-6 ${isCurrentWeek ? 'lg:col-span-7' : 'lg:col-span-12'}`}>
         {/* ── Day Sticker Dialog ── */}
         {dayStickerDialog && dayStickerHabit && canEdit && (
           // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
@@ -1942,12 +1943,13 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
-          RIGHT COLUMN (lg:col-span-4) — My Stickers + Rewards Shop + Bankable +
+          RIGHT COLUMN (lg:col-span-5) — My Stickers + Rewards Shop + Bankable +
           Saving Stickers. These are live, current-week-only controls; a
-          finalised week hides the whole column (FHS-316).
+          finalised week hides the whole column (FHS-316). Widened from 4→5
+          so the cards aren't cramped (FHS-324).
           ════════════════════════════════════════════════════════════════════ */}
       {isCurrentWeek && (
-        <div className="space-y-4 lg:col-span-4">
+        <div className="space-y-4 lg:col-span-5">
           {/* My Stickers — the sticker types a child can earn (FHS-294) */}
           <section
             aria-labelledby="my-stickers-heading"
