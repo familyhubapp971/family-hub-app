@@ -554,6 +554,19 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const isCurrentWeek = week ? !week.isFinalized : false;
   const canEdit = isAdmin ? (week ? !week.isFinalized : false) : isCurrentWeek;
 
+  // FHS-319 — the Close Week banner only appears once the week is actually
+  // over: from its last day (Sunday) onward, and stays until the week is
+  // closed (so a week left open past Sunday keeps prompting). A fresh week
+  // shows nothing until its own Sunday.
+  const fmtLocalDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const showCloseWeekBanner = (() => {
+    if (!week || week.isFinalized) return false;
+    const lastDay = new Date(`${week.startDate}T00:00:00`);
+    lastDay.setDate(lastDay.getDate() + 6); // Mon start → Sunday is the 7th day
+    return fmtLocalDate(new Date()) >= fmtLocalDate(lastDay);
+  })();
+
   const todayDayIndex = (new Date().getDay() + 6) % 7; // Mon=0, Sun=6
   const canEditDay = (dayIndex: number) => {
     if (!canEdit) return false;
@@ -2107,8 +2120,8 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
         </div>
       )}
 
-      {/* ── Close Week Banner — full width ── */}
-      {week && !week.isFinalized && (
+      {/* ── Close Week Banner — full width (only from the week's last day) ── */}
+      {showCloseWeekBanner && (
         <div className="lg:col-span-12">
           <div data-testid="my-world-close-week-banner" className="mt-2">
             <div className="bg-yellow-400 border-2 sm:border-3 border-black rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-neo">
