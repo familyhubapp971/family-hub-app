@@ -17,6 +17,7 @@ import type { DashboardMember } from '@familyhub/shared';
 import { getKidToken, signOutAll, useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
+import { useDashboardStaleSignal } from '../../lib/dashboard-refresh';
 import { KidDashboardShell } from './KidDashboardShell';
 import { TodayTabPanel } from './dashboard/TodayTabPanel';
 import { MealsTabPanel } from './dashboard/MealsTabPanel';
@@ -425,6 +426,27 @@ function ParentDashboard() {
       cancelled = true;
     };
   }, [session, slug]);
+
+  // FHS-309 — refresh the header counts (My Tasks badge, roster stats)
+  // when a task/notice mutation elsewhere fires the dashboard-stale
+  // signal, so the badge updates live instead of only on full reload.
+  const refreshToday = useCallback(() => {
+    if (!session) return;
+    fetch(`${API_BASE}/api/dashboard/today`, {
+      headers: { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((today) => {
+        if (today && Array.isArray(today.members)) {
+          const roster = today.members as DashboardMember[];
+          setMembers(roster);
+          const me = roster.find((m) => m.id === (today.callerMemberId as string | undefined));
+          setOpenTasks(me?.tasksPending ?? 0);
+        }
+      })
+      .catch(() => {});
+  }, [session, slug]);
+  useDashboardStaleSignal(refreshToday);
 
   const onTabChange = useCallback(
     (tabId: string) => {

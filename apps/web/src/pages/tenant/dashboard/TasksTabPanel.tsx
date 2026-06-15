@@ -4,6 +4,7 @@ import { Button } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
+import { notifyDashboardStale } from '../../../lib/dashboard-refresh';
 
 // FHS-233 / FHS-267 — TasksTabPanel (Magic Patterns layout).
 //
@@ -182,6 +183,7 @@ export function TasksTabPanel() {
         setStatusAnnouncement(`Added task "${trimmed}"`);
         setErrorAnnouncement('');
         await load();
+        notifyDashboardStale();
         requestAnimationFrame(() => addButtonRef.current?.focus());
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
@@ -229,6 +231,7 @@ export function TasksTabPanel() {
             nextDone ? `Marked "${title}" done` : `Moved "${title}" back to to-do`,
           );
           setErrorAnnouncement('');
+          notifyDashboardStale();
         }
       } catch {
         revert();
@@ -253,6 +256,7 @@ export function TasksTabPanel() {
         setStatusAnnouncement('Task deleted');
         setErrorAnnouncement('');
         await load();
+        notifyDashboardStale();
       } catch (err) {
         setErrorAnnouncement(
           err instanceof Error ? err.message : "Network error — couldn't delete task.",

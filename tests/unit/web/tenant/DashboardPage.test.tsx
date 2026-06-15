@@ -316,6 +316,44 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     expect(screen.getByTestId('tab-tasks-badge').textContent).toBe('1');
   });
 
+  it('refreshes the My Tasks badge on the dashboard-stale signal (FHS-309)', async () => {
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('tab-tasks-badge').textContent).toBe('1'));
+    // Simulate the caller's pending task being marked done elsewhere: the
+    // next /today fetch returns 0 pending for the caller member.
+    mocks.fetchMock.mockImplementation(async (url: string) => {
+      if (url.includes('/api/dashboard/today')) {
+        return {
+          ok: true,
+          json: async () => ({
+            callerMemberId: 'm-1',
+            members: [
+              {
+                id: 'm-1',
+                displayName: 'Sarah',
+                role: 'admin',
+                avatarEmoji: null,
+                habitsDone: 0,
+                habitsTotal: 0,
+                streak: 0,
+                tasksPending: 0,
+                statusText: 'All done',
+                starBalance: 0,
+                pendingSignup: false,
+              },
+            ],
+          }),
+        } as Response;
+      }
+      return { ok: false, status: 404, json: async () => ({}) } as Response;
+    });
+    await act(async () => {
+      window.dispatchEvent(new Event('fh:dashboard-stale'));
+    });
+    // Badge only renders when > 0, so it disappears once pending hits 0.
+    await waitFor(() => expect(screen.queryByTestId('tab-tasks-badge')).not.toBeInTheDocument());
+  });
+
   it('falls back to the auth email as parent name when no display name is set', async () => {
     authState.user = { email: 'sarah@example.com', id: 'u-1', user_metadata: {} };
     renderAt('/t/khans/dashboard');
