@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Circle, Clock, Plus } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Pencil, Plus } from 'lucide-react';
 import { Button } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
@@ -72,7 +72,8 @@ export function AssignmentsTabPanel() {
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [filter, setFilter] = useState<string>('all'); // 'all' | memberId
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ title: '', dueDate: '', memberId: '' });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState({ title: '', dueDate: '', memberId: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -87,7 +88,9 @@ export function AssignmentsTabPanel() {
 
   const onAddCancel = useCallback(() => {
     setAdding(false);
+    setEditingId(null);
     setSaveError(null);
+    setDraft({ title: '', dueDate: '', memberId: '', notes: '' });
     requestAnimationFrame(() => addButtonRef.current?.focus());
   }, []);
 
@@ -152,13 +155,18 @@ export function AssignmentsTabPanel() {
       setSaving(true);
       setSaveError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/assignments`, {
-          method: 'POST',
+        const url = editingId
+          ? `${API_BASE}/api/assignments/${editingId}`
+          : `${API_BASE}/api/assignments`;
+        const method = editingId ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: trimmedTitle,
             dueDate: draft.dueDate || null,
-            ...(draft.memberId ? { memberId: draft.memberId } : {}),
+            memberId: draft.memberId || null,
+            notes: draft.notes.trim() || null,
           }),
         });
         if (!res.ok) {
@@ -177,8 +185,11 @@ export function AssignmentsTabPanel() {
           return;
         }
         setAdding(false);
-        setDraft({ title: '', dueDate: '', memberId: '' });
-        setStatusAnnouncement(`Added assignment "${trimmedTitle}"`);
+        setEditingId(null);
+        setDraft({ title: '', dueDate: '', memberId: '', notes: '' });
+        setStatusAnnouncement(
+          editingId ? `"${trimmedTitle}" updated` : `Added assignment "${trimmedTitle}"`,
+        );
         setErrorAnnouncement('');
         await load();
       } catch (err) {
@@ -188,7 +199,7 @@ export function AssignmentsTabPanel() {
         setSaving(false);
       }
     },
-    [headers, draft, load],
+    [headers, draft, editingId, load],
   );
 
   const onToggleDone = useCallback(
@@ -241,6 +252,18 @@ export function AssignmentsTabPanel() {
     },
     [headers],
   );
+
+  const onEditClick = useCallback((a: Assignment) => {
+    setSaveError(null);
+    setEditingId(a.id);
+    setAdding(true);
+    setDraft({
+      title: a.title,
+      dueDate: a.dueDate ?? '',
+      memberId: a.memberId ?? '',
+      notes: a.notes ?? '',
+    });
+  }, []);
 
   if (status.kind === 'loading') {
     return (
@@ -317,7 +340,13 @@ export function AssignmentsTabPanel() {
         ) : (
           <ul className="space-y-3" data-testid="assignments-list">
             {visible.map((a) => (
-              <AssignmentRow key={a.id} assignment={a} members={members} onToggle={onToggleDone} />
+              <AssignmentRow
+                key={a.id}
+                assignment={a}
+                members={members}
+                onToggle={onToggleDone}
+                onEdit={onEditClick}
+              />
             ))}
           </ul>
         )}
@@ -327,7 +356,11 @@ export function AssignmentsTabPanel() {
             onSubmit={onAddSubmit}
             className="mt-5 grid grid-cols-1 gap-3 rounded-md border-2 border-black bg-yellow-50 p-4 sm:grid-cols-2"
             data-testid="assignments-add-form"
+            aria-label={editingId ? 'Edit assignment' : 'Add assignment'}
           >
+            <p className="col-span-full text-sm font-bold text-black">
+              {editingId ? 'Edit assignment' : 'Add assignment'}
+            </p>
             <label className="flex flex-col gap-1 text-sm font-bold text-black sm:col-span-2">
               Title
               <input
@@ -366,6 +399,17 @@ export function AssignmentsTabPanel() {
                 className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
             </label>
+            <label className="flex flex-col gap-1 text-sm font-bold text-black sm:col-span-2">
+              Notes (optional)
+              <input
+                type="text"
+                maxLength={500}
+                value={draft.notes}
+                onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+                data-testid="assignments-add-notes"
+                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </label>
             {saveError && (
               <p
                 role="alert"
@@ -383,7 +427,7 @@ export function AssignmentsTabPanel() {
                 disabled={saving}
                 testId="assignments-add-submit"
               >
-                {saving ? 'Saving…' : 'Add'}
+                {saving ? 'Saving…' : editingId ? 'Update' : 'Add'}
               </Button>
               <Button
                 type="button"
@@ -402,6 +446,10 @@ export function AssignmentsTabPanel() {
             type="button"
             ref={addButtonRef}
             onClick={() => {
+              // Opening "Add" must clear any leftover edit state so the
+              // form submits a POST, not a PUT (matches Notices/Tasks).
+              setEditingId(null);
+              setDraft({ title: '', dueDate: '', memberId: '', notes: '' });
               setAdding(true);
               setSaveError(null);
             }}
@@ -446,17 +494,19 @@ function AssignmentRow({
   assignment,
   members,
   onToggle,
+  onEdit,
 }: {
   assignment: Assignment;
   members: MemberLite[];
   onToggle: (id: string, nextDone: boolean) => void;
+  onEdit: (a: Assignment) => void;
 }) {
   const who = members.find((m) => m.id === assignment.memberId);
   const whoLabel = who ? who.displayName : 'Family';
   return (
     <li data-testid={`assignment-row-${assignment.id}`}>
       <div
-        className={`flex items-center gap-3 rounded-xl border-2 border-black p-3 shadow-neo-xs motion-safe:transition-colors ${
+        className={`flex flex-wrap items-center gap-3 rounded-xl border-2 border-black p-3 shadow-neo-xs motion-safe:transition-colors ${
           assignment.done ? 'bg-gray-100 opacity-70' : 'bg-white hover:bg-gray-50'
         }`}
       >
@@ -492,7 +542,7 @@ function AssignmentRow({
             <span aria-hidden="true">📚 </span>
             {assignment.title}
           </p>
-          <div className="mt-1 flex items-center gap-3">
+          <div className="mt-1 flex flex-wrap items-center gap-3">
             <span
               className="flex items-center gap-1 text-xs font-bold text-red-500"
               data-testid={`assignment-due-${assignment.id}`}
@@ -510,6 +560,15 @@ function AssignmentRow({
             </span>
           </div>
         </div>
+        <button
+          type="button"
+          aria-label={`Edit "${assignment.title}"`}
+          data-testid={`assignment-edit-${assignment.id}`}
+          onClick={() => onEdit(assignment)}
+          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-black hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+        >
+          <Pencil size={14} aria-hidden="true" />
+        </button>
       </div>
     </li>
   );

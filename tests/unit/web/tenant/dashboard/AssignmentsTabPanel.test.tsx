@@ -68,6 +68,18 @@ function installApi(opts: { assignments?: A[]; aOk?: boolean; aStatus?: number }
       );
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
     }
+    if (init?.method === 'PUT') {
+      const idMatch = u.match(/\/api\/assignments\/([^?]+)/);
+      const id = idMatch?.[1];
+      const patch = JSON.parse(init.body as string) as Partial<A>;
+      const idx = state.assignments.findIndex((a) => a.id === id);
+      if (idx >= 0) state.assignments[idx] = { ...state.assignments[idx]!, ...patch };
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => state.assignments[idx],
+      });
+    }
     return Promise.resolve({
       ok: opts.aOk ?? true,
       status: opts.aStatus ?? 200,
@@ -411,5 +423,44 @@ describe('<AssignmentsTabPanel />', () => {
       Authorization: 'Bearer tok-abc',
       'x-tenant-slug': 'khans',
     });
+  });
+
+  it('edit button pre-fills the form and save issues a PUT', async () => {
+    const existing: A = {
+      id: 'a-edit',
+      title: 'Old Spelling',
+      notes: null,
+      dueDate: '2026-05-05',
+      memberId: ALI,
+      done: false,
+      doneAt: null,
+    };
+    installApi({ assignments: [existing] });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignments-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignment-edit-a-edit'));
+    });
+    // Form opens with pre-filled title
+    expect(screen.getByTestId('assignments-add-form')).toBeInTheDocument();
+    expect((screen.getByTestId('assignments-add-title') as HTMLInputElement).value).toBe(
+      'Old Spelling',
+    );
+
+    act(() => {
+      fireEvent.change(screen.getByTestId('assignments-add-title'), {
+        target: { value: 'New Spelling' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('assignments-add-submit'));
+    });
+
+    const putCall = fetchMock.mock.calls.find(
+      ([url, init]) => String(url).includes('/api/assignments/a-edit') && init?.method === 'PUT',
+    );
+    expect(putCall).toBeTruthy();
+    expect(JSON.parse((putCall![1] as RequestInit).body as string).title).toBe('New Spelling');
   });
 });

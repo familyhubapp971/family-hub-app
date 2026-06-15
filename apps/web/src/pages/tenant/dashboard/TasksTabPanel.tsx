@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Circle, Clock, Plus, X } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Pencil, Plus, X } from 'lucide-react';
 import { Button } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
@@ -68,6 +68,7 @@ export function TasksTabPanel() {
   const { session } = useAuth();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState({ title: '', dueDate: '' });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -134,13 +135,16 @@ export function TasksTabPanel() {
 
   const onAddOpen = useCallback(() => {
     setAdding(true);
+    setEditingId(null);
     setSaveError(null);
     setDraft({ title: '', dueDate: '' });
   }, []);
 
   const onAddCancel = useCallback(() => {
     setAdding(false);
+    setEditingId(null);
     setSaveError(null);
+    setDraft({ title: '', dueDate: '' });
     requestAnimationFrame(() => addButtonRef.current?.focus());
   }, []);
 
@@ -157,8 +161,10 @@ export function TasksTabPanel() {
       setSaving(true);
       setSaveError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/tasks`, {
-          method: 'POST',
+        const url = editingId ? `${API_BASE}/api/tasks/${editingId}` : `${API_BASE}/api/tasks`;
+        const method = editingId ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: trimmed, dueDate: draft.dueDate || null }),
         });
@@ -180,10 +186,12 @@ export function TasksTabPanel() {
           return;
         }
         setAdding(false);
-        setStatusAnnouncement(`Added task "${trimmed}"`);
+        setEditingId(null);
+        setStatusAnnouncement(editingId ? `"${trimmed}" updated` : `Added task "${trimmed}"`);
         setErrorAnnouncement('');
         await load();
-        notifyDashboardStale();
+        // Do NOT call notifyDashboardStale for edits — title/due changes don't affect counts.
+        if (!editingId) notifyDashboardStale();
         requestAnimationFrame(() => addButtonRef.current?.focus());
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
@@ -192,7 +200,7 @@ export function TasksTabPanel() {
         setSaving(false);
       }
     },
-    [headers, draft, load],
+    [headers, draft, editingId, load],
   );
 
   const onToggleDone = useCallback(
@@ -267,6 +275,13 @@ export function TasksTabPanel() {
     },
     [headers, load],
   );
+
+  const onEditClick = useCallback((t: Task) => {
+    setSaveError(null);
+    setEditingId(t.id);
+    setAdding(true);
+    setDraft({ title: t.title, dueDate: t.dueDate ?? '' });
+  }, []);
 
   if (status.kind === 'loading') {
     return (
@@ -359,7 +374,9 @@ export function TasksTabPanel() {
               isOwn={isOwn}
               onToggle={onToggleDone}
               onDelete={onDelete}
+              onEdit={onEditClick}
               adding={isOwn && adding}
+              editingId={isOwn ? editingId : null}
               addButtonRef={isOwn ? addButtonRef : undefined}
               onAddOpen={onAddOpen}
               onAddCancel={onAddCancel}
@@ -386,7 +403,9 @@ function TaskColumn(props: {
   isOwn: boolean;
   onToggle: (id: string, nextDone: boolean) => void;
   onDelete: (id: string) => void;
+  onEdit: (t: Task) => void;
   adding: boolean;
+  editingId: string | null;
   addButtonRef: React.RefObject<HTMLButtonElement> | undefined;
   onAddOpen: () => void;
   onAddCancel: () => void;
@@ -406,7 +425,9 @@ function TaskColumn(props: {
     isOwn,
     onToggle,
     onDelete,
+    onEdit,
     adding,
+    editingId,
     addButtonRef,
     onAddOpen,
     onAddCancel,
@@ -459,7 +480,14 @@ function TaskColumn(props: {
       ) : (
         <ul className="space-y-2" data-testid={`tasks-column-list-${memberId}`}>
           {tasks.map((t) => (
-            <TaskRow key={t.id} task={t} editable={isOwn} onToggle={onToggle} onDelete={onDelete} />
+            <TaskRow
+              key={t.id}
+              task={t}
+              editable={isOwn}
+              onToggle={onToggle}
+              onDelete={onDelete}
+              onEdit={onEdit}
+            />
           ))}
         </ul>
       )}
@@ -470,7 +498,9 @@ function TaskColumn(props: {
             onSubmit={onAddSubmit}
             className="flex flex-col gap-2 rounded-md border-2 border-black bg-white p-3"
             data-testid="tasks-add-form"
+            aria-label={editingId ? 'Edit task' : 'Add task'}
           >
+            <p className="text-xs font-bold text-black">{editingId ? 'Edit task' : 'Add task'}</p>
             <label className="flex flex-col gap-1 text-sm font-bold text-black">
               Title
               <input
@@ -510,7 +540,7 @@ function TaskColumn(props: {
                 disabled={saving}
                 testId="tasks-add-submit"
               >
-                {saving ? 'Saving…' : 'Add'}
+                {saving ? 'Saving…' : editingId ? 'Update' : 'Add'}
               </Button>
               <Button
                 type="button"
@@ -544,16 +574,18 @@ function TaskRow({
   editable,
   onToggle,
   onDelete,
+  onEdit,
 }: {
   task: Task;
   editable: boolean;
   onToggle: (id: string, nextDone: boolean) => void;
   onDelete: (id: string) => void;
+  onEdit: (t: Task) => void;
 }) {
   return (
     <li data-testid={`task-row-${task.id}`}>
       <div
-        className={`flex items-center gap-2 rounded-lg border-2 border-black p-2.5 shadow-neo-xs motion-safe:transition-colors ${
+        className={`flex flex-wrap items-center gap-2 rounded-lg border-2 border-black p-2.5 shadow-neo-xs motion-safe:transition-colors ${
           task.done ? 'bg-gray-100 opacity-70' : 'bg-white'
         }`}
       >
@@ -594,6 +626,17 @@ function TaskRow({
             <Clock size={11} aria-hidden="true" /> {formatDueDate(task.dueDate)}
           </span>
         </div>
+        {editable && (
+          <button
+            type="button"
+            onClick={() => onEdit(task)}
+            aria-label={`Edit task: ${task.title.slice(0, 40)}`}
+            data-testid={`task-edit-${task.id}`}
+            className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-black hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          >
+            <Pencil size={14} aria-hidden="true" />
+          </button>
+        )}
         {editable && (
           <button
             type="button"
