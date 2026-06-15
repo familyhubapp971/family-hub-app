@@ -1935,7 +1935,7 @@ export function AdminPanelPage() {
     if (!headers || !selectedChildId) return;
     fetch(`${API_BASE}/api/mw/weeks/current?memberId=${selectedChildId}`, { headers })
       .then((r) => (r.ok ? r.json() : null))
-      .then((b: CurrentWeek | null) => setCurrentWeek(b))
+      .then((b: { week: CurrentWeek } | null) => setCurrentWeek(b?.week ?? null))
       .catch(() => {});
   }, [headers, selectedChildId]);
 
