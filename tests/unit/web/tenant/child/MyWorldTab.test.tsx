@@ -317,6 +317,59 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     expect(screen.getByTestId('bankable-week')).toBeInTheDocument();
   });
 
+  it('hides live current-week widgets when viewing a finalised past week (FHS-316)', async () => {
+    const PREV_WEEK = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+    installApi({
+      savedStickers: 10,
+      savedCash: 5,
+      weeks: [
+        {
+          id: PREV_WEEK,
+          weekNumber: 8,
+          year: 2026,
+          startDate: '2026-02-16',
+          isFinalized: true,
+          carriedOverStickers: 0,
+          carriedOverCash: 0,
+          retrievedStickers: 0,
+          retrievedCash: 0,
+        },
+        {
+          id: WEEK,
+          weekNumber: 9,
+          year: 2026,
+          startDate: '2026-02-23',
+          isFinalized: false,
+          carriedOverStickers: 0,
+          carriedOverCash: 0,
+          retrievedStickers: 0,
+          retrievedCash: 0,
+        },
+      ],
+    });
+    renderTab();
+    // Current week: all the live widgets are present.
+    await waitFor(() => expect(screen.getByTestId('my-stickers')).toBeInTheDocument());
+    expect(screen.getByTestId('rewards-shop')).toBeInTheDocument();
+    expect(screen.getByTestId('bankable-week')).toBeInTheDocument();
+    expect(screen.getByTestId('your-savings')).toBeInTheDocument();
+
+    // Navigate back to the finalised week.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('habit-tracker-week-prev-btn'));
+    });
+
+    // Live current-week-only widgets are gone…
+    await waitFor(() => expect(screen.queryByTestId('my-stickers')).not.toBeInTheDocument());
+    expect(screen.queryByTestId('rewards-shop')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('bankable-week')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('your-savings')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('active-investments')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('saving-big-rewards')).not.toBeInTheDocument();
+    // …but the week record itself still renders.
+    expect(screen.getByTestId('habit-tracker-week-label')).toBeInTheDocument();
+  });
+
   it('redeeming an affordable reward updates the balance', async () => {
     installApi({ balance: 5 });
     renderTab();
