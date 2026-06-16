@@ -65,3 +65,4 @@ _Seeded by FHS-172 / FHS-173 / FHS-174 — populate as ADRs land:_
 - [`0012-path-prefix-tenant-routing-interim.md`](0012-path-prefix-tenant-routing-interim.md) — accepted: path-prefix `/t/<slug>/` as interim tenant routing alongside subdomain (FHS-13, FHS-249)
 - [`0013-tasks-tab-shared-visibility.md`](0013-tasks-tab-shared-visibility.md) — accepted: Tasks tab is shared-to-see, private-to-edit — family-wide read, owner-scoped write (FHS-267)
 - [`0014-myworld-economy-separate-tables.md`](0014-myworld-economy-separate-tables.md) — accepted: My World uses its own per-child `mw_*` tables, leaving the generic family-finance stubs free (FHS-291)
+- [`0015-role-model-owner-flag.md`](0015-role-model-owner-flag.md) — accepted: an `is_owner` flag layered on roles holds the sensitive/historical/irreversible powers; admins keep everyday management (FHS-333)
