@@ -128,6 +128,54 @@ describe('WorldFlags Learn path', () => {
     expect(screen.getByTestId('wfpath-set-1')).toBeDisabled();
   });
 
+  it('answering every question correctly completes the set and POSTs once', async () => {
+    installFetch({ progress: {} });
+    renderWorldFlags();
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-learn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('wfpath-continent-africa')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('wfpath-continent-africa'));
+    });
+    await waitFor(() => expect(screen.getByTestId('wfpath-set-0')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('wfpath-set-0'));
+    });
+    // Study phase — click through all 5 cards (last "Next" starts the quiz).
+    await waitFor(() => expect(screen.getByTestId('wfpath-study')).toBeInTheDocument());
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('wfpath-study-next'));
+      });
+    }
+    // Quiz phase — answer each of the 5 questions correctly. The flag image's
+    // alt text ("Flag of X") reveals the country whose name is the answer.
+    await waitFor(() => expect(screen.getByTestId('wfpath-quiz')).toBeInTheDocument());
+    for (let q = 0; q < 5; q++) {
+      const img = screen.getByTestId('world-flag-image') as HTMLImageElement;
+      const name = img.alt.replace(/^Flag of /, '');
+      const choices = screen.getAllByTestId(/^wfpath-quiz-choice-/);
+      const target = choices.find((b) => b.textContent === name);
+      expect(target, `choice for "${name}" present`).toBeTruthy();
+      await act(async () => {
+        fireEvent.click(target!);
+      });
+      // Each correct answer auto-advances after 500ms.
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 600));
+      });
+    }
+    // Set passed → results screen + exactly one learn-complete POST.
+    await waitFor(() => expect(screen.getByTestId('wfpath-results')).toBeInTheDocument());
+    const completeCalls = (fetchMock.mock.calls as [string, RequestInit | undefined][]).filter(
+      ([url, init]) =>
+        (url as string).includes('/api/world-flags/learn-complete') && init?.method === 'POST',
+    );
+    expect(completeCalls).toHaveLength(1);
+  }, 15000);
+
   it('completed sets from the server are marked and unlock the next set', async () => {
     installFetch({ progress: { Africa: [0] } });
     renderWorldFlags();

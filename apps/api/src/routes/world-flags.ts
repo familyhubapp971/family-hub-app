@@ -29,12 +29,24 @@ const exploreBodySchema = z.object({
   countryCode: z.string().min(2).max(3),
 });
 
+// The six continents the World Flags dataset is grouped by (mirrors the
+// CONTINENTS list in apps/web data/countries). Constrained server-side so the
+// table can't accumulate arbitrary continent strings from a bad client.
+const CONTINENTS = [
+  'Africa',
+  'Asia',
+  'Europe',
+  'North America',
+  'South America',
+  'Oceania',
+] as const;
+
 const learnCompleteBodySchema = z.object({
   memberId: z.string().uuid(),
-  // Continent name, e.g. "Africa". Loose string — the client owns the list.
-  continent: z.string().min(2).max(40),
+  continent: z.enum(CONTINENTS),
   // Zero-based index of the completed set of 5 countries within the continent.
-  chunkIndex: z.number().int().min(0).max(200),
+  // Each continent has at most ~10 sets; cap generously to reject junk.
+  chunkIndex: z.number().int().min(0).max(60),
 });
 
 // ─── Auth helpers (same pattern as reading-log) ───────────────────────────────

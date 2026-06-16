@@ -113,6 +113,13 @@ export function WorldFlagsPath({ memberId }: { memberId: string }) {
     setPhase('study');
   }, []);
 
+  // Leaving the quiz/study mid-flow must cancel any pending answer-advance
+  // timer, else it fires later and yanks the child back to the results screen.
+  const exitToSelect = useCallback(() => {
+    if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    setPhase('select');
+  }, []);
+
   const startQuiz = useCallback(() => {
     setQuizQuestions(generateLearnQuiz(currentChunk, continentCountries));
     setQuizIndex(0);
@@ -334,7 +341,7 @@ export function WorldFlagsPath({ memberId }: { memberId: string }) {
           <button
             data-testid="wfpath-study-back"
             type="button"
-            onClick={() => setPhase('select')}
+            onClick={exitToSelect}
             className="flex items-center gap-1 py-2 text-sm font-bold text-white/80 transition-colors hover:text-white"
           >
             <ArrowLeft size={16} aria-hidden="true" /> Back
@@ -453,7 +460,7 @@ export function WorldFlagsPath({ memberId }: { memberId: string }) {
         <div className="flex items-center justify-between">
           <button
             type="button"
-            onClick={() => setPhase('select')}
+            onClick={exitToSelect}
             className="flex items-center gap-1 py-2 text-sm font-bold text-white/80 transition-colors hover:text-white"
           >
             <ArrowLeft size={16} aria-hidden="true" /> Exit
@@ -613,7 +620,7 @@ export function WorldFlagsPath({ memberId }: { memberId: string }) {
               <button
                 data-testid="wfpath-continue"
                 type="button"
-                onClick={() => setPhase('select')}
+                onClick={exitToSelect}
                 className="rounded-xl border-2 border-black bg-gradient-to-r from-amber-400 to-yellow-500 px-6 py-3 font-black text-black shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5"
               >
                 🏆 Continent Complete!
@@ -645,7 +652,7 @@ export function WorldFlagsPath({ memberId }: { memberId: string }) {
           <button
             data-testid="wfpath-back"
             type="button"
-            onClick={() => setPhase('select')}
+            onClick={exitToSelect}
             className="rounded-xl border-2 border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-50"
           >
             Back to Sets

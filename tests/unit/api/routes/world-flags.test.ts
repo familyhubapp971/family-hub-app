@@ -353,6 +353,14 @@ describe('POST /api/world-flags/learn-complete guards', () => {
     expect(res.status).toBe(400);
   });
 
+  it('400 when continent is not one of the six allowed', async () => {
+    const res = await buildApp().request(
+      '/api/world-flags/learn-complete',
+      post({ memberId: MEMBER_ID, continent: 'Atlantis', chunkIndex: 0 }),
+    );
+    expect(res.status).toBe(400);
+  });
+
   it('403 when a child caller targets another member', async () => {
     const res = await buildApp({
       selectQueue: [[{ id: 'other-id', role: 'child' }], [{ id: MEMBER_ID }]],

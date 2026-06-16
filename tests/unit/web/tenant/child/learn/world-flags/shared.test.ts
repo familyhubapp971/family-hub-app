@@ -51,6 +51,20 @@ describe('generateLearnQuiz', () => {
       expect(new Set(q.choices).size).toBe(4); // no duplicate options
     }
   });
+
+  it('still yields 4 distinct choices for the smallest continents (Oceania)', () => {
+    // Oceania is the smallest pool; the every-chunk quiz must still build 4
+    // distinct options by falling back to the global country list.
+    for (const chunk of getChunksForContinent('Oceania')) {
+      const quiz = generateLearnQuiz(chunk, getCountriesByContinent('Oceania'));
+      expect(quiz).toHaveLength(chunk.length);
+      for (const q of quiz) {
+        expect(q.choices).toHaveLength(4);
+        expect(new Set(q.choices).size).toBe(4);
+        expect(q.choices).toContain(q.answer);
+      }
+    }
+  });
 });
 
 describe('generateTimedQuestion', () => {
@@ -76,6 +90,10 @@ describe('redactCountryName', () => {
     const out = redactCountryName("Japan's Mount Fuji is in Japan.", 'Japan');
     expect(out).not.toMatch(/Japan/);
     expect(out).toContain('This country');
+  });
+  it('does not redact a short name inside a longer word (Niger vs Nigeria)', () => {
+    const out = redactCountryName('Niger borders Nigeria.', 'Niger');
+    expect(out).toBe('This country borders Nigeria.');
   });
 });
 

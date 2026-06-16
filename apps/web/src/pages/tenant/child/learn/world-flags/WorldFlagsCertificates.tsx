@@ -119,6 +119,9 @@ function WorldExplorerQuiz({
   };
 
   const restart = () => {
+    // Cancel any pending advance from the previous round's last answer so it
+    // can't skip the first question of the new round.
+    if (advanceRef.current) clearTimeout(advanceRef.current);
     setTimeLeft(WORLD_QUIZ_DURATION);
     setScore(0);
     setFinished(false);
@@ -129,7 +132,7 @@ function WorldExplorerQuiz({
   };
 
   if (finished) {
-    const isNewBest = score >= bestScore && score > 0;
+    const isNewBest = score > bestScore;
     const tier = getQuizTier(score);
     const nextTier = getNextQuizTier(score);
     return (

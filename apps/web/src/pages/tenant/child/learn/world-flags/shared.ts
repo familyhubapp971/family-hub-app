@@ -127,11 +127,15 @@ export interface TimedQuizQuestion {
   answer: string;
 }
 
-/** Replaces the country name (and possessive) in fun-fact text so it can't give the answer away. */
+/**
+ * Replaces the country name (and possessive) in fun-fact text so it can't give
+ * the answer away. Uses word boundaries so a short name isn't redacted inside a
+ * longer one (e.g. "Niger" must not match inside "Nigeria").
+ */
 export function redactCountryName(text: string, name: string): string {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  let result = text.replace(new RegExp(escaped + "'s", 'gi'), "This country's");
-  result = result.replace(new RegExp(escaped, 'gi'), 'This country');
+  let result = text.replace(new RegExp(`\\b${escaped}\\b's`, 'gi'), "This country's");
+  result = result.replace(new RegExp(`\\b${escaped}\\b`, 'gi'), 'This country');
   return result;
 }
 
