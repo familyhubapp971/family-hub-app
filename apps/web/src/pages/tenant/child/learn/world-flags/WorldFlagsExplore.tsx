@@ -1,54 +1,37 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Trophy, Lock } from 'lucide-react';
-import { useAuth } from '../../../../lib/auth-context';
-import { useTenantSlug } from '../../../../lib/tenant-context';
-import { API_BASE } from '../../../../lib/api';
-import { COUNTRIES, CONTINENTS, type Country } from '../../../../data/countries';
+import {
+  ChevronRight,
+  Trophy,
+  Lock,
+  MapPin,
+  Landmark as LandmarkIcon,
+  Coins,
+  Sparkles,
+} from 'lucide-react';
+import { useAuth } from '../../../../../lib/auth-context';
+import { useTenantSlug } from '../../../../../lib/tenant-context';
+import { API_BASE } from '../../../../../lib/api';
+import { COUNTRIES, CONTINENTS, type Country } from '../../../../../data/countries';
+import { FlagImage } from './FlagImage';
+import { CapitalMap } from './CapitalMap';
+import { LandmarkImage } from './LandmarkImage';
+import { CONTINENT_SOLID, continentId } from './shared';
 
-// Learn Phase 2a — World Flags Explore.
+// World Flags — Explore sub-tab.
 //
-// Tap a flashcard to cycle: flag only → name reveal → facts panel.
-// Reaching the name-reveal state marks the flag as explored (POST /api/world-flags/explore).
-// Progress bar and per-continent certificates are computed client-side.
-//
-// TODO (later PRs): timed quizzes (WorldFlagsQuiz component).
-// TODO (later PRs): structured Learn path with chunks / spaced repetition.
-// TODO (later PRs): interactive Leaflet maps per country.
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Tap a flashcard to cycle: flag image → name reveal → facts panel (capital
+// map + landmark photo + currency + fun fact). Reaching the name-reveal state
+// marks the flag as explored (POST /api/world-flags/explore). Progress bar
+// and per-continent certificates are computed client-side.
 
 type CardState = 'flag' | 'name' | 'facts';
 type Status = 'loading' | 'ready' | 'error';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const ALL_CONTINENTS = ['All', ...CONTINENTS] as const;
 type ContinentFilter = (typeof ALL_CONTINENTS)[number];
 
-const CONTINENT_COLORS: Record<string, string> = {
-  All: 'bg-gray-700',
-  Africa: 'bg-amber-500',
-  Asia: 'bg-red-500',
-  Europe: 'bg-blue-600',
-  'North America': 'bg-green-600',
-  'South America': 'bg-teal-600',
-  Oceania: 'bg-purple-600',
-};
-
-const CONTINENT_ID: Record<string, string> = {
-  All: 'all',
-  Africa: 'africa',
-  Asia: 'asia',
-  Europe: 'europe',
-  'North America': 'north-america',
-  'South America': 'south-america',
-  Oceania: 'oceania',
-};
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-export function WorldFlagsLearn({ memberId }: { memberId: string }) {
+export function WorldFlagsExplore({ memberId }: { memberId: string }) {
   const slug = useTenantSlug();
   const { session } = useAuth();
 
@@ -57,11 +40,8 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
   const [selectedContinent, setSelectedContinent] = useState<ContinentFilter>('All');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [cardState, setCardState] = useState<CardState>('flag');
-  // When a new continent certificate is earned, briefly show the badge.
   const [certEarned, setCertEarned] = useState<string | null>(null);
   const certTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Track which continents were already complete before this session so we
-  // only show the badge when the LAST flag in a continent is first explored.
   const prevComplete = useRef<Record<string, boolean>>({});
 
   const headers = useMemo(
@@ -69,8 +49,6 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
       session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
     [session, slug],
   );
-
-  // ── Countries list for current filter ─────────────────────────────────────
 
   const filteredCountries = useMemo<Country[]>(
     () =>
@@ -82,16 +60,11 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
 
   const currentCountry = filteredCountries[currentIndex] ?? null;
 
-  // ── Load explored codes on mount ───────────────────────────────────────────
-
   useEffect(() => {
     if (!headers) return;
     const ac = new AbortController();
     setStatus('loading');
-    fetch(`${API_BASE}/api/world-flags?memberId=${memberId}`, {
-      headers,
-      signal: ac.signal,
-    })
+    fetch(`${API_BASE}/api/world-flags?memberId=${memberId}`, { headers, signal: ac.signal })
       .then(async (res) => {
         if (!res.ok) {
           setStatus('error');
@@ -101,7 +74,6 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
         const codes = new Set(body.explored ?? []);
         setExplored(codes);
         setStatus('ready');
-        // Initialise prevComplete so we only fire the cert badge for NEW completions.
         for (const cont of CONTINENTS) {
           const total = COUNTRIES.filter((c) => c.continent === cont).length;
           const done = COUNTRIES.filter((c) => c.continent === cont && codes.has(c.code)).length;
@@ -115,14 +87,18 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
     return () => ac.abort();
   }, [headers, memberId]);
 
-  // ── Reset card + index when continent filter changes ───────────────────────
-
   useEffect(() => {
     setCurrentIndex(0);
     setCardState('flag');
   }, [selectedContinent]);
 
-  // ── Mark explored + POST to API ────────────────────────────────────────────
+  // Clean up the cert badge timer on unmount.
+  useEffect(
+    () => () => {
+      if (certTimerRef.current) clearTimeout(certTimerRef.current);
+    },
+    [],
+  );
 
   const markExplored = useCallback(
     (code: string, continent: string) => {
@@ -130,17 +106,15 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
       const next = new Set(explored);
       next.add(code);
       setExplored(next);
-      // Fire-and-forget; UI already updated optimistically.
       if (headers) {
         void fetch(`${API_BASE}/api/world-flags/explore`, {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ memberId, countryCode: code }),
         }).catch(() => {
-          // ignore — progress saved on next interaction
+          /* ignore — progress saved on next interaction */
         });
       }
-      // Check if this completes a continent for the first time.
       const continentCountries = COUNTRIES.filter((c) => c.continent === continent);
       const nowDone = continentCountries.filter((c) => next.has(c.code)).length;
       if (nowDone >= continentCountries.length && !prevComplete.current[continent]) {
@@ -153,8 +127,6 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
     [explored, headers, memberId],
   );
 
-  // ── Card tap handler ───────────────────────────────────────────────────────
-
   const handleCardTap = useCallback(() => {
     if (!currentCountry) return;
     if (cardState === 'flag') {
@@ -163,18 +135,13 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
     } else if (cardState === 'name') {
       setCardState('facts');
     }
-    // facts state: tapping does nothing — use Next Flag button
   }, [cardState, currentCountry, markExplored]);
-
-  // ── Next flag ─────────────────────────────────────────────────────────────
 
   const handleNext = useCallback(() => {
     if (!filteredCountries.length) return;
     setCurrentIndex((i) => (i + 1) % filteredCountries.length);
     setCardState('flag');
   }, [filteredCountries.length]);
-
-  // ── Continent progress / certificates ─────────────────────────────────────
 
   const continentStats = useMemo(
     () =>
@@ -187,8 +154,6 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
   );
 
   const exploredInFilter = filteredCountries.filter((c) => explored.has(c.code)).length;
-
-  // ── Loading / error ────────────────────────────────────────────────────────
 
   if (status === 'loading') {
     return (
@@ -210,11 +175,8 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
     );
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   return (
     <div className="flex flex-col gap-4">
-      {/* ── Certificate earned badge ── */}
       {certEarned && (
         <motion.div
           data-testid="world-cert-earned"
@@ -235,7 +197,7 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
         </motion.div>
       )}
 
-      {/* ── Continent filter bar ── */}
+      {/* Continent filter bar */}
       <div
         className="flex gap-2 overflow-x-auto pb-1"
         role="group"
@@ -243,16 +205,14 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
       >
         {ALL_CONTINENTS.map((cont) => {
           const isActive = selectedContinent === cont;
-          const colorClass = CONTINENT_COLORS[cont] ?? 'bg-gray-700';
-          const id = CONTINENT_ID[cont] ?? cont.toLowerCase();
+          const colorClass = CONTINENT_SOLID[cont] ?? 'bg-gray-700';
+          const id = continentId(cont);
           return (
             <button
               key={cont}
               data-testid={`world-continent-${id}`}
               type="button"
-              onClick={() => {
-                setSelectedContinent(cont);
-              }}
+              onClick={() => setSelectedContinent(cont)}
               className={`min-h-[44px] shrink-0 rounded-xl border-2 border-black px-3 py-2 text-xs font-black whitespace-nowrap transition-transform motion-safe:hover:-translate-y-0.5 ${
                 isActive ? `${colorClass} text-white shadow-neo-xs` : 'bg-white text-gray-600'
               }`}
@@ -263,7 +223,7 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
         })}
       </div>
 
-      {/* ── Progress bar ── */}
+      {/* Progress bar */}
       <div
         data-testid="world-progress"
         className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-xs"
@@ -294,7 +254,7 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
         </div>
       </div>
 
-      {/* ── Flash card ── */}
+      {/* Flash card */}
       {currentCountry ? (
         <div
           data-testid="world-flashcard"
@@ -319,15 +279,19 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
         >
           {/* Flag section */}
           <div className="flex flex-col items-center gap-3 p-8">
-            {/* Explored badge */}
             {explored.has(currentCountry.code) && cardState === 'flag' && (
               <div className="self-end rounded-full border-2 border-black bg-green-300 px-2 py-0.5 text-[10px] font-black">
                 Explored
               </div>
             )}
-            <span className="text-8xl leading-none" role="img" aria-label="Country flag">
-              {currentCountry.flag}
-            </span>
+            <FlagImage
+              country={currentCountry}
+              size="w320"
+              className={`h-auto w-44 rounded-lg border-2 border-white/40 shadow-md sm:w-56 ${
+                cardState === 'flag' ? 'motion-safe:animate-pulse' : ''
+              }`}
+              emojiClassName="text-8xl leading-none"
+            />
             {cardState === 'flag' && (
               <p className="text-xs font-bold text-gray-500">Tap to reveal!</p>
             )}
@@ -355,22 +319,53 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
               data-testid="world-flag-facts"
               className="flex flex-col gap-3 border-t-2 border-black p-5"
             >
-              {/* Capital */}
-              <div className="rounded-lg border-2 border-black bg-blue-50 px-4 py-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-blue-600">Capital</p>
-                <p className="mt-0.5 font-heading text-lg font-black">{currentCountry.capital}</p>
+              {/* Landmark photo + capital map */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col overflow-hidden rounded-lg border-2 border-purple-200 bg-purple-50 p-1.5">
+                  <div className="aspect-[4/3] overflow-hidden rounded bg-gray-900">
+                    <LandmarkImage landmark={currentCountry.landmark} />
+                  </div>
+                  <p className="mt-1.5 line-clamp-1 text-sm font-black leading-tight text-gray-900">
+                    <LandmarkIcon
+                      className="mr-1 inline-block h-3 w-3 align-text-bottom text-purple-500"
+                      aria-hidden="true"
+                    />
+                    {currentCountry.landmark}
+                  </p>
+                </div>
+                <div className="flex flex-col overflow-hidden rounded-lg border-2 border-blue-200 bg-blue-50 p-1.5">
+                  <div className="aspect-[4/3] overflow-hidden rounded">
+                    <CapitalMap country={currentCountry} />
+                  </div>
+                  <p className="mt-1.5 line-clamp-1 text-sm font-black leading-tight text-gray-900">
+                    <MapPin
+                      className="mr-1 inline-block h-3 w-3 align-text-bottom text-blue-500"
+                      aria-hidden="true"
+                    />
+                    {currentCountry.capital}
+                  </p>
+                </div>
               </div>
-              {/* Currency */}
-              <div className="rounded-lg border-2 border-black bg-green-50 px-4 py-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-green-600">Currency</p>
-                <p className="mt-0.5 font-heading text-lg font-black">
-                  {currentCountry.currencySymbol} {currentCountry.currency}
-                </p>
-              </div>
-              {/* Fun fact */}
-              <div className="rounded-lg border-2 border-black bg-amber-50 px-4 py-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-amber-600">Fun Fact</p>
-                <p className="mt-1 text-sm font-bold leading-snug">{currentCountry.funFact}</p>
+
+              {/* Currency + fun fact */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex items-center gap-2 rounded-lg border-2 border-green-200 bg-green-50 px-3 py-2">
+                  <Coins className="h-5 w-5 shrink-0 text-green-500" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <p className="text-lg font-black leading-none text-gray-900">
+                      {currentCountry.currencySymbol}
+                    </p>
+                    <p className="truncate text-sm font-bold text-gray-500">
+                      {currentCountry.currency}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 rounded-lg border-2 border-amber-200 bg-amber-50 px-3 py-2">
+                  <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" aria-hidden="true" />
+                  <p className="text-xs font-bold leading-snug text-gray-800">
+                    {currentCountry.funFact}
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -383,7 +378,7 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
         </div>
       )}
 
-      {/* ── Next flag button ── */}
+      {/* Next flag button */}
       {currentCountry && (
         <button
           data-testid="world-next-flag"
@@ -395,14 +390,14 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
         </button>
       )}
 
-      {/* ── Continent certificates ── */}
+      {/* Continent certificates (at-a-glance summary) */}
       <div className="rounded-xl border-2 border-black bg-white p-5 shadow-neo-xs">
         <h3 className="mb-4 font-heading text-lg uppercase tracking-wide">Continent Explorer</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {continentStats.map(({ cont, done, total, certified }) => (
             <div
               key={cont}
-              data-testid={`world-cert-${CONTINENT_ID[cont] ?? cont.toLowerCase()}`}
+              data-testid={`world-cert-${continentId(cont)}`}
               className={`flex items-center gap-3 rounded-lg border-2 border-black p-3 ${
                 certified ? 'bg-yellow-200' : 'bg-gray-50'
               }`}
@@ -412,8 +407,8 @@ export function WorldFlagsLearn({ memberId }: { memberId: string }) {
               ) : (
                 <Lock size={22} className="shrink-0 text-gray-400" aria-label="Not yet certified" />
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-black truncate">{cont}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-black">{cont}</p>
                 <p className="text-xs text-gray-500">
                   {done}/{total} explored
                 </p>
