@@ -1,6 +1,13 @@
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin } from 'lucide-react';
+// Bundle Leaflet's marker images through Vite so they're served from our own
+// origin ('self'). The library's default icons resolve via bundler-relative
+// paths that break under Vite, and a CDN URL would need a CSP allowance — local
+// assets sidestep both and keep the pin reliable offline.
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIconUrl from 'leaflet/dist/images/marker-icon.png';
+import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png';
 import { CAPITAL_COORDINATES, type Country } from '../../../../../data/countries';
 
 // Mini interactive map pinned on a country's capital (OpenStreetMap tiles via
@@ -8,12 +15,10 @@ import { CAPITAL_COORDINATES, type Country } from '../../../../../data/countries
 // coordinates for the country. The map is pan/zoom-locked — it's a static
 // "here's where it is" visual for kids, not a full map.
 
-// Leaflet's default marker icons resolve via bundler-relative paths that break
-// under Vite; point them at the unpkg CDN so the pin always renders.
 const markerIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: markerIconUrl,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadowUrl,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
