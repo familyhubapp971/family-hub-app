@@ -44,6 +44,11 @@ names so traceability between this folder and the test suite is automatic.
 
 ## Index
 
+Drafted / scoped:
+
+- [family-members.md](family-members.md)
+- [role-permissions.md](role-permissions.md) — Owner tier + rights matrix (epic FHS-333)
+
 Placeholder docs (to be filled as the corresponding features are scoped):
 
 - [tenants.md](tenants.md)
