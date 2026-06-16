@@ -3,7 +3,7 @@ import { BookOpen, Book, Check, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
-import { WorldFlagsLearn } from './learn/WorldFlagsLearn';
+import { WorldFlags } from './learn/world-flags/WorldFlags';
 
 // Learn Phase 1 — ChildWorld Learn tab.
 //
@@ -209,7 +209,7 @@ export function LearnTab({ memberId }: { memberId: string }) {
         </button>
 
         {selectedSubject === 'World Flags' ? (
-          <WorldFlagsLearn memberId={memberId} />
+          <WorldFlags memberId={memberId} />
         ) : (
           /* Coming soon card for subjects not yet built */
           <div className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm">

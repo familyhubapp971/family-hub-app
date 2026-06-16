@@ -13,6 +13,17 @@ vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 
+// World Flags Explore renders an interactive Leaflet capital map in the facts
+// panel. Leaflet needs a real browser layout, so stub it in jsdom — the map is
+// not what these tests exercise.
+vi.mock('react-leaflet', () => ({
+  MapContainer: ({ children }: { children?: unknown }) => children ?? null,
+  TileLayer: () => null,
+  Marker: ({ children }: { children?: unknown }) => children ?? null,
+  Popup: ({ children }: { children?: unknown }) => children ?? null,
+}));
+vi.mock('leaflet', () => ({ default: { icon: () => ({}) }, icon: () => ({}) }));
+
 import { LearnTab } from '../../../../../apps/web/src/pages/tenant/child/LearnTab';
 import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
 
@@ -46,8 +57,15 @@ function installDefault(
   exploredCodes: string[] = [],
 ) {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    const method = (init as RequestInit | undefined)?.method ?? 'GET';
+    // Learn path: GET → completed sets per continent, POST → mark a set done.
+    if ((url as string).includes('/api/world-flags/learn')) {
+      if (method === 'POST') {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ completed: true }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ progress: {} }) });
+    }
     if ((url as string).includes('/api/world-flags')) {
-      const method = (init as RequestInit | undefined)?.method ?? 'GET';
       if (method === 'POST') {
         return Promise.resolve({
           ok: true,
