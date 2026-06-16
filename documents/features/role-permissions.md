@@ -1,210 +1,170 @@
-# Feature: Role & permission model (Owner tier)
+# Feature: Role & permission model (admin vs normal user)
 
 **Jira:** [FHS-333](https://qualicion2.atlassian.net/browse/FHS-333) (epic)
 **Status:** draft
 **Owner:** product-manager
-**ADR:** [0015 — role model: `is_owner` flag over roles](../decisions/0015-role-model-owner-flag.md)
+**ADR:** [0015 — role model: admin vs normal user](../decisions/0015-role-model-owner-flag.md)
 
 Family Hub is multi-tenant — each family is a tenant, and members share one
 roster with a `role` (admin / adult / teen / child / guest). Today permission
-is a single blunt rule: the member themselves, OR any admin, OR any adult can
-manage almost anything. That worked when one person ran a family, but now that
-several people can be admin or adult, powers that used to belong to the single
-account holder have leaked to everyone in those roles — most visibly, anyone
-can now rewrite history by editing a habit sticker from a previous day.
+is a single blunt rule: the member themselves, OR any admin, OR any **adult**
+can manage almost anything. In the legacy app there were two kinds of
+grown-up: the one **admin** (full rights, including editing a habit sticker on
+a previous day) and everyone else, a **normal user**. Multi-tenancy blurred
+that line — a non-admin adult now gets admin-only powers, most visibly the
+ability to rewrite a past day's stickers.
 
-This feature re-introduces a top authority tier as an **`is_owner` flag** on a
-member (not a new role). The family registrant is the first Owner; more Owners
-can be added. Regular Admins keep all everyday management. A short, explicit
-list of sensitive, historical, or irreversible actions becomes **Owner-only**.
-Roles are unchanged; this is a flag layered on top of them.
+This feature restores the legacy two-tier model in the tenancy world:
+**admin** (full rights) and **normal user** (everyday rights only). The family
+registrant is an admin. An admin can make any **non-child** member an admin or
+a normal user. Kids (teen/child) are scoped to their own data and can never be
+admins. No new role or flag — just a tighter permission boundary plus a
+member-management action.
 
 ## Rights matrix
 
 Key: ✓ = allowed · ✗ = blocked · **self** = only on their own record/data.
-An Owner is always also an Admin/Adult in role terms, so an Owner inherits
-every Admin ✓ plus the owner-only rows.
+"Normal user" = an adult who is not an admin (`role = 'adult'`).
 
-| Action | Owner | Admin | Adult | Teen | Child |
-| --- | --- | --- | --- | --- | --- |
-| **My World — economy & history** | | | | | |
-| Log / edit a CURRENT-week sticker (any member) | ✓ | ✓ | ✓ | self | self |
-| Edit a PAST-day sticker (backdate) — *the named gap* | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Log a FUTURE-day sticker | ✗ | ✗ | ✗ | ✗ | ✗ |
-| Close / finalize the current week | ✓ | ✓ | ✓ | ✗ | ✗ |
-| Re-open / un-finalize a closed week | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Run the rewards shop (redeem current balance) | ✓ | ✓ | ✓ | ✗ | self-request |
-| Change sticker→cash / reward conversion rate | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Change economy settings (allowance rules, caps) | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Manually adjust a member's cash balance | ✓ | ✗ | ✗ | ✗ | ✗ |
-| **Members & access** | | | | | |
-| Invite / add a member | ✓ | ✓ | ✗ | ✗ | ✗ |
-| Set / reset a child PIN | ✓ | ✓ | ✗ | ✗ | ✗ |
-| Edit another member's profile | ✓ | ✓ | ✗ | ✗ | ✗ |
-| Change a member's role (e.g. teen→adult) | ✓ | ✓ | ✗ | ✗ | ✗ |
-| Make / remove an Admin | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Make someone an Owner | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Remove own Owner flag (demote self) | ✓\* | ✗ | ✗ | ✗ | ✗ |
-| Transfer ownership | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Remove / delete a member | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Wipe family data / delete the family | ✓ | ✗ | ✗ | ✗ | ✗ |
-| **Shared content** | | | | | |
-| Edit meals / calendar / assignments / noticeboard / tasks | ✓ | ✓ | ✓ | ✗ | ✗ |
-| Edit Journal / Learn entries | ✓ | ✓ | ✓ | self | self |
-| **Self & visibility** | | | | | |
-| Edit own profile | ✓ | ✓ | ✓ | ✓ | ✓ |
-| View another member's data | ✓ | ✓ | ✓ | ✗ | ✗ |
-| View own data | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **Account / tenant settings** | | | | | |
-| Manage billing / subscription | ✓ | ✗ | ✗ | ✗ | ✗ |
-| Edit family name / slug / branding | ✓ | ✓ | ✗ | ✗ | ✗ |
-
-\* allowed only if at least one other Owner remains (last-owner protection).
+| Action                                                    | Admin | Normal user | Teen | Child        |
+| --------------------------------------------------------- | ----- | ----------- | ---- | ------------ |
+| **My World — economy & history**                          |       |             |      |              |
+| Log / edit a CURRENT-week sticker (any member)            | ✓     | ✓           | self | self         |
+| Edit a PAST-day sticker (backdate) — _the named gap_      | ✓     | ✗           | ✗    | ✗            |
+| Log a FUTURE-day sticker                                  | ✗     | ✗           | ✗    | ✗            |
+| Close / finalize a week                                   | ✓     | ✗           | ✗    | ✗            |
+| Re-open / un-finalize a closed week                       | ✓     | ✗           | ✗    | ✗            |
+| Run the rewards shop (redeem current balance)             | ✓     | ✓           | ✗    | self-request |
+| Change conversion rate / economy settings                 | ✓     | ✗           | ✗    | ✗            |
+| Manually adjust a member's cash balance                   | ✓     | ✗           | ✗    | ✗            |
+| **Members & access**                                      |       |             |      |              |
+| Invite / add a member                                     | ✓     | ✗           | ✗    | ✗            |
+| Set / reset a child PIN                                   | ✓     | ✗           | ✗    | ✗            |
+| Edit another member's profile                             | ✓     | ✗           | ✗    | ✗            |
+| Make a member an admin / a normal user                    | ✓     | ✗           | ✗    | ✗            |
+| Make a child an admin                                     | ✗     | ✗           | ✗    | ✗            |
+| Remove / delete a member                                  | ✓     | ✗           | ✗    | ✗            |
+| Wipe family data / delete the family                      | ✓     | ✗           | ✗    | ✗            |
+| Manage billing / subscription                             | ✓     | ✗           | ✗    | ✗            |
+| **Shared content**                                        |       |             |      |              |
+| Edit meals / calendar / assignments / noticeboard / tasks | ✓     | ✓           | ✗    | ✗            |
+| Edit Journal / Learn entries                              | ✓     | ✓           | self | self         |
+| **Self & visibility**                                     |       |             |      |              |
+| Edit own profile                                          | ✓     | ✓           | ✓    | ✓            |
+| View another member's data                                | ✓     | ✓           | ✗    | ✗            |
+| View own data                                             | ✓     | ✓           | ✓    | ✓            |
 
 ## User stories
 
-### Story 1: Registrant becomes the first Owner
+### Story 1: Registrant is the admin; admins set who else is admin or normal
 
 **As a** person registering a new family
-**I want** to be the family's Owner automatically
-**so that** the sensitive controls have a clear first holder.
+**I want** to be the admin, and to choose who else is an admin or a normal user
+**so that** the family's controls stay with the people I trust.
 
-**Scenario: Registrant is flagged as Owner**
+**Scenario: Registrant becomes an admin**
 
 - **Given** I register a new family and become its first member
 - **When** my member record is created
-- **Then** my record has `is_owner = true`
-- **And** my role is `admin`
-- **And** `/api/me` returns `isOwner: true` for this membership
+- **Then** my role is `admin`
 
-**Scenario: Existing families backfill exactly one Owner**
+**Scenario: Admin promotes an adult to admin**
 
-- **Given** a family created before this feature, with no Owner flag set
-- **When** the backfill runs
-- **Then** the earliest-created `admin` member is set `is_owner = true`
-- **And** every other member keeps `is_owner = false`
+- **Given** I am an admin and Bola is a normal user (adult)
+- **When** I make Bola an admin
+- **Then** Bola has admin rights
 
-### Story 2: Only an Owner can edit a past-day sticker
+**Scenario: Admin sets an admin back to a normal user**
 
-**As an** Owner
-**I want** to be the only one who can change a habit sticker on a previous day
-**so that** the family's history can't be quietly rewritten by every admin.
+- **Given** I am an admin and Bola is an admin
+- **When** I set Bola to a normal user
+- **Then** Bola keeps only normal-user rights
 
-**Scenario: Owner edits a past-day sticker**
+**Scenario: A child cannot be made an admin**
 
-- **Given** I am an Owner
-- **And** a sticker exists for a child on a day before today
-- **When** I change that past-day sticker
-- **Then** the change is saved with my member id and a timestamp
+- **Given** I am an admin and Aisha is a child
+- **When** I try to make Aisha an admin
+- **Then** the request is rejected and Aisha stays a child
 
-**Scenario: Admin is blocked from editing a past-day sticker**
+### Story 2: Only an admin can do the legacy admin-only actions
 
-- **Given** I am an Admin but not an Owner
+**As an** admin
+**I want** the sensitive, historical, and irreversible actions limited to admins
+**so that** a normal user can't rewrite history or change the family's setup.
+
+**Scenario: Normal user is blocked from editing a past-day sticker**
+
+- **Given** I am a normal user (adult, not admin)
 - **When** I try to change a sticker on a day before today
-- **Then** the request is rejected with a 403 "owner-only" error
+- **Then** the request is rejected with a 403 "admin-only" error
 - **And** the past-day edit control is not shown to me
 
-**Scenario: Anyone can still edit the current week**
+**Scenario: Admin edits a past-day sticker**
 
-- **Given** I am an Admin (not Owner)
-- **When** I log or change a sticker for today or a day in the current week
+- **Given** I am an admin
+- **When** I change a past-day sticker
+- **Then** the change is saved with my member id and a timestamp
+
+**Scenario: Normal user keeps everyday actions**
+
+- **Given** I am a normal user
+- **When** I log/edit a current-week sticker or edit meals/calendar/tasks
 - **Then** the change is saved
 
-### Story 3: Owner manages other Owners and Admins
+**Scenario: Normal user is blocked from setup + destructive actions**
 
-**As an** Owner
-**I want** to promote or demote Owners and Admins
-**so that** authority can move as the family changes, safely.
+- **Given** I am a normal user
+- **When** I try to change a conversion rate, remove a member, or wipe data
+- **Then** the request is rejected with a 403 "admin-only" error
 
-**Scenario: Owner promotes an Admin to Owner**
-
-- **Given** I am an Owner and Bola is an Admin
-- **When** I grant Bola the Owner flag
-- **Then** Bola passes owner-only checks
-
-**Scenario: Last-owner protection blocks self-demotion**
-
-- **Given** I am the only Owner
-- **When** I try to remove my own Owner flag
-- **Then** the request is rejected with a 409 "last-owner" error
-- **And** I remain an Owner
-
-**Scenario: Transfer ownership**
-
-- **Given** I am an Owner
-- **When** I make Bola an Owner and remove my own flag in one action
-- **Then** Bola is an Owner and I am not
-- **And** the family never drops to zero Owners during the change
-
-### Story 4: Admin is blocked from owner-only actions
-
-**As an** Admin who is not an Owner
-**I want** clear, consistent blocking of owner-only actions
-**so that** I can't accidentally take an irreversible action.
-
-**Scenario: Admin attempts to change the conversion rate**
-
-- **Given** I am an Admin (not Owner)
-- **When** I try to change the sticker→cash rate
-- **Then** the request is rejected with a 403 "owner-only" error
-- **And** the economy-settings controls are hidden from me
-
-**Scenario: Admin attempts to remove a member**
-
-- **Given** I am an Admin (not Owner)
-- **When** I try to remove a member
-- **Then** the request is rejected with a 403 "owner-only" error
-
-### Story 5: Children and teens cannot escalate their own access
+### Story 3: Children and teens cannot escalate their own access
 
 **As a** parent
 **I want** children and teens to be unable to grant themselves powers
 **so that** the family's controls stay with the adults.
 
-**Scenario: Child attempts to make themselves an Owner**
+**Scenario: Child attempts to make themselves an admin**
 
 - **Given** I am signed in as a child (PIN login)
-- **When** I send a request to set my own `is_owner` to true
+- **When** I send a request to set my own role to admin
 - **Then** the request is rejected with a 403 "forbidden" error
 - **And** my record is unchanged
 
 **Scenario: Teen attempts to change another member's role**
 
 - **Given** I am signed in as a teen
-- **When** I try to change a sibling's role to adult
+- **When** I try to change a sibling's role
 - **Then** the request is rejected with a 403 "forbidden" error
 
 ## Story → ticket map
 
-| Story | Ticket | Points |
-| --- | --- | --- |
-| `is_owner` flag + migration + backfill + `/api/me` | [FHS-334](https://qualicion2.atlassian.net/browse/FHS-334) | 3 |
-| Owner-only PAST-day sticker edits (the named gap) | [FHS-335](https://qualicion2.atlassian.net/browse/FHS-335) | 3 |
-| Members promote/demote Owner & Admin + last-owner protection | [FHS-336](https://qualicion2.atlassian.net/browse/FHS-336) | 5 |
-| Owner-only My World economy (rates, settings, re-open, adjust) | [FHS-337](https://qualicion2.atlassian.net/browse/FHS-337) | 5 |
-| Owner-only tenant lifecycle (remove, wipe, transfer, billing) | [FHS-338](https://qualicion2.atlassian.net/browse/FHS-338) | 5 |
-| Centralize permission layer + escalation guards + RLS | [FHS-339](https://qualicion2.atlassian.net/browse/FHS-339) | 8 |
+| Story                                                                              | Ticket                                                     | Points |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------ |
+| Onboarding registrant is admin; admins set members admin/normal (never a child)    | [FHS-334](https://qualicion2.atlassian.net/browse/FHS-334) | 5      |
+| Legacy admin-only actions are admin-only (past-day stickers, economy, destructive) | [FHS-335](https://qualicion2.atlassian.net/browse/FHS-335) | 5      |
+| Centralize the admin check + hide admin-only UI + child-can't-be-admin guard + RLS | [FHS-336](https://qualicion2.atlassian.net/browse/FHS-336) | 5      |
+
+(The earlier owner-tier stories FHS-337/338/339 were cancelled when the model
+was simplified.)
 
 ## Out of scope
 
-- Custom / per-family permission editing — fixed matrix only for v1.
+- A separate "owner / super user" tier (the earlier, abandoned design).
+- Custom / per-family permission editing — fixed two-tier model only.
 - Per-surface granular delegation (e.g. "meals admin" vs "calendar admin").
 - A browsable audit-log viewer — sensitive edits record who/when, but the
   history screen is a later ticket.
-- Time-boxed / temporary ownership.
 
 ## Open questions
 
-- **Manual cash-balance adjustment** — defaulted to **Owner-only** (it
-  rewrites the ledger like a past-sticker edit). Confirm, or move to Admin.
-- **Billing** — defaulted to **Owner-only**. Want a dedicated "billing
-  admin" instead?
-- Should Admins be able to remove **guests** (but not children/adults)?
-- Max number of Owners — cap, or unlimited?
+- Should an admin be able to remove **guests** specifically, or are guests
+  out of scope for now?
 - Member removal — soft-delete (keep history) or hard-delete?
+- Is there ever a case for a normal user (adult) closing a week, or is that
+  firmly admin-only? (Currently admin-only.)
 
 ## Success metrics
 
-- 0 non-owner past-day sticker edits succeed after rollout (server logs).
-- 100% of existing families have exactly one Owner post-backfill.
-- 0 families ever reach zero Owners (continuous invariant; alert if breached).
+- 0 non-admin past-day sticker edits succeed after rollout (server logs).
+- The family registrant is an admin in 100% of new sign-ups.
+- 0 children/teens ever hold an admin role (continuous invariant).
