@@ -29,9 +29,8 @@ Key: ✓ = allowed · ✗ = blocked · **self** = only on their own record/data.
 | Action                                                    | Admin | Normal user | Teen | Child        |
 | --------------------------------------------------------- | ----- | ----------- | ---- | ------------ |
 | **My World — economy & history**                          |       |             |      |              |
-| Log / edit a CURRENT-week sticker (any member)            | ✓     | ✓           | self | self         |
+| Log / edit a sticker for today or later this week         | ✓     | ✓           | self | self         |
 | Edit a PAST-day sticker (backdate) — _the named gap_      | ✓     | ✗           | ✗    | ✗            |
-| Log a FUTURE-day sticker                                  | ✗     | ✗           | ✗    | ✗            |
 | Close / finalize a week                                   | ✓     | ✗           | ✗    | ✗            |
 | Re-open / un-finalize a closed week                       | ✓     | ✗           | ✗    | ✗            |
 | Run the rewards shop (redeem current balance)             | ✓     | ✓           | ✗    | self-request |
