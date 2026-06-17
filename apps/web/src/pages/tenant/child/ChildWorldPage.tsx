@@ -47,6 +47,9 @@ export function ChildWorldPage() {
   const { session } = useAuth();
   const [activeTab, setActiveTab] = useState<string>(DEFAULT_TAB);
   const [member, setMember] = useState<MemberLite | null>(null);
+  // FHS-336 — the caller's role in this family (from /api/members), so My World
+  // hides admin-only controls from a normal user. Null until loaded.
+  const [callerRole, setCallerRole] = useState<string | null>(null);
 
   const headers = useMemo(
     () =>
@@ -63,6 +66,7 @@ export function ChildWorldPage() {
         if (cancelled || !body) return;
         const found = (body.members as MemberLite[]).find((m) => m.id === memberId) ?? null;
         setMember(found);
+        setCallerRole(typeof body.callerRole === 'string' ? body.callerRole : null);
       })
       .catch(() => {
         /* leave member null — header falls back to a generic greeting */
@@ -139,7 +143,7 @@ export function ChildWorldPage() {
           data-testid={`child-panel-${active.id}`}
         >
           {active.id === 'world' ? (
-            <MyWorldTab memberId={memberId} />
+            <MyWorldTab memberId={memberId} isAdmin={callerRole === 'admin'} />
           ) : active.id === 'meals' ? (
             <MealsTab memberId={memberId} />
           ) : active.id === 'calendar' ? (
