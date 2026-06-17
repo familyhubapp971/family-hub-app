@@ -174,7 +174,7 @@ function installApi(over: Partial<St> = {}) {
   return state;
 }
 
-function renderTab() {
+function renderTab(isAdmin = true) {
   return render(
     <MemoryRouter initialEntries={['/t/khan/child/' + MEMBER]}>
       <Routes>
@@ -182,7 +182,7 @@ function renderTab() {
           path="/t/:slug/child/:memberId"
           element={
             <TenantProvider>
-              <MyWorldTab memberId={MEMBER} />
+              <MyWorldTab memberId={MEMBER} isAdmin={isAdmin} />
             </TenantProvider>
           }
         />
@@ -401,6 +401,15 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     vi.setSystemTime(new Date('2026-02-25T10:00:00')); // Wednesday, within the week
     installApi();
     renderTab();
+    await waitFor(() => expect(screen.getByTestId('habit-tracker-week-label')).toBeInTheDocument());
+    expect(screen.queryByTestId('my-world-close-week-banner')).not.toBeInTheDocument();
+  });
+
+  it('hides the Close Week banner from a normal user even on the last day (FHS-336)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-03-01T10:00:00')); // Sunday — admin would see the banner
+    installApi();
+    renderTab(false); // normal user (not admin)
     await waitFor(() => expect(screen.getByTestId('habit-tracker-week-label')).toBeInTheDocument());
     expect(screen.queryByTestId('my-world-close-week-banner')).not.toBeInTheDocument();
   });

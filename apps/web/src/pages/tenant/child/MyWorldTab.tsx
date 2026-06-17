@@ -247,12 +247,19 @@ function mapApiHabitToLocal(apiHabit: ApiHabit, apiStickers: ApiSticker[]): Habi
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export function MyWorldTab({ memberId }: { memberId: string }) {
+export function MyWorldTab({
+  memberId,
+  isAdmin = false,
+}: {
+  memberId: string;
+  // FHS-336 — only an admin may edit past days, close a week, or touch the
+  // economy. A normal user (adult) can still tick today + the rest of this
+  // week. Defaults to false so controls stay hidden until the caller's role
+  // is known. The server (FHS-335) is the real boundary; this hides the UI.
+  isAdmin?: boolean;
+}) {
   const slug = useTenantSlug();
   const { session } = useAuth();
-
-  // Admin = true for this parent-accessed route — all days editable
-  const isAdmin = true;
 
   // Key on the token STRING, not the session object. Supabase re-fires
   // onAuthStateChange with a fresh session object on window/tab refocus; if
@@ -561,6 +568,7 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const fmtLocalDate = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const showCloseWeekBanner = (() => {
+    if (!isAdmin) return false; // FHS-336 — closing a week is admin-only
     if (!week || week.isFinalized) return false;
     const lastDay = new Date(`${week.startDate}T00:00:00`);
     lastDay.setDate(lastDay.getDate() + 6); // Mon start → Sunday is the 7th day
@@ -571,7 +579,8 @@ export function MyWorldTab({ memberId }: { memberId: string }) {
   const canEditDay = (dayIndex: number) => {
     if (!canEdit) return false;
     if (isAdmin) return true;
-    return dayIndex === todayDayIndex;
+    // FHS-336 — a normal user may tick today + later this week, never a past day.
+    return dayIndex >= todayDayIndex;
   };
 
   const habits = week?.habits ?? [];
