@@ -146,10 +146,10 @@ describe('FHS-292 — DELETE /api/habits/:id guards', () => {
   });
 });
 
-// FHS-335 — editing a PAST-day sticker is admin-only; today stays open to a
-// normal user (adult); a future day is blocked for everyone. System clock is
-// pinned to Wed 2026-06-17, so the week's Monday is 2026-06-15:
-//   day 0 = Mon (past) · day 2 = Wed (today) · day 3 = Thu (future).
+// FHS-335 — editing a PAST-day sticker is admin-only; today and later days in
+// the current week stay open to a normal user (adult). System clock is pinned
+// to Wed 2026-06-17, so the week's Monday is 2026-06-15:
+//   day 0 = Mon (past) · day 2 = Wed (today) · day 3 = Thu (later this week).
 describe('FHS-335 — past-day sticker edits are admin-only', () => {
   const WEEK = { startDate: '2026-06-15', isFinalized: false };
   const HABIT = { id: HABIT_ID, isBonus: false };
@@ -187,6 +187,30 @@ describe('FHS-335 — past-day sticker edits are admin-only', () => {
     const res = await place(0, { role: 'adult' });
     expect(res.status).toBe(403);
     expect(((await res.json()) as { errorCode: string }).errorCode).toBe('ADMIN_ONLY');
+  });
+  it('a child editing their OWN past day is blocked → 403 (the primary case)', async () => {
+    // caller IS the member (self), so canManage passes — the gate must still block.
+    const app = buildApp({
+      memberChecks: [[{ id: MEMBER_ID, role: 'child' }], [{ id: MEMBER_ID }], [WEEK]],
+    });
+    dbMock.insert.mockImplementation(okInsert);
+    const res = await app.request(
+      `/api/habits/${HABIT_ID}/stickers`,
+      json('POST', { memberId: MEMBER_ID, weekId: WEEK_ID, day: 0, sticker: 'gold-star' }),
+    );
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { errorCode: string }).errorCode).toBe('ADMIN_ONLY');
+  });
+  it('a child can still tick their OWN sticker for today → 200', async () => {
+    const app = buildApp({
+      memberChecks: [[{ id: MEMBER_ID, role: 'child' }], [{ id: MEMBER_ID }], [WEEK], [HABIT]],
+    });
+    dbMock.insert.mockImplementation(okInsert);
+    const res = await app.request(
+      `/api/habits/${HABIT_ID}/stickers`,
+      json('POST', { memberId: MEMBER_ID, weekId: WEEK_ID, day: 2, sticker: 'gold-star' }),
+    );
+    expect(res.status).toBe(200);
   });
   it('an admin can place a PAST day’s sticker → 200', async () => {
     expect((await place(0, { role: 'admin' })).status).toBe(200);

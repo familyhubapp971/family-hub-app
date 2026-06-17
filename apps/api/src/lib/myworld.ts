@@ -67,8 +67,10 @@ export function dayDateOf(startDate: string, day: number): string {
 
 /**
  * Where a sticker day falls relative to today (UTC). Drives the FHS-335
- * rule: anyone may edit *today's* sticker, only an admin may edit a *past*
- * day, and *future* days can't be logged at all. `now` is injectable for tests.
+ * rule: only an admin may edit a *past* day; *today* and later days in the
+ * current week stay open to a normal user (the legacy "tick the whole week"
+ * behaviour). `now` is injectable for tests. NOTE: "today" is computed in UTC,
+ * matching how the rest of My World anchors weeks — see the timezone follow-up.
  */
 export function stickerDayRelation(
   startDate: string,
