@@ -864,6 +864,9 @@ export function MyWorldTab({
     editEnabled: boolean,
     editDayFn: (i: number) => boolean,
     isInvested: boolean,
+    // FHS-342 — adding/editing/deleting a habit is admin-only. Sticker
+    // affordances stay on `editEnabled` so a normal user can still tick.
+    canManageHabits: boolean,
   ) => (
     <div
       className={`relative ${
@@ -902,7 +905,7 @@ export function MyWorldTab({
                   {habit.title}
                 </h3>
               </div>
-              {editEnabled && (
+              {canManageHabits && (
                 <button
                   data-testid={`habit-card-edit-btn-${habit.id}`}
                   onClick={() => openEditDialog(habit)}
@@ -1018,8 +1021,8 @@ export function MyWorldTab({
         </div>
       </div>
 
-      {/* Delete X — top-right */}
-      {editEnabled && (
+      {/* Delete X — top-right (admin-only, FHS-342) */}
+      {canManageHabits && (
         <button
           data-testid={`habit-card-delete-btn-${habit.id}`}
           onClick={() => setDeleteConfirmId(habit.id)}
@@ -1611,13 +1614,19 @@ export function MyWorldTab({
                   data-testid={`habit-card-${habit.id}`}
                 >
                   <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
-                  {renderHabitCard(habit, canEdit, canEditDay, investedHabitIds.has(habit.id))}
+                  {renderHabitCard(
+                    habit,
+                    canEdit,
+                    canEditDay,
+                    investedHabitIds.has(habit.id),
+                    isAdmin && canEdit,
+                  )}
                 </div>
               ))}
             </div>
 
-            {/* ── Add New Habit button ── */}
-            {canEdit && (
+            {/* ── Add New Habit button (admin-only, FHS-342) ── */}
+            {isAdmin && canEdit && (
               <button
                 data-testid="habit-tracker-add-habit-btn"
                 onClick={() => setShowAddHabit(true)}

@@ -414,6 +414,27 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     expect(screen.queryByTestId('my-world-close-week-banner')).not.toBeInTheDocument();
   });
 
+  it('hides Add Habit + per-habit edit/delete from a normal user (FHS-342)', async () => {
+    installApi();
+    renderTab(false); // normal user (not admin)
+    await waitFor(() =>
+      expect(screen.getByTestId(`habit-card-title-${HABIT}`)).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('habit-tracker-add-habit-btn')).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`habit-card-edit-btn-${HABIT}`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`habit-card-delete-btn-${HABIT}`)).not.toBeInTheDocument();
+  });
+
+  it('shows Add Habit + edit/delete to an admin (FHS-342)', async () => {
+    installApi();
+    renderTab(true);
+    await waitFor(() =>
+      expect(screen.getByTestId('habit-tracker-add-habit-btn')).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId(`habit-card-edit-btn-${HABIT}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`habit-card-delete-btn-${HABIT}`)).toBeInTheDocument();
+  });
+
   it('add-habit with an empty name does not POST', async () => {
     installApi();
     renderTab();
