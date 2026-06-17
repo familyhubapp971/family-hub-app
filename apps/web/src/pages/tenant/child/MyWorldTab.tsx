@@ -575,12 +575,16 @@ export function MyWorldTab({
     return fmtLocalDate(new Date()) >= fmtLocalDate(lastDay);
   })();
 
-  const todayDayIndex = (new Date().getDay() + 6) % 7; // Mon=0, Sun=6
   const canEditDay = (dayIndex: number) => {
     if (!canEdit) return false;
     if (isAdmin) return true;
-    // FHS-336 — a normal user may tick today + later this week, never a past day.
-    return dayIndex >= todayDayIndex;
+    // FHS-336 — a normal user may tick today or later, never a PAST day. Compare
+    // the cell's real calendar date to today (mirrors the server rule in
+    // FHS-335), not the day-of-week index — so a stale/old open week is handled.
+    if (!week) return false;
+    const cellDate = new Date(`${week.startDate}T00:00:00`);
+    cellDate.setDate(cellDate.getDate() + dayIndex);
+    return fmtLocalDate(cellDate) >= fmtLocalDate(new Date());
   };
 
   const habits = week?.habits ?? [];

@@ -66,7 +66,7 @@ export function ChildWorldPage() {
         if (cancelled || !body) return;
         const found = (body.members as MemberLite[]).find((m) => m.id === memberId) ?? null;
         setMember(found);
-        setCallerRole((body.callerRole as string | undefined) ?? null);
+        setCallerRole(typeof body.callerRole === 'string' ? body.callerRole : null);
       })
       .catch(() => {
         /* leave member null — header falls back to a generic greeting */
