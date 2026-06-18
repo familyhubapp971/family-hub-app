@@ -158,3 +158,55 @@ revert the env var). Add a boot guard that refuses to start if the connected
 role has `BYPASSRLS`, and a test that runs **as `app_runtime`** with no app
 filter and asserts only the current tenant's rows return (and zero rows when
 no GUC).
+
+## Implementation notes (as built — FHS-344 epic)
+
+Two refinements emerged during build that the original draft above doesn't
+capture:
+
+- **Migration delivery.** Staging/prod boot with `drizzle-kit push --force`
+  (schema-diff), which knows nothing about roles/RLS/policies/grants and would
+  silently skip them — and can drop a table's grants when it recreates it. So
+  RLS is delivered as **hand-written idempotent SQL migrations** (`0027` role +
+  grants, `0028` tenant policies, `0029` users policy), NOT via schema.ts
+  `pgPolicy`. They reach the test/CI DBs via `drizzle-kit migrate`; they reach
+  staging via a dedicated **`apply-rls` step** in `start.sh` (run as the owner,
+  after `push`, gated by `APPLY_RLS`). DDL/grants run as the owner via
+  `MIGRATE_DATABASE_URL`; the app serves traffic as `app_runtime` via
+  `DATABASE_URL`.
+- **Fail-closed GUC readers.** Policies key on `app_current_tenant()` /
+  `app_current_user()` — `STABLE` SQL functions that **regex-gate** the GUC
+  before the `::uuid` cast, so unset, the empty sentinel, OR a malformed value
+  all map to `NULL` (zero rows / rejected writes) and the cast can never raise a 500. `set_config(..., false)` (session) for the request middleware;
+  `set_config(..., true)` (transaction-local) for pre-tenant writes (the
+  user-mirror upsert, onboarding's founding member).
+- **Pre-tenant write paths.** Writes that run before a tenant is resolved must
+  pin the target tenant transaction-locally first, or RLS rejects them.
+  Onboarding (founding member) is fixed (FHS-351); the invite-claim flow reads
+  invites cross-tenant by email and needs a `SECURITY DEFINER` lookup —
+  tracked as a pre-flip blocker (FHS-354).
+
+## Flip runbook (FHS-351)
+
+The code is flip-ready and merged; flipping is a deploy-only operation:
+
+1. **Provision the role password + CONNECT** on the staging DB (as the owner):
+   `ALTER ROLE app_runtime WITH LOGIN PASSWORD '<secret>';` then verify
+   `SELECT has_database_privilege('app_runtime', current_database(), 'CONNECT');`
+   — if false (Supabase revokes CONNECT from PUBLIC), run
+   `GRANT CONNECT ON DATABASE <dbname> TO app_runtime;`. Store the secret; never
+   commit it.
+2. **Set Railway staging env** (api service): `MIGRATE_DATABASE_URL=<owner URL>`
+   (the current `DATABASE_URL`), then `DATABASE_URL=<app_runtime URL>`,
+   `APPLY_RLS=true`, `RLS_ENFORCED=true`. **The `app_runtime` URL MUST use the
+   session-mode port** (Supabase **5432**, not the transaction pooler 6543) —
+   `postgresql://app_runtime:<pw>@<host>:5432/<dbname>` — or session GUCs leak
+   between requests (the boot guard would still pass, so this is silent: verify
+   the port by hand).
+3. **Deploy.** `start.sh` runs `push` + `apply-rls` as the owner, then the app
+   boots as `app_runtime`; the boot guard verifies it cannot bypass RLS.
+4. **Validate** staging E2E + perf smoke.
+5. **Rollback** (if needed): revert `DATABASE_URL` to the owner + unset
+   `RLS_ENFORCED` — one env change, instant.
+
+> Pre-flip blocker: FHS-354 (invite-claim RLS-readiness) must land first.
