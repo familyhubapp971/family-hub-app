@@ -1,6 +1,6 @@
 ---
 name: invite-parent-supabase-admin-failed
-status: in-jira: FHS-352
+status: fixed (FHS-352)
 type: bug
 area: invitations
 surface: backend

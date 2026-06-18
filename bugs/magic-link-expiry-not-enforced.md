@@ -1,5 +1,5 @@
 ---
-status: in-jira: FHS-331
+status: fixed (FHS-331)
 date: 2026-06-16
 found-by: oduniyi (manual exploration)
 severity: high (security — expired credential still valid)
