@@ -9,6 +9,7 @@ import { rejectKidTokens } from './middleware/kid-auth.js';
 import { corsMiddleware } from './middleware/cors-allowlist.js';
 import { rateLimit } from './middleware/rate-limit.js';
 import { requestContext } from './middleware/request-context.js';
+import { requestDb } from './middleware/request-db.js';
 import {
   makeDbLookup,
   resolveTenant,
@@ -124,6 +125,12 @@ export function buildApp(opts: BuildAppOptions = {}) {
     lookupTenantId: makeDbLookup(getDb()),
   };
   app.use('*', resolveTenant(resolveTenantOpts));
+
+  // FHS-345 — from here on, /api/* handlers run with a dedicated pooled DB
+  // connection bound via AsyncLocalStorage (getDb() returns it). Mounted
+  // after tenant resolution and scoped to /api/* so /health + /hello don't
+  // needlessly check out a connection. FHS-346 pins the tenant GUC on it.
+  app.use('/api/*', requestDb());
 
   app.use('*', async (c, next) => {
     const started = Date.now();
