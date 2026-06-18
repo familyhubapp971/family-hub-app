@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation, useParams } from 'react-router-dom';
 import { LoginPage } from '../../../../apps/web/src/pages/auth/LoginPage';
 
 // FHS-224 — passwordless login. Tests cover the rewritten UX:
@@ -23,6 +23,13 @@ function LocationProbe() {
   return <span data-testid="location-search">{loc.search}</span>;
 }
 
+// FHS-353 — marks the kid picker route so we can assert the kid panel
+// navigates to /t/<slug>/kid-login with the typed family code.
+function KidLoginMarker() {
+  const { slug } = useParams<{ slug: string }>();
+  return <div data-testid="route-kid-login">kid-login:{slug}</div>;
+}
+
 function renderPage(initial = '/login') {
   return render(
     <MemoryRouter initialEntries={[initial]}>
@@ -38,6 +45,7 @@ function renderPage(initial = '/login') {
         />
         <Route path="/verify-email" element={<div data-testid="route-marker">verify-email</div>} />
         <Route path="/signup" element={<div data-testid="route-marker">signup</div>} />
+        <Route path="/t/:slug/kid-login" element={<KidLoginMarker />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -48,6 +56,7 @@ describe('<LoginPage />', () => {
     signInWithOtp.mockReset();
     signInWithOAuth.mockReset();
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   it('renders the magic-link form (no password field) and the Google button', () => {
@@ -150,7 +159,41 @@ describe('<LoginPage />', () => {
     renderPage('/login?role=kid');
     expect(screen.getByTestId('login-kid-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('login-parent-panel')).toBeNull();
-    expect(screen.getByTestId('login-kid-pointer')).toBeInTheDocument();
+    // FHS-353 — the kid panel now offers a self-serve family-code entry.
+    expect(screen.getByTestId('login-kid-code')).toBeInTheDocument();
+  });
+
+  // FHS-353 — self-serve kid login.
+  it('entering a family code sends the kid to that family picker', async () => {
+    renderPage('/login?role=kid');
+    fireEvent.change(screen.getByTestId('login-kid-code'), { target: { value: 'Smiths' } });
+    fireEvent.submit(screen.getByTestId('login-kid-form'));
+    // Slug is normalised to lowercase before navigating.
+    await waitFor(() =>
+      expect(screen.getByTestId('route-kid-login').textContent).toBe('kid-login:smiths'),
+    );
+  });
+
+  it('shows a friendly error for an invalid family code and does not navigate', () => {
+    renderPage('/login?role=kid');
+    fireEvent.change(screen.getByTestId('login-kid-code'), { target: { value: 'bad code!!' } });
+    fireEvent.submit(screen.getByTestId('login-kid-form'));
+    expect(screen.getByTestId('login-kid-error')).toBeInTheDocument();
+    expect(screen.queryByTestId('route-kid-login')).toBeNull();
+  });
+
+  it('offers a one-tap "Continue as <family>" shortcut for a remembered family', async () => {
+    localStorage.setItem(
+      'fh.kid.lastFamily',
+      JSON.stringify({ slug: 'smiths', name: 'The Smiths' }),
+    );
+    renderPage('/login?role=kid');
+    const shortcut = screen.getByTestId('login-kid-continue-last');
+    expect(shortcut.textContent).toContain('The Smiths');
+    fireEvent.click(shortcut);
+    await waitFor(() =>
+      expect(screen.getByTestId('route-kid-login').textContent).toBe('kid-login:smiths'),
+    );
   });
 
   it('clicking the kid tab swaps the panel + sets ?role=kid in the URL', () => {

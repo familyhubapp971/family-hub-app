@@ -93,6 +93,16 @@ export function KidLoginPage() {
           return;
         }
         const body = (await res.json()) as KidListResponse;
+        // FHS-353 — remember this family on the device so the kid can re-enter
+        // from the generic /login "I'm a kid" tab with one tap next time.
+        try {
+          localStorage.setItem(
+            'fh.kid.lastFamily',
+            JSON.stringify({ slug: body.family.slug, name: body.family.name }),
+          );
+        } catch {
+          /* private mode / storage full — non-fatal; the code entry still works */
+        }
         setLoad({ kind: 'loaded', family: body.family, kids: body.kids });
       } catch (e) {
         if (cancelled) return;
@@ -182,6 +192,23 @@ export function KidLoginPage() {
     </p>
   );
 
+  // FHS-353 — a kid who reached a wrong/broken family link (usually a mistyped
+  // family code) should get straight back to the kid tab to try again, not be
+  // dropped on the parent form.
+  const tryAnotherCode = (
+    <p className="mt-3 font-body text-sm text-gray-700">
+      Typed the wrong code?{' '}
+      <Link
+        to="/login?role=kid"
+        className="font-semibold underline"
+        data-testid="kid-login-try-another"
+      >
+        Enter a different family code
+      </Link>
+      .
+    </p>
+  );
+
   if (load.kind === 'loading') {
     return (
       <AuthLayout title="Tap your face">
@@ -199,6 +226,7 @@ export function KidLoginPage() {
         <p className="font-body text-sm text-gray-700" data-testid="kid-login-not-found">
           We couldn&rsquo;t find a family at this link. Ask a grown-up to check the address.
         </p>
+        {tryAnotherCode}
         {back}
       </AuthLayout>
     );
@@ -210,6 +238,7 @@ export function KidLoginPage() {
         <p className="font-body text-sm text-gray-700" data-testid="kid-login-load-error">
           We couldn&rsquo;t load the family right now ({load.message}). Try again in a moment.
         </p>
+        {tryAnotherCode}
         {back}
       </AuthLayout>
     );

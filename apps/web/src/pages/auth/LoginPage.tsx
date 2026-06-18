@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button, Input, Label } from '@familyhub/ui';
@@ -277,12 +277,53 @@ function RoleButton({
   );
 }
 
-// FHS-238 — top-level /login?role=kid panel. The actual avatar grid +
-// PIN keypad lives at /t/:slug/kid-login (tenant-scoped, see
-// App.tsx) because the page needs to know which family's kids to
-// show. /login is unscoped, so a kid landing here without a family
-// slug gets pointed to the family link their grown-up sent them.
+// FHS-353 — self-serve kid login. The avatar grid + PIN keypad still live at
+// /t/:slug/kid-login (tenant-scoped — that page needs to know which family's
+// kids to show). /login is unscoped, so the kid types their family code (the
+// short name in the family's web address) and we send them to that picker.
+// Returning kids get a one-tap "Continue as <Family>" shortcut, remembered on
+// the device by KidLoginPage on its last successful load.
+const KID_LAST_FAMILY_KEY = 'fh.kid.lastFamily';
+// Same shape as the tenants.slug constraint — lowercase alphanumeric with
+// optional internal hyphens. We validate before navigating so a typo shows a
+// friendly hint instead of bouncing through the picker's not-found screen.
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+
+function readLastFamily(): { slug: string; name: string } | null {
+  try {
+    const raw = localStorage.getItem(KID_LAST_FAMILY_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw) as { slug?: unknown; name?: unknown };
+    if (
+      typeof v.slug === 'string' &&
+      typeof v.name === 'string' &&
+      v.name.length <= 100 &&
+      SLUG_RE.test(v.slug)
+    ) {
+      return { slug: v.slug, name: v.name };
+    }
+  } catch {
+    /* corrupt / unavailable storage — fall back to the code entry */
+  }
+  return null;
+}
+
 function KidLoginPanel({ onSwitchToParent }: { onSwitchToParent: () => void }) {
+  const navigate = useNavigate();
+  const [code, setCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const lastFamily = useMemo(() => readLastFamily(), []);
+
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const slug = code.trim().toLowerCase();
+    if (!SLUG_RE.test(slug)) {
+      setError("That doesn't look like a family code. Ask a grown-up if you're not sure.");
+      return;
+    }
+    navigate(`/t/${slug}/kid-login`);
+  }
+
   return (
     <section
       id="login-kid-panel"
@@ -293,20 +334,71 @@ function KidLoginPanel({ onSwitchToParent }: { onSwitchToParent: () => void }) {
       <h2 id="login-kid-heading" className="sr-only">
         Kid log in
       </h2>
-      <p className="mb-4 font-body text-sm text-gray-700">
-        Hi! Kid log-in lives at your family&rsquo;s link.
+
+      {lastFamily && (
+        <div className="mb-4">
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
+            fullWidth
+            testId="login-kid-continue-last"
+            onClick={() => navigate(`/t/${lastFamily.slug}/kid-login`)}
+          >
+            Continue as {lastFamily.name} →
+          </Button>
+          <p className="mt-2 text-center font-body text-xs text-gray-600">
+            Not your family? Enter a different code below.
+          </p>
+        </div>
+      )}
+
+      <p className="mb-3 font-body text-sm text-gray-700">
+        Type your <span className="font-semibold">family code</span> to see your faces.
       </p>
-      <div
-        data-testid="login-kid-pointer"
-        className="rounded-md border-2 border-dashed border-black bg-yellow-50 p-6 text-center"
-      >
-        <p className="font-heading text-lg text-black">Ask a grown-up</p>
-        <p className="mt-2 font-body text-sm text-gray-700">
-          They&rsquo;ll send you a link that ends with{' '}
-          <span className="font-mono font-semibold">/kid-login</span>. Tap that, then your face,
-          then your 4-digit PIN.
-        </p>
-      </div>
+
+      <form onSubmit={onSubmit} className="space-y-3" data-testid="login-kid-form" noValidate>
+        <div>
+          <Label htmlFor="kid-family-code" required>
+            Family code
+          </Label>
+          <Input
+            id="kid-family-code"
+            name="kid-family-code"
+            type="text"
+            inputMode="text"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            required
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+              if (error) setError(null);
+            }}
+            placeholder="your-family"
+            testId="login-kid-code"
+          />
+          <p className="mt-1 font-body text-xs text-gray-600">
+            It&rsquo;s the short name in your family&rsquo;s web address.
+          </p>
+        </div>
+
+        {error && (
+          <p className="font-body text-sm text-red-600" data-testid="login-kid-error" role="alert">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" variant="primary" size="md" fullWidth testId="login-kid-go">
+          Let&rsquo;s go →
+        </Button>
+      </form>
+
+      <p className="mt-5 font-body text-xs text-gray-600">
+        Don&rsquo;t know your code? Ask a grown-up — it&rsquo;s the short name in your
+        family&rsquo;s link.
+      </p>
 
       <p className="mt-6 font-body text-sm text-gray-700">
         Are you a grown-up?{' '}

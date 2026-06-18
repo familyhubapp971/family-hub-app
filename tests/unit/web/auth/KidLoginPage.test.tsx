@@ -91,6 +91,17 @@ describe('<KidLoginPage />', () => {
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/public/kid-members/khan'));
   });
 
+  it('remembers the family on the device after a successful load (FHS-353)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ family: { slug: 'khan', name: 'Khan Family' }, kids: KIDS }),
+    );
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Khan Family')).toBeInTheDocument());
+    // The login screen's "Continue as <family>" shortcut reads this.
+    const remembered = JSON.parse(localStorage.getItem('fh.kid.lastFamily') ?? 'null');
+    expect(remembered).toEqual({ slug: 'khan', name: 'Khan Family' });
+  });
+
   it('shows "family not found" on 404', async () => {
     fetchMock.mockResolvedValueOnce(new Response('not found', { status: 404 }));
     renderPage('no-such');
