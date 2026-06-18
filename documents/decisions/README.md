@@ -66,3 +66,4 @@ _Seeded by FHS-172 / FHS-173 / FHS-174 — populate as ADRs land:_
 - [`0013-tasks-tab-shared-visibility.md`](0013-tasks-tab-shared-visibility.md) — accepted: Tasks tab is shared-to-see, private-to-edit — family-wide read, owner-scoped write (FHS-267)
 - [`0014-myworld-economy-separate-tables.md`](0014-myworld-economy-separate-tables.md) — accepted: My World uses its own per-child `mw_*` tables, leaving the generic family-finance stubs free (FHS-291)
 - [`0015-role-model-owner-flag.md`](0015-role-model-owner-flag.md) — accepted: two grown-up tiers — admin (full legacy-admin rights incl. past-day edits) vs normal user; registrant is admin; admins set who's admin (never a child) (FHS-333)
+- [`0016-postgres-rls-tenant-isolation.md`](0016-postgres-rls-tenant-isolation.md) — proposed: DB-enforced tenant isolation via RLS; non-BYPASSRLS role + per-request `app.current_tenant` GUC (AsyncLocalStorage) + deny-by-default policies; fails closed (FHS-344)
