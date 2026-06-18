@@ -85,10 +85,13 @@ describe('<KidDashboardShell />', () => {
   it('confirms the kid session against GET /api/kid/me', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const [url, init] = fetchMock.mock.calls[0]!;
-    expect(String(url)).toContain('/api/kid/me');
-    expect((init as RequestInit).headers).toMatchObject({
+    // The default Today tab also fetches /api/kid/today, so find the /me call
+    // rather than assuming it's first.
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/kid/me'))).toBe(true),
+    );
+    const meCall = fetchMock.mock.calls.find(([u]) => String(u).includes('/api/kid/me'))!;
+    expect((meCall[1] as RequestInit).headers).toMatchObject({
       Authorization: expect.stringContaining('Bearer '),
     });
   });
@@ -177,6 +180,30 @@ describe('<KidDashboardShell />', () => {
     });
     await waitFor(() => expect(patchCalls.length).toBe(1));
     expect(patchCalls[0]).toContain('/api/kid/tasks/t1');
+  });
+
+  // FHS-355 — the default Today tab shows the kid's own habits.
+  it('Today tab shows the kid habits from GET /api/kid/today', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/api/kid/today')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            habits: [{ id: 'h1', name: 'Read a book', icon: '📚', color: '#facc15' }],
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ memberId: 'm1', tenantId: 't1', tenantSlug: 'khan' }),
+      });
+    });
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-today-list')).toBeInTheDocument());
+    expect(screen.getByText('Read a book')).toBeInTheDocument();
   });
 
   it('Switch user clears the kid token and returns to kid-login', async () => {
