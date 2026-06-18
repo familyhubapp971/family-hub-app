@@ -146,6 +146,127 @@ function KidNoticesPanel({ kidToken }: { kidToken: string | null }) {
   );
 }
 
+// FHS-355 — kid Tasks tab. The kid's own tasks (GET /api/kid/tasks), tickable
+// via PATCH /api/kid/tasks/:id. Optimistic toggle with revert on failure.
+interface KidTask {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  done: boolean;
+}
+type KidTasksState = { kind: 'loading' } | { kind: 'error' } | { kind: 'loaded'; tasks: KidTask[] };
+
+function KidTasksPanel({ kidToken }: { kidToken: string | null }) {
+  const [state, setState] = useState<KidTasksState>({ kind: 'loading' });
+
+  useEffect(() => {
+    if (!kidToken) return;
+    const ac = new AbortController();
+    fetch(`${API_BASE}/api/kid/tasks`, {
+      headers: { Authorization: `Bearer ${kidToken}` },
+      signal: ac.signal,
+    })
+      .then(async (r) => {
+        if (!r.ok) {
+          setState({ kind: 'error' });
+          return;
+        }
+        const body = (await r.json()) as { tasks: KidTask[] };
+        setState({ kind: 'loaded', tasks: body.tasks ?? [] });
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setState({ kind: 'error' });
+      });
+    return () => ac.abort();
+  }, [kidToken]);
+
+  const toggle = useCallback(
+    async (id: string, done: boolean) => {
+      if (!kidToken) return;
+      // Optimistic flip; revert if the server rejects.
+      setState((s) =>
+        s.kind === 'loaded'
+          ? { kind: 'loaded', tasks: s.tasks.map((t) => (t.id === id ? { ...t, done } : t)) }
+          : s,
+      );
+      try {
+        const r = await fetch(`${API_BASE}/api/kid/tasks/${id}`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ done }),
+        });
+        if (!r.ok) throw new Error('patch failed');
+      } catch {
+        setState((s) =>
+          s.kind === 'loaded'
+            ? {
+                kind: 'loaded',
+                tasks: s.tasks.map((t) => (t.id === id ? { ...t, done: !done } : t)),
+              }
+            : s,
+        );
+      }
+    },
+    [kidToken],
+  );
+
+  if (state.kind === 'loading') {
+    return (
+      <p
+        data-testid="kid-tasks-loading"
+        aria-busy="true"
+        className="text-sm font-bold text-gray-600"
+      >
+        Loading tasks…
+      </p>
+    );
+  }
+  if (state.kind === 'error') {
+    return (
+      <p data-testid="kid-tasks-error" role="alert" className="text-sm font-bold text-red-600">
+        Couldn&rsquo;t load tasks — try again.
+      </p>
+    );
+  }
+  if (state.tasks.length === 0) {
+    return (
+      <div data-testid="kid-tasks-empty">
+        <p aria-hidden="true" className="text-5xl">
+          ⭐
+        </p>
+        <h2 className="mt-3 font-heading text-2xl text-black">Tasks</h2>
+        <p className="mt-1 text-sm font-bold text-gray-600">Nothing to do right now — nice!</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2 text-left" data-testid="kid-tasks-list">
+      <h2 className="text-center font-heading text-2xl text-black">Tasks</h2>
+      {state.tasks.map((t) => (
+        <label
+          key={t.id}
+          data-testid="kid-task"
+          className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-xl border-2 border-black bg-white p-3 shadow-neo-sm"
+        >
+          <input
+            type="checkbox"
+            checked={t.done}
+            onChange={() => void toggle(t.id, !t.done)}
+            className="h-6 w-6 shrink-0 accent-purple-600"
+            data-testid="kid-task-check"
+          />
+          <span
+            className={t.done ? 'font-bold text-gray-400 line-through' : 'font-bold text-black'}
+          >
+            {t.title}
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 export function KidDashboardShell() {
   const slug = useTenantSlug();
   const navigate = useNavigate();
@@ -256,10 +377,12 @@ export function KidDashboardShell() {
         >
           {active.id === 'notices' ? (
             <KidNoticesPanel kidToken={kidToken} />
+          ) : active.id === 'tasks' ? (
+            <KidTasksPanel kidToken={kidToken} />
           ) : (
             <>
               <p aria-hidden="true" className="text-5xl">
-                {active.id === 'tasks' ? '⭐' : '🌈'}
+                🌈
               </p>
               <h2 className="mt-3 font-heading text-2xl text-black">{active.label}</h2>
               <p className="mt-1 text-sm font-bold text-gray-600">{active.blurb}</p>
