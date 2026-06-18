@@ -50,6 +50,102 @@ const KID_TABS: KidTab[] = [
 
 const DEFAULT_TAB = 'today';
 
+// FHS-355 — kid Notices tab. Reads the family noticeboard scoped to the kid's
+// own tenant (GET /api/kid/notices, kid token). First real kid-facing data feed.
+interface KidNotice {
+  id: string;
+  body: string;
+  pinned: boolean;
+  authorName: string | null;
+  icon: string | null;
+  createdAt: string;
+}
+type KidNoticesState =
+  | { kind: 'loading' }
+  | { kind: 'error' }
+  | { kind: 'loaded'; notices: KidNotice[] };
+
+function KidNoticesPanel({ kidToken }: { kidToken: string | null }) {
+  const [state, setState] = useState<KidNoticesState>({ kind: 'loading' });
+
+  useEffect(() => {
+    if (!kidToken) return;
+    const ac = new AbortController();
+    fetch(`${API_BASE}/api/kid/notices`, {
+      headers: { Authorization: `Bearer ${kidToken}` },
+      signal: ac.signal,
+    })
+      .then(async (r) => {
+        if (!r.ok) {
+          setState({ kind: 'error' });
+          return;
+        }
+        const body = (await r.json()) as { notices: KidNotice[] };
+        setState({ kind: 'loaded', notices: body.notices ?? [] });
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setState({ kind: 'error' });
+      });
+    return () => ac.abort();
+  }, [kidToken]);
+
+  if (state.kind === 'loading') {
+    return (
+      <p
+        data-testid="kid-notices-loading"
+        aria-busy="true"
+        className="text-sm font-bold text-gray-600"
+      >
+        Loading notices…
+      </p>
+    );
+  }
+  if (state.kind === 'error') {
+    return (
+      <p data-testid="kid-notices-error" role="alert" className="text-sm font-bold text-red-600">
+        Couldn&rsquo;t load notices — try again.
+      </p>
+    );
+  }
+  if (state.notices.length === 0) {
+    return (
+      <div data-testid="kid-notices-empty">
+        <p aria-hidden="true" className="text-5xl">
+          📣
+        </p>
+        <h2 className="mt-3 font-heading text-2xl text-black">Notices</h2>
+        <p className="mt-1 text-sm font-bold text-gray-600">No notices yet — check back soon!</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-3 text-left" data-testid="kid-notices-list">
+      <h2 className="text-center font-heading text-2xl text-black">Notices</h2>
+      {state.notices.map((n) => (
+        <div
+          key={n.id}
+          data-testid="kid-notice"
+          className="rounded-xl border-2 border-black bg-yellow-50 p-4 shadow-neo-sm"
+        >
+          <div className="flex items-start gap-3">
+            <span aria-hidden="true" className="text-2xl">
+              {n.icon ?? '📣'}
+            </span>
+            <div>
+              <p className="font-bold text-black">{n.body}</p>
+              <p className="mt-1 text-xs font-bold text-gray-600">
+                {n.authorName ?? 'Family'}
+                {n.pinned ? ' · 📌 pinned' : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function KidDashboardShell() {
   const slug = useTenantSlug();
   const navigate = useNavigate();
@@ -158,14 +254,20 @@ export function KidDashboardShell() {
           data-testid={`kid-panel-${active.id}`}
           className="rounded-xl border-2 border-black bg-white p-6 text-center shadow-neo-sm md:p-10"
         >
-          <p aria-hidden="true" className="text-5xl">
-            {active.id === 'tasks' ? '⭐' : active.id === 'notices' ? '📣' : '🌈'}
-          </p>
-          <h2 className="mt-3 font-heading text-2xl text-black">{active.label}</h2>
-          <p className="mt-1 text-sm font-bold text-gray-600">{active.blurb}</p>
-          <p className="mt-4 text-sm font-bold text-purple-700" data-testid="kid-panel-soon">
-            Your {active.label.toLowerCase()} land here soon!
-          </p>
+          {active.id === 'notices' ? (
+            <KidNoticesPanel kidToken={kidToken} />
+          ) : (
+            <>
+              <p aria-hidden="true" className="text-5xl">
+                {active.id === 'tasks' ? '⭐' : '🌈'}
+              </p>
+              <h2 className="mt-3 font-heading text-2xl text-black">{active.label}</h2>
+              <p className="mt-1 text-sm font-bold text-gray-600">{active.blurb}</p>
+              <p className="mt-4 text-sm font-bold text-purple-700" data-testid="kid-panel-soon">
+                Your {active.label.toLowerCase()} land here soon!
+              </p>
+            </>
+          )}
         </section>
       </main>
 
