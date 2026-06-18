@@ -1,8 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../lib/auth-context';
 import { AuthLayout } from './AuthLayout';
 import { supabase } from '../../lib/supabase';
+
+// FHS-331 — Supabase appends auth failures (expired/used magic link, denied
+// OAuth) to the redirect URL: usually the hash
+// (`#error=access_denied&error_code=otp_expired&error_description=…`), sometimes
+// the query. Pull the error out so an EXPIRED link can never look like a
+// successful sign-in just because a stale session sits in localStorage.
+function extractAuthError(
+  hash: string,
+  query: URLSearchParams,
+): { code: string; description: string } | null {
+  const h = new URLSearchParams(hash.replace(/^#/, ''));
+  const code =
+    h.get('error_code') ?? h.get('error') ?? query.get('error_code') ?? query.get('error');
+  if (!code) return null;
+  return { code, description: h.get('error_description') ?? query.get('error_description') ?? '' };
+}
+
+function isExpiredLink(err: { code: string; description: string }): boolean {
+  return /expired/i.test(err.code) || /expired/i.test(err.description);
+}
 
 // Auth landing page. Two responsibilities only:
 //   1. If the URL carries a `?code=...` (PKCE), exchange it for a
@@ -29,12 +49,49 @@ export function AuthCallbackPage() {
   const navigate = useNavigate();
   const { loading, session } = useAuth();
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState<CallbackStatus>({ kind: 'idle' });
+  const location = useLocation();
+
+  // Capture any auth error from the redirect URL on the first render — before
+  // the navigate effect can run — so an expired/invalid link never falls
+  // through to a stale-session "signed in".
+  const authErrorRef = useRef(extractAuthError(location.hash, searchParams));
+  const authError = authErrorRef.current;
+
+  const [status, setStatus] = useState<CallbackStatus>(() =>
+    authError
+      ? {
+          kind: 'error',
+          message: isExpiredLink(authError)
+            ? 'Your sign-in link has expired. Request a new one to log in.'
+            : 'That sign-in link is invalid or has already been used. Request a new one.',
+        }
+      : { kind: 'idle' },
+  );
 
   const exchangeCodeRef = useRef<string | null>(searchParams.get('code'));
+  // authError short-circuits to 'error' so the navigate effect bails on the
+  // very first render (no race with a stale session).
   const [exchangeState, setExchangeState] = useState<ExchangeState>(() =>
-    exchangeCodeRef.current ? 'pending' : 'done',
+    authError ? 'error' : exchangeCodeRef.current ? 'pending' : 'done',
   );
+
+  // An expired/invalid link must not leave the user signed in via a previously
+  // persisted session — sign out so they truly start over with a fresh link.
+  useEffect(() => {
+    if (!authError) return;
+    void supabase.auth.signOut().catch(() => {
+      /* best-effort — the error message + no-navigate already protect the user */
+    });
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+      try {
+        const url = new URL(window.location.href);
+        url.hash = '';
+        window.history.replaceState({}, '', url.toString());
+      } catch {
+        /* History API unavailable — non-fatal */
+      }
+    }
+  }, [authError]);
 
   useEffect(() => {
     if (exchangeState !== 'pending') return;

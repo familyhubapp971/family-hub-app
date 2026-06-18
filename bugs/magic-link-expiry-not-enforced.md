@@ -1,5 +1,5 @@
 ---
-status: in-jira: FHS-331
+status: fixed (FHS-331)
 date: 2026-06-16
 found-by: oduniyi (manual exploration)
 severity: high (security — expired credential still valid)
@@ -39,34 +39,39 @@ the window in which a leaked, forwarded, or device-cached email can be
 abused to take over the account. This is a real account-takeover
 exposure, not just a copy mismatch.
 
-## Suspected root cause
+## Actual root cause (FHS-331 — confirmed)
 
-Supabase magic links are email OTPs; their lifetime is governed by the
-project's **`mailer_otp_exp`** auth setting (a.k.a. "Email OTP
-Expiration"), in seconds. The branded email template hard-codes
-"expires in 1 hour", but the staging Supabase project's
-`mailer_otp_exp` is almost certainly set far higher than `3600`
-(Supabase has historically defaulted this to `86400` = 24h in some
-flows).
+The original hypothesis (a long `mailer_otp_exp`) was **wrong**: the
+staging project's `mailer_otp_exp` is already `3600` (verified via the
+Supabase Management API), and the SMTP block is intact. So Supabase
+_does_ reject an hours-old link at `/auth/v1/verify` — it redirects to
+`/auth/callback` with an error in the URL hash
+(`#error=access_denied&error_code=otp_expired&error_description=…`).
 
-Likely config drift: the auth-config PATCH that sets our SMTP block
-(see the email-domain notes) may never have set `mailer_otp_exp`, so it
-sits at a long default. The `/auth/v1/verify` endpoint then accepts the
-token because, as far as Supabase is concerned, it has not expired.
+The real bug was **client-side**: `AuthCallbackPage` ignored that error
+hash entirely. It only handled the PKCE `?code=` exchange, then checked
+`supabase.auth.getSession()`. A user who had signed in earlier that day
+still had a **persisted session in localStorage**, so the expired link
+landed on the callback, the error was ignored, `getSession()` returned
+the stale session, and the page navigated to `/dashboard` — making the
+expired link _look_ like it had worked.
 
-## Fix direction (to confirm when picked up)
+## Fix (shipped)
 
-1. `GET` the staging Supabase auth config and read `mailer_otp_exp`.
-2. Set `mailer_otp_exp = 3600` (match the email copy) — and **include
-   the full SMTP block in the PATCH** so it isn't wiped (known
-   gotcha — see the email-config notes). Consider 900–1800s (15–30 min)
-   for magic links; founder decision.
-3. Re-test: a link older than the window returns an "expired" error at
-   `/auth/callback`; a fresh link still works.
-4. Confirm `/auth/callback` surfaces a friendly expired-link message
-   rather than a silent failure or a successful sign-in.
-5. Add a guard that asserts the configured `mailer_otp_exp` value (the
-   time-based behaviour itself is hard to unit-test without waiting).
+`AuthCallbackPage` now reads the auth error from the redirect URL
+(hash + query) on first render and, if present:
+
+1. shows a clear message ("Your sign-in link has expired. Request a new
+   one to log in." / "invalid or already used"),
+2. **does not navigate into the app** (short-circuits to the error state
+   before the navigate effect runs — no stale-session race), and
+3. **signs out**, so an expired link can never leave the user signed in
+   via a previously persisted session.
+
+`mailer_otp_exp = 3600` already matches the email's "1 hour" promise, so
+no Supabase config change was needed. Covered by an `AuthCallbackPage`
+unit test (expired hash + stale session → expired message, no nav,
+signOut called).
 
 ## Acceptance criteria
 
