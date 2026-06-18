@@ -85,7 +85,7 @@ const APP_SETTINGS = { appName: 'Iman World', appSubtitle: 'Track habits and ear
 
 // ── Mock fetch router ─────────────────────────────────────────────────────────
 
-function installApi() {
+function installApi(callerRole = 'admin') {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url);
 
@@ -118,7 +118,7 @@ function installApi() {
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: async () => ({ members: MEMBERS, callerRole: 'admin' }),
+        json: async () => ({ members: MEMBERS, callerRole }),
       });
     }
     if (u.includes('/api/mw/weeks/current')) {
@@ -219,6 +219,13 @@ describe('<AdminPanelPage />', () => {
       }
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
     });
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('dashboard-page')).toBeInTheDocument());
+    expect(screen.queryByTestId('admin-panel')).not.toBeInTheDocument();
+  });
+
+  it('redirects a normal-user adult away from the admin panel (FHS-343)', async () => {
+    installApi('adult');
     renderAt();
     await waitFor(() => expect(screen.getByTestId('dashboard-page')).toBeInTheDocument());
     expect(screen.queryByTestId('admin-panel')).not.toBeInTheDocument();
