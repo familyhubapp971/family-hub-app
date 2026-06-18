@@ -22,10 +22,12 @@ vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
 }));
 
 const exchangeCodeForSession = vi.fn();
+const signOut = vi.fn();
 vi.mock('../../../../apps/web/src/lib/supabase', () => ({
   supabase: {
     auth: {
       exchangeCodeForSession: (...args: unknown[]) => exchangeCodeForSession(...args),
+      signOut: (...args: unknown[]) => signOut(...args),
     },
   },
 }));
@@ -49,6 +51,8 @@ describe('<AuthCallbackPage />', () => {
     authState.session = null;
     exchangeCodeForSession.mockReset();
     exchangeCodeForSession.mockResolvedValue({ error: null });
+    signOut.mockReset();
+    signOut.mockResolvedValue({ error: null });
   });
 
   afterEach(() => {
@@ -62,6 +66,23 @@ describe('<AuthCallbackPage />', () => {
     };
     renderAt('/auth/callback');
     await waitFor(() => expect(screen.getByTestId('route-marker').textContent).toBe('dashboard'));
+  });
+
+  // FHS-331 — an expired magic link must not look "signed in" via a stale
+  // persisted session. The callback shows the expired message, does not
+  // navigate into the app, and signs out.
+  it('rejects an expired link even with a stale session, and signs out', async () => {
+    authState.session = {
+      access_token: 'stale-jwt',
+      user: { id: 'u1', email: 'sarah@example.com', user_metadata: {} },
+    };
+    renderAt(
+      '/auth/callback#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
+    );
+    expect(screen.getByTestId('auth-callback-error').textContent).toMatch(/expired/i);
+    // Must NOT have navigated into the app.
+    expect(screen.queryByTestId('route-marker')).toBeNull();
+    await waitFor(() => expect(signOut).toHaveBeenCalled());
   });
 
   it('does NOT POST any tenant-create call from the callback page', async () => {
