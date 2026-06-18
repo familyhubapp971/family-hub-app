@@ -103,6 +103,43 @@ describe('<KidDashboardShell />', () => {
     expect(screen.getByTestId('kid-panel-tasks')).toBeInTheDocument();
   });
 
+  // FHS-355 — the Notices tab shows the kid's real family notices.
+  it('Notices tab renders notices from GET /api/kid/notices', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/api/kid/notices')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            notices: [
+              {
+                id: 'n1',
+                body: 'Tidy your room',
+                pinned: false,
+                authorName: 'Mum',
+                icon: '📣',
+                createdAt: '2026-06-18T00:00:00.000Z',
+              },
+            ],
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ memberId: 'm1', tenantId: 't1', tenantSlug: 'khan' }),
+      });
+    });
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByRole('tab', { name: /Notices/ }));
+    });
+    await waitFor(() => expect(screen.getByTestId('kid-notices-list')).toBeInTheDocument());
+    expect(screen.getByText('Tidy your room')).toBeInTheDocument();
+  });
+
   it('Switch user clears the kid token and returns to kid-login', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
