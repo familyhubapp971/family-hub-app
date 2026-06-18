@@ -1915,10 +1915,11 @@ export function AdminPanelPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [headers]);
 
-  // Redirect non-admin/non-adult callers after the role is known.
+  // FHS-343 — the Admin Panel is admin-only; redirect any non-admin (incl. a
+  // normal-user adult) to the dashboard once the role is known.
   useEffect(() => {
     if (callerRole === null) return;
-    if (callerRole !== 'admin' && callerRole !== 'adult') {
+    if (callerRole !== 'admin') {
       navigate(`/t/${slug}/dashboard`, { replace: true });
     }
   }, [callerRole, slug, navigate]);
