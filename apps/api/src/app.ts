@@ -122,7 +122,7 @@ export function buildApp(opts: BuildAppOptions = {}) {
   // auth and therefore have no user; resolveTenant falls through to
   // subdomain / path-prefix sources, or leaves tenantId undefined.
   const resolveTenantOpts: ResolveTenantOptions = opts.resolveTenant ?? {
-    lookupTenantId: makeDbLookup(getDb()),
+    lookupTenantId: makeDbLookup(getDb),
   };
   app.use('*', resolveTenant(resolveTenantOpts));
 

@@ -60,6 +60,8 @@ export function getDb(): Database {
  * calls reuse the outer request's connection (no double checkout).
  */
 export async function runWithRequestDb<T>(fn: () => Promise<T>): Promise<T> {
+  // Already inside a request scope — reuse it; the outer call owns the
+  // connection and its release. Not a leak.
   if (als.getStore()) return fn();
   let client: pg.PoolClient;
   try {
