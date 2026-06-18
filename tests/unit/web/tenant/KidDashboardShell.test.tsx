@@ -140,6 +140,45 @@ describe('<KidDashboardShell />', () => {
     expect(screen.getByText('Tidy your room')).toBeInTheDocument();
   });
 
+  // FHS-355 — the Tasks tab lists the kid's own tasks and ticking PATCHes.
+  it('Tasks tab lists the kid tasks and ticking one PATCHes /api/kid/tasks/:id', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    const patchCalls: string[] = [];
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/kid/tasks/')) {
+        patchCalls.push(u);
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true }) });
+      }
+      if (u.includes('/api/kid/tasks')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            tasks: [{ id: 't1', title: 'Brush teeth', dueDate: null, done: false }],
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ memberId: 'm1', tenantId: 't1', tenantSlug: 'khan' }),
+      });
+    });
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByRole('tab', { name: /Tasks/ }));
+    });
+    await waitFor(() => expect(screen.getByTestId('kid-tasks-list')).toBeInTheDocument());
+    expect(screen.getByText('Brush teeth')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('kid-task-check'));
+    });
+    await waitFor(() => expect(patchCalls.length).toBe(1));
+    expect(patchCalls[0]).toContain('/api/kid/tasks/t1');
+  });
+
   it('Switch user clears the kid token and returns to kid-login', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
