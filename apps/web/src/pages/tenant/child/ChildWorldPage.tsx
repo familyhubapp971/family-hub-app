@@ -164,14 +164,22 @@ export function ChildWorldPage() {
         onTabChange={setActiveTab}
         rightSlot={
           <div className="flex items-center gap-2">
-            {/* FHS-288 — the child's banked balance (stars + cash). */}
+            {/* FHS-288 — the child's banked balance (stars + cash). Always
+                visible: one compact combined badge on phones, two chips from sm. */}
             {balance && (
-              <div className="hidden items-center gap-2 sm:flex" data-testid="child-world-balance">
-                <span className="flex items-center gap-1 rounded-md border-2 border-black bg-yellow-300 px-2.5 py-1.5 text-sm font-bold text-black shadow-neo-sm">
+              <div className="flex items-center gap-2" data-testid="child-world-balance">
+                <span
+                  aria-label={`${balance.savedStickers} stars, ${balance.savedCash} cash`}
+                  className="flex items-center gap-1.5 rounded-md border-2 border-black bg-yellow-200 px-2 py-1.5 text-xs font-bold text-black shadow-neo-sm sm:hidden"
+                >
+                  <span aria-hidden="true">⭐ {balance.savedStickers}</span>
+                  <span aria-hidden="true">💰 {balance.savedCash}</span>
+                </span>
+                <span className="hidden items-center gap-1 rounded-md border-2 border-black bg-yellow-300 px-2.5 py-1.5 text-sm font-bold text-black shadow-neo-sm sm:flex">
                   <span aria-hidden="true">⭐</span>
                   <span aria-label="stars">{balance.savedStickers}</span>
                 </span>
-                <span className="flex items-center gap-1 rounded-md border-2 border-black bg-green-300 px-2.5 py-1.5 text-sm font-bold text-black shadow-neo-sm">
+                <span className="hidden items-center gap-1 rounded-md border-2 border-black bg-green-300 px-2.5 py-1.5 text-sm font-bold text-black shadow-neo-sm sm:flex">
                   <span aria-hidden="true">💰</span>
                   <span aria-label="cash">{balance.savedCash}</span>
                 </span>
@@ -196,6 +204,7 @@ export function ChildWorldPage() {
             <button
               type="button"
               onClick={onBack}
+              aria-label="Back to family"
               data-testid="child-world-back"
               className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-[#4a1578] px-3 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-[#5a1d8a] motion-safe:hover:-translate-y-0.5"
             >
@@ -205,6 +214,7 @@ export function ChildWorldPage() {
             <button
               type="button"
               onClick={() => void onLogout()}
+              aria-label="Log out"
               data-testid="child-world-logout"
               className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-white px-3 py-2 font-bold text-purple-900 shadow-neo-sm transition-transform hover:bg-red-50 motion-safe:hover:-translate-y-0.5"
             >

@@ -171,4 +171,58 @@ describe('<ChildWorldPage />', () => {
     });
     await waitFor(() => expect(screen.getByTestId('login-page')).toBeInTheDocument());
   });
+
+  it('hides the switcher when there is only one child', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/mw/financial/savings')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ savedStickers: 0, savedCash: 0 }),
+        });
+      }
+      if (u.includes('/api/members')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            callerRole: 'admin',
+            members: [{ id: MEMBER, displayName: 'Ali', avatarEmoji: '👦', isChild: true }],
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: [] }) });
+    });
+    renderAt();
+    await waitFor(() =>
+      expect(screen.getByTestId('child-world-name').textContent).toContain('Ali'),
+    );
+    expect(screen.queryByTestId('child-world-switcher')).not.toBeInTheDocument();
+  });
+
+  it('hides the balance chips when the savings fetch fails', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/mw/financial/savings')) {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+      }
+      if (u.includes('/api/members')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            callerRole: 'admin',
+            members: [{ id: MEMBER, displayName: 'Ali', avatarEmoji: '👦', isChild: true }],
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: [] }) });
+    });
+    renderAt();
+    await waitFor(() =>
+      expect(screen.getByTestId('child-world-name').textContent).toContain('Ali'),
+    );
+    expect(screen.queryByTestId('child-world-balance')).not.toBeInTheDocument();
+  });
 });
