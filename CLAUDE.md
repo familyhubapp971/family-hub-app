@@ -1087,8 +1087,9 @@ The rule (apply to every API ticket, every time):
   **generated from the live Hono route table** (FHS-356), so EVERY mounted
   endpoint is documented automatically — a new/removed route shows up in the
   regenerated spec with no manual list to maintain. A human-browsable **Swagger
-  UI** is served at **`/docs`** (and the raw spec at **`/openapi.json`**) when
-  `API_DOCS_ENABLED` is on (default).
+  UI** is served at **`/docs`** (raw spec at **`/openapi.json`**). Secure by
+  default: ON in dev/test/staging, **OFF in production** unless
+  `API_DOCS_ENABLED=true` is set (staging sets it explicitly).
 - **Enrich the contract.** Path + method coverage is automatic; the
   request/response **shape** comes from the handlers' own Zod schemas via the
   registry at `apps/api/src/openapi/registry.ts`. When you add or change an

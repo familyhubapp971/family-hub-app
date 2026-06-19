@@ -116,7 +116,13 @@ export function buildOpenApiSpec(app: Pick<Hono, 'routes'>): OpenApiSpec {
     }
 
     const isPublic = meta?.security === false || isPublicByPath(oaPath);
-    if (!isPublic) operation['security'] = [{ bearerAuth: [] }];
+    if (!isPublic) {
+      // /api/kid/* authenticate with the kid PIN session token, NOT the
+      // Supabase user JWT — document the right credential.
+      operation['security'] = oaPath.startsWith('/api/kid')
+        ? [{ kidAuth: [] }]
+        : [{ bearerAuth: [] }];
+    }
 
     if (meta?.request) {
       operation['requestBody'] = {
@@ -150,7 +156,18 @@ export function buildOpenApiSpec(app: Pick<Hono, 'routes'>): OpenApiSpec {
     tags: [...tags].sort().map((name) => ({ name })),
     components: {
       securitySchemes: {
-        bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Supabase user JWT (parent / adult sign-in).',
+        },
+        kidAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'kid-JWT',
+          description: 'Kid PIN session token from POST /api/auth/kid-pin.',
+        },
       },
     },
     paths: Object.fromEntries(Object.entries(paths).sort(([a], [b]) => a.localeCompare(b))),

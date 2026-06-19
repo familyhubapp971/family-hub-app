@@ -84,7 +84,14 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "JWT"
+        "bearerFormat": "JWT",
+        "description": "Supabase user JWT (parent / adult sign-in)."
+      },
+      "kidAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "kid-JWT",
+        "description": "Kid PIN session token from POST /api/auth/kid-pin."
       }
     }
   },
@@ -756,7 +763,7 @@
         "operationId": "get_api_kid_me",
         "security": [
           {
-            "bearerAuth": []
+            "kidAuth": []
           }
         ],
         "responses": {
@@ -796,7 +803,7 @@
         "operationId": "get_api_kid_notices",
         "security": [
           {
-            "bearerAuth": []
+            "kidAuth": []
           }
         ],
         "responses": {
@@ -869,7 +876,7 @@
         "operationId": "get_api_kid_tasks",
         "security": [
           {
-            "bearerAuth": []
+            "kidAuth": []
           }
         ],
         "responses": {
@@ -941,7 +948,7 @@
         ],
         "security": [
           {
-            "bearerAuth": []
+            "kidAuth": []
           }
         ],
         "responses": {
@@ -958,7 +965,7 @@
         "operationId": "get_api_kid_today",
         "security": [
           {
-            "bearerAuth": []
+            "kidAuth": []
           }
         ],
         "responses": {

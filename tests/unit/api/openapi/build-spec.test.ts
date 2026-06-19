@@ -41,6 +41,10 @@ describe('FHS-356 — OpenAPI spec from the live route table', () => {
     expect((spec.paths['/api/members']?.['get'] as Record<string, unknown>)['security']).toEqual([
       { bearerAuth: [] },
     ]);
+    // /api/kid/* use the kid PIN token, not the Supabase JWT.
+    expect((spec.paths['/api/kid/today']?.['get'] as Record<string, unknown>)['security']).toEqual([
+      { kidAuth: [] },
+    ]);
   });
 
   it('attaches the real request + response schemas on documented endpoints', () => {
