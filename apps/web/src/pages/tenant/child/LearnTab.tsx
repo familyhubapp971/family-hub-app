@@ -4,6 +4,11 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 import { WorldFlags } from './learn/world-flags/WorldFlags';
+import { LessonView } from './LessonView';
+
+// Subjects with an interactive lesson (FHS-283). Must match the API's
+// LESSON_SUBJECTS. World Flags + Reading have their own experiences.
+const LESSON_SUBJECTS = ['Maths', 'Science', 'Logic'];
 
 // Learn Phase 1 — ChildWorld Learn tab.
 //
@@ -210,6 +215,8 @@ export function LearnTab({ memberId }: { memberId: string }) {
 
         {selectedSubject === 'World Flags' ? (
           <WorldFlags memberId={memberId} />
+        ) : LESSON_SUBJECTS.includes(selectedSubject) ? (
+          <LessonView subject={selectedSubject} memberId={memberId} headers={headers} />
         ) : (
           /* Coming soon card for subjects not yet built */
           <div className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm">
