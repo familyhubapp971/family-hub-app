@@ -2,6 +2,7 @@ export { Button } from './Button';
 export { Card } from './Card';
 export { Input, Textarea } from './Input';
 export { Select } from './Select';
+export { Dropdown, type DropdownOption, type DropdownProps } from './Dropdown';
 export { Badge } from './Badge';
 export { Dialog } from './Dialog';
 export { ConfirmDialog } from './ConfirmDialog';
