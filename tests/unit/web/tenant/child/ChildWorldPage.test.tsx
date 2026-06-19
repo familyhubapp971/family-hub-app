@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 
 // FHS-268 — ChildWorld shell: five tabs (My World active, the rest
 // placeholders) + a "Back to family" button.
@@ -11,21 +11,36 @@ const authState: { session: { access_token?: string } | null } = {
 };
 vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
+  signOutAll: vi.fn(async () => ({ error: null })),
 }));
 
 import { ChildWorldPage } from '../../../../../apps/web/src/pages/tenant/child/ChildWorldPage';
 import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
 
 const MEMBER = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const SIBLING = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 
 function installApi() {
   fetchMock.mockImplementation((url: string) => {
     const u = String(url);
+    if (u.includes('/api/mw/financial/savings')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ savedStickers: 12, savedCash: 5 }),
+      });
+    }
     if (u.includes('/api/members')) {
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: async () => ({ members: [{ id: MEMBER, displayName: 'Ali', avatarEmoji: '👦' }] }),
+        json: async () => ({
+          callerRole: 'admin',
+          members: [
+            { id: MEMBER, displayName: 'Ali', avatarEmoji: '👦', isChild: true },
+            { id: SIBLING, displayName: 'Sara', avatarEmoji: '👧', isChild: true },
+          ],
+        }),
       });
     }
     if (u.includes('/api/rewards')) {
@@ -58,9 +73,15 @@ function installApi() {
   });
 }
 
+function LocationProbe() {
+  const loc = useLocation();
+  return <div data-testid="location">{loc.pathname}</div>;
+}
+
 function renderAt() {
   return render(
     <MemoryRouter initialEntries={['/t/khan/child/' + MEMBER]}>
+      <LocationProbe />
       <Routes>
         <Route
           path="/t/:slug/child/:memberId"
@@ -71,6 +92,7 @@ function renderAt() {
           }
         />
         <Route path="/t/:slug/dashboard" element={<div data-testid="dashboard-page">DASH</div>} />
+        <Route path="/login" element={<div data-testid="login-page">LOGIN</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -118,5 +140,35 @@ describe('<ChildWorldPage />', () => {
       fireEvent.click(screen.getByTestId('child-world-back'));
     });
     await waitFor(() => expect(screen.getByTestId('dashboard-page')).toBeInTheDocument());
+  });
+
+  // FHS-288 — header: balance chips, switch-child, logout.
+  it("shows the child's stars + cash balance in the header", async () => {
+    renderAt();
+    const chips = await screen.findByTestId('child-world-balance');
+    expect(chips).toHaveTextContent('12'); // stars
+    expect(chips).toHaveTextContent('5'); // cash
+  });
+
+  it('switch-child navigates to the sibling world', async () => {
+    renderAt();
+    const switcher = (await screen.findByTestId('child-world-switcher')) as HTMLSelectElement;
+    // Both children are listed.
+    expect(switcher.querySelectorAll('option')).toHaveLength(2);
+    await act(async () => {
+      fireEvent.change(switcher, { target: { value: SIBLING } });
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId('location').textContent).toBe(`/t/khan/child/${SIBLING}`),
+    );
+  });
+
+  it('logout signs out and lands on /login', async () => {
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('child-world-logout')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('child-world-logout'));
+    });
+    await waitFor(() => expect(screen.getByTestId('login-page')).toBeInTheDocument());
   });
 });
