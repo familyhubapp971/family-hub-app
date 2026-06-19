@@ -26,6 +26,12 @@ const configSchema = z
       .string()
       .default('false')
       .transform((v) => ['true', '1', 'yes', 'on'].includes(v.trim().toLowerCase())),
+    // FHS-356 — serve the OpenAPI spec (/openapi.json) + Swagger UI (/docs).
+    // On by default; set API_DOCS_ENABLED=false to hide them in a locked-down env.
+    API_DOCS_ENABLED: z
+      .string()
+      .default('true')
+      .transform((v) => ['true', '1', 'yes', 'on'].includes(v.trim().toLowerCase())),
     // Sentry — empty DSN = silent no-op, fine for dev / when account
     // not yet provisioned. SENTRY_RELEASE is the git SHA, set by CI/Railway.
     SENTRY_DSN_API: z.string().default(''),
