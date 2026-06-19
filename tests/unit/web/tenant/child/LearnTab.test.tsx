@@ -300,7 +300,7 @@ describe('World Flags subject routing', () => {
     expect(screen.queryByTestId('world-flashcard')).not.toBeInTheDocument();
   });
 
-  it('non-World Flags subject shows coming soon', async () => {
+  it('a lesson subject (Maths) opens the interactive lesson (FHS-283)', async () => {
     installDefault([{ subject: 'Maths', progress: 20 }], []);
     renderTab();
     await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
@@ -308,7 +308,8 @@ describe('World Flags subject routing', () => {
       fireEvent.click(screen.getByTestId('learn-subject-maths'));
     });
     await waitFor(() => expect(screen.getByTestId('learn-back')).toBeInTheDocument());
-    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
+    expect(screen.getByTestId('lesson-view')).toBeInTheDocument();
+    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
   });
 });
 
