@@ -98,7 +98,9 @@
   "paths": {
     "/api/admin/settings": {
       "get": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "summary": "Get /api/admin/settings",
         "operationId": "get_api_admin_settings",
         "security": [
@@ -115,7 +117,9 @@
     },
     "/api/admin/settings/{key}": {
       "put": {
-        "tags": ["admin"],
+        "tags": [
+          "admin"
+        ],
         "summary": "Replace /api/admin/settings/{key}",
         "operationId": "put_api_admin_settings_key",
         "parameters": [
@@ -142,7 +146,9 @@
     },
     "/api/assignments": {
       "get": {
-        "tags": ["assignments"],
+        "tags": [
+          "assignments"
+        ],
         "summary": "Get /api/assignments",
         "operationId": "get_api_assignments",
         "security": [
@@ -157,7 +163,9 @@
         }
       },
       "post": {
-        "tags": ["assignments"],
+        "tags": [
+          "assignments"
+        ],
         "summary": "Create /api/assignments",
         "operationId": "post_api_assignments",
         "security": [
@@ -174,7 +182,9 @@
     },
     "/api/assignments/{id}": {
       "patch": {
-        "tags": ["assignments"],
+        "tags": [
+          "assignments"
+        ],
         "summary": "Update /api/assignments/{id}",
         "operationId": "patch_api_assignments_id",
         "parameters": [
@@ -199,7 +209,9 @@
         }
       },
       "put": {
-        "tags": ["assignments"],
+        "tags": [
+          "assignments"
+        ],
         "summary": "Replace /api/assignments/{id}",
         "operationId": "put_api_assignments_id",
         "parameters": [
@@ -226,7 +238,9 @@
     },
     "/api/auth/kid-pin": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "summary": "Exchange a kid PIN for a kid session token",
         "operationId": "post_api_auth_kid_pin",
         "requestBody": {
@@ -251,7 +265,11 @@
                     "pattern": "^\\d{4}$"
                   }
                 },
-                "required": ["tenantSlug", "memberId", "pin"],
+                "required": [
+                  "tenantSlug",
+                  "memberId",
+                  "pin"
+                ],
                 "additionalProperties": false
               }
             }
@@ -290,7 +308,13 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "displayName", "avatarEmoji", "tenantId", "tenantSlug"],
+                      "required": [
+                        "id",
+                        "displayName",
+                        "avatarEmoji",
+                        "tenantId",
+                        "tenantSlug"
+                      ],
                       "additionalProperties": false
                     },
                     "expiresAt": {
@@ -298,7 +322,11 @@
                       "format": "date-time"
                     }
                   },
-                  "required": ["token", "member", "expiresAt"],
+                  "required": [
+                    "token",
+                    "member",
+                    "expiresAt"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -309,7 +337,9 @@
     },
     "/api/dashboard/today": {
       "get": {
-        "tags": ["dashboard"],
+        "tags": [
+          "dashboard"
+        ],
         "summary": "Get /api/dashboard/today",
         "operationId": "get_api_dashboard_today",
         "security": [
@@ -326,7 +356,9 @@
     },
     "/api/events": {
       "get": {
-        "tags": ["events"],
+        "tags": [
+          "events"
+        ],
         "summary": "Get /api/events",
         "operationId": "get_api_events",
         "security": [
@@ -341,7 +373,9 @@
         }
       },
       "post": {
-        "tags": ["events"],
+        "tags": [
+          "events"
+        ],
         "summary": "Create /api/events",
         "operationId": "post_api_events",
         "security": [
@@ -358,7 +392,9 @@
     },
     "/api/events/{id}": {
       "delete": {
-        "tags": ["events"],
+        "tags": [
+          "events"
+        ],
         "summary": "Delete /api/events/{id}",
         "operationId": "delete_api_events_id",
         "parameters": [
@@ -383,7 +419,9 @@
         }
       },
       "put": {
-        "tags": ["events"],
+        "tags": [
+          "events"
+        ],
         "summary": "Replace /api/events/{id}",
         "operationId": "put_api_events_id",
         "parameters": [
@@ -410,7 +448,9 @@
     },
     "/api/habits": {
       "get": {
-        "tags": ["habits"],
+        "tags": [
+          "habits"
+        ],
         "summary": "Get /api/habits",
         "operationId": "get_api_habits",
         "security": [
@@ -425,7 +465,9 @@
         }
       },
       "post": {
-        "tags": ["habits"],
+        "tags": [
+          "habits"
+        ],
         "summary": "Create /api/habits",
         "operationId": "post_api_habits",
         "security": [
@@ -442,7 +484,9 @@
     },
     "/api/habits/{id}": {
       "delete": {
-        "tags": ["habits"],
+        "tags": [
+          "habits"
+        ],
         "summary": "Delete /api/habits/{id}",
         "operationId": "delete_api_habits_id",
         "parameters": [
@@ -467,7 +511,9 @@
         }
       },
       "put": {
-        "tags": ["habits"],
+        "tags": [
+          "habits"
+        ],
         "summary": "Replace /api/habits/{id}",
         "operationId": "put_api_habits_id",
         "parameters": [
@@ -494,7 +540,9 @@
     },
     "/api/habits/{id}/stickers": {
       "delete": {
-        "tags": ["habits"],
+        "tags": [
+          "habits"
+        ],
         "summary": "Delete /api/habits/{id}/stickers",
         "operationId": "delete_api_habits_id_stickers",
         "parameters": [
@@ -519,7 +567,9 @@
         }
       },
       "post": {
-        "tags": ["habits"],
+        "tags": [
+          "habits"
+        ],
         "summary": "Create /api/habits/{id}/stickers",
         "operationId": "post_api_habits_id_stickers",
         "parameters": [
@@ -546,7 +596,9 @@
     },
     "/api/invitations": {
       "post": {
-        "tags": ["invitations"],
+        "tags": [
+          "invitations"
+        ],
         "summary": "Invite someone to the family",
         "operationId": "post_api_invitations",
         "security": [
@@ -568,7 +620,11 @@
                   },
                   "role": {
                     "type": "string",
-                    "enum": ["adult", "teen", "guest"],
+                    "enum": [
+                      "adult",
+                      "teen",
+                      "guest"
+                    ],
                     "default": "adult"
                   },
                   "displayName": {
@@ -577,7 +633,9 @@
                     "maxLength": 80
                   }
                 },
-                "required": ["email"],
+                "required": [
+                  "email"
+                ],
                 "additionalProperties": false
               }
             }
@@ -616,11 +674,20 @@
                           "format": "date-time"
                         }
                       },
-                      "required": ["id", "tenantId", "email", "role", "status", "createdAt"],
+                      "required": [
+                        "id",
+                        "tenantId",
+                        "email",
+                        "role",
+                        "status",
+                        "createdAt"
+                      ],
                       "additionalProperties": false
                     }
                   },
-                  "required": ["invitation"],
+                  "required": [
+                    "invitation"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -631,7 +698,9 @@
     },
     "/api/invitations/{id}/resend": {
       "post": {
-        "tags": ["invitations"],
+        "tags": [
+          "invitations"
+        ],
         "summary": "Create /api/invitations/{id}/resend",
         "operationId": "post_api_invitations_id_resend",
         "parameters": [
@@ -658,7 +727,9 @@
     },
     "/api/invitations/claim": {
       "post": {
-        "tags": ["invitations"],
+        "tags": [
+          "invitations"
+        ],
         "summary": "Claim invites addressed to my email",
         "operationId": "post_api_invitations_claim",
         "security": [
@@ -675,7 +746,9 @@
     },
     "/api/journal": {
       "get": {
-        "tags": ["journal"],
+        "tags": [
+          "journal"
+        ],
         "summary": "Get /api/journal",
         "operationId": "get_api_journal",
         "security": [
@@ -690,7 +763,9 @@
         }
       },
       "put": {
-        "tags": ["journal"],
+        "tags": [
+          "journal"
+        ],
         "summary": "Replace /api/journal",
         "operationId": "put_api_journal",
         "security": [
@@ -707,7 +782,9 @@
     },
     "/api/journal/content": {
       "get": {
-        "tags": ["journal"],
+        "tags": [
+          "journal"
+        ],
         "summary": "Get /api/journal/content",
         "operationId": "get_api_journal_content",
         "security": [
@@ -724,7 +801,9 @@
     },
     "/api/journal/earliest": {
       "get": {
-        "tags": ["journal"],
+        "tags": [
+          "journal"
+        ],
         "summary": "Get /api/journal/earliest",
         "operationId": "get_api_journal_earliest",
         "security": [
@@ -741,7 +820,9 @@
     },
     "/api/journal/entries": {
       "get": {
-        "tags": ["journal"],
+        "tags": [
+          "journal"
+        ],
         "summary": "Get /api/journal/entries",
         "operationId": "get_api_journal_entries",
         "security": [
@@ -758,7 +839,9 @@
     },
     "/api/kid/me": {
       "get": {
-        "tags": ["kid"],
+        "tags": [
+          "kid"
+        ],
         "summary": "The logged-in kid (token claims)",
         "operationId": "get_api_kid_me",
         "security": [
@@ -787,7 +870,11 @@
                       "minLength": 1
                     }
                   },
-                  "required": ["memberId", "tenantId", "tenantSlug"],
+                  "required": [
+                    "memberId",
+                    "tenantId",
+                    "tenantSlug"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -798,7 +885,9 @@
     },
     "/api/kid/notices": {
       "get": {
-        "tags": ["kid"],
+        "tags": [
+          "kid"
+        ],
         "summary": "The kid's family noticeboard",
         "operationId": "get_api_kid_notices",
         "security": [
@@ -860,7 +949,9 @@
                       }
                     }
                   },
-                  "required": ["notices"],
+                  "required": [
+                    "notices"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -871,7 +962,9 @@
     },
     "/api/kid/tasks": {
       "get": {
-        "tags": ["kid"],
+        "tags": [
+          "kid"
+        ],
         "summary": "The kid's own tasks",
         "operationId": "get_api_kid_tasks",
         "security": [
@@ -917,12 +1010,21 @@
                             "nullable": true
                           }
                         },
-                        "required": ["id", "title", "dueDate", "memberId", "done", "doneAt"],
+                        "required": [
+                          "id",
+                          "title",
+                          "dueDate",
+                          "memberId",
+                          "done",
+                          "doneAt"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["tasks"],
+                  "required": [
+                    "tasks"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -933,7 +1035,9 @@
     },
     "/api/kid/tasks/{id}": {
       "patch": {
-        "tags": ["kid"],
+        "tags": [
+          "kid"
+        ],
         "summary": "Update /api/kid/tasks/{id}",
         "operationId": "patch_api_kid_tasks_id",
         "parameters": [
@@ -960,7 +1064,9 @@
     },
     "/api/kid/today": {
       "get": {
-        "tags": ["kid"],
+        "tags": [
+          "kid"
+        ],
         "summary": "The kid's own habits for today",
         "operationId": "get_api_kid_today",
         "security": [
@@ -996,12 +1102,19 @@
                             "type": "string"
                           }
                         },
-                        "required": ["id", "name", "icon", "color"],
+                        "required": [
+                          "id",
+                          "name",
+                          "icon",
+                          "color"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["habits"],
+                  "required": [
+                    "habits"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1012,7 +1125,9 @@
     },
     "/api/learn": {
       "get": {
-        "tags": ["learn"],
+        "tags": [
+          "learn"
+        ],
         "summary": "Get /api/learn",
         "operationId": "get_api_learn",
         "security": [
@@ -1029,7 +1144,9 @@
     },
     "/api/learn/{subject}": {
       "patch": {
-        "tags": ["learn"],
+        "tags": [
+          "learn"
+        ],
         "summary": "Update /api/learn/{subject}",
         "operationId": "patch_api_learn_subject",
         "parameters": [
@@ -1056,7 +1173,9 @@
     },
     "/api/me": {
       "get": {
-        "tags": ["me"],
+        "tags": [
+          "me"
+        ],
         "summary": "The signed-in user + their families",
         "operationId": "get_api_me",
         "security": [
@@ -1106,12 +1225,23 @@
                             "type": "boolean"
                           }
                         },
-                        "required": ["id", "slug", "name", "role", "onboardingCompleted"],
+                        "required": [
+                          "id",
+                          "slug",
+                          "name",
+                          "role",
+                          "onboardingCompleted"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["id", "email", "createdAt", "tenants"],
+                  "required": [
+                    "id",
+                    "email",
+                    "createdAt",
+                    "tenants"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1122,7 +1252,9 @@
     },
     "/api/meals": {
       "get": {
-        "tags": ["meals"],
+        "tags": [
+          "meals"
+        ],
         "summary": "Get /api/meals",
         "operationId": "get_api_meals",
         "security": [
@@ -1137,7 +1269,9 @@
         }
       },
       "post": {
-        "tags": ["meals"],
+        "tags": [
+          "meals"
+        ],
         "summary": "Create /api/meals",
         "operationId": "post_api_meals",
         "security": [
@@ -1154,7 +1288,9 @@
     },
     "/api/members": {
       "get": {
-        "tags": ["members"],
+        "tags": [
+          "members"
+        ],
         "summary": "List family members",
         "operationId": "get_api_members",
         "security": [
@@ -1191,7 +1327,10 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["active", "unclaimed"]
+                            "enum": [
+                              "active",
+                              "unclaimed"
+                            ]
                           },
                           "createdAt": {
                             "type": "string",
@@ -1237,7 +1376,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["members", "callerRole"],
+                  "required": [
+                    "members",
+                    "callerRole"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1246,7 +1388,9 @@
         }
       },
       "post": {
-        "tags": ["members"],
+        "tags": [
+          "members"
+        ],
         "summary": "Create /api/members",
         "operationId": "post_api_members",
         "security": [
@@ -1263,7 +1407,9 @@
     },
     "/api/members/{id}": {
       "delete": {
-        "tags": ["members"],
+        "tags": [
+          "members"
+        ],
         "summary": "Delete /api/members/{id}",
         "operationId": "delete_api_members_id",
         "parameters": [
@@ -1288,7 +1434,9 @@
         }
       },
       "patch": {
-        "tags": ["members"],
+        "tags": [
+          "members"
+        ],
         "summary": "Update /api/members/{id}",
         "operationId": "patch_api_members_id",
         "parameters": [
@@ -1315,7 +1463,9 @@
     },
     "/api/members/{id}/pin": {
       "delete": {
-        "tags": ["members"],
+        "tags": [
+          "members"
+        ],
         "summary": "Delete /api/members/{id}/pin",
         "operationId": "delete_api_members_id_pin",
         "parameters": [
@@ -1340,7 +1490,9 @@
         }
       },
       "put": {
-        "tags": ["members"],
+        "tags": [
+          "members"
+        ],
         "summary": "Set a kid member's login PIN",
         "operationId": "put_api_members_id_pin",
         "parameters": [
@@ -1383,11 +1535,18 @@
                           "type": "boolean"
                         }
                       },
-                      "required": ["id", "displayName", "isChild", "hasPin"],
+                      "required": [
+                        "id",
+                        "displayName",
+                        "isChild",
+                        "hasPin"
+                      ],
                       "additionalProperties": false
                     }
                   },
-                  "required": ["member"],
+                  "required": [
+                    "member"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1398,7 +1557,9 @@
     },
     "/api/mw/analytics": {
       "get": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Get /api/mw/analytics",
         "operationId": "get_api_mw_analytics",
         "security": [
@@ -1415,7 +1576,9 @@
     },
     "/api/mw/financial/investments": {
       "get": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Get /api/mw/financial/investments",
         "operationId": "get_api_mw_financial_investments",
         "security": [
@@ -1430,7 +1593,9 @@
         }
       },
       "post": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Create /api/mw/financial/investments",
         "operationId": "post_api_mw_financial_investments",
         "security": [
@@ -1447,7 +1612,9 @@
     },
     "/api/mw/financial/investments/{id}/withdraw": {
       "post": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Create /api/mw/financial/investments/{id}/withdraw",
         "operationId": "post_api_mw_financial_investments_id_withdraw",
         "parameters": [
@@ -1474,7 +1641,9 @@
     },
     "/api/mw/financial/savings": {
       "get": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Get /api/mw/financial/savings",
         "operationId": "get_api_mw_financial_savings",
         "security": [
@@ -1489,7 +1658,9 @@
         }
       },
       "post": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Create /api/mw/financial/savings",
         "operationId": "post_api_mw_financial_savings",
         "security": [
@@ -1506,7 +1677,9 @@
     },
     "/api/mw/financial/savings/admin-set": {
       "put": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Replace /api/mw/financial/savings/admin-set",
         "operationId": "put_api_mw_financial_savings_admin_set",
         "security": [
@@ -1523,7 +1696,9 @@
     },
     "/api/mw/financial/savings/cashout": {
       "post": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Create /api/mw/financial/savings/cashout",
         "operationId": "post_api_mw_financial_savings_cashout",
         "security": [
@@ -1540,7 +1715,9 @@
     },
     "/api/mw/weeks": {
       "get": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Get /api/mw/weeks",
         "operationId": "get_api_mw_weeks",
         "security": [
@@ -1557,7 +1734,9 @@
     },
     "/api/mw/weeks/{id}/actions": {
       "get": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Get /api/mw/weeks/{id}/actions",
         "operationId": "get_api_mw_weeks_id_actions",
         "parameters": [
@@ -1584,7 +1763,9 @@
     },
     "/api/mw/weeks/{id}/cash": {
       "put": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Replace /api/mw/weeks/{id}/cash",
         "operationId": "put_api_mw_weeks_id_cash",
         "parameters": [
@@ -1611,7 +1792,9 @@
     },
     "/api/mw/weeks/{id}/finalize": {
       "post": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Create /api/mw/weeks/{id}/finalize",
         "operationId": "post_api_mw_weeks_id_finalize",
         "parameters": [
@@ -1638,7 +1821,9 @@
     },
     "/api/mw/weeks/{id}/reopen": {
       "post": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Create /api/mw/weeks/{id}/reopen",
         "operationId": "post_api_mw_weeks_id_reopen",
         "parameters": [
@@ -1665,7 +1850,9 @@
     },
     "/api/mw/weeks/{id}/repair": {
       "post": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Create /api/mw/weeks/{id}/repair",
         "operationId": "post_api_mw_weeks_id_repair",
         "parameters": [
@@ -1692,7 +1879,9 @@
     },
     "/api/mw/weeks/{id}/stats": {
       "get": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Get /api/mw/weeks/{id}/stats",
         "operationId": "get_api_mw_weeks_id_stats",
         "parameters": [
@@ -1719,7 +1908,9 @@
     },
     "/api/mw/weeks/current": {
       "get": {
-        "tags": ["my-world"],
+        "tags": [
+          "my-world"
+        ],
         "summary": "Get /api/mw/weeks/current",
         "operationId": "get_api_mw_weeks_current",
         "security": [
@@ -1736,7 +1927,9 @@
     },
     "/api/notices": {
       "get": {
-        "tags": ["notices"],
+        "tags": [
+          "notices"
+        ],
         "summary": "The family noticeboard",
         "operationId": "get_api_notices",
         "security": [
@@ -1798,7 +1991,9 @@
                       }
                     }
                   },
-                  "required": ["notices"],
+                  "required": [
+                    "notices"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1807,7 +2002,9 @@
         }
       },
       "post": {
-        "tags": ["notices"],
+        "tags": [
+          "notices"
+        ],
         "summary": "Create /api/notices",
         "operationId": "post_api_notices",
         "security": [
@@ -1824,7 +2021,9 @@
     },
     "/api/notices/{id}": {
       "delete": {
-        "tags": ["notices"],
+        "tags": [
+          "notices"
+        ],
         "summary": "Delete /api/notices/{id}",
         "operationId": "delete_api_notices_id",
         "parameters": [
@@ -1849,7 +2048,9 @@
         }
       },
       "put": {
-        "tags": ["notices"],
+        "tags": [
+          "notices"
+        ],
         "summary": "Replace /api/notices/{id}",
         "operationId": "put_api_notices_id",
         "parameters": [
@@ -1876,7 +2077,9 @@
     },
     "/api/onboarding/complete": {
       "post": {
-        "tags": ["onboarding"],
+        "tags": [
+          "onboarding"
+        ],
         "summary": "Create /api/onboarding/complete",
         "operationId": "post_api_onboarding_complete",
         "security": [
@@ -1893,7 +2096,9 @@
     },
     "/api/public/kid-members/{slug}": {
       "get": {
-        "tags": ["public"],
+        "tags": [
+          "public"
+        ],
         "summary": "List a family's kids who can log in with a PIN",
         "operationId": "get_api_public_kid_members_slug",
         "parameters": [
@@ -1924,7 +2129,10 @@
                           "type": "string"
                         }
                       },
-                      "required": ["slug", "name"],
+                      "required": [
+                        "slug",
+                        "name"
+                      ],
                       "additionalProperties": false
                     },
                     "kids": {
@@ -1944,12 +2152,19 @@
                             "nullable": true
                           }
                         },
-                        "required": ["id", "displayName", "avatarEmoji"],
+                        "required": [
+                          "id",
+                          "displayName",
+                          "avatarEmoji"
+                        ],
                         "additionalProperties": false
                       }
                     }
                   },
-                  "required": ["family", "kids"],
+                  "required": [
+                    "family",
+                    "kids"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1960,7 +2175,9 @@
     },
     "/api/public/slug-available": {
       "get": {
-        "tags": ["public"],
+        "tags": [
+          "public"
+        ],
         "summary": "Check if a family URL slug is free",
         "operationId": "get_api_public_slug_available",
         "responses": {
@@ -1984,7 +2201,11 @@
                       }
                     }
                   },
-                  "required": ["slug", "available", "suggestions"],
+                  "required": [
+                    "slug",
+                    "available",
+                    "suggestions"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -1995,7 +2216,9 @@
     },
     "/api/public/tenant": {
       "post": {
-        "tags": ["public"],
+        "tags": [
+          "public"
+        ],
         "summary": "Create a family (sign-up onboarding)",
         "operationId": "post_api_public_tenant",
         "requestBody": {
@@ -2022,7 +2245,11 @@
                     "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
                   }
                 },
-                "required": ["familyName", "displayName", "slug"],
+                "required": [
+                  "familyName",
+                  "displayName",
+                  "slug"
+                ],
                 "additionalProperties": false
               }
             }
@@ -2054,7 +2281,12 @@
                           "format": "date-time"
                         }
                       },
-                      "required": ["id", "slug", "name", "createdAt"],
+                      "required": [
+                        "id",
+                        "slug",
+                        "name",
+                        "createdAt"
+                      ],
                       "additionalProperties": false
                     },
                     "member": {
@@ -2075,11 +2307,19 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "tenantId", "displayName", "role"],
+                      "required": [
+                        "id",
+                        "tenantId",
+                        "displayName",
+                        "role"
+                      ],
                       "additionalProperties": false
                     }
                   },
-                  "required": ["tenant", "member"],
+                  "required": [
+                    "tenant",
+                    "member"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -2090,7 +2330,9 @@
     },
     "/api/reading-log": {
       "get": {
-        "tags": ["reading-log"],
+        "tags": [
+          "reading-log"
+        ],
         "summary": "Get /api/reading-log",
         "operationId": "get_api_reading_log",
         "security": [
@@ -2105,7 +2347,9 @@
         }
       },
       "post": {
-        "tags": ["reading-log"],
+        "tags": [
+          "reading-log"
+        ],
         "summary": "Create /api/reading-log",
         "operationId": "post_api_reading_log",
         "security": [
@@ -2122,7 +2366,9 @@
     },
     "/api/reading-log/{id}": {
       "delete": {
-        "tags": ["reading-log"],
+        "tags": [
+          "reading-log"
+        ],
         "summary": "Delete /api/reading-log/{id}",
         "operationId": "delete_api_reading_log_id",
         "parameters": [
@@ -2147,7 +2393,9 @@
         }
       },
       "patch": {
-        "tags": ["reading-log"],
+        "tags": [
+          "reading-log"
+        ],
         "summary": "Update /api/reading-log/{id}",
         "operationId": "patch_api_reading_log_id",
         "parameters": [
@@ -2174,7 +2422,9 @@
     },
     "/api/rewards": {
       "get": {
-        "tags": ["rewards"],
+        "tags": [
+          "rewards"
+        ],
         "summary": "Get /api/rewards",
         "operationId": "get_api_rewards",
         "security": [
@@ -2191,7 +2441,9 @@
     },
     "/api/rewards/{id}/redeem": {
       "post": {
-        "tags": ["rewards"],
+        "tags": [
+          "rewards"
+        ],
         "summary": "Create /api/rewards/{id}/redeem",
         "operationId": "post_api_rewards_id_redeem",
         "parameters": [
@@ -2218,7 +2470,9 @@
     },
     "/api/tasks": {
       "get": {
-        "tags": ["tasks"],
+        "tags": [
+          "tasks"
+        ],
         "summary": "List tasks",
         "operationId": "get_api_tasks",
         "security": [
@@ -2264,7 +2518,14 @@
                             "nullable": true
                           }
                         },
-                        "required": ["id", "title", "dueDate", "memberId", "done", "doneAt"],
+                        "required": [
+                          "id",
+                          "title",
+                          "dueDate",
+                          "memberId",
+                          "done",
+                          "doneAt"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -2273,7 +2534,10 @@
                       "format": "uuid"
                     }
                   },
-                  "required": ["tasks", "callerMemberId"],
+                  "required": [
+                    "tasks",
+                    "callerMemberId"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -2282,7 +2546,9 @@
         }
       },
       "post": {
-        "tags": ["tasks"],
+        "tags": [
+          "tasks"
+        ],
         "summary": "Create /api/tasks",
         "operationId": "post_api_tasks",
         "security": [
@@ -2299,7 +2565,9 @@
     },
     "/api/tasks/{id}": {
       "delete": {
-        "tags": ["tasks"],
+        "tags": [
+          "tasks"
+        ],
         "summary": "Delete /api/tasks/{id}",
         "operationId": "delete_api_tasks_id",
         "parameters": [
@@ -2324,7 +2592,9 @@
         }
       },
       "patch": {
-        "tags": ["tasks"],
+        "tags": [
+          "tasks"
+        ],
         "summary": "Update /api/tasks/{id}",
         "operationId": "patch_api_tasks_id",
         "parameters": [
@@ -2349,7 +2619,9 @@
         }
       },
       "put": {
-        "tags": ["tasks"],
+        "tags": [
+          "tasks"
+        ],
         "summary": "Replace /api/tasks/{id}",
         "operationId": "put_api_tasks_id",
         "parameters": [
@@ -2376,7 +2648,9 @@
     },
     "/api/world-flags": {
       "get": {
-        "tags": ["world-flags"],
+        "tags": [
+          "world-flags"
+        ],
         "summary": "Get /api/world-flags",
         "operationId": "get_api_world_flags",
         "security": [
@@ -2393,7 +2667,9 @@
     },
     "/api/world-flags/explore": {
       "post": {
-        "tags": ["world-flags"],
+        "tags": [
+          "world-flags"
+        ],
         "summary": "Create /api/world-flags/explore",
         "operationId": "post_api_world_flags_explore",
         "security": [
@@ -2410,7 +2686,9 @@
     },
     "/api/world-flags/learn": {
       "get": {
-        "tags": ["world-flags"],
+        "tags": [
+          "world-flags"
+        ],
         "summary": "Get /api/world-flags/learn",
         "operationId": "get_api_world_flags_learn",
         "security": [
@@ -2427,7 +2705,9 @@
     },
     "/api/world-flags/learn-complete": {
       "post": {
-        "tags": ["world-flags"],
+        "tags": [
+          "world-flags"
+        ],
         "summary": "Create /api/world-flags/learn-complete",
         "operationId": "post_api_world_flags_learn_complete",
         "security": [
@@ -2444,7 +2724,9 @@
     },
     "/health": {
       "get": {
-        "tags": ["system"],
+        "tags": [
+          "system"
+        ],
         "summary": "Liveness probe",
         "operationId": "get_health",
         "responses": {
@@ -2456,7 +2738,9 @@
     },
     "/hello": {
       "get": {
-        "tags": ["system"],
+        "tags": [
+          "system"
+        ],
         "summary": "Hello sanity check",
         "operationId": "get_hello",
         "responses": {
