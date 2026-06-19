@@ -18,7 +18,7 @@ import {
   FloatingDecorations,
   type FloatingDecoration,
 } from '@familyhub/ui';
-import { useAuth, signOutAll, KID_TOKEN_STORAGE_KEY } from '../../lib/auth-context';
+import { useAuth, signOutAll, getKidToken } from '../../lib/auth-context';
 import { API_BASE } from '../../lib/api';
 
 // Hero copy rotates between four ad pitches every 5 seconds, each
@@ -178,11 +178,9 @@ export function WelcomePage() {
   // FHS-358 — the homepage reflects logged-in state. An adult is logged in via
   // the Supabase session; a kid via the fh.kid.token (no Supabase session).
   const { session } = useAuth();
-  const kidToken = useMemo(
-    () =>
-      typeof localStorage !== 'undefined' ? localStorage.getItem(KID_TOKEN_STORAGE_KEY) : null,
-    [],
-  );
+  // getKidToken validates the JWT's expiry (and drops it if stale), so an
+  // expired kid session doesn't wrongly show the logged-in homepage.
+  const kidToken = useMemo(() => getKidToken(), []);
   const loggedInAdult = !!session;
   const loggedInKid = !session && !!kidToken;
   const loggedIn = loggedInAdult || loggedInKid;
@@ -303,8 +301,9 @@ export function WelcomePage() {
             <button
               type="button"
               onClick={() => navigate(homeDashboardPath)}
+              aria-label={`Go to ${homeLabel} dashboard`}
               data-testid="welcome-profile-pill"
-              className="flex items-center gap-2 rounded-full border-2 border-black bg-[#4a1578] py-1.5 pl-1.5 pr-3 shadow-neo-xs transition-transform hover:bg-[#5a1d8a] motion-safe:hover:-translate-y-0.5"
+              className="flex min-h-[44px] items-center gap-2 rounded-full border-2 border-black bg-[#4a1578] py-1.5 pl-1.5 pr-3 shadow-neo-xs transition-transform hover:bg-[#5a1d8a] motion-safe:hover:-translate-y-0.5"
             >
               <span
                 aria-hidden="true"

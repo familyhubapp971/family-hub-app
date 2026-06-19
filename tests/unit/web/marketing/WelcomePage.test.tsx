@@ -7,10 +7,12 @@ import { MemoryRouter } from 'react-router-dom';
 // a "Welcome back" landing. Mock the auth module + fetch.
 
 const authState: { session: { access_token: string; user: object } | null } = { session: null };
+let kidTokenReturn: string | null = null;
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
   signOutAll: vi.fn(async () => ({ error: null })),
-  KID_TOKEN_STORAGE_KEY: 'fh.kid.token',
+  // The page uses getKidToken (validates expiry), not raw localStorage.
+  getKidToken: () => kidTokenReturn,
 }));
 
 import { WelcomePage } from '../../../../apps/web/src/pages/marketing/WelcomePage';
@@ -52,6 +54,7 @@ function renderPage() {
 
 beforeEach(() => {
   authState.session = null;
+  kidTokenReturn = null;
   fetchMock.mockReset();
   localStorage.clear();
   vi.stubGlobal('fetch', fetchMock);
@@ -80,8 +83,17 @@ describe('<WelcomePage /> — logged-in state (FHS-358)', () => {
     expect(screen.getAllByText('Go to your dashboard').length).toBeGreaterThan(0);
   });
 
+  it('adult logged in but /api/me fails: degrades to welcome-back + dashboard CTA, no crash', async () => {
+    authState.session = { access_token: 'tok', user: {} };
+    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('welcome-loggedin')).toBeInTheDocument());
+    expect(screen.getAllByText('Go to your dashboard').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Start free')).not.toBeInTheDocument();
+  });
+
   it('kid logged in: welcome-back landing, no member management', async () => {
-    localStorage.setItem('fh.kid.token', 'kid-jwt');
+    kidTokenReturn = 'kid-jwt';
     localStorage.setItem(
       'fh.kid.lastFamily',
       JSON.stringify({ slug: 'khans', name: 'Khan Family' }),
