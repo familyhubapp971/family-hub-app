@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, CalendarDays, Home, PenLine, Utensils } from 'lucide-react';
+import { ArrowLeft, BookOpen, CalendarDays, Home, LogOut, PenLine, Utensils } from 'lucide-react';
 import { TopNav, type TopNavTab } from '@familyhub/ui';
-import { useAuth } from '../../../lib/auth-context';
+import { useAuth, signOutAll } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 import { MyWorldTab } from './MyWorldTab';
@@ -38,6 +38,12 @@ interface MemberLite {
   id: string;
   displayName: string;
   avatarEmoji: string | null;
+  isChild: boolean;
+}
+
+interface ChildBalance {
+  savedStickers: number;
+  savedCash: number;
 }
 
 export function ChildWorldPage() {
@@ -46,10 +52,12 @@ export function ChildWorldPage() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const [activeTab, setActiveTab] = useState<string>(DEFAULT_TAB);
-  const [member, setMember] = useState<MemberLite | null>(null);
+  const [members, setMembers] = useState<MemberLite[]>([]);
   // FHS-336 — the caller's role in this family (from /api/members), so My World
   // hides admin-only controls from a normal user. Null until loaded.
   const [callerRole, setCallerRole] = useState<string | null>(null);
+  // FHS-288 — the child's banked balance for the header chips.
+  const [balance, setBalance] = useState<ChildBalance | null>(null);
 
   const headers = useMemo(
     () =>
@@ -64,19 +72,52 @@ export function ChildWorldPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((body) => {
         if (cancelled || !body) return;
-        const found = (body.members as MemberLite[]).find((m) => m.id === memberId) ?? null;
-        setMember(found);
+        setMembers(((body.members as MemberLite[]) ?? []).map((m) => ({ ...m })));
         setCallerRole(typeof body.callerRole === 'string' ? body.callerRole : null);
       })
       .catch(() => {
-        /* leave member null — header falls back to a generic greeting */
+        /* leave members empty — header falls back to a generic greeting */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [headers]);
+
+  // FHS-288 — the child's banked balance (stars + cash) for the header chips.
+  useEffect(() => {
+    if (!headers || !memberId) return;
+    let cancelled = false;
+    fetch(`${API_BASE}/api/mw/financial/savings?memberId=${memberId}`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => {
+        if (cancelled || !body) return;
+        setBalance({
+          savedStickers: Number(body.savedStickers ?? 0),
+          savedCash: Number(body.savedCash ?? 0),
+        });
+      })
+      .catch(() => {
+        /* leave balance null — the chips just hide */
       });
     return () => {
       cancelled = true;
     };
   }, [headers, memberId]);
 
+  const member = useMemo(() => members.find((m) => m.id === memberId) ?? null, [members, memberId]);
+  const siblings = useMemo(() => members.filter((m) => m.isChild), [members]);
+
   const onBack = useCallback(() => navigate(`/t/${slug}/dashboard`), [navigate, slug]);
+  const onSelectChild = useCallback(
+    (id: string) => {
+      if (id && id !== memberId) navigate(`/t/${slug}/child/${id}`);
+    },
+    [navigate, slug, memberId],
+  );
+  const onLogout = useCallback(async () => {
+    await signOutAll();
+    navigate('/login', { replace: true });
+  }, [navigate]);
 
   const navTabs: TopNavTab[] = CHILD_TABS.map((t) => ({
     id: t.id,
@@ -122,15 +163,65 @@ export function ChildWorldPage() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         rightSlot={
-          <button
-            type="button"
-            onClick={onBack}
-            data-testid="child-world-back"
-            className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-[#4a1578] px-4 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-[#5a1d8a] motion-safe:hover:-translate-y-0.5"
-          >
-            <ArrowLeft size={16} strokeWidth={3} aria-hidden="true" />
-            <span className="hidden sm:inline">Back to family</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* FHS-288 — the child's banked balance (stars + cash). Always
+                visible: one compact combined badge on phones, two chips from sm. */}
+            {balance && (
+              <div className="flex items-center gap-2" data-testid="child-world-balance">
+                <span
+                  aria-label={`${balance.savedStickers} stars, ${balance.savedCash} cash`}
+                  className="flex items-center gap-1.5 rounded-md border-2 border-black bg-yellow-200 px-2 py-1.5 text-xs font-bold text-black shadow-neo-sm sm:hidden"
+                >
+                  <span aria-hidden="true">⭐ {balance.savedStickers}</span>
+                  <span aria-hidden="true">💰 {balance.savedCash}</span>
+                </span>
+                <span className="hidden items-center gap-1 rounded-md border-2 border-black bg-yellow-300 px-2.5 py-1.5 text-sm font-bold text-black shadow-neo-sm sm:flex">
+                  <span aria-hidden="true">⭐</span>
+                  <span aria-label="stars">{balance.savedStickers}</span>
+                </span>
+                <span className="hidden items-center gap-1 rounded-md border-2 border-black bg-green-300 px-2.5 py-1.5 text-sm font-bold text-black shadow-neo-sm sm:flex">
+                  <span aria-hidden="true">💰</span>
+                  <span aria-label="cash">{balance.savedCash}</span>
+                </span>
+              </div>
+            )}
+            {/* FHS-288 — switch to a sibling's world (only when there's more than one kid). */}
+            {siblings.length > 1 && (
+              <select
+                aria-label="Switch child"
+                data-testid="child-world-switcher"
+                value={memberId}
+                onChange={(e) => onSelectChild(e.target.value)}
+                className="min-h-[44px] rounded-md border-2 border-black bg-white px-3 py-2 text-sm font-bold text-purple-900 shadow-neo-sm"
+              >
+                {siblings.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {`${s.avatarEmoji ?? '🌟'} ${s.displayName}`}
+                  </option>
+                ))}
+              </select>
+            )}
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back to family"
+              data-testid="child-world-back"
+              className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-[#4a1578] px-3 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-[#5a1d8a] motion-safe:hover:-translate-y-0.5"
+            >
+              <ArrowLeft size={16} strokeWidth={3} aria-hidden="true" />
+              <span className="hidden lg:inline">Back to family</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => void onLogout()}
+              aria-label="Log out"
+              data-testid="child-world-logout"
+              className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-white px-3 py-2 font-bold text-purple-900 shadow-neo-sm transition-transform hover:bg-red-50 motion-safe:hover:-translate-y-0.5"
+            >
+              <LogOut size={16} strokeWidth={3} aria-hidden="true" />
+              <span className="hidden lg:inline">Logout</span>
+            </button>
+          </div>
         }
         testId="child-world-nav"
       />
