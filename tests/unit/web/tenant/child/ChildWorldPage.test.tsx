@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 
 // FHS-268 — ChildWorld shell: five tabs (My World active, the rest
@@ -150,13 +150,15 @@ describe('<ChildWorldPage />', () => {
     expect(chips).toHaveTextContent('5'); // cash
   });
 
-  it('switch-child navigates to the sibling world', async () => {
+  it('switch-child navigates to the sibling world (in-app dropdown)', async () => {
     renderAt();
-    const switcher = (await screen.findByTestId('child-world-switcher')) as HTMLSelectElement;
-    // Both children are listed.
-    expect(switcher.querySelectorAll('option')).toHaveLength(2);
+    const switcher = await screen.findByTestId('child-world-switcher');
+    // Open the in-app dropdown (trigger button), then pick the sibling.
     await act(async () => {
-      fireEvent.change(switcher, { target: { value: SIBLING } });
+      fireEvent.click(within(switcher).getByRole('button'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Sara/));
     });
     await waitFor(() =>
       expect(screen.getByTestId('location').textContent).toBe(`/t/khan/child/${SIBLING}`),

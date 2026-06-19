@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, CalendarDays, Home, LogOut, PenLine, Utensils } from 'lucide-react';
-import { TopNav, type TopNavTab } from '@familyhub/ui';
+import { TopNav, type TopNavTab, Dropdown } from '@familyhub/ui';
 import { useAuth, signOutAll } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -185,21 +185,19 @@ export function ChildWorldPage() {
                 </span>
               </div>
             )}
-            {/* FHS-288 — switch to a sibling's world (only when there's more than one kid). */}
+            {/* FHS-288 — switch to a sibling's world (only when there's more than
+                one kid). FHS-359 — in-app dropdown, not the native OS menu. */}
             {siblings.length > 1 && (
-              <select
-                aria-label="Switch child"
-                data-testid="child-world-switcher"
+              <Dropdown
+                ariaLabel="Switch child"
+                testId="child-world-switcher"
                 value={memberId}
-                onChange={(e) => onSelectChild(e.target.value)}
-                className="min-h-[44px] rounded-md border-2 border-black bg-white px-3 py-2 text-sm font-bold text-purple-900 shadow-neo-sm"
-              >
-                {siblings.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {`${s.avatarEmoji ?? '🌟'} ${s.displayName}`}
-                  </option>
-                ))}
-              </select>
+                onChange={onSelectChild}
+                options={siblings.map((s) => ({
+                  value: s.id,
+                  label: `${s.avatarEmoji ?? '🌟'} ${s.displayName}`,
+                }))}
+              />
             )}
             <button
               type="button"
