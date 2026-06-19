@@ -8,7 +8,13 @@
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
 
-/** Correct answers needed for a subject's progress to hit 100% + a certificate. */
+/**
+ * Correct answers needed for a subject's progress to hit 100% + a certificate.
+ * MVP note: repeats count — re-answering the same question correctly still
+ * advances progress (the bank is small, so this is deliberate "practice makes
+ * the certificate"). Swap to first-correct-per-question dedup once the bank is
+ * big enough to require distinct answers.
+ */
 export const CERTIFICATE_TARGET = 10;
 
 /** Subjects that have an interactive lesson (others drill into their own view). */

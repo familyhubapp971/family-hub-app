@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, X, Trophy, ArrowRight } from 'lucide-react';
 import { API_BASE } from '../../../lib/api';
 
@@ -58,13 +58,19 @@ export function LessonView({
   const [picked, setPicked] = useState<number | null>(null);
   const [result, setResult] = useState<AnswerResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pickError, setPickError] = useState(false);
+  // Bumped on every (re)load so a slow answer POST from a previous round/
+  // difficulty can't overwrite fresh state when it finally resolves.
+  const roundId = useRef(0);
 
   const load = useCallback(() => {
     if (!headers) return;
     let cancelled = false;
+    roundId.current += 1;
     setStatus('loading');
     setPicked(null);
     setResult(null);
+    setPickError(false);
     setIdx(0);
     fetch(
       `${API_BASE}/api/learn/${encodeURIComponent(subject)}/questions?memberId=${memberId}&difficulty=${difficulty}`,
@@ -91,7 +97,9 @@ export function LessonView({
 
   const onPick = async (choiceIndex: number) => {
     if (!headers || !current || picked !== null || submitting) return;
+    const myRound = roundId.current;
     setPicked(choiceIndex);
+    setPickError(false);
     setSubmitting(true);
     try {
       const res = await fetch(`${API_BASE}/api/learn/${encodeURIComponent(subject)}/answer`, {
@@ -99,19 +107,30 @@ export function LessonView({
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({ memberId, questionId: current.id, choiceIndex }),
       });
+      if (roundId.current !== myRound) return; // difficulty/round changed — drop it
       if (res.ok) {
         const body = (await res.json()) as AnswerResponse;
         setResult(body);
         setStats(body.stats);
+      } else {
+        setPicked(null);
+        setPickError(true);
+      }
+    } catch {
+      if (roundId.current === myRound) {
+        setPicked(null); // let the child try again instead of freezing
+        setPickError(true);
       }
     } finally {
-      setSubmitting(false);
+      if (roundId.current === myRound) setSubmitting(false);
     }
   };
 
   const onNext = () => {
+    if (status === 'loading') return; // guard double-clicks
     setPicked(null);
     setResult(null);
+    setPickError(false);
     if (idx + 1 < questions.length) setIdx(idx + 1);
     else load(); // start a fresh round of the same difficulty
   };
@@ -126,8 +145,9 @@ export function LessonView({
             type="button"
             data-testid={`lesson-difficulty-${d}`}
             aria-pressed={difficulty === d}
+            disabled={submitting}
             onClick={() => setDifficulty(d)}
-            className={`min-h-[44px] rounded-full border-2 border-black px-4 py-2 text-sm font-black shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5 ${
+            className={`min-h-[44px] rounded-full border-2 border-black px-4 py-2 text-sm font-black shadow-neo-xs transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 disabled:opacity-60 motion-safe:enabled:hover:-translate-y-0.5 ${
               difficulty === d ? 'bg-violet-400 text-white' : 'bg-white text-gray-800'
             }`}
           >
@@ -189,6 +209,14 @@ export function LessonView({
           Couldn&rsquo;t load the lesson — try again.
         </p>
       )}
+      {status === 'ready' && !current && (
+        <p
+          data-testid="lesson-empty"
+          className="rounded-xl border-2 border-black bg-white p-5 text-sm font-bold text-gray-500 shadow-neo-sm"
+        >
+          No questions here yet — try a different difficulty.
+        </p>
+      )}
       {status === 'ready' && current && (
         <div
           className="rounded-xl border-2 border-black bg-white p-5 shadow-neo-sm"
@@ -207,7 +235,7 @@ export function LessonView({
                   data-testid={`lesson-choice-${i}`}
                   disabled={picked !== null}
                   onClick={() => onPick(i)}
-                  className={`flex min-h-[48px] items-center justify-between gap-2 rounded-xl border-2 border-black px-4 py-3 text-left font-bold shadow-neo-xs transition-transform disabled:cursor-default motion-safe:enabled:hover:-translate-y-0.5 ${
+                  className={`flex min-h-[48px] items-center justify-between gap-2 rounded-xl border-2 border-black px-4 py-3 text-left font-bold shadow-neo-xs transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 disabled:cursor-default motion-safe:enabled:hover:-translate-y-0.5 ${
                     isCorrect
                       ? 'bg-green-300'
                       : showWrong
@@ -223,6 +251,16 @@ export function LessonView({
             })}
           </div>
 
+          {pickError && (
+            <p
+              data-testid="lesson-pick-error"
+              role="alert"
+              className="mt-4 text-sm font-black text-red-600"
+            >
+              Something went wrong — tap a choice to try again.
+            </p>
+          )}
+
           {result && (
             <div className="mt-4 flex items-center justify-between gap-3">
               <p
@@ -236,7 +274,8 @@ export function LessonView({
                 type="button"
                 data-testid="lesson-next"
                 onClick={onNext}
-                className="flex min-h-[44px] items-center gap-2 rounded-xl border-2 border-black bg-violet-400 px-4 py-2 font-black text-white shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5"
+                disabled={status !== 'ready'}
+                className="flex min-h-[44px] items-center gap-2 rounded-xl border-2 border-black bg-violet-400 px-4 py-2 font-black text-white shadow-neo-xs transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 disabled:opacity-60 motion-safe:enabled:hover:-translate-y-0.5"
               >
                 Next
                 <ArrowRight size={16} aria-hidden="true" />

@@ -26,3 +26,9 @@ Feature: Interactive Learn lessons (FHS-283)
   Scenario: reaching the target awards a certificate
     When the child answers Maths correctly 10 times
     Then progress is 100 and a certificate is earned
+
+  Scenario: an outsider cannot answer for this family child
+    Given another family with its own signed-in adult
+    When the outsider tries to answer for the first child
+    Then the lesson request is rejected
+    And the first child score is still 0

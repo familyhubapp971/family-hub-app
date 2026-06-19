@@ -254,6 +254,12 @@ export const learnRouter = new Hono()
         400,
       );
     }
+    // Permission check FIRST — grading returns the correct answer, so it must
+    // never run for a caller who can't manage this member (no cross-tenant leak).
+    const db = getDb();
+    const denied = await checkMemberAccess(db, tenantId, userRow.id, parsed.data.memberId);
+    if (denied) return c.json(denied.body, denied.status);
+
     const graded = gradeAnswer(subject, parsed.data.questionId, parsed.data.choiceIndex);
     if (!graded) {
       return c.json(
@@ -261,9 +267,6 @@ export const learnRouter = new Hono()
         400,
       );
     }
-    const db = getDb();
-    const denied = await checkMemberAccess(db, tenantId, userRow.id, parsed.data.memberId);
-    if (denied) return c.json(denied.body, denied.status);
 
     const prev = await loadProgressRow(db, tenantId, parsed.data.memberId, subject);
     const totalAnswered = (prev?.totalAnswered ?? 0) + 1;

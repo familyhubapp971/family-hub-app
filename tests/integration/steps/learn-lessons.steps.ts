@@ -166,4 +166,56 @@ describeFeature(feature, ({ Background, Scenario }) => {
       expect(last.stats.certificate).toBe(true);
     });
   });
+
+  Scenario('an outsider cannot answer for this family child', ({ Given, When, Then, And }) => {
+    let appB: Hono;
+    let outsiderRes: Response;
+    Given('another family with its own signed-in adult', async () => {
+      const outsider = randomUUID();
+      await db.insert(users).values({ id: outsider, email: `out-${outsider.slice(0, 8)}@x.com` });
+      const [tb] = await db
+        .insert(tenants)
+        .values({ slug: `otherfam-${randomUUID().slice(0, 8)}`, name: 'Other Fam' })
+        .returning();
+      await db
+        .insert(members)
+        .values({ tenantId: tb!.id, userId: outsider, displayName: 'Outsider', role: 'adult' });
+      const seedB: MiddlewareHandler = async (c, next) => {
+        c.set('user', { id: outsider, email: 'out@x.com', claims: {} } as never);
+        c.set('userRow', {
+          id: outsider,
+          email: 'out@x.com',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as never);
+        c.set('tenantId', tb!.id as never);
+        await next();
+      };
+      appB = new Hono();
+      appB.use('*', seedB);
+      appB.route('/api/learn', learnRouter);
+    });
+    When('the outsider tries to answer for the first child', async () => {
+      const { questions } = await getQuestions();
+      const q = questions[0]!;
+      outsiderRes = await appB.request('/api/learn/Maths/answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: childId,
+          questionId: q.id,
+          choiceIndex: correctIndex(q.id),
+        }),
+      });
+    });
+    Then('the lesson request is rejected', () => {
+      expect([403, 404]).toContain(outsiderRes.status);
+    });
+    And('the first child score is still 0', async () => {
+      const { rows } = await db.execute<{ total_correct: number }>(
+        sql`select coalesce(total_correct, 0) as total_correct from learn_progress where member_id = ${childId} and subject = 'Maths'`,
+      );
+      expect(rows[0]?.total_correct ?? 0).toBe(0);
+    });
+  });
 });

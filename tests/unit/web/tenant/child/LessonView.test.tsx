@@ -63,6 +63,32 @@ describe('<LessonView />', () => {
     expect(screen.getByTestId('lesson-stat-score').textContent).toContain('1');
   });
 
+  it('recovers when the answer POST fails — re-enables choices + shows an error', async () => {
+    fetchMock.mockImplementation((url: string, init?: { method?: string }) => {
+      if (init?.method === 'POST') {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          subject: 'Maths',
+          difficulty: 'easy',
+          questions: [QUESTION],
+          stats: { progress: 0, score: 0, streak: 0, best: 0, answered: 0, certificate: false },
+        }),
+      });
+    });
+    render(<LessonView subject="Maths" memberId={MEMBER} headers={HEADERS} />);
+    await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('lesson-choice-1'));
+    });
+    await waitFor(() => expect(screen.getByTestId('lesson-pick-error')).toBeInTheDocument());
+    // Choices are tappable again (not frozen).
+    expect((screen.getByTestId('lesson-choice-0') as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it('shows the certificate when progress hits 100', async () => {
     installApi({
       correct: true,
