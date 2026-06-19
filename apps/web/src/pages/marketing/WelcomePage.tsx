@@ -177,7 +177,7 @@ export function WelcomePage() {
 
   // FHS-358 — the homepage reflects logged-in state. An adult is logged in via
   // the Supabase session; a kid via the fh.kid.token (no Supabase session).
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   // getKidToken validates the JWT's expiry (and drops it if stale), so an
   // expired kid session doesn't wrongly show the logged-in homepage.
   const kidToken = useMemo(() => getKidToken(), []);
@@ -266,6 +266,21 @@ export function WelcomePage() {
   const homeDashboardPath = homeSlug ? `/t/${homeSlug}/dashboard` : '/dashboard';
   const homeLabel = (loggedInAdult ? home?.familyName : kidFamily?.name) ?? 'My family';
   const homeInitial = homeLabel.charAt(0).toUpperCase();
+
+  // While the Supabase session is still restoring, don't render the logged-out
+  // hero — it would flash (and on a slow token refresh, stick) for a returning
+  // user, which is exactly the "homepage shows logged-out" bug. A kid is known
+  // synchronously (kidToken), so we don't make them wait.
+  if (authLoading && !kidToken) {
+    return (
+      <div
+        data-testid="welcome-auth-loading"
+        className="flex h-screen items-center justify-center bg-kingdom-bg font-heading text-2xl text-white"
+      >
+        FamilyHub
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-kingdom-bg font-body text-white">

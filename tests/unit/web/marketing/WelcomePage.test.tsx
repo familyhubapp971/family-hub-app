@@ -6,7 +6,10 @@ import { MemoryRouter } from 'react-router-dom';
 // (adult session) + fh.kid.token (kid) to switch between the public ad hero and
 // a "Welcome back" landing. Mock the auth module + fetch.
 
-const authState: { session: { access_token: string; user: object } | null } = { session: null };
+const authState: {
+  session: { access_token: string; user: object } | null;
+  loading: boolean;
+} = { session: null, loading: false };
 let kidTokenReturn: string | null = null;
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
@@ -54,6 +57,7 @@ function renderPage() {
 
 beforeEach(() => {
   authState.session = null;
+  authState.loading = false;
   kidTokenReturn = null;
   fetchMock.mockReset();
   localStorage.clear();
@@ -67,6 +71,13 @@ describe('<WelcomePage /> — logged-in state (FHS-358)', () => {
     expect(screen.getByText('Start free')).toBeInTheDocument();
     expect(screen.getByText('Log in')).toBeInTheDocument();
     expect(screen.queryByTestId('welcome-loggedin')).not.toBeInTheDocument();
+  });
+
+  it('while the session is restoring: shows a splash, not the logged-out hero', () => {
+    authState.loading = true; // session still being restored
+    renderPage();
+    expect(screen.getByTestId('welcome-auth-loading')).toBeInTheDocument();
+    expect(screen.queryByText('Start free')).not.toBeInTheDocument();
   });
 
   it('adult logged in: welcome-back landing with dashboard + members + child world', async () => {
