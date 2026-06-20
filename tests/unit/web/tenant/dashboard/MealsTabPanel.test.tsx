@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 // FHS-264 — MealsTabPanel redesign. Day cards, filter pills, avatar
@@ -252,9 +252,20 @@ describe('<MealsTabPanel />', () => {
       fireEvent.click(screen.getByTestId('meals-add-tue'));
     });
     expect(screen.getByTestId('meals-editor')).toBeInTheDocument();
+    // In-app dropdowns (FHS-359): open then pick the option.
     act(() => {
-      fireEvent.change(screen.getByTestId('meals-editor-slot'), { target: { value: 'lunch' } });
-      fireEvent.change(screen.getByTestId('meals-editor-member'), { target: { value: ALI } });
+      fireEvent.click(within(screen.getByTestId('meals-editor-slot')).getByRole('button'));
+    });
+    act(() => {
+      fireEvent.click(within(screen.getByRole('listbox')).getByText('Lunch'));
+    });
+    act(() => {
+      fireEvent.click(within(screen.getByTestId('meals-editor-member')).getByRole('button'));
+    });
+    act(() => {
+      fireEvent.click(within(screen.getByRole('listbox')).getByText('Ali'));
+    });
+    act(() => {
       fireEvent.change(screen.getByTestId('meals-editor-name'), { target: { value: 'Soup' } });
       fireEvent.click(screen.getByTestId('meals-editor-recurring'));
     });
@@ -283,7 +294,9 @@ describe('<MealsTabPanel />', () => {
     });
     // Editor opens already targeting snack — no dropdown change needed.
     expect(screen.getByTestId('meals-editor')).toBeInTheDocument();
-    expect((screen.getByTestId('meals-editor-slot') as HTMLSelectElement).value).toBe('snack');
+    expect(
+      within(screen.getByTestId('meals-editor-slot')).getByRole('button').textContent,
+    ).toContain('Snack');
     act(() => {
       fireEvent.change(screen.getByTestId('meals-editor-name'), {
         target: { value: 'Apple slices' },
@@ -438,7 +451,9 @@ describe('<MealsTabPanel />', () => {
     act(() => {
       fireEvent.click(screen.getByTestId('meals-add-mon'));
     });
-    expect((screen.getByTestId('meals-editor-member') as HTMLSelectElement).value).toBe(SARA);
+    expect(
+      within(screen.getByTestId('meals-editor-member')).getByRole('button').textContent,
+    ).toContain('Sara');
   });
 
   it('pre-fills the editor who-for as Everyone under the Family or All filter', async () => {
@@ -452,7 +467,9 @@ describe('<MealsTabPanel />', () => {
     act(() => {
       fireEvent.click(screen.getByTestId('meals-add-mon'));
     });
-    expect((screen.getByTestId('meals-editor-member') as HTMLSelectElement).value).toBe('');
+    expect(
+      within(screen.getByTestId('meals-editor-member')).getByRole('button').textContent,
+    ).toContain('Everyone');
   });
 
   it('passes the bearer token + tenant slug on requests', async () => {

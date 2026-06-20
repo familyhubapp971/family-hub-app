@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Circle, Clock, Pencil, Plus } from 'lucide-react';
-import { Button } from '@familyhub/ui';
+import { Button, Dropdown } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -373,22 +373,20 @@ export function AssignmentsTabPanel() {
                 className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm font-bold text-black">
+            <div className="flex flex-col gap-1 text-sm font-bold text-black">
               For
-              <select
+              <Dropdown
+                ariaLabel="For"
+                testId="assignments-add-member"
                 value={draft.memberId}
-                onChange={(e) => setDraft({ ...draft, memberId: e.target.value })}
-                data-testid="assignments-add-member"
-                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black"
-              >
-                <option value="">Whole family</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
+                onChange={(v) => setDraft({ ...draft, memberId: v })}
+                className="flex min-h-[38px] w-full items-center justify-between gap-2 rounded border-2 border-black bg-white px-2 py-1 text-sm font-normal text-black"
+                options={[
+                  { value: '', label: 'Whole family' },
+                  ...members.map((m) => ({ value: m.id, label: m.displayName })),
+                ]}
+              />
+            </div>
             <label className="flex flex-col gap-1 text-sm font-bold text-black">
               Due date (optional)
               <input
