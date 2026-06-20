@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Repeat, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Dropdown } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -706,37 +707,31 @@ function MealEditor({
       aria-label={editor.mealId !== null ? 'Edit meal' : 'Add meal'}
     >
       <div className="flex flex-wrap gap-2">
-        <label className="flex-1 text-xs font-bold text-gray-700">
+        <div className="flex-1 text-xs font-bold text-gray-700">
           Slot
-          <select
-            data-testid="meals-editor-slot"
+          <Dropdown
+            testId="meals-editor-slot"
+            ariaLabel="Slot"
             value={editor.slot}
-            onChange={(e) => onChange({ ...editor, slot: e.target.value as Slot })}
-            className="mt-0.5 block w-full rounded-lg border-2 border-black px-2 py-1 text-sm"
-          >
-            {SLOTS.map((s) => (
-              <option key={s} value={s}>
-                {SLOT_META[s].label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex-1 text-xs font-bold text-gray-700">
+            onChange={(v) => onChange({ ...editor, slot: v as Slot })}
+            className="mt-0.5 flex min-h-[36px] w-full items-center justify-between gap-2 rounded-lg border-2 border-black bg-white px-2 py-1 text-sm font-bold text-black"
+            options={SLOTS.map((s) => ({ value: s, label: SLOT_META[s].label }))}
+          />
+        </div>
+        <div className="flex-1 text-xs font-bold text-gray-700">
           For
-          <select
-            data-testid="meals-editor-member"
+          <Dropdown
+            testId="meals-editor-member"
+            ariaLabel="For"
             value={editor.memberId ?? ''}
-            onChange={(e) => onChange({ ...editor, memberId: e.target.value || null })}
-            className="mt-0.5 block w-full rounded-lg border-2 border-black px-2 py-1 text-sm"
-          >
-            <option value="">Everyone (family)</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.displayName}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={(v) => onChange({ ...editor, memberId: v || null })}
+            className="mt-0.5 flex min-h-[36px] w-full items-center justify-between gap-2 rounded-lg border-2 border-black bg-white px-2 py-1 text-sm font-bold text-black"
+            options={[
+              { value: '', label: 'Everyone (family)' },
+              ...members.map((m) => ({ value: m.id, label: m.displayName })),
+            ]}
+          />
+        </div>
       </div>
 
       <label className="block text-xs font-bold text-gray-700">

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 // FHS-231 / FHS-266 — AssignmentsTabPanel (Magic Patterns layout).
@@ -313,7 +313,11 @@ describe('<AssignmentsTabPanel />', () => {
       fireEvent.change(screen.getByTestId('assignments-add-due'), {
         target: { value: '2026-05-05' },
       });
-      fireEvent.change(screen.getByTestId('assignments-add-member'), { target: { value: ALI } });
+      // In-app dropdown (FHS-359): open then pick Ali.
+      fireEvent.click(within(screen.getByTestId('assignments-add-member')).getByRole('button'));
+    });
+    act(() => {
+      fireEvent.click(within(screen.getByRole('listbox')).getByText('Ali'));
     });
     await act(async () => {
       fireEvent.click(screen.getByTestId('assignments-add-submit'));
