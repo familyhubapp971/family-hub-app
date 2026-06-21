@@ -51,12 +51,29 @@ function renderPage(initial = '/login') {
   );
 }
 
+// FHS-360 — the kid view now renders KidSignIn, which fetches
+// /api/public/kid-members/:slug. Stub it to return one kid so the tiles render.
+function stubKidMembersFetch() {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        family: { slug: 'smiths', name: 'The Smiths' },
+        kids: [{ id: 'k1', displayName: 'Sam', avatarEmoji: '🦊' }],
+      }),
+    })),
+  );
+}
+
 describe('<LoginPage />', () => {
   afterEach(() => {
     signInWithOtp.mockReset();
     signInWithOAuth.mockReset();
     sessionStorage.clear();
     localStorage.clear();
+    vi.unstubAllGlobals();
   });
 
   it('renders the magic-link form (no password field) and the Google button', () => {
@@ -137,9 +154,9 @@ describe('<LoginPage />', () => {
     });
   });
 
-  it('"Create an account" link routes to /signup', () => {
+  it('"Create a new family" link routes to /signup', () => {
     renderPage();
-    fireEvent.click(screen.getByRole('link', { name: /create an account/i }));
+    fireEvent.click(screen.getByTestId('login-create-family'));
     expect(screen.getByTestId('route-marker').textContent).toBe('signup');
   });
 
@@ -163,15 +180,13 @@ describe('<LoginPage />', () => {
     expect(screen.getByTestId('login-kid-code')).toBeInTheDocument();
   });
 
-  // FHS-353 — self-serve kid login.
-  it('entering a family code sends the kid to that family picker', async () => {
+  // FHS-360 — entering a family code shows that family's kid tiles in-card.
+  it('entering a family code shows that family kid tiles', async () => {
+    stubKidMembersFetch();
     renderPage('/login?role=kid');
     fireEvent.change(screen.getByTestId('login-kid-code'), { target: { value: 'Smiths' } });
     fireEvent.submit(screen.getByTestId('login-kid-form'));
-    // Slug is normalised to lowercase before navigating.
-    await waitFor(() =>
-      expect(screen.getByTestId('route-kid-login').textContent).toBe('kid-login:smiths'),
-    );
+    await waitFor(() => expect(screen.getByTestId('kid-login-avatars')).toBeInTheDocument());
   });
 
   it('shows a friendly error for an invalid family code and does not navigate', () => {
@@ -182,18 +197,16 @@ describe('<LoginPage />', () => {
     expect(screen.queryByTestId('route-kid-login')).toBeNull();
   });
 
-  it('offers a one-tap "Continue as <family>" shortcut for a remembered family', async () => {
+  it('a remembered family shows its kid tiles straight away', async () => {
     localStorage.setItem(
       'fh.kid.lastFamily',
       JSON.stringify({ slug: 'smiths', name: 'The Smiths' }),
     );
+    stubKidMembersFetch();
     renderPage('/login?role=kid');
-    const shortcut = screen.getByTestId('login-kid-continue-last');
-    expect(shortcut.textContent).toContain('The Smiths');
-    fireEvent.click(shortcut);
-    await waitFor(() =>
-      expect(screen.getByTestId('route-kid-login').textContent).toBe('kid-login:smiths'),
-    );
+    // No family-code step — the remembered family loads its tiles directly.
+    await waitFor(() => expect(screen.getByTestId('kid-login-avatars')).toBeInTheDocument());
+    expect(screen.queryByTestId('login-kid-code')).toBeNull();
   });
 
   it('clicking the kid tab swaps the panel + sets ?role=kid in the URL', () => {
@@ -210,14 +223,6 @@ describe('<LoginPage />', () => {
     renderPage('/login?role=kid');
     fireEvent.click(screen.getByTestId('login-role-parent'));
     expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument();
-    expect(screen.getByTestId('location-search').textContent).toBe('');
-  });
-
-  it('the kid panel "Switch to parent log-in" link returns to the parent panel + clears the URL', () => {
-    renderPage('/login?role=kid');
-    fireEvent.click(screen.getByTestId('login-kid-back-to-parent'));
-    expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument();
-    expect(screen.queryByTestId('login-kid-panel')).toBeNull();
     expect(screen.getByTestId('location-search').textContent).toBe('');
   });
 
