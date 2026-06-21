@@ -5,19 +5,16 @@ import { Button, Input, Label } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
 import { friendlyAuthErrorMessage } from '../../lib/auth-errors';
 import { AuthLayout } from './AuthLayout';
+import { KidSignIn } from './KidSignIn';
 
-// LoginPage — split parent / kid auth (FHS-237).
+// LoginPage — the Magic Patterns "Welcome Back!" card (FHS-237 / FHS-360).
 //
-// Parent path: passwordless via Supabase magic-link OR Google OAuth
-// (unchanged from FHS-224 / ADR 0011). Kid path: shared-device login
-// using avatar + 4-digit PIN, talking to POST /api/auth/kid-pin
-// (FHS-236). The actual kid form (avatar grid + PIN keypad) ships in
-// FHS-238 — for now the kid panel renders a "coming soon" hint so the
-// toggle, URL-state, and a11y wiring can be tested in isolation.
+// One card with a Parent/Kid toggle. Parent = passwordless magic-link or
+// Google OAuth. Kid = the avatar-tiles + PIN flow (shared KidSignIn): on a
+// device that remembers the family the tiles show straight away; otherwise the
+// kid types their family code first.
 //
-// URL state: `?role=kid` selects the kid panel on first load, so a
-// kid's home-screen icon ("My Family Hub" PWA shortcut) can deep-link
-// into their entry point.
+// URL state: `?role=kid` selects the kid view on first load (PWA deep-link).
 
 type Role = 'parent' | 'kid';
 
@@ -67,11 +64,6 @@ export function LoginPage() {
   const requested = params.get('role');
   const role: Role = isKnownRole(requested) ? requested : 'parent';
 
-  // FHS-258 — clear a stale validation error the moment the user keeps
-  // editing the email field. Without this, "enter a valid email" sticks
-  // on screen even after the user has corrected the typo. The
-  // role-toggle path already had its own clear (see onRoleChange) — this
-  // covers the typing path.
   useEffect(() => {
     setStatus((s) => (s.kind === 'error' ? { kind: 'idle' } : s));
   }, [email]);
@@ -79,19 +71,9 @@ export function LoginPage() {
   const onRoleChange = useCallback(
     (next: Role) => {
       const updated = new URLSearchParams(params);
-      if (next === 'parent') {
-        updated.delete('role');
-      } else {
-        updated.set('role', next);
-      }
-      // replace:true so toggling 4× doesn't leave 4 history entries
-      // (and the browser back button still exits /login cleanly).
+      if (next === 'parent') updated.delete('role');
+      else updated.set('role', next);
       setParams(updated, { replace: true });
-      // Clear any "wrong email" error when toggling — the kid panel
-      // doesn't have an email field, and a stale error reads as
-      // confusing if it pops back when the user switches back. Don't
-      // wipe in-flight submitting states, in case an OAuth redirect
-      // is mid-flight from a stray click.
       setStatus((s) => (s.kind === 'error' ? { kind: 'idle' } : s));
     },
     [params, setParams],
@@ -105,10 +87,6 @@ export function LoginPage() {
       return;
     }
     setStatus({ kind: 'submitting' });
-    // shouldCreateUser:false makes /login login-only — Supabase rejects
-    // unknown emails with a clear "user not found" error rather than
-    // silently creating an account, so /login and /signup stay
-    // semantically distinct (AC1 from FHS-224).
     const { error } = await supabase.auth.signInWithOtp({
       email: parsed.data.email,
       options: {
@@ -120,8 +98,6 @@ export function LoginPage() {
       setStatus({ kind: 'error', message: friendlyAuthErrorMessage(error.message) });
       return;
     }
-    // Stash the email so /verify-email can render "Check your inbox at
-    // <email>" without us threading state through the navigation.
     sessionStorage.setItem('fh.signup.email', parsed.data.email);
     navigate('/verify-email');
   }
@@ -135,14 +111,12 @@ export function LoginPage() {
     if (error) {
       setStatus({ kind: 'error', message: friendlyAuthErrorMessage(error.message) });
     }
-    // signInWithOAuth navigates the browser away on success — no
-    // post-call handling needed here.
   }
 
   const submitting = status.kind === 'submitting' || status.kind === 'submitting-google';
 
   return (
-    <AuthLayout title="Log in">
+    <AuthLayout title="Welcome Back!" subtitle="Sign in to Family Hub" centered>
       <RoleToggle role={role} onChange={onRoleChange} />
 
       {role === 'parent' ? (
@@ -150,7 +124,7 @@ export function LoginPage() {
           id="login-parent-panel"
           aria-labelledby="login-parent-heading"
           data-testid="login-parent-panel"
-          className="mt-4"
+          className="mt-6"
         >
           <h2 id="login-parent-heading" className="sr-only">
             Parent log in
@@ -215,36 +189,45 @@ export function LoginPage() {
               {status.kind === 'submitting-google' ? 'Redirecting…' : 'Continue with Google'}
             </span>
           </Button>
-
-          <p className="mt-6 font-body text-sm text-gray-700">
-            New here?{' '}
-            <Link to="/signup" className="font-semibold underline">
-              Create an account
-            </Link>
-          </p>
         </section>
       ) : (
-        <KidLoginPanel onSwitchToParent={() => onRoleChange('parent')} />
+        <div className="mt-6">
+          <KidLoginPanel />
+        </div>
       )}
+
+      {/* MP "Create a new family" footer — single CTA for both views. */}
+      <p className="mt-6 text-center font-body text-sm text-gray-700">
+        <Link
+          to="/signup"
+          className="font-semibold text-purple-700 underline decoration-2 underline-offset-2 hover:text-purple-900"
+          data-testid="login-create-family"
+        >
+          Create a new family
+        </Link>
+      </p>
     </AuthLayout>
   );
 }
 
-// Segmented control (not an ARIA tablist) — two mutually-exclusive
-// buttons toggling which login form is mounted. Plain group + per-button
-// `aria-pressed` avoids the `tablist` arrow-key navigation requirement
-// while still being screen-reader-friendly. Tab key cycles through the
-// buttons in DOM order, the focus-visible ring stays bright yellow.
+// MP segmented control — two mutually-exclusive buttons toggling which login
+// view is mounted. Plain group + per-button aria-pressed (not an ARIA tablist,
+// so no arrow-key nav requirement).
 function RoleToggle({ role, onChange }: { role: Role; onChange: (next: Role) => void }) {
   return (
     <div
       role="group"
       aria-label="Login role"
-      className="flex gap-2 rounded-md border-2 border-black bg-white p-1 shadow-neo-sm"
+      className="flex gap-2 rounded-xl border-2 border-black bg-gray-100 p-1.5"
       data-testid="login-role-toggle"
     >
-      <RoleButton id="parent" label="I'm a parent" active={role === 'parent'} onSelect={onChange} />
-      <RoleButton id="kid" label="I'm a kid" active={role === 'kid'} onSelect={onChange} />
+      <RoleButton
+        id="parent"
+        label="👩 I'm a Parent"
+        active={role === 'parent'}
+        onSelect={onChange}
+      />
+      <RoleButton id="kid" label="🧒 I'm a Kid" active={role === 'kid'} onSelect={onChange} />
     </div>
   );
 }
@@ -267,9 +250,13 @@ function RoleButton({
       data-testid={`login-role-${id}`}
       onClick={() => onSelect(id)}
       className={[
-        'flex-1 rounded px-3 py-2 text-sm font-bold transition-colors',
+        'flex-1 rounded-lg border-2 py-3 text-sm font-bold transition-all',
         'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400',
-        active ? 'bg-yellow-300 text-black' : 'bg-white text-gray-700 hover:bg-gray-50',
+        active
+          ? id === 'kid'
+            ? 'border-black bg-yellow-300 text-black shadow-neo-xs'
+            : 'border-black bg-white text-black shadow-neo-xs'
+          : 'border-transparent text-gray-400 hover:text-gray-600',
       ].join(' ')}
     >
       {label}
@@ -277,16 +264,12 @@ function RoleButton({
   );
 }
 
-// FHS-353 — self-serve kid login. The avatar grid + PIN keypad still live at
-// /t/:slug/kid-login (tenant-scoped — that page needs to know which family's
-// kids to show). /login is unscoped, so the kid types their family code (the
-// short name in the family's web address) and we send them to that picker.
-// Returning kids get a one-tap "Continue as <Family>" shortcut, remembered on
-// the device by KidLoginPage on its last successful load.
+// FHS-353 / FHS-360 — self-serve kid login. On a device that remembers the
+// family (KidLoginPage stores it on its last successful load), the avatar tiles
+// show straight away; otherwise the kid types their family code first. The
+// tiles + PIN live in the shared KidSignIn component so this matches the
+// /t/:slug/kid-login route.
 const KID_LAST_FAMILY_KEY = 'fh.kid.lastFamily';
-// Same shape as the tenants.slug constraint — lowercase alphanumeric with
-// optional internal hyphens. We validate before navigating so a typo shows a
-// friendly hint instead of bouncing through the picker's not-found screen.
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
 function readLastFamily(): { slug: string; name: string } | null {
@@ -308,51 +291,53 @@ function readLastFamily(): { slug: string; name: string } | null {
   return null;
 }
 
-function KidLoginPanel({ onSwitchToParent }: { onSwitchToParent: () => void }) {
-  const navigate = useNavigate();
+function KidLoginPanel() {
+  const lastFamily = useMemo(() => readLastFamily(), []);
+  const [slug, setSlug] = useState<string | null>(lastFamily?.slug ?? null);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const lastFamily = useMemo(() => readLastFamily(), []);
 
+  const changeFamily = (
+    <p className="mt-4 text-center font-body text-xs text-gray-600">
+      Not your family?{' '}
+      <button
+        type="button"
+        onClick={() => setSlug(null)}
+        data-testid="login-kid-change-family"
+        className="font-semibold underline"
+      >
+        Enter a different code
+      </button>
+      .
+    </p>
+  );
+
+  // Family known → show the avatar tiles + PIN (MP "Who are you?").
+  if (slug) {
+    return (
+      <section data-testid="login-kid-panel">
+        <KidSignIn slug={slug} notFoundFooter={changeFamily} />
+        {changeFamily}
+      </section>
+    );
+  }
+
+  // No family yet → ask for the family code.
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const slug = code.trim().toLowerCase();
-    if (!SLUG_RE.test(slug)) {
+    const next = code.trim().toLowerCase();
+    if (!SLUG_RE.test(next)) {
       setError("That doesn't look like a family code. Ask a grown-up if you're not sure.");
       return;
     }
-    navigate(`/t/${slug}/kid-login`);
+    setSlug(next);
   }
 
   return (
-    <section
-      id="login-kid-panel"
-      aria-labelledby="login-kid-heading"
-      data-testid="login-kid-panel"
-      className="mt-4"
-    >
+    <section id="login-kid-panel" aria-labelledby="login-kid-heading" data-testid="login-kid-panel">
       <h2 id="login-kid-heading" className="sr-only">
         Kid log in
       </h2>
-
-      {lastFamily && (
-        <div className="mb-4">
-          <Button
-            type="button"
-            variant="primary"
-            size="md"
-            fullWidth
-            testId="login-kid-continue-last"
-            onClick={() => navigate(`/t/${lastFamily.slug}/kid-login`)}
-          >
-            Continue as {lastFamily.name} →
-          </Button>
-          <p className="mt-2 text-center font-body text-xs text-gray-600">
-            Not your family? Enter a different code below.
-          </p>
-        </div>
-      )}
-
       <p className="mb-3 font-body text-sm text-gray-700">
         Type your <span className="font-semibold">family code</span> to see your faces.
       </p>
@@ -394,24 +379,6 @@ function KidLoginPanel({ onSwitchToParent }: { onSwitchToParent: () => void }) {
           Let&rsquo;s go →
         </Button>
       </form>
-
-      <p className="mt-5 font-body text-xs text-gray-600">
-        Don&rsquo;t know your code? Ask a grown-up — it&rsquo;s the short name in your
-        family&rsquo;s link.
-      </p>
-
-      <p className="mt-6 font-body text-sm text-gray-700">
-        Are you a grown-up?{' '}
-        <button
-          type="button"
-          onClick={onSwitchToParent}
-          data-testid="login-kid-back-to-parent"
-          className="font-semibold underline"
-        >
-          Switch to parent log-in
-        </button>
-        .
-      </p>
     </section>
   );
 }
