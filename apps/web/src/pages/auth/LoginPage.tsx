@@ -223,22 +223,31 @@ function RoleToggle({ role, onChange }: { role: Role; onChange: (next: Role) => 
     >
       <RoleButton
         id="parent"
-        label="👩 I'm a Parent"
+        emoji="👩"
+        label="I'm a Parent"
         active={role === 'parent'}
         onSelect={onChange}
       />
-      <RoleButton id="kid" label="🧒 I'm a Kid" active={role === 'kid'} onSelect={onChange} />
+      <RoleButton
+        id="kid"
+        emoji="🧒"
+        label="I'm a Kid"
+        active={role === 'kid'}
+        onSelect={onChange}
+      />
     </div>
   );
 }
 
 function RoleButton({
   id,
+  emoji,
   label,
   active,
   onSelect,
 }: {
   id: Role;
+  emoji: string;
   label: string;
   active: boolean;
   onSelect: (id: Role) => void;
@@ -259,7 +268,9 @@ function RoleButton({
           : 'border-transparent text-gray-400 hover:text-gray-600',
       ].join(' ')}
     >
-      {label}
+      {/* Emoji is decorative — hidden from screen readers so the button's
+          accessible name is just "I'm a Parent" / "I'm a Kid". */}
+      <span aria-hidden="true">{emoji}</span> {label}
     </button>
   );
 }

@@ -172,6 +172,13 @@ describe('<LoginPage />', () => {
     expect(screen.getByTestId('location-search').textContent).toBe('');
   });
 
+  it('the role toggle buttons read cleanly to screen readers (emoji hidden)', () => {
+    renderPage();
+    // Accessible name excludes the decorative emoji (aria-hidden).
+    expect(screen.getByRole('button', { name: "I'm a Parent" })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: "I'm a Kid" })).toBeInTheDocument();
+  });
+
   it('honours ?role=kid on initial render', () => {
     renderPage('/login?role=kid');
     expect(screen.getByTestId('login-kid-panel')).toBeInTheDocument();
