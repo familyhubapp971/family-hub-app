@@ -73,6 +73,7 @@ export function KidSignIn({
     let cancelled = false;
     setLoad({ kind: 'loading' });
     setSelectedId(undefined);
+    setSubmit({ kind: 'idle' }); // don't carry a wrong-PIN error across families
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/api/public/kid-members/${encodeURIComponent(slug)}`);

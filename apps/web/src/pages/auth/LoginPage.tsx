@@ -312,11 +312,13 @@ function KidLoginPanel() {
     </p>
   );
 
-  // Family known → show the avatar tiles + PIN (MP "Who are you?").
+  // Family known → show the avatar tiles + PIN (MP "Who are you?"). The
+  // "change family" link sits below in all states (incl. not-found), so it's
+  // NOT also passed as KidSignIn's notFoundFooter (that would double it up).
   if (slug) {
     return (
       <section data-testid="login-kid-panel">
-        <KidSignIn slug={slug} notFoundFooter={changeFamily} />
+        <KidSignIn slug={slug} />
         {changeFamily}
       </section>
     );
