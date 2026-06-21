@@ -2,10 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-257 — kid dashboard shell. Renders for a child signed in with a
-// kid JWT: kid TopNav (no parent profile pill / admin links), three kid
-// tabs, and a Switch user button that drops the token + returns to
-// kid-login.
+// FHS-257 / FHS-362 — kid dashboard shell. Renders for a child signed in
+// with a kid JWT: the MP header (avatar + name + banked stars/cash), the
+// five-tab kid world (My World, Meals, Calendar, Journal, Learn — no parent
+// profile pill / admin links), and a Switch user button that drops the token
+// + returns to kid-login. My World carries the kid's habits, tasks, notices.
 
 import { KidDashboardShell } from '../../../../apps/web/src/pages/tenant/KidDashboardShell';
 import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
@@ -46,14 +47,42 @@ function renderShell() {
   );
 }
 
+// The shell makes two boot calls: GET /api/kid/me (session confirm) and
+// GET /api/kid/profile (header). This default routes both; the My World
+// data feeds (today/tasks/notices) fall through to empty.
+function mockKidBoot(over?: (url: string) => unknown) {
+  fetchMock.mockImplementation((url: string) => {
+    const u = String(url);
+    const custom = over?.(u);
+    if (custom !== undefined) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => custom });
+    }
+    if (u.includes('/api/kid/profile')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          displayName: 'Amina',
+          avatarEmoji: '🦊',
+          savedStickers: 12,
+          savedCash: 6,
+          currency: 'AED',
+        }),
+      });
+    }
+    // /api/kid/me + any unrouted feed.
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: async () => ({ memberId: 'm1', tenantId: 't1', tenantSlug: 'khan' }),
+    });
+  });
+}
+
 beforeEach(() => {
   localStorage.clear();
   fetchMock.mockReset();
-  fetchMock.mockResolvedValue({
-    ok: true,
-    status: 200,
-    json: async () => ({ memberId: 'm1', tenantId: 't1', tenantSlug: 'khan' }),
-  });
+  mockKidBoot();
   vi.stubGlobal('fetch', fetchMock);
 });
 
@@ -63,14 +92,24 @@ afterEach(() => {
 });
 
 describe('<KidDashboardShell />', () => {
-  it('renders the kid shell with three kid tabs and a Switch user button', async () => {
+  it('renders the five kid tabs and a Switch user button', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
     expect(screen.getByTestId('kid-switch-user')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Today/ })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Tasks/ })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Notices/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /My World/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Meals/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Calendar/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Journal/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Learn/ })).toBeInTheDocument();
+  });
+
+  it('shows the kid name + banked stars/cash from GET /api/kid/profile', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-title')).toHaveTextContent(/Amina/));
+    expect(screen.getByTestId('kid-stars')).toHaveTextContent('12');
+    expect(screen.getByTestId('kid-cash')).toHaveTextContent('AED 6.00');
   });
 
   it('shows none of the parent profile / admin affordances', async () => {
@@ -79,14 +118,11 @@ describe('<KidDashboardShell />', () => {
     await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
     expect(screen.queryByTestId('dashboard-profile-pill')).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /Members/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: /Calendar/ })).not.toBeInTheDocument();
   });
 
   it('confirms the kid session against GET /api/kid/me', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
-    // The default Today tab also fetches /api/kid/today, so find the /me call
-    // rather than assuming it's first.
     await waitFor(() =>
       expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/api/kid/me'))).toBe(true),
     );
@@ -96,25 +132,23 @@ describe('<KidDashboardShell />', () => {
     });
   });
 
-  it('switches the active tab', async () => {
+  it('switches the active tab to a coming-soon tab', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
-    await waitFor(() => expect(screen.getByTestId('kid-panel-today')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('kid-panel-world')).toBeInTheDocument());
     act(() => {
-      fireEvent.click(screen.getByRole('tab', { name: /Tasks/ }));
+      fireEvent.click(screen.getByRole('tab', { name: /Meals/ }));
     });
-    expect(screen.getByTestId('kid-panel-tasks')).toBeInTheDocument();
+    expect(screen.getByTestId('kid-panel-meals')).toBeInTheDocument();
+    expect(screen.getByTestId('kid-coming-soon')).toBeInTheDocument();
   });
 
-  // FHS-355 — the Notices tab shows the kid's real family notices.
-  it('Notices tab renders notices from GET /api/kid/notices', async () => {
+  // FHS-355 / FHS-362 — the My World tab shows the kid's family notices.
+  it('My World shows notices from GET /api/kid/notices', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
-    fetchMock.mockImplementation((url: string) => {
-      if (String(url).includes('/api/kid/notices')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
+    mockKidBoot((u) =>
+      u.includes('/api/kid/notices')
+        ? {
             notices: [
               {
                 id: 'n1',
@@ -125,26 +159,16 @@ describe('<KidDashboardShell />', () => {
                 createdAt: '2026-06-18T00:00:00.000Z',
               },
             ],
-          }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({ memberId: 'm1', tenantId: 't1', tenantSlug: 'khan' }),
-      });
-    });
+          }
+        : undefined,
+    );
     renderShell();
-    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
-    act(() => {
-      fireEvent.click(screen.getByRole('tab', { name: /Notices/ }));
-    });
     await waitFor(() => expect(screen.getByTestId('kid-notices-list')).toBeInTheDocument());
     expect(screen.getByText('Tidy your room')).toBeInTheDocument();
   });
 
-  // FHS-355 — the Tasks tab lists the kid's own tasks and ticking PATCHes.
-  it('Tasks tab lists the kid tasks and ticking one PATCHes /api/kid/tasks/:id', async () => {
+  // FHS-355 / FHS-362 — My World lists the kid's tasks; ticking PATCHes.
+  it('My World lists the kid tasks and ticking one PATCHes /api/kid/tasks/:id', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     const patchCalls: string[] = [];
     fetchMock.mockImplementation((url: string) => {
@@ -162,36 +186,16 @@ describe('<KidDashboardShell />', () => {
           }),
         });
       }
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({ memberId: 'm1', tenantId: 't1', tenantSlug: 'khan' }),
-      });
-    });
-    renderShell();
-    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
-    act(() => {
-      fireEvent.click(screen.getByRole('tab', { name: /Tasks/ }));
-    });
-    await waitFor(() => expect(screen.getByTestId('kid-tasks-list')).toBeInTheDocument());
-    expect(screen.getByText('Brush teeth')).toBeInTheDocument();
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('kid-task-check'));
-    });
-    await waitFor(() => expect(patchCalls.length).toBe(1));
-    expect(patchCalls[0]).toContain('/api/kid/tasks/t1');
-  });
-
-  // FHS-355 — the default Today tab shows the kid's own habits.
-  it('Today tab shows the kid habits from GET /api/kid/today', async () => {
-    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
-    fetchMock.mockImplementation((url: string) => {
-      if (String(url).includes('/api/kid/today')) {
+      if (u.includes('/api/kid/profile')) {
         return Promise.resolve({
           ok: true,
           status: 200,
           json: async () => ({
-            habits: [{ id: 'h1', name: 'Read a book', icon: '📚', color: '#facc15' }],
+            displayName: 'Amina',
+            avatarEmoji: '🦊',
+            savedStickers: 0,
+            savedCash: 0,
+            currency: 'AED',
           }),
         });
       }
@@ -201,6 +205,24 @@ describe('<KidDashboardShell />', () => {
         json: async () => ({ memberId: 'm1', tenantId: 't1', tenantSlug: 'khan' }),
       });
     });
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-tasks-list')).toBeInTheDocument());
+    expect(screen.getByText('Brush teeth')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('kid-task-check'));
+    });
+    await waitFor(() => expect(patchCalls.length).toBe(1));
+    expect(patchCalls[0]).toContain('/api/kid/tasks/t1');
+  });
+
+  // FHS-355 / FHS-362 — My World shows the kid's habits (today).
+  it('My World shows the kid habits from GET /api/kid/today', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    mockKidBoot((u) =>
+      u.includes('/api/kid/today')
+        ? { habits: [{ id: 'h1', name: 'Read a book', icon: '📚', color: '#facc15' }] }
+        : undefined,
+    );
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-today-list')).toBeInTheDocument());
     expect(screen.getByText('Read a book')).toBeInTheDocument();
@@ -218,7 +240,6 @@ describe('<KidDashboardShell />', () => {
   });
 
   it('bounces to kid-login when there is no kid token', async () => {
-    // No token set.
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-login-page')).toBeInTheDocument());
   });
@@ -233,7 +254,6 @@ describe('<KidDashboardShell />', () => {
 
   it('ejects when the token is for a different tenant than the URL', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
-    // URL slug is "khan"; the confirmed session is for "other".
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
@@ -250,7 +270,6 @@ describe('<KidDashboardShell />', () => {
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
     expect(screen.queryByTestId('kid-login-page')).not.toBeInTheDocument();
-    // Did not falsely announce an active session on the offline path.
     expect(screen.getByTestId('kid-session-confirmed').textContent).toBe('');
   });
 });
