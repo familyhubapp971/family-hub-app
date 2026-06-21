@@ -394,7 +394,9 @@ function ComingSoon({ emoji, title }: { emoji: string; title: string }) {
         {emoji}
       </p>
       <h2 className="mt-3 font-heading text-2xl text-black">{title}</h2>
-      <p className="mt-1 text-sm font-bold text-gray-600">Coming soon! ✨</p>
+      <p className="mt-1 text-sm font-bold text-gray-600">
+        Coming soon! <span aria-hidden="true">✨</span>
+      </p>
     </div>
   );
 }
@@ -463,7 +465,11 @@ export function KidDashboardShell() {
         if (!r.ok) return;
         const body = (await r.json()) as Partial<KidProfile>;
         // Only adopt a well-formed profile (guards against an unexpected shape).
-        if (typeof body.displayName === 'string' && typeof body.savedCash === 'number') {
+        if (
+          typeof body.displayName === 'string' &&
+          typeof body.savedStickers === 'number' &&
+          typeof body.savedCash === 'number'
+        ) {
           setProfile(body as KidProfile);
         }
       })
@@ -493,8 +499,8 @@ export function KidDashboardShell() {
     >
       <TopNav
         brand={
-          <div className="flex items-center gap-3" data-testid="kid-brand">
-            <span className="grid h-12 w-12 place-items-center rounded-full border-2 border-black bg-gradient-to-br from-yellow-300 to-pink-400 text-2xl shadow-neo-sm">
+          <div className="flex min-w-0 items-center gap-3" data-testid="kid-brand">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-2 border-black bg-gradient-to-br from-yellow-300 to-pink-400 text-2xl shadow-neo-sm">
               {profile?.avatarEmoji ? (
                 <span aria-hidden="true">{profile.avatarEmoji}</span>
               ) : profile?.displayName ? (
@@ -506,10 +512,16 @@ export function KidDashboardShell() {
               )}
             </span>
             <h1
-              className="font-heading text-xl uppercase tracking-wide text-white drop-shadow-md md:text-2xl"
+              className="truncate font-heading text-xl uppercase tracking-wide text-white drop-shadow-md md:text-2xl"
               data-testid="kid-title"
             >
-              {profile ? `${profile.displayName}'s World ✨` : 'My Hub'}
+              {profile?.displayName ? (
+                <>
+                  {profile.displayName}&rsquo;s World <span aria-hidden="true">✨</span>
+                </>
+              ) : (
+                'My Hub'
+              )}
             </h1>
           </div>
         }
@@ -517,7 +529,7 @@ export function KidDashboardShell() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         rightSlot={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {profile && (
               <div className="flex items-center gap-2" data-testid="kid-balance">
                 <span
@@ -526,13 +538,14 @@ export function KidDashboardShell() {
                 >
                   <Star size={14} strokeWidth={3} aria-hidden="true" />
                   {profile.savedStickers}
-                  <span className="sr-only"> stars</span>
+                  <span className="sr-only"> stars saved</span>
                 </span>
                 <span
                   className="flex min-h-[36px] items-center gap-1 rounded-md border-2 border-black bg-emerald-300 px-2.5 py-1 font-bold text-black shadow-neo-xs"
                   data-testid="kid-cash"
                 >
                   <Coins size={14} strokeWidth={3} aria-hidden="true" />
+                  <span className="sr-only">cash saved: </span>
                   <span>
                     {profile.currency} {profile.savedCash.toFixed(2)}
                   </span>

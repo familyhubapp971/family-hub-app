@@ -2,8 +2,8 @@
  * Step bindings for kid-profile.feature (FHS-362).
  *
  * The kid dashboard header (GET /api/kid/profile) returns the kid's OWN name,
- * avatar, and banked stars/cash — scoped to their member from the kid token.
- * Real kid token against real Postgres.
+ * avatar, and banked stars/cash — scoped to their member from the kid token,
+ * never a sibling's. Real kid token against real Postgres.
  */
 
 import { randomUUID } from 'node:crypto';
@@ -30,7 +30,7 @@ const KID_AVATAR = '🦊';
 
 let db: Database;
 let app: Hono;
-let kidToken: string;
+const tokens = new Map<string, string>();
 let res: Response;
 let body: {
   displayName: string;
@@ -56,38 +56,49 @@ const feature = await loadFeature(
 
 describeFeature(feature, ({ Background, Scenario }) => {
   Background(({ Given }) => {
-    Given('a family with kid "Iman" who has an avatar and 12 banked stars', async () => {
-      db = getTestDb() as unknown as Database;
-      await db.execute(sql`TRUNCATE TABLE tenants RESTART IDENTITY CASCADE`);
-      const [t] = await db
-        .insert(tenants)
-        .values({
-          slug: `kidprofile-${randomUUID().slice(0, 8)}`,
-          name: 'Profile Fam',
-          currency: 'AED',
-        })
-        .returning();
-      const [kid] = await db
-        .insert(members)
-        .values({
-          tenantId: t!.id,
-          displayName: 'Iman',
-          role: 'child',
-          isChild: true,
-          avatarEmoji: KID_AVATAR,
-        })
-        .returning();
-      await db.insert(mwSavings).values({ tenantId: t!.id, memberId: kid!.id, savedStickers: 12 });
-      kidToken = await mintKidToken(kid!.id, t!.id, t!.slug);
-      app = new Hono();
-      app.route('/api/kid', kidRouter);
-    });
+    Given(
+      'a family with kids "Iman" (12 stars, 5.00 cash, avatar) and "Yusuf" (0 stars)',
+      async () => {
+        db = getTestDb() as unknown as Database;
+        await db.execute(sql`TRUNCATE TABLE tenants RESTART IDENTITY CASCADE`);
+        const [t] = await db
+          .insert(tenants)
+          .values({
+            slug: `kidprofile-${randomUUID().slice(0, 8)}`,
+            name: 'Profile Fam',
+            currency: 'AED',
+          })
+          .returning();
+        const [iman] = await db
+          .insert(members)
+          .values({
+            tenantId: t!.id,
+            displayName: 'Iman',
+            role: 'child',
+            isChild: true,
+            avatarEmoji: KID_AVATAR,
+          })
+          .returning();
+        const [yusuf] = await db
+          .insert(members)
+          .values({ tenantId: t!.id, displayName: 'Yusuf', role: 'child', isChild: true })
+          .returning();
+        // Iman has savings; Yusuf has none (no row → 0/0).
+        await db
+          .insert(mwSavings)
+          .values({ tenantId: t!.id, memberId: iman!.id, savedStickers: 12, savedCash: '5.00' });
+        tokens.set('Iman', await mintKidToken(iman!.id, t!.id, t!.slug));
+        tokens.set('Yusuf', await mintKidToken(yusuf!.id, t!.id, t!.slug));
+        app = new Hono();
+        app.route('/api/kid', kidRouter);
+      },
+    );
   });
 
   Scenario('a kid sees their own profile in the header', ({ When, Then, And }) => {
-    When('the kid GETs /api/kid/profile with their token', async () => {
+    When('the kid "Iman" GETs /api/kid/profile with their token', async () => {
       res = await app.request('/api/kid/profile', {
-        headers: { Authorization: `Bearer ${kidToken}` },
+        headers: { Authorization: `Bearer ${tokens.get('Iman')}` },
       });
       body = (await res.json()) as typeof body;
     });
@@ -103,8 +114,32 @@ describeFeature(feature, ({ Background, Scenario }) => {
     And('the kid profile banked stars is 12', () => {
       expect(body.savedStickers).toBe(12);
     });
+    And('the kid profile banked cash is 5', () => {
+      expect(body.savedCash).toBe(5);
+    });
     And('the kid profile currency is "AED"', () => {
       expect(body.currency).toBe('AED');
     });
   });
+
+  Scenario(
+    "a kid's profile is scoped to their own member, never a sibling's",
+    ({ When, Then, And }) => {
+      When('the kid "Yusuf" GETs /api/kid/profile with their token', async () => {
+        res = await app.request('/api/kid/profile', {
+          headers: { Authorization: `Bearer ${tokens.get('Yusuf')}` },
+        });
+        body = (await res.json()) as typeof body;
+      });
+      Then('the kid profile response status is 200', () => {
+        expect(res.status).toBe(200);
+      });
+      And('the kid profile name is "Yusuf"', () => {
+        expect(body.displayName).toBe('Yusuf');
+      });
+      And('the kid profile banked stars is 0', () => {
+        expect(body.savedStickers).toBe(0);
+      });
+    },
+  );
 });

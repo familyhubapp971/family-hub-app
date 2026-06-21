@@ -112,6 +112,25 @@ describe('<KidDashboardShell />', () => {
     expect(screen.getByTestId('kid-cash')).toHaveTextContent('AED 6.00');
   });
 
+  it('falls back to the generic header when GET /api/kid/profile fails (404)', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/api/kid/profile')) {
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ memberId: 'm1', tenantId: 't1', tenantSlug: 'khan' }),
+      });
+    });
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
+    // No crash; the header shows the generic brand and no balance chips.
+    expect(screen.getByTestId('kid-title')).toHaveTextContent('My Hub');
+    expect(screen.queryByTestId('kid-balance')).not.toBeInTheDocument();
+  });
+
   it('shows none of the parent profile / admin affordances', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
