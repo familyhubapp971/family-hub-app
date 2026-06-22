@@ -86,14 +86,23 @@ type NavAbortRef = { current: AbortController | null };
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function JournalTab({ memberId }: { memberId: string }) {
+// FHS-270 / FHS-366 — used by both the parent ChildWorld (pass `memberId`, uses
+// the Supabase session) and the kid dashboard (pass `kidToken`, uses the
+// token-scoped /api/kid/journal endpoints). Exactly one of memberId/kidToken is
+// given; the request builders below branch on which.
+export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken?: string }) {
   const slug = useTenantSlug();
   const { session } = useAuth();
+  const kid = !!kidToken;
 
   const headers = useMemo(
     () =>
-      session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
-    [session, slug],
+      kid
+        ? { Authorization: `Bearer ${kidToken}` }
+        : session
+          ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug }
+          : null,
+    [kid, kidToken, session, slug],
   );
 
   // ── global loading / error ────────────────────────────────────────────────
@@ -145,10 +154,10 @@ export function JournalTab({ memberId }: { memberId: string }) {
       setLoading(true);
       setError(false);
       try {
-        const res = await fetch(`${API_BASE}/api/journal?memberId=${memberId}&date=${date}`, {
-          headers,
-          signal: signal ?? null,
-        });
+        const url = kid
+          ? `${API_BASE}/api/kid/journal?date=${date}`
+          : `${API_BASE}/api/journal?memberId=${memberId}&date=${date}`;
+        const res = await fetch(url, { headers, signal: signal ?? null });
         if (!res.ok) {
           setError(true);
           setLoading(false);
@@ -172,17 +181,17 @@ export function JournalTab({ memberId }: { memberId: string }) {
         setLoading(false);
       }
     },
-    [headers, memberId],
+    [headers, kid, memberId],
   );
 
   const fetchEarliest = useCallback(
     async (signal?: AbortSignal) => {
       if (!headers) return;
       try {
-        const res = await fetch(`${API_BASE}/api/journal/earliest?memberId=${memberId}`, {
-          headers,
-          signal: signal ?? null,
-        });
+        const url = kid
+          ? `${API_BASE}/api/kid/journal/earliest`
+          : `${API_BASE}/api/journal/earliest?memberId=${memberId}`;
+        const res = await fetch(url, { headers, signal: signal ?? null });
         if (!res.ok) return;
         const data = (await res.json()) as { earliestDate: string | null };
         setEarliestDate(data.earliestDate);
@@ -190,7 +199,7 @@ export function JournalTab({ memberId }: { memberId: string }) {
         // non-fatal — back-nav will just be unrestricted
       }
     },
-    [headers, memberId],
+    [headers, kid, memberId],
   );
 
   const fetchPastEntries = useCallback(
@@ -198,10 +207,10 @@ export function JournalTab({ memberId }: { memberId: string }) {
       if (!headers) return;
       setPastLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/api/journal/entries?memberId=${memberId}`, {
-          headers,
-          signal: signal ?? null,
-        });
+        const url = kid
+          ? `${API_BASE}/api/kid/journal/entries`
+          : `${API_BASE}/api/journal/entries?memberId=${memberId}`;
+        const res = await fetch(url, { headers, signal: signal ?? null });
         if (!res.ok) return;
         const data = (await res.json()) as { entries: Entry[] };
         setPastEntries(data.entries);
@@ -211,7 +220,7 @@ export function JournalTab({ memberId }: { memberId: string }) {
         setPastLoading(false);
       }
     },
-    [headers, memberId],
+    [headers, kid, memberId],
   );
 
   // ── initial load ──────────────────────────────────────────────────────────
@@ -266,7 +275,6 @@ export function JournalTab({ memberId }: { memberId: string }) {
     setSaveError(null); // clear previous error on new attempt (FIX 2)
     try {
       const payload: Record<string, unknown> = {
-        memberId,
         entryDate: currentDate,
         mood: mood ?? null,
         gratitude1: gratitude1 || null,
@@ -275,7 +283,9 @@ export function JournalTab({ memberId }: { memberId: string }) {
         body: body || null,
         creativity: Object.keys(creativity).length > 0 ? creativity : null,
       };
-      const res = await fetch(`${API_BASE}/api/journal`, {
+      // Parent route takes memberId in the body; the kid route scopes from the token.
+      if (!kid) payload.memberId = memberId;
+      const res = await fetch(kid ? `${API_BASE}/api/kid/journal` : `${API_BASE}/api/journal`, {
         method: 'PUT',
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -309,6 +319,7 @@ export function JournalTab({ memberId }: { memberId: string }) {
     }
   }, [
     headers,
+    kid,
     saveState,
     memberId,
     currentDate,

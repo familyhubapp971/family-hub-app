@@ -201,11 +201,11 @@ describe('<KidDashboardShell />', () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-panel-world')).toBeInTheDocument());
-    // Journal is still a placeholder (FHS-366); Meals/Calendar are now live.
+    // Learn is still a placeholder (FHS-367); the others are now live.
     act(() => {
-      fireEvent.click(screen.getByRole('tab', { name: /Journal/ }));
+      fireEvent.click(screen.getByRole('tab', { name: /Learn/ }));
     });
-    expect(screen.getByTestId('kid-panel-journal')).toBeInTheDocument();
+    expect(screen.getByTestId('kid-panel-learn')).toBeInTheDocument();
     expect(screen.getByTestId('kid-coming-soon')).toBeInTheDocument();
   });
 
