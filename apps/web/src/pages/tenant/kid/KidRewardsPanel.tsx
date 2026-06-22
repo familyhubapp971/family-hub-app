@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Coins, Gift, Sprout, Star } from 'lucide-react';
 import { API_BASE } from '../../../lib/api';
 
@@ -37,15 +37,27 @@ interface Financial {
   investments: Investment[];
 }
 
-export function KidRewardsPanel({ kidToken }: { kidToken: string | null }) {
+export function KidRewardsPanel({
+  kidToken,
+  onClaimed,
+}: {
+  kidToken: string | null;
+  /** Called after a successful claim so the shell can refresh the header stars. */
+  onClaimed?: () => void;
+}) {
   const [rewards, setRewards] = useState<RewardsResponse | null>(null);
   const [financial, setFinancial] = useState<Financial | null>(null);
   const [state, setState] = useState<'loading' | 'error' | 'loaded'>('loading');
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
+  // Synchronous guard: blocks a second claim before React re-renders the
+  // disabled button (a fast double-tap would otherwise fire two redeems).
+  const claimingRef = useRef(false);
 
   const load = useCallback(
-    async (signal?: AbortSignal) => {
+    // `silent` skips the error state — used for the post-claim refresh so a
+    // hiccup there doesn't replace a just-claimed panel with "couldn't load".
+    async (signal?: AbortSignal, silent = false) => {
       if (!kidToken) return;
       try {
         const headers = { Authorization: `Bearer ${kidToken}` };
@@ -54,20 +66,20 @@ export function KidRewardsPanel({ kidToken }: { kidToken: string | null }) {
           fetch(`${API_BASE}/api/kid/financial`, { headers, signal: signal ?? null }),
         ]);
         if (!r1.ok || !r2.ok) {
-          setState('error');
+          if (!silent) setState('error');
           return;
         }
         const rewardsBody = (await r1.json()) as RewardsResponse;
         const financialBody = (await r2.json()) as Financial;
         if (!Array.isArray(rewardsBody.rewards) || !Array.isArray(financialBody.investments)) {
-          setState('error');
+          if (!silent) setState('error');
           return;
         }
         setRewards(rewardsBody);
         setFinancial(financialBody);
         setState('loaded');
       } catch (e) {
-        if (!(e instanceof Error && e.name === 'AbortError')) setState('error');
+        if (!(e instanceof Error && e.name === 'AbortError') && !silent) setState('error');
       }
     },
     [kidToken],
@@ -81,7 +93,8 @@ export function KidRewardsPanel({ kidToken }: { kidToken: string | null }) {
 
   const claim = useCallback(
     async (reward: Reward) => {
-      if (!kidToken || redeemingId) return;
+      if (!kidToken || claimingRef.current) return;
+      claimingRef.current = true;
       setRedeemingId(reward.id);
       setMsg(null);
       try {
@@ -99,14 +112,16 @@ export function KidRewardsPanel({ kidToken }: { kidToken: string | null }) {
           return;
         }
         setMsg({ kind: 'ok', text: `You claimed ${reward.name}! 🎉` });
-        await load();
+        await load(undefined, true); // silent — keep the happy panel if refresh blips
+        onClaimed?.(); // let the shell refresh the header stars chip
       } catch {
         setMsg({ kind: 'err', text: 'That didn’t work — check your connection.' });
       } finally {
+        claimingRef.current = false;
         setRedeemingId(null);
       }
     },
-    [kidToken, redeemingId, load],
+    [kidToken, load, onClaimed],
   );
 
   if (state === 'loading') {
@@ -129,24 +144,30 @@ export function KidRewardsPanel({ kidToken }: { kidToken: string | null }) {
   }
 
   const balance = rewards.stickerBalance;
+  // Total spendable stars in savings = banked stars + saved cash expressed as
+  // stars (matches the server's balance maths); savedValue is the same in cash.
   const savedStars = financial.savedStickers + Math.floor(financial.savedCash / STICKER_TO_CASH);
   const savedValue = financial.savedStickers * STICKER_TO_CASH + financial.savedCash;
 
   return (
     <div className="space-y-4" data-testid="kid-rewards">
-      {msg && (
-        <p
-          role={msg.kind === 'err' ? 'alert' : 'status'}
-          data-testid="kid-rewards-msg"
-          className={`rounded-lg border-2 px-3 py-2 text-center text-sm font-bold ${
-            msg.kind === 'err'
-              ? 'border-red-400 bg-red-50 text-red-700'
-              : 'border-emerald-400 bg-emerald-50 text-emerald-700'
-          }`}
-        >
-          {msg.text}
-        </p>
-      )}
+      {/* Always present so screen readers announce the claim result reliably. */}
+      <p
+        role="status"
+        aria-live="polite"
+        data-testid="kid-rewards-msg"
+        className={
+          msg
+            ? `rounded-lg border-2 px-3 py-2 text-center text-sm font-bold ${
+                msg.kind === 'err'
+                  ? 'border-red-400 bg-red-50 text-red-700'
+                  : 'border-emerald-400 bg-emerald-50 text-emerald-700'
+              }`
+            : 'sr-only'
+        }
+      >
+        {msg?.text ?? ''}
+      </p>
 
       {/* Reward Goals */}
       <section
@@ -199,6 +220,11 @@ export function KidRewardsPanel({ kidToken }: { kidToken: string | null }) {
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-label={`${r.name} progress`}
+                    aria-valuetext={
+                      affordable
+                        ? 'Ready to claim'
+                        : `${toGo} more star${toGo === 1 ? '' : 's'} to go`
+                    }
                   >
                     <div
                       className={`h-full ${affordable ? 'bg-emerald-400' : 'bg-yellow-300'}`}
@@ -210,6 +236,7 @@ export function KidRewardsPanel({ kidToken }: { kidToken: string | null }) {
                       type="button"
                       onClick={() => void claim(r)}
                       disabled={redeemingId !== null}
+                      aria-busy={redeemingId === r.id}
                       data-testid={`kid-reward-claim-${r.id}`}
                       className="min-h-[44px] w-full rounded-md border-2 border-black bg-emerald-300 py-2 font-bold text-black shadow-neo-xs motion-safe:hover:-translate-y-0.5 disabled:opacity-50"
                     >

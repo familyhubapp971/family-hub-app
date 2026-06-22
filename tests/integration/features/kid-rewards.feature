@@ -26,3 +26,7 @@ Feature: Kid rewards + money
   Scenario: a kid cannot claim a reward they can't afford
     When the kid redeems "Big Prize"
     Then the redeem response status is 409
+
+  Scenario: a kid cannot claim a reward from another family
+    When the kid redeems a reward belonging to another family
+    Then the redeem response status is 404

@@ -31,6 +31,7 @@ let app: Hono;
 let kidToken: string;
 let iceCreamId: string;
 let bigPrizeId: string;
+let otherFamilyRewardId: string;
 let res: Response;
 let body: Record<string, unknown>;
 let redeemRes: Response;
@@ -83,6 +84,16 @@ describeFeature(feature, ({ Background, Scenario }) => {
         iceCreamId = ice!.id;
         bigPrizeId = big!.id;
         kidToken = await mintKidToken(iman!.id, t!.id, t!.slug);
+        // A second family with its own reward — Iman must never reach it.
+        const [other] = await db
+          .insert(tenants)
+          .values({ slug: `other-${randomUUID().slice(0, 8)}`, name: 'Other Fam' })
+          .returning();
+        const [otherReward] = await db
+          .insert(rewards)
+          .values({ tenantId: other!.id, name: 'Their Toy', stickerCost: 1 })
+          .returning();
+        otherFamilyRewardId = otherReward!.id;
         app = new Hono();
         app.route('/api/kid', kidRouter);
       },
@@ -150,6 +161,19 @@ describeFeature(feature, ({ Background, Scenario }) => {
     });
     Then('the redeem response status is 409', () => {
       expect(redeemRes.status).toBe(409);
+    });
+  });
+
+  Scenario('a kid cannot claim a reward from another family', ({ When, Then }) => {
+    When('the kid redeems a reward belonging to another family', async () => {
+      redeemRes = await app.request(`/api/kid/rewards/${otherFamilyRewardId}/redeem`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+    });
+    Then('the redeem response status is 404', () => {
+      expect(redeemRes.status).toBe(404);
     });
   });
 });

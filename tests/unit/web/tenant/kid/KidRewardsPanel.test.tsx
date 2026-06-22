@@ -106,6 +106,17 @@ describe('<KidRewardsPanel />', () => {
     );
   });
 
+  it('calls onClaimed after a successful claim so the header can refresh', async () => {
+    mock({ rewards: [REWARD], balance: 20 });
+    const onClaimed = vi.fn();
+    render(<KidRewardsPanel kidToken={TOKEN} onClaimed={onClaimed} />);
+    await waitFor(() => expect(screen.getByTestId('kid-reward-claim-rw1')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('kid-reward-claim-rw1'));
+    });
+    await waitFor(() => expect(onClaimed).toHaveBeenCalled());
+  });
+
   it('shows a friendly message when the server says not enough stars (409)', async () => {
     mock({ rewards: [REWARD], balance: 20, redeemStatus: 409 });
     render(<KidRewardsPanel kidToken={TOKEN} />);
