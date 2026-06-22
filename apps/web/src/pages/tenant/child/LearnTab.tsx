@@ -54,7 +54,11 @@ const FALLBACK_STYLE = { emoji: '⭐', bg: 'bg-gray-300' };
 // session) and the kid dashboard (pass `kidToken`, token-scoped /api/kid/learn +
 // /api/kid/reading-log). In kid mode the subjects list comes back lessons-only
 // (World Flags is kid-scoped separately in FHS-373), so its card never renders.
-export function LearnTab({ memberId, kidToken }: { memberId?: string; kidToken?: string }) {
+// Exactly one of memberId / kidToken is supplied (enforced by the union type).
+type LearnTabProps =
+  | { memberId: string; kidToken?: undefined }
+  | { kidToken: string; memberId?: undefined };
+export function LearnTab({ memberId, kidToken }: LearnTabProps) {
   const slug = useTenantSlug();
   const { session } = useAuth();
   const kid = !!kidToken;
@@ -357,6 +361,8 @@ export function LearnTab({ memberId, kidToken }: { memberId?: string; kidToken?:
               data-testid="reading-log-add-title"
               type="text"
               placeholder="Book title"
+              maxLength={200}
+              aria-label="Book title"
               value={addTitle}
               onChange={(e) => setAddTitle(e.target.value)}
               className="min-h-[44px] rounded-lg border-2 border-black px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -367,6 +373,8 @@ export function LearnTab({ memberId, kidToken }: { memberId?: string; kidToken?:
             <input
               type="text"
               placeholder="Author (optional)"
+              aria-label="Author (optional)"
+              maxLength={120}
               value={addAuthor}
               onChange={(e) => setAddAuthor(e.target.value)}
               className="min-h-[44px] rounded-lg border-2 border-black px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -427,7 +435,7 @@ export function LearnTab({ memberId, kidToken }: { memberId?: string; kidToken?:
                       book.finished ? 'bg-green-400' : 'bg-white hover:bg-green-100'
                     }`}
                   >
-                    <Check size={14} />
+                    <Check size={14} aria-hidden="true" />
                   </button>
                   {/* Delete */}
                   <button

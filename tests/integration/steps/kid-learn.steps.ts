@@ -31,6 +31,7 @@ const tokens = new Map<string, string>();
 let res: Response;
 let addRes: Response;
 let answerRes: Response;
+let siblingRes: Response;
 
 async function mintKidToken(memberId: string, tenantId: string, slug: string): Promise<string> {
   const secret = new TextEncoder().encode(config.KID_AUTH_SECRET);
@@ -124,6 +125,25 @@ describeFeature(feature, ({ Background, Scenario }) => {
       const r = await app.request('/api/kid/reading-log', { headers: authFor('Yusuf') });
       const b = (await r.json()) as { books: unknown[] };
       expect(b.books).toHaveLength(0);
+    });
+  });
+
+  Scenario("a kid cannot change a sibling's book", ({ When, Then }) => {
+    When('"Yusuf" tries to mark "Iman"\'s book finished', async () => {
+      const add = await app.request('/api/kid/reading-log', {
+        method: 'POST',
+        headers: jsonAuth('Iman'),
+        body: JSON.stringify({ title: 'Matilda' }),
+      });
+      const book = (await add.json()) as { id: string };
+      siblingRes = await app.request(`/api/kid/reading-log/${book.id}`, {
+        method: 'PATCH',
+        headers: jsonAuth('Yusuf'),
+        body: JSON.stringify({ finished: true }),
+      });
+    });
+    Then('the sibling change response status is 404', () => {
+      expect(siblingRes.status).toBe(404);
     });
   });
 });

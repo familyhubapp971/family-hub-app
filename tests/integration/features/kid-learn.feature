@@ -23,3 +23,7 @@ Feature: Kid learn + reading log
     Then the add-book response status is 201
     And reading "Iman" books includes "Matilda"
     And reading "Yusuf" books is empty
+
+  Scenario: a kid cannot change a sibling's book
+    When "Yusuf" tries to mark "Iman"'s book finished
+    Then the sibling change response status is 404
