@@ -106,6 +106,16 @@ function mockKidBoot(over?: (url: string) => unknown) {
         json: async () => ({ savedStickers: 0, savedCash: 0, currency: 'AED', investments: [] }),
       });
     }
+    if (u.includes('/api/kid/meals')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ meals: [] }) });
+    }
+    if (u.includes('/api/kid/events')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ weekStart: '2026-06-15', events: [] }),
+      });
+    }
     // /api/kid/me + any unrouted feed.
     return Promise.resolve({
       ok: true,
@@ -191,11 +201,39 @@ describe('<KidDashboardShell />', () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-panel-world')).toBeInTheDocument());
+    // Journal is still a placeholder (FHS-366); Meals/Calendar are now live.
+    act(() => {
+      fireEvent.click(screen.getByRole('tab', { name: /Journal/ }));
+    });
+    expect(screen.getByTestId('kid-panel-journal')).toBeInTheDocument();
+    expect(screen.getByTestId('kid-coming-soon')).toBeInTheDocument();
+  });
+
+  it('Meals tab shows the kid meals from GET /api/kid/meals', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    mockKidBoot((u) =>
+      u.includes('/api/kid/meals')
+        ? {
+            meals: [
+              {
+                id: 'm1',
+                dayOfWeek: 'mon',
+                slot: 'lunch',
+                name: 'Pasta',
+                memberId: null,
+                recurring: false,
+              },
+            ],
+          }
+        : undefined,
+    );
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
     act(() => {
       fireEvent.click(screen.getByRole('tab', { name: /Meals/ }));
     });
-    expect(screen.getByTestId('kid-panel-meals')).toBeInTheDocument();
-    expect(screen.getByTestId('kid-coming-soon')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('kid-meals-tab')).toBeInTheDocument());
+    expect(screen.getByText('Pasta')).toBeInTheDocument();
   });
 
   // FHS-355 / FHS-362 — the My World tab shows the kid's family notices.

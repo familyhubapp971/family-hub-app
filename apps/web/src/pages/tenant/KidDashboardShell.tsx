@@ -16,6 +16,8 @@ import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { KidHabitsPanel } from './kid/KidHabitsPanel';
 import { KidRewardsPanel } from './kid/KidRewardsPanel';
+import { KidMealsPanel } from './kid/KidMealsPanel';
+import { KidCalendarPanel } from './kid/KidCalendarPanel';
 
 // FHS-257 / FHS-362 — kid dashboard shell.
 //
@@ -501,9 +503,9 @@ export function KidDashboardShell() {
           {active.id === 'world' ? (
             <MyWorldPanel kidToken={kidToken} onProfileChanged={() => void loadProfile()} />
           ) : active.id === 'meals' ? (
-            <ComingSoon emoji="😋" title="My Yummy Meals" />
+            <KidMealsPanel kidToken={kidToken} />
           ) : active.id === 'calendar' ? (
-            <ComingSoon emoji="📅" title="My Schedule" />
+            <KidCalendarPanel kidToken={kidToken} />
           ) : active.id === 'journal' ? (
             <ComingSoon emoji="📔" title="My Journal" />
           ) : (
