@@ -14,6 +14,7 @@ import { TopNav, type TopNavTab } from '@familyhub/ui';
 import { clearKidToken, getKidToken } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
+import { KidHabitsPanel } from './kid/KidHabitsPanel';
 
 // FHS-257 / FHS-362 — kid dashboard shell.
 //
@@ -273,105 +274,13 @@ function KidTasksPanel({ kidToken }: { kidToken: string | null }) {
   );
 }
 
-// FHS-355 — kid Today tab. The kid's own active habits (GET /api/kid/today).
-// Read-only at-a-glance; full sticker interaction is a follow-up.
-interface KidHabit {
-  id: string;
-  name: string;
-  icon: string | null;
-  color: string;
-}
-type KidTodayState =
-  | { kind: 'loading' }
-  | { kind: 'error' }
-  | { kind: 'loaded'; habits: KidHabit[] };
-
-function KidTodayPanel({ kidToken }: { kidToken: string | null }) {
-  const [state, setState] = useState<KidTodayState>({ kind: 'loading' });
-
-  useEffect(() => {
-    if (!kidToken) return;
-    const ac = new AbortController();
-    fetch(`${API_BASE}/api/kid/today`, {
-      headers: { Authorization: `Bearer ${kidToken}` },
-      signal: ac.signal,
-    })
-      .then(async (r) => {
-        if (!r.ok) {
-          setState({ kind: 'error' });
-          return;
-        }
-        const body = (await r.json()) as { habits: KidHabit[] };
-        setState({ kind: 'loaded', habits: body.habits ?? [] });
-      })
-      .catch((err: unknown) => {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        setState({ kind: 'error' });
-      });
-    return () => ac.abort();
-  }, [kidToken]);
-
-  if (state.kind === 'loading') {
-    return (
-      <p
-        data-testid="kid-today-loading"
-        aria-busy="true"
-        className="text-sm font-bold text-gray-600"
-      >
-        Loading your day…
-      </p>
-    );
-  }
-  if (state.kind === 'error') {
-    return (
-      <p data-testid="kid-today-error" role="alert" className="text-sm font-bold text-red-600">
-        Couldn&rsquo;t load your day — try again.
-      </p>
-    );
-  }
-  if (state.habits.length === 0) {
-    return (
-      <div data-testid="kid-today-empty">
-        <p aria-hidden="true" className="text-5xl">
-          🌈
-        </p>
-        <h2 className="mt-3 font-heading text-2xl text-black">Today</h2>
-        <p className="mt-1 text-sm font-bold text-gray-600">
-          No habits yet — ask a grown-up to add some!
-        </p>
-      </div>
-    );
-  }
-  return (
-    <div className="flex flex-col gap-3 text-left" data-testid="kid-today-list">
-      <h2 className="text-center font-heading text-2xl text-black">My habits today</h2>
-      {state.habits.map((h) => (
-        <div
-          key={h.id}
-          data-testid="kid-habit"
-          className="flex items-center gap-3 rounded-xl border-2 border-black p-4 shadow-neo-sm"
-          style={{ backgroundColor: `${h.color}33` }}
-        >
-          <span aria-hidden="true" className="text-2xl">
-            {h.icon ?? '⭐'}
-          </span>
-          <span className="font-bold text-black">{h.name}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// FHS-362 — My World tab. For now it carries the kid's existing content —
-// today's habits, tasks, and notices — stacked. FHS-363 swaps the read-only
-// habits for the interactive 7-day sticker grid and adds the rewards shop +
-// savings widgets to match the Magic Patterns design.
+// FHS-362 / FHS-363 — My World tab. The interactive weekly habit grid
+// (KidHabitsPanel) plus the kid's tasks + notices (these two move to their own
+// tabs in FHS-370). Rewards + savings widgets land in FHS-364.
 function MyWorldPanel({ kidToken }: { kidToken: string | null }) {
   return (
     <div className="space-y-6" data-testid="kid-myworld">
-      <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
-        <KidTodayPanel kidToken={kidToken} />
-      </div>
+      <KidHabitsPanel kidToken={kidToken} />
       <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
         <KidTasksPanel kidToken={kidToken} />
       </div>
