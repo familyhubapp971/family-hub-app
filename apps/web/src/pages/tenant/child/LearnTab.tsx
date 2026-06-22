@@ -50,9 +50,18 @@ const FALLBACK_STYLE = { emoji: '⭐', bg: 'bg-gray-300' };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function LearnTab({ memberId }: { memberId: string }) {
+// FHS-270 / FHS-367 — used by the parent ChildWorld (pass `memberId`, Supabase
+// session) and the kid dashboard (pass `kidToken`, token-scoped /api/kid/learn +
+// /api/kid/reading-log). In kid mode the subjects list comes back lessons-only
+// (World Flags is kid-scoped separately in FHS-373), so its card never renders.
+// Exactly one of memberId / kidToken is supplied (enforced by the union type).
+type LearnTabProps =
+  | { memberId: string; kidToken?: undefined }
+  | { kidToken: string; memberId?: undefined };
+export function LearnTab({ memberId, kidToken }: LearnTabProps) {
   const slug = useTenantSlug();
   const { session } = useAuth();
+  const kid = !!kidToken;
 
   // Subject routing state — null = overview, string = subject detail
   const [selectedSubject, setSelectedSubject] = useState<SelectedSubject>(null);
@@ -70,8 +79,12 @@ export function LearnTab({ memberId }: { memberId: string }) {
 
   const headers = useMemo(
     () =>
-      session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
-    [session, slug],
+      kid
+        ? { Authorization: `Bearer ${kidToken}` }
+        : session
+          ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug }
+          : null,
+    [kid, kidToken, session, slug],
   );
 
   // ── Load subjects ──────────────────────────────────────────────────────────
@@ -80,10 +93,10 @@ export function LearnTab({ memberId }: { memberId: string }) {
     async (signal?: AbortSignal) => {
       if (!headers) return;
       try {
-        const res = await fetch(`${API_BASE}/api/learn?memberId=${memberId}`, {
-          headers,
-          signal: signal ?? null,
-        });
+        const url = kid
+          ? `${API_BASE}/api/kid/learn`
+          : `${API_BASE}/api/learn?memberId=${memberId}`;
+        const res = await fetch(url, { headers, signal: signal ?? null });
         if (!res.ok) {
           setLearnStatus('error');
           return;
@@ -96,7 +109,7 @@ export function LearnTab({ memberId }: { memberId: string }) {
         setLearnStatus('error');
       }
     },
-    [headers, memberId],
+    [headers, kid, memberId],
   );
 
   useEffect(() => {
@@ -111,10 +124,10 @@ export function LearnTab({ memberId }: { memberId: string }) {
     async (signal?: AbortSignal) => {
       if (!headers) return;
       try {
-        const res = await fetch(`${API_BASE}/api/reading-log?memberId=${memberId}`, {
-          headers,
-          signal: signal ?? null,
-        });
+        const url = kid
+          ? `${API_BASE}/api/kid/reading-log`
+          : `${API_BASE}/api/reading-log?memberId=${memberId}`;
+        const res = await fetch(url, { headers, signal: signal ?? null });
         if (!res.ok) {
           setBooksStatus('error');
           return;
@@ -127,7 +140,7 @@ export function LearnTab({ memberId }: { memberId: string }) {
         setBooksStatus('error');
       }
     },
-    [headers, memberId],
+    [headers, kid, memberId],
   );
 
   useEffect(() => {
@@ -142,16 +155,20 @@ export function LearnTab({ memberId }: { memberId: string }) {
     if (!headers || !addTitle.trim()) return;
     setAddPending(true);
     try {
-      const res = await fetch(`${API_BASE}/api/reading-log`, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          memberId,
-          title: addTitle.trim(),
-          // exactOptionalPropertyTypes: only include author if non-empty
-          ...(addAuthor.trim() ? { author: addAuthor.trim() } : {}),
-        }),
-      });
+      const res = await fetch(
+        kid ? `${API_BASE}/api/kid/reading-log` : `${API_BASE}/api/reading-log`,
+        {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            // Parent route needs memberId; the kid route scopes from the token.
+            ...(kid ? {} : { memberId }),
+            title: addTitle.trim(),
+            // exactOptionalPropertyTypes: only include author if non-empty
+            ...(addAuthor.trim() ? { author: addAuthor.trim() } : {}),
+          }),
+        },
+      );
       if (res.ok) {
         const book = (await res.json()) as Book;
         setBooks((prev) => [book, ...prev]);
@@ -161,24 +178,29 @@ export function LearnTab({ memberId }: { memberId: string }) {
     } finally {
       setAddPending(false);
     }
-  }, [headers, memberId, addTitle, addAuthor]);
+  }, [headers, kid, memberId, addTitle, addAuthor]);
 
   // ── Toggle finished ────────────────────────────────────────────────────────
 
   const handleToggle = useCallback(
     async (book: Book) => {
       if (!headers) return;
-      const res = await fetch(`${API_BASE}/api/reading-log/${book.id}`, {
+      const url = kid
+        ? `${API_BASE}/api/kid/reading-log/${book.id}`
+        : `${API_BASE}/api/reading-log/${book.id}`;
+      const res = await fetch(url, {
         method: 'PATCH',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId, finished: !book.finished }),
+        body: JSON.stringify(
+          kid ? { finished: !book.finished } : { memberId, finished: !book.finished },
+        ),
       });
       if (res.ok) {
         const updated = (await res.json()) as Book;
         setBooks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
       }
     },
-    [headers, memberId],
+    [headers, kid, memberId],
   );
 
   // ── Delete book ────────────────────────────────────────────────────────────
@@ -186,15 +208,15 @@ export function LearnTab({ memberId }: { memberId: string }) {
   const handleDelete = useCallback(
     async (bookId: string) => {
       if (!headers) return;
-      const res = await fetch(`${API_BASE}/api/reading-log/${bookId}?memberId=${memberId}`, {
-        method: 'DELETE',
-        headers,
-      });
+      const url = kid
+        ? `${API_BASE}/api/kid/reading-log/${bookId}`
+        : `${API_BASE}/api/reading-log/${bookId}?memberId=${memberId}`;
+      const res = await fetch(url, { method: 'DELETE', headers });
       if (res.ok || res.status === 204) {
         setBooks((prev) => prev.filter((b) => b.id !== bookId));
       }
     },
-    [headers, memberId],
+    [headers, kid, memberId],
   );
 
   // ── Subject detail views ───────────────────────────────────────────────────
@@ -213,10 +235,15 @@ export function LearnTab({ memberId }: { memberId: string }) {
           Back to subjects
         </button>
 
-        {selectedSubject === 'World Flags' ? (
+        {selectedSubject === 'World Flags' && !kid && memberId ? (
           <WorldFlags memberId={memberId} />
         ) : LESSON_SUBJECTS.includes(selectedSubject) ? (
-          <LessonView subject={selectedSubject} memberId={memberId} headers={headers} />
+          <LessonView
+            subject={selectedSubject}
+            headers={headers}
+            {...(memberId ? { memberId } : {})}
+            {...(kidToken ? { kidToken } : {})}
+          />
         ) : (
           /* Coming soon card for subjects not yet built */
           <div className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm">
@@ -334,6 +361,8 @@ export function LearnTab({ memberId }: { memberId: string }) {
               data-testid="reading-log-add-title"
               type="text"
               placeholder="Book title"
+              maxLength={200}
+              aria-label="Book title"
               value={addTitle}
               onChange={(e) => setAddTitle(e.target.value)}
               className="min-h-[44px] rounded-lg border-2 border-black px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -344,6 +373,8 @@ export function LearnTab({ memberId }: { memberId: string }) {
             <input
               type="text"
               placeholder="Author (optional)"
+              aria-label="Author (optional)"
+              maxLength={120}
               value={addAuthor}
               onChange={(e) => setAddAuthor(e.target.value)}
               className="min-h-[44px] rounded-lg border-2 border-black px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -404,7 +435,7 @@ export function LearnTab({ memberId }: { memberId: string }) {
                       book.finished ? 'bg-green-400' : 'bg-white hover:bg-green-100'
                     }`}
                   >
-                    <Check size={14} />
+                    <Check size={14} aria-hidden="true" />
                   </button>
                   {/* Delete */}
                   <button

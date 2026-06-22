@@ -44,12 +44,15 @@ type Headers = Record<string, string> | null;
 export function LessonView({
   subject,
   memberId,
+  kidToken,
   headers,
 }: {
   subject: string;
-  memberId: string;
+  memberId?: string;
+  kidToken?: string;
   headers: Headers;
 }) {
+  const kid = !!kidToken;
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
@@ -72,10 +75,10 @@ export function LessonView({
     setResult(null);
     setPickError(false);
     setIdx(0);
-    fetch(
-      `${API_BASE}/api/learn/${encodeURIComponent(subject)}/questions?memberId=${memberId}&difficulty=${difficulty}`,
-      { headers },
-    )
+    const url = kid
+      ? `${API_BASE}/api/kid/learn/${encodeURIComponent(subject)}/questions?difficulty=${difficulty}`
+      : `${API_BASE}/api/learn/${encodeURIComponent(subject)}/questions?memberId=${memberId}&difficulty=${difficulty}`;
+    fetch(url, { headers })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('load failed'))))
       .then((body: QuestionsResponse) => {
         if (cancelled) return;
@@ -89,7 +92,7 @@ export function LessonView({
     return () => {
       cancelled = true;
     };
-  }, [headers, subject, memberId, difficulty]);
+  }, [headers, kid, subject, memberId, difficulty]);
 
   useEffect(() => load(), [load]);
 
@@ -102,10 +105,17 @@ export function LessonView({
     setPickError(false);
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE}/api/learn/${encodeURIComponent(subject)}/answer`, {
+      const answerUrl = kid
+        ? `${API_BASE}/api/kid/learn/${encodeURIComponent(subject)}/answer`
+        : `${API_BASE}/api/learn/${encodeURIComponent(subject)}/answer`;
+      const res = await fetch(answerUrl, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId, questionId: current.id, choiceIndex }),
+        body: JSON.stringify(
+          kid
+            ? { questionId: current.id, choiceIndex }
+            : { memberId, questionId: current.id, choiceIndex },
+        ),
       });
       if (roundId.current !== myRound) return; // difficulty/round changed — drop it
       if (res.ok) {
