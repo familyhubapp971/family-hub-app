@@ -197,16 +197,14 @@ describe('<KidDashboardShell />', () => {
     });
   });
 
-  it('switches the active tab to a coming-soon tab', async () => {
+  it('switches the active tab', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-panel-world')).toBeInTheDocument());
-    // Learn is still a placeholder (FHS-367); the others are now live.
     act(() => {
-      fireEvent.click(screen.getByRole('tab', { name: /Learn/ }));
+      fireEvent.click(screen.getByRole('tab', { name: /Calendar/ }));
     });
-    expect(screen.getByTestId('kid-panel-learn')).toBeInTheDocument();
-    expect(screen.getByTestId('kid-coming-soon')).toBeInTheDocument();
+    expect(screen.getByTestId('kid-panel-calendar')).toBeInTheDocument();
   });
 
   it('Meals tab shows the kid meals from GET /api/kid/meals', async () => {

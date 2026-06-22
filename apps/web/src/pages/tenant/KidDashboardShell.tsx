@@ -19,6 +19,7 @@ import { KidRewardsPanel } from './kid/KidRewardsPanel';
 import { KidMealsPanel } from './kid/KidMealsPanel';
 import { KidCalendarPanel } from './kid/KidCalendarPanel';
 import { KidJournalPanel } from './kid/KidJournalPanel';
+import { KidLearnPanel } from './kid/KidLearnPanel';
 
 // FHS-257 / FHS-362 — kid dashboard shell.
 //
@@ -302,25 +303,6 @@ function MyWorldPanel({
   );
 }
 
-// FHS-362 — friendly placeholder for the tabs whose kid-scoped data lands in
-// later tickets (Meals FHS-364, Calendar FHS-365, Journal FHS-366, Learn FHS-367).
-function ComingSoon({ emoji, title }: { emoji: string; title: string }) {
-  return (
-    <div
-      className="rounded-xl border-2 border-black bg-white p-10 text-center shadow-neo-sm"
-      data-testid="kid-coming-soon"
-    >
-      <p aria-hidden="true" className="text-5xl">
-        {emoji}
-      </p>
-      <h2 className="mt-3 font-heading text-2xl text-black">{title}</h2>
-      <p className="mt-1 text-sm font-bold text-gray-600">
-        Coming soon! <span aria-hidden="true">✨</span>
-      </p>
-    </div>
-  );
-}
-
 export function KidDashboardShell() {
   const slug = useTenantSlug();
   const navigate = useNavigate();
@@ -510,7 +492,7 @@ export function KidDashboardShell() {
           ) : active.id === 'journal' ? (
             <KidJournalPanel kidToken={kidToken} />
           ) : (
-            <ComingSoon emoji="🧠" title="My Learning" />
+            <KidLearnPanel kidToken={kidToken} />
           )}
         </section>
       </main>
