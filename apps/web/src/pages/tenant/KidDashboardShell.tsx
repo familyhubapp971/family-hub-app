@@ -15,6 +15,7 @@ import { clearKidToken, getKidToken } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { KidHabitsPanel } from './kid/KidHabitsPanel';
+import { KidRewardsPanel } from './kid/KidRewardsPanel';
 
 // FHS-257 / FHS-362 — kid dashboard shell.
 //
@@ -277,10 +278,17 @@ function KidTasksPanel({ kidToken }: { kidToken: string | null }) {
 // FHS-362 / FHS-363 — My World tab. The interactive weekly habit grid
 // (KidHabitsPanel) plus the kid's tasks + notices (these two move to their own
 // tabs in FHS-370). Rewards + savings widgets land in FHS-364.
-function MyWorldPanel({ kidToken }: { kidToken: string | null }) {
+function MyWorldPanel({
+  kidToken,
+  onProfileChanged,
+}: {
+  kidToken: string | null;
+  onProfileChanged: () => void;
+}) {
   return (
     <div className="space-y-6" data-testid="kid-myworld">
       <KidHabitsPanel kidToken={kidToken} />
+      <KidRewardsPanel kidToken={kidToken} onClaimed={onProfileChanged} />
       <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
         <KidTasksPanel kidToken={kidToken} />
       </div>
@@ -363,14 +371,15 @@ export function KidDashboardShell() {
 
   // FHS-362 — load the kid's profile for the header (name + avatar + banked
   // stars/cash). Non-fatal: a blip just leaves the generic brand showing.
-  useEffect(() => {
-    if (!kidToken) return;
-    const ac = new AbortController();
-    fetch(`${API_BASE}/api/kid/profile`, {
-      headers: { Authorization: `Bearer ${kidToken}` },
-      signal: ac.signal,
-    })
-      .then(async (r) => {
+  // FHS-364 — exposed as a callback so a reward claim can refresh the chip.
+  const loadProfile = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!kidToken) return;
+      try {
+        const r = await fetch(`${API_BASE}/api/kid/profile`, {
+          headers: { Authorization: `Bearer ${kidToken}` },
+          signal: signal ?? null,
+        });
         if (!r.ok) return;
         const body = (await r.json()) as Partial<KidProfile>;
         // Only adopt a well-formed profile (guards against an unexpected shape).
@@ -381,12 +390,18 @@ export function KidDashboardShell() {
         ) {
           setProfile(body as KidProfile);
         }
-      })
-      .catch((err: unknown) => {
+      } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
-      });
+      }
+    },
+    [kidToken],
+  );
+
+  useEffect(() => {
+    const ac = new AbortController();
+    void loadProfile(ac.signal);
     return () => ac.abort();
-  }, [kidToken]);
+  }, [loadProfile]);
 
   const onSwitchUser = useCallback(() => {
     clearKidToken();
@@ -484,7 +499,7 @@ export function KidDashboardShell() {
           data-testid={`kid-panel-${active.id}`}
         >
           {active.id === 'world' ? (
-            <MyWorldPanel kidToken={kidToken} />
+            <MyWorldPanel kidToken={kidToken} onProfileChanged={() => void loadProfile()} />
           ) : active.id === 'meals' ? (
             <ComingSoon emoji="😋" title="My Yummy Meals" />
           ) : active.id === 'calendar' ? (
