@@ -29,9 +29,12 @@ const KID_ISSUER = 'family-hub-kid-auth';
 let db: Database;
 let app: Hono;
 let kidToken: string;
+let yusufToken: string;
+let imanHabitId: string;
 let finalizedWeekId: string;
 let res: Response;
 let placeRes: Response;
+let removeRes: Response;
 
 async function mintKidToken(memberId: string, tenantId: string, slug: string): Promise<string> {
   const secret = new TextEncoder().encode(config.KID_AUTH_SECRET);
@@ -77,10 +80,12 @@ describeFeature(feature, ({ Background, Scenario }) => {
           .insert(members)
           .values({ tenantId: t!.id, displayName: 'Yusuf', role: 'child', isChild: true })
           .returning();
-        await db.insert(habits).values([
-          { tenantId: t!.id, memberId: iman!.id, name: 'Read a book' },
-          { tenantId: t!.id, memberId: yusuf!.id, name: 'Tidy room' },
-        ]);
+        const [imanHabit] = await db
+          .insert(habits)
+          .values({ tenantId: t!.id, memberId: iman!.id, name: 'Read a book' })
+          .returning();
+        await db.insert(habits).values({ tenantId: t!.id, memberId: yusuf!.id, name: 'Tidy room' });
+        imanHabitId = imanHabit!.id;
         const [fw] = await db
           .insert(mwWeeks)
           .values({
@@ -94,6 +99,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
           .returning();
         finalizedWeekId = fw!.id;
         kidToken = await mintKidToken(iman!.id, t!.id, t!.slug);
+        yusufToken = await mintKidToken(yusuf!.id, t!.id, t!.slug);
         app = new Hono();
         app.route('/api/kid', kidRouter);
       },
@@ -170,6 +176,64 @@ describeFeature(feature, ({ Background, Scenario }) => {
     });
     Then('the place-sticker response status is 403', () => {
       expect(placeRes.status).toBe(403);
+    });
+  });
+
+  Scenario("a kid cannot place a sticker on a sibling's habit", ({ When, Then }) => {
+    When('sibling "Yusuf" tries to sticker Iman\'s habit today', async () => {
+      const get = await app.request('/api/kid/habits', {
+        headers: { Authorization: `Bearer ${yusufToken}` },
+      });
+      const body = (await get.json()) as { week: { id: string; startDate: string } };
+      placeRes = await app.request(`/api/kid/habits/${imanHabitId}/stickers`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${yusufToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          weekId: body.week.id,
+          day: todayIndex(body.week.startDate),
+          sticker: 'gold-star',
+        }),
+      });
+    });
+    Then('the place-sticker response status is 404', () => {
+      expect(placeRes.status).toBe(404);
+    });
+  });
+
+  Scenario("a kid removes today's sticker", ({ When, Then, And }) => {
+    When('the kid places then removes a sticker on today', async () => {
+      const get = await app.request('/api/kid/habits', {
+        headers: { Authorization: `Bearer ${kidToken}` },
+      });
+      const body = (await get.json()) as {
+        habits: Array<{ id: string }>;
+        week: { id: string; startDate: string };
+      };
+      const habitId = body.habits[0]!.id;
+      const day = todayIndex(body.week.startDate);
+      await app.request(`/api/kid/habits/${habitId}/stickers`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weekId: body.week.id, day, sticker: 'gold-star' }),
+      });
+      removeRes = await app.request(`/api/kid/habits/${habitId}/stickers`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weekId: body.week.id, day }),
+      });
+    });
+    Then('the remove-sticker response status is 204', () => {
+      expect(removeRes.status).toBe(204);
+    });
+    And('the kid habits then show no sticker today', async () => {
+      const get = await app.request('/api/kid/habits', {
+        headers: { Authorization: `Bearer ${kidToken}` },
+      });
+      const body = (await get.json()) as {
+        stickers: Array<{ day: number }>;
+        week: { startDate: string };
+      };
+      expect(body.stickers.map((s) => s.day)).not.toContain(todayIndex(body.week.startDate));
     });
   });
 });

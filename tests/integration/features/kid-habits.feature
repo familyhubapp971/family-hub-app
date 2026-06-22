@@ -21,3 +21,12 @@ Feature: Kid interactive habits
   Scenario: a kid cannot sticker a finalized week
     When the kid places a "heart" sticker on day 0 of the finalized week
     Then the place-sticker response status is 403
+
+  Scenario: a kid cannot place a sticker on a sibling's habit
+    When sibling "Yusuf" tries to sticker Iman's habit today
+    Then the place-sticker response status is 404
+
+  Scenario: a kid removes today's sticker
+    When the kid places then removes a sticker on today
+    Then the remove-sticker response status is 204
+    And the kid habits then show no sticker today

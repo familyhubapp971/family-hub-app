@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Lock, Plus } from 'lucide-react';
 import { Dialog } from '@familyhub/ui';
 import { API_BASE } from '../../../lib/api';
@@ -22,6 +22,7 @@ const STICKER_OPTIONS = [
   { id: 'trophy', label: 'Trophy', emoji: '🏆' },
 ] as const;
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 interface Habit {
   id: string;
@@ -53,19 +54,17 @@ interface HabitsResponse {
 }
 type State = { kind: 'loading' } | { kind: 'error' } | { kind: 'loaded'; data: HabitsResponse };
 
-function fmtLocal(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-    d.getDate(),
-  ).padStart(2, '0')}`;
-}
-function dayDate(startDate: string, i: number): Date {
-  const d = new Date(`${startDate}T00:00:00`);
-  d.setDate(d.getDate() + i);
+// The server decides "today" in UTC (FHS-335 sticker gate), so the client must
+// too — otherwise a kid up late in a +hours timezone sees a tappable cell the
+// server then 403s. Both sides compare ISO-date strings in UTC.
+function dayDateUtc(startDate: string, i: number): Date {
+  const d = new Date(`${startDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + i);
   return d;
 }
 function dayRelation(startDate: string, i: number): 'past' | 'today' | 'future' {
-  const s = fmtLocal(dayDate(startDate, i));
-  const today = fmtLocal(new Date());
+  const s = dayDateUtc(startDate, i).toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
   return s < today ? 'past' : s > today ? 'future' : 'today';
 }
 
@@ -74,6 +73,10 @@ export function KidHabitsPanel({ kidToken }: { kidToken: string | null }) {
   const [weeks, setWeeks] = useState<Week[]>([]);
   const [picker, setPicker] = useState<{ habitId: string; day: number } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [mutError, setMutError] = useState<string | null>(null);
+  // Ref guard: blocks a second sticker write before React re-renders with
+  // busy=true (a fast double-tap would otherwise fire two POSTs).
+  const mutatingRef = useRef(false);
 
   const fetchWeek = useCallback(
     async (weekId?: string, signal?: AbortSignal) => {
@@ -135,11 +138,12 @@ export function KidHabitsPanel({ kidToken }: { kidToken: string | null }) {
 
   const mutate = useCallback(
     async (method: 'POST' | 'DELETE', habitId: string, day: number, sticker?: string) => {
-      if (!kidToken || !data) return;
+      if (!kidToken || !data || mutatingRef.current) return;
+      mutatingRef.current = true;
       setBusy(true);
       setPicker(null);
       try {
-        await fetch(`${API_BASE}/api/kid/habits/${habitId}/stickers`, {
+        const r = await fetch(`${API_BASE}/api/kid/habits/${habitId}/stickers`, {
           method,
           headers: { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(
@@ -148,8 +152,16 @@ export function KidHabitsPanel({ kidToken }: { kidToken: string | null }) {
               : { weekId: data.week.id, day },
           ),
         });
+        if (!r.ok) {
+          setMutError('That didn’t save — only today can be changed. Try again.');
+          return;
+        }
+        setMutError(null);
         await fetchWeek(data.week.id);
+      } catch {
+        setMutError('That didn’t save — check your connection and try again.');
       } finally {
+        mutatingRef.current = false;
         setBusy(false);
       }
     },
@@ -178,9 +190,11 @@ export function KidHabitsPanel({ kidToken }: { kidToken: string | null }) {
   const { habits, stickers, week } = state.data;
   const stickerFor = (habitId: string, day: number) =>
     stickers.find((s) => s.habitId === habitId && s.day === day);
-  const start = dayDate(week.startDate, 0);
-  const end = dayDate(week.startDate, 6);
-  const range = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  const start = dayDateUtc(week.startDate, 0);
+  const end = dayDateUtc(week.startDate, 6);
+  const fmtRange = (d: Date) =>
+    d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const range = `${fmtRange(start)} – ${fmtRange(end)}`;
 
   return (
     <div className="space-y-5" data-testid="kid-habits">
@@ -218,6 +232,16 @@ export function KidHabitsPanel({ kidToken }: { kidToken: string | null }) {
           <ChevronRight size={18} strokeWidth={3} aria-hidden="true" />
         </button>
       </div>
+
+      {mutError && (
+        <p
+          role="alert"
+          data-testid="kid-habits-mut-error"
+          className="rounded-lg border-2 border-red-400 bg-red-50 px-3 py-2 text-center text-sm font-bold text-red-700"
+        >
+          {mutError}
+        </p>
+      )}
 
       {habits.length === 0 ? (
         <div data-testid="kid-habits-empty" className="text-center">
@@ -266,7 +290,7 @@ export function KidHabitsPanel({ kidToken }: { kidToken: string | null }) {
                         type="button"
                         disabled={!editable || busy}
                         onClick={() => editable && void mutate('DELETE', h.id, day)}
-                        aria-label={`${label}, ${placed.sticker.replace('-', ' ')}${editable ? ', tap to remove' : ''}`}
+                        aria-label={`${DAY_NAMES[day]}, ${placed.sticker.replace('-', ' ')}${editable ? ', tap to remove' : ''}`}
                         data-testid={editable ? 'kid-cell-today' : 'kid-cell-done'}
                         className={`${base} border-black bg-pink-100 ${editable ? '' : 'cursor-default'}`}
                       >
@@ -282,7 +306,7 @@ export function KidHabitsPanel({ kidToken }: { kidToken: string | null }) {
                         type="button"
                         disabled={busy}
                         onClick={() => setPicker({ habitId: h.id, day })}
-                        aria-label={`${label}, add a sticker for today`}
+                        aria-label={`${DAY_NAMES[day]}, add a sticker for today`}
                         data-testid="kid-cell-today"
                         className={`${base} border-dashed border-purple-400 bg-purple-50 text-purple-400 motion-safe:hover:-translate-y-0.5`}
                       >
@@ -294,7 +318,9 @@ export function KidHabitsPanel({ kidToken }: { kidToken: string | null }) {
                   return (
                     <div
                       key={day}
-                      aria-label={rel === 'past' ? `${label}, missed` : `${label}, not yet`}
+                      aria-label={
+                        rel === 'past' ? `${DAY_NAMES[day]}, missed` : `${DAY_NAMES[day]}, not yet`
+                      }
                       data-testid={rel === 'past' ? 'kid-cell-past' : 'kid-cell-future'}
                       className={`${base} border-gray-200 ${rel === 'past' ? 'bg-gray-100 text-gray-300' : 'bg-white text-gray-200'}`}
                     >

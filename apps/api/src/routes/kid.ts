@@ -246,7 +246,12 @@ export const kidRouter = new Hono()
           ),
         )
         .limit(1);
-      week = rows[0] ?? (await getOrCreateCurrentWeek(db, kid.tenantId, kid.memberId));
+      // A supplied weekId that isn't this kid's is a 404 — don't silently
+      // fall back to the current week (that would mislead the nav state).
+      if (!rows[0]) {
+        return c.json({ error: 'not found', detail: 'week not found for this kid' }, 404);
+      }
+      week = rows[0];
     } else {
       week = await getOrCreateCurrentWeek(db, kid.tenantId, kid.memberId);
     }
