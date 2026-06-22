@@ -18,6 +18,7 @@ import { KidHabitsPanel } from './kid/KidHabitsPanel';
 import { KidRewardsPanel } from './kid/KidRewardsPanel';
 import { KidMealsPanel } from './kid/KidMealsPanel';
 import { KidCalendarPanel } from './kid/KidCalendarPanel';
+import { KidJournalPanel } from './kid/KidJournalPanel';
 
 // FHS-257 / FHS-362 — kid dashboard shell.
 //
@@ -507,7 +508,7 @@ export function KidDashboardShell() {
           ) : active.id === 'calendar' ? (
             <KidCalendarPanel kidToken={kidToken} />
           ) : active.id === 'journal' ? (
-            <ComingSoon emoji="📔" title="My Journal" />
+            <KidJournalPanel kidToken={kidToken} />
           ) : (
             <ComingSoon emoji="🧠" title="My Learning" />
           )}
