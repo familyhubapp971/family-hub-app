@@ -39,11 +39,6 @@ import {
   kidReadingCreateSchema,
   kidReadingPatchSchema,
 } from '../routes/kid.js';
-import {
-  listLearnResponseSchema,
-  lessonQuestionsResponseSchema,
-  lessonAnswerResponseSchema,
-} from '../routes/learn.js';
 import { bookSchema, listBooksResponseSchema } from '../routes/reading-log.js';
 import { listNoticesResponseSchema } from '../routes/notices.js';
 import {
@@ -57,6 +52,7 @@ import { kidPinRequestSchema, kidPinResponseSchema } from '../routes/auth-kid-pi
 import { listMembersResponseSchema, setMemberPinResponseSchema } from '../routes/members.js';
 import { listTasksResponseSchema } from '../routes/tasks.js';
 import {
+  listLearnResponseSchema,
   lessonQuestionsResponseSchema,
   lessonAnswerResponseSchema,
   answerRequestSchema,
