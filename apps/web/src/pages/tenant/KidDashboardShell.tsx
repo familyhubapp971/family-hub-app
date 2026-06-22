@@ -15,6 +15,7 @@ import { clearKidToken, getKidToken } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { KidHabitsPanel } from './kid/KidHabitsPanel';
+import { KidRewardsPanel } from './kid/KidRewardsPanel';
 
 // FHS-257 / FHS-362 — kid dashboard shell.
 //
@@ -281,6 +282,7 @@ function MyWorldPanel({ kidToken }: { kidToken: string | null }) {
   return (
     <div className="space-y-6" data-testid="kid-myworld">
       <KidHabitsPanel kidToken={kidToken} />
+      <KidRewardsPanel kidToken={kidToken} />
       <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
         <KidTasksPanel kidToken={kidToken} />
       </div>

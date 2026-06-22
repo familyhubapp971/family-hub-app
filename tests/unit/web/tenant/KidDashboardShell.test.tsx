@@ -92,6 +92,20 @@ function mockKidBoot(over?: (url: string) => unknown) {
         }),
       });
     }
+    if (u.includes('/api/kid/rewards')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ rewards: [], stickerBalance: 0 }),
+      });
+    }
+    if (u.includes('/api/kid/financial')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ savedStickers: 0, savedCash: 0, currency: 'AED', investments: [] }),
+      });
+    }
     // /api/kid/me + any unrouted feed.
     return Promise.resolve({
       ok: true,
