@@ -20,16 +20,14 @@ interface CalEvent {
 
 type Status = 'loading' | 'ready' | 'error';
 
-// Current week's Monday (YYYY-MM-DD) — the server defaults to this too, but we
-// pass it explicitly so the request is unambiguous.
+// Current week's Monday (YYYY-MM-DD), computed in UTC to match the server's
+// week anchoring — a local-time version would pick the wrong week near midnight
+// in a +hours timezone and show an empty/next week.
 function mondayOf(d: Date): string {
-  const copy = new Date(d);
-  const offset = (copy.getDay() + 6) % 7; // 0 = Monday
-  copy.setDate(copy.getDate() - offset);
-  const y = copy.getFullYear();
-  const m = String(copy.getMonth() + 1).padStart(2, '0');
-  const day = String(copy.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  const offset = (d.getUTCDay() + 6) % 7; // 0 = Monday
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - offset))
+    .toISOString()
+    .slice(0, 10);
 }
 
 const DAY_TINT = [
@@ -59,7 +57,10 @@ export function KidCalendarPanel({ kidToken }: { kidToken: string | null }) {
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
-      if (!kidToken) return;
+      if (!kidToken) {
+        setStatus('error');
+        return;
+      }
       try {
         const weekStart = mondayOf(new Date());
         const res = await fetch(`${API_BASE}/api/kid/events?weekStart=${weekStart}`, {
@@ -168,7 +169,7 @@ export function KidCalendarPanel({ kidToken }: { kidToken: string | null }) {
                   data-testid={`kid-cal-event-${e.id}`}
                   className="rounded-lg border-2 border-black bg-cyan-50 p-3"
                 >
-                  <p className="text-sm font-bold text-black">{e.title}</p>
+                  <p className="break-words text-sm font-bold text-black">{e.title}</p>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-bold text-gray-600">
                     {e.startTime && (
                       <span className="flex items-center gap-1">

@@ -151,4 +151,15 @@ describeFeature(feature, ({ Background, Scenario }) => {
       expect(names).not.toContain('Yusuf Dentist');
     });
   });
+
+  Scenario('an invalid weekStart is rejected', ({ When, Then }) => {
+    When('the kid GETs /api/kid/events with weekStart "not-a-date"', async () => {
+      res = await app.request('/api/kid/events?weekStart=not-a-date', {
+        headers: { Authorization: `Bearer ${kidToken}` },
+      });
+    });
+    Then('the kid events response status is 400', () => {
+      expect(res.status).toBe(400);
+    });
+  });
 });

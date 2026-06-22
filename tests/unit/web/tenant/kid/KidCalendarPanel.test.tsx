@@ -51,4 +51,10 @@ describe('<KidCalendarPanel />', () => {
     render(<KidCalendarPanel kidToken="kid.jwt" />);
     await waitFor(() => expect(screen.getByTestId('kid-calendar-empty')).toBeInTheDocument());
   });
+
+  it('shows an error state when the request fails', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+    render(<KidCalendarPanel kidToken="kid.jwt" />);
+    await waitFor(() => expect(screen.getByTestId('kid-calendar-error')).toBeInTheDocument());
+  });
 });

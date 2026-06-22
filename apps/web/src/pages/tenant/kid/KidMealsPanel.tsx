@@ -48,7 +48,10 @@ export function KidMealsPanel({ kidToken }: { kidToken: string | null }) {
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
-      if (!kidToken) return;
+      if (!kidToken) {
+        setStatus('error');
+        return;
+      }
       try {
         const res = await fetch(`${API_BASE}/api/kid/meals`, {
           headers: { Authorization: `Bearer ${kidToken}` },

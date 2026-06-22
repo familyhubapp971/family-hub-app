@@ -553,12 +553,17 @@ export const kidRouter = new Hono()
     const kid = getKidAuth(c);
     await pinRequestTenant(kid.tenantId);
     const param = c.req.query('weekStart');
-    const weekStart =
-      param && /^\d{4}-\d{2}-\d{2}$/.test(param)
-        ? param
-        : mondayOf(new Date()).toISOString().slice(0, 10);
+    if (param !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(param)) {
+      return c.json({ error: 'invalid weekStart', detail: 'must be YYYY-MM-DD' }, 400);
+    }
+    const weekStart = param ?? mondayOf(new Date()).toISOString().slice(0, 10);
     const [y, m, d] = weekStart.split('-').map((s) => Number.parseInt(s, 10));
-    const weekEnd = new Date(Date.UTC(y!, m! - 1, d! + 6)).toISOString().slice(0, 10);
+    const startMs = Date.UTC(y!, m! - 1, d!);
+    // Reject a structurally-valid but nonsense date (e.g. 2026-99-99).
+    if (new Date(startMs).toISOString().slice(0, 10) !== weekStart) {
+      return c.json({ error: 'invalid weekStart', detail: 'not a real date' }, 400);
+    }
+    const weekEnd = new Date(startMs + 6 * 86_400_000).toISOString().slice(0, 10);
     const rows = await getDb()
       .select({
         id: events.id,

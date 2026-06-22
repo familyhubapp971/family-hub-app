@@ -20,3 +20,7 @@ Feature: Kid meals + calendar
     And the kid events include "Family Movie"
     And the kid events include "Iman Football"
     And the kid events do not include "Yusuf Dentist"
+
+  Scenario: an invalid weekStart is rejected
+    When the kid GETs /api/kid/events with weekStart "not-a-date"
+    Then the kid events response status is 400
