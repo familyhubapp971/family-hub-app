@@ -70,6 +70,28 @@ function mockKidBoot(over?: (url: string) => unknown) {
         }),
       });
     }
+    if (u.includes('/api/kid/weeks')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ weeks: [] }) });
+    }
+    if (u.includes('/api/kid/habits')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          habits: [],
+          stickers: [],
+          week: {
+            id: 'w1',
+            weekNumber: 24,
+            year: 2026,
+            startDate: '2026-06-15',
+            isFinalized: false,
+          },
+          balance: 0,
+          currency: 'AED',
+        }),
+      });
+    }
     // /api/kid/me + any unrouted feed.
     return Promise.resolve({
       ok: true,
@@ -234,16 +256,37 @@ describe('<KidDashboardShell />', () => {
     expect(patchCalls[0]).toContain('/api/kid/tasks/t1');
   });
 
-  // FHS-355 / FHS-362 — My World shows the kid's habits (today).
-  it('My World shows the kid habits from GET /api/kid/today', async () => {
+  // FHS-363 — My World shows the kid's interactive habits (GET /api/kid/habits).
+  it('My World shows the kid habits from GET /api/kid/habits', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     mockKidBoot((u) =>
-      u.includes('/api/kid/today')
-        ? { habits: [{ id: 'h1', name: 'Read a book', icon: '📚', color: '#facc15' }] }
+      u.includes('/api/kid/habits')
+        ? {
+            habits: [
+              {
+                id: 'h1',
+                name: 'Read a book',
+                description: null,
+                color: '#facc15',
+                icon: '📚',
+                isBonus: false,
+              },
+            ],
+            stickers: [],
+            week: {
+              id: 'w1',
+              weekNumber: 24,
+              year: 2026,
+              startDate: '2026-06-15',
+              isFinalized: false,
+            },
+            balance: 0,
+            currency: 'AED',
+          }
         : undefined,
     );
     renderShell();
-    await waitFor(() => expect(screen.getByTestId('kid-today-list')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('kid-habits')).toBeInTheDocument());
     expect(screen.getByText('Read a book')).toBeInTheDocument();
   });
 
