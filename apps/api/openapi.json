@@ -1475,7 +1475,8 @@
                   "creativity": {
                     "type": "object",
                     "additionalProperties": {
-                      "type": "string"
+                      "type": "string",
+                      "maxLength": 500
                     },
                     "nullable": true
                   }

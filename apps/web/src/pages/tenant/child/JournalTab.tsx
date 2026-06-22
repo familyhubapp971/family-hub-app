@@ -271,6 +271,19 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
 
   const handleSave = useCallback(async () => {
     if (!headers || saveState === 'saving') return;
+    // Don't write a blank "ghost" entry (would show as an empty card in Past).
+    const hasContent = !!(
+      mood ||
+      gratitude1.trim() ||
+      gratitude2.trim() ||
+      gratitude3.trim() ||
+      body.trim() ||
+      Object.values(creativity).some((v) => v.trim())
+    );
+    if (!hasContent) {
+      setSaveError('Write something first ✏️');
+      return;
+    }
     setSaveState('saving');
     setSaveError(null); // clear previous error on new attempt (FIX 2)
     try {

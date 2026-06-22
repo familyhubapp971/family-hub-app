@@ -110,7 +110,7 @@ const upsertRequestSchema = z.object({
   gratitude2: z.string().max(500).nullish(),
   gratitude3: z.string().max(500).nullish(),
   body: z.string().max(5000).nullish(),
-  creativity: z.record(z.string(), z.string()).nullish(),
+  creativity: z.record(z.string(), z.string().max(500)).nullish(),
 });
 
 // ─── Response serialiser ──────────────────────────────────────────────────────

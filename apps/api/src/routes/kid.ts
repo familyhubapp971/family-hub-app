@@ -91,7 +91,7 @@ export const kidJournalUpsertSchema = z.object({
   gratitude2: z.string().max(500).nullish(),
   gratitude3: z.string().max(500).nullish(),
   body: z.string().max(5000).nullish(),
-  creativity: z.record(z.string(), z.string()).nullish(),
+  creativity: z.record(z.string(), z.string().max(500)).nullish(),
 });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -675,7 +675,10 @@ export const kidRouter = new Hono()
     const parsed = kidJournalUpsertSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) {
       return c.json(
-        { error: 'invalid request', detail: parsed.error.issues[0]?.message ?? 'bad body' },
+        {
+          error: 'invalid request',
+          issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+        },
         400,
       );
     }
