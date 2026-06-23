@@ -168,12 +168,15 @@ describe('<KidDashboardShell />', () => {
     expect(screen.getByRole('tab', { name: /Learn/ })).toBeInTheDocument();
   });
 
-  it('shows the kid name + banked stars/cash from GET /api/kid/profile', async () => {
+  it('shows the kid name + banked stars from GET /api/kid/profile', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-title')).toHaveTextContent(/Amina/));
-    expect(screen.getByTestId('kid-stars')).toHaveTextContent('12');
-    expect(screen.getByTestId('kid-cash')).toHaveTextContent('AED 6.00');
+    // FHS-376 — the header is now a single Stars pill (the mock dropped the
+    // separate cash chip); a "Magic Active" status pill sits under the name.
+    expect(screen.getByTestId('kid-stars')).toHaveTextContent('12 Stars');
+    expect(screen.queryByTestId('kid-cash')).not.toBeInTheDocument();
+    expect(screen.getByTestId('kid-status-pill')).toHaveTextContent(/Magic Active/);
   });
 
   it('falls back to the generic header when GET /api/kid/profile fails (404)', async () => {
@@ -465,12 +468,17 @@ describe('<KidDashboardShell />', () => {
 
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-my-account')).toBeInTheDocument());
-    // My Account cash = balance(10) * 0.5
-    expect(screen.getByTestId('kid-account-cash')).toHaveTextContent('AED 5.00');
-    // Reward goal shows "Ask for this"; clicking it asks + flips to pending.
+    // FHS-376 — My Account "earned this week" = sum of this week's habit
+    // progress (1 sticker), worth 1 × 0.5 = AED 0.50.
+    expect(screen.getByTestId('kid-account-cash')).toHaveTextContent('AED 0.50');
+    // Reward goal shows "Ask for this"; clicking it confirms, then asks + flips
+    // to pending (the kid mock affords it: balance 10 ≥ cost 5).
     expect(screen.getByText('Reward Goals')).toBeInTheDocument();
     await act(async () => {
       fireEvent.click(screen.getByTestId('reward-ask-rw1'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reward-confirm-rw1'));
     });
     await waitFor(() => expect(postCalls.length).toBe(1));
     await waitFor(() => expect(screen.getByTestId('reward-pending-rw1')).toBeInTheDocument());
