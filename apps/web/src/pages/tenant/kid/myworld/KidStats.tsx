@@ -2,6 +2,7 @@ import { habitIcon } from './icons';
 import type { KidAnalytics, KidHabitView } from './types';
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const FULL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 // FHS-376 — the kid "Analytics" view: a celebration, not a chart. Hero greeting,
 // three "treasure" tiles, a one-line summary banner, then a per-habit "what I did
@@ -19,8 +20,12 @@ export function KidStats({
   savedCash: number;
   currency: string;
 }) {
-  const habitStats = analytics?.habitStats ?? [];
-  const stickersEarned = habitStats.reduce((sum, h) => sum + h.completedDays, 0);
+  // "Stickers Earned" = the real all-time sticker count (per-week totals account
+  // for sticker values + bonus habits), not a sum of completed-day counts.
+  const stickersEarned = (analytics?.stickersPerWeek ?? []).reduce(
+    (sum, w) => sum + w.totalStickers,
+    0,
+  );
   const thisWeekDone = habits.reduce((sum, h) => sum + h.progress, 0);
   const possibleThisWeek = habits.length * 7;
 
@@ -102,13 +107,17 @@ export function KidStats({
                       {h.progress}/{h.total} days
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="grid grid-cols-7 gap-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
                       {DAY_LABELS.map((label, i) => (
                         <div key={i} className="flex flex-col items-center gap-1">
-                          <span className="text-[10px] font-bold text-gray-400">{label}</span>
+                          <span className="text-[10px] font-bold text-gray-400" aria-hidden="true">
+                            {label}
+                          </span>
                           <div
-                            className={`grid h-8 w-8 place-items-center rounded-lg border-2 border-black ${
+                            role="img"
+                            aria-label={`${FULL_DAYS[i]}: ${h.days[i] ? 'done' : 'not done'}`}
+                            className={`grid h-7 w-7 place-items-center rounded-lg border-2 border-black sm:h-8 sm:w-8 ${
                               h.days[i] ? h.color : 'bg-gray-100'
                             }`}
                           >

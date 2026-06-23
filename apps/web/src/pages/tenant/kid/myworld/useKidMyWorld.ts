@@ -52,6 +52,13 @@ export interface KidMyWorldData {
 
   // analytics
   analytics: KidAnalytics | null;
+
+  // Fetch state of the *viewed* week's habits. Boot uses the top-level `status`;
+  // this covers lazy loads when navigating to a not-yet-fetched week so the UI
+  // can show a spinner (loading) or a retry (error) instead of a false "no
+  // habits" empty state.
+  viewWeekStatus: LoadStatus;
+  retryWeek: () => void;
 }
 
 function buildHabitViews(body: KidApiHabitsResponse): KidHabitView[] {
@@ -82,6 +89,10 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
   const [weeks, setWeeks] = useState<KidApiWeek[]>([]);
   const [weekIndex, setWeekIndex] = useState(0);
   const [weekHabits, setWeekHabits] = useState<Record<string, KidWeekHabits>>({});
+  // Per-week lazy-fetch state (keyed by week id); a week is 'ready' once it
+  // lands in weekHabits, so we only track in-flight + failed weeks here.
+  const [weekStatus, setWeekStatus] = useState<Record<string, 'loading' | 'error'>>({});
+  const [weekRetry, setWeekRetry] = useState(0);
 
   const [balance, setBalance] = useState(0);
   const [currency, setCurrency] = useState('USD');
@@ -207,20 +218,36 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
     if (!week || weekHabits[week.id] || !headers) return;
     const ac = new AbortController();
     let cancelled = false;
+    setWeekStatus((p) => (p[week.id] === 'loading' ? p : { ...p, [week.id]: 'loading' }));
     (async () => {
       try {
         const view = await fetchWeekHabits(week.id, ac.signal);
-        if (cancelled || !view) return;
-        setWeekHabits((prev) => ({ ...prev, [week.id]: view }));
-      } catch {
-        // non-fatal — the week just shows no habits until a retry
+        if (cancelled) return;
+        if (view) {
+          setWeekHabits((prev) => ({ ...prev, [week.id]: view }));
+          setWeekStatus((p) => {
+            const next = { ...p };
+            delete next[week.id];
+            return next;
+          });
+        } else {
+          setWeekStatus((p) => ({ ...p, [week.id]: 'error' }));
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        if (!cancelled) setWeekStatus((p) => ({ ...p, [week.id]: 'error' }));
       }
     })();
     return () => {
       cancelled = true;
       ac.abort();
     };
-  }, [weekIndex, weeks, weekHabits, headers, fetchWeekHabits]);
+    // weekRetry lets retryWeek() re-trigger a failed week without it being in
+    // the cache; weekStatus is intentionally omitted so setting 'loading'
+    // doesn't re-run this effect.
+  }, [weekIndex, weeks, weekHabits, headers, fetchWeekHabits, weekRetry]);
+
+  const retryWeek = useCallback(() => setWeekRetry((n) => n + 1), []);
 
   const goPrevWeek = useCallback(() => setWeekIndex((i) => Math.max(0, i - 1)), []);
   const goNextWeek = useCallback(
@@ -266,10 +293,20 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
 
   const week = weeks[weekIndex];
   const active = week ? weekHabits[week.id] : undefined;
+  // No week (e.g. zero weeks) is a legit ready-empty state, not "loading".
+  const viewWeekStatus: LoadStatus = !week
+    ? 'ready'
+    : active
+      ? 'ready'
+      : weekStatus[week.id] === 'error'
+        ? 'error'
+        : 'loading';
 
   return {
     status,
     reload,
+    viewWeekStatus,
+    retryWeek,
     weeks,
     weekIndex,
     goPrevWeek,

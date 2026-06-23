@@ -328,8 +328,108 @@ describe('<KidMyWorld />', () => {
     await waitFor(() => expect(screen.getByTestId('kid-stats')).toBeInTheDocument());
     expect(screen.getByText('Wow, Amina!')).toBeInTheDocument();
     expect(screen.getByText('What I Did This Week')).toBeInTheDocument();
-    // Stickers Earned tile = sum(habitStats.completedDays) = 4.
     expect(screen.getByText('Stickers Earned')).toBeInTheDocument();
+  });
+
+  it('day cells expose role=img with full-day labels (FHS-377)', async () => {
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('kid-habit-day-h1-0')).toBeInTheDocument());
+    // h1 done Mon(0) + Tue(1); Wed(2) not done.
+    const mon = screen.getByTestId('kid-habit-day-h1-0');
+    expect(mon).toHaveAttribute('role', 'img');
+    expect(mon).toHaveAttribute('aria-label', 'Monday: done');
+    expect(screen.getByTestId('kid-habit-day-h1-2')).toHaveAttribute(
+      'aria-label',
+      'Wednesday: not done',
+    );
+  });
+
+  it('Stickers Earned sums weekly sticker totals, not completed days (FHS-377)', async () => {
+    mockBoot({
+      analytics: {
+        stickersPerWeek: [
+          {
+            weekNumber: 23,
+            year: 2026,
+            startDate: '2026-06-08',
+            totalStickers: 12,
+            daysCompleted: 5,
+            completionRate: 71,
+          },
+          {
+            weekNumber: 24,
+            year: 2026,
+            startDate: '2026-06-15',
+            totalStickers: 8,
+            daysCompleted: 3,
+            completionRate: 43,
+          },
+        ],
+        habitStats: [
+          {
+            habitId: 'h1',
+            name: 'Read a book',
+            habitIcon: 'heart',
+            totalDays: 7,
+            completedDays: 4,
+            rate: 57,
+          },
+        ],
+      },
+    });
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('kid-myworld-stats-tab')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('kid-myworld-stats-tab'));
+    });
+    await waitFor(() => expect(screen.getByTestId('kid-stats')).toBeInTheDocument());
+    // 12 + 8 = 20, NOT habitStats.completedDays (4).
+    const tile = screen.getByText('Stickers Earned').closest('div')!;
+    expect(tile).toHaveTextContent('20');
+  });
+
+  it('shows a retry when a navigated week fails to load (FHS-377)', async () => {
+    const w1 = { ...WEEK, id: 'w1', weekNumber: 23, startDate: '2026-06-08', isFinalized: true };
+    const w2 = { ...WEEK, id: 'w2', weekNumber: 24, startDate: '2026-06-15', isFinalized: false };
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.endsWith('/api/kid/weeks'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ weeks: [w1, w2] }) });
+      if (u.includes('/api/kid/habits')) {
+        if (u.includes('weekId=w1'))
+          return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+        return Promise.resolve({ ok: true, status: 200, json: async () => HABITS_BODY });
+      }
+      if (u.includes('/api/kid/financial/savings'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ savedStickers: 0, savedCash: 0, currency: 'AED' }),
+        });
+      if (u.includes('/api/kid/financial/investments'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ investments: [] }) });
+      if (u.endsWith('/api/kid/rewards'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ rewards: [], stickerBalance: 0 }),
+        });
+      if (u.includes('/api/kid/analytics'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ stickersPerWeek: [], habitStats: [] }),
+        });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    // Boot lands on the current week (w2); navigate back to the uncached w1.
+    await waitFor(() => expect(screen.getByTestId('kid-week-prev')).toBeEnabled());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('kid-week-prev'));
+    });
+    await waitFor(() => expect(screen.getByTestId('kid-week-error')).toBeInTheDocument());
+    expect(screen.getByTestId('kid-week-retry')).toBeInTheDocument();
   });
 
   it('shows an error state and can retry', async () => {
