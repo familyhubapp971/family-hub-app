@@ -14,7 +14,7 @@ weekly "close week".
 
 The schema already had unused stub tables named `weeks`, `savings`,
 `investments`, and `week_actions` — scaffolded in Sprint 1 for a future
-**family-level finance** feature (a savings *goal* like a "Hajj fund",
+**family-level finance** feature (a savings _goal_ like a "Hajj fund",
 stock/ETF holdings, tenant-wide weeks). Their shapes and meaning are
 incompatible with the kid economy, and no code references them.
 
@@ -47,6 +47,15 @@ here each child has their own economy, so the scoping is per member.
   `reward_redemptions`) is superseded by `habit_stickers` + the claim flow;
   it is left in place until FHS-292 rewires the UI/API, then removed in a
   later cleanup.
+- **FHS-378 — deductible investments.** `mw_investments` gained a
+  `deductible boolean NOT NULL DEFAULT true` column. When `true` (the legacy
+  behaviour, and the default for every existing row) a missed day still
+  subtracts −2/day; when `false` the investment keeps counting and showing
+  missed days but loses no value for them. Set on create (optional
+  `deductible` in `POST /mw/financial/investments`, default true), changeable
+  on an active investment via `POST /mw/financial/investments/:id/settings`
+  `{ deductible }`, preserved across a close-week continuation, and returned
+  on every investment GET (parent + kid). Migration `0033`.
 
 ## Alternatives considered
 

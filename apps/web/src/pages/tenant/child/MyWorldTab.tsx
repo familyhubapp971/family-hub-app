@@ -109,6 +109,8 @@ interface Investment {
   currentValueStickers: number;
   daysCompleted: number;
   daysMissed: number;
+  // FHS-378 — when false, missed days don't subtract value (no-penalty mode).
+  deductible: boolean;
 }
 
 // ── Local rich-habit model (mirrors legacy HabitTracker Habit interface) ─────
@@ -490,6 +492,29 @@ export function MyWorldTab(
       // Non-fatal
     }
   }, [api]);
+
+  // FHS-378 — flip an active investment's deductible flag (admin only). The
+  // server recalculates the value; we refresh to show it.
+  const setInvestmentDeductible = useCallback(
+    async (inv: Investment, deductible: boolean) => {
+      if (readOnly || !headers || inv.deductible === deductible) return;
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/mw/financial/investments/${inv.id}/settings?memberId=${memberId}`,
+          {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ memberId, deductible }),
+          },
+        );
+        if (!res.ok) return;
+        void fetchInvestments();
+      } catch {
+        // Non-fatal — the toggle can be retried
+      }
+    },
+    [readOnly, headers, memberId, fetchInvestments],
+  );
 
   useEffect(() => {
     void fetchSavings();
@@ -1951,9 +1976,31 @@ export function MyWorldTab(
                         data-testid={`investment-card-${inv.id}`}
                         className="bg-white/10 border-2 border-white/20 rounded-xl p-4 mb-2 last:mb-0"
                       >
-                        <p className="text-sm font-bold text-slate-200 leading-snug mb-3">
+                        <p className="text-sm font-bold text-slate-200 leading-snug mb-2">
                           {inv.habitName ?? `Investment #${inv.id}`}
                         </p>
+                        {/* FHS-378 — penalty mode tag + admin toggle. */}
+                        <div className="mb-3 flex items-center gap-2">
+                          <span
+                            data-testid={`investment-mode-${inv.id}`}
+                            className={`rounded-full border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase ${
+                              inv.deductible ? 'bg-red-300 text-black' : 'bg-green-300 text-black'
+                            }`}
+                          >
+                            {inv.deductible ? 'Deductible' : 'No-penalty'}
+                          </span>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              data-testid={`investment-toggle-${inv.id}`}
+                              aria-pressed={!inv.deductible}
+                              onClick={() => void setInvestmentDeductible(inv, !inv.deductible)}
+                              className="text-[10px] font-bold text-fuchsia-300 underline transition-colors hover:text-fuchsia-200"
+                            >
+                              {inv.deductible ? 'Make no-penalty' : 'Make deductible'}
+                            </button>
+                          )}
+                        </div>
                         {showOriginally && (
                           <div
                             className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-1.5"
