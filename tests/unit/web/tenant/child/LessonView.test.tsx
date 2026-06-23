@@ -45,6 +45,49 @@ describe('<LessonView />', () => {
     expect(screen.getByTestId('lesson-stat-streak')).toBeInTheDocument();
   });
 
+  it('does NOT render sub-topic pills for a non-Logic subject (Maths)', async () => {
+    installApi({ correct: true, answerIndex: 1, stats: {} });
+    render(<LessonView subject="Maths" memberId={MEMBER} headers={HEADERS} />);
+    await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
+    expect(screen.queryByTestId('lesson-subtopic-patterns')).not.toBeInTheDocument();
+  });
+
+  it('renders all 4 Logic sub-topic pills when subject is Logic', async () => {
+    installApi({ correct: true, answerIndex: 1, stats: {} });
+    render(<LessonView subject="Logic" memberId={MEMBER} headers={HEADERS} />);
+    await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
+    expect(screen.getByTestId('lesson-subtopic-patterns')).toBeInTheDocument();
+    expect(screen.getByTestId('lesson-subtopic-odd-one-out')).toBeInTheDocument();
+    expect(screen.getByTestId('lesson-subtopic-if-then')).toBeInTheDocument();
+    expect(screen.getByTestId('lesson-subtopic-sorting')).toBeInTheDocument();
+  });
+
+  it('patterns pill is active by default (aria-pressed=true)', async () => {
+    installApi({ correct: true, answerIndex: 1, stats: {} });
+    render(<LessonView subject="Logic" memberId={MEMBER} headers={HEADERS} />);
+    await waitFor(() => expect(screen.getByTestId('lesson-subtopic-patterns')).toBeInTheDocument());
+    expect(screen.getByTestId('lesson-subtopic-patterns')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('lesson-subtopic-sorting')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('selecting a sub-topic refetches with subtopic= in the URL', async () => {
+    installApi({ correct: true, answerIndex: 1, stats: {} });
+    render(<LessonView subject="Logic" memberId={MEMBER} headers={HEADERS} />);
+    await waitFor(() => expect(screen.getByTestId('lesson-subtopic-sorting')).toBeInTheDocument());
+
+    fetchMock.mockClear();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('lesson-subtopic-sorting'));
+    });
+
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls as [string][];
+      const refetch = calls.find(([url]) => String(url).includes('subtopic=sorting'));
+      expect(refetch).toBeTruthy();
+    });
+  });
+
   it('grades a pick, shows feedback + a Next button, and updates the score', async () => {
     installApi({
       correct: true,

@@ -5,6 +5,7 @@ import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 import { WorldFlags } from './learn/world-flags/WorldFlags';
 import { LessonView } from './LessonView';
+import { ArtDrawingCanvas } from './learn/art/ArtDrawingCanvas';
 
 // Subjects with an interactive lesson (FHS-283). Must match the API's
 // LESSON_SUBJECTS. World Flags + Reading have their own experiences.
@@ -45,8 +46,13 @@ const SUBJECT_STYLE: Record<string, { emoji: string; bg: string }> = {
   'World Flags': { emoji: '🚩', bg: 'bg-amber-300' },
   Logic: { emoji: '🧩', bg: 'bg-violet-300' },
   Science: { emoji: '🔬', bg: 'bg-emerald-300' },
+  Art: { emoji: '🎨', bg: 'bg-pink-300' },
 };
 const FALLBACK_STYLE = { emoji: '⭐', bg: 'bg-gray-300' };
+
+// Art is a client-side-only activity (no API subject). Always shown after the
+// API subjects in both kid + parent modes.
+const ART_SUBJECT = { subject: 'Art', progress: 0 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -235,7 +241,9 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
           Back to subjects
         </button>
 
-        {selectedSubject === 'World Flags' && !kid && memberId ? (
+        {selectedSubject === 'Art' ? (
+          <ArtDrawingCanvas />
+        ) : selectedSubject === 'World Flags' && !kid && memberId ? (
           <WorldFlags memberId={memberId} />
         ) : LESSON_SUBJECTS.includes(selectedSubject) ? (
           <LessonView
@@ -300,7 +308,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
           )}
           {learnStatus === 'ready' && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {subjects.map((s) => {
+              {[...subjects, ART_SUBJECT].map((s) => {
                 const style = SUBJECT_STYLE[s.subject] ?? FALLBACK_STYLE;
                 const pct = Math.max(0, Math.min(100, s.progress));
                 // Slug for testid: lowercase, spaces → hyphens

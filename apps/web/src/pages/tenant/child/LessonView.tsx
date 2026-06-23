@@ -5,6 +5,10 @@ import { API_BASE } from '../../../lib/api';
 // FHS-283 — interactive Learn lesson. Difficulty pills + a question/answer area
 // + a streak/best/score stats bar with progress toward a certificate. Grading
 // and all stats are server-authoritative (POST /api/learn/:subject/answer).
+//
+// FHS-371 — Logic sub-topic picker: when subject === 'Logic', a row of 4 sub-
+// topic pills appears above the difficulty pills; selecting one refetches
+// questions filtered by that sub-topic.
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
@@ -13,6 +17,15 @@ const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   medium: 'Medium',
   hard: 'Hard',
 };
+
+// Keep in sync with apps/api learn-questions.ts LOGIC_SUBTOPICS
+const LOGIC_SUBTOPICS = [
+  { slug: 'patterns', label: 'Patterns' },
+  { slug: 'odd-one-out', label: 'Odd One Out' },
+  { slug: 'if-then', label: 'If…Then' },
+  { slug: 'sorting', label: 'Sorting' },
+] as const;
+type LogicSubtopic = (typeof LOGIC_SUBTOPICS)[number]['slug'];
 
 interface Question {
   id: string;
@@ -53,7 +66,9 @@ export function LessonView({
   headers: Headers;
 }) {
   const kid = !!kidToken;
+  const isLogic = subject === 'Logic';
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [subtopic, setSubtopic] = useState<LogicSubtopic>('patterns');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -75,9 +90,10 @@ export function LessonView({
     setResult(null);
     setPickError(false);
     setIdx(0);
+    const subtopicParam = isLogic ? `&subtopic=${subtopic}` : '';
     const url = kid
-      ? `${API_BASE}/api/kid/learn/${encodeURIComponent(subject)}/questions?difficulty=${difficulty}`
-      : `${API_BASE}/api/learn/${encodeURIComponent(subject)}/questions?memberId=${memberId}&difficulty=${difficulty}`;
+      ? `${API_BASE}/api/kid/learn/${encodeURIComponent(subject)}/questions?difficulty=${difficulty}${subtopicParam}`
+      : `${API_BASE}/api/learn/${encodeURIComponent(subject)}/questions?memberId=${memberId}&difficulty=${difficulty}${subtopicParam}`;
     fetch(url, { headers })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('load failed'))))
       .then((body: QuestionsResponse) => {
@@ -92,7 +108,7 @@ export function LessonView({
     return () => {
       cancelled = true;
     };
-  }, [headers, kid, subject, memberId, difficulty]);
+  }, [headers, kid, subject, memberId, difficulty, isLogic, subtopic]);
 
   useEffect(() => load(), [load]);
 
@@ -147,6 +163,30 @@ export function LessonView({
 
   return (
     <div className="flex flex-col gap-4" data-testid="lesson-view">
+      {/* Logic sub-topic picker — only shown for the Logic subject */}
+      {isLogic && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-black uppercase tracking-wide text-gray-500">Topic</p>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Logic topic">
+            {LOGIC_SUBTOPICS.map(({ slug, label }) => (
+              <button
+                key={slug}
+                type="button"
+                data-testid={`lesson-subtopic-${slug}`}
+                aria-pressed={subtopic === slug}
+                disabled={submitting}
+                onClick={() => setSubtopic(slug)}
+                className={`min-h-[44px] rounded-full border-2 border-black px-4 py-2 text-sm font-black shadow-neo-xs transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 disabled:opacity-60 motion-safe:enabled:hover:-translate-y-0.5 ${
+                  subtopic === slug ? 'bg-violet-400 text-white' : 'bg-white text-gray-800'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Difficulty pills */}
       <div className="flex flex-wrap gap-2" role="group" aria-label="Difficulty">
         {DIFFICULTIES.map((d) => (

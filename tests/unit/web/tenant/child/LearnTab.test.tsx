@@ -313,6 +313,60 @@ describe('World Flags subject routing', () => {
   });
 });
 
+// ─── Art subject (FHS-371) ────────────────────────────────────────────────────
+
+// Mock canvas context so ArtDrawingCanvas doesn't throw in jsdom
+const artCtxStub = {
+  fillStyle: '',
+  strokeStyle: '',
+  lineWidth: 5,
+  lineCap: 'round',
+  lineJoin: 'round',
+  fillRect: vi.fn(),
+  beginPath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  stroke: vi.fn(),
+  scale: vi.fn(),
+};
+vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+  artCtxStub as unknown as CanvasRenderingContext2D,
+);
+
+describe('Art subject card (FHS-371)', () => {
+  it('Art card is always shown after the API subjects', async () => {
+    installDefault([{ subject: 'Maths', progress: 20 }], []);
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
+    expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument();
+  });
+
+  it('clicking the Art card renders art-canvas', async () => {
+    installDefault([], []);
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-art'));
+    });
+    await waitFor(() => expect(screen.getByTestId('art-canvas')).toBeInTheDocument());
+  });
+
+  it('Back button from Art returns to the overview', async () => {
+    installDefault([], []);
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-art'));
+    });
+    await waitFor(() => expect(screen.getByTestId('art-canvas')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-back'));
+    });
+    await waitFor(() => expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument());
+    expect(screen.queryByTestId('art-canvas')).not.toBeInTheDocument();
+  });
+});
+
 // ─── WorldFlagsLearn Explore behaviour ───────────────────────────────────────
 
 describe('WorldFlagsLearn Explore', () => {
