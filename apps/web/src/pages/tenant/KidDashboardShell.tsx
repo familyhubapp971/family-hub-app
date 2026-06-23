@@ -20,6 +20,7 @@ import { KidMealsPanel } from './kid/KidMealsPanel';
 import { KidCalendarPanel } from './kid/KidCalendarPanel';
 import { KidJournalPanel } from './kid/KidJournalPanel';
 import { KidLearnPanel } from './kid/KidLearnPanel';
+import { KidStatsPanel } from './kid/KidStatsPanel';
 
 // FHS-257 / FHS-362 — kid dashboard shell.
 //
@@ -289,16 +290,60 @@ function MyWorldPanel({
   kidToken: string | null;
   onProfileChanged: () => void;
 }) {
+  const [view, setView] = useState<'habits' | 'stats'>('habits');
+  const tabClass = (active: boolean) =>
+    `min-h-[40px] flex-1 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold shadow-neo-xs ${
+      active ? 'bg-pink-400 text-black' : 'bg-white text-gray-600'
+    }`;
   return (
     <div className="space-y-6" data-testid="kid-myworld">
-      <KidHabitsPanel kidToken={kidToken} />
-      <KidRewardsPanel kidToken={kidToken} onClaimed={onProfileChanged} />
-      <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
-        <KidTasksPanel kidToken={kidToken} />
+      <div className="flex gap-2" role="tablist" aria-label="My World view">
+        <button
+          type="button"
+          id="kid-myworld-habits-tab"
+          role="tab"
+          aria-selected={view === 'habits'}
+          aria-controls="kid-myworld-habits-panel"
+          data-testid="kid-myworld-habits-tab"
+          onClick={() => setView('habits')}
+          className={tabClass(view === 'habits')}
+        >
+          My Habits
+        </button>
+        <button
+          type="button"
+          id="kid-myworld-stats-tab"
+          role="tab"
+          aria-selected={view === 'stats'}
+          aria-controls="kid-myworld-stats-panel"
+          data-testid="kid-myworld-stats-tab"
+          onClick={() => setView('stats')}
+          className={tabClass(view === 'stats')}
+        >
+          My Stats
+        </button>
       </div>
-      <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
-        <KidNoticesPanel kidToken={kidToken} />
-      </div>
+      {view === 'habits' ? (
+        <div
+          id="kid-myworld-habits-panel"
+          role="tabpanel"
+          aria-labelledby="kid-myworld-habits-tab"
+          className="space-y-6"
+        >
+          <KidHabitsPanel kidToken={kidToken} />
+          <KidRewardsPanel kidToken={kidToken} onClaimed={onProfileChanged} />
+          <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
+            <KidTasksPanel kidToken={kidToken} />
+          </div>
+          <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
+            <KidNoticesPanel kidToken={kidToken} />
+          </div>
+        </div>
+      ) : (
+        <div id="kid-myworld-stats-panel" role="tabpanel" aria-labelledby="kid-myworld-stats-tab">
+          <KidStatsPanel kidToken={kidToken} />
+        </div>
+      )}
     </div>
   );
 }
