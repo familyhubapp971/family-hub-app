@@ -300,8 +300,10 @@ function MyWorldPanel({
       <div className="flex gap-2" role="tablist" aria-label="My World view">
         <button
           type="button"
+          id="kid-myworld-habits-tab"
           role="tab"
           aria-selected={view === 'habits'}
+          aria-controls="kid-myworld-habits-panel"
           data-testid="kid-myworld-habits-tab"
           onClick={() => setView('habits')}
           className={tabClass(view === 'habits')}
@@ -310,8 +312,10 @@ function MyWorldPanel({
         </button>
         <button
           type="button"
+          id="kid-myworld-stats-tab"
           role="tab"
           aria-selected={view === 'stats'}
+          aria-controls="kid-myworld-stats-panel"
           data-testid="kid-myworld-stats-tab"
           onClick={() => setView('stats')}
           className={tabClass(view === 'stats')}
@@ -320,7 +324,12 @@ function MyWorldPanel({
         </button>
       </div>
       {view === 'habits' ? (
-        <>
+        <div
+          id="kid-myworld-habits-panel"
+          role="tabpanel"
+          aria-labelledby="kid-myworld-habits-tab"
+          className="space-y-6"
+        >
           <KidHabitsPanel kidToken={kidToken} />
           <KidRewardsPanel kidToken={kidToken} onClaimed={onProfileChanged} />
           <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
@@ -329,9 +338,11 @@ function MyWorldPanel({
           <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
             <KidNoticesPanel kidToken={kidToken} />
           </div>
-        </>
+        </div>
       ) : (
-        <KidStatsPanel kidToken={kidToken} />
+        <div id="kid-myworld-stats-panel" role="tabpanel" aria-labelledby="kid-myworld-stats-tab">
+          <KidStatsPanel kidToken={kidToken} />
+        </div>
       )}
     </div>
   );

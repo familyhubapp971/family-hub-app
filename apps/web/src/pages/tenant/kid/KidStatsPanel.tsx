@@ -27,6 +27,9 @@ type State =
   | { kind: 'error' }
   | { kind: 'loaded'; stickersPerWeek: WeekStat[]; habitStats: HabitStat[] };
 
+// A habit becomes a "strength" once it's been done on at least this many days.
+const STRENGTH_MIN_DAYS = 5;
+
 function rateColour(rate: number): string {
   if (rate >= 50) return 'bg-emerald-400';
   if (rate >= 35) return 'bg-yellow-300';
@@ -74,7 +77,7 @@ export function KidStatsPanel({ kidToken }: { kidToken: string | null }) {
     if (state.kind !== 'loaded') return null;
     const starsEarned = state.habitStats.reduce((s, h) => s + h.completedDays, 0);
     const bestWeek = state.stickersPerWeek.reduce((m, w) => Math.max(m, w.daysCompleted), 0);
-    const strengths = state.habitStats.filter((h) => h.completedDays >= 5);
+    const strengths = state.habitStats.filter((h) => h.completedDays >= STRENGTH_MIN_DAYS);
     const leaderboard = [...state.habitStats].sort((a, b) => b.rate - a.rate);
     return {
       starsEarned,
@@ -153,7 +156,12 @@ export function KidStatsPanel({ kidToken }: { kidToken: string | null }) {
           data-testid="kid-stats-weekly"
         >
           <h3 className="mb-3 font-heading text-lg text-black">Each week</h3>
-          <div className="flex items-end gap-2" style={{ height: '96px' }}>
+          <div
+            className="flex items-end gap-2"
+            style={{ height: '96px' }}
+            role="img"
+            aria-label="Weekly sticker trend"
+          >
             {derived.weeks.slice(-8).map((w) => (
               <div
                 key={`${w.year}-${w.weekNumber}`}
