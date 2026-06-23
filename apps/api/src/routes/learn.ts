@@ -216,6 +216,7 @@ export const learnRouter = new Hono()
       return c.json({ error: 'unknown subject', detail: 'subject has no interactive lesson' }, 400);
     }
     const rawSubtopic = c.req.query('subtopic');
+    let subtopic: LogicSubtopic | undefined;
     if (rawSubtopic !== undefined) {
       const st = subtopicSchema.safeParse(rawSubtopic);
       if (!st.success) {
@@ -227,6 +228,7 @@ export const learnRouter = new Hono()
           400,
         );
       }
+      subtopic = st.data;
     }
     const parsed = z
       .object({ memberId: z.string().uuid(), difficulty: difficultySchema.default('easy') })
@@ -243,7 +245,6 @@ export const learnRouter = new Hono()
         400,
       );
     }
-    const subtopic = rawSubtopic as LogicSubtopic | undefined;
     const db = getDb();
     const denied = await checkMemberAccess(db, tenantId, userRow.id, parsed.data.memberId);
     if (denied) return c.json(denied.body, denied.status);

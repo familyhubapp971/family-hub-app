@@ -91,11 +91,18 @@ export function ArtDrawingCanvas() {
   const handleSave = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dataUrl = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = 'my-art.png';
-    a.click();
+    // toDataURL throws if the canvas is ever tainted (a cross-origin image
+    // drawn onto it). We only ever draw local strokes, so this can't happen
+    // today — but guard so a future change can't crash the kid's screen.
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'my-art.png';
+      a.click();
+    } catch {
+      // Saving failed — leave the drawing on screen so nothing is lost.
+    }
   }, []);
 
   return (

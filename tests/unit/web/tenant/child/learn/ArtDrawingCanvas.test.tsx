@@ -100,6 +100,30 @@ describe('<ArtDrawingCanvas />', () => {
     vi.restoreAllMocks();
   });
 
+  it('Clear then Save still triggers a download (empty canvas saves fine)', () => {
+    render(<ArtDrawingCanvas />);
+    const clickSpy = vi.fn();
+    const origCreate = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const el = origCreate(tag);
+      if (tag === 'a') vi.spyOn(el, 'click').mockImplementation(clickSpy);
+      return el;
+    });
+    fireEvent.click(screen.getByTestId('art-clear'));
+    fireEvent.click(screen.getByTestId('art-save'));
+    expect(clickSpy).toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it('does not crash when toDataURL throws (tainted-canvas guard)', () => {
+    render(<ArtDrawingCanvas />);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    // Must not throw / bubble to an error boundary.
+    expect(() => fireEvent.click(screen.getByTestId('art-save'))).not.toThrow();
+  });
+
   it('the canvas element has role=img and an aria-label', () => {
     render(<ArtDrawingCanvas />);
     const canvas = screen.getByRole('img', { name: /drawing canvas/i });

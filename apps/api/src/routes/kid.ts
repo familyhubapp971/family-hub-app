@@ -556,6 +556,7 @@ export const kidRouter = new Hono()
       );
     }
     const rawSubtopic = c.req.query('subtopic');
+    let subtopic: LogicSubtopic | undefined;
     if (rawSubtopic !== undefined) {
       const st = subtopicSchema.safeParse(rawSubtopic);
       if (!st.success) {
@@ -567,8 +568,8 @@ export const kidRouter = new Hono()
           400,
         );
       }
+      subtopic = st.data;
     }
-    const subtopic = rawSubtopic as LogicSubtopic | undefined;
     await pinRequestTenant(kid.tenantId);
     const row = await loadProgressRow(getDb(), kid.tenantId, kid.memberId, subject);
     return c.json(
