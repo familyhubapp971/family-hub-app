@@ -5,7 +5,7 @@
 // Icons are React nodes — callers must import lucide-react and build
 // the list via the factory below, or import the pre-built TABS array.
 
-import { Bell, BookOpen, CalendarDays, CheckSquare, Home, Utensils } from 'lucide-react';
+import { Bell, BookOpen, CalendarDays, CheckSquare, Gift, Home, Utensils } from 'lucide-react';
 import { createElement } from 'react';
 
 export interface TabDef {
@@ -58,6 +58,13 @@ export const TABS: TabDef[] = [
     icon: createElement(CheckSquare, { size: 16, 'aria-hidden': 'true' }),
     ticket: 'FHS-233',
     description: 'Per-parent to-do list.',
+  },
+  {
+    id: 'reward-requests',
+    label: 'Reward Requests',
+    icon: createElement(Gift, { size: 16, 'aria-hidden': 'true' }),
+    ticket: 'FHS-379',
+    description: 'Pending reward requests from kids.',
   },
 ];
 
