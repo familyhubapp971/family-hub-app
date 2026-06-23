@@ -60,6 +60,15 @@ export default {
           950: '#2a0b46',
           bg: '#3d1065',
         },
+        // Pastel aliases from the Magic Patterns design (the soft card fills).
+        // These equal Tailwind's default 100-shades; named here so MP-ported
+        // markup using `bg-pastel-*` resolves against the shared token set.
+        pastel: {
+          yellow: '#fef9c3',
+          pink: '#fce7f3',
+          cyan: '#cffafe',
+          lime: '#ecfccb',
+        },
       },
       animation: {
         shake: 'shake 0.3s ease-in-out',

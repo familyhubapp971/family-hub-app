@@ -36,4 +36,20 @@ describe('@familyhub/ui tailwind preset', () => {
     expect(preset.theme.extend.animation['space-bg']).toContain('space-move');
     expect(preset.theme.extend.keyframes['space-move']).toBeDefined();
   });
+
+  it('exposes the neo-brutalist shadow scale (xs→lg)', () => {
+    const shadow = preset.theme.extend.boxShadow;
+    for (const step of ['neo-xs', 'neo-sm', 'neo', 'neo-md', 'neo-lg']) {
+      expect(shadow).toHaveProperty(step);
+    }
+  });
+
+  it('exposes the Magic Patterns pastel aliases', () => {
+    expect(colors.pastel).toMatchObject({
+      yellow: '#fef9c3',
+      pink: '#fce7f3',
+      cyan: '#cffafe',
+      lime: '#ecfccb',
+    });
+  });
 });
