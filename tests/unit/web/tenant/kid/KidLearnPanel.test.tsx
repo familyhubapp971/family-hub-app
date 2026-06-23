@@ -1,21 +1,28 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 
-// FHS-367 — kid Learn reuses LearnTab in kid mode: lesson subjects + reading
-// log via the token-scoped /api/kid/learn + /api/kid/reading-log (no memberId).
+// FHS-367 / FHS-373 — kid Learn reuses LearnTab in kid mode: lesson subjects +
+// World Flags + reading log via the token-scoped kid endpoints (no memberId).
 vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => ({ session: null }),
 }));
 vi.mock('../../../../../apps/web/src/lib/tenant-context', () => ({
   useTenantSlug: () => 'khan',
+  TenantProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
+vi.mock('react-leaflet', () => ({
+  MapContainer: ({ children }: { children?: unknown }) => children ?? null,
+  TileLayer: () => null,
+  Marker: ({ children }: { children?: unknown }) => children ?? null,
+  Popup: ({ children }: { children?: unknown }) => children ?? null,
+}));
+vi.mock('leaflet', () => ({ default: { icon: () => ({}) }, icon: () => ({}) }));
 
 import { KidLearnPanel } from '../../../../../apps/web/src/pages/tenant/kid/KidLearnPanel';
 
 const fetchMock = vi.fn();
 
-beforeEach(() => {
-  fetchMock.mockReset();
+function installFetch() {
   fetchMock.mockImplementation((url: string, opts?: RequestInit) => {
     const u = String(url);
     if (u.includes('/api/kid/learn')) {
@@ -30,6 +37,16 @@ beforeEach(() => {
           ],
         }),
       });
+    }
+    if (u.includes('/api/kid/world-flags')) {
+      if (opts?.method === 'POST') {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ explored: true }) });
+      }
+      // GET /api/kid/world-flags and /api/kid/world-flags/learn
+      if (u.includes('/learn')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ progress: {} }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ explored: [] }) });
     }
     if (u.includes('/api/kid/reading-log')) {
       if (opts?.method === 'POST') {
@@ -49,7 +66,13 @@ beforeEach(() => {
     }
     return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
   });
+}
+
+beforeEach(() => {
+  fetchMock.mockReset();
+  installFetch();
   vi.stubGlobal('fetch', fetchMock);
+  localStorage.clear();
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -76,9 +99,37 @@ describe('<KidLearnPanel />', () => {
           String(u).includes('/api/kid/reading-log') && (o as RequestInit)?.method === 'POST',
       );
       expect(post).toBeTruthy();
-      const body = JSON.parse((post![1] as RequestInit).body as string);
+      const body = JSON.parse((post![1] as RequestInit).body as string) as Record<string, unknown>;
       expect(body.title).toBe('Matilda');
       expect(body.memberId).toBeUndefined();
     });
+  });
+
+  // FHS-373 — World Flags card present + hits /api/kid/world-flags in kid mode.
+  it('shows the World Flags subject card in kid mode', async () => {
+    render(<KidLearnPanel kidToken="kid.jwt" />);
+    await waitFor(() => expect(screen.getByTestId('learn-tab')).toBeInTheDocument());
+    expect(screen.getByTestId('learn-subject-world-flags')).toBeInTheDocument();
+  });
+
+  it('opening World Flags in kid mode fetches /api/kid/world-flags with kid Bearer token', async () => {
+    render(<KidLearnPanel kidToken="kid.jwt" />);
+    await waitFor(() => expect(screen.getByTestId('learn-tab')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-world-flags'));
+    });
+    // Explore tab should load.
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+
+    // Verify the GET went to /api/kid/world-flags, not /api/world-flags.
+    const kidCall = (fetchMock.mock.calls as [string, RequestInit | undefined][]).find(
+      ([url, init]) =>
+        String(url).includes('/api/kid/world-flags') && (init?.method ?? 'GET') === 'GET',
+    );
+    expect(kidCall).toBeTruthy();
+    expect(String(kidCall![0])).not.toContain('memberId');
+    const headers = kidCall![1]?.headers as Record<string, string> | undefined;
+    expect(headers?.Authorization).toBe('Bearer kid.jwt');
+    expect(headers?.['x-tenant-slug']).toBeUndefined();
   });
 });

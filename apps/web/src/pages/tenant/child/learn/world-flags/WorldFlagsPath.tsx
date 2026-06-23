@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../../../lib/auth-context';
 import { useTenantSlug } from '../../../../../lib/tenant-context';
-import { API_BASE } from '../../../../../lib/api';
 import { CONTINENTS, getCountriesByContinent, type Country } from '../../../../../data/countries';
 import { FlagImage } from './FlagImage';
 import {
@@ -24,20 +23,37 @@ import {
   CHUNK_SIZE,
   type LearnQuizQuestion,
 } from './shared';
+import { worldFlagsApi } from './worldFlagsApi';
 
 // World Flags — Learn path sub-tab.
 //
 // Pick a continent → numbered sets of 5 countries. Study each set (flag +
 // capital + currency + fun fact), then take its quiz. 100% correct marks the
-// set complete (POST /learn-complete) and unlocks the next. Completed sets per
-// continent load from GET /learn.
+// set complete (POST /learn-complete or /api/kid/world-flags/learn-complete)
+// and unlocks the next. Completed sets per continent load from GET /learn.
 
 type Phase = 'select' | 'study' | 'quiz' | 'results';
 type Status = 'loading' | 'ready' | 'error';
 
-export function WorldFlagsPath({ memberId }: { memberId: string }) {
+// Exactly one of memberId / kidToken is supplied.
+type WorldFlagsPathProps =
+  | { memberId: string; kidToken?: undefined }
+  | { kidToken: string; memberId?: undefined };
+
+export function WorldFlagsPath({ memberId, kidToken }: WorldFlagsPathProps) {
   const slug = useTenantSlug();
   const { session } = useAuth();
+
+  const api = useMemo(() => {
+    if (kidToken) return worldFlagsApi({ kidToken });
+    if (session) {
+      return worldFlagsApi({
+        memberId: memberId!,
+        parentHeaders: { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug },
+      });
+    }
+    return null;
+  }, [kidToken, memberId, session, slug]);
 
   const [status, setStatus] = useState<Status>('loading');
   const [phase, setPhase] = useState<Phase>('select');
@@ -55,18 +71,12 @@ export function WorldFlagsPath({ memberId }: { memberId: string }) {
   const [allProgress, setAllProgress] = useState<Record<string, number[]>>({});
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const headers = useMemo(
-    () =>
-      session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
-    [session, slug],
-  );
-
   // Load completed sets per continent.
   useEffect(() => {
-    if (!headers) return;
+    if (!api) return;
     const ac = new AbortController();
     setStatus('loading');
-    fetch(`${API_BASE}/api/world-flags/learn?memberId=${memberId}`, { headers, signal: ac.signal })
+    fetch(api.learnUrl(), { headers: api.headers, signal: ac.signal })
       .then(async (res) => {
         if (!res.ok) {
           setStatus('error');
@@ -81,7 +91,7 @@ export function WorldFlagsPath({ memberId }: { memberId: string }) {
         setStatus('error');
       });
     return () => ac.abort();
-  }, [headers, memberId]);
+  }, [api]);
 
   useEffect(
     () => () => {
@@ -152,15 +162,11 @@ export function WorldFlagsPath({ memberId }: { memberId: string }) {
           if (isLast) {
             const passed = newCorrectCount === quizQuestions.length;
             if (passed && selectedContinent) {
-              if (headers) {
-                void fetch(`${API_BASE}/api/world-flags/learn-complete`, {
+              if (api) {
+                void fetch(api.learnCompleteUrl(), {
                   method: 'POST',
-                  headers: { ...headers, 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    memberId,
-                    continent: selectedContinent,
-                    chunkIndex: currentChunkIndex,
-                  }),
+                  headers: { ...api.headers, 'Content-Type': 'application/json' },
+                  body: JSON.stringify(api.learnCompleteBody(selectedContinent, currentChunkIndex)),
                 }).catch(() => {
                   /* ignore — progress reconciles on next load */
                 });
@@ -187,8 +193,7 @@ export function WorldFlagsPath({ memberId }: { memberId: string }) {
       quizIndex,
       quizCorrectCount,
       selectedContinent,
-      headers,
-      memberId,
+      api,
       currentChunkIndex,
     ],
   );

@@ -53,6 +53,9 @@ const FALLBACK_STYLE = { emoji: '⭐', bg: 'bg-gray-300' };
 // Art is a client-side-only activity (no API subject). Always shown after the
 // API subjects in both kid + parent modes.
 const ART_SUBJECT = { subject: 'Art', progress: 0 };
+// World Flags is injected for kid mode (the kid API doesn't include it in the
+// subjects list since it lives on its own endpoints). FHS-373.
+const WORLD_FLAGS_SUBJECT = { subject: 'World Flags', progress: 0 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -243,8 +246,12 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
 
         {selectedSubject === 'Art' ? (
           <ArtDrawingCanvas />
-        ) : selectedSubject === 'World Flags' && !kid && memberId ? (
-          <WorldFlags memberId={memberId} />
+        ) : selectedSubject === 'World Flags' ? (
+          kid ? (
+            <WorldFlags kidToken={kidToken!} />
+          ) : (
+            <WorldFlags memberId={memberId!} />
+          )
         ) : LESSON_SUBJECTS.includes(selectedSubject) ? (
           <LessonView
             subject={selectedSubject}
@@ -308,7 +315,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
           )}
           {learnStatus === 'ready' && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {[...subjects, ART_SUBJECT].map((s) => {
+              {[...(kid ? [WORLD_FLAGS_SUBJECT] : []), ...subjects, ART_SUBJECT].map((s) => {
                 const style = SUBJECT_STYLE[s.subject] ?? FALLBACK_STYLE;
                 const pct = Math.max(0, Math.min(100, s.progress));
                 // Slug for testid: lowercase, spaces → hyphens

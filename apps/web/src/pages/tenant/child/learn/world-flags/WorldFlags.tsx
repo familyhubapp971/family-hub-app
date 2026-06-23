@@ -17,8 +17,15 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ReactNode }[] = [
   { id: 'certificates', label: 'Awards', icon: <Trophy size={16} aria-hidden="true" /> },
 ];
 
-export function WorldFlags({ memberId }: { memberId: string }) {
+// Exactly one of memberId / kidToken is supplied (never both).
+type WorldFlagsProps =
+  | { memberId: string; kidToken?: undefined }
+  | { kidToken: string; memberId?: undefined };
+
+export function WorldFlags({ memberId, kidToken }: WorldFlagsProps) {
   const [tab, setTab] = useState<SubTab>('explore');
+
+  const subProps = kidToken ? { kidToken } : { memberId: memberId! };
 
   return (
     <div className="flex flex-col gap-4">
@@ -51,9 +58,9 @@ export function WorldFlags({ memberId }: { memberId: string }) {
         })}
       </div>
 
-      {tab === 'explore' && <WorldFlagsExplore memberId={memberId} />}
-      {tab === 'learn' && <WorldFlagsPath memberId={memberId} />}
-      {tab === 'certificates' && <WorldFlagsCertificates memberId={memberId} />}
+      {tab === 'explore' && <WorldFlagsExplore {...subProps} />}
+      {tab === 'learn' && <WorldFlagsPath {...subProps} />}
+      {tab === 'certificates' && <WorldFlagsCertificates {...subProps} />}
     </div>
   );
 }

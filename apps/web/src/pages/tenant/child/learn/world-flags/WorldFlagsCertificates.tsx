@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Lock, Timer, Trophy, RotateCcw, Award } from 'lucide-react';
 import { useAuth } from '../../../../../lib/auth-context';
 import { useTenantSlug } from '../../../../../lib/tenant-context';
-import { API_BASE } from '../../../../../lib/api';
 import { COUNTRIES, CONTINENTS } from '../../../../../data/countries';
 import { FlagImage } from './FlagImage';
 import {
@@ -20,6 +19,7 @@ import {
   writeBestScore,
   type TimedQuizQuestion,
 } from './shared';
+import { worldFlagsApi } from './worldFlagsApi';
 
 // World Flags — Certificates + timed-quiz sub-tab.
 //
@@ -41,15 +41,15 @@ interface ContinentCert {
 // ─── Timed quiz (60s) ────────────────────────────────────────────────────────
 
 function WorldExplorerQuiz({
-  memberId,
+  userKey,
   continent,
   onExit,
 }: {
-  memberId: string;
+  userKey: string;
   continent: string;
   onExit: () => void;
 }) {
-  const key = bestScoreKey(memberId, continent);
+  const key = bestScoreKey(userKey, continent);
   const [timeLeft, setTimeLeft] = useState(WORLD_QUIZ_DURATION);
   const [score, setScore] = useState(0);
   const [question, setQuestion] = useState<TimedQuizQuestion>(() =>
@@ -305,26 +305,36 @@ function WorldExplorerQuiz({
 
 // ─── Main certificates view ──────────────────────────────────────────────────
 
-export function WorldFlagsCertificates({ memberId }: { memberId: string }) {
+// Exactly one of memberId / kidToken is supplied.
+type WorldFlagsCertificatesProps =
+  | { memberId: string; kidToken?: undefined }
+  | { kidToken: string; memberId?: undefined };
+
+export function WorldFlagsCertificates({ memberId, kidToken }: WorldFlagsCertificatesProps) {
   const slug = useTenantSlug();
   const { session } = useAuth();
+
+  const api = useMemo(() => {
+    if (kidToken) return worldFlagsApi({ kidToken });
+    if (session) {
+      return worldFlagsApi({
+        memberId: memberId!,
+        parentHeaders: { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug },
+      });
+    }
+    return null;
+  }, [kidToken, memberId, session, slug]);
 
   const [status, setStatus] = useState<Status>('loading');
   const [explored, setExplored] = useState<Set<string>>(new Set());
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizContinent, setQuizContinent] = useState<string>('All');
 
-  const headers = useMemo(
-    () =>
-      session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
-    [session, slug],
-  );
-
   useEffect(() => {
-    if (!headers) return;
+    if (!api) return;
     const ac = new AbortController();
     setStatus('loading');
-    fetch(`${API_BASE}/api/world-flags?memberId=${memberId}`, { headers, signal: ac.signal })
+    fetch(api.exploreUrl(), { headers: api.headers, signal: ac.signal })
       .then(async (res) => {
         if (!res.ok) {
           setStatus('error');
@@ -339,7 +349,7 @@ export function WorldFlagsCertificates({ memberId }: { memberId: string }) {
         setStatus('error');
       });
     return () => ac.abort();
-  }, [headers, memberId]);
+  }, [api]);
 
   const certs = useMemo<ContinentCert[]>(
     () =>
@@ -373,11 +383,13 @@ export function WorldFlagsCertificates({ memberId }: { memberId: string }) {
     );
   }
 
+  const userKey = api?.userKey ?? '';
+
   if (showQuiz) {
     return (
       <div data-testid="wfcert" className="flex flex-col gap-6">
         <WorldExplorerQuiz
-          memberId={memberId}
+          userKey={userKey}
           continent={quizContinent}
           onExit={() => setShowQuiz(false)}
         />
@@ -469,7 +481,7 @@ export function WorldFlagsCertificates({ memberId }: { memberId: string }) {
         {certs.map((cert) => {
           const emoji = CONTINENT_EMOJI[cert.continent] ?? '🌍';
           const grad = CONTINENT_GRADIENT[cert.continent] ?? 'from-gray-500 to-gray-600';
-          const best = readBestScore(bestScoreKey(memberId, cert.continent));
+          const best = readBestScore(bestScoreKey(userKey, cert.continent));
           const tier = getQuizTier(best);
 
           if (cert.completed) {
@@ -569,7 +581,7 @@ export function WorldFlagsCertificates({ memberId }: { memberId: string }) {
               const unlocked = isAll
                 ? allEarned
                 : certs.some((x) => x.continent === c && x.completed);
-              const best = readBestScore(bestScoreKey(memberId, c));
+              const best = readBestScore(bestScoreKey(userKey, c));
               const tier = getQuizTier(best);
               const nextTier = getNextQuizTier(best);
               const label = isAll ? 'All Continents' : c;
