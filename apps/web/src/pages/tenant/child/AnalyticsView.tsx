@@ -10,7 +10,6 @@ import {
   YAxis,
 } from 'recharts';
 import { Trophy } from 'lucide-react';
-import { API_BASE } from '../../../lib/api';
 
 // FHS-298 — My World analytics (faithful port of the legacy AnalyticsView).
 // Read-only summary + weekly-trend chart + habit leaderboard for one child.
@@ -59,11 +58,13 @@ function getRateStyle(rate: number): { bar: string; badge: string; label: string
   return { bar: 'bg-rose-400', badge: 'bg-rose-100 text-rose-600', label: 'Keep going' };
 }
 
+// FHS-374 — the caller supplies the analytics URL + headers, so this view works
+// for both the parent (/api/mw/analytics?memberId=) and the kid (/api/kid/analytics).
 export function AnalyticsView({
-  memberId,
+  analyticsUrl,
   headers,
 }: {
-  memberId: string;
+  analyticsUrl: string;
   headers: Record<string, string> | null;
 }) {
   const [metric, setMetric] = useState<Metric>('stickers');
@@ -84,7 +85,7 @@ export function AnalyticsView({
     if (!headers) return;
     let cancelled = false;
     setLoading(true);
-    fetch(`${API_BASE}/api/mw/analytics?memberId=${memberId}`, { headers })
+    fetch(analyticsUrl, { headers })
       .then((res) => (res.ok ? (res.json() as Promise<AnalyticsData>) : Promise.reject(res)))
       .then((data) => {
         if (cancelled) return;
@@ -119,7 +120,7 @@ export function AnalyticsView({
     return () => {
       cancelled = true;
     };
-  }, [memberId, headers]);
+  }, [analyticsUrl, headers]);
 
   if (loading) {
     return (

@@ -10,7 +10,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 import { KidDashboardShell } from '../../../../apps/web/src/pages/tenant/KidDashboardShell';
 import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
-import { KID_TOKEN_STORAGE_KEY } from '../../../../apps/web/src/lib/auth-context';
+import { AuthProvider, KID_TOKEN_STORAGE_KEY } from '../../../../apps/web/src/lib/auth-context';
 
 const fetchMock = vi.fn();
 
@@ -33,9 +33,11 @@ function renderShell() {
         <Route
           path="/t/:slug/dashboard"
           element={
-            <TenantProvider>
-              <KidDashboardShell />
-            </TenantProvider>
+            <AuthProvider>
+              <TenantProvider>
+                <KidDashboardShell />
+              </TenantProvider>
+            </AuthProvider>
           }
         />
         <Route
@@ -204,17 +206,6 @@ describe('<KidDashboardShell />', () => {
     });
   });
 
-  it('My World has a Habits/Stats toggle that switches to the stats view', async () => {
-    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
-    renderShell();
-    await waitFor(() => expect(screen.getByTestId('kid-myworld')).toBeInTheDocument());
-    act(() => {
-      fireEvent.click(screen.getByTestId('kid-myworld-stats-tab'));
-    });
-    // Empty analytics → the stats empty state renders (not the habit grid).
-    await waitFor(() => expect(screen.getByTestId('kid-stats-empty')).toBeInTheDocument());
-  });
-
   it('switches the active tab', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
@@ -324,38 +315,64 @@ describe('<KidDashboardShell />', () => {
     expect(patchCalls[0]).toContain('/api/kid/tasks/t1');
   });
 
-  // FHS-363 — My World shows the kid's interactive habits (GET /api/kid/habits).
-  it('My World shows the kid habits from GET /api/kid/habits', async () => {
+  // FHS-374 — My World reuses the real (parent) My World screen in read-only
+  // kid mode, fed by the self-scoped /api/kid/* endpoints.
+  it('My World renders the real My World screen with the kid habits (read-only)', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
-    mockKidBoot((u) =>
-      u.includes('/api/kid/habits')
-        ? {
-            habits: [
-              {
-                id: 'h1',
-                name: 'Read a book',
-                description: null,
-                color: '#facc15',
-                icon: '📚',
-                isBonus: false,
-              },
-            ],
-            stickers: [],
-            week: {
+    mockKidBoot((u) => {
+      if (u.endsWith('/api/kid/weeks'))
+        return {
+          weeks: [
+            {
               id: 'w1',
               weekNumber: 24,
               year: 2026,
               startDate: '2026-06-15',
               isFinalized: false,
+              carriedOverStickers: 0,
+              carriedOverCash: 0,
+              retrievedStickers: 0,
+              retrievedCash: 0,
             },
-            balance: 0,
-            currency: 'AED',
-          }
-        : undefined,
-    );
-    renderShell();
-    await waitFor(() => expect(screen.getByTestId('kid-habits')).toBeInTheDocument());
-    expect(screen.getByText('Read a book')).toBeInTheDocument();
+          ],
+        };
+      if (u.includes('/api/kid/habits'))
+        return {
+          habits: [
+            {
+              id: 'h1',
+              name: 'Read a book',
+              description: null,
+              color: 'bg-yellow-400',
+              // 'heart' is an icon NAME — it must render a symbol, never the
+              // literal text "heart" (the FHS-374 bug the reuse fixes).
+              icon: 'heart',
+              isBonus: false,
+            },
+          ],
+          stickers: [],
+          week: {
+            id: 'w1',
+            weekNumber: 24,
+            year: 2026,
+            startDate: '2026-06-15',
+            isFinalized: false,
+          },
+          balance: 0,
+          currency: 'AED',
+        };
+      return undefined;
+    });
+    const { container } = renderShell();
+    await waitFor(() => expect(screen.getByText('Read a book')).toBeInTheDocument());
+    // Icon bug locked: a Heart SVG renders, not the word "heart".
+    expect(container.querySelector('.lucide-heart')).toBeInTheDocument();
+    expect(screen.queryByText('heart')).not.toBeInTheDocument();
+    // Read-only: none of the write controls render for a kid.
+    expect(screen.queryByTestId('habit-card-edit-btn-h1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('habit-card-delete-btn-h1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Add stickers')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reward-buy-r1')).not.toBeInTheDocument();
   });
 
   it('Switch user clears the kid token and returns to kid-login', async () => {
