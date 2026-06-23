@@ -80,11 +80,11 @@ function ParentDashboard() {
               redesigned keep the white card until their own MP rebuild
               lands. */}
           {active.id === 'home' ? (
-            <>
-              {/* FHS-376 — pending kid reward requests surface for a parent here. */}
-              <RewardRequestsPanel />
-              <TodayTabPanel />
-            </>
+            <TodayTabPanel />
+          ) : active.id === 'reward-requests' ? (
+            // FHS-379 — dedicated Reward Requests tab; panel always renders
+            // (shows empty state when no pending requests).
+            <RewardRequestsPanel />
           ) : active.id === 'calendar' ? (
             <CalendarTabPanel />
           ) : active.id === 'meals' ? (

@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 
-// FHS-376 — parent reward-requests inbox: lists pending kid requests; admins can
-// approve/decline; non-admins see them read-only. Mocks useAuth/useTenantSlug so
-// the panel has a session + slug without Supabase.
+// FHS-379 — parent Reward Requests approval screen (restyled). Lists
+// pending kid requests in a neo-brutalist card. Admins can approve
+// (one click) or decline (two-step confirm). Non-admins see a muted
+// "Only an admin can approve" note. Empty state shows "All caught up!".
 
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => ({ session: { access_token: 'parent.tok' } }),
@@ -63,28 +64,91 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('<RewardRequestsPanel />', () => {
-  it('renders pending requests and approve removes the row', async () => {
+  it('approve removes the row', async () => {
     routeMock({ admin: true });
     render(<RewardRequestsPanel />);
     await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
-    expect(screen.getByText(/Iman wants/)).toHaveTextContent('Ice Cream');
+    // Row renders child name + reward
+    expect(screen.getByText(/Iman wants/)).toBeInTheDocument();
+    expect(screen.getByText(/Ice Cream/)).toBeInTheDocument();
     await act(async () => {
       fireEvent.click(screen.getByTestId('reward-request-approve-req1'));
     });
     await waitFor(() =>
       expect(screen.queryByTestId('reward-request-req1')).not.toBeInTheDocument(),
     );
+    // After last row removed, empty state shows
+    expect(screen.getByText(/All caught up!/)).toBeInTheDocument();
   });
 
-  it('hides approve/decline for non-admins and shows a read-only note', async () => {
+  it('two-step decline: Decline shows Confirm Decline; Confirm calls POST decline; row removed', async () => {
+    routeMock({ admin: true });
+    render(<RewardRequestsPanel />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+
+    // Step 1: click Decline → confirm buttons appear, approve disappears
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reward-request-decline-req1'));
+    });
+    expect(screen.queryByTestId('reward-request-approve-req1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reward-request-decline-req1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('reward-request-confirm-decline-req1')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Cancel/ })).toBeInTheDocument();
+
+    // Step 2: click Confirm Decline → POST is called, row removed
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reward-request-confirm-decline-req1'));
+    });
+    await waitFor(() =>
+      expect(screen.queryByTestId('reward-request-req1')).not.toBeInTheDocument(),
+    );
+    // Verify POST to decline endpoint was called
+    const declineCall = fetchMock.mock.calls.find(
+      ([url, init]: [string, RequestInit]) =>
+        String(url).includes('/req1/decline') && init?.method === 'POST',
+    );
+    expect(declineCall).toBeDefined();
+  });
+
+  it('Cancel in decline confirm restores the Approve/Decline buttons', async () => {
+    routeMock({ admin: true });
+    render(<RewardRequestsPanel />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+
+    // Enter confirm state
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reward-request-decline-req1'));
+    });
+    expect(screen.getByTestId('reward-request-confirm-decline-req1')).toBeInTheDocument();
+
+    // Cancel → back to default buttons
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Cancel/ }));
+    });
+    expect(screen.getByTestId('reward-request-approve-req1')).toBeInTheDocument();
+    expect(screen.getByTestId('reward-request-decline-req1')).toBeInTheDocument();
+    expect(screen.queryByTestId('reward-request-confirm-decline-req1')).not.toBeInTheDocument();
+  });
+
+  it('non-admin: shows "Only an admin can approve" note, no action buttons', async () => {
     routeMock({ admin: false });
     render(<RewardRequestsPanel />);
     await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
     expect(screen.getByTestId('reward-requests-readonly')).toBeInTheDocument();
     expect(screen.queryByTestId('reward-request-approve-req1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reward-request-decline-req1')).not.toBeInTheDocument();
   });
 
-  it('shows a savings error and keeps the row when approval is blocked (400)', async () => {
+  it('empty state shows "All caught up!" panel', async () => {
+    routeMock({ admin: true, requests: { requests: [] } });
+    render(<RewardRequestsPanel />);
+    // Panel always renders on its dedicated tab (never returns null)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(screen.getByTestId('reward-requests-panel')).toBeInTheDocument();
+    expect(screen.getByText(/All caught up!/)).toBeInTheDocument();
+  });
+
+  it('400 from approve shows inline error and keeps the row', async () => {
     routeMock({
       admin: true,
       approve: () => ({
@@ -104,13 +168,10 @@ describe('<RewardRequestsPanel />', () => {
     expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument();
   });
 
-  it('renders nothing when there are no pending requests', async () => {
-    routeMock({ admin: true, requests: { requests: [] } });
-    const { container } = render(<RewardRequestsPanel />);
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalled();
-    });
-    expect(screen.queryByTestId('reward-requests-panel')).not.toBeInTheDocument();
-    expect(container).toBeEmptyDOMElement();
+  it('pending count badge reflects the number of requests', async () => {
+    routeMock({ admin: true });
+    render(<RewardRequestsPanel />);
+    await waitFor(() => expect(screen.getByTestId('reward-requests-count')).toBeInTheDocument());
+    expect(screen.getByTestId('reward-requests-count').textContent).toContain('1');
   });
 });

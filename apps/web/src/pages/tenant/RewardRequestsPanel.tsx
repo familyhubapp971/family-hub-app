@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Gift, Star } from 'lucide-react';
-import { Button } from '@familyhub/ui';
+import { Check, Clock, Gift, Star } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 
-// FHS-376 — parent "Reward requests" inbox. A kid asks for a reward; this lists
-// the family's PENDING requests so a parent can approve or decline. Approval is
-// admin-only AND server-enforced (the API returns 403 for non-admins); here we
-// also hide the buttons for non-admins and show a gentle note instead.
-// Renders nothing until there's at least one pending request — so it only
-// surfaces on the parent's screen when a child is actually waiting.
+// FHS-379 — parent "Reward Requests" approval screen. Restyled to the
+// Magic Patterns neo-brutalist spec. Lives on its own dedicated dashboard
+// tab (not the home panel). Non-admins see a muted note in place of the
+// action buttons; admins get a two-step confirm flow for Decline.
 
 interface RequestItem {
   id: string;
@@ -22,6 +19,32 @@ interface RequestItem {
   starCost: number;
   status: 'pending' | 'approved' | 'declined';
   requestedAt: string;
+}
+
+// Deterministic pastel disc colour keyed on memberId so the same child
+// always lands on the same colour across reloads.
+const CHILD_COLORS = [
+  'bg-purple-300',
+  'bg-yellow-300',
+  'bg-pink-300',
+  'bg-cyan-300',
+  'bg-green-300',
+];
+function childColor(memberId: string): string {
+  const hash = [...memberId].reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return CHILD_COLORS[hash % CHILD_COLORS.length] ?? 'bg-purple-300';
+}
+
+// Relative-time helper: "just now" / "N mins ago" / "N hrs ago" / "N days ago"
+function relativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
 export function RewardRequestsPanel() {
@@ -37,6 +60,8 @@ export function RewardRequestsPanel() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<{ id: string; msg: string } | null>(null);
+  // Two-step decline: holds the id currently in the "confirm?" state.
+  const [decliningId, setDecliningId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!headers) return;
@@ -65,6 +90,7 @@ export function RewardRequestsPanel() {
         if (res.ok || res.status === 409) {
           // 409 = already decided by someone else; drop it either way.
           setRequests((prev) => prev.filter((r) => r.id !== id));
+          setDecliningId(null);
           return;
         }
         if (res.status === 400) {
@@ -81,91 +107,197 @@ export function RewardRequestsPanel() {
     [headers, busyId],
   );
 
-  if (requests.length === 0) return null;
+  const pendingCount = requests.length;
 
   return (
     <section
       data-testid="reward-requests-panel"
       aria-labelledby="reward-requests-heading"
-      className="mb-6 rounded-2xl border-2 border-black bg-white p-4 shadow-neo sm:border-3 md:p-6"
+      className="space-y-6"
     >
+      {/* Heading row */}
       <h2
         id="reward-requests-heading"
-        className="mb-3 flex items-center gap-2 font-heading text-xl text-black"
+        className="flex items-center gap-3 font-heading text-2xl tracking-wide text-white"
       >
-        <span
-          aria-hidden="true"
-          className="grid h-8 w-8 place-items-center rounded-lg border-2 border-black bg-pink-400"
-        >
-          <Gift className="h-4 w-4" />
-        </span>
-        Reward requests
+        <Gift className="text-pink-400" aria-hidden="true" />
+        Reward Requests
         <span
           data-testid="reward-requests-count"
-          className="rounded-full border-2 border-black bg-yellow-300 px-2 py-0.5 text-xs font-black text-black"
+          className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-bold text-white"
         >
-          {requests.length}
+          {pendingCount} Pending
         </span>
       </h2>
 
-      {!isAdmin && (
-        <p className="mb-3 text-sm font-bold text-gray-500" data-testid="reward-requests-readonly">
-          Only a parent with admin rights can approve these.
-        </p>
-      )}
-
-      <ul className="flex flex-col gap-3">
-        {requests.map((r) => (
-          <li
-            key={r.id}
-            data-testid={`reward-request-${r.id}`}
-            className="flex flex-col gap-2 rounded-xl border-2 border-black bg-gray-50 p-3 sm:flex-row sm:items-center sm:justify-between"
+      {/* Empty state */}
+      {pendingCount === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-black bg-white p-12 text-center shadow-neo-sm">
+          <div
+            className="mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-black bg-gray-100 text-4xl shadow-neo-xs"
+            aria-hidden="true"
           >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-black text-black">
-                {r.memberName} wants {r.rewardIcon ? `${r.rewardIcon} ` : ''}
-                {r.rewardName}
-              </p>
-              <p className="flex items-center gap-1 text-xs font-bold text-purple-700">
-                <Star size={12} className="fill-yellow-500" aria-hidden="true" /> {r.starCost} stars
-                · from savings
-              </p>
-              {rowError?.id === r.id && (
-                <p
-                  data-testid={`reward-request-error-${r.id}`}
-                  className="text-xs font-bold text-red-500"
+            🎉
+          </div>
+          <h3 className="mb-2 font-heading text-2xl">All caught up!</h3>
+          <p className="font-bold text-gray-500">There are no pending reward requests right now.</p>
+        </div>
+      ) : (
+        /* List card */
+        <div className="overflow-hidden rounded-xl border-2 border-black bg-white shadow-neo-sm">
+          {/* Desktop column header */}
+          <div
+            className="hidden gap-4 border-b-2 border-black bg-gray-50 p-4 text-xs font-bold uppercase tracking-widest text-gray-500 md:grid md:grid-cols-12"
+            aria-hidden="true"
+          >
+            <span className="col-span-4">Child &amp; Reward</span>
+            <span className="col-span-2 text-center">Cost</span>
+            <span className="col-span-2 text-center">Requested</span>
+            <span className="col-span-4 text-right">Actions</span>
+          </div>
+
+          {/* Rows */}
+          <ul className="divide-y-2 divide-black">
+            {requests.map((r) => {
+              const initial = r.memberName.charAt(0).toUpperCase();
+              const color = childColor(r.memberId);
+              const isDeclinePending = decliningId === r.id;
+
+              return (
+                <li
+                  key={r.id}
+                  data-testid={`reward-request-${r.id}`}
+                  className="flex flex-col gap-4 p-4 transition-colors hover:bg-gray-50 md:grid md:grid-cols-12 md:items-center md:p-5"
+                  aria-label={`${r.memberName} wants ${r.rewardName}`}
                 >
-                  {rowError.msg}
-                </p>
-              )}
-            </div>
-            {isAdmin && (
-              <div className="flex shrink-0 gap-2">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={() => void decide(r.id, 'approve')}
-                  disabled={busyId === r.id}
-                  testId={`reward-request-approve-${r.id}`}
-                >
-                  Approve
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void decide(r.id, 'decline')}
-                  disabled={busyId === r.id}
-                  testId={`reward-request-decline-${r.id}`}
-                >
-                  Decline
-                </Button>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
+                  {/* Child & Reward */}
+                  <div className="col-span-4 flex items-center gap-4">
+                    <span
+                      aria-hidden="true"
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-black font-heading text-xl shadow-neo-xs ${color}`}
+                    >
+                      {initial}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="mb-0.5 text-sm font-bold text-gray-500">
+                        {r.memberName} wants&hellip;
+                      </p>
+                      <p className="font-heading text-xl">
+                        {r.rewardIcon ? `${r.rewardIcon} ` : ''}
+                        {r.rewardName}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Cost */}
+                  <div className="col-span-2 flex items-center gap-2 md:justify-center">
+                    <span className="text-sm font-bold text-gray-500 md:hidden">Cost:</span>
+                    <span className="flex items-center gap-1.5 rounded-full border-2 border-black bg-yellow-100 px-3 py-1 shadow-neo-xs">
+                      <span className="font-heading text-lg text-yellow-700">{r.starCost}</span>
+                      <Star
+                        size={14}
+                        className="fill-yellow-400 text-yellow-500"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </div>
+
+                  {/* Requested */}
+                  <div className="col-span-2 flex items-center gap-2 md:justify-center">
+                    <span className="text-sm font-bold text-gray-500 md:hidden">Requested:</span>
+                    <span className="flex items-center gap-1.5 text-sm font-bold text-gray-400">
+                      <Clock size={14} aria-hidden="true" />
+                      {relativeTime(r.requestedAt)}
+                    </span>
+                  </div>
+
+                  {/* Actions (col-span-4) */}
+                  <div className="col-span-4 flex flex-col gap-1">
+                    <div className="mt-2 flex items-center justify-end gap-2 md:mt-0">
+                      {isAdmin ? (
+                        isDeclinePending ? (
+                          // Two-step decline: confirm state
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setDecliningId(null)}
+                              disabled={busyId === r.id}
+                              aria-label={`Cancel decline of ${r.rewardName}`}
+                              className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 hover:border-black hover:bg-gray-50 disabled:opacity-50 md:flex-none"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              data-testid={`reward-request-confirm-decline-${r.id}`}
+                              onClick={() => void decide(r.id, 'decline')}
+                              disabled={busyId === r.id}
+                              aria-label={`Confirm declining ${r.rewardName} for ${r.memberName}`}
+                              className="flex-1 rounded-lg border-2 border-black bg-red-400 px-4 py-2 text-sm font-bold text-black shadow-neo-xs motion-safe:hover:-translate-y-0.5 disabled:opacity-50 md:flex-none"
+                            >
+                              {busyId === r.id ? 'Declining…' : 'Confirm Decline'}
+                            </button>
+                          </>
+                        ) : (
+                          // Default: Decline + Approve
+                          <>
+                            <button
+                              type="button"
+                              data-testid={`reward-request-decline-${r.id}`}
+                              onClick={() => setDecliningId(r.id)}
+                              disabled={busyId === r.id}
+                              aria-label={`Decline ${r.rewardName} for ${r.memberName}`}
+                              className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 hover:border-black hover:bg-gray-50 disabled:opacity-50 md:flex-none"
+                            >
+                              Decline
+                            </button>
+                            <button
+                              type="button"
+                              data-testid={`reward-request-approve-${r.id}`}
+                              onClick={() => void decide(r.id, 'approve')}
+                              disabled={busyId === r.id}
+                              aria-label={`Approve ${r.rewardName} for ${r.memberName}`}
+                              className="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-black bg-green-400 px-4 py-2 text-sm font-bold text-black shadow-neo-xs motion-safe:hover:-translate-y-0.5 disabled:opacity-50 md:flex-none"
+                            >
+                              <Check size={16} strokeWidth={3} aria-hidden="true" />
+                              {busyId === r.id ? 'Approving…' : 'Approve'}
+                            </button>
+                          </>
+                        )
+                      ) : (
+                        <p
+                          className="text-sm font-bold text-gray-400"
+                          data-testid="reward-requests-readonly"
+                        >
+                          Only an admin can approve
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Inline error (400 INSUFFICIENT_SAVINGS) */}
+                    {rowError?.id === r.id && (
+                      <p
+                        data-testid={`reward-request-error-${r.id}`}
+                        className="text-right text-xs font-bold text-red-500"
+                        role="alert"
+                      >
+                        {rowError.msg}
+                      </p>
+                    )}
+
+                    {/* Helper hint — desktop only, not while in decline confirm */}
+                    {!isDeclinePending && (
+                      <p className="mt-1 hidden text-right text-[10px] font-bold text-gray-400 md:block">
+                        Approving will deduct {r.starCost} stars from {r.memberName}&apos;s balance.
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }

@@ -155,6 +155,18 @@ function defaultFetchMocks() {
         }),
       } as Response;
     }
+    if (url.includes('/api/members')) {
+      return {
+        ok: true,
+        json: async () => ({ callerRole: 'admin' }),
+      } as Response;
+    }
+    if (url.includes('/api/mw/redemption-requests')) {
+      return {
+        ok: true,
+        json: async () => ({ requests: [] }),
+      } as Response;
+    }
     return { ok: false, status: 404, json: async () => ({}) } as Response;
   });
 }
@@ -175,9 +187,17 @@ afterEach(() => {
 });
 
 describe('<DashboardPage /> — tab framework', () => {
-  it('renders all six tabs in the nav', () => {
+  it('renders all seven tabs in the nav', () => {
     renderAt('/t/khans/dashboard');
-    for (const label of ['Dashboard', 'Meals', 'Calendar', 'Assignments', 'Noticeboard', 'Tasks']) {
+    for (const label of [
+      'Dashboard',
+      'Meals',
+      'Calendar',
+      'Assignments',
+      'Noticeboard',
+      'Tasks',
+      'Reward Requests',
+    ]) {
       expect(screen.getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
     }
   });
@@ -232,6 +252,23 @@ describe('<DashboardPage /> — tab framework', () => {
     renderAt('/t/khans/dashboard?tab=tasks');
     expect(screen.getByRole('tab', { name: /Tasks/ }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('tab', { name: /Meals/ }).getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('Reward Requests tab renders the panel (empty state when no pending)', async () => {
+    renderAt('/t/khans/dashboard?tab=reward-requests');
+    expect(screen.getByTestId('dashboard-panel-reward-requests')).toBeInTheDocument();
+    // Panel always renders on its dedicated tab — even empty state
+    await waitFor(() => expect(screen.getByTestId('reward-requests-panel')).toBeInTheDocument());
+    expect(screen.getByText(/All caught up!/)).toBeInTheDocument();
+  });
+
+  it('home tab no longer shows RewardRequestsPanel', async () => {
+    renderAt('/t/khans/dashboard');
+    // Home only shows TodayTabPanel, not the rewards inbox
+    expect(screen.getByTestId('dashboard-panel-home')).toBeInTheDocument();
+    await waitFor(() => expect(mocks.fetchMock).toHaveBeenCalled());
+    // The reward-requests-panel testid must NOT appear on the home tab
+    expect(screen.queryByTestId('reward-requests-panel')).not.toBeInTheDocument();
   });
 });
 
