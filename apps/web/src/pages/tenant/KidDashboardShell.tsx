@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   CalendarDays,
+  ListChecks,
   LogOut,
+  Megaphone,
   NotebookPen,
   Sparkles,
   UtensilsCrossed,
@@ -46,6 +48,8 @@ const KID_TABS: KidTab[] = [
   { id: 'calendar', label: 'Calendar', icon: <CalendarDays size={16} aria-hidden="true" /> },
   { id: 'journal', label: 'Journal', icon: <NotebookPen size={16} aria-hidden="true" /> },
   { id: 'learn', label: 'Learn', icon: <BookOpen size={16} aria-hidden="true" /> },
+  { id: 'tasks', label: 'Tasks', icon: <ListChecks size={16} aria-hidden="true" /> },
+  { id: 'notices', label: 'Notices', icon: <Megaphone size={16} aria-hidden="true" /> },
 ];
 
 const DEFAULT_TAB = 'world';
@@ -282,17 +286,9 @@ function KidTasksPanel({ kidToken }: { kidToken: string | null }) {
 // cards, Money Skills, and the Reward Goals + My Account sidebar. The kid's tasks
 // + notices sit below for now; FHS-370 moves them to their own tabs.
 function MyWorldPanel({ kidToken, displayName }: { kidToken: string | null; displayName: string }) {
-  return (
-    <div className="space-y-6">
-      <KidMyWorld kidToken={kidToken} displayName={displayName} />
-      <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
-        <KidTasksPanel kidToken={kidToken} />
-      </div>
-      <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
-        <KidNoticesPanel kidToken={kidToken} />
-      </div>
-    </div>
-  );
+  // FHS-370 — My World is the kid habit/economy screen only (matches the mock).
+  // Tasks + Notices live in their own tabs now, not appended here.
+  return <KidMyWorld kidToken={kidToken} displayName={displayName} />;
 }
 
 export function KidDashboardShell() {
@@ -485,8 +481,16 @@ export function KidDashboardShell() {
             <KidCalendarPanel kidToken={kidToken} />
           ) : active.id === 'journal' ? (
             <KidJournalPanel kidToken={kidToken} />
-          ) : (
+          ) : active.id === 'learn' ? (
             <KidLearnPanel kidToken={kidToken} />
+          ) : active.id === 'tasks' ? (
+            <div className="rounded-xl border-2 border-black bg-white p-5 shadow-neo-sm">
+              <KidTasksPanel kidToken={kidToken} />
+            </div>
+          ) : (
+            <div className="rounded-xl border-2 border-black bg-white p-5 shadow-neo-sm">
+              <KidNoticesPanel kidToken={kidToken} />
+            </div>
           )}
         </section>
       </main>
