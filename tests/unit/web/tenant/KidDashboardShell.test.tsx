@@ -255,8 +255,8 @@ describe('<KidDashboardShell />', () => {
     expect(screen.getByText('Pasta')).toBeInTheDocument();
   });
 
-  // FHS-355 / FHS-362 — the My World tab shows the kid's family notices.
-  it('My World shows notices from GET /api/kid/notices', async () => {
+  // FHS-370 — Notices is its own kid tab now (off My World).
+  it('Notices tab shows family notices from GET /api/kid/notices', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     mockKidBoot((u) =>
       u.includes('/api/kid/notices')
@@ -275,12 +275,16 @@ describe('<KidDashboardShell />', () => {
         : undefined,
     );
     renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByRole('tab', { name: /Notices/ }));
+    });
     await waitFor(() => expect(screen.getByTestId('kid-notices-list')).toBeInTheDocument());
     expect(screen.getByText('Tidy your room')).toBeInTheDocument();
   });
 
-  // FHS-355 / FHS-362 — My World lists the kid's tasks; ticking PATCHes.
-  it('My World lists the kid tasks and ticking one PATCHes /api/kid/tasks/:id', async () => {
+  // FHS-370 — Tasks is its own kid tab now (off My World); ticking PATCHes.
+  it('Tasks tab lists the kid tasks and ticking one PATCHes /api/kid/tasks/:id', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     const patchCalls: string[] = [];
     fetchMock.mockImplementation((url: string) => {
@@ -318,6 +322,10 @@ describe('<KidDashboardShell />', () => {
       });
     });
     renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByRole('tab', { name: /Tasks/ }));
+    });
     await waitFor(() => expect(screen.getByTestId('kid-tasks-list')).toBeInTheDocument());
     expect(screen.getByText('Brush teeth')).toBeInTheDocument();
     await act(async () => {
