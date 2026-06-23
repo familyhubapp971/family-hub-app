@@ -650,6 +650,9 @@ function InvestDialog({
   const [submitting, setSubmitting] = useState(false);
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  // FHS-378 — Deductible (default): missed days subtract value. Non-deductible:
+  // missed days never reduce the value.
+  const [deductible, setDeductible] = useState(true);
   const [error, setError] = useState('');
   const num = Number(amount) || 0;
   const isOverMax = num > stickers;
@@ -694,7 +697,7 @@ function InvestDialog({
       const res = await fetch(`${API_BASE}/api/mw/financial/investments`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId, habitId: selectedHabit.id, stickerCount }),
+        body: JSON.stringify({ memberId, habitId: selectedHabit.id, stickerCount, deductible }),
       });
       if (!res.ok) throw new Error(`invest failed: ${res.status}`);
       onDone({
@@ -923,6 +926,48 @@ function InvestDialog({
               </p>
             )}
           </div>
+
+          {/* FHS-378 — Missed-days mode for the new investment. */}
+          {!notEnoughToInvest && !selectedIsInvested && (
+            <div className="mb-2" data-testid="close-week-invest-deductible">
+              <p
+                id="invest-deductible-label"
+                className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-wider text-gray-900"
+              >
+                <span className="text-xl">📉</span> Missed days
+              </p>
+              <div
+                role="group"
+                aria-labelledby="invest-deductible-label"
+                className="grid grid-cols-2 gap-2"
+              >
+                <button
+                  type="button"
+                  aria-pressed={deductible}
+                  data-testid="invest-deductible-on"
+                  onClick={() => setDeductible(true)}
+                  className={`rounded-lg border-2 border-black px-3 py-2 text-left text-sm font-bold ${
+                    deductible ? 'bg-red-300 text-black shadow-neo-xs' : 'bg-white text-gray-500'
+                  }`}
+                >
+                  Deductible
+                  <span className="block text-[10px] font-bold opacity-80">miss = −penalty</span>
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={!deductible}
+                  data-testid="invest-deductible-off"
+                  onClick={() => setDeductible(false)}
+                  className={`rounded-lg border-2 border-black px-3 py-2 text-left text-sm font-bold ${
+                    !deductible ? 'bg-green-300 text-black shadow-neo-xs' : 'bg-white text-gray-500'
+                  }`}
+                >
+                  No-penalty
+                  <span className="block text-[10px] font-bold opacity-80">miss = no change</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Habit selection */}
           <div>

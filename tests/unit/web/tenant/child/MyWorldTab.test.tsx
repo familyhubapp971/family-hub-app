@@ -384,6 +384,51 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     await waitFor(() => expect(screen.getByTestId('sticker-balance').textContent).toContain('3'));
   });
 
+  it('shows the deductible tag on an active investment and an admin can flip it (FHS-378)', async () => {
+    installApi();
+    const base = fetchMock.getMockImplementation()!;
+    const settingsCalls: string[] = [];
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/api/mw/financial/investments/') && u.includes('/settings')) {
+        settingsCalls.push(u);
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ id: 'inv1' }) });
+      }
+      if (u.includes('/api/mw/financial/investments')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            investments: [
+              {
+                id: 'inv1',
+                habitId: HABIT,
+                habitName: 'Read a book',
+                habitIcon: 'star',
+                investedStickers: 10,
+                originalInvestedStickers: 10,
+                currentValue: 5,
+                currentValueStickers: 10,
+                daysCompleted: 2,
+                daysMissed: 1,
+                deductible: false,
+              },
+            ],
+          }),
+        });
+      }
+      return base(url, init);
+    });
+    renderTab(true);
+    await waitFor(() => expect(screen.getByTestId('investment-card-inv1')).toBeInTheDocument());
+    expect(screen.getByTestId('investment-mode-inv1')).toHaveTextContent('No-penalty');
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-toggle-inv1'));
+    });
+    await waitFor(() => expect(settingsCalls.length).toBe(1));
+    expect(settingsCalls[0]).toContain('/api/mw/financial/investments/inv1/settings');
+  });
+
   it('shows the Close Week banner only from the last day of the week (FHS-319)', async () => {
     // Default week starts Mon 2026-02-23 → its last day (Sunday) is 2026-03-01.
     // Fake only Date so async fetch/waitFor still run on real timers.
