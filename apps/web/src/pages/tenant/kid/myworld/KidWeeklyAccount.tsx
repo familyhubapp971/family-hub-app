@@ -38,19 +38,19 @@ export function KidWeeklyAccount({
 
       {/* Balance section */}
       <div className="bg-green-50 p-5 text-center">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-green-700">
           In your account right now
         </p>
-        <p className="mt-1 font-heading text-4xl text-black">
+        <p className="mt-1 font-heading text-4xl text-green-700">
           {earnedThisWeek} <span aria-hidden="true">⭐</span>
         </p>
         <span
           data-testid="kid-account-cash"
-          className="mt-2 inline-block rounded-full border-2 border-black bg-yellow-300 px-3 py-1 font-heading text-sm text-black"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-white px-3 py-1 font-heading text-base text-green-700 shadow-neo-xs"
         >
           {currency} {weeklyValue}
         </span>
-        <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+        <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
           Each star is worth {currency} 0.50
         </p>
       </div>
@@ -75,7 +75,7 @@ export function KidWeeklyAccount({
                       </span>
                       <span className="truncate text-sm font-bold text-black">{h.name}</span>
                     </span>
-                    <span className="shrink-0 font-heading text-sm text-black">
+                    <span className="shrink-0 font-heading text-sm text-yellow-600">
                       +{h.progress} ⭐
                     </span>
                   </li>

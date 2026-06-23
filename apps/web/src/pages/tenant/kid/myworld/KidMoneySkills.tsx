@@ -33,24 +33,25 @@ export function KidMoneySkills({
       </h2>
 
       <p className="mt-3 text-sm font-bold text-gray-700">
-        You have {stickerBalance} stars! Every star is worth a little bit of real money. What will
-        you do with them?
+        You have{' '}
+        <span className="font-heading text-lg text-yellow-500">{stickerBalance} stars</span>! Every
+        star is worth a little bit of real money. What will you do with them?
       </p>
 
       {/* Savings now + growing stars */}
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border-2 border-black bg-green-50 p-4">
-          <h3 className="font-heading text-sm uppercase tracking-wide text-black">
+          <h3 className="font-heading text-lg uppercase tracking-wide text-black">
             My Savings Now
           </h3>
-          <dl className="mt-2 space-y-1 text-sm font-bold text-gray-700">
+          <dl className="mt-2 space-y-2 font-bold text-gray-700">
             <div className="flex items-center justify-between">
-              <dt>Saved Stars</dt>
-              <dd>{savedStickers} ⭐</dd>
+              <dt className="text-sm">Saved Stars</dt>
+              <dd className="font-heading text-3xl text-yellow-600">{savedStickers} ⭐</dd>
             </div>
-            <div className="flex items-center justify-between">
-              <dt>Worth</dt>
-              <dd>
+            <div className="flex items-center justify-between border-t-2 border-green-200 pt-2">
+              <dt className="text-sm">Worth</dt>
+              <dd className="font-heading text-2xl text-green-700">
                 {currency} {savedCash.toFixed(2)}
               </dd>
             </div>
@@ -58,18 +59,18 @@ export function KidMoneySkills({
         </div>
 
         <div className="rounded-xl border-2 border-black bg-purple-50 p-4">
-          <h3 className="font-heading text-sm uppercase tracking-wide text-black">
+          <h3 className="font-heading text-lg uppercase tracking-wide text-black">
             My Growing Stars <span aria-hidden="true">🌱</span>
           </h3>
           {hasInvestments ? (
-            <dl className="mt-2 space-y-1 text-sm font-bold text-gray-700">
+            <dl className="mt-2 space-y-2 font-bold text-gray-700">
               <div className="flex items-center justify-between">
-                <dt>Planted</dt>
-                <dd>{planted} ⭐</dd>
+                <dt className="text-sm">Planted</dt>
+                <dd className="font-heading text-2xl text-purple-700">{planted} ⭐</dd>
               </div>
-              <div className="flex items-center justify-between">
-                <dt>✨ Bonus stars it made for you</dt>
-                <dd className="text-green-600">+{bonus}</dd>
+              <div className="flex items-center justify-between border-t-2 border-purple-100 pt-2">
+                <dt className="text-xs">✨ Bonus stars it made for you</dt>
+                <dd className="font-heading text-lg text-green-600">+{bonus}</dd>
               </div>
             </dl>
           ) : (
