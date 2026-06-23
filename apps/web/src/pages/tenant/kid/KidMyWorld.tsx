@@ -213,7 +213,14 @@ export function KidMyWorld({
                   You&rsquo;ve completed {doneThisView} out of {totalThisView} habit days! Keep it
                   up!
                 </p>
-                <div className="mt-2 h-3 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100">
+                <div
+                  role="progressbar"
+                  aria-valuenow={doneThisView}
+                  aria-valuemin={0}
+                  aria-valuemax={totalThisView}
+                  aria-label="Habit days completed this week"
+                  className="mt-2 h-3 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100"
+                >
                   <div
                     className="h-full bg-green-400"
                     style={{

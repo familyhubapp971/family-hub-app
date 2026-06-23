@@ -62,6 +62,7 @@ interface BootOverrides {
   habits?: unknown;
   analytics?: unknown;
   onRequest?: (url: string) => void;
+  requestFails?: boolean;
 }
 
 function mockBoot(over: BootOverrides = {}) {
@@ -70,9 +71,9 @@ function mockBoot(over: BootOverrides = {}) {
     if (u.includes('/api/kid/rewards/') && u.endsWith('/request')) {
       over.onRequest?.(u);
       return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () => ({ id: 'req1', status: 'pending' }),
+        ok: !over.requestFails,
+        status: over.requestFails ? 500 : 200,
+        json: async () => (over.requestFails ? {} : { id: 'req1', status: 'pending' }),
       });
     }
     if (u.endsWith('/api/kid/weeks')) {
@@ -198,6 +199,57 @@ describe('<KidMyWorld />', () => {
     await waitFor(() => expect(requested.length).toBe(1));
     expect(requested[0]).toContain('/api/kid/rewards/rw1/request');
     await waitFor(() => expect(screen.getByTestId('reward-pending-rw1')).toBeInTheDocument());
+  });
+
+  it('confirm then "Not yet" returns to Ask without sending a request', async () => {
+    const requested: string[] = [];
+    mockBoot({ onRequest: (u) => requested.push(u) });
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('reward-ask-rw1')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reward-ask-rw1'));
+    });
+    await waitFor(() => expect(screen.getByTestId('reward-cancel-rw1')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reward-cancel-rw1'));
+    });
+    await waitFor(() => expect(screen.getByTestId('reward-ask-rw1')).toBeInTheDocument());
+    expect(requested).toHaveLength(0);
+  });
+
+  it('reverts to Ask when the request POST fails', async () => {
+    mockBoot({ requestFails: true });
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('reward-ask-rw1')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reward-ask-rw1'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reward-confirm-rw1'));
+    });
+    await waitFor(() => expect(screen.getByTestId('reward-ask-rw1')).toBeInTheDocument());
+    expect(screen.queryByTestId('reward-pending-rw1')).not.toBeInTheDocument();
+  });
+
+  it('a reward already pending shows no Ask button', async () => {
+    mockBoot({
+      rewards: {
+        rewards: [
+          {
+            id: 'p1',
+            name: 'Pending Treat',
+            description: null,
+            stickerCost: 5,
+            icon: '⏳',
+            requestStatus: 'pending',
+          },
+        ],
+        stickerBalance: 50,
+      },
+    });
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('reward-pending-p1')).toBeInTheDocument());
+    expect(screen.queryByTestId('reward-ask-p1')).not.toBeInTheDocument();
   });
 
   it('shows "Keep saving" when the reward is unaffordable', async () => {

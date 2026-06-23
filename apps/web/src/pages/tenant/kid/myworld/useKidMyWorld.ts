@@ -232,6 +232,9 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
   const requestReward = useCallback(
     (rewardId: string) => {
       if (!headers || requestingRef.current.has(rewardId)) return;
+      // Only a fresh ('none') reward can be requested — never re-ask a reward
+      // that's already pending/approved/declined (guards a remount race too).
+      if (rewards.find((r) => r.id === rewardId)?.requestStatus !== 'none') return;
       requestingRef.current.add(rewardId);
       // Optimistically flip the card to pending before the round-trip.
       setRewards((prev) =>
@@ -258,7 +261,7 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
         }
       })();
     },
-    [headers],
+    [headers, rewards],
   );
 
   const week = weeks[weekIndex];
@@ -271,7 +274,9 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
     weekIndex,
     goPrevWeek,
     goNextWeek,
-    isCurrentWeek: weeks.length === 0 ? true : weekIndex === weeks.length - 1,
+    // A week is "live" only if it isn't finalized — not merely the newest index
+    // (when every week is closed, the last one is still a finalized past week).
+    isCurrentWeek: weeks[weekIndex]?.isFinalized === false,
     habits: active?.habits ?? [],
     balance,
     currency,

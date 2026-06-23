@@ -55,6 +55,7 @@ function RewardRow({
         {reward.requestStatus === 'pending' ? (
           <p
             data-testid={`reward-pending-${reward.id}`}
+            role="status"
             className="animate-pulse text-sm font-bold text-purple-700"
           >
             ⏳ Requested! Waiting for a grown-up
@@ -62,6 +63,7 @@ function RewardRow({
         ) : reward.requestStatus === 'approved' ? (
           <p
             data-testid={`reward-approved-${reward.id}`}
+            role="status"
             className="text-sm font-bold text-green-700"
           >
             🎉 Yay! Approved!
@@ -69,6 +71,7 @@ function RewardRow({
         ) : reward.requestStatus === 'declined' ? (
           <p
             data-testid={`reward-declined-${reward.id}`}
+            role="status"
             className="text-sm font-bold text-gray-600"
           >
             Not this time. Keep saving!
@@ -80,6 +83,7 @@ function RewardRow({
               <div className="mt-3 flex gap-2">
                 <button
                   type="button"
+                  data-testid={`reward-cancel-${reward.id}`}
                   onClick={() => setConfirming(false)}
                   className="flex-1 rounded-lg border-2 border-black bg-gray-100 px-3 py-2 font-heading text-sm uppercase text-gray-700 transition-transform motion-safe:hover:-translate-y-0.5"
                 >
