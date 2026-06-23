@@ -3,6 +3,9 @@ import { habitIcon } from './icons';
 import type { KidHabitView } from './types';
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+// Full names for screen readers — the visible M/T/W/T/F/S/S are ambiguous
+// (two T's, two S's), so AT announces the full day instead.
+const FULL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 // FHS-376 — a single read-only kid habit card. Left = identity (coloured icon
 // disc, name, thin progress bar, "PROGRESS THIS WEEK x/7"). Right = 7 day cells
@@ -54,25 +57,30 @@ export function KidHabitCard({
       </div>
 
       {/* RIGHT: 7 day cells */}
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
         {DAY_LABELS.map((label, i) => {
           const done = habit.days[i];
           const isOpen = i === firstOpenDay;
           const isPastMissed = isCurrentWeek && !done && firstOpenDay >= 0 && i < firstOpenDay;
           return (
             <div key={i} className="flex flex-col items-center gap-1">
-              <span className="text-[10px] font-bold text-gray-400">{label}</span>
+              <span className="text-[10px] font-bold text-gray-400" aria-hidden="true">
+                {label}
+              </span>
               <div
                 data-testid={`kid-habit-day-${habit.id}-${i}`}
-                aria-label={done ? `${label} done` : `${label} not done`}
+                role="img"
+                aria-label={`${habit.name}, ${FULL_DAYS[i]}: ${
+                  done ? 'done' : isPastMissed ? 'missed' : 'not done'
+                }`}
                 className={
                   done
-                    ? 'grid h-10 w-10 place-items-center rounded-lg border-2 border-pink-200 bg-pink-100'
+                    ? 'grid h-9 w-9 place-items-center rounded-lg border-2 sm:h-10 sm:w-10 border-pink-200 bg-pink-100'
                     : isOpen
-                      ? 'grid h-10 w-10 place-items-center rounded-lg border-2 border-black bg-white'
+                      ? 'grid h-9 w-9 place-items-center rounded-lg border-2 sm:h-10 sm:w-10 border-black bg-white'
                       : isPastMissed
-                        ? 'grid h-10 w-10 place-items-center rounded-lg border-2 border-gray-100 bg-gray-50'
-                        : 'grid h-10 w-10 place-items-center rounded-lg border-2 border-gray-100 bg-gray-50'
+                        ? 'grid h-9 w-9 place-items-center rounded-lg border-2 sm:h-10 sm:w-10 border-gray-100 bg-gray-50'
+                        : 'grid h-9 w-9 place-items-center rounded-lg border-2 sm:h-10 sm:w-10 border-gray-100 bg-gray-50'
                 }
               >
                 {done ? (
