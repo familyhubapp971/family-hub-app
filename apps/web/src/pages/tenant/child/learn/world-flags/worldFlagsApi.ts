@@ -25,11 +25,29 @@ export interface WorldFlagsApi {
   /** POST learn-complete body. */
   learnCompleteBody(continent: string, chunkIndex: number): Record<string, unknown>;
   /**
-   * Stable key to use wherever a per-user identifier is needed client-side
-   * (e.g. localStorage best-score key). In kid mode we use the kidToken as
-   * the opaque per-kid identifier; in parent mode we use memberId.
+   * Stable per-user key for client-side state (e.g. localStorage best-score
+   * key). The member id in both modes — derived from the kid token's `sub`
+   * claim in kid mode, the memberId prop in parent mode — so it survives a
+   * kid-token rotation (re-login / expiry).
    */
   readonly userKey: string;
+}
+
+// Pull the stable member id (the `sub` claim) out of a kid HS256 JWT so a
+// per-kid client key (e.g. localStorage best-scores) survives token rotation.
+// The token was already verified server-side; we only read its payload. Falls
+// back to the raw token if it isn't a decodable JWT.
+function memberIdFromKidToken(tok: string): string {
+  try {
+    const payload = tok.split('.')[1];
+    if (!payload) return tok;
+    const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
+    const sub = (JSON.parse(atob(b64 + pad)) as { sub?: unknown }).sub;
+    return typeof sub === 'string' && sub ? sub : tok;
+  } catch {
+    return tok;
+  }
 }
 
 export function worldFlagsApi(mode: WorldFlagsMode): WorldFlagsApi {
@@ -38,7 +56,7 @@ export function worldFlagsApi(mode: WorldFlagsMode): WorldFlagsApi {
     const h = { Authorization: `Bearer ${tok}` };
     return {
       headers: h,
-      userKey: tok,
+      userKey: memberIdFromKidToken(tok),
       exploreUrl: () => `${API_BASE}/api/kid/world-flags`,
       explorePostUrl: () => `${API_BASE}/api/kid/world-flags/explore`,
       explorePostBody: (countryCode) => ({ countryCode }),

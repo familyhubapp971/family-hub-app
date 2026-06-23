@@ -97,7 +97,7 @@ export async function addLearnComplete(
   db: Database,
   tenantId: string,
   memberId: string,
-  continent: string,
+  continent: Continent,
   chunkIndex: number,
 ): Promise<void> {
   await db

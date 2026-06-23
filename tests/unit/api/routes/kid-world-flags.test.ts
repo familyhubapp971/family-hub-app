@@ -60,6 +60,31 @@ beforeEach(() => {
   dbMock.insert.mockReset();
 });
 
+// ─── Auth: expired token is rejected on every endpoint ───────────────────────
+
+describe('FHS-373 — expired kid token is rejected (401)', () => {
+  const routes: [string, RequestInit | undefined][] = [
+    ['/api/kid/world-flags', undefined],
+    [
+      '/api/kid/world-flags/explore',
+      { method: 'POST', body: JSON.stringify({ countryCode: 'GB' }) },
+    ],
+    ['/api/kid/world-flags/learn', undefined],
+    [
+      '/api/kid/world-flags/learn-complete',
+      { method: 'POST', body: JSON.stringify({ continent: 'Africa', chunkIndex: 0 }) },
+    ],
+  ];
+  it.each(routes)('401 (not 403) for an expired token on %s', async (path, init) => {
+    const token = await mintKidToken(-10); // already expired
+    const res = await buildLocalApp().request(path, {
+      ...init,
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+    expect(res.status).toBe(401);
+  });
+});
+
 // ─── GET /api/kid/world-flags ─────────────────────────────────────────────────
 
 describe('FHS-373 — GET /api/kid/world-flags', () => {
@@ -211,6 +236,16 @@ describe('FHS-373 — POST /api/kid/world-flags/learn-complete', () => {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ continent: 'Africa', chunkIndex: -1 }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('400 when chunkIndex is above the max', async () => {
+    const token = await mintKidToken();
+    const res = await buildLocalApp().request('/api/kid/world-flags/learn-complete', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ continent: 'Africa', chunkIndex: 61 }),
     });
     expect(res.status).toBe(400);
   });

@@ -117,7 +117,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
         body: JSON.stringify({ countryCode: 'US' }),
       });
     });
-    When('"Amira" POSTs /api/kid/world-flags/explore with countryCode "US"', async () => {
+    And('"Amira" POSTs /api/kid/world-flags/explore with countryCode "US"', async () => {
       await app.request('/api/kid/world-flags/explore', {
         method: 'POST',
         headers: jsonAuth('Amira'),
@@ -204,7 +204,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
         });
       },
     );
-    When(
+    And(
       '"Amira" POSTs /api/kid/world-flags/learn-complete with continent "Europe" chunkIndex 1',
       async () => {
         await app.request('/api/kid/world-flags/learn-complete', {
