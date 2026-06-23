@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart2, Check, ChevronLeft, ChevronRight, Sparkles, Star } from 'lucide-react';
 import { useKidMyWorld } from './myworld/useKidMyWorld';
@@ -28,12 +28,27 @@ export function KidMyWorld({
   // Only the first successful load plays the slide-in; a retry/remount (e.g.
   // after the error state) should not re-animate (FHS-377).
   const animatedOnce = useRef(false);
+  // Refs for the roving-tabindex keyboard pattern on the Habits/Analytics tabs.
+  const habitsTabRef = useRef<HTMLButtonElement>(null);
+  const analyticsTabRef = useRef<HTMLButtonElement>(null);
   const data = useKidMyWorld(kidToken);
+
+  // APG tabs pattern: Left/Right (and Home/End) move between tabs + activate.
+  const onTabKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    let next: View | null = null;
+    if (e.key === 'ArrowRight' || e.key === 'End') next = 'analytics';
+    else if (e.key === 'ArrowLeft' || e.key === 'Home') next = 'habits';
+    if (!next) return;
+    e.preventDefault();
+    setView(next);
+    (next === 'habits' ? habitsTabRef : analyticsTabRef).current?.focus();
+  };
 
   if (data.status === 'loading') {
     return (
       <div
         data-testid="kid-myworld-loading"
+        role="status"
         aria-busy="true"
         className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm"
       >
@@ -121,10 +136,13 @@ export function KidMyWorld({
           <button
             type="button"
             role="tab"
+            ref={habitsTabRef}
             id="kid-myworld-tab-habits"
             aria-controls="kid-myworld-panel"
             aria-selected={view === 'habits'}
+            tabIndex={view === 'habits' ? 0 : -1}
             data-testid="kid-myworld-habits-tab"
+            onKeyDown={onTabKeyDown}
             onClick={() => setView('habits')}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-heading text-sm uppercase tracking-wide transition-colors ${
               view === 'habits'
@@ -137,10 +155,13 @@ export function KidMyWorld({
           <button
             type="button"
             role="tab"
+            ref={analyticsTabRef}
             id="kid-myworld-tab-analytics"
             aria-controls="kid-myworld-panel"
             aria-selected={view === 'analytics'}
+            tabIndex={view === 'analytics' ? 0 : -1}
             data-testid="kid-myworld-stats-tab"
+            onKeyDown={onTabKeyDown}
             onClick={() => setView('analytics')}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-heading text-sm uppercase tracking-wide transition-colors ${
               view === 'analytics'
@@ -156,8 +177,10 @@ export function KidMyWorld({
           role="tabpanel"
           id="kid-myworld-panel"
           aria-labelledby={panelLabelId}
-          tabIndex={0}
-          className="flex flex-col gap-4 focus:outline-none"
+          // No tabIndex: the panel has focusable children (week nav, retry), so
+          // per the APG tabs pattern it isn't itself a tab stop — Tab moves from
+          // the active tab straight into the panel's controls.
+          className="flex flex-col gap-4"
         >
           {view === 'habits' ? (
             <>
@@ -256,6 +279,7 @@ export function KidMyWorld({
               {data.viewWeekStatus === 'loading' ? (
                 <div
                   data-testid="kid-week-loading"
+                  role="status"
                   aria-busy="true"
                   className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm"
                 >

@@ -70,7 +70,9 @@ export function KidHabitCard({
               <div
                 data-testid={`kid-habit-day-${habit.id}-${i}`}
                 role="img"
-                aria-label={`${FULL_DAYS[i]}: ${done ? 'done' : isPastMissed ? 'missed' : 'not done'}`}
+                aria-label={`${habit.name}, ${FULL_DAYS[i]}: ${
+                  done ? 'done' : isPastMissed ? 'missed' : 'not done'
+                }`}
                 className={
                   done
                     ? 'grid h-9 w-9 place-items-center rounded-lg border-2 sm:h-10 sm:w-10 border-pink-200 bg-pink-100'

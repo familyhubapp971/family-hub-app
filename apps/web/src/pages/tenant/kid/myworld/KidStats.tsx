@@ -116,7 +116,9 @@ export function KidStats({
                           </span>
                           <div
                             role="img"
-                            aria-label={`${FULL_DAYS[i]}: ${h.days[i] ? 'done' : 'not done'}`}
+                            aria-label={`${h.name}, ${FULL_DAYS[i]}: ${
+                              h.days[i] ? 'done' : 'not done'
+                            }`}
                             className={`grid h-7 w-7 place-items-center rounded-lg border-2 border-black sm:h-8 sm:w-8 ${
                               h.days[i] ? h.color : 'bg-gray-100'
                             }`}

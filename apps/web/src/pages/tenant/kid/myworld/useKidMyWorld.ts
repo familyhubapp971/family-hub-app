@@ -247,7 +247,16 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
     // doesn't re-run this effect.
   }, [weekIndex, weeks, weekHabits, headers, fetchWeekHabits, weekRetry]);
 
-  const retryWeek = useCallback(() => setWeekRetry((n) => n + 1), []);
+  const retryWeek = useCallback(() => {
+    // Clear errored entries first so the view flips straight to the spinner
+    // (no one-render error flash) before the re-fetch the nonce triggers.
+    setWeekStatus((p) => {
+      const next: Record<string, 'loading' | 'error'> = {};
+      for (const [k, v] of Object.entries(p)) if (v !== 'error') next[k] = v;
+      return next;
+    });
+    setWeekRetry((n) => n + 1);
+  }, []);
 
   const goPrevWeek = useCallback(() => setWeekIndex((i) => Math.max(0, i - 1)), []);
   const goNextWeek = useCallback(

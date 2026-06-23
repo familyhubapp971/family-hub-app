@@ -337,11 +337,31 @@ describe('<KidMyWorld />', () => {
     // h1 done Mon(0) + Tue(1); Wed(2) not done.
     const mon = screen.getByTestId('kid-habit-day-h1-0');
     expect(mon).toHaveAttribute('role', 'img');
-    expect(mon).toHaveAttribute('aria-label', 'Monday: done');
+    expect(mon).toHaveAttribute('aria-label', 'Read a book, Monday: done');
     expect(screen.getByTestId('kid-habit-day-h1-2')).toHaveAttribute(
       'aria-label',
-      'Wednesday: not done',
+      'Read a book, Wednesday: not done',
     );
+  });
+
+  it('arrow keys move + activate between the two tabs (FHS-377)', async () => {
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('kid-myworld-habits-tab')).toBeInTheDocument());
+    const habitsTab = screen.getByTestId('kid-myworld-habits-tab');
+    const analyticsTab = screen.getByTestId('kid-myworld-stats-tab');
+    // Roving tabindex: the selected tab is the single tab stop.
+    expect(habitsTab).toHaveAttribute('tabindex', '0');
+    expect(analyticsTab).toHaveAttribute('tabindex', '-1');
+    await act(async () => {
+      fireEvent.keyDown(habitsTab, { key: 'ArrowRight' });
+    });
+    await waitFor(() => expect(screen.getByTestId('kid-stats')).toBeInTheDocument());
+    expect(analyticsTab).toHaveAttribute('aria-selected', 'true');
+    expect(analyticsTab).toHaveAttribute('tabindex', '0');
+    await act(async () => {
+      fireEvent.keyDown(analyticsTab, { key: 'ArrowLeft' });
+    });
+    await waitFor(() => expect(habitsTab).toHaveAttribute('aria-selected', 'true'));
   });
 
   it('Stickers Earned sums weekly sticker totals, not completed days (FHS-377)', async () => {
