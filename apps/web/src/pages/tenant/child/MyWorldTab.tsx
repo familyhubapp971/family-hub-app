@@ -613,6 +613,10 @@ export function MyWorldTab(
   // ── Savings derived values ────────────────────────────────────────────────
   const weeklyValue = (unallocatedStickers * 0.5).toFixed(2);
   const bigRewardProgress = Math.min(100, (savedStickers / 100) * 100);
+  // FHS-376 — a kid's reward request is paid from SAVINGS on approval, so the
+  // "Ask for this" affordability must match savings (banked stars + banked
+  // cash converted at 0.5/star), not the spendable balance.
+  const savingsStars = savedStickers + Math.floor(savedCash / 0.5);
 
   // ── Habit state updater ───────────────────────────────────────────────────
   const updateWeekHabits = useCallback(
@@ -878,7 +882,8 @@ export function MyWorldTab(
   const onRequestReward = useCallback(
     async (reward: Reward) => {
       if (!api?.rewardRequest || redeemingRef.current.has(reward.id)) return;
-      if (balance < reward.stickerCost) return;
+      // Match the server: a request is paid from savings on approval.
+      if (savingsStars < reward.stickerCost) return;
       redeemingRef.current.add(reward.id);
       try {
         const res = await fetch(api.rewardRequest(reward.id), {
@@ -896,7 +901,7 @@ export function MyWorldTab(
         redeemingRef.current.delete(reward.id);
       }
     },
-    [api, balance],
+    [api, savingsStars],
   );
 
   // ── Dialogs lookup ────────────────────────────────────────────────────────
@@ -2086,7 +2091,10 @@ export function MyWorldTab(
             ) : (
               <ul className="grid grid-cols-1 gap-3" data-testid="rewards-grid">
                 {rewards.map((r) => {
-                  const affordable = balance >= r.stickerCost;
+                  // Parent spends the live balance; a kid asks against savings.
+                  const affordable = readOnly
+                    ? savingsStars >= r.stickerCost
+                    : balance >= r.stickerCost;
                   return (
                     <li
                       key={r.id}

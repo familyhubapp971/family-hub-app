@@ -46,6 +46,13 @@ Feature: Kid reward redemption requests (FHS-376)
     And the kid "Iman" still has 10 saved stars
     And the request status is "pending"
 
+  Scenario: an admin approves when savings exactly cover the cost
+    Given a reward "Exact Treat" (10 stars)
+    And the kid "Iman" has requested the reward "Exact Treat"
+    When the admin parent approves the request
+    Then the approve response status is 200
+    And the kid "Iman" has 0 saved stars
+
   Scenario: an admin declines a request with no deduction
     Given the kid "Iman" has requested the reward "Ice Cream"
     When the admin parent declines the request

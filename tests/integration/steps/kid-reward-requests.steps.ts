@@ -427,6 +427,32 @@ describeFeature(feature, ({ Background, Scenario }) => {
     },
   );
 
+  Scenario(
+    'an admin approves when savings exactly cover the cost',
+    ({ Given, When, Then, And }) => {
+      Given('a reward "Exact Treat" (10 stars)', async () => {
+        const [t] = await db
+          .insert(rewards)
+          .values({ tenantId: ctx.tenantId, name: 'Exact Treat', stickerCost: 10 })
+          .returning();
+        ctx.bigPrizeId = t!.id;
+      });
+      And('the kid "Iman" has requested the reward "Exact Treat"', async () => {
+        const r = await kidRequest(ctx.imanKidToken, ctx.bigPrizeId);
+        ctx.requestId = r.body['id'] as string;
+      });
+      When('the admin parent approves the request', async () => {
+        const r = await adminApprove(ctx.adminToken, ctx.tenantId, ctx.requestId);
+        ctx.lastDecideStatus = r.status;
+        ctx.lastDecideBody = r.body;
+      });
+      Then('the approve response status is 200', () => expect(ctx.lastDecideStatus).toBe(200));
+      And('the kid "Iman" has 0 saved stars', async () =>
+        expect(await savedStars(ctx.imanId, ctx.tenantId)).toBe(0),
+      );
+    },
+  );
+
   // Scenario: admin declines ─────────────────────────────────────────────────
   Scenario('an admin declines a request with no deduction', ({ Given, When, Then, And }) => {
     Given('the kid "Iman" has requested the reward "Ice Cream"', async () => {

@@ -49,9 +49,6 @@ import {
 } from './learn.js';
 import { bookSchema, listBooksResponseSchema } from './reading-log.js';
 import {
-  DATE_RE,
-  MOOD_VALUES,
-  isNotFuture,
   isValidCalendarDate,
   serializeEntry,
   journalDayResponseSchema,
@@ -146,22 +143,6 @@ export const kidReadingCreateSchema = z.object({
   author: z.string().max(120).optional(),
 });
 export const kidReadingPatchSchema = z.object({ finished: z.boolean() });
-
-// FHS-366 — kid journal upsert (the kid writes their OWN day; memberId comes
-// from the token, never the body). Same fields + validation as the parent.
-export const kidJournalUpsertSchema = z.object({
-  entryDate: z
-    .string()
-    .regex(DATE_RE, 'entryDate must be YYYY-MM-DD')
-    .refine(isValidCalendarDate, 'entryDate must be a real calendar date')
-    .refine(isNotFuture, 'entryDate may not be in the future'),
-  mood: z.enum(MOOD_VALUES).nullish(),
-  gratitude1: z.string().max(500).nullish(),
-  gratitude2: z.string().max(500).nullish(),
-  gratitude3: z.string().max(500).nullish(),
-  body: z.string().max(5000).nullish(),
-  creativity: z.record(z.string(), z.string().max(500)).nullish(),
-});
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

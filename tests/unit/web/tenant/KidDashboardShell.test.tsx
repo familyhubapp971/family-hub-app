@@ -443,6 +443,9 @@ describe('<KidDashboardShell />', () => {
           ],
           stickerBalance: 10,
         };
+      // Affordability for asking is based on SAVINGS (what approval spends).
+      if (u.includes('/api/kid/financial/savings'))
+        return { savedStickers: 10, savedCash: 0, currency: 'AED' };
       return undefined;
     });
     // Capture the request POST.
