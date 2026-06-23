@@ -107,7 +107,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
   // ─── Scenario: idempotency ───────────────────────────────────────────────────
 
-  Scenario('exploring the same flag twice is idempotent', ({ When, Then }) => {
+  Scenario('exploring the same flag twice is idempotent', ({ When, Then, And }) => {
     let explored: string[] = [];
 
     When('"Amira" POSTs /api/kid/world-flags/explore with countryCode "US"', async () => {
@@ -191,7 +191,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
   // ─── Scenario: learn-complete idempotency ────────────────────────────────────
 
-  Scenario('completing the same set twice is idempotent', ({ When, Then }) => {
+  Scenario('completing the same set twice is idempotent', ({ When, Then, And }) => {
     let progress: Record<string, number[]> = {};
 
     When(
