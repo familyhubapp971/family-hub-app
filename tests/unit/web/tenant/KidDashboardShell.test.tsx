@@ -116,6 +116,13 @@ function mockKidBoot(over?: (url: string) => unknown) {
         json: async () => ({ weekStart: '2026-06-15', events: [] }),
       });
     }
+    if (u.includes('/api/kid/analytics')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ stickersPerWeek: [], habitStats: [] }),
+      });
+    }
     // /api/kid/me + any unrouted feed.
     return Promise.resolve({
       ok: true,
@@ -195,6 +202,17 @@ describe('<KidDashboardShell />', () => {
     expect((meCall[1] as RequestInit).headers).toMatchObject({
       Authorization: expect.stringContaining('Bearer '),
     });
+  });
+
+  it('My World has a Habits/Stats toggle that switches to the stats view', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-myworld')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('kid-myworld-stats-tab'));
+    });
+    // Empty analytics → the stats empty state renders (not the habit grid).
+    await waitFor(() => expect(screen.getByTestId('kid-stats-empty')).toBeInTheDocument());
   });
 
   it('switches the active tab', async () => {
