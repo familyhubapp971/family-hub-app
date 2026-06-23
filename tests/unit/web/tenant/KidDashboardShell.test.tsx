@@ -344,7 +344,9 @@ describe('<KidDashboardShell />', () => {
               name: 'Read a book',
               description: null,
               color: 'bg-yellow-400',
-              icon: 'star',
+              // 'heart' is an icon NAME — it must render a symbol, never the
+              // literal text "heart" (the FHS-374 bug the reuse fixes).
+              icon: 'heart',
               isBonus: false,
             },
           ],
@@ -361,10 +363,16 @@ describe('<KidDashboardShell />', () => {
         };
       return undefined;
     });
-    renderShell();
-    // The real My World habit card renders; no kid tick/edit controls (read-only).
+    const { container } = renderShell();
     await waitFor(() => expect(screen.getByText('Read a book')).toBeInTheDocument());
+    // Icon bug locked: a Heart SVG renders, not the word "heart".
+    expect(container.querySelector('.lucide-heart')).toBeInTheDocument();
+    expect(screen.queryByText('heart')).not.toBeInTheDocument();
+    // Read-only: none of the write controls render for a kid.
     expect(screen.queryByTestId('habit-card-edit-btn-h1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('habit-card-delete-btn-h1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Add stickers')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reward-buy-r1')).not.toBeInTheDocument();
   });
 
   it('Switch user clears the kid token and returns to kid-login', async () => {

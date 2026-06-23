@@ -637,6 +637,7 @@ export function MyWorldTab(
   const closeEditDialog = () => setEditHabitId(null);
 
   const saveEditHabit = async () => {
+    if (readOnly) return;
     if (!editHabitId || !editTitle.trim() || !headers) return;
     const iconString = ICON_NAME_MAP[editIconName] ?? 'star';
     try {
@@ -675,6 +676,7 @@ export function MyWorldTab(
 
   // ── Habit-level sticker toggle (cosmetic badges on the card) ─────────────
   const toggleSticker = (habitId: string, stickerId: string) => {
+    if (readOnly) return;
     updateWeekHabits((hs) =>
       hs.map((h) => {
         if (h.id !== habitId) return h;
@@ -689,6 +691,7 @@ export function MyWorldTab(
 
   // ── Day sticker placement / removal (optimistic) ─────────────────────────
   const selectDaySticker = async (habitId: string, dayIndex: number, stickerId: string) => {
+    if (readOnly) return;
     if (!week || !headers) return;
     // Capture the prior cell so a failed REPLACE restores the old sticker
     // rather than wiping the cell (review FHS-293).
@@ -737,6 +740,7 @@ export function MyWorldTab(
   };
 
   const clearDay = async (habitId: string, dayIndex: number) => {
+    if (readOnly) return;
     if (!week || !headers) return;
     const previousValue = habits.find((h) => h.id === habitId)?.progress[dayIndex];
     // Optimistic
@@ -785,6 +789,7 @@ export function MyWorldTab(
 
   // ── Add new habit ─────────────────────────────────────────────────────────
   const addNewHabit = async () => {
+    if (readOnly) return;
     if (!newHabitTitle.trim() || !headers) return;
     const iconString = ICON_NAME_MAP[newHabitIconName] ?? 'star';
     try {
@@ -825,6 +830,7 @@ export function MyWorldTab(
 
   // ── Delete habit ──────────────────────────────────────────────────────────
   const deleteHabit = async (id: string) => {
+    if (readOnly) return;
     if (!headers) return;
     try {
       const res = await fetch(`${API_BASE}/api/habits/${id}`, {

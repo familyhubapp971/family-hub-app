@@ -616,7 +616,7 @@ export async function loadHabitsForWeek(
     if (!rows[0]) return null;
     week = rows[0];
   } else {
-    week = await getOrCreateCurrentWeek(db as ReturnType<typeof getDb>, tenantId, memberId);
+    week = await getOrCreateCurrentWeek(db, tenantId, memberId);
   }
   const [habitRows, stickerRows, balance, currency] = await Promise.all([
     db
