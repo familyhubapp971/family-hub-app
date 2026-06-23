@@ -14,13 +14,11 @@ import { TopNav, type TopNavTab } from '@familyhub/ui';
 import { clearKidToken, getKidToken } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
-import { KidHabitsPanel } from './kid/KidHabitsPanel';
-import { KidRewardsPanel } from './kid/KidRewardsPanel';
+import { MyWorldTab } from './child/MyWorldTab';
 import { KidMealsPanel } from './kid/KidMealsPanel';
 import { KidCalendarPanel } from './kid/KidCalendarPanel';
 import { KidJournalPanel } from './kid/KidJournalPanel';
 import { KidLearnPanel } from './kid/KidLearnPanel';
-import { KidStatsPanel } from './kid/KidStatsPanel';
 
 // FHS-257 / FHS-362 — kid dashboard shell.
 //
@@ -280,70 +278,23 @@ function KidTasksPanel({ kidToken }: { kidToken: string | null }) {
   );
 }
 
-// FHS-362 / FHS-363 — My World tab. The interactive weekly habit grid
-// (KidHabitsPanel) plus the kid's tasks + notices (these two move to their own
-// tabs in FHS-370). Rewards + savings widgets land in FHS-364.
-function MyWorldPanel({
-  kidToken,
-  onProfileChanged,
-}: {
-  kidToken: string | null;
-  onProfileChanged: () => void;
-}) {
-  const [view, setView] = useState<'habits' | 'stats'>('habits');
-  const tabClass = (active: boolean) =>
-    `min-h-[40px] flex-1 rounded-lg border-2 border-black px-3 py-1.5 text-sm font-bold shadow-neo-xs ${
-      active ? 'bg-pink-400 text-black' : 'bg-white text-gray-600'
-    }`;
+// FHS-374 — My World tab. Reuses the parent's real My World screen in read-only
+// kid mode (habit tracker + analytics + reward goals + money skills). The kid's
+// tasks + notices sit below for now; FHS-370 moves them to their own tabs.
+function MyWorldPanel({ kidToken }: { kidToken: string | null }) {
+  // FHS-374 — the kid's My World is the SAME screen the parent uses, in
+  // read-only kid mode (its own Weekly Habits / Analytics toggle, the Reward
+  // Goals + Money Skills sidebar, the rich habit rows — all pixel-matched).
+  // Tasks + Noticeboard sit below for now; FHS-370 moves them to their own tabs.
   return (
     <div className="space-y-6" data-testid="kid-myworld">
-      <div className="flex gap-2" role="tablist" aria-label="My World view">
-        <button
-          type="button"
-          id="kid-myworld-habits-tab"
-          role="tab"
-          aria-selected={view === 'habits'}
-          aria-controls="kid-myworld-habits-panel"
-          data-testid="kid-myworld-habits-tab"
-          onClick={() => setView('habits')}
-          className={tabClass(view === 'habits')}
-        >
-          My Habits
-        </button>
-        <button
-          type="button"
-          id="kid-myworld-stats-tab"
-          role="tab"
-          aria-selected={view === 'stats'}
-          aria-controls="kid-myworld-stats-panel"
-          data-testid="kid-myworld-stats-tab"
-          onClick={() => setView('stats')}
-          className={tabClass(view === 'stats')}
-        >
-          My Stats
-        </button>
+      {kidToken && <MyWorldTab kidToken={kidToken} />}
+      <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
+        <KidTasksPanel kidToken={kidToken} />
       </div>
-      {view === 'habits' ? (
-        <div
-          id="kid-myworld-habits-panel"
-          role="tabpanel"
-          aria-labelledby="kid-myworld-habits-tab"
-          className="space-y-6"
-        >
-          <KidHabitsPanel kidToken={kidToken} />
-          <KidRewardsPanel kidToken={kidToken} onClaimed={onProfileChanged} />
-          <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
-            <KidTasksPanel kidToken={kidToken} />
-          </div>
-          <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
-            <KidNoticesPanel kidToken={kidToken} />
-          </div>
-        </div>
-      ) : (
-        <div id="kid-myworld-stats-panel" role="tabpanel" aria-labelledby="kid-myworld-stats-tab">
-          <KidStatsPanel kidToken={kidToken} />
-        </div>
-      )}
+      <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
+        <KidNoticesPanel kidToken={kidToken} />
+      </div>
     </div>
   );
 }
@@ -471,7 +422,7 @@ export function KidDashboardShell() {
             >
               {profile?.displayName ? (
                 <>
-                  {profile.displayName}&rsquo;s World <span aria-hidden="true">✨</span>
+                  Hi, {profile.displayName}! <span aria-hidden="true">👋</span>
                 </>
               ) : (
                 'My Hub'
@@ -521,7 +472,7 @@ export function KidDashboardShell() {
         testId="kid-nav"
       />
 
-      <main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 md:px-6">
+      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-6">
         <section
           id={`kid-panel-${active.id}`}
           role="tabpanel"
@@ -529,7 +480,7 @@ export function KidDashboardShell() {
           data-testid={`kid-panel-${active.id}`}
         >
           {active.id === 'world' ? (
-            <MyWorldPanel kidToken={kidToken} onProfileChanged={() => void loadProfile()} />
+            <MyWorldPanel kidToken={kidToken} />
           ) : active.id === 'meals' ? (
             <KidMealsPanel kidToken={kidToken} />
           ) : active.id === 'calendar' ? (

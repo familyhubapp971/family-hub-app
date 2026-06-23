@@ -29,6 +29,7 @@ import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 import { CloseWeekDialog } from './CloseWeekDialog';
 import { AnalyticsView } from './AnalyticsView';
+import { type MyWorldDataApi, kidDataApi, parentDataApi } from './myWorldApi';
 
 // FHS-292 — My World habit grid (legacy HabitTracker UI port).
 // Pixel / behaviour parity with the legacy HabitTracker component.
@@ -247,17 +248,24 @@ function mapApiHabitToLocal(apiHabit: ApiHabit, apiStickers: ApiSticker[]): Habi
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export function MyWorldTab({
-  memberId,
-  isAdmin = false,
-}: {
-  memberId: string;
-  // FHS-336 — only an admin may edit past days, close a week, or touch the
-  // economy. A normal user (adult) can still tick today + the rest of this
-  // week. Defaults to false so controls stay hidden until the caller's role
-  // is known. The server (FHS-335) is the real boundary; this hides the UI.
-  isAdmin?: boolean;
-}) {
+export function MyWorldTab(
+  props:
+    | {
+        memberId: string;
+        // FHS-336 — only an admin may edit past days, close a week, or touch the
+        // economy. A normal user (adult) can still tick today + the rest of this
+        // week. Defaults to false so controls stay hidden until the caller's role
+        // is known. The server (FHS-335) is the real boundary; this hides the UI.
+        isAdmin?: boolean;
+      }
+    // FHS-374 — kid mode: the logged-in kid reuses this exact screen READ-ONLY.
+    // Data comes from /api/kid/* (self-scoped by the kid token); every write
+    // control is hidden (`readOnly`). The parent does all ticking/editing.
+    | { kidToken: string; isAdmin?: boolean },
+) {
+  const kidToken = 'kidToken' in props ? props.kidToken : null;
+  const memberId = 'memberId' in props ? props.memberId : '';
+  const isAdmin = props.isAdmin ?? false;
   const slug = useTenantSlug();
   const { session } = useAuth();
 
@@ -266,10 +274,20 @@ export function MyWorldTab({
   // `headers` depended on the object it would change identity every refocus,
   // re-running fetchData and flashing the loading screen ("reloads on tab switch").
   const accessToken = session?.access_token ?? null;
-  const headers = useMemo(
-    () => (accessToken ? { Authorization: `Bearer ${accessToken}`, 'x-tenant-slug': slug } : null),
-    [accessToken, slug],
+  const api = useMemo<MyWorldDataApi | null>(
+    () =>
+      kidToken
+        ? kidDataApi(kidToken)
+        : accessToken && memberId
+          ? parentDataApi(memberId, {
+              Authorization: `Bearer ${accessToken}`,
+              'x-tenant-slug': slug,
+            })
+          : null,
+    [kidToken, accessToken, memberId, slug],
   );
+  const headers = api?.headers ?? null;
+  const readOnly = api?.readOnly ?? false;
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<'habits' | 'analytics'>('habits');
@@ -319,10 +337,8 @@ export function MyWorldTab({
     async (weekId: string): Promise<Habit[]> => {
       const cached = habitsCache.current.get(weekId);
       if (cached) return cached;
-      if (!headers) return [];
-      const res = await fetch(`${API_BASE}/api/habits?memberId=${memberId}&weekId=${weekId}`, {
-        headers,
-      });
+      if (!api) return [];
+      const res = await fetch(api.habits(weekId), { headers: api.headers });
       if (!res.ok) throw new Error(`habits fetch failed: ${res.status}`);
       const body = (await res.json()) as {
         habits: ApiHabit[];
@@ -337,7 +353,7 @@ export function MyWorldTab({
       if (body.currency) setCurrency(body.currency);
       return habits;
     },
-    [headers, memberId],
+    [api],
   );
 
   const buildWeekData = useCallback((apiWeek: ApiWeek, habits: Habit[]): WeekData => {
@@ -365,14 +381,14 @@ export function MyWorldTab({
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (!headers) return;
+    if (!api) return;
     setLoading(true);
     habitsCache.current.clear();
     try {
       // Fetch weeks list + rewards in parallel
       const [wRes, rRes] = await Promise.all([
-        fetch(`${API_BASE}/api/mw/weeks?memberId=${memberId}`, { headers }),
-        fetch(`${API_BASE}/api/rewards?memberId=${memberId}`, { headers }),
+        fetch(api.weeks(), { headers: api.headers }),
+        fetch(api.rewards(), { headers: api.headers }),
       ]);
       if (!wRes.ok) throw new Error(`weeks fetch failed: ${wRes.status}`);
 
@@ -420,7 +436,7 @@ export function MyWorldTab({
     } finally {
       setLoading(false);
     }
-  }, [headers, memberId, fetchWeekHabits, buildWeekData]);
+  }, [api, fetchWeekHabits, buildWeekData]);
 
   useEffect(() => {
     void fetchData();
@@ -428,11 +444,9 @@ export function MyWorldTab({
 
   // ── Savings fetch ─────────────────────────────────────────────────────────
   const fetchSavings = useCallback(async () => {
-    if (!headers) return;
+    if (!api) return;
     try {
-      const res = await fetch(`${API_BASE}/api/mw/financial/savings?memberId=${memberId}`, {
-        headers,
-      });
+      const res = await fetch(api.savings(), { headers: api.headers });
       if (!res.ok) return;
       const body = (await res.json()) as {
         savedStickers: number;
@@ -445,15 +459,13 @@ export function MyWorldTab({
     } catch {
       // Non-fatal; leave prior values
     }
-  }, [headers, memberId]);
+  }, [api]);
 
   const fetchWeekStats = useCallback(
     async (weekId: string) => {
-      if (!headers) return;
+      if (!api) return;
       try {
-        const res = await fetch(`${API_BASE}/api/mw/weeks/${weekId}/stats?memberId=${memberId}`, {
-          headers,
-        });
+        const res = await fetch(api.weekStats(weekId), { headers: api.headers });
         if (!res.ok) return;
         const body = (await res.json()) as { unallocatedStickers?: number };
         setUnallocatedStickers(body.unallocatedStickers ?? 0);
@@ -461,23 +473,21 @@ export function MyWorldTab({
         // Non-fatal
       }
     },
-    [headers, memberId],
+    [api],
   );
 
   // ── Investments fetch ─────────────────────────────────────────────────────
   const fetchInvestments = useCallback(async () => {
-    if (!headers) return;
+    if (!api) return;
     try {
-      const res = await fetch(`${API_BASE}/api/mw/financial/investments?memberId=${memberId}`, {
-        headers,
-      });
+      const res = await fetch(api.investments(), { headers: api.headers });
       if (!res.ok) return;
       const body = (await res.json()) as { investments: Investment[] };
       setInvestments(body.investments ?? []);
     } catch {
       // Non-fatal
     }
-  }, [headers, memberId]);
+  }, [api]);
 
   useEffect(() => {
     void fetchSavings();
@@ -510,8 +520,8 @@ export function MyWorldTab({
 
     const habitsPromise = fetchWeekHabits(w.weekId);
     const actionsPromise: Promise<WeekAction[]> = w.isFinalized
-      ? fetch(`${API_BASE}/api/mw/weeks/${w.weekId}/actions?memberId=${memberId}`, {
-          headers: headers!,
+      ? fetch(api!.weekActions(w.weekId), {
+          headers: api!.headers,
         })
           .then((r) => (r.ok ? (r.json() as Promise<{ actions: WeekAction[] }>) : { actions: [] }))
           .then((b) => b.actions ?? [])
@@ -559,7 +569,8 @@ export function MyWorldTab({
   // ── Derived week values ───────────────────────────────────────────────────
   const week = weeks[weekIndex];
   const isCurrentWeek = week ? !week.isFinalized : false;
-  const canEdit = isAdmin ? (week ? !week.isFinalized : false) : isCurrentWeek;
+  // FHS-374 — a kid views read-only: never editable, regardless of week.
+  const canEdit = readOnly ? false : isAdmin ? (week ? !week.isFinalized : false) : isCurrentWeek;
 
   // FHS-319 — the Close Week banner only appears once the week is actually
   // over: from its last day (Sunday) onward, and stays until the week is
@@ -831,6 +842,9 @@ export function MyWorldTab({
   // ── Reward redemption ─────────────────────────────────────────────────────
   const onRedeem = useCallback(
     async (reward: Reward) => {
+      // FHS-374 — kids can't redeem directly; a parent approves a request
+      // (FHS-376). Read-only mode never reaches the redeem control anyway.
+      if (readOnly) return;
       if (!headers || redeemingRef.current.has(reward.id)) return;
       if (balance < reward.stickerCost) return;
       redeemingRef.current.add(reward.id);
@@ -849,7 +863,7 @@ export function MyWorldTab({
         redeemingRef.current.delete(reward.id);
       }
     },
-    [headers, balance, memberId],
+    [headers, balance, memberId, readOnly],
   );
 
   // ── Dialogs lookup ────────────────────────────────────────────────────────
@@ -999,19 +1013,23 @@ export function MyWorldTab({
                     isSticker && sticker
                       ? editDayFn(index)
                         ? `${sticker.color} shadow-neo-xs translate-x-[-2px] translate-y-[-2px] border-black hover:opacity-80`
-                        : `${sticker.color} border-gray-300 opacity-40 cursor-not-allowed grayscale-[30%]`
+                        : readOnly
+                          ? `${sticker.color} border-black`
+                          : `${sticker.color} border-gray-300 opacity-40 cursor-not-allowed grayscale-[30%]`
                       : dayValue === true
                         ? `${habit.color} shadow-neo-xs translate-x-[-2px] translate-y-[-2px] border-black`
                         : editDayFn(index)
                           ? 'bg-gray-100 hover:bg-pink-50 border-black'
-                          : 'bg-gray-50 border-gray-200 opacity-30 cursor-not-allowed'
+                          : readOnly
+                            ? 'bg-gray-50 border-gray-200'
+                            : 'bg-gray-50 border-gray-200 opacity-30 cursor-not-allowed'
                   }`}
                 >
                   {isSticker && sticker ? (
                     cloneElement(sticker.icon, { className: 'w-4 h-4' })
                   ) : dayValue === true ? (
                     <Check className="w-5 h-5" />
-                  ) : !editDayFn(index) ? (
+                  ) : !editDayFn(index) && !readOnly ? (
                     <Lock className="w-3 h-3 text-gray-300" />
                   ) : null}
                 </button>
@@ -1530,7 +1548,9 @@ export function MyWorldTab({
         </div>
 
         {activeTab === 'analytics' ? (
-          <AnalyticsView memberId={memberId} headers={headers} />
+          api ? (
+            <AnalyticsView analyticsUrl={api.analytics()} headers={api.headers} />
+          ) : null
         ) : (
           <>
             {/* ── Week Navigator ── */}
@@ -2052,16 +2072,20 @@ export function MyWorldTab({
                           <Star size={12} className="fill-yellow-500" aria-hidden="true" />{' '}
                           {r.stickerCost}
                         </span>
-                        <Button
-                          type="button"
-                          variant="primary"
-                          size="sm"
-                          onClick={() => void onRedeem(r)}
-                          disabled={!affordable}
-                          testId={`reward-buy-${r.id}`}
-                        >
-                          {affordable ? 'Buy' : 'Locked'}
-                        </Button>
+                        {/* FHS-374 — kids view rewards read-only; the request
+                            button arrives in FHS-376. Parents still redeem. */}
+                        {!readOnly && (
+                          <Button
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            onClick={() => void onRedeem(r)}
+                            disabled={!affordable}
+                            testId={`reward-buy-${r.id}`}
+                          >
+                            {affordable ? 'Buy' : 'Locked'}
+                          </Button>
+                        )}
                       </span>
                     </li>
                   );
