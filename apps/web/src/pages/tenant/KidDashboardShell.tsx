@@ -3,18 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   CalendarDays,
-  Coins,
   LogOut,
   NotebookPen,
   Sparkles,
-  Star,
   UtensilsCrossed,
 } from 'lucide-react';
 import { TopNav, type TopNavTab } from '@familyhub/ui';
 import { clearKidToken, getKidToken } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
-import { MyWorldTab } from './child/MyWorldTab';
+import { KidMyWorld } from './kid/KidMyWorld';
 import { KidMealsPanel } from './kid/KidMealsPanel';
 import { KidCalendarPanel } from './kid/KidCalendarPanel';
 import { KidJournalPanel } from './kid/KidJournalPanel';
@@ -278,17 +276,15 @@ function KidTasksPanel({ kidToken }: { kidToken: string | null }) {
   );
 }
 
-// FHS-374 — My World tab. Reuses the parent's real My World screen in read-only
-// kid mode (habit tracker + analytics + reward goals + money skills). The kid's
-// tasks + notices sit below for now; FHS-370 moves them to their own tabs.
-function MyWorldPanel({ kidToken }: { kidToken: string | null }) {
-  // FHS-374 — the kid's My World is the SAME screen the parent uses, in
-  // read-only kid mode (its own Weekly Habits / Analytics toggle, the Reward
-  // Goals + Money Skills sidebar, the rich habit rows — all pixel-matched).
-  // Tasks + Noticeboard sit below for now; FHS-370 moves them to their own tabs.
+// FHS-376 — My World tab. A DEDICATED kid My World (its own components), pixel-
+// matched to the Magic Patterns kid mock — NOT the parent's MyWorldTab reused.
+// It carries the Weekly Habits / Analytics toggle, the kid's week banner + habit
+// cards, Money Skills, and the Reward Goals + My Account sidebar. The kid's tasks
+// + notices sit below for now; FHS-370 moves them to their own tabs.
+function MyWorldPanel({ kidToken, displayName }: { kidToken: string | null; displayName: string }) {
   return (
-    <div className="space-y-6" data-testid="kid-myworld">
-      {kidToken && <MyWorldTab kidToken={kidToken} />}
+    <div className="space-y-6">
+      <KidMyWorld kidToken={kidToken} displayName={displayName} />
       <div className="rounded-xl border-2 border-black bg-white p-5 text-center shadow-neo-sm">
         <KidTasksPanel kidToken={kidToken} />
       </div>
@@ -416,18 +412,30 @@ export function KidDashboardShell() {
                 <Sparkles size={22} className="text-purple-900" aria-hidden="true" />
               )}
             </span>
-            <h1
-              className="truncate font-heading text-xl uppercase tracking-wide text-white drop-shadow-md md:text-2xl"
-              data-testid="kid-title"
-            >
-              {profile?.displayName ? (
-                <>
-                  Hi, {profile.displayName}! <span aria-hidden="true">👋</span>
-                </>
-              ) : (
-                'My Hub'
-              )}
-            </h1>
+            <div className="min-w-0">
+              <h1
+                className="truncate font-heading text-xl uppercase tracking-wide text-white drop-shadow-md md:text-2xl"
+                data-testid="kid-title"
+              >
+                {profile?.displayName ? (
+                  <>
+                    Hi, {profile.displayName}! <span aria-hidden="true">👋</span>
+                  </>
+                ) : (
+                  'My Hub'
+                )}
+              </h1>
+              <p
+                className="mt-0.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-green-300"
+                data-testid="kid-status-pill"
+              >
+                <span
+                  className="inline-block h-2 w-2 rounded-full bg-green-400 motion-safe:animate-pulse"
+                  aria-hidden="true"
+                />
+                Magic Active
+              </p>
+            </div>
           </div>
         }
         tabs={navTabs}
@@ -438,34 +446,24 @@ export function KidDashboardShell() {
             {profile && (
               <div className="flex items-center gap-2" data-testid="kid-balance">
                 <span
-                  className="flex min-h-[36px] items-center gap-1 rounded-md border-2 border-black bg-yellow-300 px-2.5 py-1 font-bold text-black shadow-neo-xs"
+                  className="flex min-h-[36px] items-center gap-1 rounded-full border-2 border-black bg-yellow-300 px-3 py-1 font-bold text-black shadow-neo-xs"
                   data-testid="kid-stars"
                 >
-                  <Star size={14} strokeWidth={3} aria-hidden="true" />
-                  {profile.savedStickers}
-                  <span className="sr-only"> stars saved</span>
-                </span>
-                <span
-                  className="flex min-h-[36px] items-center gap-1 rounded-md border-2 border-black bg-emerald-300 px-2.5 py-1 font-bold text-black shadow-neo-xs"
-                  data-testid="kid-cash"
-                >
-                  <Coins size={14} strokeWidth={3} aria-hidden="true" />
-                  <span className="sr-only">cash saved: </span>
-                  <span>
-                    {profile.currency} {profile.savedCash.toFixed(2)}
-                  </span>
+                  <span aria-hidden="true">⭐</span>
+                  {profile.savedStickers} Stars
+                  <span className="sr-only"> saved</span>
                 </span>
               </div>
             )}
             <button
               type="button"
               onClick={onSwitchUser}
-              aria-label="Switch user"
+              aria-label="Sign out"
               data-testid="kid-switch-user"
               className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-white px-3 py-2 font-bold text-purple-900 shadow-neo-sm transition-transform hover:bg-yellow-50 motion-safe:hover:-translate-y-0.5"
             >
               <LogOut size={16} strokeWidth={3} aria-hidden="true" />
-              <span className="hidden sm:inline">Switch user</span>
+              <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
         }
@@ -480,7 +478,7 @@ export function KidDashboardShell() {
           data-testid={`kid-panel-${active.id}`}
         >
           {active.id === 'world' ? (
-            <MyWorldPanel kidToken={kidToken} />
+            <MyWorldPanel kidToken={kidToken} displayName={profile?.displayName ?? 'Friend'} />
           ) : active.id === 'meals' ? (
             <KidMealsPanel kidToken={kidToken} />
           ) : active.id === 'calendar' ? (

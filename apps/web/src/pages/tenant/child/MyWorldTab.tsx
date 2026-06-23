@@ -92,6 +92,8 @@ interface Reward {
   description: string | null;
   stickerCost: number;
   icon: string | null;
+  // FHS-376 — kid mode only: the kid's latest request state for this reward.
+  requestStatus?: 'none' | 'pending' | 'approved' | 'declined';
 }
 
 interface Investment {
@@ -611,6 +613,10 @@ export function MyWorldTab(
   // ── Savings derived values ────────────────────────────────────────────────
   const weeklyValue = (unallocatedStickers * 0.5).toFixed(2);
   const bigRewardProgress = Math.min(100, (savedStickers / 100) * 100);
+  // FHS-376 — a kid's reward request is paid from SAVINGS on approval, so the
+  // "Ask for this" affordability must match savings (banked stars + banked
+  // cash converted at 0.5/star), not the spendable balance.
+  const savingsStars = savedStickers + Math.floor(savedCash / 0.5);
 
   // ── Habit state updater ───────────────────────────────────────────────────
   const updateWeekHabits = useCallback(
@@ -870,6 +876,32 @@ export function MyWorldTab(
       }
     },
     [headers, balance, memberId, readOnly],
+  );
+
+  // ── Reward request (kid asks; a parent approves — FHS-376) ────────────────
+  const onRequestReward = useCallback(
+    async (reward: Reward) => {
+      if (!api?.rewardRequest || redeemingRef.current.has(reward.id)) return;
+      // Match the server: a request is paid from savings on approval.
+      if (savingsStars < reward.stickerCost) return;
+      redeemingRef.current.add(reward.id);
+      try {
+        const res = await fetch(api.rewardRequest(reward.id), {
+          method: 'POST',
+          headers: { ...api.headers, 'Content-Type': 'application/json' },
+        });
+        if (!res.ok) return;
+        // Optimistically flip the card to "asked / pending".
+        setRewards((prev) =>
+          prev.map((r) => (r.id === reward.id ? { ...r, requestStatus: 'pending' } : r)),
+        );
+      } catch {
+        // non-fatal — the kid can tap again
+      } finally {
+        redeemingRef.current.delete(reward.id);
+      }
+    },
+    [api, savingsStars],
   );
 
   // ── Dialogs lookup ────────────────────────────────────────────────────────
@@ -1998,37 +2030,39 @@ export function MyWorldTab(
           ════════════════════════════════════════════════════════════════════ */}
       {isCurrentWeek && (
         <div className="space-y-4 lg:col-span-4">
-          {/* My Stickers — the sticker types a child can earn (FHS-294) */}
-          <section
-            aria-labelledby="my-stickers-heading"
-            className="rounded-2xl border-2 border-black bg-white p-4 shadow-neo sm:border-3"
-            data-testid="my-stickers"
-          >
-            <h2
-              id="my-stickers-heading"
-              className="mb-3 flex items-center gap-2 text-xl font-black uppercase text-black"
+          {/* My Stickers — sticker palette (parent view; hidden for kids, FHS-376) */}
+          {!readOnly && (
+            <section
+              aria-labelledby="my-stickers-heading"
+              className="rounded-2xl border-2 border-black bg-white p-4 shadow-neo sm:border-3"
+              data-testid="my-stickers"
             >
-              <span
-                aria-hidden="true"
-                className="grid h-8 w-8 place-items-center rounded-lg border-2 border-black bg-pink-400"
+              <h2
+                id="my-stickers-heading"
+                className="mb-3 flex items-center gap-2 text-xl font-black uppercase text-black"
               >
-                <Star className="h-4 w-4" />
-              </span>
-              My Stickers 💖
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {AVAILABLE_STICKERS.map((s) => (
-                <div
-                  key={s.id}
-                  data-testid={`my-sticker-${s.id}`}
-                  className={`flex flex-col items-center gap-1 rounded-xl border-2 border-black p-3 shadow-neo-xs ${s.color}`}
+                <span
+                  aria-hidden="true"
+                  className="grid h-8 w-8 place-items-center rounded-lg border-2 border-black bg-pink-400"
                 >
-                  <span aria-hidden="true">{s.icon}</span>
-                  <span className="text-xs font-black uppercase text-black">{s.name}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+                  <Star className="h-4 w-4" />
+                </span>
+                My Stickers 💖
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {AVAILABLE_STICKERS.map((s) => (
+                  <div
+                    key={s.id}
+                    data-testid={`my-sticker-${s.id}`}
+                    className={`flex flex-col items-center gap-1 rounded-xl border-2 border-black p-3 shadow-neo-xs ${s.color}`}
+                  >
+                    <span aria-hidden="true">{s.icon}</span>
+                    <span className="text-xs font-black uppercase text-black">{s.name}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section
             aria-labelledby="rewards-shop-heading"
@@ -2037,7 +2071,7 @@ export function MyWorldTab(
           >
             <div className="mb-4 flex items-center justify-between">
               <h2 id="rewards-shop-heading" className="font-heading text-xl text-black">
-                Rewards Shop
+                {readOnly ? 'Reward Goals' : 'Rewards Shop'}
               </h2>
               <span
                 data-testid="sticker-balance"
@@ -2057,7 +2091,10 @@ export function MyWorldTab(
             ) : (
               <ul className="grid grid-cols-1 gap-3" data-testid="rewards-grid">
                 {rewards.map((r) => {
-                  const affordable = balance >= r.stickerCost;
+                  // Parent spends the live balance; a kid asks against savings.
+                  const affordable = readOnly
+                    ? savingsStars >= r.stickerCost
+                    : balance >= r.stickerCost;
                   return (
                     <li
                       key={r.id}
@@ -2078,8 +2115,8 @@ export function MyWorldTab(
                           <Star size={12} className="fill-yellow-500" aria-hidden="true" />{' '}
                           {r.stickerCost}
                         </span>
-                        {/* FHS-374 — kids view rewards read-only; the request
-                            button arrives in FHS-376. Parents still redeem. */}
+                        {/* Parent redeems directly; a kid asks and a parent
+                            approves (FHS-376). */}
                         {!readOnly && (
                           <Button
                             type="button"
@@ -2092,6 +2129,46 @@ export function MyWorldTab(
                             {affordable ? 'Buy' : 'Locked'}
                           </Button>
                         )}
+                        {readOnly &&
+                          (r.requestStatus === 'approved' ? (
+                            <span
+                              data-testid={`reward-approved-${r.id}`}
+                              className="shrink-0 rounded-full border-2 border-black bg-emerald-300 px-2.5 py-1 text-xs font-black text-black"
+                            >
+                              Yay! 🎉
+                            </span>
+                          ) : r.requestStatus === 'pending' ? (
+                            <span
+                              data-testid={`reward-pending-${r.id}`}
+                              className="shrink-0 rounded-full border-2 border-black bg-yellow-200 px-2.5 py-1 text-xs font-bold text-black"
+                            >
+                              Asked ⏳
+                            </span>
+                          ) : r.requestStatus === 'declined' ? (
+                            <span
+                              data-testid={`reward-declined-${r.id}`}
+                              className="shrink-0 text-xs font-bold text-gray-500"
+                            >
+                              Not yet
+                            </span>
+                          ) : affordable ? (
+                            <Button
+                              type="button"
+                              variant="primary"
+                              size="sm"
+                              onClick={() => void onRequestReward(r)}
+                              testId={`reward-ask-${r.id}`}
+                            >
+                              Ask for this 🎁
+                            </Button>
+                          ) : (
+                            <span
+                              data-testid={`reward-keepsaving-${r.id}`}
+                              className="shrink-0 text-xs font-bold text-gray-400"
+                            >
+                              Keep saving
+                            </span>
+                          ))}
                       </span>
                     </li>
                   );
@@ -2100,77 +2177,132 @@ export function MyWorldTab(
             )}
           </section>
 
-          {/* ── Bankable This Week / Weekly Value ── */}
-          <div data-testid="bankable-week" className="relative">
-            <div className="absolute inset-0 bg-pink-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
-            <div className="relative bg-purple-900 border-2 sm:border-3 border-pink-400/30 rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-2 divide-x-2 sm:divide-x-3 divide-black">
-                <div data-testid="bankable-week-stickers" className="p-5 text-center">
-                  <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2 font-mono">
-                    Bankable This Week
-                  </p>
-                  <p className="text-3xl sm:text-4xl font-black text-yellow-400 leading-none mb-2">
-                    {unallocatedStickers}
-                  </p>
-                  <div className="flex justify-center gap-1 text-base">
-                    <span>⭐</span>
-                    <span>💖</span>
-                    <span>✨</span>
-                  </div>
-                  <p className="text-[10px] text-purple-400 mt-2 font-mono">
-                    Excludes invested habits
-                  </p>
-                </div>
-                <div data-testid="bankable-week-value" className="p-5 text-center">
-                  <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-2 font-mono">
-                    Weekly Value
-                  </p>
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-sm font-black text-lime-400">{currency}</span>
-                    <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
-                      {weeklyValue}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-purple-400 mt-2 font-mono">
-                    Each star = 0.5 {currency}
-                  </p>
-                </div>
+          {/* FHS-376 — kid "My Account": what's banked + what they earned this week. */}
+          {readOnly && (
+            <section
+              data-testid="kid-my-account"
+              aria-labelledby="kid-account-heading"
+              className="rounded-2xl border-2 border-black bg-purple-900 p-4 shadow-neo sm:border-3"
+            >
+              <h2 id="kid-account-heading" className="font-heading text-lg uppercase text-white">
+                My Account
+              </h2>
+              <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-purple-300">
+                What you earned this week
+              </p>
+              <div className="rounded-xl border-2 border-black bg-emerald-50 p-4 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                  In your account right now
+                </p>
+                <p className="mt-1 flex items-center justify-center gap-1 text-3xl font-black text-emerald-700">
+                  {balance}
+                  <Star size={22} className="fill-yellow-400 text-yellow-500" aria-hidden="true" />
+                </p>
+                <p className="text-lg font-black text-emerald-700" data-testid="kid-account-cash">
+                  {currency} {(balance * 0.5).toFixed(2)}
+                </p>
+                <p className="text-[10px] font-bold text-emerald-600">
+                  Each star is worth {currency} 0.50
+                </p>
               </div>
-            </div>
-          </div>
+              {habits.some((h) => h.total > 0) && (
+                <ul className="mt-3 space-y-2" data-testid="kid-account-earned">
+                  {habits
+                    .filter((h) => h.total > 0)
+                    .map((h) => (
+                      <li
+                        key={h.id}
+                        className="flex items-center justify-between gap-2 rounded-lg border-2 border-black bg-white px-3 py-1.5 text-sm font-bold text-black"
+                      >
+                        <span className="flex min-w-0 items-center gap-1 truncate">{h.title}</span>
+                        <span className="flex shrink-0 items-center gap-1 text-purple-700">
+                          +{h.total}
+                          <Star size={12} className="fill-yellow-500" aria-hidden="true" />
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </section>
+          )}
 
-          {/* ── Saving Stickers for Big Rewards ── */}
-          <div
-            data-testid="saving-big-rewards"
-            className="bg-purple-900 rounded-2xl p-4 sm:p-5 text-center border-2 sm:border-3 border-pink-400/30"
-          >
-            <h3 className="text-white font-black uppercase mb-1">
-              Saving Stickers for Big Rewards 💖
-            </h3>
-            <p className="text-purple-300 text-xs font-mono mb-4">
-              Invest your stars across weeks to unlock bigger prizes!
-            </p>
-            <div className="flex items-center justify-center gap-2 text-white font-mono text-sm">
-              <div className="bg-lime-400 text-black px-2 py-1 rounded border-2 border-black font-black">
-                WK 1
+          {/* Bankable + Saving Stickers — parent economy widgets; hidden for kids (FHS-376) */}
+          {!readOnly && (
+            <>
+              <div data-testid="bankable-week" className="relative">
+                <div className="absolute inset-0 bg-pink-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
+                <div className="relative bg-purple-900 border-2 sm:border-3 border-pink-400/30 rounded-2xl overflow-hidden">
+                  <div className="grid grid-cols-2 divide-x-2 sm:divide-x-3 divide-black">
+                    <div data-testid="bankable-week-stickers" className="p-5 text-center">
+                      <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2 font-mono">
+                        Bankable This Week
+                      </p>
+                      <p className="text-3xl sm:text-4xl font-black text-yellow-400 leading-none mb-2">
+                        {unallocatedStickers}
+                      </p>
+                      <div className="flex justify-center gap-1 text-base">
+                        <span>⭐</span>
+                        <span>💖</span>
+                        <span>✨</span>
+                      </div>
+                      <p className="text-[10px] text-purple-400 mt-2 font-mono">
+                        Excludes invested habits
+                      </p>
+                    </div>
+                    <div data-testid="bankable-week-value" className="p-5 text-center">
+                      <p className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-2 font-mono">
+                        Weekly Value
+                      </p>
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-sm font-black text-lime-400">{currency}</span>
+                        <span className="text-2xl sm:text-3xl font-black text-lime-400 leading-none">
+                          {weeklyValue}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-purple-400 mt-2 font-mono">
+                        Each star = 0.5 {currency}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <span className="text-purple-300">+</span>
-              <div className="bg-purple-700 px-2 py-1 rounded border-2 border-purple-500">WK 2</div>
-              <span className="text-purple-300">=</span>
-              <Gift className="w-6 h-6 text-yellow-400 animate-bounce" />
-              <span className="text-yellow-400 font-black text-xs">BIG PRIZE!</span>
-            </div>
-            <div className="w-full bg-purple-800 h-4 rounded-full mt-4 border-2 border-purple-600 overflow-hidden">
+
+              {/* ── Saving Stickers for Big Rewards ── */}
               <div
-                className="h-full bg-gradient-to-r from-pink-400 to-yellow-400"
-                style={{ width: `${bigRewardProgress}%` }}
-              />
-            </div>
-            <p className="text-purple-400 text-xs font-mono mt-2">
-              {savedStickers} stickers saved ({currency} {(savedStickers * 0.5).toFixed(2)}) towards
-              big prizes
-            </p>
-          </div>
+                data-testid="saving-big-rewards"
+                className="bg-purple-900 rounded-2xl p-4 sm:p-5 text-center border-2 sm:border-3 border-pink-400/30"
+              >
+                <h3 className="text-white font-black uppercase mb-1">
+                  Saving Stickers for Big Rewards 💖
+                </h3>
+                <p className="text-purple-300 text-xs font-mono mb-4">
+                  Invest your stars across weeks to unlock bigger prizes!
+                </p>
+                <div className="flex items-center justify-center gap-2 text-white font-mono text-sm">
+                  <div className="bg-lime-400 text-black px-2 py-1 rounded border-2 border-black font-black">
+                    WK 1
+                  </div>
+                  <span className="text-purple-300">+</span>
+                  <div className="bg-purple-700 px-2 py-1 rounded border-2 border-purple-500">
+                    WK 2
+                  </div>
+                  <span className="text-purple-300">=</span>
+                  <Gift className="w-6 h-6 text-yellow-400 animate-bounce" />
+                  <span className="text-yellow-400 font-black text-xs">BIG PRIZE!</span>
+                </div>
+                <div className="w-full bg-purple-800 h-4 rounded-full mt-4 border-2 border-purple-600 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-pink-400 to-yellow-400"
+                    style={{ width: `${bigRewardProgress}%` }}
+                  />
+                </div>
+                <p className="text-purple-400 text-xs font-mono mt-2">
+                  {savedStickers} stickers saved ({currency} {(savedStickers * 0.5).toFixed(2)})
+                  towards big prizes
+                </p>
+              </div>
+            </>
+          )}
         </div>
       )}
 

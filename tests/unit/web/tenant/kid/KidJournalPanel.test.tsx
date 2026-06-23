@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 
 // FHS-366 — kid Journal reuses JournalTab in kid mode: it talks to the
 // token-scoped /api/kid/journal endpoints (no memberId param) using the kid
@@ -68,21 +68,14 @@ describe('<KidJournalPanel />', () => {
     expect(String(dayCall![0])).not.toContain('memberId');
   });
 
-  it('saves via PUT /api/kid/journal with no memberId in the body', async () => {
+  // FHS-376 — the kid Journal is read-only: Past Entries only, no "My Journal"
+  // write form and no write/sub-tab toggle. Parents author entries.
+  it('shows past entries only — no write form or sub-tab toggle', async () => {
     render(<KidJournalPanel kidToken="kid.jwt" />);
     await waitFor(() => expect(screen.getByTestId('journal-tab')).toBeInTheDocument());
-    fireEvent.change(screen.getByTestId('journal-body'), { target: { value: 'Fun day' } });
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('journal-save'));
-    });
-    await waitFor(() => {
-      const put = fetchMock.mock.calls.find(
-        ([u, o]) => String(u).includes('/api/kid/journal') && (o as RequestInit)?.method === 'PUT',
-      );
-      expect(put).toBeTruthy();
-      const body = JSON.parse((put![1] as RequestInit).body as string);
-      expect(body.body).toBe('Fun day');
-      expect(body.memberId).toBeUndefined();
-    });
+    expect(screen.queryByTestId('journal-subtab-write')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('journal-subtab-past')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('journal-body')).not.toBeInTheDocument();
+    expect(screen.getByTestId('journal-past-empty')).toBeInTheDocument();
   });
 });
