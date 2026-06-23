@@ -11,19 +11,19 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../../../lib/auth-context';
 import { useTenantSlug } from '../../../../../lib/tenant-context';
-import { API_BASE } from '../../../../../lib/api';
 import { COUNTRIES, CONTINENTS, type Country } from '../../../../../data/countries';
 import { FlagImage } from './FlagImage';
 import { CapitalMap } from './CapitalMap';
 import { LandmarkImage } from './LandmarkImage';
 import { CONTINENT_SOLID, continentId } from './shared';
+import { worldFlagsApi } from './worldFlagsApi';
 
 // World Flags — Explore sub-tab.
 //
 // Tap a flashcard to cycle: flag image → name reveal → facts panel (capital
 // map + landmark photo + currency + fun fact). Reaching the name-reveal state
-// marks the flag as explored (POST /api/world-flags/explore). Progress bar
-// and per-continent certificates are computed client-side.
+// marks the flag as explored (POST /api/world-flags/explore or /api/kid/world-flags/explore).
+// Progress bar and per-continent certificates are computed client-side.
 
 type CardState = 'flag' | 'name' | 'facts';
 type Status = 'loading' | 'ready' | 'error';
@@ -31,9 +31,27 @@ type Status = 'loading' | 'ready' | 'error';
 const ALL_CONTINENTS = ['All', ...CONTINENTS] as const;
 type ContinentFilter = (typeof ALL_CONTINENTS)[number];
 
-export function WorldFlagsExplore({ memberId }: { memberId: string }) {
+// Exactly one of memberId / kidToken is supplied.
+type WorldFlagsExploreProps =
+  | { memberId: string; kidToken?: undefined }
+  | { kidToken: string; memberId?: undefined };
+
+export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps) {
   const slug = useTenantSlug();
   const { session } = useAuth();
+
+  // In kid mode we use the kidToken directly; in parent mode we build headers
+  // from the Supabase session + tenant slug.
+  const api = useMemo(() => {
+    if (kidToken) return worldFlagsApi({ kidToken });
+    if (session) {
+      return worldFlagsApi({
+        memberId: memberId!,
+        parentHeaders: { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug },
+      });
+    }
+    return null;
+  }, [kidToken, memberId, session, slug]);
 
   const [status, setStatus] = useState<Status>('loading');
   const [explored, setExplored] = useState<Set<string>>(new Set());
@@ -43,12 +61,6 @@ export function WorldFlagsExplore({ memberId }: { memberId: string }) {
   const [certEarned, setCertEarned] = useState<string | null>(null);
   const certTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevComplete = useRef<Record<string, boolean>>({});
-
-  const headers = useMemo(
-    () =>
-      session ? { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug } : null,
-    [session, slug],
-  );
 
   const filteredCountries = useMemo<Country[]>(
     () =>
@@ -61,10 +73,10 @@ export function WorldFlagsExplore({ memberId }: { memberId: string }) {
   const currentCountry = filteredCountries[currentIndex] ?? null;
 
   useEffect(() => {
-    if (!headers) return;
+    if (!api) return;
     const ac = new AbortController();
     setStatus('loading');
-    fetch(`${API_BASE}/api/world-flags?memberId=${memberId}`, { headers, signal: ac.signal })
+    fetch(api.exploreUrl(), { headers: api.headers, signal: ac.signal })
       .then(async (res) => {
         if (!res.ok) {
           setStatus('error');
@@ -85,7 +97,7 @@ export function WorldFlagsExplore({ memberId }: { memberId: string }) {
         setStatus('error');
       });
     return () => ac.abort();
-  }, [headers, memberId]);
+  }, [api]);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -106,11 +118,11 @@ export function WorldFlagsExplore({ memberId }: { memberId: string }) {
       const next = new Set(explored);
       next.add(code);
       setExplored(next);
-      if (headers) {
-        void fetch(`${API_BASE}/api/world-flags/explore`, {
+      if (api) {
+        void fetch(api.explorePostUrl(), {
           method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ memberId, countryCode: code }),
+          headers: { ...api.headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify(api.explorePostBody(code)),
         }).catch(() => {
           /* ignore — progress saved on next interaction */
         });
@@ -124,7 +136,7 @@ export function WorldFlagsExplore({ memberId }: { memberId: string }) {
         certTimerRef.current = setTimeout(() => setCertEarned(null), 4000);
       }
     },
-    [explored, headers, memberId],
+    [explored, api],
   );
 
   const handleCardTap = useCallback(() => {

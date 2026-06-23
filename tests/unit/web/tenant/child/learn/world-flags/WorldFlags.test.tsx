@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 // World Flags container — Explore / Learn path / Certificates sub-tabs.
+// Tests cover both parent mode (memberId) and kid mode (kidToken).
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
@@ -23,11 +24,15 @@ import { WorldFlags } from '../../../../../../../apps/web/src/pages/tenant/child
 import { TenantProvider } from '../../../../../../../apps/web/src/lib/tenant-context';
 
 const CHILD = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const KID_TOKEN = 'kid.jwt.tok';
 
 function installFetch(opts: { explored?: string[]; progress?: Record<string, number[]> } = {}) {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const method = (init as RequestInit | undefined)?.method ?? 'GET';
-    if ((url as string).includes('/api/world-flags/learn')) {
+    if (
+      (url as string).includes('/api/world-flags/learn') ||
+      (url as string).includes('/api/kid/world-flags/learn')
+    ) {
       if (method === 'POST') {
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ completed: true }) });
       }
@@ -37,7 +42,10 @@ function installFetch(opts: { explored?: string[]; progress?: Record<string, num
         json: async () => ({ progress: opts.progress ?? {} }),
       });
     }
-    if ((url as string).includes('/api/world-flags')) {
+    if (
+      (url as string).includes('/api/world-flags') ||
+      (url as string).includes('/api/kid/world-flags')
+    ) {
       if (method === 'POST') {
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ explored: true }) });
       }
@@ -61,6 +69,26 @@ function renderWorldFlags() {
           element={
             <TenantProvider>
               <WorldFlags memberId={CHILD} />
+            </TenantProvider>
+          }
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+function renderWorldFlagsKid() {
+  // Must be under a /t/:slug route so TenantProvider can read the slug param
+  // (useTenantSlug() throws outside it). The slug value is irrelevant for kid
+  // mode — only the kidToken is used to build headers.
+  return render(
+    <MemoryRouter initialEntries={['/t/khan/kid']}>
+      <Routes>
+        <Route
+          path="/t/:slug/kid"
+          element={
+            <TenantProvider>
+              <WorldFlags kidToken={KID_TOKEN} />
             </TenantProvider>
           }
         />
@@ -207,4 +235,117 @@ describe('WorldFlags Certificates', () => {
     await waitFor(() => expect(screen.getByTestId('wfcert-card-africa')).toBeInTheDocument());
     expect(screen.getByTestId('wfcert-quiz-africa')).toBeInTheDocument();
   });
+});
+
+// ─── Kid-mode tests (FHS-373) ─────────────────────────────────────────────────
+
+describe('WorldFlags kid mode — Explore', () => {
+  it('GETs /api/kid/world-flags with only the kid Bearer token (no memberId, no x-tenant-slug)', async () => {
+    // Kid mode does NOT need a Supabase session — set to null to prove it.
+    authState.session = null;
+    installFetch();
+    renderWorldFlagsKid();
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+
+    const exploreCalls = (fetchMock.mock.calls as [string, RequestInit | undefined][]).filter(
+      ([url, init]) =>
+        (url as string).includes('/api/kid/world-flags') && (init?.method ?? 'GET') === 'GET',
+    );
+    expect(exploreCalls.length).toBeGreaterThan(0);
+    const [url, init] = exploreCalls[0]!;
+    expect(url).not.toContain('memberId');
+    expect((init?.headers as Record<string, string>)?.Authorization).toBe(`Bearer ${KID_TOKEN}`);
+    expect((init?.headers as Record<string, string>)?.['x-tenant-slug']).toBeUndefined();
+  });
+
+  it('POSTs /api/kid/world-flags/explore with countryCode only (no memberId)', async () => {
+    authState.session = null;
+    installFetch();
+    renderWorldFlagsKid();
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+
+    // Tapping the card (flag → name state) triggers markExplored.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-flashcard'));
+    });
+
+    await waitFor(() => {
+      const postCalls = (fetchMock.mock.calls as [string, RequestInit | undefined][]).filter(
+        ([url, init]) =>
+          (url as string).includes('/api/kid/world-flags/explore') && init?.method === 'POST',
+      );
+      expect(postCalls.length).toBeGreaterThan(0);
+      const body = JSON.parse(postCalls[0]![1]!.body as string) as Record<string, unknown>;
+      expect(body.countryCode).toBeTruthy();
+      expect(body.memberId).toBeUndefined();
+    });
+  });
+});
+
+describe('WorldFlags kid mode — Learn path', () => {
+  it('GETs /api/kid/world-flags/learn with no memberId in the URL', async () => {
+    authState.session = null;
+    installFetch();
+    renderWorldFlagsKid();
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-learn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+
+    const learnCalls = (fetchMock.mock.calls as [string, RequestInit | undefined][]).filter(
+      ([url, init]) =>
+        (url as string).includes('/api/kid/world-flags/learn') && (init?.method ?? 'GET') === 'GET',
+    );
+    expect(learnCalls.length).toBeGreaterThan(0);
+    expect(String(learnCalls[0]![0])).not.toContain('memberId');
+  });
+
+  it('POSTs /api/kid/world-flags/learn-complete without memberId', async () => {
+    authState.session = null;
+    installFetch({ progress: {} });
+    renderWorldFlagsKid();
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-learn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('wfpath-continent-africa')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('wfpath-continent-africa'));
+    });
+    await waitFor(() => expect(screen.getByTestId('wfpath-set-0')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('wfpath-set-0'));
+    });
+    await waitFor(() => expect(screen.getByTestId('wfpath-study')).toBeInTheDocument());
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('wfpath-study-next'));
+      });
+    }
+    await waitFor(() => expect(screen.getByTestId('wfpath-quiz')).toBeInTheDocument());
+    for (let q = 0; q < 5; q++) {
+      const img = screen.getByTestId('world-flag-image') as HTMLImageElement;
+      const name = img.alt.replace(/^Flag of /, '');
+      const choices = screen.getAllByTestId(/^wfpath-quiz-choice-/);
+      const target = choices.find((b) => b.textContent === name);
+      expect(target).toBeTruthy();
+      await act(async () => {
+        fireEvent.click(target!);
+      });
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 600));
+      });
+    }
+    await waitFor(() => expect(screen.getByTestId('wfpath-results')).toBeInTheDocument());
+
+    const completeCalls = (fetchMock.mock.calls as [string, RequestInit | undefined][]).filter(
+      ([url, init]) =>
+        (url as string).includes('/api/kid/world-flags/learn-complete') && init?.method === 'POST',
+    );
+    expect(completeCalls).toHaveLength(1);
+    const body = JSON.parse(completeCalls[0]![1]!.body as string) as Record<string, unknown>;
+    expect(body.memberId).toBeUndefined();
+    expect(body.continent).toBe('Africa');
+  }, 15000);
 });
