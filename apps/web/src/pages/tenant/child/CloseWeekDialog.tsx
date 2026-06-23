@@ -930,10 +930,17 @@ function InvestDialog({
           {/* FHS-378 — Missed-days mode for the new investment. */}
           {!notEnoughToInvest && !selectedIsInvested && (
             <div className="mb-2" data-testid="close-week-invest-deductible">
-              <p className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-wider text-gray-900">
+              <p
+                id="invest-deductible-label"
+                className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-wider text-gray-900"
+              >
                 <span className="text-xl">📉</span> Missed days
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div
+                role="group"
+                aria-labelledby="invest-deductible-label"
+                className="grid grid-cols-2 gap-2"
+              >
                 <button
                   type="button"
                   aria-pressed={deductible}

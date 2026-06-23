@@ -18,7 +18,14 @@ import { authMiddleware, _resetJwksCacheForTests } from '../../../apps/api/src/m
 import { habitsRouter } from '../../../apps/api/src/routes/habits.js';
 import { mwWeeksRouter } from '../../../apps/api/src/routes/mw-weeks.js';
 import { mwFinancialRouter } from '../../../apps/api/src/routes/mw-financial.js';
-import { tenants, members, habits, mwInvestments, users } from '../../../apps/api/src/db/schema.js';
+import {
+  tenants,
+  members,
+  habits,
+  mwInvestments,
+  mwSavings,
+  users,
+} from '../../../apps/api/src/db/schema.js';
 import { and, eq } from 'drizzle-orm';
 import type { Database } from '../../../apps/api/src/db/client.js';
 import { getTestDb } from '../support/db.js';
@@ -188,6 +195,16 @@ describeFeature(feature, ({ Background, Scenario }) => {
       })
       .returning();
     memberIds[name] = row!.id;
+    // Seed saved stickers so the child can fund a 10-sticker investment without
+    // placing 10 habit stickers this week — the placed stickers must stay at the
+    // exact count the maturation assertions expect (completed days), while the
+    // create endpoint draws the principal savings-first.
+    await db.insert(mwSavings).values({
+      tenantId: tenantIds[slug]!,
+      memberId: row!.id,
+      savedStickers: 50,
+      savedCash: '0',
+    });
   }
 
   async function seedHabit(slug: string, name: string, memberName: string) {

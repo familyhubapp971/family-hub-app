@@ -1993,7 +1993,6 @@ export function MyWorldTab(
                             <button
                               type="button"
                               data-testid={`investment-toggle-${inv.id}`}
-                              aria-pressed={!inv.deductible}
                               onClick={() => void setInvestmentDeductible(inv, !inv.deductible)}
                               className="text-[10px] font-bold text-fuchsia-300 underline transition-colors hover:text-fuchsia-200"
                             >
