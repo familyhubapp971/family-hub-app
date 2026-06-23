@@ -18,6 +18,9 @@ export interface MyWorldDataApi {
   investments(): string;
   rewards(): string;
   analytics(): string;
+  // FHS-376 — kid only: POST a "please can I have this reward" request. Parent
+  // mode omits it (parents redeem directly; kids ask).
+  rewardRequest?(rewardId: string): string;
 }
 
 export function parentDataApi(memberId: string, headers: Record<string, string>): MyWorldDataApi {
@@ -48,5 +51,6 @@ export function kidDataApi(kidToken: string): MyWorldDataApi {
     investments: () => `${API_BASE}/api/kid/financial/investments`,
     rewards: () => `${API_BASE}/api/kid/rewards`,
     analytics: () => `${API_BASE}/api/kid/analytics`,
+    rewardRequest: (id) => `${API_BASE}/api/kid/rewards/${id}/request`,
   };
 }

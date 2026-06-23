@@ -23,11 +23,12 @@ import {
 } from '../lib/learn-questions.js';
 import {
   computeMemberAnalytics,
+  createRedemptionRequest,
   getSavings,
   getTenantCurrency,
   loadHabitsForWeek,
   loadInvestmentsForMember,
-  loadRewardsForMember,
+  loadKidRewardsWithRequestStatus,
   loadSavingsForMember,
   loadWeekActions,
   loadWeeksForMember,
@@ -38,7 +39,6 @@ import { mwAnalyticsResponseSchema } from './mw-analytics.js';
 import { listHabitsResponseSchema } from './habits.js';
 import { listMealsResponseSchema } from './meals.js';
 import { listEventsResponseSchema } from './events.js';
-import { listRewardsResponseSchema } from './rewards.js';
 import {
   difficultySchema,
   listLearnResponseSchema,
@@ -57,7 +57,6 @@ import {
   journalDayResponseSchema,
   journalEntriesResponseSchema,
   journalEarliestResponseSchema,
-  journalEntrySchema,
 } from './journal.js';
 import { listTenantNotices, listNoticesResponseSchema } from './notices.js';
 import { listTasksForMember, setTaskDoneForMember, taskItemSchema } from './tasks.js';
@@ -110,6 +109,31 @@ export const kidInvestmentSchema = z.object({
 });
 export const kidInvestmentsResponseSchema = z.object({
   investments: z.array(kidInvestmentSchema),
+});
+
+// FHS-376 — kid rewards list now carries the kid's latest request status per
+// reward. Shape: { rewards: [{id,name,description,stickerCost,icon,requestStatus}], stickerBalance }.
+export const kidRewardItemSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  stickerCost: z.number().int(),
+  icon: z.string().nullable(),
+  requestStatus: z.enum(['none', 'pending', 'approved', 'declined']),
+});
+export const kidRewardsResponseSchema = z.object({
+  rewards: z.array(kidRewardItemSchema),
+  stickerBalance: z.number().int(),
+});
+
+// FHS-376 — the request row the kid gets back when they ask for a reward.
+export const kidRedemptionRequestSchema = z.object({
+  id: z.string().uuid(),
+  memberId: z.string().uuid(),
+  rewardId: z.string().uuid(),
+  status: z.enum(['pending', 'approved', 'declined']),
+  starCost: z.number().int(),
+  requestedAt: z.string(),
 });
 
 // FHS-367 — kid learn answer + reading-log writes (memberId from the token).
@@ -333,15 +357,37 @@ export const kidRouter = new Hono()
       ),
     );
   })
-  // FHS-374 — rewards (identical to GET /api/rewards).
+  // FHS-374 / FHS-376 — rewards + the kid's spendable balance + the kid's
+  // latest request status per reward ('none'|'pending'|'approved'|'declined').
   .get('/rewards', async (c) => {
     const kid = getKidAuth(c);
     await pinRequestTenant(kid.tenantId);
     return c.json(
-      listRewardsResponseSchema.parse(
-        await loadRewardsForMember(getDb(), kid.tenantId, kid.memberId),
+      kidRewardsResponseSchema.parse(
+        await loadKidRewardsWithRequestStatus(getDb(), kid.tenantId, kid.memberId),
       ),
     );
+  })
+  // FHS-376 — the kid ASKS to redeem a reward (no deduction; an admin approves).
+  // Self-scoped from the kid token. Idempotent: a duplicate ask while one is
+  // still pending returns the existing pending request (200) rather than a new
+  // row. FHS-374 removed POST /redeem; this request endpoint replaces it.
+  .post('/rewards/:id/request', async (c) => {
+    const kid = getKidAuth(c);
+    const rewardId = c.req.param('id');
+    if (!UUID_RE.test(rewardId)) {
+      return c.json({ error: 'invalid id', detail: 'reward id must be a UUID' }, 400);
+    }
+    await pinRequestTenant(kid.tenantId);
+    const outcome = await createRedemptionRequest(getDb(), {
+      tenantId: kid.tenantId,
+      memberId: kid.memberId,
+      rewardId,
+    });
+    if (!outcome.ok) {
+      return c.json({ error: 'not found', detail: 'reward not found in this tenant' }, 404);
+    }
+    return c.json(kidRedemptionRequestSchema.parse(outcome.request), 200);
   })
   // FHS-374 — banked savings + currency (identical to GET /mw/financial/savings).
   .get('/financial/savings', async (c) => {
@@ -490,56 +536,8 @@ export const kidRouter = new Hono()
       );
     return c.json(journalEarliestResponseSchema.parse({ earliestDate: rows[0]?.earliest ?? null }));
   })
-  // FHS-366 — the kid saves their OWN day (upsert on tenant+member+date).
-  .put('/journal', async (c) => {
-    const kid = getKidAuth(c);
-    const parsed = kidJournalUpsertSchema.safeParse(await c.req.json().catch(() => null));
-    if (!parsed.success) {
-      return c.json(
-        {
-          error: 'invalid request',
-          issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-        },
-        400,
-      );
-    }
-    await pinRequestTenant(kid.tenantId);
-    const { entryDate, mood, gratitude1, gratitude2, gratitude3, body, creativity } = parsed.data;
-    const quoteIndex = quoteIndexForDate(entryDate);
-    const now = new Date();
-    const [row] = await getDb()
-      .insert(journalEntries)
-      .values({
-        tenantId: kid.tenantId,
-        memberId: kid.memberId,
-        entryDate,
-        mood: mood ?? null,
-        gratitude1: gratitude1 ?? null,
-        gratitude2: gratitude2 ?? null,
-        gratitude3: gratitude3 ?? null,
-        quoteIndex,
-        creativity: creativity ?? {},
-        body: body ?? null,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: [journalEntries.tenantId, journalEntries.memberId, journalEntries.entryDate],
-        set: {
-          mood: mood ?? null,
-          gratitude1: gratitude1 ?? null,
-          gratitude2: gratitude2 ?? null,
-          gratitude3: gratitude3 ?? null,
-          quoteIndex,
-          creativity: creativity ?? {},
-          body: body ?? null,
-          updatedAt: now,
-        },
-      })
-      .returning();
-    if (!row) return c.json({ error: 'upsert failed', errorCode: 'JOURNAL_UPSERT_NO_ROW' }, 500);
-    return c.json(journalEntrySchema.parse(serializeEntry(row)), 200);
-  })
+  // FHS-376 — kids are VIEW-ONLY on the journal: PUT /api/kid/journal was
+  // removed (kids only READ past entries). The GET reads above stay.
   // FHS-367 — the kid's lesson subjects (Maths/Science/Logic) + their progress.
   .get('/learn', async (c) => {
     const kid = getKidAuth(c);

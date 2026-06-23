@@ -116,7 +116,9 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
   const moods = JOURNAL_MOODS;
 
   // ── sub-tab ───────────────────────────────────────────────────────────────
-  const [subTab, setSubTab] = useState<SubTab>('write');
+  // FHS-376 — kids get a read-only Journal: Past Entries only, no "My Journal"
+  // write form. Parents author entries from the parent portal.
+  const [subTab, setSubTab] = useState<SubTab>(kid ? 'past' : 'write');
 
   // ── date navigator ────────────────────────────────────────────────────────
   const [currentDate, setCurrentDate] = useState<string>(todayIso);
@@ -367,36 +369,38 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Sub-tab switcher */}
-      <div className="flex gap-1 rounded-xl border-2 border-black bg-white p-1.5 shadow-neo-sm">
-        <button
-          data-testid="journal-subtab-write"
-          onClick={() => setSubTab('write')}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-lg border-2 py-3 text-sm font-bold transition-all ${
-            subTab === 'write'
-              ? 'border-black bg-gradient-to-r from-purple-500 to-pink-400 text-white shadow-neo-xs'
-              : 'border-transparent bg-transparent text-gray-500 hover:bg-gray-100'
-          }`}
-        >
-          <PenLine size={16} aria-hidden="true" />
-          My Journal
-        </button>
-        <button
-          data-testid="journal-subtab-past"
-          onClick={() => setSubTab('past')}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-lg border-2 py-3 text-sm font-bold transition-all ${
-            subTab === 'past'
-              ? 'border-black bg-gradient-to-r from-purple-500 to-pink-400 text-white shadow-neo-xs'
-              : 'border-transparent bg-transparent text-gray-500 hover:bg-gray-100'
-          }`}
-        >
-          <BookOpen size={16} aria-hidden="true" />
-          Past Entries
-        </button>
-      </div>
+      {/* Sub-tab switcher — hidden for kids (read-only, Past Entries only). */}
+      {!kid && (
+        <div className="flex gap-1 rounded-xl border-2 border-black bg-white p-1.5 shadow-neo-sm">
+          <button
+            data-testid="journal-subtab-write"
+            onClick={() => setSubTab('write')}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg border-2 py-3 text-sm font-bold transition-all ${
+              subTab === 'write'
+                ? 'border-black bg-gradient-to-r from-purple-500 to-pink-400 text-white shadow-neo-xs'
+                : 'border-transparent bg-transparent text-gray-500 hover:bg-gray-100'
+            }`}
+          >
+            <PenLine size={16} aria-hidden="true" />
+            My Journal
+          </button>
+          <button
+            data-testid="journal-subtab-past"
+            onClick={() => setSubTab('past')}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg border-2 py-3 text-sm font-bold transition-all ${
+              subTab === 'past'
+                ? 'border-black bg-gradient-to-r from-purple-500 to-pink-400 text-white shadow-neo-xs'
+                : 'border-transparent bg-transparent text-gray-500 hover:bg-gray-100'
+            }`}
+          >
+            <BookOpen size={16} aria-hidden="true" />
+            Past Entries
+          </button>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
-        {subTab === 'write' ? (
+        {subTab === 'write' && !kid ? (
           <motion.div
             key="write"
             className="flex flex-col gap-5"

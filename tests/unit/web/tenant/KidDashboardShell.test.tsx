@@ -125,6 +125,15 @@ function mockKidBoot(over?: (url: string) => unknown) {
         json: async () => ({ stickersPerWeek: [], habitStats: [] }),
       });
     }
+    if (u.includes('/api/kid/journal/entries')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ entries: [] }) });
+    }
+    if (u.includes('/api/kid/journal/earliest')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ earliest: null }) });
+    }
+    if (u.includes('/api/kid/journal')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    }
     // /api/kid/me + any unrouted feed.
     return Promise.resolve({
       ok: true,
@@ -373,6 +382,108 @@ describe('<KidDashboardShell />', () => {
     expect(screen.queryByTestId('habit-card-delete-btn-h1')).not.toBeInTheDocument();
     expect(screen.queryByText('Add stickers')).not.toBeInTheDocument();
     expect(screen.queryByTestId('reward-buy-r1')).not.toBeInTheDocument();
+  });
+
+  // FHS-376 — kid Reward Goals ("Ask for this") + My Account, and a kid can ask.
+  it('kid My World shows Reward Goals (Ask for this) + My Account and can ask', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    const postCalls: string[] = [];
+    mockKidBoot((u) => {
+      // (over() can't see method, so the request POST falls through to default — fine)
+      if (u.endsWith('/api/kid/weeks'))
+        return {
+          weeks: [
+            {
+              id: 'w1',
+              weekNumber: 24,
+              year: 2026,
+              startDate: '2026-06-15',
+              isFinalized: false,
+              carriedOverStickers: 0,
+              carriedOverCash: 0,
+              retrievedStickers: 0,
+              retrievedCash: 0,
+            },
+          ],
+        };
+      if (u.includes('/api/kid/habits'))
+        return {
+          habits: [
+            {
+              id: 'h1',
+              name: 'Read a book',
+              description: null,
+              color: 'bg-yellow-400',
+              icon: 'star',
+              isBonus: false,
+            },
+          ],
+          stickers: [{ habitId: 'h1', day: 0, sticker: 'gold-star', stickerValue: 1 }],
+          week: {
+            id: 'w1',
+            weekNumber: 24,
+            year: 2026,
+            startDate: '2026-06-15',
+            isFinalized: false,
+          },
+          balance: 10,
+          currency: 'AED',
+        };
+      if (u.endsWith('/api/kid/rewards'))
+        return {
+          rewards: [
+            {
+              id: 'rw1',
+              name: 'Ice Cream',
+              description: null,
+              stickerCost: 5,
+              icon: '🍦',
+              requestStatus: 'none',
+            },
+          ],
+          stickerBalance: 10,
+        };
+      return undefined;
+    });
+    // Capture the request POST.
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/api/kid/rewards/rw1/request')) {
+        postCalls.push(u);
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ id: 'req1', status: 'pending' }),
+        });
+      }
+      return base(url, init);
+    });
+
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-my-account')).toBeInTheDocument());
+    // My Account cash = balance(10) * 0.5
+    expect(screen.getByTestId('kid-account-cash')).toHaveTextContent('AED 5.00');
+    // Reward goal shows "Ask for this"; clicking it asks + flips to pending.
+    expect(screen.getByText('Reward Goals')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reward-ask-rw1'));
+    });
+    await waitFor(() => expect(postCalls.length).toBe(1));
+    await waitFor(() => expect(screen.getByTestId('reward-pending-rw1')).toBeInTheDocument());
+  });
+
+  // FHS-376 — kid Journal is read-only: Past Entries only, no "My Journal".
+  it('kid Journal shows past entries only (no write tab)', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    renderShell();
+    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByRole('tab', { name: /Journal/ }));
+    });
+    await waitFor(() => expect(screen.getByTestId('journal-tab')).toBeInTheDocument());
+    expect(screen.queryByTestId('journal-subtab-write')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('journal-subtab-past')).not.toBeInTheDocument();
   });
 
   it('Switch user clears the kid token and returns to kid-login', async () => {

@@ -10,6 +10,7 @@ import { AssignmentsTabPanel } from './dashboard/AssignmentsTabPanel';
 import { NoticeboardTabPanel } from './dashboard/NoticeboardTabPanel';
 import { TasksTabPanel } from './dashboard/TasksTabPanel';
 import { AppHeader } from './AppHeader';
+import { RewardRequestsPanel } from './RewardRequestsPanel';
 import { TABS, DEFAULT_TAB } from './dashboard-tabs';
 
 // FHS-227 + FHS-261 — Parent Dashboard shell. Six tabs gated by the
@@ -79,7 +80,11 @@ function ParentDashboard() {
               redesigned keep the white card until their own MP rebuild
               lands. */}
           {active.id === 'home' ? (
-            <TodayTabPanel />
+            <>
+              {/* FHS-376 — pending kid reward requests surface for a parent here. */}
+              <RewardRequestsPanel />
+              <TodayTabPanel />
+            </>
           ) : active.id === 'calendar' ? (
             <CalendarTabPanel />
           ) : active.id === 'meals' ? (
