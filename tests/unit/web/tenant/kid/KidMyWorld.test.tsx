@@ -169,7 +169,7 @@ describe('<KidMyWorld />', () => {
 
     // Money Skills
     expect(screen.getByTestId('kid-moneyskills')).toBeInTheDocument();
-    expect(screen.getByText(/You have 8 stars/)).toBeInTheDocument();
+    expect(screen.getByTestId('kid-moneyskills')).toHaveTextContent('You have 8 stars');
 
     // Reward Goals
     expect(screen.getByTestId('kid-reward-goals')).toBeInTheDocument();
