@@ -2115,12 +2115,11 @@ export function MyWorldTab(
               The panel handles its own admin gate; showing the list to any
               non-kid viewer matches the Magic Patterns mock. */}
           {!readOnly && memberId && (
-            <section
-              aria-labelledby="reward-requests-sidebar-heading"
-              data-testid="reward-requests-sidebar"
-            >
+            <div data-testid="reward-requests-sidebar">
+              {/* The panel is its own labelled region (reward-requests-heading);
+                  no extra landmark needed here. */}
               <RewardRequestsPanel memberId={memberId} />
-            </section>
+            </div>
           )}
 
           <section

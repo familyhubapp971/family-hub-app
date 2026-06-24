@@ -81,7 +81,8 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
       })
       .catch(() => {});
     return () => ac.abort();
-  }, [headers]);
+    // memberId is in the filter — re-run if the viewed child changes without unmount.
+  }, [headers, memberId]);
 
   const decide = useCallback(
     async (id: string, action: 'approve' | 'decline') => {
