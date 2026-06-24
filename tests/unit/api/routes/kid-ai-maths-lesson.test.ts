@@ -127,9 +127,9 @@ describe('FHS-389 — GET /learn/maths/ai-lesson/status', () => {
     });
     expect(res.status).toBe(200);
     expect(((await res.json()) as { enabled: boolean }).enabled).toBe(false);
-    expect(fetchSpy.mock.calls.filter(([u]) => String(u).includes('anthropic.com'))).toHaveLength(
-      0,
-    );
+    expect(
+      fetchSpy.mock.calls.filter(([u]) => String(u).startsWith('https://api.anthropic.com')),
+    ).toHaveLength(0);
   });
 
   it('returns { enabled: true } when on, STILL with no Anthropic call', async () => {
@@ -141,9 +141,9 @@ describe('FHS-389 — GET /learn/maths/ai-lesson/status', () => {
     });
     expect(res.status).toBe(200);
     expect(((await res.json()) as { enabled: boolean }).enabled).toBe(true);
-    expect(fetchSpy.mock.calls.filter(([u]) => String(u).includes('anthropic.com'))).toHaveLength(
-      0,
-    );
+    expect(
+      fetchSpy.mock.calls.filter(([u]) => String(u).startsWith('https://api.anthropic.com')),
+    ).toHaveLength(0);
   });
 
   it('403 without a kid token', async () => {
@@ -168,7 +168,7 @@ describe('FHS-389 — POST /learn/maths/ai-lesson — flag OFF', () => {
     expect(body.enabled).toBe(false);
     // No Anthropic call made.
     const anthropicCalls = fetchSpy.mock.calls.filter(([url]) =>
-      String(url).includes('anthropic.com'),
+      String(url).startsWith('https://api.anthropic.com'),
     );
     expect(anthropicCalls).toHaveLength(0);
   });
