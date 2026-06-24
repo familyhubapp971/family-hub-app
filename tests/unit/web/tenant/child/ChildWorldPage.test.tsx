@@ -56,9 +56,6 @@ function installApi() {
     if (u.includes('/api/journal')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ entries: [] }) });
     }
-    if (u.includes('/api/learn')) {
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ subjects: [] }) });
-    }
     // /api/habits
     return Promise.resolve({
       ok: true,
