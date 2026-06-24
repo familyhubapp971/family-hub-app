@@ -10,7 +10,6 @@ import { AssignmentsTabPanel } from './dashboard/AssignmentsTabPanel';
 import { NoticeboardTabPanel } from './dashboard/NoticeboardTabPanel';
 import { TasksTabPanel } from './dashboard/TasksTabPanel';
 import { AppHeader } from './AppHeader';
-import { RewardRequestsPanel } from './RewardRequestsPanel';
 import { TABS, DEFAULT_TAB } from './dashboard-tabs';
 
 // FHS-227 + FHS-261 — Parent Dashboard shell. Six tabs gated by the
@@ -81,10 +80,6 @@ function ParentDashboard() {
               lands. */}
           {active.id === 'home' ? (
             <TodayTabPanel />
-          ) : active.id === 'reward-requests' ? (
-            // FHS-379 — dedicated Reward Requests tab; panel always renders
-            // (shows empty state when no pending requests).
-            <RewardRequestsPanel />
           ) : active.id === 'calendar' ? (
             <CalendarTabPanel />
           ) : active.id === 'meals' ? (

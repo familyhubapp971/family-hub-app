@@ -5,6 +5,7 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 // pending kid requests in a neo-brutalist card. Admins can approve
 // (one click) or decline (two-step confirm). Non-admins see a muted
 // "Only an admin can approve" note. Empty state shows "All caught up!".
+// FHS-392 — optional memberId prop filters to one child's requests only.
 
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => ({ session: { access_token: 'parent.tok' } }),
@@ -28,6 +29,33 @@ const ONE_REQUEST = {
       starCost: 10,
       status: 'pending',
       requestedAt: '2026-06-20T00:00:00.000Z',
+    },
+  ],
+};
+
+const TWO_REQUESTS = {
+  requests: [
+    {
+      id: 'req1',
+      memberId: 'm1',
+      memberName: 'Iman',
+      rewardId: 'rw1',
+      rewardName: 'Ice Cream',
+      rewardIcon: '🍦',
+      starCost: 10,
+      status: 'pending',
+      requestedAt: '2026-06-20T00:00:00.000Z',
+    },
+    {
+      id: 'req2',
+      memberId: 'm2',
+      memberName: 'Ali',
+      rewardId: 'rw2',
+      rewardName: 'Pizza Night',
+      rewardIcon: '🍕',
+      starCost: 15,
+      status: 'pending',
+      requestedAt: '2026-06-21T00:00:00.000Z',
     },
   ],
 };
@@ -173,5 +201,39 @@ describe('<RewardRequestsPanel />', () => {
     render(<RewardRequestsPanel />);
     await waitFor(() => expect(screen.getByTestId('reward-requests-count')).toBeInTheDocument());
     expect(screen.getByTestId('reward-requests-count').textContent).toContain('1');
+  });
+
+  // FHS-392 — memberId prop filters to one child's requests only
+  it("with memberId: shows only that child's request, hides the other child's", async () => {
+    routeMock({ admin: true, requests: TWO_REQUESTS });
+    render(<RewardRequestsPanel memberId="m1" />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    // Iman's request shows (memberId matches)
+    expect(screen.getByText(/Ice Cream/)).toBeInTheDocument();
+    // Ali's request is filtered out
+    expect(screen.queryByTestId('reward-request-req2')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Pizza Night/)).not.toBeInTheDocument();
+    // Count badge = 1 (only the matching request)
+    expect(screen.getByTestId('reward-requests-count').textContent).toContain('1');
+  });
+
+  it('with memberId: child avatar disc and "wants…" label are hidden', async () => {
+    routeMock({ admin: true });
+    render(<RewardRequestsPanel memberId="m1" />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    // The "Iman wants…" line must not appear in single-child sidebar mode
+    expect(screen.queryByText(/Iman wants/)).not.toBeInTheDocument();
+    // The reward name still appears
+    expect(screen.getByText(/Ice Cream/)).toBeInTheDocument();
+  });
+
+  it("without memberId: shows all children's requests (original behaviour)", async () => {
+    routeMock({ admin: true, requests: TWO_REQUESTS });
+    render(<RewardRequestsPanel />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    expect(screen.getByTestId('reward-request-req2')).toBeInTheDocument();
+    expect(screen.getByText(/Iman wants/)).toBeInTheDocument();
+    expect(screen.getByText(/Ali wants/)).toBeInTheDocument();
+    expect(screen.getByTestId('reward-requests-count').textContent).toContain('2');
   });
 });

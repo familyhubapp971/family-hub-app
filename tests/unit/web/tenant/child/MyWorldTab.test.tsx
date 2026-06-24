@@ -115,6 +115,21 @@ function installApi(over: Partial<St> = {}) {
         json: async () => ({ stickerBalance: state.balance, redemptionId: 'r1' }),
       });
     }
+    // FHS-392 — RewardRequestsPanel in the sidebar calls this endpoint.
+    if (u.includes('/api/mw/redemption-requests')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ requests: [] }),
+      });
+    }
+    if (u.includes('/api/members')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ callerRole: 'admin' }),
+      });
+    }
     if (u.includes('/api/mw/financial/savings')) {
       return Promise.resolve({
         ok: true,
@@ -498,6 +513,48 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
         ([u, i]) => i?.method === 'POST' && /\/api\/habits$/.test(String(u)),
       ),
     ).toBe(false);
+  });
+
+  // FHS-392 — Reward Requests sidebar in parent/admin mode
+  it('renders the reward-requests sidebar for an admin parent (FHS-392)', async () => {
+    installApi();
+    renderTab(true /* isAdmin */);
+    await waitFor(() => expect(screen.getByTestId('my-world')).toBeInTheDocument());
+    // Sidebar section must be present for parent/admin
+    expect(screen.getByTestId('reward-requests-sidebar')).toBeInTheDocument();
+    // The panel itself renders inside (even empty-state is fine)
+    expect(screen.getByTestId('reward-requests-panel')).toBeInTheDocument();
+  });
+
+  it('does NOT render the reward-requests sidebar in kid (readOnly) mode (FHS-392)', async () => {
+    installApi();
+    // Kid mode uses kidToken prop — readOnly=true suppresses the sidebar.
+    // Kid API uses /api/kid/* paths so the data may not load, but the
+    // sidebar guard fires before data (readOnly branch).
+    render(
+      <MemoryRouter initialEntries={['/t/khan/child/' + MEMBER]}>
+        <Routes>
+          <Route
+            path="/t/:slug/child/:memberId"
+            element={
+              <TenantProvider>
+                <MyWorldTab kidToken="kid.jwt.tok" />
+              </TenantProvider>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    // Wait for the component to mount and settle (loading or no-data)
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('habit-tracker-loading') ??
+          screen.queryByTestId('habit-tracker-no-data') ??
+          screen.queryByTestId('my-world'),
+      ).toBeInTheDocument(),
+    );
+    // The sidebar must never appear in kid/readOnly mode
+    expect(screen.queryByTestId('reward-requests-sidebar')).not.toBeInTheDocument();
   });
 
   it('reverts the cell when the sticker POST fails', async () => {

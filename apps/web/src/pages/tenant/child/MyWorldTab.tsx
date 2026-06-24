@@ -1,4 +1,5 @@
 import React, { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RewardRequestsPanel } from '../RewardRequestsPanel';
 import {
   ArrowDownToLine,
   Award,
@@ -2107,6 +2108,18 @@ export function MyWorldTab(
                   </div>
                 ))}
               </div>
+            </section>
+          )}
+
+          {/* FHS-392 — Reward Requests in-context sidebar (parent/admin only).
+              The panel handles its own admin gate; showing the list to any
+              non-kid viewer matches the Magic Patterns mock. */}
+          {!readOnly && memberId && (
+            <section
+              aria-labelledby="reward-requests-sidebar-heading"
+              data-testid="reward-requests-sidebar"
+            >
+              <RewardRequestsPanel memberId={memberId} />
             </section>
           )}
 

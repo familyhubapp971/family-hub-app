@@ -187,19 +187,13 @@ afterEach(() => {
 });
 
 describe('<DashboardPage /> — tab framework', () => {
-  it('renders all seven tabs in the nav', () => {
+  it('renders six tabs in the nav (Reward Requests removed — FHS-392)', () => {
     renderAt('/t/khans/dashboard');
-    for (const label of [
-      'Dashboard',
-      'Meals',
-      'Calendar',
-      'Assignments',
-      'Noticeboard',
-      'Tasks',
-      'Reward Requests',
-    ]) {
+    for (const label of ['Dashboard', 'Meals', 'Calendar', 'Assignments', 'Noticeboard', 'Tasks']) {
       expect(screen.getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
     }
+    // Reward Requests tab no longer lives on the parent dashboard
+    expect(screen.queryByRole('tab', { name: /Reward Requests/ })).not.toBeInTheDocument();
   });
 
   it('defaults to the home (Dashboard) panel when ?tab is absent', () => {
@@ -254,20 +248,18 @@ describe('<DashboardPage /> — tab framework', () => {
     expect(screen.getByRole('tab', { name: /Meals/ }).getAttribute('aria-selected')).toBe('false');
   });
 
-  it('Reward Requests tab renders the panel (empty state when no pending)', async () => {
+  // FHS-392 — reward-requests tab removed; panel moved to ChildWorldPage sidebar.
+  it('?tab=reward-requests falls back to the default home panel (tab no longer exists)', () => {
     renderAt('/t/khans/dashboard?tab=reward-requests');
-    expect(screen.getByTestId('dashboard-panel-reward-requests')).toBeInTheDocument();
-    // Panel always renders on its dedicated tab — even empty state
-    await waitFor(() => expect(screen.getByTestId('reward-requests-panel')).toBeInTheDocument());
-    expect(screen.getByText(/All caught up!/)).toBeInTheDocument();
+    // Unknown tab → fallback to home
+    expect(screen.getByTestId('dashboard-panel-home')).toBeInTheDocument();
+    expect(screen.queryByTestId('reward-requests-panel')).not.toBeInTheDocument();
   });
 
-  it('home tab no longer shows RewardRequestsPanel', async () => {
+  it('home tab does not show RewardRequestsPanel', async () => {
     renderAt('/t/khans/dashboard');
-    // Home only shows TodayTabPanel, not the rewards inbox
     expect(screen.getByTestId('dashboard-panel-home')).toBeInTheDocument();
     await waitFor(() => expect(mocks.fetchMock).toHaveBeenCalled());
-    // The reward-requests-panel testid must NOT appear on the home tab
     expect(screen.queryByTestId('reward-requests-panel')).not.toBeInTheDocument();
   });
 });
