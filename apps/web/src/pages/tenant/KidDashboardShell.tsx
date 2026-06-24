@@ -5,7 +5,6 @@ import {
   CalendarDays,
   ListChecks,
   LogOut,
-  Megaphone,
   NotebookPen,
   Sparkles,
   UtensilsCrossed,
@@ -30,8 +29,8 @@ import { KidLearnPanel } from './kid/KidLearnPanel';
 // Patterns design, and a "Switch user" button that drops the kid token and
 // returns to the avatar picker.
 //
-// FHS-362 ships the SHAPE: the MP header + 5-tab nav. My World carries the
-// kid's existing content (today's habits, tasks, notices). The interactive
+// FHS-362 ships the SHAPE: the MP header + tab nav. My World carries the
+// kid's existing content (today's habits + tasks). The interactive
 // habit grid + rewards land in FHS-363; Meals / Calendar / Journal / Learn
 // are kid-scoped in FHS-364..367. The shell confirms the session via
 // GET /api/kid/me and loads the header via GET /api/kid/profile.
@@ -49,7 +48,6 @@ const KID_TABS: KidTab[] = [
   { id: 'journal', label: 'Journal', icon: <NotebookPen size={16} aria-hidden="true" /> },
   { id: 'learn', label: 'Learn', icon: <BookOpen size={16} aria-hidden="true" /> },
   { id: 'tasks', label: 'Tasks', icon: <ListChecks size={16} aria-hidden="true" /> },
-  { id: 'notices', label: 'Notices', icon: <Megaphone size={16} aria-hidden="true" /> },
 ];
 
 const DEFAULT_TAB = 'world';
@@ -63,103 +61,7 @@ interface KidProfile {
   currency: string;
 }
 
-// FHS-355 — kid Notices tab. Reads the family noticeboard scoped to the kid's
-// own tenant (GET /api/kid/notices, kid token). First real kid-facing data feed.
-interface KidNotice {
-  id: string;
-  body: string;
-  pinned: boolean;
-  authorName: string | null;
-  icon: string | null;
-  createdAt: string;
-}
-type KidNoticesState =
-  | { kind: 'loading' }
-  | { kind: 'error' }
-  | { kind: 'loaded'; notices: KidNotice[] };
-
-function KidNoticesPanel({ kidToken }: { kidToken: string | null }) {
-  const [state, setState] = useState<KidNoticesState>({ kind: 'loading' });
-
-  useEffect(() => {
-    if (!kidToken) return;
-    const ac = new AbortController();
-    fetch(`${API_BASE}/api/kid/notices`, {
-      headers: { Authorization: `Bearer ${kidToken}` },
-      signal: ac.signal,
-    })
-      .then(async (r) => {
-        if (!r.ok) {
-          setState({ kind: 'error' });
-          return;
-        }
-        const body = (await r.json()) as { notices: KidNotice[] };
-        setState({ kind: 'loaded', notices: body.notices ?? [] });
-      })
-      .catch((err: unknown) => {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        setState({ kind: 'error' });
-      });
-    return () => ac.abort();
-  }, [kidToken]);
-
-  if (state.kind === 'loading') {
-    return (
-      <p
-        data-testid="kid-notices-loading"
-        aria-busy="true"
-        className="text-sm font-bold text-gray-600"
-      >
-        Loading notices…
-      </p>
-    );
-  }
-  if (state.kind === 'error') {
-    return (
-      <p data-testid="kid-notices-error" role="alert" className="text-sm font-bold text-red-600">
-        Couldn&rsquo;t load notices — try again.
-      </p>
-    );
-  }
-  if (state.notices.length === 0) {
-    return (
-      <div data-testid="kid-notices-empty">
-        <p aria-hidden="true" className="text-5xl">
-          📣
-        </p>
-        <h2 className="mt-3 font-heading text-2xl text-black">Notices</h2>
-        <p className="mt-1 text-sm font-bold text-gray-600">No notices yet — check back soon!</p>
-      </div>
-    );
-  }
-  return (
-    <div className="flex flex-col gap-3 text-left" data-testid="kid-notices-list">
-      <h2 className="text-center font-heading text-2xl text-black">Notices</h2>
-      {state.notices.map((n) => (
-        <div
-          key={n.id}
-          data-testid="kid-notice"
-          className="rounded-xl border-2 border-black bg-yellow-50 p-4 shadow-neo-sm"
-        >
-          <div className="flex items-start gap-3">
-            <span aria-hidden="true" className="text-2xl">
-              {n.icon ?? '📣'}
-            </span>
-            <div>
-              <p className="font-bold text-black">{n.body}</p>
-              <p className="mt-1 text-xs font-bold text-gray-600">
-                {n.authorName ?? 'Family'}
-                {n.pinned ? ' · 📌 pinned' : ''}
-              </p>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// FHS-355 — kid Tasks tab. The kid's own tasks (GET /api/kid/tasks), tickable
+// FHS-370 — kid Tasks tab. The kid's own tasks (GET /api/kid/tasks), tickable
 // via PATCH /api/kid/tasks/:id. Optimistic toggle with revert on failure.
 interface KidTask {
   id: string;
@@ -284,10 +186,10 @@ function KidTasksPanel({ kidToken }: { kidToken: string | null }) {
 // matched to the Magic Patterns kid mock — NOT the parent's MyWorldTab reused.
 // It carries the Weekly Habits / Analytics toggle, the kid's week banner + habit
 // cards, Money Skills, and the Reward Goals + My Account sidebar. The kid's tasks
-// + notices sit below for now; FHS-370 moves them to their own tabs.
+// live in their own tab (FHS-370).
 function MyWorldPanel({ kidToken, displayName }: { kidToken: string | null; displayName: string }) {
   // FHS-370 — My World is the kid habit/economy screen only (matches the mock).
-  // Tasks + Notices live in their own tabs now, not appended here.
+  // Tasks live in their own tab; Notices were removed from the kid view (FHS-386).
   return <KidMyWorld kidToken={kidToken} displayName={displayName} />;
 }
 
@@ -483,13 +385,9 @@ export function KidDashboardShell() {
             <KidJournalPanel kidToken={kidToken} />
           ) : active.id === 'learn' ? (
             <KidLearnPanel kidToken={kidToken} />
-          ) : active.id === 'tasks' ? (
-            <div className="rounded-xl border-2 border-black bg-white p-5 shadow-neo-sm">
-              <KidTasksPanel kidToken={kidToken} />
-            </div>
           ) : (
             <div className="rounded-xl border-2 border-black bg-white p-5 shadow-neo-sm">
-              <KidNoticesPanel kidToken={kidToken} />
+              <KidTasksPanel kidToken={kidToken} />
             </div>
           )}
         </section>
