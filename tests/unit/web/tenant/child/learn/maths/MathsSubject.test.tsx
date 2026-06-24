@@ -234,15 +234,40 @@ describe('MathsSubject — learn stage wiring', () => {
   });
 });
 
-// ─── Coming-soon placeholders ─────────────────────────────────────────────────
+// ─── Practice stage wiring ────────────────────────────────────────────────────
 
-describe('MathsSubject — coming-soon seams', () => {
-  it('Practice stage shows the "coming soon" card (seam for PR3)', async () => {
-    // progress: learn done, practiceCorrect < 10 → practice is next stage
-    fetchMock.mockImplementation((url: string) => {
+// Stable mock for generateTableProblem so the practice questions are deterministic.
+vi.mock(
+  '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils')
+      >();
+    return {
+      ...actual,
+      generateTableProblem: () => ({
+        a: 3,
+        b: 4,
+        operation: 'addition',
+        answer: 12,
+        emoji: 'star',
+        choices: [10, 12, 14, 16],
+      }),
+    };
+  },
+);
+
+describe('MathsSubject — practice stage wiring', () => {
+  // Install progress so the journey renders with practice as the active stage.
+  function installPracticeReady() {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const u = String(url);
+      const method = (init as RequestInit | undefined)?.method ?? 'GET';
       if (u.includes('/api/kid/maths/certificates'))
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ certificates: [] }) });
+      if (u.includes('/api/kid/maths/progress') && method === 'PUT')
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
       if (u.includes('/api/kid/maths/progress'))
         return Promise.resolve({
           ok: true,
@@ -253,7 +278,7 @@ describe('MathsSubject — coming-soon seams', () => {
                 operation: 'addition',
                 tableNumber: 1,
                 learnCompleted: true,
-                practiceCorrect: 5,
+                practiceCorrect: 0,
                 proveScore: 0,
                 proveAvgTime: 0,
               },
@@ -262,19 +287,143 @@ describe('MathsSubject — coming-soon seams', () => {
         });
       return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
     });
+  }
 
+  // Answer all 10 questions in MathsTablePractice using the seeded correct answer.
+  async function answerAll10() {
+    for (let q = 0; q < 10; q++) {
+      await waitFor(() =>
+        expect(screen.getAllByRole('button', { name: /Answer \d+/ }).length).toBeGreaterThan(0),
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Answer 12' }));
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(700);
+      });
+    }
+  }
+
+  it('clicking Continue on the journey when practice is active renders MathsTablePractice', async () => {
+    installPracticeReady();
     render(<MathsSubject kidToken={KID_TOKEN} />);
     await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
 
-    // Click Continue — active stage is practice
     await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByTestId('journey-continue-btn'));
     });
 
+    await waitFor(() => expect(screen.getByTestId('maths-table-practice')).toBeInTheDocument());
+    expect(screen.queryByTestId('maths-coming-soon-practice')).not.toBeInTheDocument();
+  });
+
+  it('completing practice PUTs practiceCorrect then shows MathsStageComplete (no internal done-screen)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    installPracticeReady();
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('journey-continue-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('maths-table-practice')).toBeInTheDocument());
+
+    // Answer all 10 — onComplete fires automatically (no internal done-screen to tap)
+    await answerAll10();
+
+    // PUT /api/kid/maths/progress should have been called with practiceCorrect
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls as [string, RequestInit][];
+      const putCall = calls.find(
+        ([url, init]) =>
+          (url as string).includes('/api/kid/maths/progress') &&
+          (init as RequestInit)?.method === 'PUT',
+      );
+      expect(putCall).toBeTruthy();
+      const body = JSON.parse((putCall![1] as RequestInit).body as string);
+      expect(body).toMatchObject({ practiceCorrect: 10 });
+    });
+
+    // MathsStageComplete for practice is the ONLY celebration screen
+    await waitFor(() => expect(screen.getByTestId('stage-complete')).toBeInTheDocument());
+    // No internal "practice-complete-continue" button — parent owns it
+    expect(screen.queryByTestId('practice-complete-continue')).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('Back to Journey from MathsTablePractice returns to journey without stage-complete', async () => {
+    installPracticeReady();
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('journey-continue-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('maths-table-practice')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('practice-back-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+    expect(screen.queryByTestId('stage-complete')).not.toBeInTheDocument();
+  });
+
+  it('re-entry: after stage-complete → Back to Journey → start practice again shows fresh questions (not stale stage-complete)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    installPracticeReady();
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
+
+    // --- First practice run ---
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('journey-continue-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('maths-table-practice')).toBeInTheDocument());
+    await answerAll10();
+    await waitFor(() => expect(screen.getByTestId('stage-complete')).toBeInTheDocument());
+
+    // --- Back to Journey from stage-complete ---
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('stage-complete-journey'));
+    });
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+
+    // --- Second practice run (re-entry) ---
+    await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('journey-continue-btn'));
+    });
+
+    // Must show fresh questions — NOT the stale stage-complete
+    await waitFor(() => expect(screen.getByTestId('maths-table-practice')).toBeInTheDocument());
+    expect(screen.queryByTestId('stage-complete')).not.toBeInTheDocument();
+    expect(screen.getByTestId('practice-progress')).toHaveTextContent('Question 1 of 10');
+    vi.useRealTimers();
+  });
+
+  it('Continue from stage-complete navigates to the Prove coming-soon stub (PR4 seam)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    installPracticeReady();
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('journey-continue-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('maths-table-practice')).toBeInTheDocument());
+    await answerAll10();
+    await waitFor(() => expect(screen.getByTestId('stage-complete')).toBeInTheDocument());
+
+    // Tap "Continue to Prove It" on MathsStageComplete
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('stage-complete-continue'));
+    });
+
+    // Prove coming-soon stub renders (PR4 seam, testid from ComingSoonCard)
     await waitFor(() =>
-      expect(screen.getByTestId('maths-coming-soon-practice')).toBeInTheDocument(),
+      expect(screen.getByTestId('maths-coming-soon-prove-it')).toBeInTheDocument(),
     );
-    expect(screen.getByTestId('coming-soon-back')).toBeInTheDocument();
+    vi.useRealTimers();
   });
 });
