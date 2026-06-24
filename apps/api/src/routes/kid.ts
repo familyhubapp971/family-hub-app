@@ -875,6 +875,13 @@ export const kidRouter = new Hono()
   // Body: { operation, difficulty? | tableNumber? } — one of difficulty/tableNumber required.
   // Response when disabled: { enabled: false } (200, not an error).
   // Response when enabled + success: { enabled: true, lesson: <Lesson> }.
+  // FHS-389 — cheap availability probe. Returns just the flag state with NO
+  // Anthropic call, so the UI can decide whether to show the AI button without
+  // burning a real (paid) lesson generation on every Maths-tab open.
+  .get('/learn/maths/ai-lesson/status', (c) => {
+    getKidAuth(c);
+    return c.json({ enabled: aiEnabled() });
+  })
   // Response when enabled + AI fails: { enabled: true, lesson: null, error: '...' }.
   // No child PII is ever sent to Anthropic — only the operation + settings.
   .post('/learn/maths/ai-lesson', async (c) => {

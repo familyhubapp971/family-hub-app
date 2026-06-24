@@ -255,6 +255,10 @@ export const routeMeta: Record<string, RouteMeta> = {
     responseDesc: '{ completed: true } — always, even if already recorded',
   },
   // FHS-389 — AI Maths lesson (feature-flagged OFF by default).
+  'GET /api/kid/learn/maths/ai-lesson/status': {
+    summary: 'Whether AI Maths lessons are enabled (cheap probe, no generation)',
+    response: z.object({ enabled: z.boolean() }),
+  },
   'POST /api/kid/learn/maths/ai-lesson': {
     summary: 'Generate an AI Maths lesson for the kid (feature-flagged)',
     request: kidAiMathLessonBodySchema,

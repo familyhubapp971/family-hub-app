@@ -141,6 +141,29 @@ describe('<MathsAILesson /> — loading state', () => {
     await waitFor(() => expect(screen.getByTestId('ai-lesson-loading')).toBeInTheDocument());
     expect(screen.getByText(/our ai teacher is preparing something fun/i)).toBeInTheDocument();
   });
+
+  it('ignores a rapid second click while a generation is in flight (FHS-389)', async () => {
+    fetchMock.mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                ok: true,
+                status: 200,
+                json: async () => ({ enabled: true, lesson: MOCK_LESSON }),
+              }),
+            100,
+          ),
+        ),
+    );
+    render(<MathsAILesson kidToken={KID_TOKEN} />);
+    const start = screen.getByTestId('ai-lesson-start');
+    fireEvent.click(start);
+    fireEvent.click(start); // second click must be a no-op (each call is paid AI)
+    await waitFor(() => expect(screen.getByTestId('ai-lesson-loading')).toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ── Step-by-step lesson flow ──────────────────────────────────────────────────

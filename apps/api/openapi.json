@@ -2141,6 +2141,41 @@
         }
       }
     },
+    "/api/kid/learn/maths/ai-lesson/status": {
+      "get": {
+        "tags": [
+          "kid"
+        ],
+        "summary": "Whether AI Maths lessons are enabled (cheap probe, no generation)",
+        "operationId": "get_api_kid_learn_maths_ai_lesson_status",
+        "security": [
+          {
+            "kidAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "enabled"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/kid/me": {
       "get": {
         "tags": [

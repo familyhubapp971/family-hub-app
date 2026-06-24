@@ -10,7 +10,7 @@
 //
 // No child PII is sent to the API. All auth uses the kidToken bearer header.
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   BookOpen,
   Loader2,
@@ -93,7 +93,8 @@ const STEP_INFO: Record<LessonStep, { icon: typeof BookOpen; title: string; colo
 // ─── Visual helpers ───────────────────────────────────────────────────────────
 
 function parseEquation(equation: string): { first: number; second: number } | null {
-  const match = equation.match(/(\d+)\s*[+\-×÷]\s*(\d+)/);
+  // Accept ASCII hyphen and the Unicode minus (U+2212) the AI sometimes emits.
+  const match = equation.match(/(\d+)\s*[+\-−×÷]\s*(\d+)/);
   if (!match) return null;
   return { first: parseInt(match[1]!), second: parseInt(match[2]!) };
 }
@@ -409,7 +410,11 @@ export function MathsAILesson({
   const [practiceIndex, setPracticeIndex] = useState(0);
   const [completed, setCompleted] = useState(false);
 
+  const inFlight = useRef(false);
   const generateLesson = useCallback(async () => {
+    // Guard against double-clicks / concurrent calls — each is a paid AI call.
+    if (inFlight.current) return;
+    inFlight.current = true;
     setLoading(true);
     setError(null);
     setLesson(null);
@@ -457,6 +462,7 @@ export function MathsAILesson({
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
+      inFlight.current = false;
     }
   }, [kidToken, operation, difficulty, tableNumber]);
 

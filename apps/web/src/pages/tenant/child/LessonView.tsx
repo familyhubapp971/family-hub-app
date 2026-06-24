@@ -84,12 +84,10 @@ export function LessonView({
   useEffect(() => {
     if (!kid || !isMaths || !kidToken || aiStatus !== 'unknown') return;
     let cancelled = false;
-    // Probe with a minimal body — the endpoint returns { enabled: false }
-    // without calling Anthropic when the flag is off, so this is cheap.
-    fetch(`${API_BASE}/api/kid/learn/maths/ai-lesson`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ operation: 'addition', difficulty: 'easy' }),
+    // Cheap GET probe — returns just { enabled } with NO Anthropic call, so
+    // checking availability never burns a paid lesson generation.
+    fetch(`${API_BASE}/api/kid/learn/maths/ai-lesson/status`, {
+      headers: { Authorization: `Bearer ${kidToken}` },
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { enabled: boolean } | null) => {
@@ -205,6 +203,7 @@ export function LessonView({
           <button
             data-testid="ai-lesson-toggle"
             type="button"
+            aria-expanded={showAiLesson}
             onClick={() => setShowAiLesson((v) => !v)}
             className="w-full flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 font-black text-sm shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5 min-h-[44px]"
           >

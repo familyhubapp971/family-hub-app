@@ -116,6 +116,42 @@ function enableAI() {
   });
 }
 
+// ── GET status probe — cheap, never generates / never calls Anthropic ────────
+
+describe('FHS-389 — GET /learn/maths/ai-lesson/status', () => {
+  it('returns { enabled: false } when off, with no Anthropic call', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    const token = await mintKidToken();
+    const res = await makeApp().request('/learn/maths/ai-lesson/status', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { enabled: boolean }).enabled).toBe(false);
+    expect(fetchSpy.mock.calls.filter(([u]) => String(u).includes('anthropic.com'))).toHaveLength(
+      0,
+    );
+  });
+
+  it('returns { enabled: true } when on, STILL with no Anthropic call', async () => {
+    enableAI();
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    const token = await mintKidToken();
+    const res = await makeApp().request('/learn/maths/ai-lesson/status', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { enabled: boolean }).enabled).toBe(true);
+    expect(fetchSpy.mock.calls.filter(([u]) => String(u).includes('anthropic.com'))).toHaveLength(
+      0,
+    );
+  });
+
+  it('403 without a kid token', async () => {
+    const res = await makeApp().request('/learn/maths/ai-lesson/status');
+    expect(res.status).toBe(403);
+  });
+});
+
 // ── Flag OFF (default in test env) ──────────────────────────────────────────
 
 describe('FHS-389 — POST /learn/maths/ai-lesson — flag OFF', () => {
@@ -343,14 +379,12 @@ describe('FHS-389 — POST /learn/maths/ai-lesson — flag ON, AI failure', () =
   });
 
   it('returns 200 { enabled:true, lesson:null } when AI returns malformed JSON', async () => {
-    global.fetch = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(JSON.stringify({ content: [{ type: 'text', text: 'not valid json {{{' }] }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      );
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ content: [{ type: 'text', text: 'not valid json {{{' }] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
     const token = await mintKidToken();
     const res = await makeApp().request('/learn/maths/ai-lesson', {
       method: 'POST',
