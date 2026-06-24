@@ -61,7 +61,7 @@ interface KidProfile {
   currency: string;
 }
 
-// FHS-355 — kid Tasks tab. The kid's own tasks (GET /api/kid/tasks), tickable
+// FHS-370 — kid Tasks tab. The kid's own tasks (GET /api/kid/tasks), tickable
 // via PATCH /api/kid/tasks/:id. Optimistic toggle with revert on failure.
 interface KidTask {
   id: string;

@@ -4,7 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 // FHS-257 / FHS-362 — kid dashboard shell. Renders for a child signed in
 // with a kid JWT: the MP header (avatar + name + banked stars/cash), the
-// five-tab kid world (My World, Meals, Calendar, Journal, Learn — no parent
+// six-tab kid world (My World, Meals, Calendar, Journal, Learn, Tasks — no parent
 // profile pill / admin links), and a Switch user button that drops the token
 // + returns to kid-login. My World carries the kid's habits + tasks.
 
@@ -26,9 +26,9 @@ function fakeKidJwt(expSecondsFromNow = 3600): string {
   return `${header}.${payload}.sig`;
 }
 
-function renderShell() {
+function renderShell(entry = '/t/khan/dashboard') {
   return render(
-    <MemoryRouter initialEntries={['/t/khan/dashboard']}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route
           path="/t/:slug/dashboard"
@@ -262,6 +262,16 @@ describe('<KidDashboardShell />', () => {
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
     expect(screen.queryByRole('tab', { name: /Notices/ })).not.toBeInTheDocument();
+  });
+
+  // FHS-386 — a stale ?tab=notices link must not strand the kid; tabs are
+  // in-memory and default to My World, so it falls back gracefully.
+  it('ignores a stale ?tab=notices deep link and lands on My World (FHS-386)', async () => {
+    localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
+    renderShell('/t/khan/dashboard?tab=notices');
+    await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
+    expect(screen.queryByRole('tab', { name: /Notices/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /My World/ })).toHaveAttribute('aria-selected', 'true');
   });
 
   // FHS-370 — Tasks is its own kid tab now (off My World); ticking PATCHes.
