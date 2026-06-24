@@ -16,6 +16,8 @@ import { API_BASE } from '../../../../../lib/api';
 import { MathsPlacementTest } from './MathsPlacementTest';
 import { MathsJourney } from './MathsJourney';
 import { MathsAILesson } from './MathsAILesson';
+import { MathsTablePractice } from './MathsTablePractice';
+import { MathsStageComplete } from './MathsStageComplete';
 import type { Operation, TableNumber } from './maths-utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -80,6 +82,9 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
   const [activeView, setActiveView] = useState<ActiveView>('journey');
   const [activeTableNumber, setActiveTableNumber] = useState<TableNumber>(1);
   const [journeyKey, setJourneyKey] = useState(0);
+  // Practice stage result — passed from MathsTablePractice → MathsStageComplete
+  const [lastPracticeCorrect, setLastPracticeCorrect] = useState(0);
+  const [showPracticeComplete, setShowPracticeComplete] = useState(false);
 
   // Whether this operation has any progress at all — controls placement vs journey.
   const [hasProgress, setHasProgress] = useState<boolean | null>(null); // null = loading
@@ -139,6 +144,28 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
     setActiveView('journey');
     setJourneyKey((k) => k + 1);
   }, [kidToken, operation, activeTableNumber]);
+
+  // Practice stage complete → PUT progress then show MathsStageComplete.
+  const handlePracticeComplete = useCallback(
+    async (correct: number) => {
+      try {
+        await fetch(`${API_BASE}/api/kid/maths/progress`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            operation,
+            tableNumber: activeTableNumber,
+            practiceCorrect: correct,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to save practice progress:', err);
+      }
+      setLastPracticeCorrect(correct);
+      setShowPracticeComplete(true);
+    },
+    [kidToken, operation, activeTableNumber],
+  );
 
   const isAchievements = activeView === 'achievements';
 
@@ -262,9 +289,33 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
         />
       )}
 
-      {/* Practice stage — PR3 seam */}
-      {activeView === 'practice' && (
-        <ComingSoonCard stage="Practice" onBack={() => setActiveView('journey')} />
+      {/* Practice stage — MathsTablePractice (PR3) */}
+      {activeView === 'practice' && !showPracticeComplete && (
+        <MathsTablePractice
+          operation={operation}
+          tableNumber={activeTableNumber}
+          onComplete={(correct) => void handlePracticeComplete(correct)}
+          onBack={() => setActiveView('journey')}
+        />
+      )}
+
+      {/* Practice stage complete — celebrate then offer Prove (PR4 seam) */}
+      {activeView === 'practice' && showPracticeComplete && (
+        <MathsStageComplete
+          operation={operation}
+          tableNumber={activeTableNumber}
+          completedStage="practice"
+          practiceCorrect={lastPracticeCorrect}
+          onContinue={() => {
+            setShowPracticeComplete(false);
+            setActiveView('prove');
+          }}
+          onBackToJourney={() => {
+            setShowPracticeComplete(false);
+            setActiveView('journey');
+            setJourneyKey((k) => k + 1);
+          }}
+        />
       )}
 
       {/* Prove stage — PR4 seam */}
