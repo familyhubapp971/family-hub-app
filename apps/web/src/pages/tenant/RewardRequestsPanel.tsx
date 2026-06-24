@@ -5,9 +5,12 @@ import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 
 // FHS-379 — parent "Reward Requests" approval screen. Restyled to the
-// Magic Patterns neo-brutalist spec. Lives on its own dedicated dashboard
-// tab (not the home panel). Non-admins see a muted note in place of the
-// action buttons; admins get a two-step confirm flow for Decline.
+// Magic Patterns neo-brutalist spec. Non-admins see a muted note in
+// place of the action buttons; admins get a two-step confirm flow for
+// Decline.
+// FHS-392 — accepts an optional `memberId` prop. When provided, only
+// that child's pending requests are shown (used in ChildWorldPage
+// sidebar). When omitted, all pending requests are listed.
 
 interface RequestItem {
   id: string;
@@ -47,7 +50,7 @@ function relativeTime(iso: string): string {
   return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
-export function RewardRequestsPanel() {
+export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
   const { session } = useAuth();
   const slug = useTenantSlug();
   const accessToken = session?.access_token ?? null;
@@ -72,10 +75,14 @@ export function RewardRequestsPanel() {
       .catch(() => {});
     fetch(`${API_BASE}/api/mw/redemption-requests?status=pending`, { headers, signal: ac.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(r)))
-      .then((b: { requests?: RequestItem[] }) => setRequests(b.requests ?? []))
+      .then((b: { requests?: RequestItem[] }) => {
+        const all = b.requests ?? [];
+        setRequests(memberId ? all.filter((r) => r.memberId === memberId) : all);
+      })
       .catch(() => {});
     return () => ac.abort();
-  }, [headers]);
+    // memberId is in the filter — re-run if the viewed child changes without unmount.
+  }, [headers, memberId]);
 
   const decide = useCallback(
     async (id: string, action: 'approve' | 'decline') => {
@@ -150,7 +157,7 @@ export function RewardRequestsPanel() {
             className="hidden gap-4 border-b-2 border-black bg-gray-50 p-4 text-xs font-bold uppercase tracking-widest text-gray-500 md:grid md:grid-cols-12"
             aria-hidden="true"
           >
-            <span className="col-span-4">Child &amp; Reward</span>
+            <span className="col-span-4">{memberId ? 'Reward' : 'Child & Reward'}</span>
             <span className="col-span-2 text-center">Cost</span>
             <span className="col-span-2 text-center">Requested</span>
             <span className="col-span-4 text-right">Actions</span>
@@ -172,16 +179,21 @@ export function RewardRequestsPanel() {
                 >
                   {/* Child & Reward */}
                   <div className="col-span-4 flex items-center gap-4">
-                    <span
-                      aria-hidden="true"
-                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-black font-heading text-xl shadow-neo-xs ${color}`}
-                    >
-                      {initial}
-                    </span>
+                    {/* Avatar disc — hidden in single-child mode (memberId set) */}
+                    {!memberId && (
+                      <span
+                        aria-hidden="true"
+                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-black font-heading text-xl shadow-neo-xs ${color}`}
+                      >
+                        {initial}
+                      </span>
+                    )}
                     <div className="min-w-0">
-                      <p className="mb-0.5 text-sm font-bold text-gray-500">
-                        {r.memberName} wants&hellip;
-                      </p>
+                      {!memberId && (
+                        <p className="mb-0.5 text-sm font-bold text-gray-500">
+                          {r.memberName} wants&hellip;
+                        </p>
+                      )}
                       <p className="font-heading text-xl">
                         {r.rewardIcon ? `${r.rewardIcon} ` : ''}
                         {r.rewardName}
