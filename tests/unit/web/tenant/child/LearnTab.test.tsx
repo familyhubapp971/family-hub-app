@@ -777,3 +777,127 @@ describe('kid mode (kidToken)', () => {
     expect(deleteCall).toBeTruthy();
   });
 });
+
+// ─── FHS-394: kid mode Maths routes to MathsSubject ──────────────────────────
+//
+// In kid mode, clicking the Maths card must show MathsSubject (placement /
+// journey flow), NOT the old LessonView. Science and Logic keep using
+// LessonView unchanged.
+
+describe('FHS-394 — kid Maths routes to MathsSubject', () => {
+  function installKidMathsFetch() {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      // Kid world-flags (loaded by the tab on mount in kid mode)
+      if (u.includes('/api/kid/world-flags'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ explored: [] }) });
+      if (u.includes('/api/kid/learn'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            subjects: [
+              { subject: 'Maths', progress: 30 },
+              { subject: 'Science', progress: 10 },
+            ],
+          }),
+        });
+      if (u.includes('/api/kid/reading-log'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [] }) });
+      // MathsSubject fetches /api/kid/maths/progress on mount
+      if (u.includes('/api/kid/maths/progress'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ progress: [] }) });
+      // MathsSubject also fetches /api/kid/maths/certificates (via MathsJourney on journey mount)
+      if (u.includes('/api/kid/maths/certificates'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ certificates: [] }) });
+      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+    });
+  }
+
+  it('clicking Maths in kid mode renders maths-subject (not lesson-view)', async () => {
+    installKidMathsFetch();
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-maths'));
+    });
+
+    // MathsSubject renders; the old LessonView should NOT be present.
+    await waitFor(() => expect(screen.getByTestId('maths-subject')).toBeInTheDocument());
+    expect(screen.queryByTestId('lesson-view')).not.toBeInTheDocument();
+  });
+
+  it('Maths in kid mode shows placement-test when no progress exists', async () => {
+    installKidMathsFetch();
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-maths'));
+    });
+
+    // No progress → placement test intro shown.
+    await waitFor(() => expect(screen.getByTestId('placement-test')).toBeInTheDocument());
+    expect(screen.getByTestId('placement-begin')).toBeInTheDocument();
+  });
+
+  it('Back button from Maths returns to the subject overview', async () => {
+    installKidMathsFetch();
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-maths'));
+    });
+    await waitFor(() => expect(screen.getByTestId('maths-subject')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-back'));
+    });
+    await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
+    expect(screen.queryByTestId('maths-subject')).not.toBeInTheDocument();
+  });
+
+  it('Science in kid mode still uses LessonView, not MathsSubject', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/kid/world-flags'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ explored: [] }) });
+      if (u.includes('/api/kid/learn'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ subjects: [{ subject: 'Science', progress: 10 }] }),
+        });
+      if (u.includes('/api/kid/reading-log'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [] }) });
+      // LessonView fetches questions
+      if (u.includes('/api/kid/learn/Science'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            subject: 'Science',
+            difficulty: 'easy',
+            questions: [],
+            stats: { progress: 0, score: 0, streak: 0, best: 0, answered: 0, certificate: false },
+          }),
+        });
+      // Science LessonView also probes the AI endpoint (only for Maths, but it checks subject)
+      if (u.includes('/api/kid/learn') && u.includes('ai-lesson'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ enabled: false }) });
+      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+    });
+
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-science')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-science'));
+    });
+
+    await waitFor(() => expect(screen.getByTestId('lesson-view')).toBeInTheDocument());
+    expect(screen.queryByTestId('maths-subject')).not.toBeInTheDocument();
+  });
+});
