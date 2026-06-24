@@ -3,7 +3,12 @@
 //
 // 10 questions for the given operation + tableNumber. 4-option multiple choice
 // via generateTableProblem. Immediate feedback (auto-advance ~600ms correct /
-// ~1000ms wrong). Tracks totalCorrect + streak. Calls onComplete(totalCorrect).
+// ~1000ms wrong). Tracks totalCorrect + streak.
+//
+// Completion: when the 10th question resolves, onComplete(totalCorrect) fires
+// exactly once via a useEffect on `done` guarded by hasCompletedRef. The parent
+// owns the celebration screen (MathsStageComplete) — this component never
+// renders its own done UI, so the PUT always fires even if the kid dismisses.
 //
 // Double-tap guard: answeredRef resets each time a new question is generated
 // (same pattern as MathsPlacementTest).
@@ -180,11 +185,21 @@ export function MathsTablePractice({
 
   // Double-tap guard: reset when the question changes (via useEffect below).
   const answeredRef = useRef(false);
+  // Completion guard: ensures onComplete fires exactly once even if React
+  // re-renders while the done flag settles.
+  const hasCompletedRef = useRef(false);
 
-  // Reset the guard whenever a new problem loads (questionIndex changes).
+  // Reset the double-tap guard whenever a new problem loads.
   useEffect(() => {
     answeredRef.current = false;
   }, [questionIndex]);
+
+  // Fire onComplete exactly once when the run finishes.
+  useEffect(() => {
+    if (!done || hasCompletedRef.current) return;
+    hasCompletedRef.current = true;
+    onComplete(finalCorrect);
+  }, [done, finalCorrect, onComplete]);
 
   const symbol = OPERATION_SYMBOLS[operation];
   const label = getTableLabel(operation, tableNumber);
@@ -200,7 +215,6 @@ export function MathsTablePractice({
       setQuestionIndex((i) => i + 1);
       setSelected(null);
       setIsCorrect(null);
-      // answeredRef reset happens via the useEffect above on questionIndex change
     },
     [questionIndex, operation, tableNumber],
   );
@@ -225,61 +239,7 @@ export function MathsTablePractice({
     setTimeout(() => nextQuestion(updatedCorrect), correct ? 600 : 1000);
   };
 
-  // ── Done: call parent with final score ────────────────────────────────────
-
-  if (done) {
-    return (
-      <div data-testid="maths-table-practice" className="space-y-4">
-        <div className="bg-white border-2 sm:border-[3px] border-black rounded-2xl p-6 sm:p-8 shadow-neo text-center space-y-4">
-          <div className="text-5xl" aria-hidden="true">
-            {finalCorrect >= TOTAL_QUESTIONS ? '🎯' : finalCorrect >= 7 ? '👍' : '💪'}
-          </div>
-          <h3 className="font-black text-xl text-gray-800">Practice Complete!</h3>
-          <p className="text-sm font-bold text-gray-400">{label}</p>
-          <div
-            className={`${
-              finalCorrect >= TOTAL_QUESTIONS
-                ? 'bg-green-50 border-green-200'
-                : 'bg-blue-50 border-blue-200'
-            } border-2 rounded-xl p-4 max-w-xs mx-auto`}
-          >
-            <p
-              className={`text-3xl font-black ${
-                finalCorrect >= TOTAL_QUESTIONS ? 'text-green-700' : 'text-blue-700'
-              }`}
-            >
-              {finalCorrect}/{TOTAL_QUESTIONS}
-            </p>
-            <p
-              className={`text-sm font-bold mt-1 ${
-                finalCorrect >= TOTAL_QUESTIONS ? 'text-green-500' : 'text-blue-500'
-              }`}
-            >
-              {finalCorrect >= TOTAL_QUESTIONS
-                ? 'Perfect score!'
-                : finalCorrect >= 7
-                  ? 'Great job!'
-                  : 'Keep practising!'}
-            </p>
-          </div>
-          <button
-            data-testid="practice-complete-continue"
-            type="button"
-            onClick={() => onComplete(finalCorrect)}
-            className={`min-h-[44px] bg-gradient-to-r ${
-              finalCorrect >= TOTAL_QUESTIONS
-                ? 'from-green-500 to-emerald-500'
-                : 'from-blue-500 to-indigo-600'
-            } text-white font-black px-6 py-3 rounded-xl border-2 border-black shadow-neo-xs active:translate-y-0.5 transition-all`}
-          >
-            {finalCorrect >= TOTAL_QUESTIONS ? '⚡ Continue to Prove It →' : 'Continue →'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Question screen ───────────────────────────────────────────────────────
+  // ── Question screen (parent renders MathsStageComplete after onComplete) ──
 
   const writtenProblem = `${problem.a} ${symbol} ${problem.b} = ?`;
 

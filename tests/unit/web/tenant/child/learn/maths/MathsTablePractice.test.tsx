@@ -164,6 +164,9 @@ describe('MathsTablePractice — double-tap guard', () => {
 });
 
 // ─── Full 10-question run → onComplete ───────────────────────────────────────
+// The component no longer renders its own done-screen. When the 10th question
+// resolves, onComplete fires automatically via useEffect. The parent
+// (MathsSubject) owns the celebration (MathsStageComplete).
 
 // Helper: answer all questions with the given choice label.
 // Uses 1200ms advance to cover both the 600ms (correct) and 1000ms (wrong) delays.
@@ -183,36 +186,40 @@ async function answerAll(choiceLabel: string) {
 }
 
 describe('MathsTablePractice — 10-question completion', () => {
-  it('shows the completion screen after 10 questions', async () => {
+  it('calls onComplete automatically (no button tap) with score 10 when all correct', async () => {
     renderPractice();
-    await answerAll('Answer 12'); // all correct
-    await waitFor(() =>
-      expect(screen.getByTestId('practice-complete-continue')).toBeInTheDocument(),
-    );
+    await answerAll('Answer 12'); // all correct — answer=12
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledOnce();
+      expect(onComplete).toHaveBeenCalledWith(10);
+    });
   });
 
-  it('calls onComplete with the number of correct answers (all 10 correct)', async () => {
+  it('calls onComplete automatically with score 0 when all wrong', async () => {
+    renderPractice();
+    await answerAll('Answer 10'); // all wrong — correct answer is 12
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledOnce();
+      expect(onComplete).toHaveBeenCalledWith(0);
+    });
+  });
+
+  it('does NOT render an internal done-screen — parent owns celebration', async () => {
     renderPractice();
     await answerAll('Answer 12');
-    await waitFor(() =>
-      expect(screen.getByTestId('practice-complete-continue')).toBeInTheDocument(),
-    );
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('practice-complete-continue'));
-    });
-    expect(onComplete).toHaveBeenCalledOnce();
-    expect(onComplete).toHaveBeenCalledWith(10);
+    await waitFor(() => expect(onComplete).toHaveBeenCalled());
+    // No internal continue button should exist — MathsStageComplete is in the parent
+    expect(screen.queryByTestId('practice-complete-continue')).not.toBeInTheDocument();
   });
 
-  it('calls onComplete with 0 when all answers are wrong', async () => {
+  it('fires onComplete exactly once even if the component re-renders after done', async () => {
     renderPractice();
-    await answerAll('Answer 10'); // all wrong (answer is 12)
-    await waitFor(() =>
-      expect(screen.getByTestId('practice-complete-continue')).toBeInTheDocument(),
-    );
+    await answerAll('Answer 12');
+    await waitFor(() => expect(onComplete).toHaveBeenCalled());
+    // Wait another tick to confirm no second call
     await act(async () => {
-      fireEvent.click(screen.getByTestId('practice-complete-continue'));
+      vi.advanceTimersByTime(500);
     });
-    expect(onComplete).toHaveBeenCalledWith(0);
+    expect(onComplete).toHaveBeenCalledOnce();
   });
 });

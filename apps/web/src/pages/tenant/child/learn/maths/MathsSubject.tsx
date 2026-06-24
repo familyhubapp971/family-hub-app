@@ -208,6 +208,8 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
                 setOperation(op.key);
                 setActiveView('journey');
                 setJourneyKey((k) => k + 1);
+                setShowPracticeComplete(false);
+                setLastPracticeCorrect(0);
               }}
               className={`flex-1 min-h-[44px] py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all ${
                 operation === op.key
@@ -269,6 +271,8 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
           }}
           onStartPractice={(t) => {
             setActiveTableNumber(t);
+            setShowPracticeComplete(false);
+            setLastPracticeCorrect(0);
             setActiveView('practice');
           }}
           onStartProve={(t) => {
