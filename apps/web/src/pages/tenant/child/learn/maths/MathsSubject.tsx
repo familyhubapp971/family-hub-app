@@ -6,9 +6,10 @@
 // selected operation) → shows MathsPlacementTest. Otherwise shows
 // MathsJourney.
 //
-// Learn stage → MathsAILesson (FHS-389); on completion PUT progress.
-// Practice / Prove stages → "Coming soon" placeholder (PR3/PR4 seam).
-// Achievements (trophy) → future certificates view placeholder.
+// Learn stage → MathsAILesson (FHS-389).
+// Practice stage → MathsTablePractice (PR3).
+// Prove stage → MathsProveChallenge (PR4).
+// Achievements (trophy) → MathsCertificates (PR4).
 
 import { useState, useCallback, useEffect } from 'react';
 import { Trophy } from 'lucide-react';
@@ -18,6 +19,8 @@ import { MathsJourney } from './MathsJourney';
 import { MathsAILesson } from './MathsAILesson';
 import { MathsTablePractice } from './MathsTablePractice';
 import { MathsStageComplete } from './MathsStageComplete';
+import { MathsProveChallenge, PASS_SCORE, PASS_AVG_TIME } from './MathsProveChallenge';
+import { MathsCertificates } from './MathsCertificates';
 import type { Operation, TableNumber } from './maths-utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -46,35 +49,6 @@ const OPERATIONS: { key: Operation; label: string; symbol: string; color: string
   { key: 'division', label: 'Divide', symbol: '÷', color: 'from-green-500 to-emerald-500' },
 ];
 
-// ─── Coming-soon placeholder (seam for PR3 / PR4) ────────────────────────────
-
-function ComingSoonCard({ stage, onBack }: { stage: 'Practice' | 'Prove It'; onBack: () => void }) {
-  return (
-    <div
-      data-testid={`maths-coming-soon-${stage.toLowerCase().replace(' ', '-')}`}
-      className="space-y-4"
-    >
-      <div className="bg-white border-2 sm:border-[3px] border-black rounded-2xl p-8 shadow-neo text-center space-y-4">
-        <div className="text-5xl" aria-hidden="true">
-          {stage === 'Practice' ? '🎯' : '⚡'}
-        </div>
-        <h3 className="font-black text-xl text-gray-800">{stage} — Coming Soon!</h3>
-        <p className="text-sm text-gray-500 font-medium max-w-xs mx-auto">
-          This part of your maths journey is on its way. Check back soon to unlock it!
-        </p>
-        <button
-          data-testid="coming-soon-back"
-          type="button"
-          onClick={onBack}
-          className="min-h-[44px] bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-black px-6 py-3 rounded-xl border-2 border-black shadow-neo-xs active:translate-y-0.5 transition-all"
-        >
-          ← Back to Journey
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function MathsSubject({ kidToken }: MathsSubjectProps) {
@@ -82,9 +56,16 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
   const [activeView, setActiveView] = useState<ActiveView>('journey');
   const [activeTableNumber, setActiveTableNumber] = useState<TableNumber>(1);
   const [journeyKey, setJourneyKey] = useState(0);
+
   // Practice stage result — passed from MathsTablePractice → MathsStageComplete
   const [lastPracticeCorrect, setLastPracticeCorrect] = useState(0);
   const [showPracticeComplete, setShowPracticeComplete] = useState(false);
+
+  // Prove stage result — passed from MathsProveChallenge → MathsStageComplete
+  const [lastProveScore, setLastProveScore] = useState(0);
+  const [lastProveAvgTime, setLastProveAvgTime] = useState(0);
+  const [lastProvePassed, setLastProvePassed] = useState(false);
+  const [showProveComplete, setShowProveComplete] = useState(false);
 
   // Whether this operation has any progress at all — controls placement vs journey.
   const [hasProgress, setHasProgress] = useState<boolean | null>(null); // null = loading
@@ -98,7 +79,6 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
           headers: { Authorization: `Bearer ${kidToken}` },
         });
         if (!res.ok) {
-          // Fail safe: assume no progress → show placement.
           setHasProgress(false);
           return;
         }
@@ -116,10 +96,7 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
     void checkProgress(operation);
   }, [operation, checkProgress]);
 
-  // After placement completes, always go to the journey — never bounce back to
-  // the placement test. MathsJourney fetches its own progress, so we don't
-  // refetch here (a failed refetch must not flip hasProgress back to false and
-  // re-show placement, which would loop on a flaky network).
+  // After placement completes, always go to the journey.
   const handlePlacementComplete = useCallback(() => {
     setHasProgress(true);
     setActiveView('journey');
@@ -167,6 +144,52 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
     [kidToken, operation, activeTableNumber],
   );
 
+  // Prove stage complete → PUT progress, conditionally POST certificate, show stage complete.
+  const handleProveComplete = useCallback(
+    async (score: number, avgTime: number) => {
+      const passed = score >= PASS_SCORE && avgTime <= PASS_AVG_TIME;
+
+      // PUT progress regardless of pass/fail.
+      try {
+        await fetch(`${API_BASE}/api/kid/maths/progress`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            operation,
+            tableNumber: activeTableNumber,
+            proveScore: score,
+            proveAvgTime: avgTime,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to save prove progress:', err);
+      }
+
+      // POST certificate only when passed.
+      if (passed) {
+        try {
+          await fetch(`${API_BASE}/api/kid/maths/certificates`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              operation,
+              difficulty: String(activeTableNumber),
+              totalCorrect: score,
+            }),
+          });
+        } catch (err) {
+          console.error('Failed to save certificate:', err);
+        }
+      }
+
+      setLastProveScore(score);
+      setLastProveAvgTime(avgTime);
+      setLastProvePassed(passed);
+      setShowProveComplete(true);
+    },
+    [kidToken, operation, activeTableNumber],
+  );
+
   const isAchievements = activeView === 'achievements';
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -210,6 +233,10 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
                 setJourneyKey((k) => k + 1);
                 setShowPracticeComplete(false);
                 setLastPracticeCorrect(0);
+                setShowProveComplete(false);
+                setLastProveScore(0);
+                setLastProveAvgTime(0);
+                setLastProvePassed(false);
               }}
               className={`flex-1 min-h-[44px] py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all ${
                 operation === op.key
@@ -251,8 +278,6 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
           operation={operation}
           onComplete={handlePlacementComplete}
           onBack={() => {
-            // If they back out of placement, stay on the subject page but
-            // pretend they have progress so the journey renders (empty state).
             setHasProgress(true);
             setActiveView('journey');
           }}
@@ -277,6 +302,10 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
           }}
           onStartProve={(t) => {
             setActiveTableNumber(t);
+            setShowProveComplete(false);
+            setLastProveScore(0);
+            setLastProveAvgTime(0);
+            setLastProvePassed(false);
             setActiveView('prove');
           }}
         />
@@ -303,7 +332,7 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
         />
       )}
 
-      {/* Practice stage complete — celebrate then offer Prove (PR4 seam) */}
+      {/* Practice stage complete — celebrate then offer Prove */}
       {activeView === 'practice' && showPracticeComplete && (
         <MathsStageComplete
           operation={operation}
@@ -312,6 +341,10 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
           practiceCorrect={lastPracticeCorrect}
           onContinue={() => {
             setShowPracticeComplete(false);
+            setShowProveComplete(false);
+            setLastProveScore(0);
+            setLastProveAvgTime(0);
+            setLastProvePassed(false);
             setActiveView('prove');
           }}
           onBackToJourney={() => {
@@ -322,36 +355,48 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
         />
       )}
 
-      {/* Prove stage — PR4 seam */}
-      {activeView === 'prove' && (
-        <ComingSoonCard stage="Prove It" onBack={() => setActiveView('journey')} />
+      {/* Prove stage — MathsProveChallenge (PR4) */}
+      {activeView === 'prove' && !showProveComplete && (
+        <MathsProveChallenge
+          operation={operation}
+          tableNumber={activeTableNumber}
+          onComplete={(score, avgTime) => void handleProveComplete(score, avgTime)}
+          onBack={() => {
+            setShowProveComplete(false);
+            setActiveView('journey');
+          }}
+        />
       )}
 
-      {/* Achievements (placeholder until certificates view ships) */}
+      {/* Prove stage complete */}
+      {activeView === 'prove' && showProveComplete && (
+        <MathsStageComplete
+          operation={operation}
+          tableNumber={activeTableNumber}
+          completedStage="prove"
+          proveScore={lastProveScore}
+          proveAvgTime={lastProveAvgTime}
+          provePassed={lastProvePassed}
+          onContinue={() => {
+            // Try Again: reset prove state and re-enter the challenge fresh.
+            setShowProveComplete(false);
+            setLastProveScore(0);
+            setLastProveAvgTime(0);
+            setLastProvePassed(false);
+          }}
+          onBackToJourney={() => {
+            // Continue to Next Table (passed) or Back to Journey (either).
+            setShowProveComplete(false);
+            setActiveView('journey');
+            setJourneyKey((k) => k + 1);
+          }}
+        />
+      )}
+
+      {/* Achievements — MathsCertificates (PR4) */}
       {activeView === 'achievements' && (
-        <div
-          data-testid="maths-achievements"
-          className="bg-white border-2 sm:border-[3px] border-black rounded-2xl p-8 shadow-neo text-center space-y-4"
-        >
-          <div className="text-5xl" aria-hidden="true">
-            🏆
-          </div>
-          <h3 className="font-black text-xl text-gray-800">Your Certificates</h3>
-          <p className="text-sm text-gray-500 font-medium max-w-xs mx-auto">
-            Earn certificates by mastering each table through Learn, Practice, and Prove.
-          </p>
-          <p className="text-xs text-gray-400 font-bold">Full certificates view — coming soon!</p>
-          <button
-            data-testid="achievements-back"
-            type="button"
-            onClick={() => {
-              setActiveView('journey');
-              setJourneyKey((k) => k + 1);
-            }}
-            className="min-h-[44px] bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-black px-6 py-3 rounded-xl border-2 border-black shadow-neo-xs active:translate-y-0.5 transition-all"
-          >
-            ← Back to Journey
-          </button>
+        <div data-testid="maths-achievements">
+          <MathsCertificates kidToken={kidToken} operation={operation} />
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 // FHS-394 — MathsSubject unit tests.
 // Covers: placement vs journey branching, operation switch, trophy toggle,
-// learn-stage wiring (MathsAILesson), and coming-soon placeholders.
+// learn-stage wiring (MathsAILesson), practice stage wiring, prove stage
+// wiring (MathsProveChallenge), and achievements (MathsCertificates).
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
@@ -20,7 +21,7 @@ function installFetch(overrides: Record<string, unknown> = {}) {
       const r = overrides['placement'] ?? { unlocked: [] };
       return Promise.resolve({ ok: true, status: 200, json: async () => r });
     }
-    // Progress PUT (learn complete)
+    // Progress PUT
     if (u.includes('/api/kid/maths/progress') && method === 'PUT') {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
     }
@@ -29,7 +30,12 @@ function installFetch(overrides: Record<string, unknown> = {}) {
       const r = overrides['progress'] ?? { progress: [] };
       return Promise.resolve({ ok: true, status: 200, json: async () => r });
     }
-    // Certificates GET
+    // Certificates POST (earn certificate)
+    if (u.includes('/api/kid/maths/certificates') && method === 'POST') {
+      const r = overrides['certPost'] ?? { certificate: {}, alreadyEarned: false };
+      return Promise.resolve({ ok: true, status: 200, json: async () => r });
+    }
+    // Certificates GET (MathsCertificates component)
     if (u.includes('/api/kid/maths/certificates')) {
       const r = overrides['certificates'] ?? { certificates: [] };
       return Promise.resolve({ ok: true, status: 200, json: async () => r });
@@ -402,7 +408,7 @@ describe('MathsSubject — practice stage wiring', () => {
     vi.useRealTimers();
   });
 
-  it('Continue from stage-complete navigates to the Prove coming-soon stub (PR4 seam)', async () => {
+  it('Continue from stage-complete navigates to MathsProveChallenge (PR4 — real component)', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     installPracticeReady();
     render(<MathsSubject kidToken={KID_TOKEN} />);
@@ -420,10 +426,283 @@ describe('MathsSubject — practice stage wiring', () => {
       fireEvent.click(screen.getByTestId('stage-complete-continue'));
     });
 
-    // Prove coming-soon stub renders (PR4 seam, testid from ComingSoonCard)
-    await waitFor(() =>
-      expect(screen.getByTestId('maths-coming-soon-prove-it')).toBeInTheDocument(),
-    );
+    // MathsProveChallenge renders its setup screen (PR4 — real component, not a stub).
+    await waitFor(() => expect(screen.getByTestId('prove-challenge-setup')).toBeInTheDocument());
+    // ComingSoonCard must be gone.
+    expect(screen.queryByTestId('maths-coming-soon-prove-it')).not.toBeInTheDocument();
     vi.useRealTimers();
+  });
+});
+
+// ─── Prove stage wiring ────────────────────────────────────────────────────────
+
+describe('MathsSubject — prove stage wiring', () => {
+  // Install progress so the journey renders with prove as the active stage
+  // (learnCompleted=true, practiceCorrect=10, proveScore=0 means prove is next).
+  function installProveReady() {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      const method = (init as RequestInit | undefined)?.method ?? 'GET';
+      if (u.includes('/api/kid/maths/certificates') && method === 'POST')
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ certificate: {}, alreadyEarned: false }),
+        });
+      if (u.includes('/api/kid/maths/certificates'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ certificates: [] }) });
+      if (u.includes('/api/kid/maths/progress') && method === 'PUT')
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+      if (u.includes('/api/kid/maths/progress'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            progress: [
+              {
+                operation: 'addition',
+                tableNumber: 1,
+                learnCompleted: true,
+                practiceCorrect: 10,
+                proveScore: 0,
+                proveAvgTime: 0,
+              },
+            ],
+          }),
+        });
+      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+    });
+  }
+
+  it('journey onStartProve renders MathsProveChallenge setup screen', async () => {
+    installProveReady();
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+
+    // Click the prove button on the journey card.
+    await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('journey-continue-btn'));
+    });
+
+    await waitFor(() => expect(screen.getByTestId('prove-challenge-setup')).toBeInTheDocument());
+  });
+
+  it('a passing prove run PUTs proveScore/proveAvgTime AND POSTs a certificate', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    installProveReady();
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('journey-continue-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('prove-challenge-setup')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('prove-start'));
+    });
+
+    // Answer 10 correct questions quickly (answer=12 from the mock).
+    for (let i = 0; i < 10; i++) {
+      await waitFor(() =>
+        expect(screen.getAllByRole('button', { name: /Answer \d+/ }).length).toBeGreaterThan(0),
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Answer 12' }));
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(500);
+      });
+    }
+
+    // Let the timer expire (onComplete fires).
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    // Should show MathsStageComplete for prove.
+    await waitFor(() => expect(screen.getByTestId('stage-complete')).toBeInTheDocument());
+
+    // PUT /api/kid/maths/progress must have been called with proveScore + proveAvgTime.
+    const calls = fetchMock.mock.calls as [string, RequestInit][];
+    const putCall = calls.find(
+      ([url, init]) =>
+        (url as string).includes('/api/kid/maths/progress') &&
+        (init as RequestInit)?.method === 'PUT',
+    );
+    expect(putCall).toBeTruthy();
+    const putBody = JSON.parse((putCall![1] as RequestInit).body as string);
+    expect(putBody).toMatchObject({ proveScore: 10 });
+    expect(typeof putBody.proveAvgTime).toBe('number');
+
+    // POST /api/kid/maths/certificates must have been called (passed run).
+    const postCall = calls.find(
+      ([url, init]) =>
+        (url as string).includes('/api/kid/maths/certificates') &&
+        (init as RequestInit)?.method === 'POST',
+    );
+    expect(postCall).toBeTruthy();
+    const postBody = JSON.parse((postCall![1] as RequestInit).body as string);
+    expect(postBody).toMatchObject({ operation: 'addition', difficulty: '1', totalCorrect: 10 });
+
+    vi.useRealTimers();
+  });
+
+  it('a failing prove run PUTs progress but does NOT POST a certificate', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    installProveReady();
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('journey-continue-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('prove-challenge-setup')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('prove-start'));
+    });
+
+    // Let the timer expire without answering (score=0 → fail).
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    await waitFor(() => expect(screen.getByTestId('stage-complete')).toBeInTheDocument());
+
+    // PUT should have been called.
+    const calls = fetchMock.mock.calls as [string, RequestInit][];
+    const putCall = calls.find(
+      ([url, init]) =>
+        (url as string).includes('/api/kid/maths/progress') &&
+        (init as RequestInit)?.method === 'PUT',
+    );
+    expect(putCall).toBeTruthy();
+
+    // POST must NOT have been called (failed run).
+    const postCall = calls.find(
+      ([url, init]) =>
+        (url as string).includes('/api/kid/maths/certificates') &&
+        (init as RequestInit)?.method === 'POST',
+    );
+    expect(postCall).toBeFalsy();
+
+    vi.useRealTimers();
+  });
+
+  it('Try Again from stage-complete (fail) re-enters prove fresh (not stale stage-complete)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    installProveReady();
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('journey-continue-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('prove-challenge-setup')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('prove-start'));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+    await waitFor(() => expect(screen.getByTestId('stage-complete')).toBeInTheDocument());
+
+    // Tap Try Again.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('stage-complete-retry'));
+    });
+
+    // Should show the prove setup again — not the stale stage-complete.
+    await waitFor(() => expect(screen.getByTestId('prove-challenge-setup')).toBeInTheDocument());
+    expect(screen.queryByTestId('stage-complete')).not.toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+
+  it('Back to Journey from passed prove bumps journeyKey so journey re-fetches', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    installProveReady();
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('journey-continue-btn')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('journey-continue-btn'));
+    });
+    await waitFor(() => expect(screen.getByTestId('prove-challenge-setup')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('prove-start'));
+    });
+
+    // Answer 10 to pass.
+    for (let i = 0; i < 10; i++) {
+      await waitFor(() =>
+        expect(screen.getAllByRole('button', { name: /Answer \d+/ }).length).toBeGreaterThan(0),
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Answer 12' }));
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(500);
+      });
+    }
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+    await waitFor(() => expect(screen.getByTestId('stage-complete')).toBeInTheDocument());
+
+    // Continue to Next Table = onBackToJourney on MathsStageComplete.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('stage-complete-next-table'));
+    });
+
+    // Journey should re-render.
+    await waitFor(() => expect(screen.getByTestId('maths-journey')).toBeInTheDocument());
+    expect(screen.queryByTestId('stage-complete')).not.toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+});
+
+// ─── Achievements view ────────────────────────────────────────────────────────
+
+describe('MathsSubject — achievements view (MathsCertificates)', () => {
+  it('trophy shows MathsCertificates (data-testid maths-certificates) instead of placeholder', async () => {
+    installFetch({ progress: { progress: [] }, certificates: { certificates: [] } });
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-subject')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('maths-trophy-toggle'));
+    });
+
+    // maths-achievements wraps the certificates component.
+    expect(screen.getByTestId('maths-achievements')).toBeInTheDocument();
+    // The certificates component itself (not the old placeholder text).
+    await waitFor(() => expect(screen.getByTestId('maths-certificates')).toBeInTheDocument());
+    // Old placeholder copy must be gone.
+    expect(screen.queryByText(/full certificates view — coming soon/i)).not.toBeInTheDocument();
+  });
+
+  it('certificates GET is called with the kid token when achievements opens', async () => {
+    installFetch({ progress: { progress: [] }, certificates: { certificates: [] } });
+    render(<MathsSubject kidToken={KID_TOKEN} />);
+    await waitFor(() => expect(screen.getByTestId('maths-subject')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('maths-trophy-toggle'));
+    });
+
+    await waitFor(() => expect(screen.getByTestId('maths-certificates')).toBeInTheDocument());
+
+    const calls = fetchMock.mock.calls as [string, RequestInit][];
+    const certGet = calls.find(
+      ([url, init]) =>
+        (url as string).includes('/api/kid/maths/certificates') &&
+        ((init as RequestInit)?.method ?? 'GET') === 'GET',
+    );
+    expect(certGet).toBeTruthy();
+    expect((certGet![1] as RequestInit)?.headers).toMatchObject({
+      Authorization: `Bearer ${KID_TOKEN}`,
+    });
   });
 });
