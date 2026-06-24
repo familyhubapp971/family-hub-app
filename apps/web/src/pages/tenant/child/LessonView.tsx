@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, X, Trophy, ArrowRight } from 'lucide-react';
 import { API_BASE } from '../../../lib/api';
+import { MathsAILesson } from './learn/maths/MathsAILesson';
 
 // FHS-283 — interactive Learn lesson. Difficulty pills + a question/answer area
 // + a streak/best/score stats bar with progress toward a certificate. Grading
@@ -9,6 +10,11 @@ import { API_BASE } from '../../../lib/api';
 // FHS-371 — Logic sub-topic picker: when subject === 'Logic', a row of 4 sub-
 // topic pills appears above the difficulty pills; selecting one refetches
 // questions filtered by that sub-topic.
+//
+// FHS-389 — Maths in kid mode: probe the AI endpoint once on mount. When
+// { enabled: true }, surface a toggleable AI Lesson panel above the static
+// question bank. When { enabled: false } (flag is off), the static bank is
+// the full experience — no broken AI button visible.
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
@@ -66,7 +72,35 @@ export function LessonView({
   headers: Headers;
 }) {
   const kid = !!kidToken;
+  const isMaths = subject === 'Maths';
   const isLogic = subject === 'Logic';
+
+  // FHS-389 — AI Maths lesson availability (kid + Maths only).
+  // 'unknown' = not probed yet; 'enabled' = show AI panel toggle;
+  // 'disabled' = flag is off, skip AI UI entirely (static bank only).
+  const [aiStatus, setAiStatus] = useState<'unknown' | 'enabled' | 'disabled'>('unknown');
+  const [showAiLesson, setShowAiLesson] = useState(false);
+
+  useEffect(() => {
+    if (!kid || !isMaths || !kidToken || aiStatus !== 'unknown') return;
+    let cancelled = false;
+    // Cheap GET probe — returns just { enabled } with NO Anthropic call, so
+    // checking availability never burns a paid lesson generation.
+    fetch(`${API_BASE}/api/kid/learn/maths/ai-lesson/status`, {
+      headers: { Authorization: `Bearer ${kidToken}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { enabled: boolean } | null) => {
+        if (!cancelled) setAiStatus(data?.enabled ? 'enabled' : 'disabled');
+      })
+      .catch(() => {
+        if (!cancelled) setAiStatus('disabled');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [kid, isMaths, kidToken, aiStatus]);
+
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [subtopic, setSubtopic] = useState<LogicSubtopic>('patterns');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -163,6 +197,31 @@ export function LessonView({
 
   return (
     <div className="flex flex-col gap-4" data-testid="lesson-view">
+      {/* FHS-389 — AI Maths lesson toggle (kid + Maths + flag ON only) */}
+      {kid && isMaths && aiStatus === 'enabled' && (
+        <div data-testid="ai-lesson-section">
+          <button
+            data-testid="ai-lesson-toggle"
+            type="button"
+            aria-expanded={showAiLesson}
+            onClick={() => setShowAiLesson((v) => !v)}
+            className="w-full flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 font-black text-sm shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5 min-h-[44px]"
+          >
+            <span>✨ Try an AI Maths Lesson</span>
+            <span
+              className={`text-xs rounded-full border-2 border-black px-2 py-0.5 ${showAiLesson ? 'bg-blue-500 text-white' : 'bg-white text-gray-700'}`}
+            >
+              {showAiLesson ? 'Hide' : 'Show'}
+            </span>
+          </button>
+          {showAiLesson && (
+            <div className="mt-3">
+              <MathsAILesson kidToken={kidToken!} onBack={() => setShowAiLesson(false)} />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Logic sub-topic picker — only shown for the Logic subject */}
       {isLogic && (
         <div className="flex flex-col gap-2">
