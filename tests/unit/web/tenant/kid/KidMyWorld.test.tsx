@@ -90,7 +90,8 @@ function mockBoot(over: BootOverrides = {}) {
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: async () => over.savings ?? { savedStickers: 10, savedCash: 5, currency: 'AED' },
+        json: async () =>
+          over.savings ?? { savedStickers: 10, savedCash: 5, currency: 'AED', stickerRate: 0.5 },
       });
     }
     if (u.includes('/api/kid/financial/investments')) {
@@ -477,5 +478,23 @@ describe('<KidMyWorld />', () => {
     render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
     await waitFor(() => expect(screen.getByTestId('kid-myworld')).toBeInTheDocument());
     expect(screen.getByText(/No habits yet/)).toBeInTheDocument();
+  });
+
+  // FHS-387 — cash values and the "worth" label derive from the API stickerRate,
+  // never from a hardcoded 0.5.
+  it('uses the API stickerRate to compute weekly value and "worth" label', async () => {
+    // stickerRate = 1.0 → each star is worth 1 AED.
+    // earnedThisWeek = 3 (h1:2 + h2:1), weeklyValue = 3 * 1.0 = "3.00".
+    mockBoot({
+      savings: { savedStickers: 10, savedCash: 5, currency: 'AED', stickerRate: 1.0 },
+    });
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+
+    await waitFor(() => expect(screen.getByTestId('kid-my-account')).toBeInTheDocument());
+
+    // weeklyValue: 3 × 1.0 = "3.00"
+    expect(screen.getByTestId('kid-account-cash')).toHaveTextContent('AED 3.00');
+    // "worth" label: "Each star is worth AED 1.00"
+    expect(screen.getByText(/Each star is worth AED 1\.00/)).toBeInTheDocument();
   });
 });

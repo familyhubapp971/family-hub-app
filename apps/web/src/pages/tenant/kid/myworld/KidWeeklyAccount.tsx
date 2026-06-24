@@ -3,18 +3,21 @@ import { habitIcon } from './icons';
 import type { KidHabitView } from './types';
 
 // FHS-376 — "My Account" sidebar card: what the kid earned THIS WEEK. Big star
-// count, the cash it's worth (0.5 per star), then a per-habit breakdown of where
-// the stars came from. Pure presentation off the viewed week's habits.
+// count, the cash it's worth, then a per-habit breakdown of where the stars
+// came from. Pure presentation off the viewed week's habits.
+// FHS-387 — stickerRate is now supplied by the caller (no hardcoded 0.5).
 export function KidWeeklyAccount({
   habits,
   earnedThisWeek,
   weeklyValue,
   currency,
+  stickerRate = 0.5,
 }: {
   habits: KidHabitView[];
   earnedThisWeek: number;
   weeklyValue: string;
   currency: string;
+  stickerRate?: number;
 }) {
   const earnedHabits = habits.filter((h) => h.progress > 0);
 
@@ -51,7 +54,7 @@ export function KidWeeklyAccount({
           {currency} {weeklyValue}
         </span>
         <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-          Each star is worth {currency} 0.50
+          Each star is worth {currency} {stickerRate.toFixed(2)}
         </p>
       </div>
 
