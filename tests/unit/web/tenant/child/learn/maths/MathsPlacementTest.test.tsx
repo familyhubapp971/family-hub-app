@@ -226,9 +226,8 @@ describe('MathsPlacementTest — results phase', () => {
     expect(screen.getByText(/You got \d+\/12 correct/i)).toBeInTheDocument();
   });
 
-  it('clicking Continue calls onComplete with the unlocked tables array', async () => {
-    const unlocked = [1, 2, 3, 4];
-    mockPlacementPost(unlocked);
+  it('clicking Continue calls onComplete (parent re-fetches; no args passed)', async () => {
+    mockPlacementPost([1, 2, 3, 4]);
     render(
       <MathsPlacementTest
         kidToken={KID_TOKEN}
@@ -243,6 +242,46 @@ describe('MathsPlacementTest — results phase', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('placement-done'));
     });
-    expect(onComplete).toHaveBeenCalledWith(unlocked);
+    expect(onComplete).toHaveBeenCalledOnce();
+  });
+
+  it('ignores a rapid double-tap — records exactly one answer per question (FHS-394)', async () => {
+    // Capture the placement POST body so we can assert no duplicate result rows.
+    let postedResults: unknown[] = [];
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const method = (init as RequestInit | undefined)?.method ?? 'GET';
+      if ((url as string).includes('/api/kid/maths/placement') && method === 'POST') {
+        postedResults = JSON.parse((init as RequestInit).body as string).results;
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ unlocked: [] }) });
+      }
+      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+    });
+    render(
+      <MathsPlacementTest
+        kidToken={KID_TOKEN}
+        operation="addition"
+        onComplete={onComplete}
+        onBack={onBack}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('placement-begin'));
+    });
+    for (let q = 0; q < 12; q++) {
+      await waitFor(() =>
+        expect(screen.getAllByRole('button', { name: /Answer \d+/ }).length).toBeGreaterThan(0),
+      );
+      const choices = screen.getAllByRole('button', { name: /Answer \d+/ });
+      // Double-tap: two synchronous taps on the same question.
+      await act(async () => {
+        fireEvent.click(choices[0]!);
+        fireEvent.click(choices[1]!);
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(900);
+      });
+    }
+    // Despite a double-tap on every question, exactly 12 results are recorded.
+    await waitFor(() => expect(postedResults).toHaveLength(12));
   });
 });

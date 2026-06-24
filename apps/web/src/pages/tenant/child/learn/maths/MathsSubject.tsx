@@ -84,14 +84,14 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
   // Whether this operation has any progress at all — controls placement vs journey.
   const [hasProgress, setHasProgress] = useState<boolean | null>(null); // null = loading
 
-  const headers = { Authorization: `Bearer ${kidToken}` };
-
   // Fetch progress on mount and whenever the operation changes.
   const checkProgress = useCallback(
     async (op: Operation) => {
       setHasProgress(null);
       try {
-        const res = await fetch(`${API_BASE}/api/kid/maths/progress`, { headers });
+        const res = await fetch(`${API_BASE}/api/kid/maths/progress`, {
+          headers: { Authorization: `Bearer ${kidToken}` },
+        });
         if (!res.ok) {
           // Fail safe: assume no progress → show placement.
           setHasProgress(false);
@@ -103,7 +103,6 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
       } catch {
         setHasProgress(false);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [kidToken],
   );
@@ -112,20 +111,22 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
     void checkProgress(operation);
   }, [operation, checkProgress]);
 
-  // After placement completes, mark progress and switch to journey.
-  const handlePlacementComplete = useCallback(async () => {
-    // Refetch progress — the server has now seeded placements rows.
-    await checkProgress(operation);
+  // After placement completes, always go to the journey — never bounce back to
+  // the placement test. MathsJourney fetches its own progress, so we don't
+  // refetch here (a failed refetch must not flip hasProgress back to false and
+  // re-show placement, which would loop on a flaky network).
+  const handlePlacementComplete = useCallback(() => {
+    setHasProgress(true);
     setActiveView('journey');
     setJourneyKey((k) => k + 1);
-  }, [operation, checkProgress]);
+  }, []);
 
   // Learn stage complete → PUT progress then back to journey.
   const handleLearnComplete = useCallback(async () => {
     try {
       await fetch(`${API_BASE}/api/kid/maths/progress`, {
         method: 'PUT',
-        headers: { ...headers, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${kidToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           operation,
           tableNumber: activeTableNumber,
@@ -137,7 +138,6 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
     }
     setActiveView('journey');
     setJourneyKey((k) => k + 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kidToken, operation, activeTableNumber]);
 
   const isAchievements = activeView === 'achievements';

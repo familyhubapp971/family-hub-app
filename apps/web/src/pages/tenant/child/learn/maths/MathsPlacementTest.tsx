@@ -21,7 +21,9 @@ import {
 interface MathsPlacementTestProps {
   kidToken: string;
   operation: Operation;
-  onComplete: (unlocked: number[]) => void;
+  // The parent re-fetches progress on completion, so the unlocked list isn't
+  // passed up — the placement POST has already persisted the mastered tables.
+  onComplete: () => void;
   onBack: () => void;
 }
 
@@ -52,6 +54,9 @@ export function MathsPlacementTest({
   const [unlockedTables, setUnlockedTables] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const startTimeRef = useRef<number>(0);
+  // Guards against a double-tap registering two answers for the same question
+  // before React flushes selectedAnswer (a real risk on a slow phone).
+  const answeredRef = useRef(false);
 
   const symbol = OPERATION_SYMBOLS[operation];
 
@@ -69,11 +74,13 @@ export function MathsPlacementTest({
     });
     setSelectedAnswer(null);
     setIsCorrect(null);
+    answeredRef.current = false;
     startTimeRef.current = Date.now();
   }, [phase, currentIndex, operation]);
 
   const handleAnswer = (choice: number) => {
-    if (selectedAnswer !== null || !question) return;
+    if (answeredRef.current || selectedAnswer !== null || !question) return;
+    answeredRef.current = true;
 
     const timeSeconds = (Date.now() - startTimeRef.current) / 1000;
     const correct = choice === question.answer;
@@ -311,7 +318,7 @@ export function MathsPlacementTest({
               <button
                 data-testid="placement-done"
                 type="button"
-                onClick={() => onComplete(unlockedTables)}
+                onClick={() => onComplete()}
                 className="min-h-[44px] bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black px-6 py-3 rounded-xl border-2 border-black shadow-neo-xs active:translate-y-0.5 transition-all mt-4"
               >
                 Continue →
