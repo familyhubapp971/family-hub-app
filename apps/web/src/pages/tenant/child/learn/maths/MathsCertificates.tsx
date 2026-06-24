@@ -82,10 +82,10 @@ const MILESTONE_DEFS = [
   },
   {
     name: 'Grand Master',
-    tables: TABLE_NUMBERS as unknown as number[],
+    tables: [...TABLE_NUMBERS] as number[],
     emoji: '👑',
     range: 'All',
-    cumulative: TABLE_NUMBERS as unknown as number[],
+    cumulative: [...TABLE_NUMBERS] as number[],
   },
 ] as const;
 
@@ -259,7 +259,7 @@ function SpeedChallenge({ operation, tables, milestoneName, onExit }: SpeedChall
 
   // Finished screen
   if (finished) {
-    const isNewBest = score >= bestScore && score > 0;
+    const isNewBest = score > bestScore && score > 0;
     const tier = getSpeedTier(score);
     const nextTier = getNextTierTarget(score);
     return (
@@ -433,7 +433,9 @@ export function MathsCertificates({ kidToken, operation }: MathsCertificatesProp
       .finally(() => setLoading(false));
 
     return () => abortRef.current?.abort();
-  }, [kidToken, operation]);
+    // operation isn't used in the fetch (all certs returned; filtered client-side),
+    // so no need to re-fetch on operation switch.
+  }, [kidToken]);
 
   // Filter certificates for the current operation.
   const opCerts = certificates.filter((c) => c.operation === operation);

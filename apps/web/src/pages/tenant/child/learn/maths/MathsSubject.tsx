@@ -19,7 +19,7 @@ import { MathsJourney } from './MathsJourney';
 import { MathsAILesson } from './MathsAILesson';
 import { MathsTablePractice } from './MathsTablePractice';
 import { MathsStageComplete } from './MathsStageComplete';
-import { MathsProveChallenge } from './MathsProveChallenge';
+import { MathsProveChallenge, PASS_SCORE, PASS_AVG_TIME } from './MathsProveChallenge';
 import { MathsCertificates } from './MathsCertificates';
 import type { Operation, TableNumber } from './maths-utils';
 
@@ -39,11 +39,6 @@ type ActiveView = 'journey' | 'placement' | 'learn' | 'practice' | 'prove' | 'ac
 interface MathsSubjectProps {
   kidToken: string;
 }
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const PASS_SCORE = 10;
-const PASS_AVG_TIME = 5;
 
 // ─── Operation catalogue ──────────────────────────────────────────────────────
 
