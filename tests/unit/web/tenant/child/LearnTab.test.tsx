@@ -579,6 +579,30 @@ describe('kid mode (kidToken)', () => {
     expect(parentHits).toHaveLength(0);
   });
 
+  // FHS-387 — the World Flags overview fetch can fail (slow/offline); the card
+  // must still render at 0% with no crash.
+  it('renders the World Flags card at 0% (no crash) when the world-flags fetch fails', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/kid/world-flags'))
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+      if (u.includes('/api/kid/learn'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ subjects: [{ subject: 'Maths', progress: 20 }] }),
+        });
+      if (u.includes('/api/kid/reading-log'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [] }) });
+      return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+    });
+    renderKidTab();
+    await waitFor(() =>
+      expect(screen.getByTestId('learn-subject-world-flags')).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('learn-subject-world-flags')).toHaveTextContent('0%');
+  });
+
   it('adding a book POSTs to /api/kid/reading-log with no memberId in the body', async () => {
     const newBook = makeBook({ title: 'Narnia' });
     // FHS-387 — kid mode also fetches /api/kid/world-flags on mount, so use a

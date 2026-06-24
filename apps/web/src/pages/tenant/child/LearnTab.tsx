@@ -381,6 +381,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                       ) : (
                         <span
                           data-testid="learn-art-freeplay"
+                          aria-label={`${s.subject}: free play, no progress to track`}
                           className="rounded-full border-2 border-black bg-white px-2 py-1 text-xs font-bold"
                         >
                           Free play
