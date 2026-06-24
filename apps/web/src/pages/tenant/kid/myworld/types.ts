@@ -48,6 +48,8 @@ export interface KidSavings {
   savedStickers: number;
   savedCash: number;
   currency: string;
+  // FHS-387 — the fixed star-to-cash rate from the API; default 0.5 if absent.
+  stickerRate?: number;
 }
 
 export interface KidInvestment {

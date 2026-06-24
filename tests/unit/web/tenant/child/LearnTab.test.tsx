@@ -341,6 +341,15 @@ describe('Art subject card (FHS-371)', () => {
     expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument();
   });
 
+  // FHS-387 — Art is free-play with no progress bar (MOCK-4).
+  it('Art card has no progress bar and shows "Free play" badge', async () => {
+    installDefault([], []);
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument());
+    expect(screen.queryByTestId('learn-progress-Art')).not.toBeInTheDocument();
+    expect(screen.getByTestId('learn-art-freeplay')).toBeInTheDocument();
+  });
+
   it('clicking the Art card renders art-canvas', async () => {
     installDefault([], []);
     renderTab();
@@ -572,11 +581,21 @@ describe('kid mode (kidToken)', () => {
 
   it('adding a book POSTs to /api/kid/reading-log with no memberId in the body', async () => {
     const newBook = makeBook({ title: 'Narnia' });
-    // Sequence: GET /api/kid/learn, GET /api/kid/reading-log (empty list), POST /api/kid/reading-log
-    fetchMock
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ subjects: [] }) })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ books: [] }) })
-      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => newBook });
+    // FHS-387 — kid mode also fetches /api/kid/world-flags on mount, so use a
+    // URL-keyed mock (positional .once chains break on the extra call).
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      const method = (init as RequestInit | undefined)?.method ?? 'GET';
+      if (u.includes('/api/kid/world-flags'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ explored: [] }) });
+      if (u.includes('/api/kid/learn'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ subjects: [] }) });
+      if (u.includes('/api/kid/reading-log') && method === 'POST')
+        return Promise.resolve({ ok: true, status: 201, json: async () => newBook });
+      if (u.includes('/api/kid/reading-log'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [] }) });
+      return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+    });
 
     renderKidTab();
     await waitFor(() => expect(screen.getByTestId('reading-log')).toBeInTheDocument());
@@ -609,10 +628,25 @@ describe('kid mode (kidToken)', () => {
     const book = makeBook();
     const toggled = makeBook({ finished: true });
 
-    fetchMock
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ subjects: [] }) })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ books: [book] }) })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => toggled });
+    // FHS-387 — kid mode now also fetches /api/kid/world-flags on mount.
+    // Use mockImplementation so all calls resolve regardless of order.
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      const method = (init as RequestInit | undefined)?.method ?? 'GET';
+      if (u.includes('/api/kid/world-flags'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ explored: [] }),
+        });
+      if (u.includes('/api/kid/learn'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ subjects: [] }) });
+      if (u.includes(`/api/kid/reading-log/${BOOK_ID}`) && method === 'PATCH')
+        return Promise.resolve({ ok: true, status: 200, json: async () => toggled });
+      if (u.includes('/api/kid/reading-log'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [book] }) });
+      return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+    });
 
     renderKidTab();
     await waitFor(() =>
@@ -634,13 +668,68 @@ describe('kid mode (kidToken)', () => {
     });
   });
 
+  // FHS-387 — World Flags card shows real explored progress (MOCK-3).
+  it('in kid mode, World Flags card shows non-zero progress when explored > 0', async () => {
+    // The kid has explored 2 countries. COUNTRIES.length > 0, so progress > 0.
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/kid/world-flags/learn'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ progress: {} }) });
+      if (u.includes('/api/kid/world-flags'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ explored: ['NG', 'GH'] }),
+        });
+      if (u.includes('/api/kid/learn'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ subjects: [] }) });
+      if (u.includes('/api/kid/reading-log'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [] }) });
+      return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+    });
+    renderKidTab();
+    await waitFor(() =>
+      expect(screen.getByTestId('learn-subject-world-flags')).toBeInTheDocument(),
+    );
+    // The World Flags progress bar should show > 0% (2 explored of ~195 countries).
+    const progressBar = screen.getByTestId('learn-progress-World Flags');
+    const pct = Number(progressBar.getAttribute('aria-valuenow'));
+    expect(pct).toBeGreaterThan(0);
+  });
+
+  // FHS-387 — Art card has no progress bar (MOCK-4).
+  it('in kid mode, Art card shows "Free play" and has no progress bar', async () => {
+    installKidDefault([], []);
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument());
+    // No progress bar rendered for Art.
+    expect(screen.queryByTestId('learn-progress-Art')).not.toBeInTheDocument();
+    // "Free play" badge is shown instead.
+    expect(screen.getByTestId('learn-art-freeplay')).toBeInTheDocument();
+  });
+
   it('deleting a book sends DELETE to /api/kid/reading-log/:id', async () => {
     const book = makeBook();
 
-    fetchMock
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ subjects: [] }) })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ books: [book] }) })
-      .mockResolvedValueOnce({ ok: true, status: 204, json: async () => null });
+    // FHS-387 — kid mode now fetches /api/kid/world-flags on mount; use
+    // mockImplementation so all calls resolve regardless of order.
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      const method = (init as RequestInit | undefined)?.method ?? 'GET';
+      if (u.includes('/api/kid/world-flags'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ explored: [] }),
+        });
+      if (u.includes('/api/kid/learn'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ subjects: [] }) });
+      if (u.includes(`/api/kid/reading-log/${BOOK_ID}`) && method === 'DELETE')
+        return Promise.resolve({ ok: true, status: 204, json: async () => null });
+      if (u.includes('/api/kid/reading-log'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [book] }) });
+      return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+    });
 
     renderKidTab();
     await waitFor(() =>

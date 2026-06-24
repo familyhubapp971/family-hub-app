@@ -3,6 +3,7 @@ import { BookOpen, Book, Check, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
+import { COUNTRIES } from '../../../data/countries';
 import { WorldFlags } from './learn/world-flags/WorldFlags';
 import { LessonView } from './LessonView';
 import { ArtDrawingCanvas } from './learn/art/ArtDrawingCanvas';
@@ -26,6 +27,8 @@ const LESSON_SUBJECTS = ['Maths', 'Science', 'Logic'];
 interface Subject {
   subject: string;
   progress: number;
+  // FHS-387 — false for subjects with no server-side tracking (Art).
+  hasProgress?: boolean;
 }
 
 interface Book {
@@ -50,12 +53,15 @@ const SUBJECT_STYLE: Record<string, { emoji: string; bg: string }> = {
 };
 const FALLBACK_STYLE = { emoji: '⭐', bg: 'bg-gray-300' };
 
-// Art is a client-side-only activity (no API subject). Always shown after the
-// API subjects in both kid + parent modes.
-const ART_SUBJECT = { subject: 'Art', progress: 0 };
-// World Flags is injected for kid mode (the kid API doesn't include it in the
-// subjects list since it lives on its own endpoints). FHS-373.
-const WORLD_FLAGS_SUBJECT = { subject: 'World Flags', progress: 0 };
+// Art is a free-play canvas with no server-side progress tracking.
+// FHS-387 — hasProgress=false suppresses the progress bar for Art.
+const ART_SUBJECT = { subject: 'Art', progress: 0, hasProgress: false };
+// World Flags is injected for kid mode with a real explored progress (FHS-387).
+// In parent mode it also comes from the API subjects list as normal.
+const WORLD_FLAGS_SUBJECT = { subject: 'World Flags', progress: 0, hasProgress: true };
+
+// Total number of countries in the World Flags dataset (FHS-387).
+const TOTAL_COUNTRIES = COUNTRIES.length;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -78,6 +84,9 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
   // Learn subjects state
   const [learnStatus, setLearnStatus] = useState<Status>('loading');
   const [subjects, setSubjects] = useState<Subject[]>([]);
+
+  // FHS-387 — kid mode: real World Flags explored count → progress %.
+  const [kidWorldFlagsProgress, setKidWorldFlagsProgress] = useState<number>(0);
 
   // Reading log state
   const [books, setBooks] = useState<Book[]>([]);
@@ -126,6 +135,31 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
     void loadSubjects(ac.signal);
     return () => ac.abort();
   }, [loadSubjects]);
+
+  // ── FHS-387: Kid mode — fetch real World Flags explored progress ───────────
+
+  useEffect(() => {
+    if (!kid || !headers) return;
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/kid/world-flags`, {
+          headers,
+          signal: ac.signal,
+        });
+        if (!res.ok) return;
+        const body = (await res.json()) as { explored: string[] };
+        const explored = body.explored ?? [];
+        setKidWorldFlagsProgress(
+          TOTAL_COUNTRIES > 0 ? Math.round((explored.length / TOTAL_COUNTRIES) * 100) : 0,
+        );
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        // Non-fatal: leave progress at 0 if the fetch fails.
+      }
+    })();
+    return () => ac.abort();
+  }, [kid, headers]);
 
   // ── Load books ─────────────────────────────────────────────────────────────
 
@@ -315,9 +349,16 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
           )}
           {learnStatus === 'ready' && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {[...(kid ? [WORLD_FLAGS_SUBJECT] : []), ...subjects, ART_SUBJECT].map((s) => {
+              {[
+                // FHS-387 — in kid mode inject World Flags with real explored progress.
+                ...(kid ? [{ ...WORLD_FLAGS_SUBJECT, progress: kidWorldFlagsProgress }] : []),
+                ...subjects,
+                ART_SUBJECT,
+              ].map((s) => {
                 const style = SUBJECT_STYLE[s.subject] ?? FALLBACK_STYLE;
                 const pct = Math.max(0, Math.min(100, s.progress));
+                // FHS-387 — hasProgress defaults to true; Art has it set to false.
+                const showProgress = s.hasProgress !== false;
                 // Slug for testid: lowercase, spaces → hyphens
                 const slug = s.subject.toLowerCase().replace(/\s+/g, '-');
                 return (
@@ -328,29 +369,40 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                     onClick={() => setSelectedSubject(s.subject)}
                     className={`flex flex-col gap-4 rounded-xl border-2 border-black p-5 text-left shadow-neo-xs motion-safe:hover:-translate-y-1 ${style.bg} transition-transform`}
                   >
-                    {/* Icon + progress pill */}
+                    {/* Icon + progress pill (or "Free play" badge for Art) */}
                     <div className="flex items-center justify-between">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-black bg-white text-2xl">
                         <span aria-hidden="true">{style.emoji}</span>
                       </div>
-                      <span className="rounded-full border-2 border-black bg-white px-2 py-1 text-xs font-bold">
-                        {pct}%
-                      </span>
+                      {showProgress ? (
+                        <span className="rounded-full border-2 border-black bg-white px-2 py-1 text-xs font-bold">
+                          {pct}%
+                        </span>
+                      ) : (
+                        <span
+                          data-testid="learn-art-freeplay"
+                          className="rounded-full border-2 border-black bg-white px-2 py-1 text-xs font-bold"
+                        >
+                          Free play
+                        </span>
+                      )}
                     </div>
                     {/* Subject name */}
                     <h3 className="mb-2 font-heading text-xl">{s.subject}</h3>
-                    {/* Progress bar */}
-                    <div
-                      role="progressbar"
-                      aria-valuenow={pct}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={`${s.subject} progress`}
-                      data-testid={`learn-progress-${s.subject}`}
-                      className="h-3 w-full overflow-hidden rounded-full border-2 border-black bg-white/50"
-                    >
-                      <div className="h-full bg-black" style={{ width: `${pct}%` }} />
-                    </div>
+                    {/* Progress bar — omitted for Art (no trackable progress) */}
+                    {showProgress && (
+                      <div
+                        role="progressbar"
+                        aria-valuenow={pct}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${s.subject} progress`}
+                        data-testid={`learn-progress-${s.subject}`}
+                        className="h-3 w-full overflow-hidden rounded-full border-2 border-black bg-white/50"
+                      >
+                        <div className="h-full bg-black" style={{ width: `${pct}%` }} />
+                      </div>
+                    )}
                   </button>
                 );
               })}

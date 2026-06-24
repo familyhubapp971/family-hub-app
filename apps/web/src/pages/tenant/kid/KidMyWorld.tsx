@@ -96,10 +96,12 @@ export function KidMyWorld({
   const savedStickers = data.savings?.savedStickers ?? 0;
   const savedCash = data.savings?.savedCash ?? 0;
   const currency = data.savings?.currency ?? data.currency;
+  // FHS-387 — use the API-supplied rate; fall back to 0.5 if the server is old.
+  const stickerRate = data.savings?.stickerRate ?? 0.5;
   // FHS-376 — a reward request is paid from SAVINGS on approval, so Reward Goals
   // affordability + "more to go" are measured against savings (banked stars +
-  // banked cash at 0.5/star), not the spendable week balance.
-  const savingsStars = savedStickers + Math.floor(savedCash / 0.5);
+  // banked cash at stickerRate/star), not the spendable week balance.
+  const savingsStars = savedStickers + Math.floor(savedCash / stickerRate);
   const planted = data.investments.reduce((s, inv) => s + inv.originalInvestedStickers, 0);
   const bonus = Math.max(
     0,
@@ -111,7 +113,7 @@ export function KidMyWorld({
 
   // My Account "earned this week" = sum of the live week's habit progress.
   const earnedThisWeek = doneThisView;
-  const weeklyValue = (earnedThisWeek * 0.5).toFixed(2);
+  const weeklyValue = (earnedThisWeek * stickerRate).toFixed(2);
 
   const playEnter = !animatedOnce.current;
   animatedOnce.current = true;
@@ -363,6 +365,7 @@ export function KidMyWorld({
           earnedThisWeek={earnedThisWeek}
           weeklyValue={weeklyValue}
           currency={currency}
+          stickerRate={stickerRate}
         />
       </div>
     </motion.div>
