@@ -98,6 +98,15 @@ function mockAnthropicError(status = 500): Response {
   return new Response(JSON.stringify({ error: 'server error' }), { status });
 }
 
+// Exact host match (not a substring/startsWith) so the URL check is precise.
+function isAnthropicUrl(u: unknown): boolean {
+  try {
+    return new URL(String(u)).host === 'api.anthropic.com';
+  } catch {
+    return false;
+  }
+}
+
 const originalFetch = global.fetch;
 
 afterEach(() => {
@@ -127,9 +136,7 @@ describe('FHS-389 — GET /learn/maths/ai-lesson/status', () => {
     });
     expect(res.status).toBe(200);
     expect(((await res.json()) as { enabled: boolean }).enabled).toBe(false);
-    expect(
-      fetchSpy.mock.calls.filter(([u]) => String(u).startsWith('https://api.anthropic.com')),
-    ).toHaveLength(0);
+    expect(fetchSpy.mock.calls.filter(([u]) => isAnthropicUrl(u))).toHaveLength(0);
   });
 
   it('returns { enabled: true } when on, STILL with no Anthropic call', async () => {
@@ -141,9 +148,7 @@ describe('FHS-389 — GET /learn/maths/ai-lesson/status', () => {
     });
     expect(res.status).toBe(200);
     expect(((await res.json()) as { enabled: boolean }).enabled).toBe(true);
-    expect(
-      fetchSpy.mock.calls.filter(([u]) => String(u).startsWith('https://api.anthropic.com')),
-    ).toHaveLength(0);
+    expect(fetchSpy.mock.calls.filter(([u]) => isAnthropicUrl(u))).toHaveLength(0);
   });
 
   it('403 without a kid token', async () => {
@@ -167,9 +172,7 @@ describe('FHS-389 — POST /learn/maths/ai-lesson — flag OFF', () => {
     const body = (await res.json()) as { enabled: boolean };
     expect(body.enabled).toBe(false);
     // No Anthropic call made.
-    const anthropicCalls = fetchSpy.mock.calls.filter(([url]) =>
-      String(url).startsWith('https://api.anthropic.com'),
-    );
+    const anthropicCalls = fetchSpy.mock.calls.filter(([url]) => isAnthropicUrl(url));
     expect(anthropicCalls).toHaveLength(0);
   });
 
