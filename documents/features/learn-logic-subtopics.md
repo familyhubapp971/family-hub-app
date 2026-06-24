@@ -34,20 +34,11 @@
 - **Then** the response status is 400
 - **And** the error detail mentions the valid values
 
-### Story 2: A parent views Logic sub-topic questions for their child
-
-**As a** parent
-**I want** to fetch Logic questions filtered by sub-topic for my child
-**so that** I can see what content is available per skill area
-
-#### Acceptance criteria
-
-**Scenario: parent fetches Logic questions by sub-topic**
-
-- **Given** an authenticated parent with manage access to a child member
-- **When** the parent fetches `GET /api/learn/Logic/questions?memberId=<id>&subtopic=if-then`
-- **Then** the response status is 200
-- **And** all returned questions have `subtopic: "if-then"`
+> **Superseded by [ADR 0017](../decisions/0017-learn-is-kid-only.md) (FHS-382):**
+> Learn is now kid-only. The parent no longer takes lessons or fetches Logic
+> questions — parents will see progress via the read-only Learning Insights tab
+> (epic FHS-388). The former "Story 2: A parent views Logic questions" and the
+> parent `GET /api/learn/Logic/questions` endpoint have been removed.
 
 ## Sub-topic catalogue
 
@@ -62,11 +53,11 @@ Every (subtopic × difficulty) pair has at least 2 questions. Total Logic bank: 
 
 ## API contract
 
-Both endpoints (kid and parent) accept an optional `?subtopic=` query param:
+The kid endpoint accepts an optional `?subtopic=` query param (the parent
+endpoint was removed in FHS-382 — see [ADR 0017](../decisions/0017-learn-is-kid-only.md)):
 
-```
+```text
 GET /api/kid/learn/Logic/questions?difficulty=easy&subtopic=patterns
-GET /api/learn/Logic/questions?memberId=<uuid>&difficulty=easy&subtopic=patterns
 ```
 
 - Valid values: `patterns`, `odd-one-out`, `if-then`, `sorting`

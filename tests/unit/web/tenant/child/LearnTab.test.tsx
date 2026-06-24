@@ -448,3 +448,219 @@ describe('WorldFlagsLearn Explore', () => {
     expect(screen.getByTestId('world-cert-asia')).toBeInTheDocument();
   });
 });
+
+// ─── GAP 3: kid mode (kidToken) ───────────────────────────────────────────────
+//
+// <LearnTab kidToken="..."> routes to /api/kid/learn (subjects) and
+// /api/kid/reading-log (books). The parent /api/learn path is NEVER hit.
+
+const KID_TOKEN = 'kid.jwt.tok';
+
+function installKidDefault(
+  subjects: Array<{ subject: string; progress: number }>,
+  books: ReturnType<typeof makeBook>[],
+) {
+  fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+    const method = (init as RequestInit | undefined)?.method ?? 'GET';
+    // Kid world-flags stubs (for when World Flags is clicked in kid mode)
+    if ((url as string).includes('/api/kid/world-flags/learn')) {
+      if (method === 'POST') {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ completed: true }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ progress: {} }) });
+    }
+    if ((url as string).includes('/api/kid/world-flags')) {
+      if (method === 'POST') {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ explored: true }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ explored: [] }) });
+    }
+    // Kid learn + reading-log
+    if ((url as string).includes('/api/kid/learn')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ subjects }) });
+    }
+    if ((url as string).includes('/api/kid/reading-log')) {
+      if (method === 'POST') {
+        // Return the first element of the books array as the newly created book,
+        // or a default if none supplied.
+        const newBook = books[0] ?? makeBook();
+        return Promise.resolve({ ok: true, status: 201, json: async () => newBook });
+      }
+      if (method === 'PATCH') {
+        const existing = books[0] ?? makeBook({ finished: true });
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ...existing, finished: !existing.finished }),
+        });
+      }
+      if (method === 'DELETE') {
+        return Promise.resolve({ ok: true, status: 204, json: async () => null });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ books }) });
+    }
+    // Reject any accidental hit to the PARENT /api/learn or /api/reading-log
+    if ((url as string).includes('/api/learn') || (url as string).includes('/api/reading-log')) {
+      throw new Error(`kid mode should not call parent route: ${url}`);
+    }
+    return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+  });
+}
+
+function renderKidTab() {
+  // kid mode: kidToken prop, no memberId. TenantProvider context still needed
+  // because WorldFlags inside the tab may read the slug.
+  return render(
+    <MemoryRouter initialEntries={['/t/khan/child/' + CHILD]}>
+      <Routes>
+        <Route
+          path="/t/:slug/child/:memberId"
+          element={
+            <TenantProvider>
+              <LearnTab kidToken={KID_TOKEN} />
+            </TenantProvider>
+          }
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+describe('kid mode (kidToken)', () => {
+  it('fetches subjects from /api/kid/learn, not /api/learn', async () => {
+    installKidDefault(
+      [
+        { subject: 'Maths', progress: 30 },
+        { subject: 'Science', progress: 10 },
+      ],
+      [],
+    );
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
+    // Confirm every fetch call went to /api/kid/* — never the parent path.
+    const calls = fetchMock.mock.calls as [string][];
+    const parentHits = calls.filter(([url]) => /\/api\/learn(?!\/)/.test(url as string));
+    expect(parentHits).toHaveLength(0);
+  });
+
+  it('renders subject cards from /api/kid/learn', async () => {
+    installKidDefault(
+      [
+        { subject: 'Maths', progress: 50 },
+        { subject: 'Logic', progress: 0 },
+      ],
+      [],
+    );
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
+    expect(screen.getByTestId('learn-subject-logic')).toBeInTheDocument();
+  });
+
+  it('fetches books from /api/kid/reading-log, not /api/reading-log', async () => {
+    installKidDefault([], [makeBook()]);
+    renderKidTab();
+    await waitFor(() =>
+      expect(screen.getByTestId(`reading-log-item-${BOOK_ID}`)).toBeInTheDocument(),
+    );
+    const calls = fetchMock.mock.calls as [string][];
+    const parentHits = calls.filter(
+      ([url]) =>
+        /\/api\/reading-log(?!\/)/.test(url as string) && !(url as string).includes('/api/kid/'),
+    );
+    expect(parentHits).toHaveLength(0);
+  });
+
+  it('adding a book POSTs to /api/kid/reading-log with no memberId in the body', async () => {
+    const newBook = makeBook({ title: 'Narnia' });
+    // Sequence: GET /api/kid/learn, GET /api/kid/reading-log (empty list), POST /api/kid/reading-log
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ subjects: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ books: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => newBook });
+
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('reading-log')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('reading-log-empty')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('reading-log-add-title'), {
+        target: { value: 'Narnia' },
+      });
+      fireEvent.click(screen.getByTestId('reading-log-add-submit'));
+    });
+
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls as [string, RequestInit][];
+      const postCall = calls.find(
+        ([url, init]) =>
+          (url as string).includes('/api/kid/reading-log') &&
+          (init as RequestInit)?.method === 'POST',
+      );
+      expect(postCall).toBeTruthy();
+      const [, init] = postCall!;
+      const sentBody = JSON.parse((init as RequestInit).body as string) as Record<string, unknown>;
+      // Kid mode must NOT send memberId — the API scopes from the token.
+      expect(sentBody).not.toHaveProperty('memberId');
+      expect(sentBody.title).toBe('Narnia');
+    });
+  });
+
+  it('toggling a book PATCHes /api/kid/reading-log/:id', async () => {
+    const book = makeBook();
+    const toggled = makeBook({ finished: true });
+
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ subjects: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ books: [book] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => toggled });
+
+    renderKidTab();
+    await waitFor(() =>
+      expect(screen.getByTestId(`reading-log-toggle-${BOOK_ID}`)).toBeInTheDocument(),
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId(`reading-log-toggle-${BOOK_ID}`));
+    });
+
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls as [string, RequestInit][];
+      const patchCall = calls.find(
+        ([url, init]) =>
+          (url as string).includes(`/api/kid/reading-log/${BOOK_ID}`) &&
+          (init as RequestInit)?.method === 'PATCH',
+      );
+      expect(patchCall).toBeTruthy();
+    });
+  });
+
+  it('deleting a book sends DELETE to /api/kid/reading-log/:id', async () => {
+    const book = makeBook();
+
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ subjects: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ books: [book] }) })
+      .mockResolvedValueOnce({ ok: true, status: 204, json: async () => null });
+
+    renderKidTab();
+    await waitFor(() =>
+      expect(screen.getByTestId(`reading-log-delete-${BOOK_ID}`)).toBeInTheDocument(),
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId(`reading-log-delete-${BOOK_ID}`));
+    });
+
+    await waitFor(() =>
+      expect(screen.queryByTestId(`reading-log-item-${BOOK_ID}`)).not.toBeInTheDocument(),
+    );
+
+    const calls = fetchMock.mock.calls as [string, RequestInit][];
+    const deleteCall = calls.find(
+      ([url, init]) =>
+        (url as string).includes(`/api/kid/reading-log/${BOOK_ID}`) &&
+        (init as RequestInit)?.method === 'DELETE',
+    );
+    expect(deleteCall).toBeTruthy();
+  });
+});

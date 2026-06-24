@@ -56,9 +56,6 @@ function installApi() {
     if (u.includes('/api/journal')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ entries: [] }) });
     }
-    if (u.includes('/api/learn')) {
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ subjects: [] }) });
-    }
     // /api/habits
     return Promise.resolve({
       ok: true,
@@ -107,12 +104,13 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('<ChildWorldPage />', () => {
-  it('renders the five ChildWorld tabs with My World active', async () => {
+  it('renders the four ChildWorld tabs with My World active (FHS-382: Learn tab removed)', async () => {
     renderAt();
     await waitFor(() => expect(screen.getByTestId('child-world')).toBeInTheDocument());
-    for (const label of ['My World', 'Meals', 'Calendar', 'Journal', 'Learn']) {
+    for (const label of ['My World', 'Meals', 'Calendar', 'Journal']) {
       expect(screen.getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
     }
+    expect(screen.queryByRole('tab', { name: /Learn/ })).not.toBeInTheDocument();
     expect(screen.getByTestId('child-panel-world')).toBeInTheDocument();
   });
 

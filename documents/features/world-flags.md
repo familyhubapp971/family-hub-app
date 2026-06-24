@@ -15,10 +15,10 @@ There are two phases:
   When a kid scores 100% on a set's quiz, the app marks that set complete.
   The next set in the continent unlocks.
 
-Both parent (admin) routes and kid-scoped routes exist.
-The parent routes (`/api/world-flags`) require a `memberId` param and standard
-adult auth. The kid routes (`/api/kid/world-flags`) use the kid session token —
-the kid can only ever access their own data.
+World Flags is kid-only (the parent `/api/world-flags` routes were removed in
+FHS-382 — see [ADR 0017](../decisions/0017-learn-is-kid-only.md)). The kid routes
+(`/api/kid/world-flags`) use the kid session token — the kid can only ever access
+their own data.
 
 ---
 

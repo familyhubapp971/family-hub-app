@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, CalendarDays, Home, LogOut, PenLine, Utensils } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Home, LogOut, PenLine, Utensils } from 'lucide-react';
 import { TopNav, type TopNavTab, Dropdown } from '@familyhub/ui';
 import { useAuth, signOutAll } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
@@ -9,7 +9,6 @@ import { MyWorldTab } from './MyWorldTab';
 import { MealsTab } from './MealsTab';
 import { CalendarTab } from './CalendarTab';
 import { JournalTab } from './JournalTab';
-import { LearnTab } from './LearnTab';
 
 // FHS-268 — ChildWorld shell.
 //
@@ -29,7 +28,6 @@ const CHILD_TABS: ChildTab[] = [
   { id: 'meals', label: 'Meals', icon: <Utensils size={16} aria-hidden="true" /> },
   { id: 'calendar', label: 'Calendar', icon: <CalendarDays size={16} aria-hidden="true" /> },
   { id: 'journal', label: 'Journal', icon: <PenLine size={16} aria-hidden="true" /> },
-  { id: 'learn', label: 'Learn', icon: <BookOpen size={16} aria-hidden="true" /> },
 ];
 
 const DEFAULT_TAB = 'world';
@@ -237,10 +235,8 @@ export function ChildWorldPage() {
             <MealsTab memberId={memberId} />
           ) : active.id === 'calendar' ? (
             <CalendarTab memberId={memberId} />
-          ) : active.id === 'journal' ? (
-            <JournalTab memberId={memberId} />
           ) : (
-            <LearnTab memberId={memberId} />
+            <JournalTab memberId={memberId} />
           )}
         </section>
       </main>
