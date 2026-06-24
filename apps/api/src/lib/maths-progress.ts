@@ -20,20 +20,41 @@ export const PROVE_SCORE_THRESHOLD = 10;
 /** Prove stage: maximum average seconds per answer to "pass" with speed. */
 export const PROVE_TIME_THRESHOLD = 5;
 
+/**
+ * Placement gate: maximum seconds per answer to auto-master a table.
+ * Deliberately stricter than PROVE_TIME_THRESHOLD (5s) — placement is a
+ * fast-check shortcut, not a casual prove run. A kid who answers in ≤4s has
+ * clearly mastered the table; 4.001s is not penalised in prove, but it does
+ * not trigger the placement cascade.
+ */
+export const PLACEMENT_TIME_THRESHOLD_SECONDS = 4;
+
 // ─── Zod schemas (request body validation) ────────────────────────────────────
 
 export const operationSchema = z.enum(['addition', 'subtraction', 'multiplication', 'division']);
 export type MathsOperation = z.infer<typeof operationSchema>;
 
 /** PUT /api/kid/maths/progress body. */
-export const updateProgressBodySchema = z.object({
-  operation: operationSchema,
-  tableNumber: z.number().int().min(1).max(12),
-  learnCompleted: z.boolean().optional(),
-  practiceCorrect: z.number().int().min(0).optional(),
-  proveScore: z.number().int().min(0).optional(),
-  proveAvgTime: z.number().min(0).optional(),
-});
+export const updateProgressBodySchema = z
+  .object({
+    operation: operationSchema,
+    tableNumber: z.number().int().min(1).max(12),
+    learnCompleted: z.boolean().optional(),
+    practiceCorrect: z.number().int().min(0).optional(),
+    proveScore: z.number().int().min(0).optional(),
+    proveAvgTime: z.number().min(0).optional(),
+  })
+  .refine(
+    (d) =>
+      d.learnCompleted !== undefined ||
+      d.practiceCorrect !== undefined ||
+      d.proveScore !== undefined ||
+      d.proveAvgTime !== undefined,
+    {
+      message:
+        'At least one stage field (learnCompleted, practiceCorrect, proveScore, proveAvgTime) must be provided',
+    },
+  );
 
 /** POST /api/kid/maths/placement body. */
 export const placementBodySchema = z.object({
@@ -74,7 +95,7 @@ export const certBodySchema = z.object({
         ].includes(v),
       { message: 'difficulty must be easy|medium|hard or a table number 1-12' },
     ),
-  totalCorrect: z.number().int().positive(),
+  totalCorrect: z.number().int().positive().max(1000),
 });
 
 // ─── Response Zod schemas (used in registry + route return types) ──────────────
@@ -300,7 +321,7 @@ export async function applyPlacement(
   const unlockedSet = new Set<number>();
 
   for (const result of results) {
-    if (!result.correct || result.timeSeconds > 4) continue;
+    if (!result.correct || result.timeSeconds > PLACEMENT_TIME_THRESHOLD_SECONDS) continue;
 
     // Master every table from 1 up to result.tableNumber.
     for (let t = 1; t <= result.tableNumber; t++) {
@@ -320,9 +341,10 @@ export async function applyPlacement(
         .onConflictDoNothing()
         .returning();
 
-      // Only count tables where we actually inserted a new row.
+      // Report EVERY table newly inserted, not just the trigger table.
+      // This means tableNumber 3 qualifying returns unlocked = [1,2,3].
       if (progressRow) {
-        unlockedSet.add(result.tableNumber);
+        unlockedSet.add(t);
 
         await db
           .insert(mwMathsCertificates)

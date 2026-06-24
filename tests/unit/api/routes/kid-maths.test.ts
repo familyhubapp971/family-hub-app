@@ -48,6 +48,17 @@ async function mintKidToken(secondsFromNow = 3600): Promise<string> {
     .sign(KEY);
 }
 
+/** A token with scope:'parent' — getKidAuth should reject it with 403. */
+async function mintParentScopeToken(): Promise<string> {
+  return new SignJWT({ scope: 'parent', tenantId: TENANT_ID, tenantSlug: TENANT_SLUG })
+    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+    .setSubject(MEMBER_ID)
+    .setIssuer(KID_ISSUER)
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(Date.now() / 1000) + 3600)
+    .sign(KEY);
+}
+
 function buildApp() {
   const app = new Hono();
   app.route('/api/kid', kidRouter);
@@ -340,5 +351,44 @@ describe('FHS-394 — POST /api/kid/maths/certificates', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { alreadyEarned: boolean };
     expect(body.alreadyEarned).toBe(true);
+  });
+
+  it('400 when totalCorrect exceeds the max cap (1000)', async () => {
+    const token = await mintKidToken();
+    const res = await buildApp().request('/api/kid/maths/certificates', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operation: 'addition', difficulty: 'easy', totalCorrect: 9999 }),
+    });
+    expect(res.status).toBe(400);
+  });
+});
+
+// ─── PUT progress: at least one stage field required ─────────────────────────
+
+describe('FHS-394 — PUT /api/kid/maths/progress — stage-field requirement', () => {
+  it('400 when body has operation + tableNumber but no stage field', async () => {
+    const token = await mintKidToken();
+    const res = await buildApp().request('/api/kid/maths/progress', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operation: 'addition', tableNumber: 5 }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe('invalid request');
+  });
+});
+
+// ─── Auth: parent-scope token is rejected on kid routes ──────────────────────
+
+describe('FHS-394 — parent-scope token rejected on kid maths routes', () => {
+  it('403 when a token with scope:parent hits GET /api/kid/maths/progress', async () => {
+    const token = await mintParentScopeToken();
+    const res = await buildApp().request('/api/kid/maths/progress', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    // kid-auth middleware rejects non-child scope tokens.
+    expect(res.status).toBe(403);
   });
 });

@@ -377,4 +377,89 @@ describeFeature(feature, ({ Background, Scenario }) => {
       );
     },
   );
+
+  // ─── Scenario: same-tenant member isolation ───────────────────────────────────
+
+  Scenario(
+    "same-tenant member isolation — a sibling sees none of Maya's progress",
+    ({ Given, When, Then, And }) => {
+      Given('a sibling "Lily" in the same tenant as Maya', async () => {
+        // Resolve Maya's tenant from the existing token (tenantId is in the JWT).
+        // We need the real tenantId — look it up from the members table via Maya's token,
+        // which we can do by querying the DB for the sole 'maths-fam' tenant inserted in Background.
+        const [tenant] = await db.select({ id: tenants.id }).from(tenants).limit(1);
+        const [lily] = await db
+          .insert(members)
+          .values({ tenantId: tenant!.id, displayName: 'Lily', role: 'child', isChild: true })
+          .returning();
+        tokens.set('Lily', await mintKidToken(lily!.id, tenant!.id, 'maths-fam'));
+      });
+
+      When(
+        '"Maya" PUTs /api/kid/maths/progress with operation "addition" tableNumber 7 learnCompleted true',
+        async () => {
+          await app.request('/api/kid/maths/progress', {
+            method: 'PUT',
+            headers: jsonAuth('Maya'),
+            body: JSON.stringify({ operation: 'addition', tableNumber: 7, learnCompleted: true }),
+          });
+        },
+      );
+      And(
+        '"Maya" POSTs /api/kid/maths/certificates with operation "addition" difficulty "7" totalCorrect 10',
+        async () => {
+          await app.request('/api/kid/maths/certificates', {
+            method: 'POST',
+            headers: jsonAuth('Maya'),
+            body: JSON.stringify({ operation: 'addition', difficulty: '7', totalCorrect: 10 }),
+          });
+        },
+      );
+      When('"Lily" GETs /api/kid/maths/progress', async () => {
+        progressGetRes = await app.request('/api/kid/maths/progress', { headers: authFor('Lily') });
+        progressListBody = (await progressGetRes.json()) as typeof progressListBody;
+      });
+      Then('the maths progress list is empty', () =>
+        expect(progressListBody.progress).toHaveLength(0),
+      );
+      When('"Lily" GETs /api/kid/maths/certificates', async () => {
+        certGetRes = await app.request('/api/kid/maths/certificates', { headers: authFor('Lily') });
+        certListBody = (await certGetRes.json()) as typeof certListBody;
+      });
+      Then('the certificates list is empty', () =>
+        expect(certListBody.certificates).toHaveLength(0),
+      );
+    },
+  );
+
+  // ─── Scenario: all-wrong placement ────────────────────────────────────────────
+
+  Scenario(
+    'all-wrong placement returns empty unlocked and writes no rows',
+    ({ When, Then, And }) => {
+      When(
+        '"Maya" POSTs /api/kid/maths/placement with all-wrong results for operation "addition" tableNumber 5',
+        async () => {
+          placementRes = await app.request('/api/kid/maths/placement', {
+            method: 'POST',
+            headers: jsonAuth('Maya'),
+            body: JSON.stringify({
+              operation: 'addition',
+              results: [{ tableNumber: 5, correct: false, timeSeconds: 1 }],
+            }),
+          });
+          placementBody = (await placementRes.json()) as typeof placementBody;
+        },
+      );
+      Then('the placement response status is 200', () => expect(placementRes.status).toBe(200));
+      And('the unlocked list is empty', () => expect(placementBody.unlocked).toHaveLength(0));
+      When('"Maya" GETs /api/kid/maths/progress', async () => {
+        progressGetRes = await app.request('/api/kid/maths/progress', { headers: authFor('Maya') });
+        progressListBody = (await progressGetRes.json()) as typeof progressListBody;
+      });
+      Then('the maths progress list is empty', () =>
+        expect(progressListBody.progress).toHaveLength(0),
+      );
+    },
+  );
 });

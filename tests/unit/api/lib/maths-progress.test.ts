@@ -47,6 +47,7 @@ import {
   awardCertificate,
   PRACTICE_THRESHOLD,
   PROVE_SCORE_THRESHOLD,
+  PLACEMENT_TIME_THRESHOLD_SECONDS,
 } from '../../../../apps/api/src/lib/maths-progress.js';
 
 const TENANT = '11111111-1111-4111-8111-111111111111';
@@ -142,20 +143,21 @@ describe('applyPlacement — cascade logic', () => {
   });
 
   it('returns unlocked list sorted ascending when multiple tables are hit', async () => {
-    // Two results: table 1 (slow) and table 3 (fast). Only table 3 cascades.
-    let tableNum = 0;
+    // Two results: table 1 (wrong) and table 3 (fast). Only table 3 cascades,
+    // but the cascade inserts t=1, t=2, t=3 → unlocked = [1,2,3].
+    let insertCallCount = 0;
     const insertMock = vi.fn().mockImplementation(() => ({
       values: vi.fn().mockReturnValue({
         onConflictDoNothing: vi.fn().mockReturnValue({
           returning: vi.fn().mockImplementation(() => {
-            tableNum++;
+            insertCallCount++;
             return Promise.resolve([
               {
                 id: 'x',
                 tenantId: TENANT,
                 memberId: MEMBER,
                 operation: 'addition',
-                tableNumber: tableNum,
+                tableNumber: insertCallCount,
                 learnCompleted: true,
                 practiceCorrect: 10,
                 proveScore: 10,
@@ -176,8 +178,89 @@ describe('applyPlacement — cascade logic', () => {
       { tableNumber: 3, correct: true, timeSeconds: 3 },
     ]);
 
-    // Only table 3 triggers; returns [3].
-    expect(unlocked).toEqual([3]);
+    // Table 3 triggers the cascade → tables 1,2,3 newly inserted.
+    expect(unlocked).toEqual([1, 2, 3]);
+  });
+
+  // ─── Boundary: exactly at the threshold (≤4s unlocks; >4s does not) ──────────
+
+  it(`unlocks when timeSeconds === ${PLACEMENT_TIME_THRESHOLD_SECONDS} (at the boundary)`, async () => {
+    const fakeRow = {
+      id: 'e1',
+      tenantId: TENANT,
+      memberId: MEMBER,
+      operation: 'addition',
+      tableNumber: 1,
+      learnCompleted: true,
+      practiceCorrect: PRACTICE_THRESHOLD,
+      proveScore: PROVE_SCORE_THRESHOLD,
+      proveAvgTime: PLACEMENT_TIME_THRESHOLD_SECONDS,
+      placementUnlocked: true,
+      updatedAt: new Date(),
+    };
+    const insertMock = vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        onConflictDoNothing: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([fakeRow]),
+        }),
+      }),
+    });
+    const db = { insert: insertMock } as unknown as Parameters<typeof applyPlacement>[0];
+
+    const unlocked = await applyPlacement(db, TENANT, MEMBER, 'addition', [
+      { tableNumber: 1, correct: true, timeSeconds: PLACEMENT_TIME_THRESHOLD_SECONDS },
+    ]);
+
+    expect(unlocked).toContain(1);
+  });
+
+  it('does NOT unlock when timeSeconds is just above the threshold', async () => {
+    const insertMock = makeInsertMock([]);
+    const db = { insert: insertMock } as unknown as Parameters<typeof applyPlacement>[0];
+
+    const unlocked = await applyPlacement(db, TENANT, MEMBER, 'addition', [
+      // 4.001 > 4 — should be filtered out before any DB call.
+      { tableNumber: 1, correct: true, timeSeconds: 4.001 },
+    ]);
+
+    expect(unlocked).toHaveLength(0);
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+
+  it('single result tableNumber:3 on blank slate returns unlocked containing 1,2,3', async () => {
+    let t = 0;
+    const insertMock = vi.fn().mockImplementation(() => ({
+      values: vi.fn().mockReturnValue({
+        onConflictDoNothing: vi.fn().mockReturnValue({
+          returning: vi.fn().mockImplementation(() => {
+            t++;
+            return Promise.resolve([
+              {
+                id: `row-${t}`,
+                tenantId: TENANT,
+                memberId: MEMBER,
+                operation: 'multiplication',
+                tableNumber: t,
+                learnCompleted: true,
+                practiceCorrect: PRACTICE_THRESHOLD,
+                proveScore: PROVE_SCORE_THRESHOLD,
+                proveAvgTime: 2,
+                placementUnlocked: true,
+                updatedAt: new Date(),
+              },
+            ]);
+          }),
+        }),
+      }),
+    }));
+
+    const db = { insert: insertMock } as unknown as Parameters<typeof applyPlacement>[0];
+
+    const unlocked = await applyPlacement(db, TENANT, MEMBER, 'multiplication', [
+      { tableNumber: 3, correct: true, timeSeconds: 2 },
+    ]);
+
+    expect(unlocked).toEqual([1, 2, 3]);
   });
 });
 

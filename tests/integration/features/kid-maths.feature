@@ -56,3 +56,19 @@ Feature: Kid Maths Progression (FHS-394)
     When "Maya" POSTs /api/kid/maths/certificates with operation "multiplication" difficulty "6" totalCorrect 10
     When "Omar" GETs /api/kid/maths/certificates
     Then the certificates list is empty
+
+  Scenario: same-tenant member isolation — a sibling sees none of Maya's progress
+    Given a sibling "Lily" in the same tenant as Maya
+    When "Maya" PUTs /api/kid/maths/progress with operation "addition" tableNumber 7 learnCompleted true
+    And "Maya" POSTs /api/kid/maths/certificates with operation "addition" difficulty "7" totalCorrect 10
+    When "Lily" GETs /api/kid/maths/progress
+    Then the maths progress list is empty
+    When "Lily" GETs /api/kid/maths/certificates
+    Then the certificates list is empty
+
+  Scenario: all-wrong placement returns empty unlocked and writes no rows
+    When "Maya" POSTs /api/kid/maths/placement with all-wrong results for operation "addition" tableNumber 5
+    Then the placement response status is 200
+    And the unlocked list is empty
+    When "Maya" GETs /api/kid/maths/progress
+    Then the maths progress list is empty
