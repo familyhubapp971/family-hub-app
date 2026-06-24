@@ -6,7 +6,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 // with a kid JWT: the MP header (avatar + name + banked stars/cash), the
 // five-tab kid world (My World, Meals, Calendar, Journal, Learn — no parent
 // profile pill / admin links), and a Switch user button that drops the token
-// + returns to kid-login. My World carries the kid's habits, tasks, notices.
+// + returns to kid-login. My World carries the kid's habits + tasks.
 
 import { KidDashboardShell } from '../../../../apps/web/src/pages/tenant/KidDashboardShell';
 import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
@@ -51,7 +51,7 @@ function renderShell() {
 
 // The shell makes two boot calls: GET /api/kid/me (session confirm) and
 // GET /api/kid/profile (header). This default routes both; the My World
-// data feeds (today/tasks/notices) fall through to empty.
+// data feeds (today/tasks) fall through to empty.
 function mockKidBoot(over?: (url: string) => unknown) {
   fetchMock.mockImplementation((url: string) => {
     const u = String(url);
@@ -156,7 +156,7 @@ afterEach(() => {
 });
 
 describe('<KidDashboardShell />', () => {
-  it('renders the five kid tabs and a Switch user button', async () => {
+  it('renders the six kid tabs and a Switch user button', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
@@ -166,6 +166,7 @@ describe('<KidDashboardShell />', () => {
     expect(screen.getByRole('tab', { name: /Calendar/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Journal/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Learn/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Tasks/ })).toBeInTheDocument();
   });
 
   it('shows the kid name + banked stars from GET /api/kid/profile', async () => {
@@ -255,32 +256,12 @@ describe('<KidDashboardShell />', () => {
     expect(screen.getByText('Pasta')).toBeInTheDocument();
   });
 
-  // FHS-370 — Notices is its own kid tab now (off My World).
-  it('Notices tab shows family notices from GET /api/kid/notices', async () => {
+  // FHS-386 — Notices was removed from the kid view; the tab must not render.
+  it('has no Notices tab (removed in FHS-386)', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
-    mockKidBoot((u) =>
-      u.includes('/api/kid/notices')
-        ? {
-            notices: [
-              {
-                id: 'n1',
-                body: 'Tidy your room',
-                pinned: false,
-                authorName: 'Mum',
-                icon: '📣',
-                createdAt: '2026-06-18T00:00:00.000Z',
-              },
-            ],
-          }
-        : undefined,
-    );
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-dashboard')).toBeInTheDocument());
-    act(() => {
-      fireEvent.click(screen.getByRole('tab', { name: /Notices/ }));
-    });
-    await waitFor(() => expect(screen.getByTestId('kid-notices-list')).toBeInTheDocument());
-    expect(screen.getByText('Tidy your room')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Notices/ })).not.toBeInTheDocument();
   });
 
   // FHS-370 — Tasks is its own kid tab now (off My World); ticking PATCHes.
