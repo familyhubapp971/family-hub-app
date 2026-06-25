@@ -39,6 +39,7 @@ import {
   mwLogicProgress,
   mwMathsCertificates,
   mwMathsProgress,
+  worldFlagsLearnProgress,
   worldFlagsProgress,
 } from '../db/schema.js';
 import type { Database } from '../db/client.js';
@@ -91,6 +92,19 @@ export interface SubjectInsight {
    * World Flags:  null — quiz attempt tracking not yet implemented server-side.
    */
   accuracyPct: number | null;
+  /**
+   * FHS-401 — World Flags only: number of continents the child has started
+   * exploring in the Learn path (distinct continents with ≥1 completed chunk
+   * in world_flags_learn_progress). Always 0 for non-WF subjects.
+   */
+  continentsExplored: number;
+  /** FHS-401 — World Flags only: total continents (6). Always 0 for non-WF subjects. */
+  continentsTotal: number;
+  /**
+   * FHS-401 — World Flags only: names of explored continents, e.g. ["Africa", "Asia"].
+   * Always [] for non-WF subjects.
+   */
+  exploredContinents: string[];
 }
 
 export interface WeakestDetail {
@@ -145,6 +159,8 @@ interface ScienceRaw {
 interface WorldFlagsRaw {
   explored: number;
   lastActive: Date | null;
+  /** Distinct continent names with ≥1 completed chunk in world_flags_learn_progress. */
+  exploredContinents: string[];
 }
 
 // ─── Per-subject DB queries ───────────────────────────────────────────────────
@@ -294,9 +310,23 @@ async function fetchWorldFlags(
       and(eq(worldFlagsProgress.tenantId, tenantId), eq(worldFlagsProgress.memberId, memberId)),
     );
 
+  // FHS-401 — distinct continent names the child has touched in the Learn path.
+  // A continent is "explored" as soon as one chunk in it has been completed.
+  const continentRows = await db
+    .select({ continent: worldFlagsLearnProgress.continent })
+    .from(worldFlagsLearnProgress)
+    .where(
+      and(
+        eq(worldFlagsLearnProgress.tenantId, tenantId),
+        eq(worldFlagsLearnProgress.memberId, memberId),
+      ),
+    )
+    .groupBy(worldFlagsLearnProgress.continent);
+
   return {
     explored: Number(row?.explored ?? 0),
     lastActive: row?.lastActive ?? null,
+    exploredContinents: continentRows.map((r) => r.continent),
   };
 }
 
@@ -408,6 +438,9 @@ export async function computeLearnInsights(
       maths.totalAttempts,
     ),
     accuracyPct: mathsAccuracy,
+    continentsExplored: 0,
+    continentsTotal: 0,
+    exploredContinents: [],
   };
 
   // ── Logic subject ────────────────────────────────────────────────────────
@@ -426,6 +459,9 @@ export async function computeLearnInsights(
     lastActive: logic.lastActive?.toISOString() ?? null,
     needsHelp: logicNeedsHelp(logic.certsEarned, logic.sumCorrect, logic.sumAttempts),
     accuracyPct: logicAccuracy,
+    continentsExplored: 0,
+    continentsTotal: 0,
+    exploredContinents: [],
   };
 
   // ── Science subject ──────────────────────────────────────────────────────
@@ -449,6 +485,9 @@ export async function computeLearnInsights(
     lastActive: science.lastActive?.toISOString() ?? null,
     needsHelp: scienceNeedsHelp(science.totalAnswered, science.totalCorrect),
     accuracyPct: scienceAccuracy,
+    continentsExplored: 0,
+    continentsTotal: 0,
+    exploredContinents: [],
   };
 
   // ── World Flags subject ──────────────────────────────────────────────────
@@ -477,6 +516,9 @@ export async function computeLearnInsights(
     lastActive: flags.lastActive?.toISOString() ?? null,
     needsHelp: worldFlagsNeedsHelp(flags.explored),
     accuracyPct: null,
+    continentsExplored: flags.exploredContinents.length,
+    continentsTotal: WORLD_FLAGS_CONTINENTS_TOTAL,
+    exploredContinents: flags.exploredContinents,
   };
 
   const subjects: SubjectInsight[] = [mathsSubject, logicSubject, scienceSubject, flagsSubject];

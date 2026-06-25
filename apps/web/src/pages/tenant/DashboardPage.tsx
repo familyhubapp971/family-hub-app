@@ -9,13 +9,15 @@ import { CalendarTabPanel } from './dashboard/CalendarTabPanel';
 import { AssignmentsTabPanel } from './dashboard/AssignmentsTabPanel';
 import { NoticeboardTabPanel } from './dashboard/NoticeboardTabPanel';
 import { TasksTabPanel } from './dashboard/TasksTabPanel';
-import { LearningInsightsTabPanel } from './dashboard/LearningInsightsTabPanel';
 import { AppHeader } from './AppHeader';
 import { TABS, DEFAULT_TAB } from './dashboard-tabs';
 
 // FHS-227 + FHS-261 — Parent Dashboard shell. Six tabs gated by the
 // `?tab=<id>` URL query so deep-links + browser back-button work.
 // Default tab = `home` (TodayTabPanel / FHS-228).
+//
+// FHS-401 — Learning Insights tab removed from dashboard; relocated to
+// each child's ChildWorldPage as the 5th tab.
 //
 // FHS-261 replaced the original header with FamilyHero + ProfilePill
 // + per-tab badges. That header now lives in AppHeader (shared with
@@ -88,10 +90,6 @@ function ParentDashboard() {
             // page with its own white cards + white header text; the leftover
             // white Card wrapper made the header invisible (white-on-white).
             <MealsTabPanel />
-          ) : active.id === 'learning-insights' ? (
-            // FHS-385 — Learning Insights renders on the purple page with its
-            // own white cards (matches neo-brutalist MP spec for this tab).
-            <LearningInsightsTabPanel />
           ) : (
             <Card className="bg-white p-6 text-gray-900 md:p-8">
               {active.id === 'assignments' ? (

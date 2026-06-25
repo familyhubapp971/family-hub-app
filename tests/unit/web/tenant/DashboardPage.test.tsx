@@ -187,70 +187,22 @@ afterEach(() => {
 });
 
 describe('<DashboardPage /> — tab framework', () => {
-  it('renders seven tabs in the nav including Learning Insights (FHS-385, FHS-392)', () => {
+  it('renders six tabs in the nav (FHS-401: Learning Insights moved to child world view)', () => {
     renderAt('/t/khans/dashboard');
-    for (const label of [
-      'Dashboard',
-      'Meals',
-      'Calendar',
-      'Assignments',
-      'Noticeboard',
-      'Tasks',
-      'Learning Insights',
-    ]) {
+    for (const label of ['Dashboard', 'Meals', 'Calendar', 'Assignments', 'Noticeboard', 'Tasks']) {
       expect(screen.getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
     }
-    // Reward Requests tab no longer lives on the parent dashboard
+    // Learning Insights tab removed from parent dashboard (FHS-401)
+    expect(screen.queryByRole('tab', { name: /Learning Insights/ })).not.toBeInTheDocument();
+    // Reward Requests tab also not on parent dashboard
     expect(screen.queryByRole('tab', { name: /Reward Requests/ })).not.toBeInTheDocument();
   });
 
-  it('?tab=learning-insights renders the learning-insights panel (FHS-385)', async () => {
-    // Extend the default mock to handle the insights API
-    mocks.fetchMock.mockImplementation(async (url: string) => {
-      if (url.includes('/api/members')) {
-        return {
-          ok: true,
-          json: async () => ({
-            members: [
-              { id: 'm-3', displayName: 'Iman', role: 'child' },
-              { id: 'm-4', displayName: 'Ali', role: 'child' },
-            ],
-          }),
-        } as Response;
-      }
-      if (url.includes('/api/learn/insights')) {
-        return {
-          ok: true,
-          json: async () => ({
-            memberId: 'm-3',
-            displayName: 'Iman',
-            hasActivity: true,
-            subjects: [
-              {
-                subject: 'Maths',
-                progressPct: 60,
-                certificatesEarned: 2,
-                certificatesTotal: 5,
-                lastActive: new Date().toISOString(),
-                needsHelp: false,
-              },
-            ],
-            weakest: null,
-          }),
-        } as Response;
-      }
-      return { ok: false, status: 404, json: async () => ({}) } as Response;
-    });
-
+  it('?tab=learning-insights falls back to the default home panel (tab no longer exists)', () => {
     renderAt('/t/khans/dashboard?tab=learning-insights');
-    expect(screen.getByTestId('dashboard-panel-learning-insights')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByTestId('learning-insights-panel')).toBeInTheDocument());
-  });
-
-  it('learning-insights panel is not wrapped in the white card (renders on purple bg)', () => {
-    renderAt('/t/khans/dashboard?tab=learning-insights');
-    const panel = screen.getByTestId('dashboard-panel-learning-insights');
-    expect(panel.querySelector('.bg-white')).toBeNull();
+    // Tab removed — falls back to home
+    expect(screen.getByTestId('dashboard-panel-home')).toBeInTheDocument();
+    expect(screen.queryByTestId('dashboard-panel-learning-insights')).not.toBeInTheDocument();
   });
 
   it('defaults to the home (Dashboard) panel when ?tab is absent', () => {

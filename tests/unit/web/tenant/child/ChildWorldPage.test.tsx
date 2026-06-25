@@ -20,6 +20,63 @@ import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
 const MEMBER = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const SIBLING = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 
+const STUB_INSIGHTS = {
+  memberId: MEMBER,
+  displayName: 'Ali',
+  hasActivity: false,
+  subjects: [
+    {
+      subject: 'Maths',
+      progressPct: 0,
+      certificatesEarned: 0,
+      certificatesTotal: 48,
+      lastActive: null,
+      needsHelp: false,
+      accuracyPct: null,
+      continentsExplored: 0,
+      continentsTotal: 0,
+      exploredContinents: [],
+    },
+    {
+      subject: 'Logic',
+      progressPct: 0,
+      certificatesEarned: 0,
+      certificatesTotal: 15,
+      lastActive: null,
+      needsHelp: false,
+      accuracyPct: null,
+      continentsExplored: 0,
+      continentsTotal: 0,
+      exploredContinents: [],
+    },
+    {
+      subject: 'Science',
+      progressPct: 0,
+      certificatesEarned: 0,
+      certificatesTotal: 1,
+      lastActive: null,
+      needsHelp: false,
+      accuracyPct: null,
+      continentsExplored: 0,
+      continentsTotal: 0,
+      exploredContinents: [],
+    },
+    {
+      subject: 'World Flags',
+      progressPct: 0,
+      certificatesEarned: 0,
+      certificatesTotal: 6,
+      lastActive: null,
+      needsHelp: false,
+      accuracyPct: null,
+      continentsExplored: 0,
+      continentsTotal: 6,
+      exploredContinents: [],
+    },
+  ],
+  weakest: null,
+};
+
 function installApi() {
   fetchMock.mockImplementation((url: string) => {
     const u = String(url);
@@ -41,6 +98,13 @@ function installApi() {
             { id: SIBLING, displayName: 'Sara', avatarEmoji: '👧', isChild: true },
           ],
         }),
+      });
+    }
+    if (u.includes('/api/learn/insights')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => STUB_INSIGHTS,
       });
     }
     if (u.includes('/api/rewards')) {
@@ -104,14 +168,23 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('<ChildWorldPage />', () => {
-  it('renders the four ChildWorld tabs with My World active (FHS-382: Learn tab removed)', async () => {
+  it('renders the five ChildWorld tabs including Learning Insights (FHS-401)', async () => {
     renderAt();
     await waitFor(() => expect(screen.getByTestId('child-world')).toBeInTheDocument());
-    for (const label of ['My World', 'Meals', 'Calendar', 'Journal']) {
+    for (const label of ['My World', 'Meals', 'Calendar', 'Journal', 'Learning Insights']) {
       expect(screen.getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
     }
-    expect(screen.queryByRole('tab', { name: /Learn/ })).not.toBeInTheDocument();
     expect(screen.getByTestId('child-panel-world')).toBeInTheDocument();
+  });
+
+  it('switching to Learning Insights tab renders the child insights panel (FHS-401)', async () => {
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('child-world')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByRole('tab', { name: /Learning Insights/ }));
+    });
+    expect(screen.getByTestId('child-panel-insights')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('child-insights-panel')).toBeInTheDocument());
   });
 
   it("shows the child's name in the header once members load", async () => {

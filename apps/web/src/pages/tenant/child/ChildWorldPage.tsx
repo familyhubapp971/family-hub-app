@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, Home, LogOut, PenLine, Utensils } from 'lucide-react';
+import {
+  ArrowLeft,
+  CalendarDays,
+  GraduationCap,
+  Home,
+  LogOut,
+  PenLine,
+  Utensils,
+} from 'lucide-react';
 import { TopNav, type TopNavTab, Dropdown } from '@familyhub/ui';
 import { useAuth, signOutAll } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
@@ -9,6 +17,7 @@ import { MyWorldTab } from './MyWorldTab';
 import { MealsTab } from './MealsTab';
 import { CalendarTab } from './CalendarTab';
 import { JournalTab } from './JournalTab';
+import { ChildLearningInsights } from './ChildLearningInsights';
 
 // FHS-268 — ChildWorld shell.
 //
@@ -28,6 +37,12 @@ const CHILD_TABS: ChildTab[] = [
   { id: 'meals', label: 'Meals', icon: <Utensils size={16} aria-hidden="true" /> },
   { id: 'calendar', label: 'Calendar', icon: <CalendarDays size={16} aria-hidden="true" /> },
   { id: 'journal', label: 'Journal', icon: <PenLine size={16} aria-hidden="true" /> },
+  // FHS-401 — Learning Insights moved from parent dashboard into each child's world view.
+  {
+    id: 'insights',
+    label: 'Learning Insights',
+    icon: <GraduationCap size={16} aria-hidden="true" />,
+  },
 ];
 
 const DEFAULT_TAB = 'world';
@@ -235,6 +250,9 @@ export function ChildWorldPage() {
             <MealsTab memberId={memberId} />
           ) : active.id === 'calendar' ? (
             <CalendarTab memberId={memberId} />
+          ) : active.id === 'insights' ? (
+            // FHS-401 — parent/admin view of this child's learning progress.
+            <ChildLearningInsights memberId={memberId} />
           ) : (
             <JournalTab memberId={memberId} />
           )}
