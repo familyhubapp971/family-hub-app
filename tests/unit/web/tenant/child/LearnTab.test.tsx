@@ -901,3 +901,125 @@ describe('FHS-394 — kid Maths routes to MathsSubject', () => {
     expect(screen.queryByTestId('maths-subject')).not.toBeInTheDocument();
   });
 });
+
+// ─── FHS-395: kid mode Logic routes to LogicSubject ──────────────────────────
+//
+// In kid mode, clicking the Logic card must show LogicSubject (game-type +
+// trophy-wall flow), NOT LessonView. Science keeps using LessonView.
+
+describe('FHS-395 — kid Logic routes to LogicSubject', () => {
+  function installKidLogicFetch() {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/kid/world-flags'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ explored: [] }) });
+      if (u.includes('/api/kid/learn'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            subjects: [
+              { subject: 'Logic', progress: 0 },
+              { subject: 'Science', progress: 10 },
+            ],
+          }),
+        });
+      if (u.includes('/api/kid/reading-log'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [] }) });
+      // LogicSubject → LogicLesson fetches questions on mount
+      if (u.includes('/api/kid/logic/questions'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            questions: [{ id: 'q1', type: 'truefalse', statement: 'The sky is blue.' }],
+          }),
+        });
+      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+    });
+  }
+
+  it('clicking Logic in kid mode renders logic-subject (not lesson-view)', async () => {
+    installKidLogicFetch();
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-logic')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-logic'));
+    });
+
+    await waitFor(() => expect(screen.getByTestId('logic-subject')).toBeInTheDocument());
+    expect(screen.queryByTestId('lesson-view')).not.toBeInTheDocument();
+  });
+
+  it('kid Logic shows game-type selector and lesson view', async () => {
+    installKidLogicFetch();
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-logic')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-logic'));
+    });
+
+    await waitFor(() => expect(screen.getByTestId('logic-game-selector')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('logic-lesson')).toBeInTheDocument());
+  });
+
+  it('Back button from Logic returns to the subject overview', async () => {
+    installKidLogicFetch();
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-logic')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-logic'));
+    });
+    await waitFor(() => expect(screen.getByTestId('logic-subject')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-back'));
+    });
+    await waitFor(() => expect(screen.getByTestId('learn-subject-logic')).toBeInTheDocument());
+    expect(screen.queryByTestId('logic-subject')).not.toBeInTheDocument();
+  });
+
+  it('Science in kid mode still uses LessonView when Logic is also available', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/kid/world-flags'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ explored: [] }) });
+      if (u.includes('/api/kid/learn'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ subjects: [{ subject: 'Science', progress: 10 }] }),
+        });
+      if (u.includes('/api/kid/reading-log'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [] }) });
+      if (
+        u.includes('/api/kid/learn/Science') ||
+        (u.includes('/api/kid/learn') && u.includes('Science'))
+      )
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            subject: 'Science',
+            difficulty: 'easy',
+            questions: [],
+            stats: { progress: 0, score: 0, streak: 0, best: 0, answered: 0, certificate: false },
+          }),
+        });
+      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+    });
+
+    renderKidTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-science')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('learn-subject-science'));
+    });
+
+    await waitFor(() => expect(screen.getByTestId('lesson-view')).toBeInTheDocument());
+    expect(screen.queryByTestId('logic-subject')).not.toBeInTheDocument();
+  });
+});
