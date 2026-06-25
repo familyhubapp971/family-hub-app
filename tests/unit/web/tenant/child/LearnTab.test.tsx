@@ -313,6 +313,31 @@ describe('World Flags subject routing', () => {
   });
 });
 
+// ─── FHS-397: hub subject-card progress bar fill ────────────────────────────
+
+describe('FHS-397 — subject card progress bar fill (LearnTab hub)', () => {
+  it('progress bar fill div uses bg-gray-800 (readable on coloured cards)', async () => {
+    installDefault([{ subject: 'Maths', progress: 50 }], []);
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('learn-progress-Maths')).toBeInTheDocument());
+    // The inner fill div is the first child of the progressbar element.
+    const progressbar = screen.getByTestId('learn-progress-Maths');
+    const fill = progressbar.firstElementChild as HTMLElement;
+    expect(fill).toBeTruthy();
+    // bg-gray-800 is the visible fill (replaced bg-black for parity, both are dark)
+    expect(fill.className).toMatch(/bg-gray-800/);
+  });
+
+  it('subject card button has motion-safe:hover:-translate-y-0.5 (not -translate-y-1)', async () => {
+    installDefault([{ subject: 'Maths', progress: 20 }], []);
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
+    const card = screen.getByTestId('learn-subject-maths');
+    expect(card.className).toMatch(/motion-safe:hover:-translate-y-0\.5/);
+    expect(card.className).not.toMatch(/motion-safe:hover:-translate-y-1\b/);
+  });
+});
+
 // ─── Art subject (FHS-371) ────────────────────────────────────────────────────
 
 // Mock canvas context so ArtDrawingCanvas doesn't throw in jsdom

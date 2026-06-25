@@ -377,7 +377,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                     type="button"
                     data-testid={`learn-subject-${slug}`}
                     onClick={() => setSelectedSubject(s.subject)}
-                    className={`flex flex-col gap-4 rounded-xl border-2 border-black p-5 text-left shadow-neo-xs motion-safe:hover:-translate-y-1 ${style.bg} transition-transform`}
+                    className={`flex flex-col gap-4 rounded-xl border-2 border-black p-5 text-left shadow-neo-xs motion-safe:hover:-translate-y-0.5 ${style.bg} transition-transform`}
                   >
                     {/* Icon + progress pill (or "Free play" badge for Art) */}
                     <div className="flex items-center justify-between">
@@ -411,7 +411,8 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                         data-testid={`learn-progress-${s.subject}`}
                         className="h-3 w-full overflow-hidden rounded-full border-2 border-black bg-white/50"
                       >
-                        <div className="h-full bg-black" style={{ width: `${pct}%` }} />
+                        {/* FHS-397 — white/dark fill is readable on any coloured card bg */}
+                        <div className="h-full bg-gray-800" style={{ width: `${pct}%` }} />
                       </div>
                     )}
                   </button>
