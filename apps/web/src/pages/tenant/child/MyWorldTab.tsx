@@ -50,6 +50,8 @@ interface ApiHabit {
   color: string;
   icon: string;
   isBonus: boolean;
+  // FHS-399 — bonus habits may have a target < 7. Defaults to 7 when absent.
+  target?: number;
 }
 interface ApiSticker {
   habitId: string;
@@ -244,7 +246,8 @@ function mapApiHabitToLocal(apiHabit: ApiHabit, apiStickers: ApiSticker[]): Habi
     isBonus: apiHabit.isBonus ?? false,
     progress,
     total,
-    target: 7,
+    // Use the API-supplied target when present; default to 7 for regular habits.
+    target: apiHabit.target ?? 7,
     stickers: [], // habit-level cosmetic stickers not exposed in API; start empty
   };
 }
@@ -1008,10 +1011,9 @@ export function MyWorldTab(
                 className="text-xs font-black text-gray-700 uppercase tracking-wide mt-1"
               >
                 Progress that week{' '}
-                <span
-                  className={`inline-flex items-center justify-center rounded-full border-2 border-black px-2 py-0.5 text-[10px] font-black ${habit.color}`}
-                >
-                  {habit.total}/7
+                {/* Neutral pill so text stays readable regardless of habit colour */}
+                <span className="inline-flex items-center justify-center rounded-full border-2 border-black bg-gray-100 text-gray-800 px-2 py-0.5 text-[10px] font-black">
+                  {habit.total}/{habit.target}
                 </span>
               </p>
             ) : (
@@ -1762,11 +1764,25 @@ export function MyWorldTab(
                       ? week.summary.carriedOver
                       : 0;
 
+                // Prefer the server-computed performance value (bounded 0-100, correct
+                // even if habits were deleted after close). Fall back to a client-side
+                // calculation only when unavailable, clamped so bonus stickers can't push
+                // it above 100%.
                 const totalPossibleWeek = habits.length * 7;
                 const completionPct =
-                  totalPossibleWeek > 0
-                    ? Math.round((week.summary.totalStickers / totalPossibleWeek) * 100)
-                    : week.summary.performance;
+                  week.summary.performance > 0
+                    ? week.summary.performance
+                    : totalPossibleWeek > 0
+                      ? Math.min(
+                          100,
+                          Math.max(
+                            0,
+                            Math.round((week.summary.totalStickers / totalPossibleWeek) * 100),
+                          ),
+                        )
+                      : 0;
+                // Adaptive message: only celebrate at ≥50%; below that use a neutral line
+                // to avoid "Great job! You finished 0%". Applied inline in the JSX below.
 
                 return (
                   <div
@@ -1848,7 +1864,14 @@ export function MyWorldTab(
                         data-testid="finalized-completion"
                         className="bg-purple-50 border-2 border-purple-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3"
                       >
-                        <p className="text-sm font-bold text-purple-700">Great job! You finished</p>
+                        <p
+                          data-testid="finalized-completion-message"
+                          className="text-sm font-bold text-purple-700"
+                        >
+                          {completionPct >= 50
+                            ? 'Great job! You finished'
+                            : 'Here’s how this week went — you finished'}
+                        </p>
                         <span
                           data-testid="finalized-completion-pct"
                           className="flex-shrink-0 bg-purple-500 text-white text-sm font-black px-3 py-1 rounded-full border-2 border-black shadow-neo-xs"
