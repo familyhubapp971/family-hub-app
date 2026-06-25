@@ -15,6 +15,9 @@ import { MathsAILesson } from './learn/maths/MathsAILesson';
 // { enabled: true }, surface a toggleable AI Lesson panel above the static
 // question bank. When { enabled: false } (flag is off), the static bank is
 // the full experience — no broken AI button visible.
+//
+// FHS-397 — Design parity: certificate modal, wrong-answer reveal, streak
+// celebration overlay, animate-shake on wrong choice, gradient progress bar.
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
@@ -32,6 +35,26 @@ const LOGIC_SUBTOPICS = [
   { slug: 'sorting', label: 'Sorting' },
 ] as const;
 type LogicSubtopic = (typeof LOGIC_SUBTOPICS)[number]['slug'];
+
+// FHS-397 — wrong-answer encouragement phrases (ported from MathsLesson).
+const ENCOURAGEMENT = ['Try again!', 'Almost!', 'Keep going!', 'You can do it!', 'Don’t give up!'];
+
+// FHS-397 — streak milestone messages (ported from MathsLesson).
+const STREAK_MESSAGES: Record<number, string> = {
+  3: 'On fire! 🔥',
+  5: 'Super Star! ⭐',
+  10: 'Maths Wizard! 🧙',
+  15: 'Unstoppable! 🚀',
+  20: 'Legendary! 🏆',
+};
+const STREAK_MILESTONES = [3, 5, 10, 15, 20] as const;
+
+// FHS-397 — confetti pieces for the certificate modal.
+const CONFETTI_EMOJIS = ['🌟', '🎉', '🎊', '✨', '🏆', '🥇', '💫', '🌈'];
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)] as T;
+}
 
 interface Question {
   id: string;
@@ -59,6 +82,158 @@ interface AnswerResponse {
 }
 
 type Headers = Record<string, string> | null;
+
+// ─── Certificate modal (FHS-397) ─────────────────────────────────────────────
+
+function CertificateModal({ subject, onDismiss }: { subject: string; onDismiss: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 6000);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+
+  const today = new Date().toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  return (
+    <>
+      {/* Inline keyframes — Tailwind can&apos;t express these without a plugin */}
+      <style>{`
+        @keyframes certPop {
+          0% { transform: scale(0) rotate(-8deg); opacity: 0; }
+          40% { transform: scale(1.1) rotate(2deg); opacity: 1; }
+          60% { transform: scale(0.95) rotate(-1deg); }
+          80% { transform: scale(1.03) rotate(0.5deg); }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .cert-pop { animation: certPop 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+        @keyframes certShine {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .cert-shine { background-size: 200% 100%; animation: certShine 3s linear infinite; }
+
+        @keyframes certWiggle {
+          0%,100% { transform: rotate(-3deg) scale(1); }
+          25% { transform: rotate(3deg) scale(1.05); }
+          50% { transform: rotate(-3deg) scale(1); }
+          75% { transform: rotate(3deg) scale(1.05); }
+        }
+        .cert-wiggle { animation: certWiggle 0.6s ease-in-out 0.7s 3; }
+
+        @keyframes confettiFall {
+          0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .cert-confetti { animation: confettiFall 3s ease-in-out infinite; }
+      `}</style>
+
+      {/* Outer wrapper: dialog semantics, keyboard-focusable for Escape */}
+      <div
+        data-testid="lesson-certificate-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${subject} certificate of achievement`}
+        className="fixed inset-0 z-50 flex items-center justify-center"
+      >
+        {/* Dismiss backdrop (native button — a11y compliant) */}
+        <button
+          type="button"
+          aria-label="Close certificate"
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={onDismiss}
+        />
+
+        {/* Floating confetti (pointer-events-none so it doesn't block the backdrop button) */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          {CONFETTI_EMOJIS.map((e, i) => (
+            <span
+              key={i}
+              aria-hidden="true"
+              className="cert-confetti absolute text-2xl sm:text-3xl"
+              style={{ left: `${10 + ((i * 10) % 80)}%`, animationDelay: `${i * 200}ms` }}
+            >
+              {e}
+            </span>
+          ))}
+        </div>
+
+        {/* Certificate card — sits above the backdrop button via z-index */}
+        <div className="cert-pop relative z-10 mx-4 w-full max-w-md overflow-hidden rounded-2xl border-2 border-black bg-gradient-to-br from-yellow-50 via-white to-amber-50 shadow-neo-lg">
+          {/* Gold header band */}
+          <div className="cert-shine border-b-2 border-black bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-6 py-4 text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-yellow-900">
+              Certificate of Achievement
+            </p>
+          </div>
+
+          {/* Certificate body */}
+          <div className="space-y-4 px-6 py-6 text-center">
+            {/* Trophy */}
+            <div className="cert-wiggle inline-block text-5xl sm:text-6xl" aria-hidden="true">
+              🏆
+            </div>
+
+            {/* Achievement */}
+            <div className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-xs">
+              <p className="text-lg font-black text-gray-900">{subject}</p>
+              <p className="text-sm font-bold text-amber-600">Certificate Earned!</p>
+            </div>
+
+            {/* Date */}
+            <p className="text-xs font-bold text-gray-400">{today}</p>
+
+            {/* Stars */}
+            <div className="flex justify-center gap-1" aria-hidden="true">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="animate-pulse text-xl"
+                  style={{ animationDelay: `${i * 150}ms` }}
+                >
+                  ⭐
+                </span>
+              ))}
+            </div>
+
+            {/* Dismiss */}
+            <button
+              data-testid="lesson-cert-dismiss"
+              type="button"
+              onClick={onDismiss}
+              className="rounded-xl border-2 border-black bg-gradient-to-r from-yellow-400 to-amber-500 px-8 py-3 text-sm font-black shadow-neo-sm transition-all active:translate-y-0.5 motion-safe:hover:shadow-neo-xs sm:text-base"
+            >
+              Awesome! 🎉
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Streak celebration overlay (FHS-397) ────────────────────────────────────
+
+function StreakOverlay({ message }: { message: string }) {
+  return (
+    <div
+      data-testid="lesson-streak-overlay"
+      aria-live="assertive"
+      className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center"
+    >
+      <div className="animate-bounce text-center">
+        <p className="bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500 bg-clip-text text-4xl font-black text-transparent drop-shadow-lg sm:text-6xl">
+          {message}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function LessonView({
   subject,
@@ -111,6 +286,17 @@ export function LessonView({
   const [result, setResult] = useState<AnswerResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pickError, setPickError] = useState(false);
+  // FHS-397 — shake the wrong-choice button briefly after a wrong answer.
+  const [shakingIndex, setShakingIndex] = useState<number | null>(null);
+  // FHS-397 — random encouragement for the current wrong-answer feedback.
+  const [encouragement] = useState(() => pickRandom(ENCOURAGEMENT));
+  const [currentEncouragement, setCurrentEncouragement] = useState(encouragement);
+  // FHS-397 — certificate modal: shown once when stats.certificate first flips true.
+  const certShown = useRef(false);
+  const [showCertModal, setShowCertModal] = useState(false);
+  // FHS-397 — streak overlay: track which milestones have already been celebrated.
+  const celebratedStreaks = useRef<Set<number>>(new Set());
+  const [streakMessage, setStreakMessage] = useState<string | null>(null);
   // Bumped on every (re)load so a slow answer POST from a previous round/
   // difficulty can't overwrite fresh state when it finally resolves.
   const roundId = useRef(0);
@@ -146,6 +332,30 @@ export function LessonView({
 
   useEffect(() => load(), [load]);
 
+  // FHS-397 — fire certificate modal once when stats.certificate first becomes true.
+  useEffect(() => {
+    if (stats?.certificate && !certShown.current) {
+      certShown.current = true;
+      setShowCertModal(true);
+    }
+  }, [stats?.certificate]);
+
+  // FHS-397 — fire streak overlay at milestone crossings.
+  useEffect(() => {
+    if (!stats) return;
+    const streak = stats.streak;
+    for (const milestone of STREAK_MILESTONES) {
+      if (streak >= milestone && !celebratedStreaks.current.has(milestone)) {
+        celebratedStreaks.current.add(milestone);
+        const msg = STREAK_MESSAGES[milestone] ?? '';
+        setStreakMessage(msg);
+        // Auto-dismiss overlay after 2 s.
+        const t = setTimeout(() => setStreakMessage(null), 2000);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [stats?.streak]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const current = questions[idx] ?? null;
 
   const onPick = async (choiceIndex: number) => {
@@ -172,6 +382,12 @@ export function LessonView({
         const body = (await res.json()) as AnswerResponse;
         setResult(body);
         setStats(body.stats);
+        // FHS-397 — shake the wrong button and pick a fresh encouragement phrase.
+        if (!body.correct) {
+          setShakingIndex(choiceIndex);
+          setCurrentEncouragement(pickRandom(ENCOURAGEMENT));
+          setTimeout(() => setShakingIndex(null), 500);
+        }
       } else {
         setPicked(null);
         setPickError(true);
@@ -191,12 +407,31 @@ export function LessonView({
     setPicked(null);
     setResult(null);
     setPickError(false);
+    setShakingIndex(null);
     if (idx + 1 < questions.length) setIdx(idx + 1);
     else load(); // start a fresh round of the same difficulty
   };
 
   return (
     <div className="flex flex-col gap-4" data-testid="lesson-view">
+      {/* FHS-397 — certificate modal (full-screen, fires once on earn) */}
+      {showCertModal && (
+        <CertificateModal subject={subject} onDismiss={() => setShowCertModal(false)} />
+      )}
+
+      {/* FHS-397 — streak celebration overlay */}
+      {streakMessage && <StreakOverlay message={streakMessage} />}
+
+      {/* Inline keyframes for animate-shake (FHS-397) */}
+      <style>{`
+        @keyframes shake {
+          0%,100% { transform: translateX(0); }
+          25% { transform: translateX(-6px); }
+          75% { transform: translateX(6px); }
+        }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+      `}</style>
+
       {/* FHS-389 — AI Maths lesson toggle (kid + Maths + flag ON only) */}
       {kid && isMaths && aiStatus === 'enabled' && (
         <div data-testid="ai-lesson-section">
@@ -277,20 +512,22 @@ export function LessonView({
         </div>
       )}
 
-      {/* Progress + certificate */}
+      {/* Progress + certificate (inline banner — kept for persistent visibility) */}
       {stats && (
         <div className="rounded-xl border-2 border-black bg-white p-3 shadow-neo-sm">
           <div className="mb-1 flex items-center justify-between text-xs font-black uppercase tracking-wide">
             <span>Certificate progress</span>
             <span data-testid="lesson-progress-pct">{stats.progress}%</span>
           </div>
+          {/* FHS-397 — gradient fill (was flat bg-green-400) */}
           <div className="h-3 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100">
             <div
               data-testid="lesson-progress"
-              className="h-full bg-green-400 transition-all"
+              className="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all"
               style={{ width: `${stats.progress}%` }}
             />
           </div>
+          {/* Inline banner kept as a persistent earned indicator alongside the modal */}
           {stats.certificate && (
             <div
               data-testid="lesson-certificate"
@@ -310,12 +547,12 @@ export function LessonView({
           aria-busy="true"
           className="text-sm font-bold text-gray-500"
         >
-          Loading the lesson…
+          Loading the lesson&hellip;
         </p>
       )}
       {status === 'error' && (
         <p data-testid="lesson-error" role="alert" className="text-sm font-bold text-red-500">
-          Couldn&rsquo;t load the lesson — try again.
+          Couldn&rsquo;t load the lesson &mdash; try again.
         </p>
       )}
       {status === 'ready' && !current && (
@@ -323,7 +560,7 @@ export function LessonView({
           data-testid="lesson-empty"
           className="rounded-xl border-2 border-black bg-white p-5 text-sm font-bold text-gray-500 shadow-neo-sm"
         >
-          No questions here yet — try a different difficulty.
+          No questions here yet &mdash; try a different difficulty.
         </p>
       )}
       {status === 'ready' && current && (
@@ -337,6 +574,7 @@ export function LessonView({
               const isPicked = picked === i;
               const isCorrect = result !== null && result.answerIndex === i;
               const showWrong = result !== null && isPicked && !result.correct;
+              const isShaking = shakingIndex === i;
               return (
                 <button
                   key={i}
@@ -344,13 +582,13 @@ export function LessonView({
                   data-testid={`lesson-choice-${i}`}
                   disabled={picked !== null}
                   onClick={() => onPick(i)}
-                  className={`flex min-h-[48px] items-center justify-between gap-2 rounded-xl border-2 border-black px-4 py-3 text-left font-bold shadow-neo-xs transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 disabled:cursor-default motion-safe:enabled:hover:-translate-y-0.5 ${
+                  className={`flex min-h-[48px] items-center justify-between gap-2 rounded-xl border-2 border-black px-4 py-3 text-left font-black shadow-neo-xs transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 disabled:cursor-default motion-safe:enabled:hover:-translate-y-0.5 ${
                     isCorrect
                       ? 'bg-green-300'
                       : showWrong
                         ? 'bg-red-300'
                         : 'bg-white disabled:opacity-60'
-                  }`}
+                  } ${isShaking ? 'animate-shake' : ''}`}
                 >
                   <span>{choice}</span>
                   {isCorrect && <Check size={18} aria-hidden="true" />}
@@ -366,29 +604,48 @@ export function LessonView({
               role="alert"
               className="mt-4 text-sm font-black text-red-600"
             >
-              Something went wrong — tap a choice to try again.
+              Something went wrong &mdash; tap a choice to try again.
             </p>
           )}
 
           {result && (
-            <div className="mt-4 flex items-center justify-between gap-3">
-              <p
-                data-testid="lesson-feedback"
-                aria-live="polite"
-                className={`text-sm font-black ${result.correct ? 'text-green-600' : 'text-red-600'}`}
-              >
-                {result.correct ? 'Correct! 🎉' : 'Not quite — keep going!'}
-              </p>
-              <button
-                type="button"
-                data-testid="lesson-next"
-                onClick={onNext}
-                disabled={status !== 'ready'}
-                className="flex min-h-[44px] items-center gap-2 rounded-xl border-2 border-black bg-violet-400 px-4 py-2 font-black text-white shadow-neo-xs transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 disabled:opacity-60 motion-safe:enabled:hover:-translate-y-0.5"
-              >
-                Next
-                <ArrowRight size={16} aria-hidden="true" />
-              </button>
+            <div className="mt-4 flex flex-col gap-3">
+              {result.correct ? (
+                <p
+                  data-testid="lesson-feedback"
+                  aria-live="polite"
+                  className="text-sm font-black text-green-600"
+                >
+                  Correct! 🎉
+                </p>
+              ) : (
+                /* FHS-397 — wrong-answer feedback card with encouragement + correct answer reveal */
+                <div
+                  data-testid="lesson-feedback"
+                  className="rounded-xl border-2 border-black bg-red-50 px-4 py-3 shadow-neo-xs"
+                  aria-live="polite"
+                >
+                  <p className="font-black text-red-600">{currentEncouragement}</p>
+                  <p className="mt-1 text-sm font-bold text-red-500">
+                    The answer was:{' '}
+                    <span data-testid="lesson-correct-answer" className="font-black text-red-700">
+                      {current.choices[result.answerIndex]}
+                    </span>
+                  </p>
+                </div>
+              )}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  data-testid="lesson-next"
+                  onClick={onNext}
+                  disabled={status !== 'ready'}
+                  className="flex min-h-[44px] items-center gap-2 rounded-xl border-2 border-black bg-violet-400 px-4 py-2 font-black text-white shadow-neo-xs transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 disabled:opacity-60 motion-safe:enabled:hover:-translate-y-0.5"
+                >
+                  Next
+                  <ArrowRight size={16} aria-hidden="true" />
+                </button>
+              </div>
             </div>
           )}
         </div>
