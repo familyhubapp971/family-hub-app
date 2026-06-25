@@ -884,6 +884,34 @@ describe('computeLearnInsights — World Flags', () => {
     expect(wf.exploredContinents).toEqual(['Africa', 'Asia', 'Europe']);
   });
 
+  it('continentsExplored is clamped to WORLD_FLAGS_CONTINENTS_TOTAL (6) when DB returns more rows', async () => {
+    // A corrupt or over-counted DB could return more than 6 distinct continents.
+    // Math.min(..., TOTAL) ensures the field never exceeds the schema's .max(6).
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '0' }],
+      [],
+      [{ explored: '50', lastActive: new Date('2026-02-01') }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [], // no logic progress rows
+      [
+        { continent: 'Africa' },
+        { continent: 'Asia' },
+        { continent: 'Europe' },
+        { continent: 'North America' },
+        { continent: 'South America' },
+        { continent: 'Oceania' },
+        { continent: 'Antarctica' }, // 7th row — should be clamped
+      ], // wf continents
+      [], // logic certs per game
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    const wf = res.subjects.find((s) => s.subject === 'World Flags')!;
+    expect(wf.continentsExplored).toBe(6); // clamped to WORLD_FLAGS_CONTINENTS_TOTAL
+    // exploredContinents still has all 7 raw rows (clamping is on the count only)
+    expect(wf.exploredContinents).toHaveLength(7);
+  });
+
   it('non-WF subjects have continentsExplored = 0 and exploredContinents = []', async () => {
     setupDbReturns(
       [{ certsEarned: '5' }],

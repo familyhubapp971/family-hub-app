@@ -120,6 +120,14 @@ describe('<ChildLearningInsights /> — loading', () => {
     renderComponent();
     expect(screen.getByTestId('child-insights-loading').getAttribute('aria-busy')).toBe('true');
   });
+
+  it('shows error panel instead of perpetual loading when session resolves to null', async () => {
+    // Simulate auth context resolving with no session (e.g. token expired).
+    authState.session = null;
+    renderComponent();
+    await waitFor(() => expect(screen.getByTestId('child-insights-error')).toBeInTheDocument());
+    expect(screen.getByTestId('child-insights-error').textContent).toContain('Session expired');
+  });
 });
 
 // ─── Error state ──────────────────────────────────────────────────────────────
@@ -413,6 +421,48 @@ describe('<ChildLearningInsights /> — World Flags panel', () => {
     renderComponent();
     await waitFor(() => expect(screen.getByTestId('world-flags-panel')).toBeInTheDocument());
     expect(screen.queryByTestId('wf-cert-badge')).not.toBeInTheDocument();
+  });
+});
+
+// ─── World Flags panel edge cases ────────────────────────────────────────────
+
+describe('<ChildLearningInsights /> — World Flags edge cases', () => {
+  it('renders "0/6" and no continent pills when continentsExplored=0 (not started)', async () => {
+    const data = activeInsights();
+    const wf = data.subjects.find((s) => s.subject === 'World Flags')!;
+    wf.continentsExplored = 0;
+    wf.exploredContinents = [];
+    fetchMock.mockResolvedValue({ ok: true, json: async () => data });
+    renderComponent();
+    await waitFor(() => expect(screen.getByTestId('wf-continents-explored')).toBeInTheDocument());
+    expect(screen.getByTestId('wf-continents-explored').textContent).toContain('0/6');
+    expect(screen.queryByTestId('wf-continent-pills')).not.toBeInTheDocument();
+  });
+});
+
+// ─── AccuracyRing boundary values ────────────────────────────────────────────
+
+describe('<ChildLearningInsights /> — AccuracyRing boundary values', () => {
+  it('renders without crash when accuracyPct = 0', async () => {
+    const data = activeInsights();
+    // Set all subjects to 0% accuracy.
+    for (const s of data.subjects) s.accuracyPct = 0;
+    fetchMock.mockResolvedValue({ ok: true, json: async () => data });
+    renderComponent();
+    await waitFor(() => expect(screen.getByTestId('child-subject-cards-grid')).toBeInTheDocument());
+    // All 4 rings should render; the maths label should show "0%".
+    expect(screen.getAllByTestId('accuracy-ring')).toHaveLength(4);
+    expect(screen.getByTestId('accuracy-label-maths').textContent).toContain('0%');
+  });
+
+  it('renders without crash when accuracyPct = 100', async () => {
+    const data = activeInsights();
+    for (const s of data.subjects) s.accuracyPct = 100;
+    fetchMock.mockResolvedValue({ ok: true, json: async () => data });
+    renderComponent();
+    await waitFor(() => expect(screen.getByTestId('child-subject-cards-grid')).toBeInTheDocument());
+    expect(screen.getAllByTestId('accuracy-ring')).toHaveLength(4);
+    expect(screen.getByTestId('accuracy-label-maths').textContent).toContain('100%');
   });
 });
 

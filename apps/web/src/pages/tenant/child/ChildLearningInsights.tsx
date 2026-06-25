@@ -395,6 +395,15 @@ export function ChildLearningInsights({ memberId }: ChildLearningInsightsProps) 
     setRetryCount((n) => n + 1);
   }, []);
 
+  // Guard: if the auth context has resolved but we still have no token/slug,
+  // surface an error instead of staying in perpetual loading.
+  useEffect(() => {
+    // session===null means "auth resolved but no user" (distinct from "still loading").
+    if (headers === null && session === null) {
+      setStatus({ kind: 'error', message: 'Session expired. Please log in again.' });
+    }
+  }, [headers, session]);
+
   useEffect(() => {
     if (!headers || !memberId) return;
     setStatus({ kind: 'loading' });

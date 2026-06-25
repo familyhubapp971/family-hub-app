@@ -312,6 +312,13 @@ async function fetchWorldFlags(
 
   // FHS-401 — distinct continent names the child has touched in the Learn path.
   // A continent is "explored" as soon as one chunk in it has been completed.
+  //
+  // IMPORTANT: this second `await` runs sequentially after the first query above.
+  // Promise.all (in computeLearnInsights) fires all four fetchXxx concurrently,
+  // but WITHIN this function the continent query always starts AFTER the progress
+  // row resolves. The unit-test mock call-order (tests/unit/api/lib/learn-insights.test.ts)
+  // depends on this sequentiality — do NOT convert to a concurrent Promise.all
+  // inside fetchWorldFlags without re-deriving the mock slot numbers.
   const continentRows = await db
     .select({ continent: worldFlagsLearnProgress.continent })
     .from(worldFlagsLearnProgress)
@@ -516,7 +523,7 @@ export async function computeLearnInsights(
     lastActive: flags.lastActive?.toISOString() ?? null,
     needsHelp: worldFlagsNeedsHelp(flags.explored),
     accuracyPct: null,
-    continentsExplored: flags.exploredContinents.length,
+    continentsExplored: Math.min(flags.exploredContinents.length, WORLD_FLAGS_CONTINENTS_TOTAL),
     continentsTotal: WORLD_FLAGS_CONTINENTS_TOTAL,
     exploredContinents: flags.exploredContinents,
   };

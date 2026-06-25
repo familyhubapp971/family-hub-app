@@ -170,7 +170,10 @@ afterEach(() => vi.unstubAllGlobals());
 describe('<ChildWorldPage />', () => {
   it('renders the five ChildWorld tabs including Learning Insights (FHS-401)', async () => {
     renderAt();
-    await waitFor(() => expect(screen.getByTestId('child-world')).toBeInTheDocument());
+    // Wait for callerRole to load (admin) so the Insights tab appears.
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Learning Insights/ })).toBeInTheDocument(),
+    );
     for (const label of ['My World', 'Meals', 'Calendar', 'Journal', 'Learning Insights']) {
       expect(screen.getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
     }
@@ -179,7 +182,11 @@ describe('<ChildWorldPage />', () => {
 
   it('switching to Learning Insights tab renders the child insights panel (FHS-401)', async () => {
     renderAt();
-    await waitFor(() => expect(screen.getByTestId('child-world')).toBeInTheDocument());
+    // Wait for the members fetch to resolve so callerRole='admin' is set and
+    // the Insights tab becomes visible.
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Learning Insights/ })).toBeInTheDocument(),
+    );
     act(() => {
       fireEvent.click(screen.getByRole('tab', { name: /Learning Insights/ }));
     });
@@ -297,5 +304,104 @@ describe('<ChildWorldPage />', () => {
       expect(screen.getByTestId('child-world-name').textContent).toContain('Ali'),
     );
     expect(screen.queryByTestId('child-world-balance')).not.toBeInTheDocument();
+  });
+
+  // FHS-401 — Learning Insights tab visibility gated by callerRole.
+
+  it('Learning Insights tab is visible when callerRole = admin', async () => {
+    // Default installApi already returns callerRole: 'admin'.
+    renderAt();
+    await waitFor(() =>
+      expect(screen.getByTestId('child-world-name').textContent).toContain('Ali'),
+    );
+    expect(screen.getByRole('tab', { name: /Learning Insights/ })).toBeInTheDocument();
+  });
+
+  it('Learning Insights tab is visible when callerRole = adult', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/members')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            callerRole: 'adult',
+            members: [{ id: MEMBER, displayName: 'Ali', avatarEmoji: '👦', isChild: true }],
+          }),
+        });
+      }
+      if (u.includes('/api/mw/financial/savings')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ savedStickers: 0, savedCash: 0 }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: [] }) });
+    });
+    renderAt();
+    await waitFor(() =>
+      expect(screen.getByTestId('child-world-name').textContent).toContain('Ali'),
+    );
+    expect(screen.getByRole('tab', { name: /Learning Insights/ })).toBeInTheDocument();
+  });
+
+  it('Learning Insights tab is NOT visible when callerRole = child (FHS-401)', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/members')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            callerRole: 'child',
+            members: [{ id: MEMBER, displayName: 'Ali', avatarEmoji: '👦', isChild: true }],
+          }),
+        });
+      }
+      if (u.includes('/api/mw/financial/savings')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ savedStickers: 0, savedCash: 0 }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: [] }) });
+    });
+    renderAt();
+    await waitFor(() =>
+      expect(screen.getByTestId('child-world-name').textContent).toContain('Ali'),
+    );
+    expect(screen.queryByRole('tab', { name: /Learning Insights/ })).not.toBeInTheDocument();
+    // Other tabs still present
+    expect(screen.getByRole('tab', { name: /My World/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Journal/ })).toBeInTheDocument();
+  });
+
+  it('switching child while on Insights tab lands on My World for the new child', async () => {
+    // Start on the Insights tab as admin, then switch child → navigates to new child URL
+    // (ChildWorldPage remounts at the new :memberId, defaulting to My World tab).
+    renderAt();
+    // Wait for callerRole='admin' so the Insights tab is visible.
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Learning Insights/ })).toBeInTheDocument(),
+    );
+    // Switch to Insights tab
+    act(() => {
+      fireEvent.click(screen.getByRole('tab', { name: /Learning Insights/ }));
+    });
+    expect(screen.getByTestId('child-panel-insights')).toBeInTheDocument();
+    // Switch child
+    const switcher = await screen.findByTestId('child-world-switcher');
+    await act(async () => {
+      fireEvent.click(within(switcher).getByRole('button'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Sara/));
+    });
+    // Navigation moves to sibling URL — the route remounts → My World panel
+    await waitFor(() =>
+      expect(screen.getByTestId('location').textContent).toBe(`/t/khan/child/${SIBLING}`),
+    );
   });
 });

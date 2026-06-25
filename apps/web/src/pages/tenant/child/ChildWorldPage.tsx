@@ -132,13 +132,20 @@ export function ChildWorldPage() {
     navigate('/login', { replace: true });
   }, [navigate]);
 
-  const navTabs: TopNavTab[] = CHILD_TABS.map((t) => ({
+  // FHS-401 — Learning Insights is parent/admin-only. A kid viewing their own
+  // world sees the page but must not see (or be able to navigate to) the
+  // Insights tab — the API returns 403 for child/teen tokens anyway, but we
+  // should not surface the tab at all. Only admin and adult callers see it.
+  const isParentCaller = callerRole === 'admin' || callerRole === 'adult';
+  const visibleTabs = CHILD_TABS.filter((t) => t.id !== 'insights' || isParentCaller);
+
+  const navTabs: TopNavTab[] = visibleTabs.map((t) => ({
     id: t.id,
     label: t.label,
     icon: t.icon,
     badge: 0,
   }));
-  const active = CHILD_TABS.find((t) => t.id === activeTab) ?? CHILD_TABS[0]!;
+  const active = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0]!;
   const childName = member?.displayName ?? 'My';
 
   return (

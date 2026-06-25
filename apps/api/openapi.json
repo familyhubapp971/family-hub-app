@@ -4162,11 +4162,13 @@
                           },
                           "continentsExplored": {
                             "type": "integer",
-                            "minimum": 0
+                            "minimum": 0,
+                            "maximum": 6
                           },
                           "continentsTotal": {
                             "type": "integer",
-                            "minimum": 0
+                            "minimum": 0,
+                            "maximum": 6
                           },
                           "exploredContinents": {
                             "type": "array",
