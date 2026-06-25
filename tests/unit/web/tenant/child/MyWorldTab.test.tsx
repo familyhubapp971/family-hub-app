@@ -437,6 +437,9 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     renderTab(true);
     await waitFor(() => expect(screen.getByTestId('investment-card-inv1')).toBeInTheDocument());
     expect(screen.getByTestId('investment-mode-inv1')).toHaveTextContent('No-penalty');
+    // FHS-406 — the invested habit shows its "Invested · 5x" tag (now in-flow
+    // above the day grid instead of an absolute badge that overlapped the cells).
+    expect(screen.getByTestId(`habit-card-invested-badge-${HABIT}`)).toBeInTheDocument();
     await act(async () => {
       fireEvent.click(screen.getByTestId('investment-toggle-inv1'));
     });

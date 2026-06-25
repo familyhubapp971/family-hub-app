@@ -227,6 +227,26 @@ describe('<RewardRequestsPanel />', () => {
     expect(screen.getByText(/Ice Cream/)).toBeInTheDocument();
   });
 
+  // FHS-408 — single-child sidebar is narrow, so it must stack (no 12-col grid
+  // header) and show inline labels, preventing the cost/time/buttons overlap.
+  it('with memberId: stacks (no desktop column header) and shows inline labels', async () => {
+    routeMock({ admin: true });
+    render(<RewardRequestsPanel memberId="m1" />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    // The grid column header is gated out in single-child mode.
+    expect(screen.queryByText('Child & Reward')).not.toBeInTheDocument();
+    // Inline labels are shown (they replace the missing column header).
+    expect(screen.getByText('Cost:')).toBeInTheDocument();
+    expect(screen.getByText('Requested:')).toBeInTheDocument();
+  });
+
+  it('without memberId: shows the desktop column header (grid layout)', async () => {
+    routeMock({ admin: true, requests: TWO_REQUESTS });
+    render(<RewardRequestsPanel />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    expect(screen.getByText('Child & Reward')).toBeInTheDocument();
+  });
+
   it("without memberId: shows all children's requests (original behaviour)", async () => {
     routeMock({ admin: true, requests: TWO_REQUESTS });
     render(<RewardRequestsPanel />);
