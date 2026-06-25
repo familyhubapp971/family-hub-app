@@ -958,15 +958,6 @@ export function MyWorldTab(
         editEnabled ? 'group-hover:-translate-y-1 group-hover:-translate-x-1' : ''
       }`}
     >
-      {isInvested && (
-        <div
-          data-testid={`habit-card-invested-badge-${habit.id}`}
-          className="absolute top-3 right-12 flex items-center gap-1 bg-amber-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-amber-600"
-        >
-          <BarChart2 className="w-3 h-3" /> Invested · 5x
-        </div>
-      )}
-
       <div className="flex flex-col md:flex-row md:items-center gap-6">
         {/* LEFT: icon + name + progress + sticker badges */}
         <div className={`flex items-center gap-4 md:w-1/3 ${editEnabled ? 'pr-8' : ''}`}>
@@ -1062,60 +1053,73 @@ export function MyWorldTab(
           </div>
         </div>
 
-        {/* RIGHT: 7-day grid */}
-        <div className="flex-1 grid grid-cols-7 gap-2">
-          {daysShort.map((day, index) => {
-            const dayValue = habit.progress[index];
-            const isSticker = typeof dayValue === 'string';
-            const sticker = isSticker ? AVAILABLE_STICKERS.find((s) => s.id === dayValue) : null;
-            return (
-              <div key={index} className="flex flex-col items-center gap-1">
-                <span
-                  className={`text-xs font-black font-mono ${
-                    editDayFn(index) ? 'text-gray-400' : 'text-gray-300'
-                  }`}
-                >
-                  {day}
-                </span>
-                <button
-                  data-testid={`habit-day-cell-${habit.id}-${index}`}
-                  aria-pressed={isSticker}
-                  onClick={() => {
-                    if (!editDayFn(index)) return;
-                    if (isSticker) {
-                      void clearDay(habit.id, index);
-                      return;
-                    }
-                    setDayStickerDialog({ habitId: habit.id, dayIndex: index });
-                  }}
-                  disabled={!editDayFn(index)}
-                  className={`w-full aspect-square rounded-lg border-2 flex items-center justify-center transition-all ${
-                    isSticker && sticker
-                      ? editDayFn(index)
-                        ? `${sticker.color} shadow-neo-xs translate-x-[-2px] translate-y-[-2px] border-black hover:opacity-80`
-                        : readOnly
-                          ? `${sticker.color} border-black`
-                          : `${sticker.color} border-gray-300 opacity-40 cursor-not-allowed grayscale-[30%]`
-                      : dayValue === true
-                        ? `${habit.color} shadow-neo-xs translate-x-[-2px] translate-y-[-2px] border-black`
-                        : editDayFn(index)
-                          ? 'bg-gray-100 hover:bg-pink-50 border-black'
+        {/* RIGHT: 7-day grid. FHS-406 — the "Invested · 5x" tag sits in-flow
+            above the grid (was an absolute badge that overlapped the day cells). */}
+        <div className="flex-1">
+          {isInvested && (
+            <div className="mb-2 flex justify-end">
+              <span
+                data-testid={`habit-card-invested-badge-${habit.id}`}
+                className="inline-flex items-center gap-1 rounded-full border border-amber-600 bg-amber-500 px-2 py-0.5 text-[10px] font-black uppercase text-white"
+              >
+                <BarChart2 className="w-3 h-3" aria-hidden="true" /> Invested · 5x
+              </span>
+            </div>
+          )}
+          <div className="grid grid-cols-7 gap-2">
+            {daysShort.map((day, index) => {
+              const dayValue = habit.progress[index];
+              const isSticker = typeof dayValue === 'string';
+              const sticker = isSticker ? AVAILABLE_STICKERS.find((s) => s.id === dayValue) : null;
+              return (
+                <div key={index} className="flex flex-col items-center gap-1">
+                  <span
+                    className={`text-xs font-black font-mono ${
+                      editDayFn(index) ? 'text-gray-400' : 'text-gray-300'
+                    }`}
+                  >
+                    {day}
+                  </span>
+                  <button
+                    data-testid={`habit-day-cell-${habit.id}-${index}`}
+                    aria-pressed={isSticker}
+                    onClick={() => {
+                      if (!editDayFn(index)) return;
+                      if (isSticker) {
+                        void clearDay(habit.id, index);
+                        return;
+                      }
+                      setDayStickerDialog({ habitId: habit.id, dayIndex: index });
+                    }}
+                    disabled={!editDayFn(index)}
+                    className={`w-full aspect-square rounded-lg border-2 flex items-center justify-center transition-all ${
+                      isSticker && sticker
+                        ? editDayFn(index)
+                          ? `${sticker.color} shadow-neo-xs translate-x-[-2px] translate-y-[-2px] border-black hover:opacity-80`
                           : readOnly
-                            ? 'bg-gray-50 border-gray-200'
-                            : 'bg-gray-50 border-gray-200 opacity-30 cursor-not-allowed'
-                  }`}
-                >
-                  {isSticker && sticker ? (
-                    cloneElement(sticker.icon, { className: 'w-4 h-4' })
-                  ) : dayValue === true ? (
-                    <Check className="w-5 h-5" />
-                  ) : !editDayFn(index) && !readOnly ? (
-                    <Lock className="w-3 h-3 text-gray-300" />
-                  ) : null}
-                </button>
-              </div>
-            );
-          })}
+                            ? `${sticker.color} border-black`
+                            : `${sticker.color} border-gray-300 opacity-40 cursor-not-allowed grayscale-[30%]`
+                        : dayValue === true
+                          ? `${habit.color} shadow-neo-xs translate-x-[-2px] translate-y-[-2px] border-black`
+                          : editDayFn(index)
+                            ? 'bg-gray-100 hover:bg-pink-50 border-black'
+                            : readOnly
+                              ? 'bg-gray-50 border-gray-200'
+                              : 'bg-gray-50 border-gray-200 opacity-30 cursor-not-allowed'
+                    }`}
+                  >
+                    {isSticker && sticker ? (
+                      cloneElement(sticker.icon, { className: 'w-4 h-4' })
+                    ) : dayValue === true ? (
+                      <Check className="w-5 h-5" />
+                    ) : !editDayFn(index) && !readOnly ? (
+                      <Lock className="w-3 h-3 text-gray-300" />
+                    ) : null}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -1969,8 +1973,9 @@ export function MyWorldTab(
                         <p className="text-sm font-bold text-slate-200 leading-snug mb-2">
                           {inv.habitName ?? `Investment #${inv.id}`}
                         </p>
-                        {/* FHS-378 — penalty mode tag + admin toggle. */}
-                        <div className="mb-3 flex items-center gap-2">
+                        {/* FHS-378 — penalty mode tag + admin toggle.
+                            FHS-407 — wrap so the tag + toggle don't collide on narrow cards. */}
+                        <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span
                             data-testid={`investment-mode-${inv.id}`}
                             className={`rounded-full border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase ${
@@ -2016,7 +2021,7 @@ export function MyWorldTab(
                           className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-2"
                           data-testid="investment-current"
                         >
-                          <span className="text-slate-400 whitespace-nowrap">
+                          <span className="text-slate-400">
                             Now ({inv.daysCompleted}/7 done
                             {inv.daysMissed > 0 && (
                               <span className="text-red-400 ml-1">· {inv.daysMissed} missed</span>

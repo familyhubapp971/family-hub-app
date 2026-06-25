@@ -167,6 +167,23 @@ describe('<RewardRequestsPanel />', () => {
     expect(screen.queryByTestId('reward-request-decline-req1')).not.toBeInTheDocument();
   });
 
+  // FHS-408 — the "Approving will deduct…" hint is about approving, so it must
+  // not show to a non-admin (who only sees "Only an admin can approve").
+  it('non-admin + memberId: does NOT show the "Approving will deduct" hint', async () => {
+    routeMock({ admin: false });
+    render(<RewardRequestsPanel memberId="m1" />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    expect(screen.getByTestId('reward-requests-readonly')).toBeInTheDocument();
+    expect(screen.queryByText(/Approving will deduct/)).not.toBeInTheDocument();
+  });
+
+  it('admin + memberId: shows the "Approving will deduct" hint', async () => {
+    routeMock({ admin: true });
+    render(<RewardRequestsPanel memberId="m1" />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    expect(screen.getByText(/Approving will deduct/)).toBeInTheDocument();
+  });
+
   it('empty state shows "All caught up!" panel', async () => {
     routeMock({ admin: true, requests: { requests: [] } });
     render(<RewardRequestsPanel />);
@@ -225,6 +242,26 @@ describe('<RewardRequestsPanel />', () => {
     expect(screen.queryByText(/Iman wants/)).not.toBeInTheDocument();
     // The reward name still appears
     expect(screen.getByText(/Ice Cream/)).toBeInTheDocument();
+  });
+
+  // FHS-408 — single-child sidebar is narrow, so it must stack (no 12-col grid
+  // header) and show inline labels, preventing the cost/time/buttons overlap.
+  it('with memberId: stacks (no desktop column header) and shows inline labels', async () => {
+    routeMock({ admin: true });
+    render(<RewardRequestsPanel memberId="m1" />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    // The grid column header is gated out in single-child mode.
+    expect(screen.queryByText('Child & Reward')).not.toBeInTheDocument();
+    // Inline labels are shown (they replace the missing column header).
+    expect(screen.getByText('Cost:')).toBeInTheDocument();
+    expect(screen.getByText('Requested:')).toBeInTheDocument();
+  });
+
+  it('without memberId: shows the desktop column header (grid layout)', async () => {
+    routeMock({ admin: true, requests: TWO_REQUESTS });
+    render(<RewardRequestsPanel />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    expect(screen.getByText('Child & Reward')).toBeInTheDocument();
   });
 
   it("without memberId: shows all children's requests (original behaviour)", async () => {

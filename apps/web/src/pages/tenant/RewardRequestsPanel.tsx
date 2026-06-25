@@ -115,6 +115,9 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
   );
 
   const pendingCount = requests.length;
+  // FHS-408 — in single-child mode this panel sits in a NARROW sidebar, so the
+  // 12-col grid crams (cost/time/buttons + helper text overlap). Stack instead.
+  const singleChild = Boolean(memberId);
 
   return (
     <section
@@ -152,16 +155,18 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
       ) : (
         /* List card */
         <div className="overflow-hidden rounded-xl border-2 border-black bg-white shadow-neo-sm">
-          {/* Desktop column header */}
-          <div
-            className="hidden gap-4 border-b-2 border-black bg-gray-50 p-4 text-xs font-bold uppercase tracking-widest text-gray-500 md:grid md:grid-cols-12"
-            aria-hidden="true"
-          >
-            <span className="col-span-4">{memberId ? 'Reward' : 'Child & Reward'}</span>
-            <span className="col-span-2 text-center">Cost</span>
-            <span className="col-span-2 text-center">Requested</span>
-            <span className="col-span-4 text-right">Actions</span>
-          </div>
+          {/* Desktop column header — only in the wide multi-child grid layout */}
+          {!singleChild && (
+            <div
+              className="hidden gap-4 border-b-2 border-black bg-gray-50 p-4 text-xs font-bold uppercase tracking-widest text-gray-500 md:grid md:grid-cols-12"
+              aria-hidden="true"
+            >
+              <span className="col-span-4">Child &amp; Reward</span>
+              <span className="col-span-2 text-center">Cost</span>
+              <span className="col-span-2 text-center">Requested</span>
+              <span className="col-span-4 text-right">Actions</span>
+            </div>
+          )}
 
           {/* Rows */}
           <ul className="divide-y-2 divide-black">
@@ -174,7 +179,9 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
                 <li
                   key={r.id}
                   data-testid={`reward-request-${r.id}`}
-                  className="flex flex-col gap-4 p-4 transition-colors hover:bg-gray-50 md:grid md:grid-cols-12 md:items-center md:p-5"
+                  className={`flex flex-col gap-4 p-4 transition-colors hover:bg-gray-50 md:p-5 ${
+                    singleChild ? '' : 'md:grid md:grid-cols-12 md:items-center'
+                  }`}
                   aria-label={`${r.memberName} wants ${r.rewardName}`}
                 >
                   {/* Child & Reward */}
@@ -203,7 +210,11 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
 
                   {/* Cost */}
                   <div className="col-span-2 flex items-center gap-2 md:justify-center">
-                    <span className="text-sm font-bold text-gray-500 md:hidden">Cost:</span>
+                    <span
+                      className={`text-sm font-bold text-gray-500 ${singleChild ? '' : 'md:hidden'}`}
+                    >
+                      Cost:
+                    </span>
                     <span className="flex items-center gap-1.5 rounded-full border-2 border-black bg-yellow-100 px-3 py-1 shadow-neo-xs">
                       <span className="font-heading text-lg text-yellow-700">{r.starCost}</span>
                       <Star
@@ -216,7 +227,11 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
 
                   {/* Requested */}
                   <div className="col-span-2 flex items-center gap-2 md:justify-center">
-                    <span className="text-sm font-bold text-gray-500 md:hidden">Requested:</span>
+                    <span
+                      className={`text-sm font-bold text-gray-500 ${singleChild ? '' : 'md:hidden'}`}
+                    >
+                      Requested:
+                    </span>
                     <span className="flex items-center gap-1.5 text-sm font-bold text-gray-400">
                       <Clock size={14} aria-hidden="true" />
                       {relativeTime(r.requestedAt)}
@@ -225,7 +240,7 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
 
                   {/* Actions (col-span-4) */}
                   <div className="col-span-4 flex flex-col gap-1">
-                    <div className="mt-2 flex items-center justify-end gap-2 md:mt-0">
+                    <div className="mt-2 flex flex-wrap items-center justify-end gap-2 md:mt-0">
                       {isAdmin ? (
                         isDeclinePending ? (
                           // Two-step decline: confirm state
@@ -297,9 +312,15 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
                       </p>
                     )}
 
-                    {/* Helper hint — desktop only, not while in decline confirm */}
-                    {!isDeclinePending && (
-                      <p className="mt-1 hidden text-right text-[10px] font-bold text-gray-400 md:block">
+                    {/* Helper hint — admins only (it's about approving), not while
+                        in decline confirm. FHS-408 — also gate on isAdmin so the
+                        non-admin sidebar doesn't show "Approving will deduct…". */}
+                    {isAdmin && !isDeclinePending && (
+                      <p
+                        className={`mt-1 text-right text-[10px] font-bold text-gray-400 ${
+                          singleChild ? 'block' : 'hidden md:block'
+                        }`}
+                      >
                         Approving will deduct {r.starCost} stars from {r.memberName}&apos;s balance.
                       </p>
                     )}
