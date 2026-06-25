@@ -4,13 +4,19 @@ import { useEffect } from 'react';
 // The original overflow value is captured once when the count goes 0 → 1 and
 // restored only when the count returns to 0.
 let lockCount = 0;
-let originalOverflow = '';
+let originalBodyOverflow = '';
+let originalHtmlOverflow = '';
 
+// Lock BOTH <html> and <body>: in this app the scrolling element is <html>
+// (the document/viewport), so locking body alone left the page scrollable
+// behind modals. Locking documentElement is what actually stops the scroll.
 function lock(): void {
   if (typeof document === 'undefined') return;
   if (lockCount === 0) {
-    originalOverflow = document.body.style.overflow;
+    originalBodyOverflow = document.body.style.overflow;
+    originalHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
   }
   lockCount += 1;
 }
@@ -20,7 +26,8 @@ function unlock(): void {
   if (lockCount <= 0) return;
   lockCount -= 1;
   if (lockCount === 0) {
-    document.body.style.overflow = originalOverflow;
+    document.body.style.overflow = originalBodyOverflow;
+    document.documentElement.style.overflow = originalHtmlOverflow;
   }
 }
 
