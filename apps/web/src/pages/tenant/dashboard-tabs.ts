@@ -5,15 +5,7 @@
 // Icons are React nodes — callers must import lucide-react and build
 // the list via the factory below, or import the pre-built TABS array.
 
-import {
-  Bell,
-  BookOpen,
-  CalendarDays,
-  CheckSquare,
-  GraduationCap,
-  Home,
-  Utensils,
-} from 'lucide-react';
+import { Bell, BookOpen, CalendarDays, CheckSquare, Home, Utensils } from 'lucide-react';
 import { createElement } from 'react';
 
 export interface TabDef {
@@ -67,16 +59,8 @@ export const TABS: TabDef[] = [
     ticket: 'FHS-233',
     description: 'Per-parent to-do list.',
   },
-  {
-    id: 'learning-insights',
-    label: 'Learning Insights',
-    icon: createElement(GraduationCap, { size: 16, 'aria-hidden': 'true' }),
-    ticket: 'FHS-385',
-    description: 'Per-child learning progress, certificates, and gap highlights.',
-  },
   // FHS-392 — Reward Requests moved to each child's My World sidebar.
-  // Removed the standalone dashboard tab; the panel is now rendered
-  // in-context via <RewardRequestsPanel memberId={…} /> in MyWorldTab.
+  // FHS-401 — Learning Insights moved to each child's ChildWorldPage (5th tab).
 ];
 
 export const DEFAULT_TAB = 'home';
