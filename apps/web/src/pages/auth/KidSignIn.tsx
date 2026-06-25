@@ -218,72 +218,76 @@ export function KidSignIn({
         testId="kid-login-avatars"
       />
 
-      {selectedKid && (
-        <section className="mt-4" data-testid="kid-login-pin-section">
-          <p className="mb-3 text-center font-body text-sm text-gray-600">
-            Hi <span className="font-bold">{selectedKid.displayName}</span> — type your PIN.
-          </p>
-          <PinInput
-            key={pinNonce}
-            length={4}
-            onComplete={onPinComplete}
-            disabled={submit.kind === 'submitting' || submit.kind === 'locked'}
-            error={submit.kind === 'wrong-pin' || submit.kind === 'locked'}
-            label={`PIN for ${selectedKid.displayName}`}
-            testId="kid-login-pin"
-          />
-          {submit.kind === 'submitting' && (
-            <p
-              className="mt-3 text-center font-body text-sm text-gray-600"
-              data-testid="kid-login-status-submitting"
-            >
-              Checking&hellip;
+      {/* FHS-402 — reserve the PIN-slot height so the centred card stays the same
+          height with or without a kid selected (no jump when the PIN box appears). */}
+      <div className="mt-4 min-h-[208px]">
+        {selectedKid && (
+          <section data-testid="kid-login-pin-section">
+            <p className="mb-3 text-center font-body text-sm text-gray-600">
+              Hi <span className="font-bold">{selectedKid.displayName}</span> — type your PIN.
             </p>
-          )}
-          {submit.kind === 'wrong-pin' && (
-            <p
-              className="mt-3 text-center font-body text-sm text-red-600"
-              role="alert"
-              data-testid="kid-login-error"
-            >
-              That PIN didn&rsquo;t match. Try again.
-            </p>
-          )}
-          {submit.kind === 'locked' && (
-            <p
-              className="mt-3 text-center font-body text-sm text-red-600"
-              role="alert"
-              data-testid="kid-login-locked"
-            >
-              Too many tries. Wait {Math.ceil(submit.retryAfterSec / 60)} minute
-              {Math.ceil(submit.retryAfterSec / 60) === 1 ? '' : 's'} or ask a grown-up.
-            </p>
-          )}
-          {submit.kind === 'error' && (
-            <p
-              className="mt-3 text-center font-body text-sm text-red-600"
-              role="alert"
-              data-testid="kid-login-error"
-            >
-              {submit.message}
-            </p>
-          )}
-          <div className="mt-4 text-center">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setSelectedId(undefined);
-                setSubmit({ kind: 'idle' });
-              }}
-              testId="kid-login-pick-different"
-            >
-              Pick a different face
-            </Button>
-          </div>
-        </section>
-      )}
+            <PinInput
+              key={pinNonce}
+              length={4}
+              onComplete={onPinComplete}
+              disabled={submit.kind === 'submitting' || submit.kind === 'locked'}
+              error={submit.kind === 'wrong-pin' || submit.kind === 'locked'}
+              label={`PIN for ${selectedKid.displayName}`}
+              testId="kid-login-pin"
+            />
+            {submit.kind === 'submitting' && (
+              <p
+                className="mt-3 text-center font-body text-sm text-gray-600"
+                data-testid="kid-login-status-submitting"
+              >
+                Checking&hellip;
+              </p>
+            )}
+            {submit.kind === 'wrong-pin' && (
+              <p
+                className="mt-3 text-center font-body text-sm text-red-600"
+                role="alert"
+                data-testid="kid-login-error"
+              >
+                That PIN didn&rsquo;t match. Try again.
+              </p>
+            )}
+            {submit.kind === 'locked' && (
+              <p
+                className="mt-3 text-center font-body text-sm text-red-600"
+                role="alert"
+                data-testid="kid-login-locked"
+              >
+                Too many tries. Wait {Math.ceil(submit.retryAfterSec / 60)} minute
+                {Math.ceil(submit.retryAfterSec / 60) === 1 ? '' : 's'} or ask a grown-up.
+              </p>
+            )}
+            {submit.kind === 'error' && (
+              <p
+                className="mt-3 text-center font-body text-sm text-red-600"
+                role="alert"
+                data-testid="kid-login-error"
+              >
+                {submit.message}
+              </p>
+            )}
+            <div className="mt-4 text-center">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setSelectedId(undefined);
+                  setSubmit({ kind: 'idle' });
+                }}
+                testId="kid-login-pick-different"
+              >
+                Pick a different face
+              </Button>
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart2, Check, ChevronLeft, ChevronRight, Sparkles, Star } from 'lucide-react';
 import { useKidMyWorld } from './myworld/useKidMyWorld';
@@ -8,6 +8,7 @@ import { KidMoneySkills } from './myworld/KidMoneySkills';
 import { KidRewardShop } from './myworld/KidRewardShop';
 import { KidWeeklyAccount } from './myworld/KidWeeklyAccount';
 import { KidStats } from './myworld/KidStats';
+import { KidFinishedWeekRecap } from './myworld/KidFinishedWeekRecap';
 
 // FHS-376 — the dedicated kid "My World". A DISTINCT design from the parent's
 // MyWorldTab (which this no longer reuses): a Weekly Habits / Analytics toggle,
@@ -32,6 +33,13 @@ export function KidMyWorld({
   const habitsTabRef = useRef<HTMLButtonElement>(null);
   const analyticsTabRef = useRef<HTMLButtonElement>(null);
   const data = useKidMyWorld(kidToken);
+
+  // FHS-399 — stable auth headers for the KidFinishedWeekRecap fetch.
+  // Declared here (before any early return) so hook order is always stable.
+  const recapHeaders = useMemo(
+    () => (kidToken ? { Authorization: `Bearer ${kidToken}` } : {}),
+    [kidToken],
+  );
 
   // APG tabs pattern: Left/Right (and Home/End) move between tabs + activate.
   const onTabKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
@@ -119,16 +127,21 @@ export function KidMyWorld({
   animatedOnce.current = true;
   const panelLabelId = view === 'habits' ? 'kid-myworld-tab-habits' : 'kid-myworld-tab-analytics';
 
+  // FHS-399 — on a finalized week the page is single-column: navigator + banner
+  // + habit rows + "What I Did That Week" recap. The live (current) week keeps
+  // the existing two-column layout (habits + right sidebar).
+  const isFinalized = !data.isCurrentWeek;
+
   return (
     <motion.div
       data-testid="kid-myworld"
-      className="grid grid-cols-1 gap-6 xl:grid-cols-12"
+      className={`grid grid-cols-1 gap-6 ${isFinalized ? '' : 'xl:grid-cols-12'}`}
       initial={playEnter ? { opacity: 0, y: 12 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* LEFT column */}
-      <div className="flex flex-col gap-4 xl:col-span-8">
+      {/* LEFT column (full-width on finalized; 8/12 on live) */}
+      <div className={`flex flex-col gap-4 ${isFinalized ? '' : 'xl:col-span-8'}`}>
         {/* Toggle */}
         <div
           role="tablist"
@@ -381,17 +394,33 @@ export function KidMyWorld({
                 </div>
               )}
 
-              {/* Money skills */}
-              <KidMoneySkills
-                stickerBalance={data.balance}
-                savedStickers={savedStickers}
-                savedCash={savedCash}
-                currency={currency}
-                planted={planted}
-                bonus={bonus}
-                hasInvestments={data.investments.length > 0}
-                isFinalized={!data.isCurrentWeek}
-              />
+              {/* FHS-399 — finalized week: show the recap card.
+                  Live week: show Money Skills. */}
+              {isFinalized ? (
+                week && (
+                  <KidFinishedWeekRecap
+                    weekId={week.id}
+                    headers={recapHeaders}
+                    earnedThisWeek={earnedThisWeek}
+                    stickerRate={stickerRate}
+                    currency={currency}
+                    carriedOverStickers={week.carriedOverStickers}
+                    doneThisView={doneThisView}
+                    totalThisView={totalThisView}
+                  />
+                )
+              ) : (
+                <KidMoneySkills
+                  stickerBalance={data.balance}
+                  savedStickers={savedStickers}
+                  savedCash={savedCash}
+                  currency={currency}
+                  planted={planted}
+                  bonus={bonus}
+                  hasInvestments={data.investments.length > 0}
+                  isFinalized={false}
+                />
+              )}
             </>
           ) : (
             <KidStats
@@ -405,21 +434,23 @@ export function KidMyWorld({
         </div>
       </div>
 
-      {/* RIGHT column */}
-      <div className="flex flex-col gap-6 xl:col-span-4">
-        <KidRewardShop
-          rewards={data.rewards}
-          savingsStars={savingsStars}
-          onRequest={data.requestReward}
-        />
-        <KidWeeklyAccount
-          habits={data.habits}
-          earnedThisWeek={earnedThisWeek}
-          weeklyValue={weeklyValue}
-          currency={currency}
-          stickerRate={stickerRate}
-        />
-      </div>
+      {/* RIGHT column — live weeks only. Hidden on finalized weeks (single-column). */}
+      {!isFinalized && (
+        <div className="flex flex-col gap-6 xl:col-span-4">
+          <KidRewardShop
+            rewards={data.rewards}
+            savingsStars={savingsStars}
+            onRequest={data.requestReward}
+          />
+          <KidWeeklyAccount
+            habits={data.habits}
+            earnedThisWeek={earnedThisWeek}
+            weeklyValue={weeklyValue}
+            currency={currency}
+            stickerRate={stickerRate}
+          />
+        </div>
+      )}
     </motion.div>
   );
 }
