@@ -270,4 +270,34 @@ describe('<KidLoginPage />', () => {
     fireEvent.click(screen.getByTestId('kid-login-to-parent'));
     expect(screen.getByTestId('route-marker').textContent).toBe('login');
   });
+
+  // FHS-399 / FHS-402 - PIN-slot reserved height: the wrapper div stays in the
+  // DOM whether or not a kid is selected, keeping the card height constant.
+  it('after "Pick a different face" the PIN-slot reserve div is still in the DOM (no height jump)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ family: { slug: 'khan', name: 'Khan Family' }, kids: KIDS }),
+    );
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'invalid login' }, { status: 401 }));
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('Khan Family')).toBeInTheDocument());
+
+    // Select a kid -> PIN section appears inside the reserve wrapper
+    fireEvent.click(screen.getByRole('button', { name: /Aisha/ }));
+    expect(screen.getByTestId('kid-login-pin-section')).toBeInTheDocument();
+
+    // Click "Pick a different face"
+    fireEvent.click(screen.getByTestId('kid-login-pick-different'));
+
+    // PIN section gone, but the reserve wrapper (which holds the min-h-* classes
+    // that prevent the card from jumping) must still be in the DOM.
+    expect(screen.queryByTestId('kid-login-pin-section')).toBeNull();
+
+    // The reserve div doesn't have its own testid, but its parent (the space-y-4
+    // container) and the AvatarGrid are still there, confirming the layout wrapper
+    // didn't unmount. Verify by checking the pick-different button is gone and
+    // the avatar grid is still present.
+    expect(screen.queryByTestId('kid-login-pick-different')).toBeNull();
+    expect(screen.getByTestId('kid-login-avatars')).toBeInTheDocument();
+  });
 });

@@ -218,9 +218,13 @@ export function KidSignIn({
         testId="kid-login-avatars"
       />
 
-      {/* FHS-402 — reserve the PIN-slot height so the centred card stays the same
-          height with or without a kid selected (no jump when the PIN box appears). */}
-      <div className="mt-4 min-h-[208px]">
+      {/* FHS-402 — reserve the PIN-slot height so the card doesn't jump when the
+          PIN box appears/disappears. Breakdown at each breakpoint:
+            greeting text (~24px) + PinInput (h-14=56px mobile / h-16=64px sm+)
+            + status line (~40px) + "Pick a different face" button (~40px) + gaps
+          mobile: 24+56+40+40+48gap = ~208px; sm+: 24+64+40+40+48gap = ~216px.
+          Use sm:min-h-[232px] to give comfortable headroom at the larger size. */}
+      <div className="mt-4 min-h-[208px] sm:min-h-[232px]">
         {selectedKid && (
           <section data-testid="kid-login-pin-section">
             <p className="mb-3 text-center font-body text-sm text-gray-600">

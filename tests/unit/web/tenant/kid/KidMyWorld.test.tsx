@@ -752,4 +752,150 @@ describe('<KidMyWorld />', () => {
     // "worth" label: "Each star is worth AED 1.00"
     expect(screen.getByText(/Each star is worth AED 1\.00/)).toBeInTheDocument();
   });
+
+  // FHS-399 QA regression: layout restoration + week-switch clearing
+
+  it('navigating from a finalized week back to the live week restores the two-column layout', async () => {
+    // Two weeks: w1=finalized (older), w2=live (current). Boot lands on w2.
+    const w1 = { ...WEEK, id: 'w1', weekNumber: 23, startDate: '2026-06-08', isFinalized: true };
+    const w2 = { ...WEEK, id: 'w2', weekNumber: 24, startDate: '2026-06-15', isFinalized: false };
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.endsWith('/api/kid/weeks'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ weeks: [w1, w2] }),
+        });
+      if (u.includes('/api/kid/habits'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () =>
+            u.includes('weekId=w1') ? { ...HABITS_BODY, week: w1 } : { ...HABITS_BODY, week: w2 },
+        });
+      if (u.includes('/api/kid/financial/savings'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ savedStickers: 5, savedCash: 0, currency: 'AED', stickerRate: 0.5 }),
+        });
+      if (u.includes('/api/kid/financial/investments'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ investments: [] }) });
+      if (u.endsWith('/api/kid/rewards'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ rewards: [], stickerBalance: 5 }),
+        });
+      if (u.includes('/api/kid/analytics'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ stickersPerWeek: [], habitStats: [] }),
+        });
+      if (u.includes('/api/kid/weeks/') && u.includes('/actions'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ actions: [] }),
+        });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+
+    // Boot lands on live week -> two-column layout present
+    await waitFor(() => expect(screen.getByTestId('kid-myworld')).toBeInTheDocument());
+    expect(screen.getByTestId('kid-moneyskills')).toBeInTheDocument();
+    expect(screen.getByTestId('kid-reward-goals')).toBeInTheDocument();
+    expect(screen.getByTestId('kid-my-account')).toBeInTheDocument();
+
+    // Navigate back to the finalized week
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('kid-week-prev'));
+    });
+    await waitFor(() => expect(screen.getByTestId('kid-finished-week-recap')).toBeInTheDocument());
+    expect(screen.queryByTestId('kid-moneyskills')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('kid-reward-goals')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('kid-my-account')).not.toBeInTheDocument();
+
+    // Navigate forward back to the live week -> two-column layout restored
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('kid-week-next'));
+    });
+    await waitFor(() => expect(screen.getByTestId('kid-moneyskills')).toBeInTheDocument());
+    expect(screen.getByTestId('kid-reward-goals')).toBeInTheDocument();
+    expect(screen.getByTestId('kid-my-account')).toBeInTheDocument();
+    expect(screen.queryByTestId('kid-finished-week-recap')).not.toBeInTheDocument();
+  });
+
+  it('switching between two finalized weeks clears stale Saved/Planted rows', async () => {
+    // w1 has save actions; w2 has invest actions only.
+    const w1 = { ...WEEK, id: 'w1', weekNumber: 22, startDate: '2026-06-01', isFinalized: true };
+    const w2 = { ...WEEK, id: 'w2', weekNumber: 23, startDate: '2026-06-08', isFinalized: true };
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.endsWith('/api/kid/weeks'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ weeks: [w1, w2] }),
+        });
+      if (u.includes('/api/kid/habits'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () =>
+            u.includes('weekId=w1') ? { ...HABITS_BODY, week: w1 } : { ...HABITS_BODY, week: w2 },
+        });
+      if (u.includes('/api/kid/financial/savings'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ savedStickers: 5, savedCash: 0, currency: 'AED', stickerRate: 0.5 }),
+        });
+      if (u.includes('/api/kid/financial/investments'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ investments: [] }) });
+      if (u.endsWith('/api/kid/rewards'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ rewards: [], stickerBalance: 0 }),
+        });
+      if (u.includes('/api/kid/analytics'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ stickersPerWeek: [], habitStats: [] }),
+        });
+      if (u.includes('/api/kid/weeks/w1/actions'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ actions: [{ actionType: 'save', stickersUsed: 4 }] }),
+        });
+      if (u.includes('/api/kid/weeks/w2/actions'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ actions: [{ actionType: 'invest', stickersUsed: 3 }] }),
+        });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+
+    // Boot lands on w2 (last finalized = highest index); shows Planted, no Saved
+    await waitFor(() => expect(screen.getByTestId('kid-recap-planted-stars')).toBeInTheDocument());
+    expect(screen.queryByTestId('kid-recap-saved-stars')).not.toBeInTheDocument();
+
+    // Navigate to w1 -> should show Saved, no Planted
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('kid-week-prev'));
+    });
+    // Allocation area clears (loading) then shows the new week's data
+    await waitFor(() => expect(screen.getByTestId('kid-recap-saved-stars')).toBeInTheDocument());
+    expect(screen.queryByTestId('kid-recap-planted-stars')).not.toBeInTheDocument();
+  });
 });

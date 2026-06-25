@@ -123,51 +123,55 @@ export function KidFinishedWeekRecap({
           </div>
         </div>
 
-        {/* Where My Stars Went */}
-        {actionsStatus === 'ready' && (saved ?? 0) === 0 && (planted ?? 0) === 0 ? null : (
-          <div data-testid="kid-recap-stars-allocation" className="space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-              Where My Stars Went
+        {/* Where My Stars Went — always rendered so the allocation testid is
+            always present; content varies by state. */}
+        <div data-testid="kid-recap-stars-allocation" className="space-y-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+            Where My Stars Went
+          </p>
+          {actionsStatus === 'loading' && (
+            <p className="text-xs font-bold text-gray-400">Loading...</p>
+          )}
+          {actionsStatus === 'error' && (
+            <p className="text-xs font-bold text-gray-400">
+              Couldn&rsquo;t load star details right now.
             </p>
-            {actionsStatus === 'loading' && (
-              <p className="text-xs font-bold text-gray-400">Loading...</p>
-            )}
-            {actionsStatus === 'error' && (
-              <p className="text-xs font-bold text-gray-400">
-                Couldn&rsquo;t load star details right now.
-              </p>
-            )}
-            {actionsStatus === 'ready' && (
-              <>
-                {(saved ?? 0) > 0 && (
-                  <div
-                    data-testid="kid-recap-saved-stars"
-                    className="flex items-center gap-3 rounded-xl border-2 border-cyan-300 bg-cyan-50 px-4 py-2.5"
-                  >
-                    <PiggyBank className="h-5 w-5 flex-shrink-0 text-cyan-600" aria-hidden="true" />
-                    <p className="text-sm font-bold text-cyan-800">
-                      Saved {saved} star{saved !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                )}
-                {(planted ?? 0) > 0 && (
-                  <div
-                    data-testid="kid-recap-planted-stars"
-                    className="flex items-center gap-3 rounded-xl border-2 border-emerald-300 bg-emerald-50 px-4 py-2.5"
-                  >
-                    <TrendingUp
-                      className="h-5 w-5 flex-shrink-0 text-emerald-600"
-                      aria-hidden="true"
-                    />
-                    <p className="text-sm font-bold text-emerald-800">
-                      Planted {planted} star{planted !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
+          )}
+          {actionsStatus === 'ready' && (saved ?? 0) === 0 && (planted ?? 0) === 0 && (
+            <p data-testid="kid-recap-no-activity" className="text-sm font-bold text-gray-500">
+              No stars earned this week — there&rsquo;s always next week!
+            </p>
+          )}
+          {actionsStatus === 'ready' && (
+            <>
+              {(saved ?? 0) > 0 && (
+                <div
+                  data-testid="kid-recap-saved-stars"
+                  className="flex items-center gap-3 rounded-xl border-2 border-cyan-300 bg-cyan-50 px-4 py-2.5"
+                >
+                  <PiggyBank className="h-5 w-5 flex-shrink-0 text-cyan-600" aria-hidden="true" />
+                  <p className="text-sm font-bold text-cyan-800">
+                    Saved {saved} star{saved !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
+              {(planted ?? 0) > 0 && (
+                <div
+                  data-testid="kid-recap-planted-stars"
+                  className="flex items-center gap-3 rounded-xl border-2 border-emerald-300 bg-emerald-50 px-4 py-2.5"
+                >
+                  <TrendingUp
+                    className="h-5 w-5 flex-shrink-0 text-emerald-600"
+                    aria-hidden="true"
+                  />
+                  <p className="text-sm font-bold text-emerald-800">
+                    Planted {planted} star{planted !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
         {/* Completion line + % badge */}
         <div
