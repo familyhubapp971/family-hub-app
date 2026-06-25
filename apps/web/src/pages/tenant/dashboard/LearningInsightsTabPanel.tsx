@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Award, BookOpen, Clock } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Award, BookOpen, Clock, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -88,7 +88,8 @@ function relativeDate(iso: string | null): string {
 
 // ─── Sub-components ────────────────────────────────────────────────────────
 
-/** Circular SVG progress ring with accessible label. */
+/** Circular SVG progress ring with accessible label.
+ * Fix #3: pct clamped to 0-100 before SVG math and aria-label. */
 function ProgressRing({
   pct,
   size = 64,
@@ -100,9 +101,10 @@ function ProgressRing({
   stroke?: number;
   label: string;
 }) {
+  const clamped = Math.min(100, Math.max(0, pct));
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
-  const offset = circ - (pct / 100) * circ;
+  const offset = circ - (clamped / 100) * circ;
   const cx = size / 2;
 
   return (
@@ -140,7 +142,7 @@ function ProgressRing({
         fill="#1f2937"
         aria-hidden="true"
       >
-        {pct}%
+        {clamped}%
       </text>
     </svg>
   );
@@ -149,9 +151,10 @@ function ProgressRing({
 /** Per-subject card. */
 function SubjectCard({ sub }: { sub: SubjectProgress }) {
   const theme = subjectTheme(sub.subject);
+  const slug = sub.subject.toLowerCase().replace(/\s+/g, '-');
   return (
     <article
-      data-testid={`subject-card-${sub.subject.toLowerCase().replace(/\s+/g, '-')}`}
+      data-testid={`subject-card-${slug}`}
       className={`flex flex-col gap-3 rounded-xl border-2 border-black p-4 shadow-neo-sm ${theme.bg}`}
     >
       {/* Header row */}
@@ -162,7 +165,7 @@ function SubjectCard({ sub }: { sub: SubjectProgress }) {
         </h3>
         {sub.needsHelp && (
           <span
-            data-testid={`needs-help-chip-${sub.subject.toLowerCase().replace(/\s+/g, '-')}`}
+            data-testid={`needs-help-chip-${slug}`}
             className="flex items-center gap-1 rounded-full border-2 border-red-400 bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700"
             role="status"
             aria-label={`${sub.subject}: needs help`}
@@ -177,22 +180,16 @@ function SubjectCard({ sub }: { sub: SubjectProgress }) {
       <div className="flex items-center gap-4">
         <ProgressRing
           pct={sub.progressPct}
-          label={`${sub.subject} progress: ${sub.progressPct}%`}
+          label={`${sub.subject} progress: ${Math.min(100, Math.max(0, sub.progressPct))}%`}
         />
         <div className="flex flex-col gap-1">
-          <div
-            data-testid={`subject-certs-${sub.subject.toLowerCase().replace(/\s+/g, '-')}`}
-            className="flex items-center gap-1.5"
-          >
+          <div data-testid={`subject-certs-${slug}`} className="flex items-center gap-1.5">
             <Award size={14} className="text-yellow-600" aria-hidden="true" />
             <span className="text-sm font-bold text-gray-700">
               {sub.certificatesEarned}/{sub.certificatesTotal} certs
             </span>
           </div>
-          <div
-            data-testid={`subject-last-active-${sub.subject.toLowerCase().replace(/\s+/g, '-')}`}
-            className="flex items-center gap-1.5"
-          >
+          <div data-testid={`subject-last-active-${slug}`} className="flex items-center gap-1.5">
             <Clock size={14} className="text-gray-400" aria-hidden="true" />
             <span className="text-xs font-bold text-gray-500">{relativeDate(sub.lastActive)}</span>
           </div>
@@ -262,7 +259,8 @@ function ChildSwitcher({
             data-testid={`child-pill-${child.id}`}
             onClick={() => onSelect(child.id)}
             aria-pressed={selected}
-            aria-label={`View ${child.displayName}&apos;s learning progress`}
+            // Fix #2: plain apostrophe in JS template literal (not &apos;)
+            aria-label={`View ${child.displayName}'s learning progress`}
             className={[
               'flex min-h-[44px] min-w-[44px] items-center gap-2 rounded-full border-2 border-black px-4 py-2 font-heading text-sm shadow-neo-xs transition-transform',
               'motion-safe:hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white',
@@ -288,6 +286,8 @@ type FetchStatus =
   | { kind: 'ready'; data: InsightsResponse }
   | { kind: 'error'; message: string };
 
+type MembersStatus = 'loading' | 'ok' | 'error';
+
 function isChild(role: string): boolean {
   return role === 'child' || role === 'teen';
 }
@@ -296,9 +296,10 @@ export function LearningInsightsTabPanel() {
   const { session } = useAuth();
   const slug = useTenantSlug();
 
+  // Fix #4: require BOTH token AND a non-empty slug so x-tenant-slug is never "null"
   const headers = useMemo(
     () =>
-      session?.access_token
+      session?.access_token && slug
         ? {
             Authorization: `Bearer ${session.access_token}`,
             'x-tenant-slug': slug,
@@ -308,12 +309,24 @@ export function LearningInsightsTabPanel() {
   );
 
   const [children, setChildren] = useState<ChildMember[]>([]);
+  const [membersStatus, setMembersStatus] = useState<MembersStatus>('loading');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [status, setStatus] = useState<FetchStatus>({ kind: 'idle' });
 
+  // Fix #5: retry increments a counter that is listed as an effect dep,
+  // re-triggering the insights fetch for the same selectedId.
+  const [retryCount, setRetryCount] = useState(0);
+
+  const retryInsights = useCallback(() => {
+    setStatus({ kind: 'idle' });
+    setRetryCount((n) => n + 1);
+  }, []);
+
   // 1. Fetch member list and filter to children.
+  // Fix #6: surface a distinct error state instead of silently swallowing failures.
   useEffect(() => {
     if (!headers) return;
+    setMembersStatus('loading');
     const ac = new AbortController();
     fetch(`${API_BASE}/api/members`, { headers, signal: ac.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`members ${r.status}`))))
@@ -321,18 +334,25 @@ export function LearningInsightsTabPanel() {
         if (ac.signal.aborted) return;
         const kids = (b.members ?? []).filter((m) => isChild(m.role));
         setChildren(kids);
+        setMembersStatus('ok');
         if (kids.length > 0) setSelectedId((prev) => prev ?? kids[0]!.id);
       })
-      .catch(() => {});
+      .catch((err: Error) => {
+        if (ac.signal.aborted) return;
+        // Only set error if it's a real failure, not an abort
+        if (err.name !== 'AbortError') setMembersStatus('error');
+      });
     return () => ac.abort();
   }, [headers]);
 
-  // 2. Fetch insights whenever selectedId changes.
+  // 2. Fetch insights whenever selectedId or retryCount changes.
+  // Fix #1: URL-encode memberId via URLSearchParams.
   useEffect(() => {
     if (!headers || !selectedId) return;
     setStatus({ kind: 'loading' });
     const ac = new AbortController();
-    fetch(`${API_BASE}/api/learn/insights?memberId=${selectedId}`, {
+    const qs = new URLSearchParams({ memberId: selectedId }).toString();
+    fetch(`${API_BASE}/api/learn/insights?${qs}`, {
       headers,
       signal: ac.signal,
     })
@@ -346,7 +366,9 @@ export function LearningInsightsTabPanel() {
         setStatus({ kind: 'error', message: err.message ?? 'Could not load insights.' });
       });
     return () => ac.abort();
-  }, [headers, selectedId]);
+    // retryCount is intentionally included: incrementing it re-triggers
+    // this effect for the same selectedId (user clicked "Try again").
+  }, [headers, selectedId, retryCount]);
 
   return (
     <div className="space-y-6" data-testid="learning-insights-panel">
@@ -356,14 +378,26 @@ export function LearningInsightsTabPanel() {
         <h2 className="font-heading text-2xl tracking-wide text-white">Learning Insights</h2>
       </div>
 
-      {/* Child switcher */}
-      {children.length === 0 ? (
-        <p data-testid="learning-insights-no-children" className="font-bold text-purple-200">
-          No children found in this family.
+      {/* Members fetch error — distinct from "no children" empty state */}
+      {membersStatus === 'error' && (
+        <p
+          data-testid="learning-insights-members-error"
+          role="alert"
+          className="font-bold text-red-300"
+        >
+          Could not load family members. Please refresh the page.
         </p>
-      ) : (
-        <ChildSwitcher kids={children} selectedId={selectedId} onSelect={setSelectedId} />
       )}
+
+      {/* Child switcher (only when members loaded ok) */}
+      {membersStatus === 'ok' &&
+        (children.length === 0 ? (
+          <p data-testid="learning-insights-no-children" className="font-bold text-purple-200">
+            No children found in this family.
+          </p>
+        ) : (
+          <ChildSwitcher kids={children} selectedId={selectedId} onSelect={setSelectedId} />
+        ))}
 
       {/* Insights area */}
       {status.kind === 'loading' && (
@@ -376,10 +410,24 @@ export function LearningInsightsTabPanel() {
         </p>
       )}
 
+      {/* Fix #5: error state with retry button */}
       {status.kind === 'error' && (
-        <p data-testid="learning-insights-error" role="alert" className="font-bold text-red-300">
-          {status.message}
-        </p>
+        <div
+          data-testid="learning-insights-error"
+          role="alert"
+          className="flex flex-col items-start gap-3 rounded-xl border-2 border-red-400 bg-red-50 p-5 shadow-neo-sm"
+        >
+          <p className="font-bold text-red-700">{status.message}</p>
+          <button
+            type="button"
+            data-testid="learning-insights-retry"
+            onClick={retryInsights}
+            className="flex items-center gap-2 rounded-lg border-2 border-black bg-white px-4 py-2 text-sm font-bold text-black shadow-neo-xs motion-safe:hover:-translate-y-0.5"
+          >
+            <RefreshCw size={14} aria-hidden="true" />
+            Try again
+          </button>
+        </div>
       )}
 
       {status.kind === 'ready' && (
