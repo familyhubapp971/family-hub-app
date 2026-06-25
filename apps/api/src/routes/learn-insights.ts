@@ -107,7 +107,7 @@ export const learnInsightsRouter = new Hono().get('/', async (c) => {
 
   // 6 — Target member must exist in the same tenant (cross-tenant → 404).
   const targetRows = await db
-    .select({ id: members.id, displayName: members.displayName })
+    .select({ id: members.id, displayName: members.displayName, role: members.role })
     .from(members)
     .where(and(eq(members.tenantId, tenantId), eq(members.id, memberId)))
     .limit(1);
@@ -116,7 +116,21 @@ export const learnInsightsRouter = new Hono().get('/', async (c) => {
     return c.json({ error: 'not found', detail: 'member not found in this tenant' }, 404);
   }
 
-  // 7 — canManage check (admin/adult can read any member in their tenant).
+  // 7 — Learn insights are only meaningful for child members. Requesting
+  //     analytics for an adult member is not supported and would leak that
+  //     member's existence to the caller unnecessarily.
+  if (target.role !== 'child') {
+    return c.json(
+      {
+        error: 'forbidden',
+        errorCode: 'TARGET_NOT_CHILD',
+        detail: 'learn insights are only available for child members',
+      },
+      403,
+    );
+  }
+
+  // 8 — canManage check (admin/adult can read any member in their tenant).
   if (!canManage(caller, memberId)) {
     return c.json(
       { error: 'forbidden', detail: "not allowed to view this member's insights" },

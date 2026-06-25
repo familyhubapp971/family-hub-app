@@ -3,6 +3,7 @@
 // Tests cover:
 //   - computeLearnInsights aggregation + needsHelp heuristics per subject
 //   - weakest detection (lowest progressPct among subjects with activity)
+//   - weakest tie-break: ties resolve to first in array order (Maths→Logic→Science→WF)
 //   - empty-state: child with no activity → hasActivity false, all zeroed, weakest null
 //
 // Mock call ordering (Promise.all concurrent, but JS single-threaded):
@@ -19,7 +20,7 @@ import {
   computeLearnInsights,
   MATHS_CERTS_TOTAL,
   LOGIC_CERTS_TOTAL,
-  WORLD_FLAGS_COUNTRIES_TOTAL,
+  WORLD_FLAGS_CONTINENTS_TOTAL,
 } from '../../../../apps/api/src/lib/learn-insights.js';
 
 // ─── Mock the drizzle DB client ───────────────────────────────────────────────
@@ -149,7 +150,7 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
   });
 
   it('needsHelp true when progress < 25% AND avgProveTime > 10s', async () => {
-    // 2 certs / 48 = ~4% progress, avg time 12s
+    // 2 certs / 48 = ~4% progress (floor(4.16)=4), avg time 12s
     setupDbReturns(
       [{ certsEarned: '2' }], // maths certs
       [{ certsEarned: '0' }], // logic certs
@@ -178,7 +179,7 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
   });
 
   it('needsHelp false when progress >= 25%', async () => {
-    // 12 certs / 48 = 25%
+    // 12 certs / 48 = 25% (floor(25)=25)
     setupDbReturns(
       [{ certsEarned: '12' }],
       [{ certsEarned: '0' }],
@@ -205,13 +206,28 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
     expect(res.subjects.find((s) => s.subject === 'Maths')!.progressPct).toBe(100);
   });
+
+  it('progressPct uses Math.floor — 6 certs / 48 = floor(12.5) = 12 not 13', async () => {
+    // Rounding convention: floor, not round. 6/48 = 0.125 → 12.5% → floor = 12.
+    setupDbReturns(
+      [{ certsEarned: '6' }],
+      [{ certsEarned: '0' }],
+      [],
+      [],
+      [{ lastActive: null, avgProveTime: 0 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Maths')!.progressPct).toBe(12);
+  });
 });
 
 // ─── Logic needsHelp ──────────────────────────────────────────────────────────
 
 describe('computeLearnInsights — Logic needsHelp heuristic', () => {
   it('needsHelp true when progressPct < 20 with activity', async () => {
-    // 2 / 15 = ~13%
+    // 2 / 15 = floor(13.3) = 13% < 20
     setupDbReturns(
       [{ certsEarned: '0' }], // maths certs
       [{ certsEarned: '2' }], // logic certs
@@ -226,7 +242,7 @@ describe('computeLearnInsights — Logic needsHelp heuristic', () => {
   });
 
   it('needsHelp false when progressPct >= 20', async () => {
-    // 3 / 15 = 20%
+    // 3 / 15 = floor(20) = 20%
     setupDbReturns(
       [{ certsEarned: '0' }],
       [{ certsEarned: '3' }],
@@ -351,6 +367,28 @@ describe('computeLearnInsights — Science needsHelp heuristic', () => {
     expect(sci.certificatesEarned).toBe(1);
     expect(sci.certificatesTotal).toBe(1);
   });
+
+  it('progressPct is clamped to [0, 100] — defends against corrupt column values', async () => {
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '0' }],
+      [
+        {
+          progress: 150, // corrupt value above 100
+          totalCorrect: 10,
+          totalAnswered: 10,
+          certificateAt: null,
+          lastActive: new Date('2026-01-15'),
+        },
+      ],
+      [],
+      [{ lastActive: null, avgProveTime: 0 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Science')!.progressPct).toBe(100);
+  });
 });
 
 // ─── World Flags ──────────────────────────────────────────────────────────────
@@ -398,20 +436,37 @@ describe('computeLearnInsights — World Flags', () => {
     expect(res.subjects.find((s) => s.subject === 'World Flags')!.needsHelp).toBe(false);
   });
 
-  it('certificatesTotal is WORLD_FLAGS_COUNTRIES_TOTAL (197)', async () => {
+  it('certificatesEarned is 0 (no WF cert table yet)', async () => {
+    // World Flags does not yet have a dedicated cert table. certificatesEarned
+    // is always 0; certificatesTotal is WORLD_FLAGS_CONTINENTS_TOTAL (6).
     setupDbReturns(
       [{ certsEarned: '0' }],
       [{ certsEarned: '0' }],
       [],
-      [{ explored: '0', lastActive: null }],
+      [{ explored: '50', lastActive: new Date('2026-01-01') }],
       [{ lastActive: null, avgProveTime: 0 }],
       [],
       [],
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
-    expect(res.subjects.find((s) => s.subject === 'World Flags')!.certificatesTotal).toBe(
-      WORLD_FLAGS_COUNTRIES_TOTAL,
+    const wf = res.subjects.find((s) => s.subject === 'World Flags')!;
+    expect(wf.certificatesEarned).toBe(0);
+    expect(wf.certificatesTotal).toBe(WORLD_FLAGS_CONTINENTS_TOTAL);
+  });
+
+  it('progressPct is driven by explored / 197 (not by certificatesEarned)', async () => {
+    // 100 explored / 197 = floor(50.76) = 50
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '0' }],
+      [],
+      [{ explored: '100', lastActive: new Date('2026-01-01') }],
+      [{ lastActive: null, avgProveTime: 0 }],
+      [],
+      [],
     );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'World Flags')!.progressPct).toBe(50);
   });
 });
 
@@ -419,10 +474,11 @@ describe('computeLearnInsights — World Flags', () => {
 
 describe('computeLearnInsights — weakest subject', () => {
   it('weakest is the subject with the lowest progressPct that has activity', async () => {
-    // Maths has 6 certs (~12%), Logic has 1 cert (~6%). Logic should be weakest.
+    // Maths has 6 certs (floor(6/48*100)=12%), Logic has 1 cert (floor(6%)=6%).
+    // Logic should be weakest.
     setupDbReturns(
       [{ certsEarned: '6' }], // maths certs → 12%
-      [{ certsEarned: '1' }], // logic certs → ~6%
+      [{ certsEarned: '1' }], // logic certs → 6%
       [], // science
       [], // flags
       [{ lastActive: new Date('2026-02-01'), avgProveTime: 3 }],
@@ -467,6 +523,28 @@ describe('computeLearnInsights — weakest subject', () => {
     setupDbReturns([], [], [], [], [], [], []);
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
     expect(res.weakest).toBeNull();
+  });
+
+  it('tie-break: Maths wins over Logic when both have equal progressPct (first in array order)', async () => {
+    // Both Maths and Logic at 0 progressPct with activity (1 cert each →
+    // floor(2%)=2% for Maths, floor(6%)=6% for Logic... that's not a tie).
+    // Make them equal: 0 certs each but both have a lastActive date.
+    // 0/48 = 0% Maths, 0/15 = 0% Logic → both 0%, both active via lastActive.
+    // Array.reduce with (a, b) => a.pct <= b.pct picks the first equal element.
+    // Expected winner: Maths (first in array).
+    setupDbReturns(
+      [{ certsEarned: '0' }], // maths certs → 0%
+      [{ certsEarned: '0' }], // logic certs → 0%
+      [], // science (no activity)
+      [], // flags (no activity)
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 0 }], // maths lastActive → active
+      [{ gameType: 'sorting', totalCorrect: '1', lastUpdated: new Date('2026-01-01') }], // logic active
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    // Both Maths and Logic have lastActive and 0% progress. Maths is first in
+    // the subjects array, so it wins the tie-break.
+    expect(res.weakest?.subject).toBe('Maths');
   });
 });
 

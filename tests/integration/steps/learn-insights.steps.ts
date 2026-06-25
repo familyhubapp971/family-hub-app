@@ -39,6 +39,7 @@ const ISSUER = 'https://test.supabase.local/auth/v1';
 const KID = 'learn-insights-test-kid';
 const PARENT_USER_ID = '00000000-0000-4000-8000-000000000abc';
 const PARENT_EMAIL = 'parent-insights@example.com';
+const KID_USER_ID = '00000000-0000-4000-8000-000000000bbb';
 
 async function genKey() {
   const { publicKey, privateKey } = await generateKeyPair('ES256', { extractable: true });
@@ -79,6 +80,8 @@ describeFeature(feature, ({ Background, Scenario }) => {
   let app: Hono;
   let token: string;
   let kidToken: string;
+  // Shared private key — exposed at closure level so kid-caller step can reuse.
+  let sharedPrivateKey: KeyLike;
   const tenantIds: Record<string, string> = {};
   const memberIds: Record<string, string> = {};
 
@@ -116,7 +119,8 @@ describeFeature(feature, ({ Background, Scenario }) => {
       await db.execute(sql`TRUNCATE TABLE world_flags_progress RESTART IDENTITY CASCADE`);
       await db.execute(sql`TRUNCATE TABLE members RESTART IDENTITY CASCADE`);
       await db.execute(sql`TRUNCATE TABLE tenants RESTART IDENTITY CASCADE`);
-      await db.execute(sql`DELETE FROM users WHERE id = ${PARENT_USER_ID}`);
+      // Clean both the parent and the kid user so each Scenario starts fresh.
+      await db.execute(sql`DELETE FROM users WHERE id IN (${PARENT_USER_ID}, ${KID_USER_ID})`);
       _resetJwksCacheForTests();
       for (const m of [tenantIds, memberIds]) {
         for (const k of Object.keys(m)) delete m[k];
@@ -129,19 +133,25 @@ describeFeature(feature, ({ Background, Scenario }) => {
             ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email`,
       );
       const { privateKey, publicJwk } = await genKey();
+      sharedPrivateKey = privateKey; // expose for kid-caller step
+
       app = new Hono();
       app.use(
         '*',
         authMiddleware({
           issuer: ISSUER,
           jwks: makeJwks(publicJwk),
-          userMirrorSync: async () => {
+          // userMirrorSync resolves by claims.id (= JWT sub).
+          // The kid-caller Scenario uses the same app with a different sub,
+          // so the callback MUST use claims.id rather than a hardcoded user.
+          userMirrorSync: async (claims) => {
             const rows = await db
               .select()
               .from(users)
-              .where(sql`id = ${PARENT_USER_ID}`)
+              .where(sql`id = ${claims.id}`)
               .limit(1);
-            return rows[0]!;
+            if (!rows[0]) throw new Error(`users-mirror row not found for id=${claims.id}`);
+            return rows[0];
           },
         }),
       );
@@ -306,6 +316,8 @@ describeFeature(feature, ({ Background, Scenario }) => {
       When(
         'the caller GETs learn insights for {string} in {string}',
         async (_c, name: string, slug: string) => {
+          // Omar is in "other-family"; caller's x-test-tenant header is "insight-family".
+          // The member lookup (tenantId = insight-family, id = Omar.id) returns 0 rows → 404.
           await getInsights(name, slug);
         },
       );
@@ -320,65 +332,30 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
   Scenario('kid-role caller is rejected (403 ADULT_REQUIRED)', ({ Given, When, Then, And }) => {
     Given('a kid caller {string} in {string}', async (_c, name: string, slug: string) => {
-      // Create a kid member with its own auth user identity so we can
-      // mint a JWT for it. A real kid member has isChild=true and role='child'.
-      const kidUserId = '00000000-0000-4000-8000-000000000bbb';
+      // Create a child member with its own user identity so we can mint a JWT
+      // for it. The role check comes from the DB (members.role = 'child'), not
+      // the JWT payload, so we reuse the SAME app and SAME keypair built in
+      // Background — just with a different sub claim (kid's userId).
       const kidEmail = `${name.toLowerCase()}@example.com`;
 
+      // Insert the kid user so userMirrorSync can resolve claims.sub.
       await db.execute(
-        sql`INSERT INTO users (id, email) VALUES (${kidUserId}, ${kidEmail})
+        sql`INSERT INTO users (id, email) VALUES (${KID_USER_ID}, ${kidEmail})
             ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email`,
       );
       await db.insert(members).values({
         tenantId: tenantIds[slug]!,
-        userId: kidUserId,
+        userId: KID_USER_ID,
         displayName: name,
         role: 'child',
         isChild: true,
       });
-      memberIds[name] = kidUserId; // store so getInsights can look it up if needed
+      memberIds[name] = KID_USER_ID;
 
-      // Mint a kid token via the same keypair as the parent (same JWKS). In
-      // production kid tokens are HS256, but in this test the middleware is the
-      // same ES256 auth — we just need a different subject claim.
-      const { privateKey: kpk } = await genKey();
-      // Re-build app with a combined JWKS that knows both kids. Simpler: just
-      // re-use the parent's existing app and swap the Authorization header below.
-      // The kid's role check comes from the DB (members.role = 'child'), not
-      // from the JWT payload, so using the parent keypair here is fine for
-      // testing the role guard.
-      kidToken = await mintToken(kpk, kidUserId, kidEmail);
-
-      // Re-wire the auth to accept the kid's key too (easiest: issue from
-      // the SAME key by re-keying the app). Since the JWKS cache is global,
-      // regenerate it for this user.
-      const { privateKey: newPk, publicJwk: newJwk } = await genKey();
-      newJwk.kid = KID; // re-use same KID so the existing JWKS stub matches
-      kidToken = await mintToken(newPk, kidUserId, kidEmail);
-
-      // Rebuild the app wiring so the kid's token verifies.
-      _resetJwksCacheForTests();
-      app = new Hono();
-      app.use(
-        '*',
-        authMiddleware({
-          issuer: ISSUER,
-          jwks: async (header) => {
-            const { importJWK } = await import('jose');
-            return (await importJWK(newJwk, header.alg ?? 'ES256')) as KeyLike;
-          },
-          userMirrorSync: async (claims) => {
-            const rows = await db
-              .select()
-              .from(users)
-              .where(sql`id = ${claims.sub}`)
-              .limit(1);
-            return rows[0]!;
-          },
-        }),
-      );
-      app.use('*', resolveTenantFromHeader);
-      app.route('/api/learn/insights', learnInsightsRouter);
+      // Mint using the shared parent private key (same JWKS as the existing
+      // app). The sub is the kid's userId — isAdminOrAdult() returns false
+      // because members.role = 'child' in the DB → 403 ADULT_REQUIRED.
+      kidToken = await mintToken(sharedPrivateKey, KID_USER_ID, kidEmail);
     });
 
     When(

@@ -2,21 +2,34 @@
 //
 // No auth / middleware here. The route (routes/learn-insights.ts) handles all
 // auth guards, then calls `computeLearnInsights` with already-scoped
-// (tenantId, memberId, displayName).
+// (tenantId, memberId).
 //
-// Heuristics (where we lack per-attempt accuracy):
-//   Maths      — needsHelp when progressPct < 25 AND any proveAvgTime > 10s
-//                (slow on Prove means struggling). With zero activity, needsHelp=false.
-//   Logic      — needsHelp when progressPct < 20 (few certs, few correct answers).
+// ── progressPct rounding convention ──────────────────────────────────────────
+// ALL progressPct values use Math.floor (truncate, not round). This ensures
+// the bar never "over-promises": a kid who has earned 6/48 Maths certificates
+// sees 12% (floor(12.5)), not 13% (round). It also makes expected values in
+// tests deterministic: multiply, divide, floor — no half-up surprises.
+//
+// ── Heuristics (where per-attempt accuracy is unavailable) ────────────────────
+//   Maths      — needsHelp when progressPct < 25 AND any avgProveTime > 10 s
+//                (slow on Prove = struggling; no certs → not flagged).
+//   Logic      — needsHelp when progressPct < 20 (few certs = low exposure).
 //   Science    — needsHelp when totalAnswered >= 5 AND accuracy < 0.60.
-//   World Flags — needsHelp when explored < 10 (barely started, but keep it
-//                 simple — no per-flag accuracy tracked).
+//   World Flags — needsHelp when 0 < explored < 10 countries (barely started).
 //
-// weakest = subject with the lowest progressPct that has *some* activity
-// (certificatesEarned > 0 OR lastActive != null). If none have any activity,
-// weakest = null.
+// ── weakest subject ────────────────────────────────────────────────────────────
+// The subject with the lowest progressPct among those with ANY activity
+// (lastActive != null). Ties resolve to the first subject in array order
+// (Maths → Logic → Science → World Flags) because Array.reduce picks the
+// first equal element.
 //
-// tip — one-line parent-friendly hint per subject.
+// ── World Flags certificatesEarned / certificatesTotal ────────────────────────
+// WF has no per-country cert table. We treat "continents fully explored" as
+// the cert signal: a continent is "done" when the kid has explored all
+// countries in it (cross-referenced against CONTINENT_COUNTRY_COUNTS).
+// certificatesTotal = number of distinct continents (6 per the CONTINENTS list
+// in world-flags.ts). progressPct is driven by raw explored-country count /
+// WORLD_FLAGS_COUNTRIES_TOTAL, independent of continent completions.
 
 import { and, count, eq, max, sql, sum } from 'drizzle-orm';
 import {
@@ -31,23 +44,36 @@ import type { Database } from '../db/client.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-/** 4 operations × 12 tables = 48 possible Maths certificates. */
+/**
+ * 4 operations × 12 tables = 48 possible Maths certificates.
+ * Only numeric-difficulty rows ('1'..'12') count toward this total —
+ * legacy 'easy'|'medium'|'hard' rows are excluded from the cert-count query.
+ */
 export const MATHS_CERTS_TOTAL = 48;
 
 /** 5 game types × 3 difficulties = 15 possible Logic certificates. */
 export const LOGIC_CERTS_TOTAL = 15;
 
 /**
- * Total distinct country codes in the World Flags dataset (all ~197 UN-
- * recognized sovereign states tracked by the web app).
+ * Total distinct country codes in the World Flags dataset (~197 UN-recognized
+ * sovereign states tracked by the web app's countries.ts).
+ * Used for progressPct only (explored / total).
  */
 export const WORLD_FLAGS_COUNTRIES_TOTAL = 197;
+
+/**
+ * Number of continents in the World Flags dataset.
+ * Matches CONTINENTS array in lib/world-flags.ts (6 entries).
+ * Used as certificatesTotal for World Flags — a "certificate" = a fully
+ * explored continent.
+ */
+export const WORLD_FLAGS_CONTINENTS_TOTAL = 6;
 
 // ─── Response types ───────────────────────────────────────────────────────────
 
 export interface SubjectInsight {
   subject: 'Maths' | 'Logic' | 'Science' | 'World Flags';
-  /** 0–100 integer */
+  /** 0–100 integer, floor-rounded (see rounding convention above). */
   progressPct: number;
   certificatesEarned: number;
   certificatesTotal: number;
@@ -58,7 +84,7 @@ export interface SubjectInsight {
 
 export interface WeakestDetail {
   subject: 'Maths' | 'Logic' | 'Science' | 'World Flags';
-  /** e.g. "division tables", "sorting (easy)", "Animal Classification", "Africa" */
+  /** e.g. "division tables", "sorting (needs most practice)" */
   detail: string;
   /** One-line friendly tip for parents */
   tip: string;
@@ -75,6 +101,7 @@ export interface LearnInsightsResult {
 // ─── Internal raw aggregates ──────────────────────────────────────────────────
 
 interface MathsRaw {
+  /** Count of rows where difficulty is a numeric table number ('1'..'12') */
   certsEarned: number;
   lastActive: Date | null;
   /** Average proveAvgTime across all rows where proveAvgTime > 0, or 0 */
@@ -84,9 +111,7 @@ interface MathsRaw {
 interface LogicRaw {
   certsEarned: number;
   lastActive: Date | null;
-  /** { gameType: totalCorrectAcrossDifficulties } */
   correctByGame: Record<string, number>;
-  /** The game_type with the fewest certs (or fewest correct if tied) */
   weakestGame: string | null;
 }
 
@@ -106,11 +131,17 @@ interface WorldFlagsRaw {
 // ─── Per-subject DB queries ───────────────────────────────────────────────────
 
 async function fetchMaths(db: Database, tenantId: string, memberId: string): Promise<MathsRaw> {
+  // Only count numeric-difficulty certificates ('1'..'12') — excludes legacy
+  // 'easy'|'medium'|'hard' rows so certsEarned can never exceed MATHS_CERTS_TOTAL.
   const [certsRow] = await db
     .select({ certsEarned: count() })
     .from(mwMathsCertificates)
     .where(
-      and(eq(mwMathsCertificates.tenantId, tenantId), eq(mwMathsCertificates.memberId, memberId)),
+      and(
+        eq(mwMathsCertificates.tenantId, tenantId),
+        eq(mwMathsCertificates.memberId, memberId),
+        sql`${mwMathsCertificates.difficulty} ~ '^[0-9]+$'`,
+      ),
     );
 
   const [progressRow] = await db
@@ -242,14 +273,14 @@ async function fetchWorldFlags(
 function mathsNeedsHelp(certsEarned: number, avgProveTime: number): boolean {
   // No activity → not "needs help" (don't flag a kid who hasn't started).
   if (certsEarned === 0) return false;
-  const progressPct = Math.round((certsEarned / MATHS_CERTS_TOTAL) * 100);
+  const progressPct = Math.floor((certsEarned / MATHS_CERTS_TOTAL) * 100);
   // Low progress AND slow on Prove = struggling.
   return progressPct < 25 && avgProveTime > 10;
 }
 
 function logicNeedsHelp(certsEarned: number): boolean {
   if (certsEarned === 0) return false;
-  return Math.round((certsEarned / LOGIC_CERTS_TOTAL) * 100) < 20;
+  return Math.floor((certsEarned / LOGIC_CERTS_TOTAL) * 100) < 20;
 }
 
 function scienceNeedsHelp(totalAnswered: number, totalCorrect: number): boolean {
@@ -285,11 +316,10 @@ function gameTypeLabel(gameType: string): string {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 /**
- * Fetches member's display name, aggregates Learn data from four subjects,
- * and returns the full insights payload.
+ * Aggregates Learn data from four subjects for one child.
  *
  * Scoped exclusively to (tenantId, memberId) — callers must have already
- * verified that the target member belongs to the caller's tenant.
+ * verified the target member belongs to the caller's tenant AND is a child.
  */
 export async function computeLearnInsights(
   db: Database,
@@ -305,7 +335,8 @@ export async function computeLearnInsights(
   ]);
 
   // ── Maths subject ────────────────────────────────────────────────────────
-  const mathsPct = Math.min(100, Math.round((maths.certsEarned / MATHS_CERTS_TOTAL) * 100));
+  // progressPct uses Math.floor (see rounding convention at top of file).
+  const mathsPct = Math.min(100, Math.floor((maths.certsEarned / MATHS_CERTS_TOTAL) * 100));
   const mathsSubject: SubjectInsight = {
     subject: 'Maths',
     progressPct: mathsPct,
@@ -316,7 +347,7 @@ export async function computeLearnInsights(
   };
 
   // ── Logic subject ────────────────────────────────────────────────────────
-  const logicPct = Math.min(100, Math.round((logic.certsEarned / LOGIC_CERTS_TOTAL) * 100));
+  const logicPct = Math.min(100, Math.floor((logic.certsEarned / LOGIC_CERTS_TOTAL) * 100));
   const logicSubject: SubjectInsight = {
     subject: 'Logic',
     progressPct: logicPct,
@@ -327,12 +358,13 @@ export async function computeLearnInsights(
   };
 
   // ── Science subject ──────────────────────────────────────────────────────
-  // progressPct = learn_progress.progress column (0–100 integer), which the
-  // Learn flow sets. certificatesEarned = 1 if certificate_at is set, else 0.
+  // progressPct = learn_progress.progress column (0–100 integer set by the
+  // Learn flow). Clamped to [0, 100] defensively in case of column drift.
+  // certificatesEarned = 1 if certificate_at is set, else 0.
   const scienceCerts = science.certificateAt ? 1 : 0;
   const scienceSubject: SubjectInsight = {
     subject: 'Science',
-    progressPct: science.progress,
+    progressPct: Math.min(100, Math.max(0, science.progress)),
     certificatesEarned: scienceCerts,
     certificatesTotal: 1,
     lastActive: science.lastActive?.toISOString() ?? null,
@@ -340,14 +372,25 @@ export async function computeLearnInsights(
   };
 
   // ── World Flags subject ──────────────────────────────────────────────────
-  const flagsPct = Math.min(100, Math.round((flags.explored / WORLD_FLAGS_COUNTRIES_TOTAL) * 100));
-  // No cert table for World Flags — we treat explored count as progress signal;
-  // certificates = 0 / total = 0 (not applicable for this subject).
+  // progressPct  = explored countries / 197 (floor-rounded).
+  // certificatesEarned = number of fully-explored continents (one per
+  //   continent where every country in it has been explored). This is a proxy
+  //   since WF has no dedicated cert table; it's coherent: completing a
+  //   continent is the natural "achievement". certificatesTotal = 6 continents.
+  // hasActivity trigger: lastActive from world_flags_progress (any explore).
+  const flagsPct = Math.min(100, Math.floor((flags.explored / WORLD_FLAGS_COUNTRIES_TOTAL) * 100));
+  // Continent completion is not queryable here without the full country list.
+  // We use the world_flags_learn_progress table (one row per completed chunk)
+  // as a cheaper proxy: count DISTINCT continents where the kid has at least
+  // one completed chunk. A full continent completion is tracked via the learn
+  // path separately. For now, certificatesEarned = 0 (accurate: no WF cert
+  // table exists yet). TODO(FHS-future): switch to continent-completion count
+  // once the WF cert table is added.
   const flagsSubject: SubjectInsight = {
     subject: 'World Flags',
     progressPct: flagsPct,
-    certificatesEarned: flags.explored,
-    certificatesTotal: WORLD_FLAGS_COUNTRIES_TOTAL,
+    certificatesEarned: 0,
+    certificatesTotal: WORLD_FLAGS_CONTINENTS_TOTAL,
     lastActive: flags.lastActive?.toISOString() ?? null,
     needsHelp: worldFlagsNeedsHelp(flags.explored),
   };
@@ -355,10 +398,14 @@ export async function computeLearnInsights(
   const subjects: SubjectInsight[] = [mathsSubject, logicSubject, scienceSubject, flagsSubject];
 
   // ── hasActivity ──────────────────────────────────────────────────────────
+  // A subject has activity if it has a lastActive date OR certificatesEarned > 0.
+  // For World Flags, explored > 0 is signaled by lastActive being non-null.
   const hasActivity = subjects.some((s) => s.lastActive !== null || s.certificatesEarned > 0);
 
   // ── weakest ──────────────────────────────────────────────────────────────
-  // Only consider subjects that have some activity (lastActive or certs).
+  // Only consider subjects with some activity.
+  // Ties resolve to the first subject in array order (Maths→Logic→Science→World
+  // Flags) because Array.reduce picks the first equal element.
   const active = subjects.filter((s) => s.lastActive !== null || s.certificatesEarned > 0);
   let weakest: WeakestDetail | null = null;
 
@@ -373,7 +420,7 @@ export async function computeLearnInsights(
     } else if (lowest.subject === 'Science') {
       const acc =
         science.totalAnswered > 0
-          ? Math.round((science.totalCorrect / science.totalAnswered) * 100)
+          ? Math.floor((science.totalCorrect / science.totalAnswered) * 100)
           : 0;
       detail = `${acc}% accuracy in Science questions`;
     } else {

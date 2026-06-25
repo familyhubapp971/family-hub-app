@@ -23,6 +23,7 @@ vi.mock('../../../../apps/api/src/lib/learn-insights.js', () => ({
   MATHS_CERTS_TOTAL: 48,
   LOGIC_CERTS_TOTAL: 15,
   WORLD_FLAGS_COUNTRIES_TOTAL: 197,
+  WORLD_FLAGS_CONTINENTS_TOTAL: 6,
 }));
 
 import { computeLearnInsights } from '../../../../apps/api/src/lib/learn-insights.js';
@@ -72,7 +73,7 @@ const STUB_INSIGHTS = {
       subject: 'World Flags' as const,
       progressPct: 0,
       certificatesEarned: 0,
-      certificatesTotal: 197,
+      certificatesTotal: 6,
       lastActive: null,
       needsHelp: false,
     },
@@ -87,10 +88,13 @@ function buildApp({
   callerRole,
   noTenant = false,
   targetMemberExists = true,
+  targetRole = 'child',
 }: {
   callerRole: string | null;
   noTenant?: boolean;
   targetMemberExists?: boolean;
+  /** Role of the target member returned by the DB mock (default: 'child') */
+  targetRole?: string;
 }) {
   const seed: MiddlewareHandler = async (c, next) => {
     c.set('user', { id: USER_ID, email: FIXED_USER.email, claims: {} });
@@ -99,8 +103,8 @@ function buildApp({
     await next();
   };
 
-  // DB calls:
-  // 1) loadCaller: select().from().where().limit(1) → caller row
+  // DB calls in handler order:
+  // 1) loadCaller: select().from().where().limit(1) → caller member row
   // 2) target member lookup: select().from().where().limit(1) → target row
   let selectCallCount = 0;
   dbMock.select.mockImplementation(() => {
@@ -111,14 +115,16 @@ function buildApp({
         where: () => ({
           limit: () => {
             if (callNo === 1) {
-              // loadCaller
+              // loadCaller — returns a member with the specified caller role
               return Promise.resolve(
                 callerRole ? [{ id: 'caller-member-id', role: callerRole }] : [],
               );
             }
-            // target member lookup
+            // target member lookup — returns the child row (role included)
             return Promise.resolve(
-              targetMemberExists ? [{ id: CHILD_ID, displayName: 'TestChild' }] : [],
+              targetMemberExists
+                ? [{ id: CHILD_ID, displayName: 'TestChild', role: targetRole }]
+                : [],
             );
           },
         }),
@@ -204,6 +210,22 @@ describe('GET /api/learn/insights — target member guard', () => {
     );
     expect(res.status).toBe(404);
   });
+
+  it('403 TARGET_NOT_CHILD when target is an adult member', async () => {
+    // An admin caller requesting learn insights for another adult member
+    // is not supported — learn insights are child-only.
+    const res = await buildApp({ callerRole: 'admin', targetRole: 'adult' }).request(get(CHILD_ID));
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { errorCode: string };
+    expect(body.errorCode).toBe('TARGET_NOT_CHILD');
+  });
+
+  it('403 TARGET_NOT_CHILD when target is an admin member', async () => {
+    const res = await buildApp({ callerRole: 'admin', targetRole: 'admin' }).request(get(CHILD_ID));
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { errorCode: string };
+    expect(body.errorCode).toBe('TARGET_NOT_CHILD');
+  });
 });
 
 describe('GET /api/learn/insights — success path', () => {
@@ -238,13 +260,14 @@ describe('GET /api/learn/insights — success path', () => {
   it('empty-state shape: hasActivity false, weakest null, all subjects zeroed', async () => {
     const res = await buildApp({ callerRole: 'admin' }).request(get(CHILD_ID));
     const body = (await res.json()) as {
-      subjects: Array<{ progressPct: number; certificatesEarned: number }>;
+      subjects: Array<{ subject: string; progressPct: number; certificatesEarned: number }>;
       hasActivity: boolean;
       weakest: null;
     };
     expect(body.hasActivity).toBe(false);
     expect(body.weakest).toBeNull();
     for (const s of body.subjects) {
+      // STUB_INSIGHTS has Maths at progressPct=10; all others at 0.
       expect(s.progressPct).toBe(s.subject === 'Maths' ? 10 : 0);
     }
   });
