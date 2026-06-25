@@ -45,6 +45,7 @@ import {
   applyPlacement,
   upsertProgress,
   awardCertificate,
+  updateProgressBodySchema,
   PRACTICE_THRESHOLD,
   PROVE_SCORE_THRESHOLD,
   PLACEMENT_TIME_THRESHOLD_SECONDS,
@@ -440,5 +441,170 @@ describe('awardCertificate — idempotency', () => {
     expect(result.alreadyEarned).toBe(false);
     expect(result.certificate.difficulty).toBe('easy');
     expect(insertMock).toHaveBeenCalledOnce();
+  });
+});
+
+// ─── updateProgressBodySchema — cross-field refines (FHS-401) ─────────────────
+
+describe('updateProgressBodySchema — impossible accuracy inputs rejected', () => {
+  it('rejects when practiceCorrect > practiceAttempts', () => {
+    const result = updateProgressBodySchema.safeParse({
+      operation: 'addition',
+      tableNumber: 1,
+      practiceCorrect: 9,
+      practiceAttempts: 5,
+    });
+    expect(result.success).toBe(false);
+    const issues = result.error!.issues.map((i) => i.message);
+    expect(issues.some((m) => m.includes('practiceCorrect'))).toBe(true);
+  });
+
+  it('rejects when proveScore > proveAttempts', () => {
+    const result = updateProgressBodySchema.safeParse({
+      operation: 'multiplication',
+      tableNumber: 3,
+      proveScore: 10,
+      proveAttempts: 8,
+    });
+    expect(result.success).toBe(false);
+    const issues = result.error!.issues.map((i) => i.message);
+    expect(issues.some((m) => m.includes('proveScore'))).toBe(true);
+  });
+
+  it('accepts when practiceCorrect === practiceAttempts (perfect run)', () => {
+    const result = updateProgressBodySchema.safeParse({
+      operation: 'addition',
+      tableNumber: 1,
+      practiceCorrect: 10,
+      practiceAttempts: 10,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts when only learnCompleted (no accuracy fields)', () => {
+    const result = updateProgressBodySchema.safeParse({
+      operation: 'subtraction',
+      tableNumber: 2,
+      learnCompleted: true,
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+// ─── upsertProgress — SELECT gate (FHS-401) ───────────────────────────────────
+
+describe('upsertProgress — SELECT skipped when no real accuracy delta', () => {
+  it('does NOT call db.select for a learnCompleted-only PUT (no accuracy fields)', async () => {
+    const fakeRow = {
+      id: 'e1',
+      tenantId: TENANT,
+      memberId: MEMBER,
+      operation: 'addition' as const,
+      tableNumber: 1,
+      learnCompleted: true,
+      practiceCorrect: 0,
+      proveScore: 0,
+      proveAvgTime: 0,
+      placementUnlocked: false,
+      totalCorrect: 0,
+      totalAttempts: 0,
+      updatedAt: new Date(),
+    };
+
+    const selectMock = vi.fn();
+    const insertMock = vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        onConflictDoUpdate: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([fakeRow]),
+        }),
+      }),
+    });
+
+    const db = { select: selectMock, insert: insertMock } as unknown as Parameters<
+      typeof upsertProgress
+    >[0];
+
+    await upsertProgress(db, TENANT, MEMBER, 'addition', 1, { learnCompleted: true });
+
+    // No SELECT should have fired — no accuracy delta.
+    expect(selectMock).not.toHaveBeenCalled();
+    expect(insertMock).toHaveBeenCalledOnce();
+  });
+
+  it('does NOT call db.select for a proveAttempts:0 no-op session', async () => {
+    const fakeRow = {
+      id: 'e2',
+      tenantId: TENANT,
+      memberId: MEMBER,
+      operation: 'addition' as const,
+      tableNumber: 1,
+      learnCompleted: false,
+      practiceCorrect: 0,
+      proveScore: 0,
+      proveAvgTime: 0,
+      placementUnlocked: false,
+      totalCorrect: 0,
+      totalAttempts: 0,
+      updatedAt: new Date(),
+    };
+
+    const selectMock = vi.fn();
+    const insertMock = vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        onConflictDoUpdate: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([fakeRow]),
+        }),
+      }),
+    });
+
+    const db = { select: selectMock, insert: insertMock } as unknown as Parameters<
+      typeof upsertProgress
+    >[0];
+
+    // proveAttempts:0 → accuracyDelta.attempts === 0 → no real delta.
+    await upsertProgress(db, TENANT, MEMBER, 'addition', 1, {
+      proveScore: 0,
+      accuracyDelta: { correct: 0, attempts: 0 },
+    });
+
+    expect(selectMock).not.toHaveBeenCalled();
+  });
+
+  it('DOES call db.select when there is a real accuracy delta (attempts > 0)', async () => {
+    const fakeRow = {
+      id: 'e3',
+      tenantId: TENANT,
+      memberId: MEMBER,
+      operation: 'addition' as const,
+      tableNumber: 1,
+      learnCompleted: false,
+      practiceCorrect: 8,
+      proveScore: 0,
+      proveAvgTime: 0,
+      placementUnlocked: false,
+      totalCorrect: 8,
+      totalAttempts: 10,
+      updatedAt: new Date(),
+    };
+
+    const selectMock = makeSelectMock([]);
+    const insertMock = vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        onConflictDoUpdate: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([fakeRow]),
+        }),
+      }),
+    });
+
+    const db = { select: selectMock, insert: insertMock } as unknown as Parameters<
+      typeof upsertProgress
+    >[0];
+
+    await upsertProgress(db, TENANT, MEMBER, 'addition', 1, {
+      practiceCorrect: 8,
+      accuracyDelta: { correct: 8, attempts: 10 },
+    });
+
+    expect(selectMock).toHaveBeenCalledOnce();
   });
 });

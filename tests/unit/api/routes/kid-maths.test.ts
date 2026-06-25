@@ -181,6 +181,36 @@ describe('FHS-394 — PUT /api/kid/maths/progress', () => {
     expect(res.status).toBe(400);
   });
 
+  it('400 when practiceCorrect > practiceAttempts (impossible input, FHS-401)', async () => {
+    const token = await mintKidToken();
+    const res = await buildApp().request('/api/kid/maths/progress', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operation: 'addition',
+        tableNumber: 1,
+        practiceCorrect: 9,
+        practiceAttempts: 5,
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('400 when proveScore > proveAttempts (impossible input, FHS-401)', async () => {
+    const token = await mintKidToken();
+    const res = await buildApp().request('/api/kid/maths/progress', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operation: 'addition',
+        tableNumber: 1,
+        proveScore: 10,
+        proveAttempts: 8,
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
   it('200 + updated row on valid body', async () => {
     const upserted = {
       id: '00000000-0000-4000-8000-000000000002',

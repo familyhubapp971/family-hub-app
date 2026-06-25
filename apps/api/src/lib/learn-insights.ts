@@ -10,12 +10,13 @@
 // sees 12% (floor(12.5)), not 13% (round). It also makes expected values in
 // tests deterministic: multiply, divide, floor — no half-up surprises.
 //
-// ── Heuristics (where per-attempt accuracy is unavailable) ────────────────────
-//   Maths      — needsHelp when progressPct < 25 AND any avgProveTime > 10 s
-//                (slow on Prove = struggling; no certs → not flagged).
-//   Logic      — needsHelp when progressPct < 20 (few certs = low exposure).
-//   Science    — needsHelp when totalAnswered >= 5 AND accuracy < 0.60.
-//   World Flags — needsHelp when 0 < explored < 10 countries (barely started).
+// ── Heuristics ─────────────────────────────────────────────────────────────────
+//   Maths      — ≥5 attempts: accuracy < 0.70 → flagged (certsEarned irrelevant).
+//                <5 attempts: progressPct < 25 AND avgProveTime > 10 s (proxy).
+//   Logic      — ≥5 attempts: accuracy < 0.70 → flagged (same pattern as Maths).
+//                <5 attempts: progressPct < 20 (proxy; no flag if 0 certs yet).
+//   Science    — totalAnswered >= 5 AND accuracy < 0.60.
+//   World Flags — 0 < explored < 10 countries (barely started).
 //
 // ── weakest subject ────────────────────────────────────────────────────────────
 // The subject with the lowest progressPct among those with ANY activity
@@ -307,25 +308,29 @@ function mathsNeedsHelp(
   totalCorrect: number,
   totalAttempts: number,
 ): boolean {
-  // No activity → not "needs help" (don't flag a kid who hasn't started).
-  if (certsEarned === 0) return false;
-  // FHS-401: prefer real accuracy when enough attempts are recorded (≥5).
-  // accuracy < 60% = struggling regardless of Prove speed.
+  // FHS-401: when we have enough real signal (≥5 attempts), use accuracy alone.
+  // Threshold 0.70: a kid at ~61% is genuinely struggling and should be flagged
+  // even if they have 0 certs (the old certsEarned>0 guard was a proxy from
+  // before accuracy data existed — a struggling new kid is exactly who needs help).
   if (totalAttempts >= 5) {
-    return totalCorrect / totalAttempts < 0.6;
+    return totalCorrect / totalAttempts < 0.7;
   }
-  // Fallback heuristic (pre-accuracy data): low progress AND slow on Prove.
+  // Fallback heuristic (brand-new kid with <5 attempts — not enough signal yet):
+  // don't flag until there's real data, unless certs+speed signal struggling.
+  if (certsEarned === 0) return false;
   const progressPct = Math.floor((certsEarned / MATHS_CERTS_TOTAL) * 100);
   return progressPct < 25 && avgProveTime > 10;
 }
 
 function logicNeedsHelp(certsEarned: number, sumCorrect: number, sumAttempts: number): boolean {
-  if (certsEarned === 0) return false;
-  // FHS-401: prefer real accuracy when enough attempts are recorded (≥5).
+  // FHS-401: same pattern as mathsNeedsHelp — real accuracy takes priority when
+  // ≥5 attempts recorded. Threshold 0.70 (matches Maths). certsEarned=0 is NOT
+  // a guard here: a struggling kid with no certs yet is exactly who needs help.
   if (sumAttempts >= 5) {
-    return sumCorrect / sumAttempts < 0.6;
+    return sumCorrect / sumAttempts < 0.7;
   }
-  // Fallback: few certs = low exposure.
+  // Fallback (brand-new kid, <5 attempts): no flag until there's real signal.
+  if (certsEarned === 0) return false;
   return Math.floor((certsEarned / LOGIC_CERTS_TOTAL) * 100) < 20;
 }
 
@@ -384,8 +389,12 @@ export async function computeLearnInsights(
   // progressPct uses Math.floor (see rounding convention at top of file).
   const mathsPct = Math.min(100, Math.floor((maths.certsEarned / MATHS_CERTS_TOTAL) * 100));
   // FHS-401: accuracy = total_correct / total_attempts, null when no attempts yet.
+  // Clamped to 100 — a client sending more correct than attempts is a bug, not
+  // a reason to 500 (the Zod response schema declares max(100)).
   const mathsAccuracy =
-    maths.totalAttempts > 0 ? Math.round((maths.totalCorrect / maths.totalAttempts) * 100) : null;
+    maths.totalAttempts > 0
+      ? Math.min(100, Math.round((maths.totalCorrect / maths.totalAttempts) * 100))
+      : null;
   const mathsSubject: SubjectInsight = {
     subject: 'Maths',
     progressPct: mathsPct,
@@ -404,8 +413,11 @@ export async function computeLearnInsights(
   // ── Logic subject ────────────────────────────────────────────────────────
   const logicPct = Math.min(100, Math.floor((logic.certsEarned / LOGIC_CERTS_TOTAL) * 100));
   // FHS-401: accuracy = sum(correctCount) / sum(totalAttempts) across all rows.
+  // Clamped to 100 defensively (see Maths comment above).
   const logicAccuracy =
-    logic.sumAttempts > 0 ? Math.round((logic.sumCorrect / logic.sumAttempts) * 100) : null;
+    logic.sumAttempts > 0
+      ? Math.min(100, Math.round((logic.sumCorrect / logic.sumAttempts) * 100))
+      : null;
   const logicSubject: SubjectInsight = {
     subject: 'Logic',
     progressPct: logicPct,
@@ -422,9 +434,12 @@ export async function computeLearnInsights(
   // certificatesEarned = 1 if certificate_at is set, else 0.
   const scienceCerts = science.certificateAt ? 1 : 0;
   // FHS-401: Science already has total_correct/total_answered in learn_progress.
+  // total_answered = every individual answer submission (including retries on
+  // the same question card), so accuracyPct reflects overall answer quality,
+  // not distinct questions seen. Clamped to 100 defensively.
   const scienceAccuracy =
     science.totalAnswered > 0
-      ? Math.round((science.totalCorrect / science.totalAnswered) * 100)
+      ? Math.min(100, Math.round((science.totalCorrect / science.totalAnswered) * 100))
       : null;
   const scienceSubject: SubjectInsight = {
     subject: 'Science',

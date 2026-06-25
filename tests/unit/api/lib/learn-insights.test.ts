@@ -167,8 +167,8 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
     expect(res.subjects.find((s) => s.subject === 'Maths')!.needsHelp).toBe(true);
   });
 
-  it('needsHelp true when accuracy < 60% with enough attempts (FHS-401 real accuracy path)', async () => {
-    // 3 correct / 10 attempts = 30% accuracy < 60%
+  it('needsHelp true when accuracy < 70% with enough attempts (FHS-401 real accuracy path)', async () => {
+    // 3 correct / 10 attempts = 30% accuracy < 70%
     setupDbReturns(
       [{ certsEarned: '2' }],
       [{ certsEarned: '0' }],
@@ -182,8 +182,24 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
     expect(res.subjects.find((s) => s.subject === 'Maths')!.needsHelp).toBe(true);
   });
 
-  it('needsHelp false when accuracy >= 60% with enough attempts', async () => {
-    // 7 correct / 10 attempts = 70% accuracy >= 60%
+  it('needsHelp true with 0 certs and accuracy < 70% (struggling new kid)', async () => {
+    // certsEarned=0 must NOT block the flag when ≥5 attempts exists.
+    // 5 correct / 10 attempts = 50% < 70% → needsHelp.
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '0' }],
+      [],
+      [],
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 3, totalCorrect: 5, totalAttempts: 10 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Maths')!.needsHelp).toBe(true);
+  });
+
+  it('needsHelp false when accuracy >= 70% with enough attempts', async () => {
+    // 7 correct / 10 attempts = 70% accuracy — exactly at threshold → not flagged.
     setupDbReturns(
       [{ certsEarned: '2' }],
       [{ certsEarned: '0' }],
@@ -292,6 +308,29 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
     expect(res.subjects.find((s) => s.subject === 'Maths')!.accuracyPct).toBe(70);
   });
+
+  it('accuracyPct is clamped to 100 when correct > attempts (corrupt data guard)', async () => {
+    // If DB somehow has totalCorrect > totalAttempts, the API must not 500.
+    // The Zod response schema declares max(100), so an unclamped value would throw.
+    setupDbReturns(
+      [{ certsEarned: '2' }],
+      [{ certsEarned: '0' }],
+      [],
+      [],
+      [
+        {
+          lastActive: new Date('2026-01-01'),
+          avgProveTime: 3,
+          totalCorrect: 15,
+          totalAttempts: 10,
+        },
+      ],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Maths')!.accuracyPct).toBe(100);
+  });
 });
 
 // ─── Logic needsHelp ──────────────────────────────────────────────────────────
@@ -319,8 +358,8 @@ describe('computeLearnInsights — Logic needsHelp heuristic', () => {
     expect(res.subjects.find((s) => s.subject === 'Logic')!.needsHelp).toBe(true);
   });
 
-  it('needsHelp true when accuracy < 60% with enough attempts (FHS-401)', async () => {
-    // 2 correct / 10 attempts = 20% accuracy < 60%
+  it('needsHelp true when accuracy < 70% with enough attempts (FHS-401)', async () => {
+    // 2 correct / 10 attempts = 20% accuracy < 70%
     setupDbReturns(
       [{ certsEarned: '0' }],
       [{ certsEarned: '2' }],
@@ -341,8 +380,31 @@ describe('computeLearnInsights — Logic needsHelp heuristic', () => {
     expect(res.subjects.find((s) => s.subject === 'Logic')!.needsHelp).toBe(true);
   });
 
-  it('needsHelp false when accuracy >= 60% with enough attempts', async () => {
-    // 8 correct / 10 attempts = 80% accuracy >= 60%
+  it('needsHelp true with 0 certs and accuracy < 70% (struggling new kid)', async () => {
+    // certsEarned=0 must NOT suppress the flag when ≥5 attempts exist.
+    // 4 correct / 10 attempts = 40% < 70% → needsHelp.
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '0' }],
+      [],
+      [],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [
+        {
+          gameType: 'truefalse',
+          totalCorrect: '4',
+          totalAttempts: '10',
+          lastUpdated: new Date('2026-01-01'),
+        },
+      ],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Logic')!.needsHelp).toBe(true);
+  });
+
+  it('needsHelp false when accuracy >= 70% with enough attempts', async () => {
+    // 7 correct / 10 attempts = 70% — exactly at threshold → not flagged.
     setupDbReturns(
       [{ certsEarned: '0' }],
       [{ certsEarned: '3' }],
@@ -352,7 +414,7 @@ describe('computeLearnInsights — Logic needsHelp heuristic', () => {
       [
         {
           gameType: 'patterns',
-          totalCorrect: '8',
+          totalCorrect: '7',
           totalAttempts: '10',
           lastUpdated: new Date('2026-01-01'),
         },
@@ -450,6 +512,27 @@ describe('computeLearnInsights — Logic needsHelp heuristic', () => {
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
     expect(res.subjects.find((s) => s.subject === 'Logic')!.accuracyPct).toBe(50);
+  });
+
+  it('accuracyPct is clamped to 100 when sumCorrect > sumAttempts (corrupt data guard)', async () => {
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '1' }],
+      [],
+      [],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [
+        {
+          gameType: 'truefalse',
+          totalCorrect: '20',
+          totalAttempts: '10',
+          lastUpdated: new Date('2026-01-01'),
+        },
+      ],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Logic')!.accuracyPct).toBe(100);
   });
 });
 
@@ -607,6 +690,28 @@ describe('computeLearnInsights — Science needsHelp heuristic', () => {
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
     expect(res.subjects.find((s) => s.subject === 'Science')!.accuracyPct).toBe(70);
+  });
+
+  it('accuracyPct is clamped to 100 when totalCorrect > totalAnswered (corrupt data guard)', async () => {
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '0' }],
+      [
+        {
+          progress: 100,
+          totalCorrect: 15,
+          totalAnswered: 10,
+          certificateAt: null,
+          lastActive: new Date('2026-01-01'),
+        },
+      ],
+      [],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Science')!.accuracyPct).toBe(100);
   });
 });
 
