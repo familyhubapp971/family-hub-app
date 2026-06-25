@@ -167,6 +167,23 @@ describe('<RewardRequestsPanel />', () => {
     expect(screen.queryByTestId('reward-request-decline-req1')).not.toBeInTheDocument();
   });
 
+  // FHS-408 — the "Approving will deduct…" hint is about approving, so it must
+  // not show to a non-admin (who only sees "Only an admin can approve").
+  it('non-admin + memberId: does NOT show the "Approving will deduct" hint', async () => {
+    routeMock({ admin: false });
+    render(<RewardRequestsPanel memberId="m1" />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    expect(screen.getByTestId('reward-requests-readonly')).toBeInTheDocument();
+    expect(screen.queryByText(/Approving will deduct/)).not.toBeInTheDocument();
+  });
+
+  it('admin + memberId: shows the "Approving will deduct" hint', async () => {
+    routeMock({ admin: true });
+    render(<RewardRequestsPanel memberId="m1" />);
+    await waitFor(() => expect(screen.getByTestId('reward-request-req1')).toBeInTheDocument());
+    expect(screen.getByText(/Approving will deduct/)).toBeInTheDocument();
+  });
+
   it('empty state shows "All caught up!" panel', async () => {
     routeMock({ admin: true, requests: { requests: [] } });
     render(<RewardRequestsPanel />);

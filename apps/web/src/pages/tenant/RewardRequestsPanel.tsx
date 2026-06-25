@@ -312,8 +312,10 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
                       </p>
                     )}
 
-                    {/* Helper hint — desktop only, not while in decline confirm */}
-                    {!isDeclinePending && (
+                    {/* Helper hint — admins only (it's about approving), not while
+                        in decline confirm. FHS-408 — also gate on isAdmin so the
+                        non-admin sidebar doesn't show "Approving will deduct…". */}
+                    {isAdmin && !isDeclinePending && (
                       <p
                         className={`mt-1 text-right text-[10px] font-bold text-gray-400 ${
                           singleChild ? 'block' : 'hidden md:block'

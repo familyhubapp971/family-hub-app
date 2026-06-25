@@ -1062,7 +1062,7 @@ export function MyWorldTab(
                 data-testid={`habit-card-invested-badge-${habit.id}`}
                 className="inline-flex items-center gap-1 rounded-full border border-amber-600 bg-amber-500 px-2 py-0.5 text-[10px] font-black uppercase text-white"
               >
-                <BarChart2 className="w-3 h-3" /> Invested · 5x
+                <BarChart2 className="w-3 h-3" aria-hidden="true" /> Invested · 5x
               </span>
             </div>
           )}
