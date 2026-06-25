@@ -8,6 +8,7 @@ import { WorldFlags } from './learn/world-flags/WorldFlags';
 import { LessonView } from './LessonView';
 import { ArtDrawingCanvas } from './learn/art/ArtDrawingCanvas';
 import { MathsSubject } from './learn/maths/MathsSubject';
+import { LogicSubject } from './learn/logic/LogicSubject';
 
 // Subjects with an interactive lesson (FHS-283). Must match the API's
 // LESSON_SUBJECTS. World Flags + Reading have their own experiences.
@@ -290,6 +291,9 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
         ) : kid && selectedSubject === 'Maths' ? (
           // FHS-394 — kid Maths uses the progressive placement+journey flow.
           <MathsSubject kidToken={kidToken!} />
+        ) : kid && selectedSubject === 'Logic' ? (
+          // FHS-395 — kid Logic uses the game-type + trophy-wall flow.
+          <LogicSubject kidToken={kidToken!} />
         ) : LESSON_SUBJECTS.includes(selectedSubject) ? (
           <LessonView
             subject={selectedSubject}
