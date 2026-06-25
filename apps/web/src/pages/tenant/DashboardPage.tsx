@@ -9,6 +9,7 @@ import { CalendarTabPanel } from './dashboard/CalendarTabPanel';
 import { AssignmentsTabPanel } from './dashboard/AssignmentsTabPanel';
 import { NoticeboardTabPanel } from './dashboard/NoticeboardTabPanel';
 import { TasksTabPanel } from './dashboard/TasksTabPanel';
+import { LearningInsightsTabPanel } from './dashboard/LearningInsightsTabPanel';
 import { AppHeader } from './AppHeader';
 import { TABS, DEFAULT_TAB } from './dashboard-tabs';
 
@@ -87,6 +88,10 @@ function ParentDashboard() {
             // page with its own white cards + white header text; the leftover
             // white Card wrapper made the header invisible (white-on-white).
             <MealsTabPanel />
+          ) : active.id === 'learning-insights' ? (
+            // FHS-385 — Learning Insights renders on the purple page with its
+            // own white cards (matches neo-brutalist MP spec for this tab).
+            <LearningInsightsTabPanel />
           ) : (
             <Card className="bg-white p-6 text-gray-900 md:p-8">
               {active.id === 'assignments' ? (
