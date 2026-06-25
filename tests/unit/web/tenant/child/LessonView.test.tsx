@@ -5,9 +5,12 @@ import { LessonView } from '../../../../../apps/web/src/pages/tenant/child/Lesso
 // FHS-283 — the interactive lesson UI: renders questions, grades a pick via the
 // API, shows feedback + a Next button, and reveals a certificate at 100%.
 //
-// FHS-397 — design parity: cert modal fires once on earn + dismiss works;
-// wrong answer reveals correct answer + shows encouragement; streak overlay
-// fires at milestones.
+// FHS-397 — design parity + reviewer fixes:
+//   • cert modal fires only on not-certified → certified transition (not on mount if already certified)
+//   • streak overlay fires only on in-session crossings (not on mount for pre-existing streak)
+//   • cert timer fires once (stable [] deps, not [onDismiss])
+//   • subject-neutral streak messages (no "Maths Wizard" for Science)
+//   • shake timer cleaned up; redundant encouragement state removed
 
 const fetchMock = vi.fn();
 const HEADERS = { Authorization: 'Bearer tok', 'x-tenant-slug': 'khan' };
@@ -40,7 +43,7 @@ function makeStats(
   };
 }
 
-// URL-keyed mock: GET → questions, POST → answer
+// URL-keyed mock: GET → questions with zero stats, POST → answer.
 function installApi(answer: { correct: boolean; answerIndex: number; stats: object }) {
   fetchMock.mockImplementation((url: string, init?: { method?: string }) => {
     if (init?.method === 'POST') {
@@ -59,6 +62,28 @@ function installApi(answer: { correct: boolean; answerIndex: number; stats: obje
   });
 }
 
+// GET returns questions with the given initial stats; POST returns the answer.
+function installWithInitialStats(
+  initialStats: ReturnType<typeof makeStats>,
+  answer: { correct: boolean; answerIndex: number; stats: object },
+) {
+  fetchMock.mockImplementation((url: string, init?: { method?: string }) => {
+    if (init?.method === 'POST') {
+      return Promise.resolve({ ok: true, status: 200, json: async () => answer });
+    }
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        subject: 'Science',
+        difficulty: 'easy',
+        questions: [QUESTION],
+        stats: initialStats,
+      }),
+    });
+  });
+}
+
 beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
@@ -69,6 +94,8 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
+
+// ─── Baseline behaviour ───────────────────────────────────────────────────────
 
 describe('<LessonView />', () => {
   it('renders the question, choices, difficulty pills and stats', async () => {
@@ -166,16 +193,14 @@ describe('<LessonView />', () => {
     // Choices are tappable again (not frozen).
     expect((screen.getByTestId('lesson-choice-0') as HTMLButtonElement).disabled).toBe(false);
   });
+});
 
-  // ─── FHS-397: wrong-answer reveal ───────────────────────────────────────────
+// ─── FHS-397: wrong-answer reveal ────────────────────────────────────────────
 
-  it('wrong answer shows encouragement text + reveals the correct answer', async () => {
-    // answerIndex: 2 = '5' is the correct choice. Kid picks 0 ('3').
-    installApi({
-      correct: false,
-      answerIndex: 2,
-      stats: makeStats({ streak: 0 }),
-    });
+describe('FHS-397 — wrong-answer reveal', () => {
+  it('shows encouragement text + reveals the correct answer', async () => {
+    // answerIndex: 2 = '5' is correct. Kid picks 0 ('3').
+    installApi({ correct: false, answerIndex: 2, stats: makeStats() });
     render(<LessonView subject="Science" memberId={MEMBER} headers={HEADERS} />);
     await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
 
@@ -184,9 +209,9 @@ describe('<LessonView />', () => {
     });
 
     await waitFor(() => expect(screen.getByTestId('lesson-feedback')).toBeInTheDocument());
-    // Correct answer revealed
+    // Correct answer revealed (choice at answerIndex 2 = '5').
     expect(screen.getByTestId('lesson-correct-answer').textContent).toBe('5');
-    // Encouragement present (any phrase from the array)
+    // An encouragement phrase is shown.
     const encouragements = [
       'Try again!',
       'Almost!',
@@ -210,10 +235,12 @@ describe('<LessonView />', () => {
     await waitFor(() => expect(screen.getByTestId('lesson-feedback')).toBeInTheDocument());
     expect(screen.queryByTestId('lesson-correct-answer')).not.toBeInTheDocument();
   });
+});
 
-  // ─── FHS-397: certificate modal ─────────────────────────────────────────────
+// ─── FHS-397: certificate modal ──────────────────────────────────────────────
 
-  it('shows the inline certificate banner when progress hits 100', async () => {
+describe('FHS-397 — certificate modal', () => {
+  it('shows the inline certificate banner when stats.certificate is true', async () => {
     installApi({
       correct: true,
       answerIndex: 1,
@@ -235,18 +262,12 @@ describe('<LessonView />', () => {
     expect(screen.getByTestId('lesson-progress-pct').textContent).toContain('100');
   });
 
-  it('certificate modal appears once when stats.certificate flips true', async () => {
-    installApi({
+  it('cert modal appears once when stats.certificate flips true in-session', async () => {
+    // Initial GET: certificate: false. POST: certificate: true.
+    installWithInitialStats(makeStats({ progress: 90 }), {
       correct: true,
       answerIndex: 1,
-      stats: makeStats({
-        progress: 100,
-        score: 10,
-        streak: 10,
-        best: 10,
-        answered: 10,
-        certificate: true,
-      }),
+      stats: makeStats({ progress: 100, certificate: true }),
     });
     render(<LessonView subject="Science" memberId={MEMBER} headers={HEADERS} />);
     await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
@@ -258,8 +279,24 @@ describe('<LessonView />', () => {
     await waitFor(() => expect(screen.getByTestId('lesson-certificate-modal')).toBeInTheDocument());
   });
 
-  it('certificate modal dismiss button closes the modal', async () => {
-    installApi({
+  // BLOCKING fix #1 — pre-existing cert must NOT pop the modal on mount.
+  it('does NOT show cert modal when initial GET already returns certificate: true', async () => {
+    installWithInitialStats(makeStats({ progress: 100, certificate: true }), {
+      correct: true,
+      answerIndex: 1,
+      stats: makeStats({ progress: 100, certificate: true }),
+    });
+    render(<LessonView subject="Science" memberId={MEMBER} headers={HEADERS} />);
+    await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
+    // Give any spurious effects time to fire.
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+    expect(screen.queryByTestId('lesson-certificate-modal')).not.toBeInTheDocument();
+  });
+
+  it('cert modal dismiss button closes the modal', async () => {
+    installWithInitialStats(makeStats({ progress: 90 }), {
       correct: true,
       answerIndex: 1,
       stats: makeStats({ progress: 100, certificate: true }),
@@ -279,8 +316,9 @@ describe('<LessonView />', () => {
     expect(screen.queryByTestId('lesson-certificate-modal')).not.toBeInTheDocument();
   });
 
-  it('certificate modal auto-dismisses after 6 s', async () => {
-    installApi({
+  // BLOCKING fix #3 — timer fires exactly once (stable [] deps on CertificateModal).
+  it('cert modal auto-dismisses after 6 s (timer not reset by parent re-renders)', async () => {
+    installWithInitialStats(makeStats({ progress: 90 }), {
       correct: true,
       answerIndex: 1,
       stats: makeStats({ progress: 100, certificate: true }),
@@ -300,9 +338,7 @@ describe('<LessonView />', () => {
     expect(screen.queryByTestId('lesson-certificate-modal')).not.toBeInTheDocument();
   });
 
-  it('certificate modal does NOT appear a second time on a subsequent correct answer', async () => {
-    // First answer → certificate: true (modal fires).
-    // Second answer → certificate still true (modal must NOT refire).
+  it('cert modal does NOT reappear on a subsequent correct answer (guard holds)', async () => {
     let callCount = 0;
     fetchMock.mockImplementation((url: string, init?: { method?: string }) => {
       if (init?.method === 'POST') {
@@ -324,7 +360,7 @@ describe('<LessonView />', () => {
           subject: 'Science',
           difficulty: 'easy',
           questions: [QUESTION],
-          stats: makeStats(),
+          stats: makeStats({ progress: 90 }),
         }),
       });
     });
@@ -337,13 +373,13 @@ describe('<LessonView />', () => {
       fireEvent.click(screen.getByTestId('lesson-choice-1'));
     });
     await waitFor(() => expect(screen.getByTestId('lesson-certificate-modal')).toBeInTheDocument());
-    // Dismiss the modal.
+    // Dismiss.
     await act(async () => {
       fireEvent.click(screen.getByTestId('lesson-cert-dismiss'));
     });
     expect(screen.queryByTestId('lesson-certificate-modal')).not.toBeInTheDocument();
 
-    // Click Next → second question load (fetchMock returns same single question).
+    // Next question.
     await act(async () => {
       fireEvent.click(screen.getByTestId('lesson-next'));
     });
@@ -356,16 +392,19 @@ describe('<LessonView />', () => {
     await waitFor(() => expect(callCount).toBeGreaterThanOrEqual(2));
     expect(screen.queryByTestId('lesson-certificate-modal')).not.toBeInTheDocument();
   });
+});
 
-  // ─── FHS-397: streak overlay ────────────────────────────────────────────────
+// ─── FHS-397: streak overlay ─────────────────────────────────────────────────
 
-  it('streak overlay appears at the streak-3 milestone', async () => {
-    installApi({
+describe('FHS-397 — streak overlay', () => {
+  it('streak overlay appears at the streak-3 milestone (in-session crossing)', async () => {
+    // Initial streak 0, answer bumps to 3.
+    installWithInitialStats(makeStats({ streak: 0 }), {
       correct: true,
       answerIndex: 1,
       stats: makeStats({ streak: 3 }),
     });
-    render(<LessonView subject="Maths" memberId={MEMBER} headers={HEADERS} />);
+    render(<LessonView subject="Science" memberId={MEMBER} headers={HEADERS} />);
     await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
 
     await act(async () => {
@@ -376,13 +415,29 @@ describe('<LessonView />', () => {
     expect(screen.getByTestId('lesson-streak-overlay').textContent).toContain('On fire');
   });
 
+  // BLOCKING fix #2 — pre-existing streak must NOT fire the overlay on mount.
+  it('does NOT show streak overlay when initial GET already returns streak >= milestone', async () => {
+    installWithInitialStats(makeStats({ streak: 5 }), {
+      correct: true,
+      answerIndex: 1,
+      stats: makeStats({ streak: 5 }),
+    });
+    render(<LessonView subject="Science" memberId={MEMBER} headers={HEADERS} />);
+    await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
+    // Give any spurious effects time to fire.
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+    expect(screen.queryByTestId('lesson-streak-overlay')).not.toBeInTheDocument();
+  });
+
   it('streak overlay auto-dismisses after 2 s', async () => {
-    installApi({
+    installWithInitialStats(makeStats({ streak: 0 }), {
       correct: true,
       answerIndex: 1,
       stats: makeStats({ streak: 3 }),
     });
-    render(<LessonView subject="Maths" memberId={MEMBER} headers={HEADERS} />);
+    render(<LessonView subject="Science" memberId={MEMBER} headers={HEADERS} />);
     await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
 
     await act(async () => {
@@ -395,5 +450,26 @@ describe('<LessonView />', () => {
     });
 
     expect(screen.queryByTestId('lesson-streak-overlay')).not.toBeInTheDocument();
+  });
+
+  // BLOCKING fix #4 — subject-neutral streak messages.
+  it('streak-10 message does not contain "Maths" (subject-neutral for Science)', async () => {
+    // Seed initial streak at 9 so milestones 3+5 are already celebrated;
+    // only the 10 crossing is new this session.
+    installWithInitialStats(makeStats({ streak: 9 }), {
+      correct: true,
+      answerIndex: 1,
+      stats: makeStats({ streak: 10 }),
+    });
+    render(<LessonView subject="Science" memberId={MEMBER} headers={HEADERS} />);
+    await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('lesson-choice-1'));
+    });
+
+    await waitFor(() => expect(screen.getByTestId('lesson-streak-overlay')).toBeInTheDocument());
+    expect(screen.getByTestId('lesson-streak-overlay').textContent).not.toContain('Maths');
+    expect(screen.getByTestId('lesson-streak-overlay').textContent).toContain('Wizard');
   });
 });

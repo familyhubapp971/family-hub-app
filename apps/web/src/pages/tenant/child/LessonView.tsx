@@ -39,11 +39,11 @@ type LogicSubtopic = (typeof LOGIC_SUBTOPICS)[number]['slug'];
 // FHS-397 — wrong-answer encouragement phrases (ported from MathsLesson).
 const ENCOURAGEMENT = ['Try again!', 'Almost!', 'Keep going!', 'You can do it!', 'Don’t give up!'];
 
-// FHS-397 — streak milestone messages (ported from MathsLesson).
+// FHS-397 — streak milestone messages. Subject-neutral (no "Maths" leaking to Science).
 const STREAK_MESSAGES: Record<number, string> = {
   3: 'On fire! 🔥',
   5: 'Super Star! ⭐',
-  10: 'Maths Wizard! 🧙',
+  10: 'Quiz Wizard! 🧙',
   15: 'Unstoppable! 🚀',
   20: 'Legendary! 🏆',
 };
@@ -86,10 +86,23 @@ type Headers = Record<string, string> | null;
 // ─── Certificate modal (FHS-397) ─────────────────────────────────────────────
 
 function CertificateModal({ subject, onDismiss }: { subject: string; onDismiss: () => void }) {
+  const dismissRef = useRef(onDismiss);
+  // Keep ref current so the effect closure never stales, without re-running the timer.
   useEffect(() => {
-    const t = setTimeout(onDismiss, 6000);
-    return () => clearTimeout(t);
+    dismissRef.current = onDismiss;
   }, [onDismiss]);
+
+  // Timer runs exactly once on mount — stable [] deps, no timer-reset on parent re-render.
+  useEffect(() => {
+    const t = setTimeout(() => dismissRef.current(), 6000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Move focus to the dismiss button when the modal opens (keyboard a11y).
+  const dismissBtnRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    dismissBtnRef.current?.focus();
+  }, []);
 
   const today = new Date().toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -99,7 +112,7 @@ function CertificateModal({ subject, onDismiss }: { subject: string; onDismiss: 
 
   return (
     <>
-      {/* Inline keyframes — Tailwind can&apos;t express these without a plugin */}
+      {/* Inline keyframes — Tailwind can't express these without a plugin */}
       <style>{`
         @keyframes certPop {
           0% { transform: scale(0) rotate(-8deg); opacity: 0; }
@@ -131,7 +144,7 @@ function CertificateModal({ subject, onDismiss }: { subject: string; onDismiss: 
         .cert-confetti { animation: confettiFall 3s ease-in-out infinite; }
       `}</style>
 
-      {/* Outer wrapper: dialog semantics, keyboard-focusable for Escape */}
+      {/* Outer wrapper: dialog semantics */}
       <div
         data-testid="lesson-certificate-modal"
         role="dialog"
@@ -199,8 +212,9 @@ function CertificateModal({ subject, onDismiss }: { subject: string; onDismiss: 
               ))}
             </div>
 
-            {/* Dismiss */}
+            {/* Dismiss — receives focus on modal open */}
             <button
+              ref={dismissBtnRef}
               data-testid="lesson-cert-dismiss"
               type="button"
               onClick={onDismiss}
@@ -224,7 +238,8 @@ function StreakOverlay({ message }: { message: string }) {
       aria-live="assertive"
       className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center"
     >
-      <div className="animate-bounce text-center">
+      {/* motion-safe: required for reduced-motion accessibility */}
+      <div className="motion-safe:animate-bounce text-center">
         <p className="bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500 bg-clip-text text-4xl font-black text-transparent drop-shadow-lg sm:text-6xl">
           {message}
         </p>
@@ -288,18 +303,29 @@ export function LessonView({
   const [pickError, setPickError] = useState(false);
   // FHS-397 — shake the wrong-choice button briefly after a wrong answer.
   const [shakingIndex, setShakingIndex] = useState<number | null>(null);
-  // FHS-397 — random encouragement for the current wrong-answer feedback.
-  const [encouragement] = useState(() => pickRandom(ENCOURAGEMENT));
-  const [currentEncouragement, setCurrentEncouragement] = useState(encouragement);
-  // FHS-397 — certificate modal: shown once when stats.certificate first flips true.
+  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // FHS-397 — random encouragement for the current wrong-answer feedback card.
+  const [currentEncouragement, setCurrentEncouragement] = useState(() => pickRandom(ENCOURAGEMENT));
+  // FHS-397 — certificate modal: fires only on the not-certified→certified transition.
+  // Seeded to true on first stats load if already certified (pre-existing cert = no modal).
   const certShown = useRef(false);
   const [showCertModal, setShowCertModal] = useState(false);
   // FHS-397 — streak overlay: track which milestones have already been celebrated.
+  // Seeded from initial stats so re-entering a lesson at streak 10 doesn't re-celebrate.
   const celebratedStreaks = useRef<Set<number>>(new Set());
+  // true once the first stats response has been processed (used for seeding guards).
+  const firstStatsSeeded = useRef(false);
   const [streakMessage, setStreakMessage] = useState<string | null>(null);
   // Bumped on every (re)load so a slow answer POST from a previous round/
   // difficulty can't overwrite fresh state when it finally resolves.
   const roundId = useRef(0);
+
+  // Cleanup shake timer on unmount so no setState-after-unmount.
+  useEffect(() => {
+    return () => {
+      if (shakeTimerRef.current !== null) clearTimeout(shakeTimerRef.current);
+    };
+  }, []);
 
   const load = useCallback(() => {
     if (!headers) return;
@@ -321,6 +347,17 @@ export function LessonView({
         setQuestions(body.questions ?? []);
         setStats(body.stats);
         setStatus('ready');
+        // FHS-397 — seed guards from the first stats load so we only celebrate
+        // in-session transitions, not values that were already true on arrival.
+        if (!firstStatsSeeded.current) {
+          firstStatsSeeded.current = true;
+          // If already certified, mark the cert as already shown.
+          if (body.stats.certificate) certShown.current = true;
+          // Seed every milestone already reached so the overlay doesn't fire for them.
+          for (const milestone of STREAK_MILESTONES) {
+            if (body.stats.streak >= milestone) celebratedStreaks.current.add(milestone);
+          }
+        }
       })
       .catch(() => {
         if (!cancelled) setStatus('error');
@@ -332,7 +369,7 @@ export function LessonView({
 
   useEffect(() => load(), [load]);
 
-  // FHS-397 — fire certificate modal once when stats.certificate first becomes true.
+  // FHS-397 — fire certificate modal only on the not-certified → certified transition.
   useEffect(() => {
     if (stats?.certificate && !certShown.current) {
       certShown.current = true;
@@ -340,7 +377,7 @@ export function LessonView({
     }
   }, [stats?.certificate]);
 
-  // FHS-397 — fire streak overlay at milestone crossings.
+  // FHS-397 — fire streak overlay only at in-session milestone crossings.
   useEffect(() => {
     if (!stats) return;
     const streak = stats.streak;
@@ -386,7 +423,8 @@ export function LessonView({
         if (!body.correct) {
           setShakingIndex(choiceIndex);
           setCurrentEncouragement(pickRandom(ENCOURAGEMENT));
-          setTimeout(() => setShakingIndex(null), 500);
+          if (shakeTimerRef.current !== null) clearTimeout(shakeTimerRef.current);
+          shakeTimerRef.current = setTimeout(() => setShakingIndex(null), 500);
         }
       } else {
         setPicked(null);
@@ -407,6 +445,11 @@ export function LessonView({
     setPicked(null);
     setResult(null);
     setPickError(false);
+    // Clear any in-flight shake timer.
+    if (shakeTimerRef.current !== null) {
+      clearTimeout(shakeTimerRef.current);
+      shakeTimerRef.current = null;
+    }
     setShakingIndex(null);
     if (idx + 1 < questions.length) setIdx(idx + 1);
     else load(); // start a fresh round of the same difficulty
