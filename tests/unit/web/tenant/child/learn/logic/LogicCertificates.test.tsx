@@ -34,7 +34,11 @@ describe('LogicCertificates — empty state', () => {
   it('renders 15 locked cards when no certificates are earned', async () => {
     installFetch([]);
     render(<LogicCertificates kidToken={KID_TOKEN} />);
-    await waitFor(() => expect(screen.getByTestId('logic-certificates')).toBeInTheDocument());
+    // Wait for the loaded state — both loading and loaded share data-testid="logic-certificates";
+    // wait for a specific card instead so we know loading has finished.
+    await waitFor(() =>
+      expect(screen.getByTestId('logic-cert-truefalse-easy')).toBeInTheDocument(),
+    );
 
     // 5 game types × 3 difficulties = 15 cards
     const gameTypes = ['truefalse', 'patterns', 'oddoneout', 'ifthen', 'sorting'];

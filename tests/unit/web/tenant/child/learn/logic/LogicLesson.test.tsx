@@ -437,3 +437,111 @@ describe('LogicLesson — certificate progress', () => {
     await waitFor(() => expect(screen.getByTestId('logic-cert-progress')).toBeInTheDocument());
   });
 });
+
+// ─── Escape closes hint lightbox (Fix #1) ────────────────────────────────────
+
+describe('LogicLesson — hint lightbox Escape key', () => {
+  it('pressing Escape on the close button closes the hint dialog', async () => {
+    installFetch(makeIfThenQ());
+    render(<LogicLesson kidToken={KID_TOKEN} gameType="ifthen" />);
+    await waitFor(() => expect(screen.getByTestId('logic-clue-btn')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('logic-clue-btn'));
+    });
+    expect(screen.getByTestId('logic-clue-lightbox')).toBeInTheDocument();
+    const closeBtn = screen.getByTestId('logic-clue-lightbox-close');
+    await act(async () => {
+      // Escape on the focused close button closes the lightbox
+      fireEvent.keyDown(closeBtn, { key: 'Escape' });
+    });
+    expect(screen.queryByTestId('logic-clue-lightbox')).not.toBeInTheDocument();
+  });
+});
+
+// ─── Fetch error → retry card (Fix #3) ───────────────────────────────────────
+
+describe('LogicLesson — fetch error state', () => {
+  it('shows retry card when GET /questions returns non-ok', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+    render(<LogicLesson kidToken={KID_TOKEN} gameType="truefalse" />);
+    await waitFor(() => expect(screen.getByTestId('logic-error-retry')).toBeInTheDocument());
+    expect(screen.getByTestId('logic-retry-btn')).toBeInTheDocument();
+  });
+});
+
+// ─── Sorting: only tapped wrong button goes red (Fix #4) ─────────────────────
+
+describe('LogicLesson — SortingGame wrong selection highlight', () => {
+  it('tapping wrong group only highlights that button red, not others', async () => {
+    // groups: ['Bird','Mammal','Reptile','Fish']; correctAnswer is 'Bird' (index 0)
+    installFetch(
+      makeSortingQ(),
+      makeAnswerRes({ correct: false, correctAnswer: 'Bird', explanation: 'Eagles are birds.' }),
+    );
+    render(<LogicLesson kidToken={KID_TOKEN} gameType="sorting" />);
+    await waitFor(() => expect(screen.getByTestId('logic-choice-0')).toBeInTheDocument());
+    await act(async () => {
+      // Click 'Mammal' (index 1) — wrong answer
+      fireEvent.click(screen.getByTestId('logic-choice-1'));
+    });
+    await waitFor(() => expect(screen.getByTestId('logic-next-btn')).toBeInTheDocument());
+    // Only index 1 should have red classes; index 2 ('Reptile') should not
+    expect(screen.getByTestId('logic-choice-1').className).toContain('bg-red-400');
+    expect(screen.getByTestId('logic-choice-2').className).not.toContain('bg-red-400');
+  });
+});
+
+// ─── Certificate dismiss fires once, timer does not double-fire (Fix #5) ─────
+
+describe('LogicLesson — CertificateOverlay one-shot dismiss', () => {
+  it('clicking dismiss fires onDismiss exactly once even if clicked twice', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    installFetch(makeTrueFalseQ(), makeAnswerRes({ certificateEarned: true, comboCorrect: 10 }));
+    render(<LogicLesson kidToken={KID_TOKEN} gameType="truefalse" />);
+    await waitFor(() => expect(screen.getByTestId('logic-choice-true')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('logic-choice-true'));
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId('logic-certificate-overlay')).toBeInTheDocument(),
+    );
+    const btn = screen.getByTestId('logic-cert-dismiss');
+    await act(async () => {
+      fireEvent.click(btn);
+      fireEvent.click(btn);
+    });
+    // Overlay gone after first click
+    expect(screen.queryByTestId('logic-certificate-overlay')).not.toBeInTheDocument();
+    // Timer should not re-fire and cause a second state update after 6s
+    await act(async () => {
+      vi.advanceTimersByTime(7000);
+    });
+    // Still absent — no second fire
+    expect(screen.queryByTestId('logic-certificate-overlay')).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+});
+
+// ─── POST sends Authorization header (Fix #7) ────────────────────────────────
+
+describe('LogicLesson — POST auth header', () => {
+  it('POST /api/kid/logic/answer sends Authorization: Bearer <kidToken>', async () => {
+    installFetch(makeTrueFalseQ());
+    render(<LogicLesson kidToken={KID_TOKEN} gameType="truefalse" />);
+    await waitFor(() => expect(screen.getByTestId('logic-choice-true')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('logic-choice-true'));
+    });
+    await waitFor(() => expect(screen.getByTestId('logic-next-btn')).toBeInTheDocument());
+    const calls = fetchMock.mock.calls as [string, RequestInit][];
+    const postCall = calls.find(
+      ([url, init]) =>
+        (url as string).includes('/api/kid/logic/answer') &&
+        (init as RequestInit)?.method === 'POST',
+    );
+    expect(postCall).toBeTruthy();
+    expect((postCall![1] as RequestInit).headers).toMatchObject({
+      Authorization: `Bearer ${KID_TOKEN}`,
+    });
+  });
+});

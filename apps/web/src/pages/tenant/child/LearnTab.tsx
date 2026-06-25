@@ -293,6 +293,8 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
           <MathsSubject kidToken={kidToken!} />
         ) : kid && selectedSubject === 'Logic' ? (
           // FHS-395 — kid Logic uses the game-type + trophy-wall flow.
+          // Logic is kid-only: ChildWorldPage (parent mode) has no Learn tab,
+          // so the LESSON_SUBJECTS Logic fallthrough below is unreachable in kid mode.
           <LogicSubject kidToken={kidToken!} />
         ) : LESSON_SUBJECTS.includes(selectedSubject) ? (
           <LessonView

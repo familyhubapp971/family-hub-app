@@ -5,6 +5,8 @@
 //
 // Auth: Bearer kidToken on all calls.
 // Double-tap guard: useRef answerFiredRef, reset per question.
+// Unmount guard: isMountedRef gates every setState after async POST.
+// Logic subject is kid-only — ChildWorldPage (parent mode) has no Learn tab.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE } from '../../../../../lib/api';
@@ -21,7 +23,6 @@ interface LogicLessonProps {
 interface BaseFetchedQuestion {
   id: string;
   type: GameType;
-  explanation?: string; // only present on answer response
 }
 interface TrueFalseFetched extends BaseFetchedQuestion {
   type: 'truefalse';
@@ -83,7 +84,6 @@ const CONFETTI_EMOJIS = ['🌟', '🎉', '🎊', '✨', '🏆', '🥇', '🎖️
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function pickRandom<T>(arr: T[]): T {
-  // arr is always non-empty at call sites; the fallback keeps TS strict-mode happy.
   return (arr[Math.floor(Math.random() * arr.length)] as T | undefined) ?? arr[0]!;
 }
 
@@ -125,6 +125,8 @@ function CelebrationOverlay({ message }: { message: string }) {
 }
 
 // ─── Certificate overlay ──────────────────────────────────────────────────────
+// Fix #1b: autoFocus on dismiss button so Escape → onKeyDown on dialog fires.
+// Fix #5: onDismiss runs at most once; manual dismiss cancels the 6s auto-timer.
 
 function CertificateOverlay({
   gameType,
@@ -135,10 +137,32 @@ function CertificateOverlay({
   difficulty: Difficulty;
   onDismiss: () => void;
 }) {
-  useEffect(() => {
-    const t = setTimeout(onDismiss, 6000);
-    return () => clearTimeout(t);
+  const dismissedRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dismissBtnRef = useRef<HTMLButtonElement>(null);
+
+  const safeOnDismiss = useCallback(() => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    onDismiss();
   }, [onDismiss]);
+
+  // Auto-dismiss after 6s; cancel on manual dismiss.
+  useEffect(() => {
+    timerRef.current = setTimeout(safeOnDismiss, 6000);
+    return () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current);
+    };
+  }, [safeOnDismiss]);
+
+  // Focus the dismiss button when the overlay opens (Fix #1b).
+  useEffect(() => {
+    dismissBtnRef.current?.focus();
+  }, []);
 
   const meta = GAME_TYPE_META[gameType];
   const diffLabel = DIFFICULTY_META[difficulty].label;
@@ -149,6 +173,7 @@ function CertificateOverlay({
   });
 
   return (
+    // Fix #1b: Escape on the dialog container closes the overlay.
     <div
       data-testid="logic-certificate-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
@@ -160,9 +185,9 @@ function CertificateOverlay({
       <button
         type="button"
         aria-label="Close certificate"
-        onClick={onDismiss}
-        onKeyDown={(e) => e.key === 'Escape' && onDismiss()}
+        onClick={safeOnDismiss}
         className="absolute inset-0 w-full h-full cursor-default"
+        tabIndex={-1}
       />
 
       {/* Confetti */}
@@ -221,9 +246,11 @@ function CertificateOverlay({
           </div>
 
           <button
+            ref={dismissBtnRef}
             data-testid="logic-cert-dismiss"
             type="button"
-            onClick={onDismiss}
+            onClick={safeOnDismiss}
+            onKeyDown={(e) => e.key === 'Escape' && safeOnDismiss()}
             className="bg-gradient-to-r from-violet-400 to-purple-500 text-white font-black px-8 py-3 rounded-xl border-2 border-black shadow-neo-sm motion-safe:hover:shadow-neo-xs active:translate-y-0.5 transition-all text-sm sm:text-base min-h-[44px]"
           >
             Awesome! 🎉
@@ -481,6 +508,8 @@ function OddOneOutGame({
   );
 }
 
+// Fix #1: Escape on the dialog container closes the lightbox.
+// The close button receives autoFocus so keyboard users can tab/Escape.
 function IfThenGame({
   question,
   onAnswer,
@@ -502,7 +531,7 @@ function IfThenGame({
 
   return (
     <div className="space-y-4">
-      {/* Hint lightbox */}
+      {/* Hint lightbox — Fix #1: Escape on role="dialog" div + autoFocus close btn */}
       {showHint && (
         <div
           data-testid="logic-clue-lightbox"
@@ -512,13 +541,13 @@ function IfThenGame({
           aria-modal="true"
           aria-label="Hint"
         >
-          {/* Backdrop button — click outside to dismiss */}
+          {/* Backdrop — click outside to dismiss */}
           <button
             type="button"
             aria-label="Close hint"
             onClick={() => setShowHint(false)}
-            onKeyDown={(e) => e.key === 'Escape' && setShowHint(false)}
             className="absolute inset-0 w-full h-full cursor-default"
+            tabIndex={-1}
           />
           <div className="relative z-10 bg-white border-2 sm:border-[3px] border-black rounded-2xl shadow-neo-lg max-w-md w-full">
             <div className="flex items-center justify-between px-6 py-4 border-b-2 border-gray-100">
@@ -529,9 +558,13 @@ function IfThenGame({
                 <h2 className="text-lg font-black uppercase text-purple-600">Clue</h2>
               </div>
               <button
+                // autoFocus so Escape works when keyboard focus lands on this button
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
                 data-testid="logic-clue-lightbox-close"
                 type="button"
                 onClick={() => setShowHint(false)}
+                onKeyDown={(e) => e.key === 'Escape' && setShowHint(false)}
                 aria-label="Close hint"
                 className="w-10 h-10 flex items-center justify-center bg-gray-100 motion-safe:hover:bg-red-100 motion-safe:hover:text-red-600 rounded-xl transition-colors text-gray-500"
               >
@@ -607,10 +640,13 @@ function IfThenGame({
   );
 }
 
+// Fix #4: track selected group so only the tapped wrong group goes red;
+// all other non-correct groups stay neutral (bg-gray-100), mirroring PatternGame.
 function SortingGame({
   question,
   onAnswer,
   answered,
+  selected,
   correctAnswer,
   isCorrect,
   explanation,
@@ -618,6 +654,7 @@ function SortingGame({
   question: SortingFetched;
   onAnswer: (group: string) => void;
   answered: boolean;
+  selected: string | null;
   correctAnswer: string | null;
   isCorrect: boolean | null;
   explanation: string | null;
@@ -635,12 +672,15 @@ function SortingGame({
       {/* Group buttons */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {question.groups.map((group, i) => {
+          const isSelected = selected === group;
           const isAnswer = answered && group === correctAnswer;
           let btnClass =
             'bg-white border-gray-200 text-gray-900 motion-safe:hover:border-purple-300 motion-safe:hover:bg-purple-50 active:translate-y-1';
           if (answered) {
             if (isAnswer) btnClass = 'bg-green-400 border-green-600 text-white scale-105';
-            else btnClass = 'bg-red-100 border-red-300 text-red-400';
+            else if (isSelected && !isCorrect)
+              btnClass = 'bg-red-400 border-red-600 text-white animate-shake';
+            else btnClass = 'bg-gray-100 border-gray-200 text-gray-400';
           }
           return (
             <button
@@ -677,6 +717,8 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
   const [questions, setQuestions] = useState<FetchedQuestion[]>([]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  // Fix #3: error state for failed fetches
+  const [fetchError, setFetchError] = useState(false);
 
   // Answer state
   const [answered, setAnswered] = useState(false);
@@ -698,34 +740,51 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
   const answerFiredRef = useRef(false);
   // Fire-once: certificate overlay shown once per award
   const certShownRef = useRef<Set<string>>(new Set());
+  // Fix #2: unmount guard — gates every setState after async POST
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // ── Fetch questions ──────────────────────────────────────────────────────────
 
   const fetchQuestions = useCallback(
     async (gt: GameType, diff: Difficulty, signal?: AbortSignal) => {
       setLoading(true);
+      setFetchError(false);
       try {
         const res = await fetch(
           `${API_BASE}/api/kid/logic/questions?gameType=${gt}&difficulty=${diff}`,
           { headers: { Authorization: `Bearer ${kidToken}` }, signal: signal ?? null },
         );
-        if (!res.ok) return;
+        // Fix #3: on non-ok response, surface the error state
+        if (!res.ok) {
+          if (isMountedRef.current) setFetchError(true);
+          return;
+        }
         const data = (await res.json()) as { questions: FetchedQuestion[] };
         const qs = data.questions ?? [];
-        // Shuffle for variety
         const shuffled = [...qs].sort(() => Math.random() - 0.5);
-        setQuestions(shuffled);
-        setQuestionIndex(0);
-        answerFiredRef.current = false;
-        setAnswered(false);
-        setSelected(null);
-        setIsCorrect(null);
-        setCorrectAnswer(null);
-        setExplanation(null);
+        if (isMountedRef.current) {
+          setQuestions(shuffled);
+          setQuestionIndex(0);
+          answerFiredRef.current = false;
+          setAnswered(false);
+          setSelected(null);
+          setIsCorrect(null);
+          setCorrectAnswer(null);
+          setExplanation(null);
+        }
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
+        // Fix #3: non-abort throw → error state
+        if (isMountedRef.current) setFetchError(true);
       } finally {
-        setLoading(false);
+        if (isMountedRef.current) setLoading(false);
       }
     },
     [kidToken],
@@ -738,6 +797,8 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
   }, [gameType, difficulty, fetchQuestions]);
 
   // ── Submit answer ──────────────────────────────────────────────────────────
+  // Fix #2: isMountedRef gates all setState calls after the await.
+  // Fix #6: functional setStreak/setBestStreak; drop streak/bestStreak from deps.
 
   const handleAnswer = useCallback(
     async (answerValue: string | boolean) => {
@@ -747,9 +808,8 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
       const currentQ = questions[questionIndex];
       if (!currentQ) return;
 
-      if (typeof answerValue === 'string') setSelected(answerValue);
-
-      setTotalAttempted((n) => n + 1);
+      if (typeof answerValue === 'string' && isMountedRef.current) setSelected(answerValue);
+      if (isMountedRef.current) setTotalAttempted((n) => n + 1);
 
       try {
         const res = await fetch(`${API_BASE}/api/kid/logic/answer`, {
@@ -766,13 +826,17 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
           }),
         });
 
+        if (!isMountedRef.current) return;
+
         if (!res.ok) {
-          // Still mark answered to unblock UI
           setAnswered(true);
           return;
         }
 
         const data = (await res.json()) as AnswerResponse;
+
+        if (!isMountedRef.current) return;
+
         setAnswered(true);
         setIsCorrect(data.correct);
         setCorrectAnswer(data.correctAnswer);
@@ -781,16 +845,18 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
 
         if (data.correct) {
           setTotalCorrect((n) => n + 1);
-          const newStreak = streak + 1;
-          setStreak(newStreak);
-          if (newStreak > bestStreak) setBestStreak(newStreak);
-          const msg = STREAK_MESSAGES[newStreak];
-          if (msg) setCelebrationMsg(msg);
+          // Fix #6: functional updates — no stale closure on streak/bestStreak
+          setStreak((s) => {
+            const next = s + 1;
+            setBestStreak((b) => Math.max(b, next));
+            const msg = STREAK_MESSAGES[next];
+            if (msg && isMountedRef.current) setCelebrationMsg(msg);
+            return next;
+          });
         } else {
           setStreak(0);
         }
 
-        // Show certificate overlay once per award
         if (data.certificateEarned) {
           const certKey = `${gameType}-${difficulty}`;
           if (!certShownRef.current.has(certKey)) {
@@ -799,11 +865,11 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
           }
         }
       } catch {
-        // Network error — still mark answered to unblock the UI
-        setAnswered(true);
+        if (isMountedRef.current) setAnswered(true);
       }
     },
-    [answered, questions, questionIndex, gameType, difficulty, kidToken, streak, bestStreak],
+    // Fix #6: streak and bestStreak removed from deps — functional updates only
+    [answered, questions, questionIndex, gameType, difficulty, kidToken],
   );
 
   // ── Next question ──────────────────────────────────────────────────────────
@@ -818,7 +884,6 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
     setExplanation(null);
     setQuestionIndex((i) => {
       const next = i + 1;
-      // Cycle back if we reach the end
       return next < questions.length ? next : 0;
     });
   }, [questions.length]);
@@ -828,7 +893,6 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
   const changeDifficulty = useCallback((diff: Difficulty) => {
     setDifficulty(diff);
     setComboCorrect(0);
-    // fetchQuestions effect handles the rest via the dependency
   }, []);
 
   // ── Clear celebration after 2s ─────────────────────────────────────────────
@@ -842,7 +906,6 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   const question = questions[questionIndex];
-  const answered_ = answered;
   const hasCert = certShownRef.current.has(`${gameType}-${difficulty}`);
   const progressPct = Math.min((comboCorrect / CERTIFICATE_THRESHOLD) * 100, 100);
 
@@ -975,14 +1038,37 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
         </div>
       )}
 
+      {/* Fix #3: Error / retry card */}
+      {!loading && fetchError && (
+        <div
+          data-testid="logic-error-retry"
+          className="bg-white border-2 border-black rounded-2xl p-6 text-center shadow-neo-sm space-y-4"
+        >
+          <p className="text-2xl" aria-hidden="true">
+            😬
+          </p>
+          <p className="font-black text-gray-900 text-sm sm:text-base">
+            Couldn&apos;t load questions
+          </p>
+          <button
+            data-testid="logic-retry-btn"
+            type="button"
+            onClick={() => void fetchQuestions(gameType, difficulty)}
+            className="min-h-[44px] bg-violet-500 text-white font-black px-6 py-2.5 rounded-xl border-2 border-black shadow-neo-xs active:translate-y-0.5 transition-all text-sm"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       {/* Game content */}
-      {!loading && question && (
+      {!loading && !fetchError && question && (
         <>
           {question.type === 'truefalse' && (
             <TrueFalseGame
               question={question}
               onAnswer={(v) => void handleAnswer(v)}
-              answered={answered_}
+              answered={answered}
               correctAnswer={correctAnswer as boolean | null}
               isCorrect={isCorrect}
               explanation={explanation}
@@ -992,7 +1078,7 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
             <PatternGame
               question={question}
               onAnswer={(choice) => void handleAnswer(choice)}
-              answered={answered_}
+              answered={answered}
               selected={selected}
               correctAnswer={correctAnswer as string | null}
               isCorrect={isCorrect}
@@ -1003,7 +1089,7 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
             <OddOneOutGame
               question={question}
               onAnswer={(item) => void handleAnswer(item)}
-              answered={answered_}
+              answered={answered}
               selected={selected}
               correctAnswer={correctAnswer as string | null}
               isCorrect={isCorrect}
@@ -1014,7 +1100,7 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
             <IfThenGame
               question={question}
               onAnswer={(choice) => void handleAnswer(choice)}
-              answered={answered_}
+              answered={answered}
               selected={selected}
               correctAnswer={correctAnswer as string | null}
               isCorrect={isCorrect}
@@ -1025,15 +1111,16 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
             <SortingGame
               question={question}
               onAnswer={(group) => void handleAnswer(group)}
-              answered={answered_}
+              answered={answered}
+              selected={selected}
               correctAnswer={correctAnswer as string | null}
               isCorrect={isCorrect}
               explanation={explanation}
             />
           )}
 
-          {/* Feedback banner when no explanation available yet */}
-          {answered_ && !explanation && (
+          {/* Fallback feedback banner when no explanation returned */}
+          {answered && !explanation && (
             <div
               className={`border-2 border-black rounded-2xl p-4 text-center shadow-neo-xs ${
                 isCorrect ? 'bg-green-100' : 'bg-orange-50'
@@ -1048,7 +1135,7 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
       )}
 
       {/* Next button */}
-      {!loading && answered_ && (
+      {!loading && !fetchError && answered && (
         <div className="flex justify-center">
           <button
             data-testid="logic-next-btn"
