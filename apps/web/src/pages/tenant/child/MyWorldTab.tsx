@@ -1,10 +1,8 @@
 import React, { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RewardRequestsPanel } from '../RewardRequestsPanel';
 import {
-  ArrowDownToLine,
   Award,
   BarChart2,
-  Banknote,
   Check,
   CheckCircle,
   ChevronLeft,
@@ -16,7 +14,6 @@ import {
   Lock,
   PiggyBank,
   Plus,
-  RefreshCw,
   Sparkles,
   Star,
   TrendingUp,
@@ -945,6 +942,9 @@ export function MyWorldTab(
     // FHS-342 — adding/editing/deleting a habit is admin-only. Sticker
     // affordances stay on `editEnabled` so a normal user can still tick.
     canManageHabits: boolean,
+    // FHS-399 — when true, replace the live "Progress this week" label with
+    // the finalized "PROGRESS THAT WEEK X/7" pill used in the kid view.
+    weekIsFinalized = false,
   ) => (
     <div
       className={`relative ${
@@ -1002,12 +1002,26 @@ export function MyWorldTab(
                 style={{ width: `${(habit.total / habit.target) * 100}%` }}
               />
             </div>
-            <p className="text-xs text-gray-500 font-mono mt-1">
-              Progress this week{' '}
-              <span className="font-black text-gray-700">
-                {habit.total}/{habit.target}
-              </span>
-            </p>
+            {weekIsFinalized ? (
+              <p
+                data-testid={`habit-finalized-progress-${habit.id}`}
+                className="text-xs font-black text-gray-700 uppercase tracking-wide mt-1"
+              >
+                Progress that week{' '}
+                <span
+                  className={`inline-flex items-center justify-center rounded-full border-2 border-black px-2 py-0.5 text-[10px] font-black ${habit.color}`}
+                >
+                  {habit.total}/7
+                </span>
+              </p>
+            ) : (
+              <p className="text-xs text-gray-500 font-mono mt-1">
+                Progress this week{' '}
+                <span className="font-black text-gray-700">
+                  {habit.total}/{habit.target}
+                </span>
+              </p>
+            )}
 
             {/* Habit-level sticker badges */}
             {habit.stickers.length > 0 && (
@@ -1667,10 +1681,15 @@ export function MyWorldTab(
               </div>
 
               {week.isFinalized && (
-                <div className="relative z-10 mt-3 bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-2 flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+                <div
+                  data-testid="finalized-week-banner"
+                  className="relative z-10 mt-3 bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-2 flex items-center gap-2"
+                >
+                  <span className="text-base flex-shrink-0" aria-hidden="true">
+                    🎉
+                  </span>
                   <p className="text-xs font-bold text-amber-200">
-                    This week is finalized — viewing past records.
+                    You&apos;re looking at a finished week. Here&apos;s what you did!
                   </p>
                 </div>
               )}
@@ -1704,6 +1723,7 @@ export function MyWorldTab(
                     canEditDay,
                     investedHabitIds.has(habit.id),
                     isAdmin && canEdit,
+                    week.isFinalized,
                   )}
                 </div>
               ))}
@@ -1720,183 +1740,129 @@ export function MyWorldTab(
               </button>
             )}
 
-            {/* ── Week Summary (finalized weeks) ── */}
-            {week.isFinalized && week.summary && (
-              <div className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-purple-500" />
-                  <h3 className="font-black text-gray-900 text-lg">
-                    Week {week.weekNumber}, {week.year} – Final Summary
-                  </h3>
-                </div>
-                <div className="p-6 space-y-5">
-                  {/* Weekly Earnings */}
-                  <div className="border-b border-gray-100 pb-5">
-                    <p className="text-sm text-gray-500 font-medium mb-1">Weekly Earnings</p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl sm:text-3xl font-black text-purple-600">
-                        {week.summary.totalStickers}
+            {/* ── FHS-399 What I Did That Week (finalized weeks) ── */}
+            {week.isFinalized &&
+              week.summary &&
+              (() => {
+                const actions = week.summary.actions ?? [];
+                // Map actions → "saved" vs "planted" buckets for the kid-friendly breakdown.
+                // saved  = save + auto_save (banked in piggy bank)
+                // planted = invest + invest_continue (growing like a seed)
+                const savedStars = actions
+                  .filter((a) => a.actionType === 'save' || a.actionType === 'auto_save')
+                  .reduce((s, a) => s + (a.stickersUsed ?? 0), 0);
+                const plantedStars = actions
+                  .filter((a) => a.actionType === 'invest' || a.actionType === 'invest_continue')
+                  .reduce((s, a) => s + (a.stickersUsed ?? 0), 0);
+                // Fall back to carriedOver when no explicit actions recorded yet
+                const effectiveSaved =
+                  savedStars > 0
+                    ? savedStars
+                    : week.summary.carriedOver > 0
+                      ? week.summary.carriedOver
+                      : 0;
+
+                const totalPossibleWeek = habits.length * 7;
+                const completionPct =
+                  totalPossibleWeek > 0
+                    ? Math.round((week.summary.totalStickers / totalPossibleWeek) * 100)
+                    : week.summary.performance;
+
+                return (
+                  <div
+                    data-testid="finalized-week-summary"
+                    className="bg-white border-2 sm:border-3 border-black rounded-2xl overflow-hidden shadow-neo"
+                  >
+                    {/* Header */}
+                    <div className="px-5 py-4 border-b-2 border-gray-100 flex items-center gap-2 bg-purple-50">
+                      <span className="text-xl" aria-hidden="true">
+                        🏆
                       </span>
-                      <span className="text-gray-500 font-medium">
-                        = {currency} {(week.summary.totalStickers * 0.5).toFixed(2)}
-                      </span>
+                      <h3 className="font-black text-gray-900 text-base sm:text-lg uppercase tracking-wide">
+                        What I Did That Week
+                      </h3>
                     </div>
-                  </div>
 
-                  {/* Actions Taken */}
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-                      Actions Taken
-                    </p>
-                    {(() => {
-                      const displayActions =
-                        week.summary.actions && week.summary.actions.length > 0
-                          ? week.summary.actions
-                          : week.summary.carriedOver > 0
-                            ? [
-                                {
-                                  id: 0,
-                                  weekId: week.weekId,
-                                  actionType: 'auto_save' as const,
-                                  stickersUsed: week.summary.carriedOver,
-                                  cashAmount: week.summary.carriedOver * 0.5,
-                                  rewardName: null,
-                                  habitId: null,
-                                  habitName: null,
-                                  createdAt: '',
-                                },
-                              ]
-                            : [];
+                    <div className="p-5 space-y-4">
+                      {/* Stars Earned row */}
+                      <div
+                        data-testid="finalized-stars-earned"
+                        className="flex items-center gap-3 bg-yellow-50 border-2 border-yellow-300 rounded-xl px-4 py-3"
+                      >
+                        <Star
+                          className="w-6 h-6 text-yellow-500 fill-current flex-shrink-0"
+                          aria-hidden="true"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-700">
+                            Stars Earned
+                          </p>
+                          <p className="text-2xl font-black text-yellow-700 leading-none">
+                            {week.summary.totalStickers}
+                            <span className="text-sm font-bold text-yellow-600 ml-2">
+                              = {currency} {(week.summary.totalStickers * 0.5).toFixed(2)}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
 
-                      return displayActions.length > 0 ? (
-                        <div className="space-y-2">
-                          {displayActions.map((action, idx) => (
+                      {/* Where My Stars Went */}
+                      {(effectiveSaved > 0 || plantedStars > 0) && (
+                        <div data-testid="finalized-stars-allocation" className="space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                            Where My Stars Went
+                          </p>
+                          {effectiveSaved > 0 && (
                             <div
-                              key={idx}
-                              className={`rounded-xl p-3 flex items-center gap-3 ${
-                                action.actionType === 'claim'
-                                  ? 'bg-pink-50'
-                                  : action.actionType === 'cashout'
-                                    ? 'bg-lime-50'
-                                    : action.actionType === 'save' ||
-                                        action.actionType === 'auto_save'
-                                      ? 'bg-cyan-50'
-                                      : action.actionType === 'invest' ||
-                                          action.actionType === 'invest_continue'
-                                        ? 'bg-yellow-50'
-                                        : 'bg-orange-50'
-                              }`}
+                              data-testid="finalized-saved-stars"
+                              className="flex items-center gap-3 bg-cyan-50 border-2 border-cyan-300 rounded-xl px-4 py-2.5"
                             >
-                              <div
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                  action.actionType === 'claim'
-                                    ? 'bg-pink-200'
-                                    : action.actionType === 'cashout'
-                                      ? 'bg-lime-200'
-                                      : action.actionType === 'save' ||
-                                          action.actionType === 'auto_save'
-                                        ? 'bg-cyan-200'
-                                        : action.actionType === 'invest' ||
-                                            action.actionType === 'invest_continue'
-                                          ? 'bg-yellow-200'
-                                          : 'bg-orange-200'
-                                }`}
-                              >
-                                {action.actionType === 'claim' && (
-                                  <Gift className="w-4 h-4 text-pink-700" />
-                                )}
-                                {action.actionType === 'cashout' && (
-                                  <Banknote className="w-4 h-4 text-lime-700" />
-                                )}
-                                {(action.actionType === 'save' ||
-                                  action.actionType === 'auto_save') && (
-                                  <PiggyBank className="w-4 h-4 text-cyan-700" />
-                                )}
-                                {action.actionType === 'invest' && (
-                                  <TrendingUp className="w-4 h-4 text-yellow-700" />
-                                )}
-                                {action.actionType === 'invest_continue' && (
-                                  <RefreshCw className="w-4 h-4 text-yellow-700" />
-                                )}
-                                {action.actionType === 'withdraw' && (
-                                  <ArrowDownToLine className="w-4 h-4 text-orange-700" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p
-                                  className={`text-sm font-bold ${
-                                    action.actionType === 'claim'
-                                      ? 'text-pink-800'
-                                      : action.actionType === 'cashout'
-                                        ? 'text-lime-800'
-                                        : action.actionType === 'save' ||
-                                            action.actionType === 'auto_save'
-                                          ? 'text-cyan-800'
-                                          : action.actionType === 'invest' ||
-                                              action.actionType === 'invest_continue'
-                                            ? 'text-yellow-800'
-                                            : 'text-orange-800'
-                                  }`}
-                                >
-                                  {action.actionType === 'claim' &&
-                                    `Claimed: ${action.rewardName ?? 'Reward'}`}
-                                  {action.actionType === 'cashout' &&
-                                    `Cashed Out: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'}`}
-                                  {action.actionType === 'save' &&
-                                    `Saved: ${action.stickersUsed ?? 0} stickers`}
-                                  {action.actionType === 'auto_save' &&
-                                    `Saved to Savings: ${action.stickersUsed ?? 0} stickers`}
-                                  {action.actionType === 'invest' &&
-                                    `Invested: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'} in ${action.habitName ?? 'habit'}`}
-                                  {action.actionType === 'invest_continue' &&
-                                    `Continued: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'} in ${action.habitName ?? 'habit'}`}
-                                  {action.actionType === 'withdraw' &&
-                                    `Withdrawn: ${currency} ${action.cashAmount?.toFixed(2) ?? '0.00'}`}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {action.actionType === 'claim' &&
-                                    `${action.stickersUsed ?? 0} stickers used`}
-                                  {action.actionType === 'cashout' &&
-                                    `${action.stickersUsed ?? 0} stickers converted`}
-                                  {(action.actionType === 'save' ||
-                                    action.actionType === 'auto_save') &&
-                                    `= AED ${((action.stickersUsed ?? 0) * 0.5).toFixed(2)}`}
-                                  {action.actionType === 'invest' &&
-                                    `${action.stickersUsed ?? Math.round((action.cashAmount ?? 0) / 0.5)} stickers invested`}
-                                  {action.actionType === 'invest_continue' &&
-                                    `${action.stickersUsed ?? Math.round((action.cashAmount ?? 0) / 0.5)} stickers carried forward`}
-                                  {action.actionType === 'withdraw' &&
-                                    action.habitName &&
-                                    `from ${action.habitName}`}
-                                </p>
-                              </div>
+                              <PiggyBank
+                                className="w-5 h-5 text-cyan-600 flex-shrink-0"
+                                aria-hidden="true"
+                              />
+                              <p className="text-sm font-bold text-cyan-800">
+                                Saved {effectiveSaved} star{effectiveSaved !== 1 ? 's' : ''}
+                              </p>
                             </div>
-                          ))}
+                          )}
+                          {plantedStars > 0 && (
+                            <div
+                              data-testid="finalized-planted-stars"
+                              className="flex items-center gap-3 bg-emerald-50 border-2 border-emerald-300 rounded-xl px-4 py-2.5"
+                            >
+                              <TrendingUp
+                                className="w-5 h-5 text-emerald-600 flex-shrink-0"
+                                aria-hidden="true"
+                              />
+                              <p className="text-sm font-bold text-emerald-800">
+                                Planted {plantedStars} star{plantedStars !== 1 ? 's' : ''}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="bg-gray-50 rounded-xl p-4 text-center">
-                          <p className="text-sm text-gray-500">No actions recorded for this week</p>
-                        </div>
-                      );
-                    })()}
-                  </div>
+                      )}
 
-                  {/* Performance */}
-                  <div className="bg-purple-50 rounded-xl px-5 py-4 flex items-center justify-between">
-                    <div>
-                      <p className="font-bold text-purple-700 text-sm">Week Performance</p>
-                      <p className="text-xs text-purple-400">{habits.length} habits tracked</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                      <span className="text-2xl font-black text-purple-700">
-                        {week.summary.performance}%
-                      </span>
+                      {/* Completion line + % badge */}
+                      <div
+                        data-testid="finalized-completion"
+                        className="bg-purple-50 border-2 border-purple-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3"
+                      >
+                        <p className="text-sm font-bold text-purple-700">Great job! You finished</p>
+                        <span
+                          data-testid="finalized-completion-pct"
+                          className="flex-shrink-0 bg-purple-500 text-white text-sm font-black px-3 py-1 rounded-full border-2 border-black shadow-neo-xs"
+                        >
+                          {completionPct}%
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-gray-400 font-mono text-center">
+                        of your habits that week
+                      </p>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
+                );
+              })()}
           </>
         )}
 

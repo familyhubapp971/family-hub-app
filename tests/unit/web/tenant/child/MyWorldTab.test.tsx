@@ -584,4 +584,226 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
       ),
     );
   });
+
+  // ── FHS-399 — Finalized week kid view ────────────────────────────────────
+
+  // Two-week setup: week 9 is the live current week (habits load at mount);
+  // week 8 is finalized and lazy-loads when the user navigates back.
+  // This mirrors the real app flow where actions are only fetched via the
+  // lazy-load effect (which fires when habits.length === 0 for a non-active week).
+  const FINALIZED_WEEK = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+
+  // 5 stickers placed across days 0-4 on the finalized week
+  const FINALIZED_STICKERS = [0, 1, 2, 3, 4].map((day) => ({
+    habitId: HABIT,
+    day,
+    sticker: 'gold-star',
+    stickerValue: 1,
+  }));
+
+  type TestAction = {
+    id: number;
+    weekId: string;
+    actionType: string;
+    stickersUsed: number | null;
+    cashAmount: number | null;
+    rewardName: string | null;
+    habitId: string | null;
+    habitName: string | null;
+    createdAt: string;
+  };
+
+  const DEFAULT_FINALIZED_ACTIONS: TestAction[] = [
+    {
+      id: 1,
+      weekId: FINALIZED_WEEK,
+      actionType: 'save',
+      stickersUsed: 3,
+      cashAmount: 1.5,
+      rewardName: null,
+      habitId: null,
+      habitName: null,
+      createdAt: '2026-02-22T00:00:00Z',
+    },
+    {
+      id: 2,
+      weekId: FINALIZED_WEEK,
+      actionType: 'invest',
+      stickersUsed: 2,
+      cashAmount: 1.0,
+      rewardName: null,
+      habitId: HABIT,
+      habitName: 'Brush teeth',
+      createdAt: '2026-02-22T00:00:00Z',
+    },
+  ];
+
+  function installFinalizedWeekApi(actions: TestAction[] = DEFAULT_FINALIZED_ACTIONS) {
+    // Base install: two weeks — week 8 finalized, week 9 current
+    installApi({
+      weeks: [
+        {
+          id: FINALIZED_WEEK,
+          weekNumber: 8,
+          year: 2026,
+          startDate: '2026-02-16',
+          isFinalized: true,
+          carriedOverStickers: 3,
+          carriedOverCash: 0,
+          retrievedStickers: 0,
+          retrievedCash: 0,
+        },
+        {
+          id: WEEK,
+          weekNumber: 9,
+          year: 2026,
+          startDate: '2026-02-23',
+          isFinalized: false,
+          carriedOverStickers: 0,
+          carriedOverCash: 0,
+          retrievedStickers: 0,
+          retrievedCash: 0,
+        },
+      ],
+    });
+
+    // Extend the base mock to handle the finalized week's habits + actions
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      // Finalized week actions
+      if (u.includes('/api/mw/weeks') && u.includes(FINALIZED_WEEK) && u.includes('/actions')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ actions }),
+        });
+      }
+      // Habits for the finalized week — 5 stickers across days 0-4
+      if (u.includes('/api/habits') && u.includes(FINALIZED_WEEK) && !init?.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            habits: [
+              {
+                id: HABIT,
+                name: 'Brush teeth',
+                description: null,
+                color: 'bg-yellow-400',
+                icon: 'star',
+                isBonus: false,
+              },
+            ],
+            stickers: FINALIZED_STICKERS,
+            balance: 5,
+          }),
+        });
+      }
+      return base(url, init);
+    });
+  }
+
+  // Navigate to the finalized (previous) week and wait for it to load
+  async function navigateToFinalizedWeek() {
+    await waitFor(() =>
+      expect(screen.getByTestId('habit-tracker-week-prev-btn')).toBeInTheDocument(),
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('habit-tracker-week-prev-btn'));
+    });
+    // Wait for the finalized week label to appear
+    await waitFor(() =>
+      expect(screen.getByTestId('habit-tracker-week-label').textContent).toContain('Week 8'),
+    );
+  }
+
+  it('FHS-399: shows the friendly finished-week banner on a finalized week', async () => {
+    installFinalizedWeekApi();
+    renderTab();
+    await navigateToFinalizedWeek();
+    await waitFor(() => expect(screen.getByTestId('finalized-week-banner')).toBeInTheDocument());
+    // Friendly copy — no "viewing past records"
+    expect(screen.getByTestId('finalized-week-banner').textContent).toContain(
+      'looking at a finished week',
+    );
+    expect(screen.getByTestId('finalized-week-banner').textContent).not.toContain(
+      'viewing past records',
+    );
+  });
+
+  it('FHS-399: shows the "What I Did That Week" summary card with stars + cash', async () => {
+    installFinalizedWeekApi();
+    renderTab();
+    await navigateToFinalizedWeek();
+    await waitFor(() => expect(screen.getByTestId('finalized-week-summary')).toBeInTheDocument());
+    // Stars earned section — 5 stickers * 0.5 = 2.50
+    const earned = screen.getByTestId('finalized-stars-earned');
+    expect(earned.textContent).toContain('5');
+    expect(earned.textContent).toContain('2.50');
+  });
+
+  it('FHS-399: shows the saved + planted breakdown in the summary card', async () => {
+    installFinalizedWeekApi();
+    renderTab();
+    await navigateToFinalizedWeek();
+    await waitFor(() =>
+      expect(screen.getByTestId('finalized-stars-allocation')).toBeInTheDocument(),
+    );
+    // save action → "Saved 3 stars"
+    expect(screen.getByTestId('finalized-saved-stars').textContent).toContain('3');
+    // invest action → "Planted 2 stars"
+    expect(screen.getByTestId('finalized-planted-stars').textContent).toContain('2');
+  });
+
+  it('FHS-399: shows the completion % badge in the summary card', async () => {
+    // 5 stickers out of 7 possible = 71%
+    installFinalizedWeekApi();
+    renderTab();
+    await navigateToFinalizedWeek();
+    await waitFor(() => expect(screen.getByTestId('finalized-completion')).toBeInTheDocument());
+    expect(screen.getByTestId('finalized-completion-pct').textContent).toContain('%');
+    // Friendly completion message
+    expect(screen.getByTestId('finalized-completion').textContent).toContain('Great job');
+  });
+
+  it('FHS-399: each habit card shows PROGRESS THAT WEEK X/7 on a finalized week', async () => {
+    installFinalizedWeekApi();
+    renderTab();
+    await navigateToFinalizedWeek();
+    await waitFor(() =>
+      expect(screen.getByTestId(`habit-finalized-progress-${HABIT}`)).toBeInTheDocument(),
+    );
+    // 5 stickers placed across days 0-4
+    expect(screen.getByTestId(`habit-finalized-progress-${HABIT}`).textContent).toMatch(/5.*7/);
+  });
+
+  it('FHS-399: day cells do not trigger a sticker POST on a finalized (read-only) week', async () => {
+    installFinalizedWeekApi();
+    renderTab();
+    await navigateToFinalizedWeek();
+    await waitFor(() =>
+      expect(screen.getByTestId(`habit-day-cell-${HABIT}-0`)).toBeInTheDocument(),
+    );
+    act(() => {
+      fireEvent.click(screen.getByTestId(`habit-day-cell-${HABIT}-0`));
+    });
+    // Dialog must NOT appear; no sticker POST should fire
+    expect(screen.queryByTestId('habit-day-sticker-dialog')).not.toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(
+        ([u, i]) => i?.method === 'POST' && String(u).includes('/stickers'),
+      ),
+    ).toBe(false);
+  });
+
+  it('FHS-399: omits the planted section when only save actions were recorded', async () => {
+    // Only a save action — no invest/invest_continue
+    installFinalizedWeekApi([DEFAULT_FINALIZED_ACTIONS[0]!]);
+    renderTab();
+    await navigateToFinalizedWeek();
+    await waitFor(() => expect(screen.getByTestId('finalized-week-summary')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('finalized-saved-stars')).toBeInTheDocument());
+    expect(screen.queryByTestId('finalized-planted-stars')).not.toBeInTheDocument();
+  });
 });
