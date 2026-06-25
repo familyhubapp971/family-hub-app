@@ -406,10 +406,11 @@ describeFeature(feature, ({ Background, Scenario }) => {
   );
 
   // ─── Same-tenant member isolation ────────────────────────────────────────────
+  // Feature keywords: Given / And / When / Then — must match exactly.
 
   Scenario(
     "same-tenant member isolation — a sibling sees none of Alex's certs",
-    ({ Given, When, Then }) => {
+    ({ Given, And, When, Then }) => {
       Given('a logic sibling "Jordan" in the same tenant as Alex', async () => {
         const allTenants = await db.select({ id: tenants.id, slug: tenants.slug }).from(tenants);
         // The first tenant is "logic-fam" (Alex's tenant, created in Background).
@@ -420,7 +421,8 @@ describeFeature(feature, ({ Background, Scenario }) => {
           .returning();
         tokens.set('Jordan', await mintKidToken(jordan!.id, alexTenant.id, alexTenant.slug));
       });
-      Given('"Alex" answers 10 truefalse easy questions correctly', async () => {
+      // Feature line 69 uses "And" keyword — must bind with And(), not Given().
+      And('"Alex" answers 10 truefalse easy questions correctly', async () => {
         const qs = getRawQuestions('truefalse', 'easy');
         for (let i = 0; i < 10; i++) {
           const q = qs[i % qs.length]!;
@@ -447,4 +449,46 @@ describeFeature(feature, ({ Background, Scenario }) => {
       );
     },
   );
+
+  // ─── Scenario #6: wrong x9 then correct x1 → comboCorrect 1 ─────────────────
+
+  Scenario('wrong x9 then correct x1 gives comboCorrect 1 not 10', ({ Given, When, Then }) => {
+    Given('"Alex" submits 9 wrong truefalse easy answers', async () => {
+      const qs = getRawQuestions('truefalse', 'easy');
+      for (let i = 0; i < 9; i++) {
+        const q = qs[i % qs.length]!;
+        const wrongAnswer = !q.answer; // flip boolean
+        await app.request('/api/kid/logic/answer', {
+          method: 'POST',
+          headers: jsonAuth('Alex'),
+          body: JSON.stringify({
+            gameType: 'truefalse',
+            difficulty: 'easy',
+            questionId: q.id,
+            answer: wrongAnswer,
+          }),
+        });
+      }
+      const q10 = qs[9 % qs.length]!;
+      currentQuestion = { id: q10.id, answer: q10.answer, type: q10.type };
+    });
+    When('"Alex" then submits 1 correct truefalse easy answer', async () => {
+      answerRes = await app.request('/api/kid/logic/answer', {
+        method: 'POST',
+        headers: jsonAuth('Alex'),
+        body: JSON.stringify({
+          gameType: 'truefalse',
+          difficulty: 'easy',
+          questionId: currentQuestion.id,
+          answer: currentQuestion.answer,
+        }),
+      });
+      answerBody = (await answerRes.json()) as typeof answerBody;
+    });
+    Then('comboCorrect is 1 and certificateEarned is false', () => {
+      expect(answerBody.correct).toBe(true);
+      expect(answerBody.comboCorrect).toBe(1);
+      expect(answerBody.certificateEarned).toBe(false);
+    });
+  });
 });

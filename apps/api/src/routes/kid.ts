@@ -92,7 +92,8 @@ import { getLogicQuestions, isLogicGameType, isLogicDifficulty } from '../lib/lo
 // FHS-395 — response schemas exported for OpenAPI registry.
 import { z as _z } from 'zod';
 export const logicQuestionsResponseSchema = _z.object({
-  questions: _z.array(_z.record(_z.unknown())),
+  // Require at least id + type; passthrough preserves game-type-specific fields.
+  questions: _z.array(_z.object({ id: _z.string(), type: _z.string() }).passthrough()),
 });
 export const logicAnswerResponseSchema = _z.object({
   correct: _z.boolean(),
@@ -1105,6 +1106,8 @@ export const kidRouter = new Hono()
   // FHS-395 — GET /api/kid/logic/questions?gameType=&difficulty=
   // Returns questions for the combo with answers stripped.
   .get('/logic/questions', async (c) => {
+    const kid = getKidAuth(c);
+    await pinRequestTenant(kid.tenantId);
     const gameType = c.req.query('gameType');
     const difficulty = c.req.query('difficulty');
     if (!isLogicGameType(gameType) || !isLogicDifficulty(difficulty)) {

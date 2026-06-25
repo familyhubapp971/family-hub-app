@@ -87,7 +87,15 @@ export async function getProgress(
   return rows[0] ?? null;
 }
 
-/** Upsert progress row, incrementing correctCount by delta (usually +1). */
+/**
+ * Upsert progress row, incrementing correctCount by delta (usually +1).
+ *
+ * Read-then-write increment: a concurrent request for the same kid+combo
+ * could increment from the same base value. This race is acceptable — the
+ * certificate threshold (10) is high enough that a missed increment only
+ * delays the award by one extra correct answer. Using SELECT FOR UPDATE
+ * would add lock contention on a hot path for marginal gain.
+ */
 export async function upsertProgress(
   db: Database,
   tenantId: string,

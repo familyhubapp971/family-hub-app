@@ -336,6 +336,150 @@ describe('FHS-395 — POST /api/kid/logic/answer', () => {
     const body = (await res.json()) as { correct: boolean };
     expect(body.correct).toBe(false);
   });
+
+  // #4a — cross-combo boundary: truefalse/easy questionId submitted under sorting/easy → 400
+  it('400 when truefalse/easy questionId is submitted with gameType sorting', async () => {
+    const { getRawQuestions } = await import('../../../../apps/api/src/lib/logic-questions.js');
+    const tfQ = getRawQuestions('truefalse', 'easy')[0]!;
+
+    const token = await mintKidToken();
+    const res = await buildApp().request('/api/kid/logic/answer', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      // tfQ.id is e.g. "truefalse-easy-1" — won't be found in sorting/easy bank.
+      body: JSON.stringify({
+        gameType: 'sorting',
+        difficulty: 'easy',
+        questionId: tfQ.id,
+        answer: 'Fruits',
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  // #4b — replay same correct questionId 10x → comboCorrect 10 + certificateEarned true on 10th
+  it('replaying same correct questionId 10 times awards cert on 10th', async () => {
+    const { getRawQuestions } = await import('../../../../apps/api/src/lib/logic-questions.js');
+    const q = getRawQuestions('truefalse', 'easy')[0]!;
+    const token = await mintKidToken();
+
+    let callCount = 0;
+    dbMock.select.mockImplementation(() => ({
+      from: () => ({
+        where: () => ({
+          limit: () => {
+            // Return increasing correctCount to simulate accumulated progress.
+            return Promise.resolve(
+              callCount === 0
+                ? []
+                : [
+                    {
+                      id: 'pr',
+                      tenantId: TENANT_ID,
+                      memberId: MEMBER_ID,
+                      gameType: 'truefalse',
+                      difficulty: 'easy',
+                      correctCount: callCount,
+                      updatedAt: new Date(),
+                    },
+                  ],
+            );
+          },
+        }),
+      }),
+    }));
+
+    dbMock.insert.mockImplementation(() => {
+      callCount++;
+      const newCount = callCount;
+      return {
+        values: () => ({
+          onConflictDoUpdate: () => ({
+            returning: () =>
+              Promise.resolve([
+                {
+                  id: 'pr',
+                  tenantId: TENANT_ID,
+                  memberId: MEMBER_ID,
+                  gameType: 'truefalse',
+                  difficulty: 'easy',
+                  correctCount: newCount,
+                  updatedAt: new Date(),
+                },
+              ]),
+          }),
+          onConflictDoNothing: () => ({
+            returning: () =>
+              Promise.resolve(
+                newCount >= 10
+                  ? [
+                      {
+                        id: 'c1',
+                        tenantId: TENANT_ID,
+                        memberId: MEMBER_ID,
+                        gameType: 'truefalse',
+                        difficulty: 'easy',
+                        totalCorrect: newCount,
+                        earnedAt: new Date(),
+                      },
+                    ]
+                  : [],
+              ),
+          }),
+        }),
+      };
+    });
+
+    let lastBody: { correct: boolean; comboCorrect: number; certificateEarned: boolean } | null =
+      null;
+    for (let i = 0; i < 10; i++) {
+      const res = await buildApp().request('/api/kid/logic/answer', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameType: 'truefalse',
+          difficulty: 'easy',
+          questionId: q.id,
+          answer: q.answer,
+        }),
+      });
+      expect(res.status).toBe(200);
+      lastBody = (await res.json()) as typeof lastBody;
+    }
+    expect(lastBody!.correct).toBe(true);
+    expect(lastBody!.comboCorrect).toBe(10);
+    expect(lastBody!.certificateEarned).toBe(true);
+  });
+
+  // #4c — boolean answer (true) to a string-answer game (sorting) → correct:false
+  it('boolean answer against a string-answer sorting question returns correct:false', async () => {
+    const { getRawQuestions } = await import('../../../../apps/api/src/lib/logic-questions.js');
+    const sortQ = getRawQuestions('sorting', 'easy')[0]!;
+
+    dbMock.select.mockImplementation(() => ({
+      from: () => ({
+        where: () => ({
+          limit: () => Promise.resolve([]),
+        }),
+      }),
+    }));
+
+    const token = await mintKidToken();
+    const res = await buildApp().request('/api/kid/logic/answer', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      // Sorting answers are strings (e.g. "Fruits") — boolean true must never match.
+      body: JSON.stringify({
+        gameType: 'sorting',
+        difficulty: 'easy',
+        questionId: sortQ.id,
+        answer: true,
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { correct: boolean };
+    expect(body.correct).toBe(false);
+  });
 });
 
 // ─── GET /api/kid/logic/certificates ─────────────────────────────────────────

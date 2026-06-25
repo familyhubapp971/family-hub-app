@@ -69,3 +69,8 @@ Feature: Kid Logic Progression (FHS-395)
     And "Alex" answers 10 truefalse easy questions correctly
     When "Jordan" GETs /api/kid/logic/certificates
     Then the logic certificates list is empty
+
+  Scenario: wrong x9 then correct x1 gives comboCorrect 1 not 10
+    Given "Alex" submits 9 wrong truefalse easy answers
+    When "Alex" then submits 1 correct truefalse easy answer
+    Then comboCorrect is 1 and certificateEarned is false

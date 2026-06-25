@@ -82,15 +82,18 @@ export type PublicLogicQuestion =
   | Omit<SortingQuestion, 'answer'>;
 
 // ─── Builder helpers ──────────────────────────────────────────────────────────
+//
+// IDs are assigned after array construction via tagIds(), NOT by a global
+// counter. Format: `${gameType}-${difficulty}-${1-based-index}`.
+// This makes every id stable against reorders and insertions within a combo.
 
-let _idSeq = 0;
-function nextId(prefix: string): string {
-  _idSeq++;
-  return `${prefix}-${_idSeq}`;
-}
+type Unidentified<T extends LogicQuestion> = Omit<T, 'id'>;
 
-const tf = (statement: string, answer: boolean, explanation: string): TrueFalseQuestion => ({
-  id: nextId('tf'),
+const tf = (
+  statement: string,
+  answer: boolean,
+  explanation: string,
+): Unidentified<TrueFalseQuestion> => ({
   type: 'truefalse',
   statement,
   answer,
@@ -102,8 +105,7 @@ const pat = (
   choices: string[],
   answer: string,
   explanation: string,
-): PatternQuestion => ({
-  id: nextId('pat'),
+): Unidentified<PatternQuestion> => ({
   type: 'patterns',
   sequence,
   choices,
@@ -111,8 +113,11 @@ const pat = (
   explanation,
 });
 
-const odd = (items: string[], answer: string, explanation: string): OddOneOutQuestion => ({
-  id: nextId('odd'),
+const odd = (
+  items: string[],
+  answer: string,
+  explanation: string,
+): Unidentified<OddOneOutQuestion> => ({
   type: 'oddoneout',
   items,
   answer,
@@ -125,8 +130,7 @@ const ift = (
   choices: string[],
   answer: string,
   explanation: string,
-): IfThenQuestion => ({
-  id: nextId('ift'),
+): Unidentified<IfThenQuestion> => ({
   type: 'ifthen',
   premise,
   hint,
@@ -140,8 +144,7 @@ const srt = (
   groups: string[],
   answer: string,
   explanation: string,
-): SortingQuestion => ({
-  id: nextId('srt'),
+): Unidentified<SortingQuestion> => ({
   type: 'sorting',
   item,
   groups,
@@ -153,7 +156,7 @@ const srt = (
 // TRUE OR FALSE
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const trueFalseEasy: TrueFalseQuestion[] = [
+const trueFalseEasy: Unidentified<TrueFalseQuestion>[] = [
   tf('A dog is an animal', true, 'Yes! Dogs are animals — they are our furry friends! 🐕'),
   tf('The sun is blue', false, 'The sun looks yellow or orange, not blue! ☀️'),
   tf('Fish live in water', true, "That's right! Fish need water to breathe and swim! 🐟"),
@@ -187,7 +190,7 @@ const trueFalseEasy: TrueFalseQuestion[] = [
   tf('Carrots are purple', false, 'Most carrots are orange, though some are purple! 🥕'),
 ];
 
-const trueFalseMedium: TrueFalseQuestion[] = [
+const trueFalseMedium: Unidentified<TrueFalseQuestion>[] = [
   tf('Penguins can fly', false, 'Penguins are birds but they swim instead of flying! 🐧'),
   tf('Water freezes at 0°C', true, 'Yes! Water turns to ice at 0 degrees Celsius! ❄️'),
   tf('The Earth is flat', false, 'The Earth is round like a ball — a sphere! 🌍'),
@@ -265,7 +268,7 @@ const trueFalseMedium: TrueFalseQuestion[] = [
   ),
 ];
 
-const trueFalseHard: TrueFalseQuestion[] = [
+const trueFalseHard: Unidentified<TrueFalseQuestion>[] = [
   tf(
     'All rectangles are squares',
     false,
@@ -395,7 +398,7 @@ const trueFalseHard: TrueFalseQuestion[] = [
 // PATTERNS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const patternsEasy: PatternQuestion[] = [
+const patternsEasy: Unidentified<PatternQuestion>[] = [
   pat(
     ['1', '2', '3', '4', '?'],
     ['5', '6', '3', '8'],
@@ -558,7 +561,7 @@ const patternsEasy: PatternQuestion[] = [
   ),
 ];
 
-const patternsMedium: PatternQuestion[] = [
+const patternsMedium: Unidentified<PatternQuestion>[] = [
   pat(
     ['A', 'C', 'E', 'G', '?'],
     ['H', 'I', 'J', 'F'],
@@ -724,7 +727,7 @@ const patternsMedium: PatternQuestion[] = [
   ),
 ];
 
-const patternsHard: PatternQuestion[] = [
+const patternsHard: Unidentified<PatternQuestion>[] = [
   pat(
     ['1', '1', '2', '3', '5', '?'],
     ['6', '7', '8', '9'],
@@ -905,7 +908,7 @@ const patternsHard: PatternQuestion[] = [
 // ODD ONE OUT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const oddOneOutEasy: OddOneOutQuestion[] = [
+const oddOneOutEasy: Unidentified<OddOneOutQuestion>[] = [
   odd(
     ['🍎', '🍌', '🍊', '🚗'],
     '🚗',
@@ -1013,7 +1016,7 @@ const oddOneOutEasy: OddOneOutQuestion[] = [
   ),
 ];
 
-const oddOneOutMedium: OddOneOutQuestion[] = [
+const oddOneOutMedium: Unidentified<OddOneOutQuestion>[] = [
   odd(
     ['🐄', '🐑', '🐖', '🐙'],
     '🐙',
@@ -1133,7 +1136,7 @@ const oddOneOutMedium: OddOneOutQuestion[] = [
   odd(['🌙', '⭐', '☀️', '🌸'], '🌸', 'A flower is on Earth! The others are all in the sky! 🌌'),
 ];
 
-const oddOneOutHard: OddOneOutQuestion[] = [
+const oddOneOutHard: Unidentified<OddOneOutQuestion>[] = [
   odd(['2', '4', '6', '9'], '9', '9 is odd! The others are all even numbers! 🔢'),
   odd(
     ['cat', 'bat', 'hat', 'dog'],
@@ -1250,7 +1253,7 @@ const oddOneOutHard: OddOneOutQuestion[] = [
 // IF...THEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const ifThenEasy: IfThenQuestion[] = [
+const ifThenEasy: Unidentified<IfThenQuestion>[] = [
   ift(
     'If it is raining outside...',
     'Think about what keeps you dry! ☂️',
@@ -1506,7 +1509,7 @@ const ifThenEasy: IfThenQuestion[] = [
   ),
 ];
 
-const ifThenMedium: IfThenQuestion[] = [
+const ifThenMedium: Unidentified<IfThenQuestion>[] = [
   ift(
     'If all cats are animals, and Fluffy is a cat...',
     'If Fluffy is in the "cats" group, what bigger group does that put Fluffy in? 🐾',
@@ -1792,7 +1795,7 @@ const ifThenMedium: IfThenQuestion[] = [
   ),
 ];
 
-const ifThenHard: IfThenQuestion[] = [
+const ifThenHard: Unidentified<IfThenQuestion>[] = [
   ift(
     'If no birds are reptiles, and all eagles are birds...',
     'Eagles are birds — and birds are NOT in the reptile group! 🦅',
@@ -2052,7 +2055,7 @@ const ifThenHard: IfThenQuestion[] = [
 // SORTING
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const sortingEasy: SortingQuestion[] = [
+const sortingEasy: Unidentified<SortingQuestion>[] = [
   srt(
     '🍎 Apple',
     ['🍏 Fruits', '🥦 Vegetables'],
@@ -2209,7 +2212,7 @@ const sortingEasy: SortingQuestion[] = [
   ),
 ];
 
-const sortingMedium: SortingQuestion[] = [
+const sortingMedium: Unidentified<SortingQuestion>[] = [
   srt(
     '🐄 Cow',
     ['🏡 Land Animals', '🌊 Sea Animals'],
@@ -2386,7 +2389,7 @@ const sortingMedium: SortingQuestion[] = [
   ),
 ];
 
-const sortingHard: SortingQuestion[] = [
+const sortingHard: Unidentified<SortingQuestion>[] = [
   srt(
     '🪵 Wood',
     ['🏊 Things That Float', '⬇️ Things That Sink'],
@@ -2573,12 +2576,47 @@ const sortingHard: SortingQuestion[] = [
 // BANK EXPORT
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Stamp stable, scoped IDs onto a builder array.
+ * Format: `${gameType}-${difficulty}-${1-based-index}` — stable against
+ * reorders and insertions within a combo. A future change to position 3 only
+ * shifts ids for that combo, never another, and the grader always looks up by
+ * id within the (gameType, difficulty) bank.
+ */
+function tagIds<T extends LogicQuestion>(
+  gt: LogicGameType,
+  diff: LogicDifficulty,
+  arr: Unidentified<T>[],
+): T[] {
+  return arr.map((q, i) => ({ ...q, id: `${gt}-${diff}-${i + 1}` }) as T);
+}
+
 const BANK: Record<LogicGameType, Record<LogicDifficulty, LogicQuestion[]>> = {
-  truefalse: { easy: trueFalseEasy, medium: trueFalseMedium, hard: trueFalseHard },
-  patterns: { easy: patternsEasy, medium: patternsMedium, hard: patternsHard },
-  oddoneout: { easy: oddOneOutEasy, medium: oddOneOutMedium, hard: oddOneOutHard },
-  ifthen: { easy: ifThenEasy, medium: ifThenMedium, hard: ifThenHard },
-  sorting: { easy: sortingEasy, medium: sortingMedium, hard: sortingHard },
+  truefalse: {
+    easy: tagIds('truefalse', 'easy', trueFalseEasy),
+    medium: tagIds('truefalse', 'medium', trueFalseMedium),
+    hard: tagIds('truefalse', 'hard', trueFalseHard),
+  },
+  patterns: {
+    easy: tagIds('patterns', 'easy', patternsEasy),
+    medium: tagIds('patterns', 'medium', patternsMedium),
+    hard: tagIds('patterns', 'hard', patternsHard),
+  },
+  oddoneout: {
+    easy: tagIds('oddoneout', 'easy', oddOneOutEasy),
+    medium: tagIds('oddoneout', 'medium', oddOneOutMedium),
+    hard: tagIds('oddoneout', 'hard', oddOneOutHard),
+  },
+  ifthen: {
+    easy: tagIds('ifthen', 'easy', ifThenEasy),
+    medium: tagIds('ifthen', 'medium', ifThenMedium),
+    hard: tagIds('ifthen', 'hard', ifThenHard),
+  },
+  sorting: {
+    easy: tagIds('sorting', 'easy', sortingEasy),
+    medium: tagIds('sorting', 'medium', sortingMedium),
+    hard: tagIds('sorting', 'hard', sortingHard),
+  },
 };
 
 /**
