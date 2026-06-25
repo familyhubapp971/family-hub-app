@@ -261,7 +261,9 @@ export function KidMyWorld({
                     <p className="mt-1 text-sm font-bold text-gray-700">
                       {(() => {
                         const pct =
-                          totalThisView > 0 ? Math.round((doneThisView / totalThisView) * 100) : 0;
+                          totalThisView > 0
+                            ? Math.min(100, Math.round((doneThisView / totalThisView) * 100))
+                            : 0;
                         return (
                           <>
                             You finished{' '}
