@@ -453,6 +453,203 @@ describe('<KidMyWorld />', () => {
     expect(screen.getByTestId('kid-week-retry')).toBeInTheDocument();
   });
 
+  // FHS-399 — finished-week framing on KidMyWorld ──────────────────────────
+
+  it('shows the live banner on the current (non-finalized) week', async () => {
+    // Default mock uses WEEK with isFinalized: false → data.isCurrentWeek = true
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('kid-myworld')).toBeInTheDocument());
+    expect(screen.getByText('How are you doing this week?')).toBeInTheDocument();
+    expect(screen.queryByTestId('kid-finished-week-banner')).not.toBeInTheDocument();
+  });
+
+  it('shows the finished-week banner when viewing a finalized week', async () => {
+    const finalizedWeek = { ...WEEK, isFinalized: true };
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.endsWith('/api/kid/weeks'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ weeks: [finalizedWeek] }),
+        });
+      if (u.includes('/api/kid/habits'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            ...HABITS_BODY,
+            week: finalizedWeek,
+          }),
+        });
+      if (u.includes('/api/kid/financial/savings'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            savedStickers: 10,
+            savedCash: 5,
+            currency: 'AED',
+            stickerRate: 0.5,
+          }),
+        });
+      if (u.includes('/api/kid/financial/investments'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ investments: [] }) });
+      if (u.endsWith('/api/kid/rewards'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ rewards: [], stickerBalance: 8 }),
+        });
+      if (u.includes('/api/kid/analytics'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ stickersPerWeek: [], habitStats: [] }),
+        });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('kid-finished-week-banner')).toBeInTheDocument());
+    // Finished-week heading (&rsquo; renders as the curly right-single-quote ’)
+    expect(screen.getByTestId('kid-finished-week-banner')).toHaveTextContent(
+      /looking at a finished week/,
+    );
+    // Past-tense completion line (3 done out of 14 total → 21% → gentle message)
+    expect(screen.getByTestId('kid-finished-week-banner')).toHaveTextContent(/You finished/);
+    // Live banner heading is NOT shown
+    expect(screen.queryByText('How are you doing this week?')).not.toBeInTheDocument();
+  });
+
+  it('shows celebratory message when completion >= 50% on a finalized week', async () => {
+    const finalizedWeek = { ...WEEK, isFinalized: true };
+    // Give h1 and h2 each 4 done days out of 7 = 8/14 = 57%
+    const richStickers = [
+      ...Array.from({ length: 4 }, (_, d) => ({
+        habitId: 'h1',
+        day: d,
+        sticker: 'gold-star',
+        stickerValue: 1,
+      })),
+      ...Array.from({ length: 4 }, (_, d) => ({
+        habitId: 'h2',
+        day: d,
+        sticker: 'gold-star',
+        stickerValue: 1,
+      })),
+    ];
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.endsWith('/api/kid/weeks'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ weeks: [finalizedWeek] }),
+        });
+      if (u.includes('/api/kid/habits'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ...HABITS_BODY, stickers: richStickers, week: finalizedWeek }),
+        });
+      if (u.includes('/api/kid/financial/savings'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ savedStickers: 0, savedCash: 0, currency: 'AED', stickerRate: 0.5 }),
+        });
+      if (u.includes('/api/kid/financial/investments'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ investments: [] }) });
+      if (u.endsWith('/api/kid/rewards'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ rewards: [], stickerBalance: 0 }),
+        });
+      if (u.includes('/api/kid/analytics'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ stickersPerWeek: [], habitStats: [] }),
+        });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('kid-finished-week-banner')).toBeInTheDocument());
+    expect(screen.getByText(/Amazing work/)).toBeInTheDocument();
+  });
+
+  it('KidMoneySkills shows past-tense copy when isFinalized, forward copy when live', async () => {
+    const finalizedWeek = { ...WEEK, isFinalized: true };
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.endsWith('/api/kid/weeks'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ weeks: [finalizedWeek] }),
+        });
+      if (u.includes('/api/kid/habits'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ...HABITS_BODY, week: finalizedWeek }),
+        });
+      if (u.includes('/api/kid/financial/savings'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            savedStickers: 10,
+            savedCash: 5,
+            currency: 'AED',
+            stickerRate: 0.5,
+          }),
+        });
+      if (u.includes('/api/kid/financial/investments'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ investments: [] }) });
+      if (u.endsWith('/api/kid/rewards'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ rewards: [], stickerBalance: 8 }),
+        });
+      if (u.includes('/api/kid/analytics'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ stickersPerWeek: [], habitStats: [] }),
+        });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('kid-moneyskills')).toBeInTheDocument());
+    const ms = screen.getByTestId('kid-moneyskills');
+    // Past-tense intro line (apostrophe may render as curly quote; use regex)
+    expect(ms).toHaveTextContent(/what you did with your stars this week/);
+    // Forward-looking CTA is gone
+    expect(ms).not.toHaveTextContent('What will you do with them?');
+    // Card headings flip to past tense
+    expect(ms).toHaveTextContent('Spent');
+    expect(ms).toHaveTextContent('Saved');
+    expect(ms).toHaveTextContent('Grew (Invested)');
+  });
+
+  it('KidMoneySkills shows forward-looking copy on the current week', async () => {
+    // Default mockBoot → current week, isFinalized: false
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('kid-moneyskills')).toBeInTheDocument());
+    const ms = screen.getByTestId('kid-moneyskills');
+    expect(ms).toHaveTextContent('What will you do with them?');
+    expect(ms).not.toHaveTextContent(/what you did with your stars this week/);
+    expect(ms).toHaveTextContent('Spend Now');
+    expect(ms).toHaveTextContent('Save Up');
+    expect(ms).toHaveTextContent('Grow (Invest)');
+  });
+
   it('shows an error state and can retry', async () => {
     fetchMock.mockImplementation((url: string) => {
       const u = String(url);
