@@ -80,6 +80,16 @@ export interface SubjectInsight {
   /** ISO 8601 string or null (no activity yet) */
   lastActive: string | null;
   needsHelp: boolean;
+  /**
+   * FHS-401 — per-subject accuracy as a 0–100 integer (floor-rounded), or null
+   * when no attempts have been recorded yet.
+   *
+   * Maths:        round(totalCorrect / totalAttempts * 100) across all progress rows.
+   * Logic:        round(sum(correctCount) / sum(totalAttempts) * 100) across all rows.
+   * Science:      round(totalCorrect / totalAnswered * 100) from learn_progress.
+   * World Flags:  null — quiz attempt tracking not yet implemented server-side.
+   */
+  accuracyPct: number | null;
 }
 
 export interface WeakestDetail {
@@ -106,6 +116,10 @@ interface MathsRaw {
   lastActive: Date | null;
   /** Average proveAvgTime across all rows where proveAvgTime > 0, or 0 */
   avgProveTime: number;
+  /** FHS-401 — sum of total_correct across all mw_maths_progress rows for this kid. */
+  totalCorrect: number;
+  /** FHS-401 — sum of total_attempts across all mw_maths_progress rows for this kid. */
+  totalAttempts: number;
 }
 
 interface LogicRaw {
@@ -113,6 +127,10 @@ interface LogicRaw {
   lastActive: Date | null;
   correctByGame: Record<string, number>;
   weakestGame: string | null;
+  /** FHS-401 — sum of correct_count across all mw_logic_progress rows for this kid. */
+  sumCorrect: number;
+  /** FHS-401 — sum of total_attempts across all mw_logic_progress rows for this kid. */
+  sumAttempts: number;
 }
 
 interface ScienceRaw {
@@ -148,6 +166,9 @@ async function fetchMaths(db: Database, tenantId: string, memberId: string): Pro
     .select({
       lastActive: max(mwMathsProgress.updatedAt),
       avgProveTime: sql<number>`coalesce(avg(nullif(${mwMathsProgress.proveAvgTime}, 0)), 0)`,
+      // FHS-401 — sum across all rows for this kid (different rows = different tables).
+      totalCorrect: sql<number>`coalesce(sum(${mwMathsProgress.totalCorrect}), 0)`,
+      totalAttempts: sql<number>`coalesce(sum(${mwMathsProgress.totalAttempts}), 0)`,
     })
     .from(mwMathsProgress)
     .where(and(eq(mwMathsProgress.tenantId, tenantId), eq(mwMathsProgress.memberId, memberId)));
@@ -156,6 +177,8 @@ async function fetchMaths(db: Database, tenantId: string, memberId: string): Pro
     certsEarned: Number(certsRow?.certsEarned ?? 0),
     lastActive: progressRow?.lastActive ?? null,
     avgProveTime: Number(progressRow?.avgProveTime ?? 0),
+    totalCorrect: Number(progressRow?.totalCorrect ?? 0),
+    totalAttempts: Number(progressRow?.totalAttempts ?? 0),
   };
 }
 
@@ -167,11 +190,12 @@ async function fetchLogic(db: Database, tenantId: string, memberId: string): Pro
       and(eq(mwLogicCertificates.tenantId, tenantId), eq(mwLogicCertificates.memberId, memberId)),
     );
 
-  // Progress rows grouped by game_type — for weakest game detection.
+  // Progress rows grouped by game_type — for weakest game detection and accuracy sums.
   const progressRows = await db
     .select({
       gameType: mwLogicProgress.gameType,
       totalCorrect: sum(mwLogicProgress.correctCount),
+      totalAttempts: sum(mwLogicProgress.totalAttempts),
       lastUpdated: max(mwLogicProgress.updatedAt),
     })
     .from(mwLogicProgress)
@@ -192,8 +216,13 @@ async function fetchLogic(db: Database, tenantId: string, memberId: string): Pro
 
   const correctByGame: Record<string, number> = {};
   let lastActive: Date | null = null;
+  // FHS-401 — aggregate across all game_type rows for subject-level accuracy.
+  let sumCorrect = 0;
+  let sumAttempts = 0;
   for (const r of progressRows) {
     correctByGame[r.gameType] = Number(r.totalCorrect ?? 0);
+    sumCorrect += Number(r.totalCorrect ?? 0);
+    sumAttempts += Number(r.totalAttempts ?? 0);
     if (r.lastUpdated && (!lastActive || r.lastUpdated > lastActive)) {
       lastActive = r.lastUpdated;
     }
@@ -216,6 +245,8 @@ async function fetchLogic(db: Database, tenantId: string, memberId: string): Pro
     lastActive,
     correctByGame,
     weakestGame,
+    sumCorrect,
+    sumAttempts,
   };
 }
 
@@ -270,16 +301,31 @@ async function fetchWorldFlags(
 
 // ─── Heuristic helpers ────────────────────────────────────────────────────────
 
-function mathsNeedsHelp(certsEarned: number, avgProveTime: number): boolean {
+function mathsNeedsHelp(
+  certsEarned: number,
+  avgProveTime: number,
+  totalCorrect: number,
+  totalAttempts: number,
+): boolean {
   // No activity → not "needs help" (don't flag a kid who hasn't started).
   if (certsEarned === 0) return false;
+  // FHS-401: prefer real accuracy when enough attempts are recorded (≥5).
+  // accuracy < 60% = struggling regardless of Prove speed.
+  if (totalAttempts >= 5) {
+    return totalCorrect / totalAttempts < 0.6;
+  }
+  // Fallback heuristic (pre-accuracy data): low progress AND slow on Prove.
   const progressPct = Math.floor((certsEarned / MATHS_CERTS_TOTAL) * 100);
-  // Low progress AND slow on Prove = struggling.
   return progressPct < 25 && avgProveTime > 10;
 }
 
-function logicNeedsHelp(certsEarned: number): boolean {
+function logicNeedsHelp(certsEarned: number, sumCorrect: number, sumAttempts: number): boolean {
   if (certsEarned === 0) return false;
+  // FHS-401: prefer real accuracy when enough attempts are recorded (≥5).
+  if (sumAttempts >= 5) {
+    return sumCorrect / sumAttempts < 0.6;
+  }
+  // Fallback: few certs = low exposure.
   return Math.floor((certsEarned / LOGIC_CERTS_TOTAL) * 100) < 20;
 }
 
@@ -337,24 +383,37 @@ export async function computeLearnInsights(
   // ── Maths subject ────────────────────────────────────────────────────────
   // progressPct uses Math.floor (see rounding convention at top of file).
   const mathsPct = Math.min(100, Math.floor((maths.certsEarned / MATHS_CERTS_TOTAL) * 100));
+  // FHS-401: accuracy = total_correct / total_attempts, null when no attempts yet.
+  const mathsAccuracy =
+    maths.totalAttempts > 0 ? Math.round((maths.totalCorrect / maths.totalAttempts) * 100) : null;
   const mathsSubject: SubjectInsight = {
     subject: 'Maths',
     progressPct: mathsPct,
     certificatesEarned: maths.certsEarned,
     certificatesTotal: MATHS_CERTS_TOTAL,
     lastActive: maths.lastActive?.toISOString() ?? null,
-    needsHelp: mathsNeedsHelp(maths.certsEarned, maths.avgProveTime),
+    needsHelp: mathsNeedsHelp(
+      maths.certsEarned,
+      maths.avgProveTime,
+      maths.totalCorrect,
+      maths.totalAttempts,
+    ),
+    accuracyPct: mathsAccuracy,
   };
 
   // ── Logic subject ────────────────────────────────────────────────────────
   const logicPct = Math.min(100, Math.floor((logic.certsEarned / LOGIC_CERTS_TOTAL) * 100));
+  // FHS-401: accuracy = sum(correctCount) / sum(totalAttempts) across all rows.
+  const logicAccuracy =
+    logic.sumAttempts > 0 ? Math.round((logic.sumCorrect / logic.sumAttempts) * 100) : null;
   const logicSubject: SubjectInsight = {
     subject: 'Logic',
     progressPct: logicPct,
     certificatesEarned: logic.certsEarned,
     certificatesTotal: LOGIC_CERTS_TOTAL,
     lastActive: logic.lastActive?.toISOString() ?? null,
-    needsHelp: logicNeedsHelp(logic.certsEarned),
+    needsHelp: logicNeedsHelp(logic.certsEarned, logic.sumCorrect, logic.sumAttempts),
+    accuracyPct: logicAccuracy,
   };
 
   // ── Science subject ──────────────────────────────────────────────────────
@@ -362,6 +421,11 @@ export async function computeLearnInsights(
   // Learn flow). Clamped to [0, 100] defensively in case of column drift.
   // certificatesEarned = 1 if certificate_at is set, else 0.
   const scienceCerts = science.certificateAt ? 1 : 0;
+  // FHS-401: Science already has total_correct/total_answered in learn_progress.
+  const scienceAccuracy =
+    science.totalAnswered > 0
+      ? Math.round((science.totalCorrect / science.totalAnswered) * 100)
+      : null;
   const scienceSubject: SubjectInsight = {
     subject: 'Science',
     progressPct: Math.min(100, Math.max(0, science.progress)),
@@ -369,6 +433,7 @@ export async function computeLearnInsights(
     certificatesTotal: 1,
     lastActive: science.lastActive?.toISOString() ?? null,
     needsHelp: scienceNeedsHelp(science.totalAnswered, science.totalCorrect),
+    accuracyPct: scienceAccuracy,
   };
 
   // ── World Flags subject ──────────────────────────────────────────────────
@@ -378,6 +443,9 @@ export async function computeLearnInsights(
   //   since WF has no dedicated cert table; it's coherent: completing a
   //   continent is the natural "achievement". certificatesTotal = 6 continents.
   // hasActivity trigger: lastActive from world_flags_progress (any explore).
+  // FHS-401: World Flags quiz correct/attempts are NOT tracked server-side —
+  //   world_flags_progress only records which countries were explored, not quiz
+  //   answers. accuracyPct = null until a quiz-attempts table is added.
   const flagsPct = Math.min(100, Math.floor((flags.explored / WORLD_FLAGS_COUNTRIES_TOTAL) * 100));
   // Continent completion is not queryable here without the full country list.
   // We use the world_flags_learn_progress table (one row per completed chunk)
@@ -393,6 +461,7 @@ export async function computeLearnInsights(
     certificatesTotal: WORLD_FLAGS_CONTINENTS_TOTAL,
     lastActive: flags.lastActive?.toISOString() ?? null,
     needsHelp: worldFlagsNeedsHelp(flags.explored),
+    accuracyPct: null,
   };
 
   const subjects: SubjectInsight[] = [mathsSubject, logicSubject, scienceSubject, flagsSubject];

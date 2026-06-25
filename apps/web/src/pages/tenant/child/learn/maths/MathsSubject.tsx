@@ -123,6 +123,7 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
   }, [kidToken, operation, activeTableNumber]);
 
   // Practice stage complete → PUT progress then show MathsStageComplete.
+  // FHS-401: MathsTablePractice always asks exactly 10 questions, so attempts=10.
   const handlePracticeComplete = useCallback(
     async (correct: number) => {
       try {
@@ -133,6 +134,7 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
             operation,
             tableNumber: activeTableNumber,
             practiceCorrect: correct,
+            practiceAttempts: 10, // FHS-401: fixed 10-question practice session.
           }),
         });
       } catch (err) {
@@ -145,8 +147,10 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
   );
 
   // Prove stage complete → PUT progress, conditionally POST certificate, show stage complete.
+  // FHS-401: totalAnswered from MathsProveChallenge is the total questions attempted
+  // in the 60s window (correct + wrong). Passed as proveAttempts for accuracy tracking.
   const handleProveComplete = useCallback(
-    async (score: number, avgTime: number) => {
+    async (score: number, avgTime: number, totalAnswered: number) => {
       const passed = score >= PASS_SCORE && avgTime <= PASS_AVG_TIME;
 
       // PUT progress regardless of pass/fail.
@@ -159,6 +163,7 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
             tableNumber: activeTableNumber,
             proveScore: score,
             proveAvgTime: avgTime,
+            proveAttempts: totalAnswered, // FHS-401: total questions answered in 60s.
           }),
         });
       } catch (err) {
@@ -360,7 +365,9 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
         <MathsProveChallenge
           operation={operation}
           tableNumber={activeTableNumber}
-          onComplete={(score, avgTime) => void handleProveComplete(score, avgTime)}
+          onComplete={(score, avgTime, totalAnswered) =>
+            void handleProveComplete(score, avgTime, totalAnswered)
+          }
           onBack={() => {
             setShowProveComplete(false);
             setActiveView('journey');

@@ -283,6 +283,8 @@ describe('upsertProgress — partial-field updates', () => {
       proveScore: 0,
       proveAvgTime: 0,
       placementUnlocked: false,
+      totalCorrect: 5,
+      totalAttempts: 10,
       updatedAt: new Date(),
     };
 
@@ -295,10 +297,17 @@ describe('upsertProgress — partial-field updates', () => {
       }),
     });
 
-    const db = { insert: insertMock } as unknown as Parameters<typeof upsertProgress>[0];
+    // FHS-401: upsertProgress now does a SELECT to read existing totals first.
+    const selectMock = makeSelectMock([]); // no existing row → totals start at 0
+
+    const db = {
+      insert: insertMock,
+      select: selectMock,
+    } as unknown as Parameters<typeof upsertProgress>[0];
 
     const result = await upsertProgress(db, TENANT, MEMBER, 'addition', 1, {
       practiceCorrect: 5,
+      accuracyDelta: { correct: 5, attempts: 10 },
     });
 
     // onConflictDoUpdate was called (upsert path).
@@ -314,9 +323,66 @@ describe('upsertProgress — partial-field updates', () => {
     expect(callArg.set).not.toHaveProperty('learnCompleted');
     expect(callArg.set).not.toHaveProperty('proveScore');
     expect(callArg.set).not.toHaveProperty('proveAvgTime');
+    // FHS-401: accuracy counters always present in conflict set.
+    expect(callArg.set).toHaveProperty('totalCorrect', 5);
+    expect(callArg.set).toHaveProperty('totalAttempts', 10);
 
     // The returned row is serialised correctly.
     expect(result.practiceCorrect).toBe(5);
+    expect(result.totalCorrect).toBe(5);
+    expect(result.totalAttempts).toBe(10);
+  });
+
+  it('accumulates accuracy counters onto existing totals (FHS-401)', async () => {
+    const fakeRow = {
+      id: 'ccc',
+      tenantId: TENANT,
+      memberId: MEMBER,
+      operation: 'multiplication',
+      tableNumber: 3,
+      learnCompleted: false,
+      practiceCorrect: 8,
+      proveScore: 0,
+      proveAvgTime: 0,
+      placementUnlocked: false,
+      totalCorrect: 23, // 15 existing + 8 new
+      totalAttempts: 30, // 20 existing + 10 new
+      updatedAt: new Date(),
+    };
+
+    const onConflictDoUpdate = vi.fn().mockReturnValue({
+      returning: vi.fn().mockResolvedValue([fakeRow]),
+    });
+    const insertMock = vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({ onConflictDoUpdate }),
+    });
+
+    // Existing row with prior accuracy data.
+    const existingSelectRow = {
+      totalCorrect: 15,
+      totalAttempts: 20,
+    };
+    const selectMock = makeSelectMock([existingSelectRow]);
+
+    const db = {
+      insert: insertMock,
+      select: selectMock,
+    } as unknown as Parameters<typeof upsertProgress>[0];
+
+    const result = await upsertProgress(db, TENANT, MEMBER, 'multiplication', 3, {
+      practiceCorrect: 8,
+      accuracyDelta: { correct: 8, attempts: 10 },
+    });
+
+    const callArg = onConflictDoUpdate.mock.calls[0]![0] as {
+      set: Record<string, unknown>;
+    };
+
+    // Should have added 8 to 15 and 10 to 20.
+    expect(callArg.set).toHaveProperty('totalCorrect', 23);
+    expect(callArg.set).toHaveProperty('totalAttempts', 30);
+    expect(result.totalCorrect).toBe(23);
+    expect(result.totalAttempts).toBe(30);
   });
 });
 

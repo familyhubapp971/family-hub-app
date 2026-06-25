@@ -25,7 +25,8 @@ import {
 interface MathsProveChallengeProps {
   operation: Operation;
   tableNumber: TableNumber;
-  onComplete: (score: number, avgTime: number) => void;
+  // FHS-401: totalAnswered added so parent can pass it to the PUT for accuracy tracking.
+  onComplete: (score: number, avgTime: number, totalAnswered: number) => void;
   onBack: () => void;
 }
 
@@ -102,10 +103,11 @@ export function MathsProveChallenge({
 
   // Fire onComplete exactly once when the timer hits 0.
   // finalScore and finalAvgTime are set synchronously before finished=true.
+  // FHS-401: also pass totalAnswered so the parent can accumulate attempt counts.
   useEffect(() => {
     if (!finished || hasCompletedRef.current) return;
     hasCompletedRef.current = true;
-    onComplete(finalScore, finalAvgTime);
+    onComplete(finalScore, finalAvgTime, totalAnsweredRef.current);
   }, [finished, finalScore, finalAvgTime, onComplete]);
 
   const handleAnswer = (choice: number) => {

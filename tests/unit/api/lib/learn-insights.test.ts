@@ -1,18 +1,20 @@
-// FHS-384 — Unit tests for lib/learn-insights.ts
+// FHS-384 / FHS-401 — Unit tests for lib/learn-insights.ts
 //
 // Tests cover:
 //   - computeLearnInsights aggregation + needsHelp heuristics per subject
 //   - weakest detection (lowest progressPct among subjects with activity)
 //   - weakest tie-break: ties resolve to first in array order (Maths→Logic→Science→WF)
 //   - empty-state: child with no activity → hasActivity false, all zeroed, weakest null
+//   - FHS-401: accuracyPct per subject (Maths/Logic/Science real accuracy; WF null)
+//   - FHS-401: needsHelp uses real accuracy (< 60%) when enough attempts exist
 //
 // Mock call ordering (Promise.all concurrent, but JS single-threaded):
 //   fetchMaths    → call 1: maths certs count
 //   fetchLogic    → call 2: logic certs count
 //   fetchScience  → call 3: science learn_progress row
 //   fetchFlags    → call 4: world_flags_progress count
-//   fetchMaths    → call 5: maths progress aggregate (lastActive, avgProveTime)
-//   fetchLogic    → call 6: logic progress rows (grouped by game_type)
+//   fetchMaths    → call 5: maths progress aggregate (lastActive, avgProveTime, totalCorrect, totalAttempts)
+//   fetchLogic    → call 6: logic progress rows (grouped by game_type, with totalAttempts)
 //   fetchLogic    → call 7: logic certs per game_type
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -111,13 +113,14 @@ describe('computeLearnInsights — empty state (no activity)', () => {
     expect(res.weakest).toBeNull();
   });
 
-  it('returns all subjects at 0 progressPct, 0 certs, null lastActive, needsHelp false', async () => {
+  it('returns all subjects at 0 progressPct, 0 certs, null lastActive, needsHelp false, accuracyPct null', async () => {
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
     for (const s of res.subjects) {
       expect(s.progressPct).toBe(0);
       expect(s.certificatesEarned).toBe(0);
       expect(s.lastActive).toBeNull();
       expect(s.needsHelp).toBe(false);
+      expect(s.accuracyPct).toBeNull();
     }
   });
 
@@ -141,7 +144,7 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
       [{ certsEarned: '0' }], // logic certs
       [], // science
       [], // flags
-      [{ lastActive: new Date('2026-01-01'), avgProveTime: 15 }], // maths progress agg
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 15, totalCorrect: 0, totalAttempts: 0 }], // maths agg
       [], // logic progress rows
       [], // logic certs per game
     );
@@ -149,14 +152,14 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
     expect(res.subjects.find((s) => s.subject === 'Maths')!.needsHelp).toBe(false);
   });
 
-  it('needsHelp true when progress < 25% AND avgProveTime > 10s', async () => {
-    // 2 certs / 48 = ~4% progress (floor(4.16)=4), avg time 12s
+  it('needsHelp true when progress < 25% AND avgProveTime > 10s (no attempt data)', async () => {
+    // 2 certs / 48 = ~4% progress (floor(4.16)=4), avg time 12s, no attempts yet
     setupDbReturns(
       [{ certsEarned: '2' }], // maths certs
       [{ certsEarned: '0' }], // logic certs
       [], // science
       [], // flags
-      [{ lastActive: new Date('2026-01-01'), avgProveTime: 12 }], // maths progress agg
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 12, totalCorrect: 0, totalAttempts: 0 }],
       [], // logic progress rows
       [], // logic certs per game
     );
@@ -164,13 +167,36 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
     expect(res.subjects.find((s) => s.subject === 'Maths')!.needsHelp).toBe(true);
   });
 
-  it('needsHelp false when progress < 25% but avgProveTime <= 10s', async () => {
+  it('needsHelp true when accuracy < 60% with enough attempts (FHS-401 real accuracy path)', async () => {
+    // 3 correct / 10 attempts = 30% accuracy < 60%
     setupDbReturns(
-      [{ certsEarned: '3' }],
+      [{ certsEarned: '2' }],
       [{ certsEarned: '0' }],
       [],
       [],
-      [{ lastActive: new Date('2026-01-01'), avgProveTime: 8 }],
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 3, totalCorrect: 3, totalAttempts: 10 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Maths')!.needsHelp).toBe(true);
+  });
+
+  it('needsHelp false when accuracy >= 60% with enough attempts', async () => {
+    // 7 correct / 10 attempts = 70% accuracy >= 60%
+    setupDbReturns(
+      [{ certsEarned: '2' }],
+      [{ certsEarned: '0' }],
+      [],
+      [],
+      [
+        {
+          lastActive: new Date('2026-01-01'),
+          avgProveTime: 12,
+          totalCorrect: 7,
+          totalAttempts: 10,
+        },
+      ],
       [],
       [],
     );
@@ -178,14 +204,28 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
     expect(res.subjects.find((s) => s.subject === 'Maths')!.needsHelp).toBe(false);
   });
 
-  it('needsHelp false when progress >= 25%', async () => {
+  it('needsHelp false when progress < 25% but avgProveTime <= 10s (no attempt data)', async () => {
+    setupDbReturns(
+      [{ certsEarned: '3' }],
+      [{ certsEarned: '0' }],
+      [],
+      [],
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 8, totalCorrect: 0, totalAttempts: 0 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Maths')!.needsHelp).toBe(false);
+  });
+
+  it('needsHelp false when progress >= 25% (no attempt data)', async () => {
     // 12 certs / 48 = 25% (floor(25)=25)
     setupDbReturns(
       [{ certsEarned: '12' }],
       [{ certsEarned: '0' }],
       [],
       [],
-      [{ lastActive: new Date('2026-01-01'), avgProveTime: 15 }],
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 15, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -199,7 +239,7 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
       [{ certsEarned: '0' }],
       [],
       [],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -214,42 +254,131 @@ describe('computeLearnInsights — Maths needsHelp heuristic', () => {
       [{ certsEarned: '0' }],
       [],
       [],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
     expect(res.subjects.find((s) => s.subject === 'Maths')!.progressPct).toBe(12);
   });
+
+  // ─── FHS-401: accuracyPct ────────────────────────────────────────────────────
+
+  it('accuracyPct is null when totalAttempts = 0', async () => {
+    setupDbReturns(
+      [{ certsEarned: '2' }],
+      [{ certsEarned: '0' }],
+      [],
+      [],
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 3, totalCorrect: 0, totalAttempts: 0 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Maths')!.accuracyPct).toBeNull();
+  });
+
+  it('accuracyPct = round(totalCorrect/totalAttempts*100)', async () => {
+    // 7 correct / 10 attempts = 70%
+    setupDbReturns(
+      [{ certsEarned: '2' }],
+      [{ certsEarned: '0' }],
+      [],
+      [],
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 3, totalCorrect: 7, totalAttempts: 10 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Maths')!.accuracyPct).toBe(70);
+  });
 });
 
 // ─── Logic needsHelp ──────────────────────────────────────────────────────────
 
 describe('computeLearnInsights — Logic needsHelp heuristic', () => {
-  it('needsHelp true when progressPct < 20 with activity', async () => {
-    // 2 / 15 = floor(13.3) = 13% < 20
+  it('needsHelp true when progressPct < 20 with activity (no attempt data)', async () => {
+    // 2 / 15 = floor(13.3) = 13% < 20; no attempt data → fallback heuristic
     setupDbReturns(
       [{ certsEarned: '0' }], // maths certs
       [{ certsEarned: '2' }], // logic certs
       [], // science
       [], // flags
-      [{ lastActive: null, avgProveTime: 0 }], // maths agg
-      [{ gameType: 'sorting', totalCorrect: '3', lastUpdated: new Date('2026-01-01') }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }], // maths agg
+      [
+        {
+          gameType: 'sorting',
+          totalCorrect: '3',
+          totalAttempts: '0',
+          lastUpdated: new Date('2026-01-01'),
+        },
+      ],
       [{ gameType: 'sorting', certCount: '2' }],
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
     expect(res.subjects.find((s) => s.subject === 'Logic')!.needsHelp).toBe(true);
   });
 
-  it('needsHelp false when progressPct >= 20', async () => {
+  it('needsHelp true when accuracy < 60% with enough attempts (FHS-401)', async () => {
+    // 2 correct / 10 attempts = 20% accuracy < 60%
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '2' }],
+      [],
+      [],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [
+        {
+          gameType: 'sorting',
+          totalCorrect: '2',
+          totalAttempts: '10',
+          lastUpdated: new Date('2026-01-01'),
+        },
+      ],
+      [{ gameType: 'sorting', certCount: '2' }],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Logic')!.needsHelp).toBe(true);
+  });
+
+  it('needsHelp false when accuracy >= 60% with enough attempts', async () => {
+    // 8 correct / 10 attempts = 80% accuracy >= 60%
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '3' }],
+      [],
+      [],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [
+        {
+          gameType: 'patterns',
+          totalCorrect: '8',
+          totalAttempts: '10',
+          lastUpdated: new Date('2026-01-01'),
+        },
+      ],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Logic')!.needsHelp).toBe(false);
+  });
+
+  it('needsHelp false when progressPct >= 20 (no attempt data)', async () => {
     // 3 / 15 = floor(20) = 20%
     setupDbReturns(
       [{ certsEarned: '0' }],
       [{ certsEarned: '3' }],
       [],
       [],
-      [{ lastActive: null, avgProveTime: 0 }],
-      [{ gameType: 'patterns', totalCorrect: '30', lastUpdated: new Date('2026-01-01') }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [
+        {
+          gameType: 'patterns',
+          totalCorrect: '30',
+          totalAttempts: '0',
+          lastUpdated: new Date('2026-01-01'),
+        },
+      ],
       [],
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
@@ -262,7 +391,7 @@ describe('computeLearnInsights — Logic needsHelp heuristic', () => {
       [{ certsEarned: '0' }],
       [],
       [],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -270,6 +399,57 @@ describe('computeLearnInsights — Logic needsHelp heuristic', () => {
     expect(res.subjects.find((s) => s.subject === 'Logic')!.certificatesTotal).toBe(
       LOGIC_CERTS_TOTAL,
     );
+  });
+
+  // ─── FHS-401: accuracyPct ────────────────────────────────────────────────────
+
+  it('accuracyPct is null when sumAttempts = 0', async () => {
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '2' }],
+      [],
+      [],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [
+        {
+          gameType: 'sorting',
+          totalCorrect: '5',
+          totalAttempts: '0',
+          lastUpdated: new Date('2026-01-01'),
+        },
+      ],
+      [{ gameType: 'sorting', certCount: '2' }],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Logic')!.accuracyPct).toBeNull();
+  });
+
+  it('accuracyPct sums correctCount/totalAttempts across game_type rows', async () => {
+    // Two rows: 6 correct / 10 attempts + 4 correct / 10 attempts = 10/20 = 50%
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '2' }],
+      [],
+      [],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [
+        {
+          gameType: 'sorting',
+          totalCorrect: '6',
+          totalAttempts: '10',
+          lastUpdated: new Date('2026-01-01'),
+        },
+        {
+          gameType: 'patterns',
+          totalCorrect: '4',
+          totalAttempts: '10',
+          lastUpdated: new Date('2026-01-02'),
+        },
+      ],
+      [{ gameType: 'sorting', certCount: '2' }],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Logic')!.accuracyPct).toBe(50);
   });
 });
 
@@ -290,7 +470,7 @@ describe('computeLearnInsights — Science needsHelp heuristic', () => {
         },
       ],
       [],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -313,7 +493,7 @@ describe('computeLearnInsights — Science needsHelp heuristic', () => {
         },
       ],
       [],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -336,7 +516,7 @@ describe('computeLearnInsights — Science needsHelp heuristic', () => {
         },
       ],
       [],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -358,7 +538,7 @@ describe('computeLearnInsights — Science needsHelp heuristic', () => {
         },
       ],
       [],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -382,12 +562,51 @@ describe('computeLearnInsights — Science needsHelp heuristic', () => {
         },
       ],
       [],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
     expect(res.subjects.find((s) => s.subject === 'Science')!.progressPct).toBe(100);
+  });
+
+  // ─── FHS-401: Science accuracyPct ───────────────────────────────────────────
+
+  it('accuracyPct is null when totalAnswered = 0', async () => {
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '0' }],
+      [{ progress: 0, totalCorrect: 0, totalAnswered: 0, certificateAt: null, lastActive: null }],
+      [],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Science')!.accuracyPct).toBeNull();
+  });
+
+  it('accuracyPct = round(totalCorrect/totalAnswered*100)', async () => {
+    // 7 / 10 = 70%
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '0' }],
+      [
+        {
+          progress: 70,
+          totalCorrect: 7,
+          totalAnswered: 10,
+          certificateAt: null,
+          lastActive: new Date('2026-01-01'),
+        },
+      ],
+      [],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'Science')!.accuracyPct).toBe(70);
   });
 });
 
@@ -400,7 +619,7 @@ describe('computeLearnInsights — World Flags', () => {
       [{ certsEarned: '0' }],
       [],
       [{ explored: '5', lastActive: new Date('2026-01-01') }],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -414,7 +633,7 @@ describe('computeLearnInsights — World Flags', () => {
       [{ certsEarned: '0' }],
       [],
       [{ explored: '0', lastActive: null }],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -428,7 +647,7 @@ describe('computeLearnInsights — World Flags', () => {
       [{ certsEarned: '0' }],
       [],
       [{ explored: '10', lastActive: new Date('2026-01-01') }],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -444,7 +663,7 @@ describe('computeLearnInsights — World Flags', () => {
       [{ certsEarned: '0' }],
       [],
       [{ explored: '50', lastActive: new Date('2026-01-01') }],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -461,12 +680,28 @@ describe('computeLearnInsights — World Flags', () => {
       [{ certsEarned: '0' }],
       [],
       [{ explored: '100', lastActive: new Date('2026-01-01') }],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
     expect(res.subjects.find((s) => s.subject === 'World Flags')!.progressPct).toBe(50);
+  });
+
+  // ─── FHS-401: World Flags accuracyPct is always null ────────────────────────
+
+  it('accuracyPct is always null — WF quiz attempts not tracked server-side yet', async () => {
+    setupDbReturns(
+      [{ certsEarned: '0' }],
+      [{ certsEarned: '0' }],
+      [],
+      [{ explored: '20', lastActive: new Date('2026-01-01') }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
+      [],
+      [],
+    );
+    const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
+    expect(res.subjects.find((s) => s.subject === 'World Flags')!.accuracyPct).toBeNull();
   });
 });
 
@@ -481,8 +716,15 @@ describe('computeLearnInsights — weakest subject', () => {
       [{ certsEarned: '1' }], // logic certs → 6%
       [], // science
       [], // flags
-      [{ lastActive: new Date('2026-02-01'), avgProveTime: 3 }],
-      [{ gameType: 'truefalse', totalCorrect: '5', lastUpdated: new Date('2026-01-10') }],
+      [{ lastActive: new Date('2026-02-01'), avgProveTime: 3, totalCorrect: 0, totalAttempts: 0 }],
+      [
+        {
+          gameType: 'truefalse',
+          totalCorrect: '5',
+          totalAttempts: '0',
+          lastUpdated: new Date('2026-01-10'),
+        },
+      ],
       [{ gameType: 'truefalse', certCount: '1' }],
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
@@ -495,8 +737,15 @@ describe('computeLearnInsights — weakest subject', () => {
       [{ certsEarned: '1' }],
       [],
       [],
-      [{ lastActive: new Date('2026-02-01'), avgProveTime: 3 }],
-      [{ gameType: 'sorting', totalCorrect: '2', lastUpdated: new Date('2026-01-10') }],
+      [{ lastActive: new Date('2026-02-01'), avgProveTime: 3, totalCorrect: 0, totalAttempts: 0 }],
+      [
+        {
+          gameType: 'sorting',
+          totalCorrect: '2',
+          totalAttempts: '0',
+          lastUpdated: new Date('2026-01-10'),
+        },
+      ],
       [],
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
@@ -510,8 +759,15 @@ describe('computeLearnInsights — weakest subject', () => {
       [{ certsEarned: '1' }],
       [],
       [],
-      [{ lastActive: new Date('2026-02-01'), avgProveTime: 3 }],
-      [{ gameType: 'ifthen', totalCorrect: '4', lastUpdated: new Date('2026-01-10') }],
+      [{ lastActive: new Date('2026-02-01'), avgProveTime: 3, totalCorrect: 0, totalAttempts: 0 }],
+      [
+        {
+          gameType: 'ifthen',
+          totalCorrect: '4',
+          totalAttempts: '0',
+          lastUpdated: new Date('2026-01-10'),
+        },
+      ],
       [],
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
@@ -537,8 +793,15 @@ describe('computeLearnInsights — weakest subject', () => {
       [{ certsEarned: '0' }], // logic certs → 0%
       [], // science (no activity)
       [], // flags (no activity)
-      [{ lastActive: new Date('2026-01-01'), avgProveTime: 0 }], // maths lastActive → active
-      [{ gameType: 'sorting', totalCorrect: '1', lastUpdated: new Date('2026-01-01') }], // logic active
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }], // maths lastActive → active
+      [
+        {
+          gameType: 'sorting',
+          totalCorrect: '1',
+          totalAttempts: '0',
+          lastUpdated: new Date('2026-01-01'),
+        },
+      ], // logic active
       [],
     );
     const res = await computeLearnInsights(dbMock as never, TENANT_ID, MEMBER_ID);
@@ -557,7 +820,7 @@ describe('computeLearnInsights — hasActivity', () => {
       [{ certsEarned: '0' }],
       [],
       [],
-      [{ lastActive: new Date('2026-01-01'), avgProveTime: 2 }],
+      [{ lastActive: new Date('2026-01-01'), avgProveTime: 2, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );
@@ -579,7 +842,7 @@ describe('computeLearnInsights — hasActivity', () => {
         },
       ],
       [],
-      [{ lastActive: null, avgProveTime: 0 }],
+      [{ lastActive: null, avgProveTime: 0, totalCorrect: 0, totalAttempts: 0 }],
       [],
       [],
     );

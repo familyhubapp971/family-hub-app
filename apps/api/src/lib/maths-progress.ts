@@ -43,6 +43,14 @@ export const updateProgressBodySchema = z
     practiceCorrect: z.number().int().min(0).optional(),
     proveScore: z.number().int().min(0).optional(),
     proveAvgTime: z.number().min(0).optional(),
+    // FHS-401 — attempt counts for cumulative accuracy tracking.
+    // practiceAttempts: always 10 (MathsTablePractice always asks 10 questions).
+    // proveAttempts: total questions answered in the 60s Prove window.
+    // These are accumulated into mw_maths_progress.total_correct / total_attempts
+    // independently of the per-session practiceCorrect / proveScore that gate stage
+    // completion. Only supplied when the corresponding stage field is also provided.
+    practiceAttempts: z.number().int().min(0).optional(),
+    proveAttempts: z.number().int().min(0).optional(),
   })
   .refine(
     (d) =>
@@ -111,6 +119,9 @@ export const mathsProgressRowSchema = z.object({
   proveScore: z.number().int(),
   proveAvgTime: z.number(),
   placementUnlocked: z.boolean(),
+  // FHS-401 — cumulative accuracy counters.
+  totalCorrect: z.number().int(),
+  totalAttempts: z.number().int(),
   updatedAt: z.string().nullable(),
 });
 export const listMathsProgressResponseSchema = z.object({
@@ -144,6 +155,8 @@ function serializeProgress(r: {
   proveScore: number;
   proveAvgTime: number;
   placementUnlocked: boolean;
+  totalCorrect: number;
+  totalAttempts: number;
   updatedAt: Date | null;
 }) {
   return {
@@ -157,6 +170,8 @@ function serializeProgress(r: {
     proveScore: r.proveScore,
     proveAvgTime: r.proveAvgTime,
     placementUnlocked: r.placementUnlocked,
+    totalCorrect: r.totalCorrect,
+    totalAttempts: r.totalAttempts,
     updatedAt: r.updatedAt?.toISOString() ?? null,
   };
 }
@@ -194,6 +209,12 @@ export async function listProgress(db: Database, tenantId: string, memberId: str
 /**
  * Upsert one progress row, updating ONLY the fields provided in `updates`.
  * The identity key is (tenantId, memberId, operation, tableNumber).
+ *
+ * FHS-401: accuracyDelta.correct and accuracyDelta.attempts are ACCUMULATED
+ * onto the existing totalCorrect/totalAttempts rather than replacing them.
+ * These lifetime counters enable accuracy = totalCorrect / totalAttempts in
+ * the Insights API without touching per-session stage-gate fields.
+ *
  * Returns the upserted row.
  */
 export async function upsertProgress(
@@ -207,11 +228,37 @@ export async function upsertProgress(
     practiceCorrect?: number;
     proveScore?: number;
     proveAvgTime?: number;
+    // FHS-401 — accuracy accumulators (optional; omit when no attempt data available).
+    accuracyDelta?: { correct: number; attempts: number };
   },
 ) {
+  // Read the existing row so we can compute the new cumulative totals.
+  const [existing] = await db
+    .select({
+      totalCorrect: mwMathsProgress.totalCorrect,
+      totalAttempts: mwMathsProgress.totalAttempts,
+    })
+    .from(mwMathsProgress)
+    .where(
+      and(
+        eq(mwMathsProgress.tenantId, tenantId),
+        eq(mwMathsProgress.memberId, memberId),
+        eq(mwMathsProgress.operation, operation),
+        eq(mwMathsProgress.tableNumber, tableNumber),
+      ),
+    )
+    .limit(1);
+
+  const newTotalCorrect = (existing?.totalCorrect ?? 0) + (updates.accuracyDelta?.correct ?? 0);
+  const newTotalAttempts = (existing?.totalAttempts ?? 0) + (updates.accuracyDelta?.attempts ?? 0);
+
   // Build the conflict-update set — only include provided fields so a PUT
   // with only { practiceCorrect } doesn't accidentally reset learnCompleted.
-  const conflictSet: Record<string, unknown> = { updatedAt: sql`now()` };
+  const conflictSet: Record<string, unknown> = {
+    updatedAt: sql`now()`,
+    totalCorrect: newTotalCorrect,
+    totalAttempts: newTotalAttempts,
+  };
   if (updates.learnCompleted !== undefined) conflictSet['learnCompleted'] = updates.learnCompleted;
   if (updates.practiceCorrect !== undefined)
     conflictSet['practiceCorrect'] = updates.practiceCorrect;
@@ -229,6 +276,8 @@ export async function upsertProgress(
       practiceCorrect: updates.practiceCorrect ?? 0,
       proveScore: updates.proveScore ?? 0,
       proveAvgTime: updates.proveAvgTime ?? 0,
+      totalCorrect: newTotalCorrect,
+      totalAttempts: newTotalAttempts,
     })
     .onConflictDoUpdate({
       target: [

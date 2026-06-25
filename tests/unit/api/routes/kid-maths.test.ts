@@ -129,6 +129,8 @@ describe('FHS-394 — GET /api/kid/maths/progress', () => {
       proveScore: 10,
       proveAvgTime: 2.5,
       placementUnlocked: false,
+      totalCorrect: 0, // FHS-401
+      totalAttempts: 0,
       updatedAt: new Date(),
     };
     // listProgress: select().from().where() — no .limit() in that helper.
@@ -191,8 +193,18 @@ describe('FHS-394 — PUT /api/kid/maths/progress', () => {
       proveScore: 0,
       proveAvgTime: 0,
       placementUnlocked: false,
+      totalCorrect: 0, // FHS-401
+      totalAttempts: 0,
       updatedAt: new Date(),
     };
+    // FHS-401: upsertProgress now does a SELECT to read existing accuracy totals first.
+    dbMock.select.mockImplementationOnce(() => ({
+      from: () => ({
+        where: () => ({
+          limit: () => Promise.resolve([]), // no existing row
+        }),
+      }),
+    }));
     dbMock.insert.mockImplementationOnce(() => ({
       values: () => ({
         onConflictDoUpdate: () => ({
