@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, X, Trophy, ArrowRight } from 'lucide-react';
 import { API_BASE } from '../../../lib/api';
 import { MathsAILesson } from './learn/maths/MathsAILesson';
+import { useBodyScrollLock } from '@familyhub/ui';
 
 // FHS-283 — interactive Learn lesson. Difficulty pills + a question/answer area
 // + a streak/best/score stats bar with progress toward a certificate. Grading
@@ -319,6 +320,9 @@ export function LessonView({
   // Bumped on every (re)load so a slow answer POST from a previous round/
   // difficulty can't overwrite fresh state when it finally resolves.
   const roundId = useRef(0);
+
+  // Lock body scroll while the certificate modal is open (FHS-412).
+  useBodyScrollLock(showCertModal);
 
   // Cleanup shake timer on unmount so no setState-after-unmount.
   useEffect(() => {

@@ -23,3 +23,4 @@ export {
 } from './SearchableSelect';
 export { TimezonePicker, detectBrowserTimezone, type TimezonePickerProps } from './TimezonePicker';
 export { CurrencyPicker, detectBrowserCurrency, type CurrencyPickerProps } from './CurrencyPicker';
+export { useBodyScrollLock } from './useBodyScrollLock';

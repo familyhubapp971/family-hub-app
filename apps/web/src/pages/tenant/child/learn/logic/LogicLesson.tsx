@@ -11,6 +11,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE } from '../../../../../lib/api';
 import { type GameType, type Difficulty, GAME_TYPE_META, DIFFICULTY_META } from './LogicSubject';
+import { useBodyScrollLock } from '@familyhub/ui';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -528,6 +529,8 @@ function IfThenGame({
   explanation: string | null;
 }) {
   const [showHint, setShowHint] = useState(false);
+  // Lock body scroll while the hint lightbox is open (FHS-412).
+  useBodyScrollLock(showHint);
 
   return (
     <div className="space-y-4">
@@ -894,6 +897,9 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
     setDifficulty(diff);
     setComboCorrect(0);
   }, []);
+
+  // Lock body scroll while the certificate overlay is open (FHS-412).
+  useBodyScrollLock(showCertificate);
 
   // ── Clear celebration after 2s ─────────────────────────────────────────────
 

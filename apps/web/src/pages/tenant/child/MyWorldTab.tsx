@@ -21,7 +21,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { Button } from '@familyhub/ui';
+import { Button, useBodyScrollLock } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -333,6 +333,18 @@ export function MyWorldTab(
 
   // ── Close Week dialog state ───────────────────────────────────────────────
   const [closeWeekOpen, setCloseWeekOpen] = useState(false);
+
+  // Lock body scroll whenever any overlay is open (FHS-412).
+  useBodyScrollLock(
+    Boolean(
+      stickerDialogId ||
+        dayStickerDialog ||
+        editHabitId ||
+        showAddHabit ||
+        deleteConfirmId ||
+        closeWeekOpen,
+    ),
+  );
 
   const habitsCache = useRef<Map<string, Habit[]>>(new Map());
   const redeemingRef = useRef<Set<string>>(new Set());

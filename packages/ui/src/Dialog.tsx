@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useBodyScrollLock } from './useBodyScrollLock';
 
 interface DialogProps {
   isOpen: boolean;
@@ -25,6 +26,8 @@ export function Dialog({
   ariaLabel,
   ariaLabelledBy,
 }: DialogProps) {
+  useBodyScrollLock(isOpen);
+
   useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
