@@ -23,7 +23,7 @@ type WorldFlagsProps =
   | { kidToken: string; memberId?: undefined };
 
 export function WorldFlags({ memberId, kidToken }: WorldFlagsProps) {
-  const [tab, setTab] = useState<SubTab>('explore');
+  const [tab, setTab] = useState<SubTab>('learn');
 
   const subProps = kidToken ? { kidToken } : { memberId: memberId! };
 

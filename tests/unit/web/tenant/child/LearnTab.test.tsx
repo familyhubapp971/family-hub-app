@@ -267,7 +267,7 @@ describe('Loading / error states', () => {
 // ─── World Flags subject routing (Learn Phase 2a) ─────────────────────────────
 
 describe('World Flags subject routing', () => {
-  it('clicking World Flags subject card shows the Explore detail', async () => {
+  it('clicking World Flags subject card shows the World Flags detail (Learn tab default)', async () => {
     installDefault([{ subject: 'World Flags', progress: 10 }], []);
     renderTab();
     await waitFor(() =>
@@ -277,8 +277,8 @@ describe('World Flags subject routing', () => {
       fireEvent.click(screen.getByTestId('learn-subject-world-flags'));
     });
     await waitFor(() => expect(screen.getByTestId('learn-back')).toBeInTheDocument());
-    // World Flags Explore renders a flashcard
-    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    // Default is now Learn path — continent picker is visible.
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
   });
 
   it('back button returns to the subject overview', async () => {
@@ -413,7 +413,11 @@ describe('WorldFlagsLearn Explore', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('learn-subject-world-flags'));
     });
-    // Wait for the world flags GET to resolve and the flashcard to appear
+    // Default tab is now Learn — click Explore to show the flashcard.
+    await waitFor(() => expect(screen.getByTestId('world-subtab-explore')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
     await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
   }
 
