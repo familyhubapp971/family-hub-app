@@ -82,6 +82,8 @@ const ctx: {
   imanKidToken: string;
   // per-step response capture
   lastKidStatuses: number[];
+  lastKidStatus: number;
+  lastKidBody: Record<string, unknown>;
   lastParentStatus: number;
   lastParentBody: Record<string, unknown>;
 } = {} as never;
@@ -197,6 +199,8 @@ describeFeature(feature, ({ Background, Scenario }) => {
 
         // Reset per-step state.
         ctx.lastKidStatuses = [];
+        ctx.lastKidStatus = 0;
+        ctx.lastKidBody = {};
         ctx.lastParentStatus = 0;
         ctx.lastParentBody = {};
 
@@ -364,13 +368,13 @@ describeFeature(feature, ({ Background, Scenario }) => {
           },
           body: JSON.stringify({ continent: 'Africa', chunkIndex: 0 }),
         });
-        ctx.lastParentStatus = res.status;
-        ctx.lastParentBody = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        ctx.lastKidStatus = res.status;
+        ctx.lastKidBody = (await res.json().catch(() => ({}))) as Record<string, unknown>;
       });
 
       Then('the world-flags learn-complete response status is 200', () => {
-        expect(ctx.lastParentStatus).toBe(200);
-        expect(ctx.lastParentBody['completed']).toBe(true);
+        expect(ctx.lastKidStatus).toBe(200);
+        expect(ctx.lastKidBody['completed']).toBe(true);
       });
 
       When('the admin parent GETs learn insights for Iman after the continent', async () => {
