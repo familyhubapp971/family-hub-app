@@ -106,30 +106,38 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('WorldFlags sub-tabs', () => {
-  it('defaults to Explore and shows all three sub-tab buttons', async () => {
+  it('defaults to Learn and shows all three sub-tab buttons', async () => {
     installFetch();
     renderWorldFlags();
     expect(screen.getByTestId('world-subtab-explore')).toBeInTheDocument();
     expect(screen.getByTestId('world-subtab-learn')).toBeInTheDocument();
     expect(screen.getByTestId('world-subtab-certificates')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    // Default tab is Learn — wfpath is visible immediately.
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
   });
 
-  it('switches to the Learn path tab and shows the continent picker', async () => {
+  it('shows the continent picker in the Learn path (default tab)', async () => {
     installFetch();
     renderWorldFlags();
-    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('world-subtab-learn'));
-    });
+    // Default is Learn — continent picker appears immediately.
     await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
     expect(screen.getByTestId('wfpath-continent-africa')).toBeInTheDocument();
+  });
+
+  it('switches to the Explore tab and shows the flashcard', async () => {
+    installFetch();
+    renderWorldFlags();
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
   });
 
   it('switches to the Certificates tab and shows the progress bar', async () => {
     installFetch();
     renderWorldFlags();
-    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByTestId('world-subtab-certificates'));
     });
@@ -142,10 +150,7 @@ describe('WorldFlags Learn path', () => {
   it('picking a continent unlocks set 1 and locks the rest', async () => {
     installFetch({ progress: {} });
     renderWorldFlags();
-    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('world-subtab-learn'));
-    });
+    // Default tab is Learn — no need to click the tab.
     await waitFor(() => expect(screen.getByTestId('wfpath-continent-africa')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByTestId('wfpath-continent-africa'));
@@ -159,10 +164,7 @@ describe('WorldFlags Learn path', () => {
   it('answering every question correctly completes the set and POSTs once', async () => {
     installFetch({ progress: {} });
     renderWorldFlags();
-    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('world-subtab-learn'));
-    });
+    // Default tab is Learn — continent picker is present without clicking.
     await waitFor(() => expect(screen.getByTestId('wfpath-continent-africa')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByTestId('wfpath-continent-africa'));
@@ -207,10 +209,7 @@ describe('WorldFlags Learn path', () => {
   it('completed sets from the server are marked and unlock the next set', async () => {
     installFetch({ progress: { Africa: [0] } });
     renderWorldFlags();
-    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('world-subtab-learn'));
-    });
+    // Default tab is Learn.
     await waitFor(() => expect(screen.getByTestId('wfpath-continent-africa')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByTestId('wfpath-continent-africa'));
@@ -228,7 +227,8 @@ describe('WorldFlags Certificates', () => {
     const africa = COUNTRIES.filter((c) => c.continent === 'Africa').map((c) => c.code);
     installFetch({ explored: africa });
     renderWorldFlags();
-    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    // Default is Learn — navigate from Learn to Certificates.
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByTestId('world-subtab-certificates'));
     });
@@ -245,6 +245,11 @@ describe('WorldFlags kid mode — Explore', () => {
     authState.session = null;
     installFetch();
     renderWorldFlagsKid();
+    // Default is Learn; navigate to Explore to trigger the explore fetch.
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
     await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
 
     const exploreCalls = (fetchMock.mock.calls as [string, RequestInit | undefined][]).filter(
@@ -262,6 +267,11 @@ describe('WorldFlags kid mode — Explore', () => {
     authState.session = null;
     installFetch();
     renderWorldFlagsKid();
+    // Navigate to Explore (default is Learn).
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
     await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
 
     // Tapping the card (flag → name state) triggers markExplored.
@@ -287,10 +297,7 @@ describe('WorldFlags kid mode — Learn path', () => {
     authState.session = null;
     installFetch();
     renderWorldFlagsKid();
-    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('world-subtab-learn'));
-    });
+    // Default is Learn — wfpath renders immediately.
     await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
 
     const learnCalls = (fetchMock.mock.calls as [string, RequestInit | undefined][]).filter(
@@ -305,10 +312,7 @@ describe('WorldFlags kid mode — Learn path', () => {
     authState.session = null;
     installFetch({ progress: {} });
     renderWorldFlagsKid();
-    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('world-subtab-learn'));
-    });
+    // Default is Learn — continent picker present immediately.
     await waitFor(() => expect(screen.getByTestId('wfpath-continent-africa')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByTestId('wfpath-continent-africa'));
@@ -348,4 +352,113 @@ describe('WorldFlags kid mode — Learn path', () => {
     expect(body.memberId).toBeUndefined();
     expect(body.continent).toBe('Africa');
   }, 15000);
+});
+
+// ─── Design parity tests (FHS-397) ───────────────────────────────────────────
+
+describe('WorldFlags Explore — continent gradient flashcard', () => {
+  it('applies the continent gradient class to the flag section', async () => {
+    installFetch();
+    renderWorldFlags();
+    // Navigate to Explore.
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    // The flag section div should include gradient classes (All continent default).
+    const flashcard = screen.getByTestId('world-flashcard');
+    const gradientSection = flashcard.querySelector('[class*="bg-gradient-to-br"]');
+    expect(gradientSection).not.toBeNull();
+    expect(gradientSection?.className).toMatch(/from-gray-500/);
+  });
+});
+
+describe('WorldFlags Explore — progress bar gradient', () => {
+  it('progress bar fill uses the continent gradient, not plain bg-black', async () => {
+    installFetch();
+    renderWorldFlags();
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-progress-fill')).toBeInTheDocument());
+    const fill = screen.getByTestId('world-progress-fill');
+    expect(fill.className).toMatch(/bg-gradient-to-r/);
+    expect(fill.className).not.toMatch(/\bbg-black\b/);
+  });
+});
+
+describe('WorldFlags Explore — continent certificate overlay', () => {
+  it('shows the full-screen overlay once when a new cert is earned', async () => {
+    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    // All Africa flags already explored on load — exploring one more from a tiny
+    // 1-country list triggers the cert. Instead, we simulate it by exploring the
+    // last un-explored Africa flag via a card tap.
+    const africa = COUNTRIES.filter((c) => c.continent === 'Africa');
+    // Pre-explore all but the first Africa country.
+    const allButFirst = africa.slice(1).map((c) => c.code);
+    installFetch({ explored: allButFirst });
+    renderWorldFlags();
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+
+    // Select Africa continent so the current card is an Africa country.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-continent-africa'));
+    });
+    // The first Africa country (un-explored) is now the flashcard.
+    // Tapping it marks it explored and triggers the certificate overlay.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-flashcard'));
+    });
+
+    // Overlay appears with role=dialog.
+    await waitFor(() => expect(screen.getByTestId('world-cert-earned')).toBeInTheDocument());
+    expect(screen.getByTestId('world-cert-earned')).toHaveAttribute('role', 'dialog');
+
+    // Dismiss button is present.
+    const dismissBtn = screen.getByRole('button', { name: /Amazing!/i });
+    expect(dismissBtn).toBeInTheDocument();
+
+    // Clicking dismiss removes the overlay.
+    await act(async () => {
+      fireEvent.click(dismissBtn);
+    });
+    expect(screen.queryByTestId('world-cert-earned')).not.toBeInTheDocument();
+  });
+
+  it('overlay does not re-fire for an already-earned cert', async () => {
+    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    const africa = COUNTRIES.filter((c) => c.continent === 'Africa');
+    const allButFirst = africa.slice(1).map((c) => c.code);
+    installFetch({ explored: allButFirst });
+    renderWorldFlags();
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-continent-africa'));
+    });
+    // First tap — cert earned.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-flashcard'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-cert-earned')).toBeInTheDocument());
+    // Dismiss.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Amazing!/i }));
+    });
+    expect(screen.queryByTestId('world-cert-earned')).not.toBeInTheDocument();
+    // Tapping again (same card, already explored) must NOT re-open the overlay.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-flashcard'));
+    });
+    expect(screen.queryByTestId('world-cert-earned')).not.toBeInTheDocument();
+  });
 });

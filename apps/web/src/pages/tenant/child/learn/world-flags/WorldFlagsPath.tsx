@@ -538,7 +538,7 @@ export function WorldFlagsPath({ memberId, kidToken }: WorldFlagsPathProps) {
 
         {quizFeedback && (
           <p
-            className={`text-center font-black ${quizFeedback === 'correct' ? 'text-green-300' : 'text-red-300'}`}
+            className={`text-center font-black ${quizFeedback === 'correct' ? 'text-green-400' : 'text-red-400'}`}
           >
             {quizFeedback === 'correct' ? '✓ Correct!' : `✗ It was ${question.answer}`}
           </p>

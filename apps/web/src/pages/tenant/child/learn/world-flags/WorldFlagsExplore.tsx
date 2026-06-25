@@ -8,6 +8,7 @@ import {
   Landmark as LandmarkIcon,
   Coins,
   Sparkles,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../../../../lib/auth-context';
 import { useTenantSlug } from '../../../../../lib/tenant-context';
@@ -15,7 +16,7 @@ import { COUNTRIES, CONTINENTS, type Country } from '../../../../../data/countri
 import { FlagImage } from './FlagImage';
 import { CapitalMap } from './CapitalMap';
 import { LandmarkImage } from './LandmarkImage';
-import { CONTINENT_SOLID, continentId } from './shared';
+import { CONTINENT_SOLID, CONTINENT_GRADIENT, CONTINENT_EMOJI, continentId } from './shared';
 import { worldFlagsApi } from './worldFlagsApi';
 
 // World Flags — Explore sub-tab.
@@ -24,6 +25,134 @@ import { worldFlagsApi } from './worldFlagsApi';
 // map + landmark photo + currency + fun fact). Reaching the name-reveal state
 // marks the flag as explored (POST /api/world-flags/explore or /api/kid/world-flags/explore).
 // Progress bar and per-continent certificates are computed client-side.
+
+// ─── Continent Certificate Overlay ──────────────────────────────────────────
+
+const CONFETTI_ITEMS = ['🌟', '🎉', '🎊', '✨', '🏆', '🥇', '🏅', '💫', '🌍'];
+
+function CertOverlay({
+  continent,
+  confetti,
+  dismissBtnRef,
+  onDismiss,
+}: {
+  continent: string;
+  confetti: string[];
+  dismissBtnRef: React.RefObject<HTMLButtonElement>;
+  onDismiss: () => void;
+}) {
+  // Close on Escape key.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onDismiss();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onDismiss]);
+
+  return (
+    // Backdrop — click outside the card to dismiss.
+    <button
+      type="button"
+      aria-label="Close certificate"
+      className="fixed inset-0 z-50 flex cursor-default items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={onDismiss}
+    >
+      {/* Confetti layer */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {confetti.map((e, i) => (
+          <span
+            key={i}
+            aria-hidden="true"
+            className="absolute text-2xl motion-safe:animate-bounce sm:text-3xl"
+            style={{
+              left: `${10 + ((i * 10) % 80)}%`,
+              top: `${5 + ((i * 8) % 30)}%`,
+              animationDelay: `${i * 200}ms`,
+            }}
+          >
+            {e}
+          </span>
+        ))}
+      </div>
+
+      {/* Cert card — stop propagation so clicking it doesn&apos;t dismiss */}
+      <motion.div
+        data-testid="world-cert-earned"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${continent} Explorer Certificate`}
+        initial={{ opacity: 0, scale: 0.7, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        className="relative mx-4 w-full max-w-md overflow-hidden rounded-2xl border-2 border-black bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-neo-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Shining header band */}
+        <div className="border-b-2 border-black bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-500 px-6 py-4 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-blue-900">
+            Explorer Certificate
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center gap-4 px-6 py-6 text-center">
+          <span
+            aria-hidden="true"
+            className="inline-block text-5xl motion-safe:animate-bounce sm:text-6xl"
+          >
+            {CONTINENT_EMOJI[continent] ?? '🌍'}
+          </span>
+
+          <div className="rounded-xl border-2 border-black bg-white p-4 shadow-neo-xs">
+            <p className="text-lg font-black text-gray-900">{continent} Explorer</p>
+            <p className="text-sm font-bold text-indigo-600">All flags discovered. Amazing work!</p>
+          </div>
+
+          <p className="text-xs font-bold text-gray-400">
+            {new Date().toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </p>
+
+          <div className="flex justify-center gap-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                className="text-xl motion-safe:animate-pulse"
+                style={{ animationDelay: `${i * 150}ms` }}
+              >
+                ⭐
+              </span>
+            ))}
+          </div>
+
+          <button
+            ref={dismissBtnRef}
+            type="button"
+            onClick={onDismiss}
+            className="rounded-xl border-2 border-black bg-gradient-to-r from-blue-400 to-indigo-500 px-8 py-3 text-sm font-black text-white shadow-neo-sm transition-all motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0.5 sm:text-base"
+          >
+            Amazing! 🌍
+          </button>
+
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Close certificate"
+            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white text-gray-600 shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5"
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+      </motion.div>
+    </button>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
 
 type CardState = 'flag' | 'name' | 'facts';
 type Status = 'loading' | 'ready' | 'error';
@@ -61,6 +190,9 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
   const [certEarned, setCertEarned] = useState<string | null>(null);
   const certTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevComplete = useRef<Record<string, boolean>>({});
+  // Fire-once guard: track which certs have already triggered the overlay this session.
+  const shownOverlay = useRef<Set<string>>(new Set());
+  const dismissBtnRef = useRef<HTMLButtonElement>(null);
 
   const filteredCountries = useMemo<Country[]>(
     () =>
@@ -129,11 +261,18 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
       }
       const continentCountries = COUNTRIES.filter((c) => c.continent === continent);
       const nowDone = continentCountries.filter((c) => next.has(c.code)).length;
-      if (nowDone >= continentCountries.length && !prevComplete.current[continent]) {
+      if (
+        nowDone >= continentCountries.length &&
+        !prevComplete.current[continent] &&
+        !shownOverlay.current.has(continent)
+      ) {
         prevComplete.current[continent] = true;
+        shownOverlay.current.add(continent);
         if (certTimerRef.current) clearTimeout(certTimerRef.current);
         setCertEarned(continent);
-        certTimerRef.current = setTimeout(() => setCertEarned(null), 4000);
+        // Move focus to the dismiss button once the overlay renders.
+        requestAnimationFrame(() => dismissBtnRef.current?.focus());
+        certTimerRef.current = setTimeout(() => setCertEarned(null), 6000);
       }
     },
     [explored, api],
@@ -165,6 +304,11 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
     [explored],
   );
 
+  const handleDismissOverlay = useCallback(() => {
+    if (certTimerRef.current) clearTimeout(certTimerRef.current);
+    setCertEarned(null);
+  }, []);
+
   const exploredInFilter = filteredCountries.filter((c) => explored.has(c.code)).length;
 
   if (status === 'loading') {
@@ -189,24 +333,14 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Full-screen continent certificate overlay */}
       {certEarned && (
-        <motion.div
-          data-testid="world-cert-earned"
-          initial={{ opacity: 0, scale: 0.7, y: -20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.7 }}
-          className="flex items-center gap-3 rounded-xl border-2 border-black bg-yellow-300 p-4 shadow-neo-sm"
-          role="status"
-          aria-live="polite"
-        >
-          <Trophy size={28} className="shrink-0" aria-hidden="true" />
-          <div>
-            <p className="font-heading text-lg uppercase tracking-wide">
-              {certEarned} Certificate!
-            </p>
-            <p className="text-sm font-bold">All flags explored. Amazing work!</p>
-          </div>
-        </motion.div>
+        <CertOverlay
+          continent={certEarned}
+          confetti={CONFETTI_ITEMS}
+          dismissBtnRef={dismissBtnRef}
+          onDismiss={handleDismissOverlay}
+        />
       )}
 
       {/* Continent filter bar */}
@@ -255,7 +389,8 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
           className="h-3 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100"
         >
           <div
-            className="h-full rounded-full bg-black transition-all duration-500"
+            data-testid="world-progress-fill"
+            className={`h-full rounded-full bg-gradient-to-r transition-all duration-500 ${CONTINENT_GRADIENT[selectedContinent] ?? CONTINENT_GRADIENT['All']}`}
             style={{
               width:
                 filteredCountries.length > 0
@@ -289,8 +424,10 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
               : ''
           }`}
         >
-          {/* Flag section */}
-          <div className="flex flex-col items-center gap-3 p-8">
+          {/* Flag section — continent gradient background (legacy parity) */}
+          <div
+            className={`flex flex-col items-center gap-3 border-b-2 border-black bg-gradient-to-br p-8 ${CONTINENT_GRADIENT[selectedContinent] ?? CONTINENT_GRADIENT['All']}`}
+          >
             {explored.has(currentCountry.code) && cardState === 'flag' && (
               <div className="self-end rounded-full border-2 border-black bg-green-300 px-2 py-0.5 text-[10px] font-black">
                 Explored
@@ -305,7 +442,7 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
               emojiClassName="text-8xl leading-none"
             />
             {cardState === 'flag' && (
-              <p className="text-xs font-bold text-gray-500">Tap to reveal!</p>
+              <p className="text-xs font-bold text-white/80">Tap to reveal!</p>
             )}
           </div>
 

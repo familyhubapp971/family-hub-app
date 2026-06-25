@@ -118,7 +118,11 @@ describe('<KidLearnPanel />', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('learn-subject-world-flags'));
     });
-    // Explore tab should load.
+    // Default tab is Learn — click Explore to trigger the explore fetch.
+    await waitFor(() => expect(screen.getByTestId('world-subtab-explore')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
     await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
 
     // Verify the GET went to /api/kid/world-flags, not /api/world-flags.
