@@ -888,7 +888,7 @@ describe('FHS-394 — kid Maths routes to MathsSubject', () => {
     expect(screen.queryByTestId('maths-subject')).not.toBeInTheDocument();
   });
 
-  it('Science in kid mode still uses LessonView, not MathsSubject', async () => {
+  it('FHS-403 — Science card is disabled (visible, Coming soon, not clickable)', async () => {
     fetchMock.mockImplementation((url: string) => {
       const u = String(url);
       if (u.includes('/api/kid/world-flags'))
@@ -901,32 +901,20 @@ describe('FHS-394 — kid Maths routes to MathsSubject', () => {
         });
       if (u.includes('/api/kid/reading-log'))
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [] }) });
-      // LessonView fetches questions
-      if (u.includes('/api/kid/learn/Science'))
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            subject: 'Science',
-            difficulty: 'easy',
-            questions: [],
-            stats: { progress: 0, score: 0, streak: 0, best: 0, answered: 0, certificate: false },
-          }),
-        });
-      // Science LessonView also probes the AI endpoint (only for Maths, but it checks subject)
-      if (u.includes('/api/kid/learn') && u.includes('ai-lesson'))
-        return Promise.resolve({ ok: true, status: 200, json: async () => ({ enabled: false }) });
       return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
     });
 
     renderKidTab();
-    await waitFor(() => expect(screen.getByTestId('learn-subject-science')).toBeInTheDocument());
+    const card = await screen.findByTestId('learn-subject-science');
+    // Visible but disabled + a Coming soon cue.
+    expect(card).toBeDisabled();
+    expect(screen.getByTestId('learn-coming-soon')).toBeInTheDocument();
 
+    // Clicking does nothing — no lesson view, no Maths/Logic subject.
     await act(async () => {
-      fireEvent.click(screen.getByTestId('learn-subject-science'));
+      fireEvent.click(card);
     });
-
-    await waitFor(() => expect(screen.getByTestId('lesson-view')).toBeInTheDocument());
+    expect(screen.queryByTestId('lesson-view')).not.toBeInTheDocument();
     expect(screen.queryByTestId('maths-subject')).not.toBeInTheDocument();
   });
 });
@@ -1011,7 +999,7 @@ describe('FHS-395 — kid Logic routes to LogicSubject', () => {
     expect(screen.queryByTestId('logic-subject')).not.toBeInTheDocument();
   });
 
-  it('Science in kid mode still uses LessonView when Logic is also available', async () => {
+  it('FHS-403 — Science card stays disabled even when Logic is available', async () => {
     fetchMock.mockImplementation((url: string) => {
       const u = String(url);
       if (u.includes('/api/kid/world-flags'))
@@ -1020,35 +1008,26 @@ describe('FHS-395 — kid Logic routes to LogicSubject', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: async () => ({ subjects: [{ subject: 'Science', progress: 10 }] }),
+          json: async () => ({
+            subjects: [
+              { subject: 'Science', progress: 10 },
+              { subject: 'Logic', progress: 10 },
+            ],
+          }),
         });
       if (u.includes('/api/kid/reading-log'))
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ books: [] }) });
-      if (
-        u.includes('/api/kid/learn/Science') ||
-        (u.includes('/api/kid/learn') && u.includes('Science'))
-      )
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            subject: 'Science',
-            difficulty: 'easy',
-            questions: [],
-            stats: { progress: 0, score: 0, streak: 0, best: 0, answered: 0, certificate: false },
-          }),
-        });
       return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
     });
 
     renderKidTab();
-    await waitFor(() => expect(screen.getByTestId('learn-subject-science')).toBeInTheDocument());
+    const card = await screen.findByTestId('learn-subject-science');
+    expect(card).toBeDisabled();
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('learn-subject-science'));
+      fireEvent.click(card);
     });
-
-    await waitFor(() => expect(screen.getByTestId('lesson-view')).toBeInTheDocument());
+    expect(screen.queryByTestId('lesson-view')).not.toBeInTheDocument();
     expect(screen.queryByTestId('logic-subject')).not.toBeInTheDocument();
   });
 });

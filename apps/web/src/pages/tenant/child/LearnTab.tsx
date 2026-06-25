@@ -371,20 +371,36 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                 const showProgress = s.hasProgress !== false;
                 // Slug for testid: lowercase, spaces → hyphens
                 const slug = s.subject.toLowerCase().replace(/\s+/g, '-');
+                // FHS-403 — Science isn't built yet: show the card but disabled
+                // (dimmed + unclickable) so kids can't drill into an empty experience.
+                const isComingSoon = s.subject === 'Science';
                 return (
                   <button
                     key={s.subject}
                     type="button"
                     data-testid={`learn-subject-${slug}`}
-                    onClick={() => setSelectedSubject(s.subject)}
-                    className={`flex flex-col gap-4 rounded-xl border-2 border-black p-5 text-left shadow-neo-xs motion-safe:hover:-translate-y-0.5 ${style.bg} transition-transform`}
+                    onClick={isComingSoon ? undefined : () => setSelectedSubject(s.subject)}
+                    disabled={isComingSoon}
+                    aria-disabled={isComingSoon}
+                    className={`flex flex-col gap-4 rounded-xl border-2 border-black p-5 text-left shadow-neo-xs ${style.bg} transition-transform ${
+                      isComingSoon
+                        ? 'cursor-not-allowed opacity-50 grayscale'
+                        : 'motion-safe:hover:-translate-y-0.5'
+                    }`}
                   >
                     {/* Icon + progress pill (or "Free play" badge for Art) */}
                     <div className="flex items-center justify-between">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-black bg-white text-2xl">
                         <span aria-hidden="true">{style.emoji}</span>
                       </div>
-                      {showProgress ? (
+                      {isComingSoon ? (
+                        <span
+                          data-testid="learn-coming-soon"
+                          className="rounded-full border-2 border-black bg-white px-2 py-1 text-xs font-bold"
+                        >
+                          Coming soon
+                        </span>
+                      ) : showProgress ? (
                         <span className="rounded-full border-2 border-black bg-white px-2 py-1 text-xs font-bold">
                           {pct}%
                         </span>
@@ -400,8 +416,8 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                     </div>
                     {/* Subject name */}
                     <h3 className="mb-2 font-heading text-xl">{s.subject}</h3>
-                    {/* Progress bar — omitted for Art (no trackable progress) */}
-                    {showProgress && (
+                    {/* Progress bar — omitted for Art (no progress) + disabled Science */}
+                    {!isComingSoon && showProgress && (
                       <div
                         role="progressbar"
                         aria-valuenow={pct}
