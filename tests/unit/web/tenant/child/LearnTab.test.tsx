@@ -366,37 +366,26 @@ describe('Art subject card (FHS-371)', () => {
     expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument();
   });
 
-  // FHS-387 — Art is free-play with no progress bar (MOCK-4).
-  it('Art card has no progress bar and shows "Free play" badge', async () => {
+  // FHS-414 — Art is being redesigned: the card is disabled (Coming soon),
+  // no longer free-play, and tapping it does nothing.
+  it('Art card is disabled (Coming soon, no progress bar, not free-play)', async () => {
     installDefault([], []);
     renderTab();
-    await waitFor(() => expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument());
+    const card = await screen.findByTestId('learn-subject-art');
+    expect(card).toBeDisabled();
     expect(screen.queryByTestId('learn-progress-Art')).not.toBeInTheDocument();
-    expect(screen.getByTestId('learn-art-freeplay')).toBeInTheDocument();
+    expect(screen.queryByTestId('learn-art-freeplay')).not.toBeInTheDocument();
+    // Shows the shared "Coming soon" cue.
+    expect(screen.getAllByTestId('learn-coming-soon').length).toBeGreaterThan(0);
   });
 
-  it('clicking the Art card renders art-canvas', async () => {
+  it('clicking the disabled Art card does not open the canvas', async () => {
     installDefault([], []);
     renderTab();
-    await waitFor(() => expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument());
+    const card = await screen.findByTestId('learn-subject-art');
     await act(async () => {
-      fireEvent.click(screen.getByTestId('learn-subject-art'));
+      fireEvent.click(card);
     });
-    await waitFor(() => expect(screen.getByTestId('art-canvas')).toBeInTheDocument());
-  });
-
-  it('Back button from Art returns to the overview', async () => {
-    installDefault([], []);
-    renderTab();
-    await waitFor(() => expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('learn-subject-art'));
-    });
-    await waitFor(() => expect(screen.getByTestId('art-canvas')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('learn-back'));
-    });
-    await waitFor(() => expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument());
     expect(screen.queryByTestId('art-canvas')).not.toBeInTheDocument();
   });
 });
@@ -751,14 +740,16 @@ describe('kid mode (kidToken)', () => {
   });
 
   // FHS-387 — Art card has no progress bar (MOCK-4).
-  it('in kid mode, Art card shows "Free play" and has no progress bar', async () => {
+  // FHS-414 — Art is disabled (Coming soon) in kid mode too: no progress bar,
+  // no free-play badge, and not clickable.
+  it('in kid mode, Art card is disabled (Coming soon, no progress, not free-play)', async () => {
     installKidDefault([], []);
     renderKidTab();
-    await waitFor(() => expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument());
-    // No progress bar rendered for Art.
+    const card = await screen.findByTestId('learn-subject-art');
+    expect(card).toBeDisabled();
     expect(screen.queryByTestId('learn-progress-Art')).not.toBeInTheDocument();
-    // "Free play" badge is shown instead.
-    expect(screen.getByTestId('learn-art-freeplay')).toBeInTheDocument();
+    expect(screen.queryByTestId('learn-art-freeplay')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('learn-coming-soon').length).toBeGreaterThan(0);
   });
 
   it('deleting a book sends DELETE to /api/kid/reading-log/:id', async () => {
@@ -906,9 +897,9 @@ describe('FHS-394 — kid Maths routes to MathsSubject', () => {
 
     renderKidTab();
     const card = await screen.findByTestId('learn-subject-science');
-    // Visible but disabled + a Coming soon cue.
+    // Visible but disabled + a Coming soon cue (Art is also coming-soon now).
     expect(card).toBeDisabled();
-    expect(screen.getByTestId('learn-coming-soon')).toBeInTheDocument();
+    expect(screen.getAllByTestId('learn-coming-soon').length).toBeGreaterThan(0);
 
     // Clicking does nothing — no lesson view, no Maths/Logic subject.
     await act(async () => {

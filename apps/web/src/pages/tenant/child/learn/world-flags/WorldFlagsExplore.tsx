@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useBodyScrollLock } from '@familyhub/ui';
 import { motion } from 'framer-motion';
 import {
   ChevronRight,
@@ -312,6 +313,9 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
     if (certTimerRef.current) clearTimeout(certTimerRef.current);
     setCertEarned(null);
   }, []);
+
+  // Lock body scroll while the continent certificate overlay is shown (FHS-412).
+  useBodyScrollLock(Boolean(certEarned));
 
   const exploredInFilter = filteredCountries.filter((c) => explored.has(c.code)).length;
 

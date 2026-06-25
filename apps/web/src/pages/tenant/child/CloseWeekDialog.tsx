@@ -10,6 +10,7 @@
  * - Uses fetch + headers instead of a generated API client.
  */
 import { useEffect, useState } from 'react';
+import { useBodyScrollLock } from '@familyhub/ui';
 import {
   X,
   ShieldCheck,
@@ -1367,6 +1368,9 @@ export function CloseWeekDialog({
   initialSubDialog,
   onWeekFinalized,
 }: CloseWeekDialogProps) {
+  // Lock body scroll while the dialog is open (FHS-412).
+  useBodyScrollLock(isOpen);
+
   const [subDialog, setSubDialog] = useState<SubDialog>(initialSubDialog ?? null);
   const [done, setDone] = useState<SubDialog>(null);
   const [finalizing, setFinalizing] = useState(false);

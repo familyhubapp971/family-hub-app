@@ -21,7 +21,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { Button } from '@familyhub/ui';
+import { Button, useBodyScrollLock } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -333,6 +333,18 @@ export function MyWorldTab(
 
   // ── Close Week dialog state ───────────────────────────────────────────────
   const [closeWeekOpen, setCloseWeekOpen] = useState(false);
+
+  // Lock body scroll whenever any overlay is open (FHS-412).
+  useBodyScrollLock(
+    Boolean(
+      stickerDialogId ||
+        dayStickerDialog ||
+        editHabitId ||
+        showAddHabit ||
+        deleteConfirmId ||
+        closeWeekOpen,
+    ),
+  );
 
   const habitsCache = useRef<Map<string, Habit[]>>(new Map());
   const redeemingRef = useRef<Set<string>>(new Set());
@@ -1995,32 +2007,30 @@ export function MyWorldTab(
                             </button>
                           )}
                         </div>
-                        {showOriginally && (
-                          <div
-                            className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-1.5"
-                            data-testid="investment-original"
-                          >
-                            <span className="text-slate-400">Originally</span>
-                            <span className="text-slate-200 font-bold ml-auto whitespace-nowrap">
-                              {inv.originalInvestedStickers} stickers ({currency}{' '}
-                              {(inv.originalInvestedStickers! * 0.5).toFixed(2)})
-                            </span>
-                          </div>
-                        )}
-                        <div
-                          className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-1.5"
-                          data-testid="investment-invested"
-                        >
+                        {/* FHS-413 — one shared 2-col grid (label | value) so the
+                            Originally/Invested/Now rows always line up: labels in
+                            col 1, values right-aligned in col 2, no ragged wrapping. */}
+                        <div className="mb-2 grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-1.5 text-xs font-mono tabular-nums">
+                          {showOriginally && (
+                            <>
+                              <span className="text-slate-400">Originally</span>
+                              <span
+                                data-testid="investment-original"
+                                className="justify-self-end whitespace-nowrap font-bold text-slate-200"
+                              >
+                                {inv.originalInvestedStickers} stickers ({currency}{' '}
+                                {(inv.originalInvestedStickers! * 0.5).toFixed(2)})
+                              </span>
+                            </>
+                          )}
                           <span className="text-slate-400">Invested</span>
-                          <span className="text-yellow-400 font-bold ml-auto whitespace-nowrap">
+                          <span
+                            data-testid="investment-invested"
+                            className="justify-self-end whitespace-nowrap font-bold text-yellow-400"
+                          >
                             {inv.investedStickers} stickers ({currency}{' '}
                             {(inv.investedStickers * 0.5).toFixed(2)})
                           </span>
-                        </div>
-                        <div
-                          className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs font-mono mb-2"
-                          data-testid="investment-current"
-                        >
                           <span className="text-slate-400">
                             Now ({inv.daysCompleted}/7 done
                             {inv.daysMissed > 0 && (
@@ -2028,7 +2038,10 @@ export function MyWorldTab(
                             )}
                             )
                           </span>
-                          <span className="font-black text-fuchsia-300 ml-auto whitespace-nowrap">
+                          <span
+                            data-testid="investment-current"
+                            className="justify-self-end whitespace-nowrap font-black text-fuchsia-300"
+                          >
                             {inv.currentValueStickers} stickers ({currency}{' '}
                             {inv.currentValue.toFixed(2)})
                             {delta !== 0 && (

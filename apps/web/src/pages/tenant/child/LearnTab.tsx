@@ -371,9 +371,10 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                 const showProgress = s.hasProgress !== false;
                 // Slug for testid: lowercase, spaces → hyphens
                 const slug = s.subject.toLowerCase().replace(/\s+/g, '-');
-                // FHS-403 — Science isn't built yet: show the card but disabled
-                // (dimmed + unclickable) so kids can't drill into an empty experience.
-                const isComingSoon = s.subject === 'Science';
+                // FHS-403 — Science isn't built yet; FHS-414 — Art is being
+                // redesigned. Show these cards but disabled (dimmed + unclickable)
+                // so kids can't drill into an empty/old experience.
+                const isComingSoon = s.subject === 'Science' || s.subject === 'Art';
                 return (
                   <button
                     key={s.subject}
