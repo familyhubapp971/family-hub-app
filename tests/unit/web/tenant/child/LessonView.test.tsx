@@ -217,7 +217,7 @@ describe('FHS-397 — wrong-answer reveal', () => {
       'Almost!',
       'Keep going!',
       'You can do it!',
-      "Don't give up!",
+      'Don’t give up!',
     ];
     const feedbackText = screen.getByTestId('lesson-feedback').textContent ?? '';
     expect(encouragements.some((e) => feedbackText.includes(e))).toBe(true);

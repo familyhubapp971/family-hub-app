@@ -348,7 +348,8 @@ describe('MathsSubject — practice stage wiring', () => {
       );
       expect(putCall).toBeTruthy();
       const body = JSON.parse((putCall![1] as RequestInit).body as string);
-      expect(body).toMatchObject({ practiceCorrect: 10 });
+      // FHS-401: practiceAttempts must be sent alongside practiceCorrect for accuracy tracking.
+      expect(body).toMatchObject({ practiceCorrect: 10, practiceAttempts: 10 });
     });
 
     // MathsStageComplete for practice is the ONLY celebration screen
@@ -532,8 +533,11 @@ describe('MathsSubject — prove stage wiring', () => {
     );
     expect(putCall).toBeTruthy();
     const putBody = JSON.parse((putCall![1] as RequestInit).body as string);
+    // FHS-401: proveAttempts (totalAnswered) must be sent for accuracy tracking.
     expect(putBody).toMatchObject({ proveScore: 10 });
     expect(typeof putBody.proveAvgTime).toBe('number');
+    // proveAttempts should equal how many questions were answered in the 60s window (10).
+    expect(putBody).toHaveProperty('proveAttempts', 10);
 
     // POST /api/kid/maths/certificates must have been called (passed run).
     const postCall = calls.find(
