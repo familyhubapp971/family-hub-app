@@ -2031,13 +2031,7 @@ export function MyWorldTab(
                             {inv.investedStickers} stickers ({currency}{' '}
                             {(inv.investedStickers * 0.5).toFixed(2)})
                           </span>
-                          <span className="text-slate-400">
-                            Now ({inv.daysCompleted}/7 done
-                            {inv.daysMissed > 0 && (
-                              <span className="text-red-400 ml-1">· {inv.daysMissed} missed</span>
-                            )}
-                            )
-                          </span>
+                          <span className="text-slate-400">Now</span>
                           <span
                             data-testid="investment-current"
                             className="justify-self-end whitespace-nowrap font-black text-fuchsia-300"
@@ -2054,6 +2048,14 @@ export function MyWorldTab(
                               </span>
                             )}
                           </span>
+                        </div>
+                        {/* FHS-413 follow-up — day detail sits with the bar (not
+                            crammed into the "Now" label) so the rows read cleanly. */}
+                        <div className="mb-1 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                          <span>{inv.daysCompleted}/7 days done</span>
+                          {inv.daysMissed > 0 && (
+                            <span className="text-red-400">{inv.daysMissed} missed</span>
+                          )}
                         </div>
                         <div className="w-full bg-white/10 h-2 rounded-full border border-white/10 overflow-hidden">
                           <div

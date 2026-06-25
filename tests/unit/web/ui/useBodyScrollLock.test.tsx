@@ -13,11 +13,22 @@ describe('useBodyScrollLock', () => {
   beforeEach(() => {
     // Reset to a known state before each test.
     document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
   });
 
-  it('sets body overflow to hidden when active=true', () => {
+  it('sets body AND html overflow to hidden when active=true', () => {
     renderHook(() => useBodyScrollLock(true));
     expect(document.body.style.overflow).toBe('hidden');
+    // FHS-412 follow-up — <html> is the real scroll container; lock it too.
+    expect(document.documentElement.style.overflow).toBe('hidden');
+  });
+
+  it('locks and restores <html> (the real scroll container) too', () => {
+    document.documentElement.style.overflow = 'auto';
+    const { unmount } = renderHook(() => useBodyScrollLock(true));
+    expect(document.documentElement.style.overflow).toBe('hidden');
+    unmount();
+    expect(document.documentElement.style.overflow).toBe('auto');
   });
 
   it('is a no-op when active=false', () => {
