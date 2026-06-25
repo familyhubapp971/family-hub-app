@@ -11,10 +11,36 @@ import { WorldFlagsCertificates } from './WorldFlagsCertificates';
 
 type SubTab = 'explore' | 'learn' | 'certificates';
 
-const SUB_TABS: { id: SubTab; label: string; icon: React.ReactNode }[] = [
-  { id: 'explore', label: 'Explore', icon: <Globe size={16} aria-hidden="true" /> },
-  { id: 'learn', label: 'Learn', icon: <BookOpen size={16} aria-hidden="true" /> },
-  { id: 'certificates', label: 'Awards', icon: <Trophy size={16} aria-hidden="true" /> },
+// FHS-397 — legacy parity: a compact right-aligned pill row, per-tab gradient
+// active state, icon-only trophy. Order matches the legacy (Learn, Explore, Awards).
+const SUB_TABS: {
+  id: SubTab;
+  label: string;
+  icon: React.ReactNode;
+  /** active-state gradient + text colour, per the legacy. */
+  activeClass: string;
+  /** Awards is icon-only in the legacy. */
+  iconOnly?: boolean;
+}[] = [
+  {
+    id: 'learn',
+    label: 'Learn',
+    icon: <BookOpen size={16} aria-hidden="true" />,
+    activeClass: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-black',
+  },
+  {
+    id: 'explore',
+    label: 'Explore',
+    icon: <Globe size={16} aria-hidden="true" />,
+    activeClass: 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white border-black',
+  },
+  {
+    id: 'certificates',
+    label: 'Awards',
+    icon: <Trophy size={16} aria-hidden="true" />,
+    activeClass: 'bg-gradient-to-r from-yellow-400 to-amber-500 text-black border-black',
+    iconOnly: true,
+  },
 ];
 
 // Exactly one of memberId / kidToken is supplied (never both).
@@ -29,11 +55,11 @@ export function WorldFlags({ memberId, kidToken }: WorldFlagsProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Sub-tab switcher */}
+      {/* Sub-tab switcher — compact right-aligned pill row (legacy parity, FHS-397) */}
       <div
         role="tablist"
         aria-label="World Flags modes"
-        className="flex gap-2 rounded-xl border-2 border-black bg-white p-1.5 shadow-neo-xs"
+        className="flex items-center justify-end gap-2"
       >
         {SUB_TABS.map((t) => {
           const active = tab === t.id;
@@ -42,17 +68,16 @@ export function WorldFlags({ memberId, kidToken }: WorldFlagsProps) {
               key={t.id}
               role="tab"
               aria-selected={active}
+              aria-label={t.iconOnly ? t.label : undefined}
               data-testid={`world-subtab-${t.id}`}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg border-2 px-3 py-2 text-sm font-black transition-transform motion-safe:hover:-translate-y-0.5 ${
-                active
-                  ? 'border-black bg-black text-white shadow-neo-xs'
-                  : 'border-transparent bg-white text-gray-600'
+              className={`flex min-h-[44px] items-center gap-1.5 rounded-full border-2 px-3 py-2 text-xs font-black transition-all motion-safe:hover:-translate-y-0.5 ${
+                active ? `${t.activeClass} shadow-neo-xs` : 'border-gray-200 bg-white text-gray-400'
               }`}
             >
               {t.icon}
-              <span>{t.label}</span>
+              {!t.iconOnly && <span>{t.label}</span>}
             </button>
           );
         })}

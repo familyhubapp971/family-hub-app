@@ -461,4 +461,94 @@ describe('WorldFlags Explore — continent certificate overlay', () => {
     });
     expect(screen.queryByTestId('world-cert-earned')).not.toBeInTheDocument();
   });
+
+  it('backdrop is a div (not a button) — no interactive-inside-interactive nesting', async () => {
+    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    const africa = COUNTRIES.filter((c) => c.continent === 'Africa');
+    const allButFirst = africa.slice(1).map((c) => c.code);
+    installFetch({ explored: allButFirst });
+    renderWorldFlags();
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-continent-africa'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-flashcard'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-cert-backdrop')).toBeInTheDocument());
+    // Backdrop must be a div, not a button.
+    expect(screen.getByTestId('world-cert-backdrop').tagName).toBe('DIV');
+    // The dialog card (role=dialog) must be inside that div, not inside a button.
+    const dialog = screen.getByTestId('world-cert-earned');
+    expect(dialog.closest('button')).toBeNull();
+  });
+
+  it('pressing Escape while the overlay is open dismisses it', async () => {
+    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    const africa = COUNTRIES.filter((c) => c.continent === 'Africa');
+    const allButFirst = africa.slice(1).map((c) => c.code);
+    installFetch({ explored: allButFirst });
+    renderWorldFlags();
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-continent-africa'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-flashcard'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-cert-earned')).toBeInTheDocument());
+    // Fire the Escape key on the document — the useEffect listener should close it.
+    await act(async () => {
+      fireEvent.keyDown(document, { key: 'Escape' });
+    });
+    expect(screen.queryByTestId('world-cert-earned')).not.toBeInTheDocument();
+  });
+
+  it('overlay auto-dismisses after 6 seconds', async () => {
+    // Render and open the overlay using real timers so waitFor polling works normally.
+    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    const africa = COUNTRIES.filter((c) => c.continent === 'Africa');
+    const allButFirst = africa.slice(1).map((c) => c.code);
+    installFetch({ explored: allButFirst });
+    renderWorldFlags();
+    await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-subtab-explore'));
+    });
+    await waitFor(() => expect(screen.getByTestId('world-flashcard')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('world-continent-africa'));
+    });
+    // Swap to fake timers immediately before the tap so the 6s setTimeout is intercepted.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('world-flashcard'));
+      });
+      // Flush React's own pending setState batches (microtasks not affected by fake timers).
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      // Cert overlay must be up — assert synchronously, NOT via waitFor: waitFor
+      // polls with setTimeout which is now faked and would never advance (hang).
+      // The overlay is in the DOM after the click + microtask flush above.
+      expect(screen.queryByTestId('world-cert-earned')).not.toBeNull();
+      // Now advance past 6s — the fake setTimeout fires → setCertEarned(null).
+      await act(async () => {
+        vi.advanceTimersByTime(6001);
+      });
+      expect(screen.queryByTestId('world-cert-earned')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  }, 10000);
 });

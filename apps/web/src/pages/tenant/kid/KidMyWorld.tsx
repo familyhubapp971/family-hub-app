@@ -245,36 +245,87 @@ export function KidMyWorld({
                 <span className="h-0.5 flex-1 rounded-full bg-pink-200" aria-hidden="true" />
               </div>
 
-              {/* How are you doing this week */}
-              <div className="flex items-center gap-4 rounded-xl border-2 border-black bg-white p-5 shadow-neo-sm">
-                <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-black bg-yellow-100 text-3xl">
-                  <span aria-hidden="true">🎯</span>
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-heading text-base text-black">
-                    How are you doing this week?
-                  </h3>
-                  <p className="mt-1 text-sm font-bold text-gray-700">
-                    You&rsquo;ve completed {doneThisView} out of {totalThisView} habit days! Keep it
-                    up!
-                  </p>
-                  <div
-                    role="progressbar"
-                    aria-valuenow={doneThisView}
-                    aria-valuemin={0}
-                    aria-valuemax={totalThisView}
-                    aria-label="Habit days completed this week"
-                    className="mt-2 h-3 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100"
-                  >
+              {/* Progress banner — live for current week, recap for finalized */}
+              {week && !data.isCurrentWeek ? (
+                <div
+                  data-testid="kid-finished-week-banner"
+                  className="flex items-center gap-4 rounded-xl border-2 border-black bg-white p-5 shadow-neo-sm"
+                >
+                  <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-black bg-green-100 text-3xl">
+                    <span aria-hidden="true">🎉</span>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-heading text-base text-black">
+                      You&rsquo;re looking at a finished week!
+                    </h3>
+                    <p className="mt-1 text-sm font-bold text-gray-700">
+                      {(() => {
+                        const pct =
+                          totalThisView > 0
+                            ? Math.min(100, Math.round((doneThisView / totalThisView) * 100))
+                            : 0;
+                        return (
+                          <>
+                            You finished{' '}
+                            <span className="font-heading text-green-700">
+                              {doneThisView} out of {totalThisView}
+                            </span>{' '}
+                            habit days ({pct}%)!{' '}
+                            {pct >= 50
+                              ? 'Amazing work — you crushed it! 🌟'
+                              : 'Every habit you did was a win. Keep going next week! 💪'}
+                          </>
+                        );
+                      })()}
+                    </p>
                     <div
-                      className="h-full bg-green-400"
-                      style={{
-                        width: `${totalThisView > 0 ? (doneThisView / totalThisView) * 100 : 0}%`,
-                      }}
-                    />
+                      role="progressbar"
+                      aria-valuenow={doneThisView}
+                      aria-valuemin={0}
+                      aria-valuemax={totalThisView}
+                      aria-label="Habit days completed that week"
+                      className="mt-2 h-3 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100"
+                    >
+                      <div
+                        className="h-full bg-green-400"
+                        style={{
+                          width: `${totalThisView > 0 ? (doneThisView / totalThisView) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center gap-4 rounded-xl border-2 border-black bg-white p-5 shadow-neo-sm">
+                  <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-black bg-yellow-100 text-3xl">
+                    <span aria-hidden="true">🎯</span>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-heading text-base text-black">
+                      How are you doing this week?
+                    </h3>
+                    <p className="mt-1 text-sm font-bold text-gray-700">
+                      You&rsquo;ve completed {doneThisView} out of {totalThisView} habit days! Keep
+                      it up!
+                    </p>
+                    <div
+                      role="progressbar"
+                      aria-valuenow={doneThisView}
+                      aria-valuemin={0}
+                      aria-valuemax={totalThisView}
+                      aria-label="Habit days completed this week"
+                      className="mt-2 h-3 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100"
+                    >
+                      <div
+                        className="h-full bg-green-400"
+                        style={{
+                          width: `${totalThisView > 0 ? (doneThisView / totalThisView) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Habit cards — spinner while a navigated week loads, retry on
                 failure, then the real empty/cards state (FHS-377). */}
@@ -339,6 +390,7 @@ export function KidMyWorld({
                 planted={planted}
                 bonus={bonus}
                 hasInvestments={data.investments.length > 0}
+                isFinalized={!data.isCurrentWeek}
               />
             </>
           ) : (

@@ -51,10 +51,10 @@ function CertOverlay({
   }, [onDismiss]);
 
   return (
-    // Backdrop — click outside the card to dismiss.
-    <button
-      type="button"
-      aria-label="Close certificate"
+    // Backdrop — click outside the card to dismiss (div, not button — dialog card contains the real interactive elements).
+    <div
+      role="presentation"
+      data-testid="world-cert-backdrop"
       className="fixed inset-0 z-50 flex cursor-default items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={onDismiss}
     >
@@ -142,13 +142,13 @@ function CertOverlay({
             type="button"
             onClick={onDismiss}
             aria-label="Close certificate"
-            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white text-gray-600 shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5"
+            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full border-2 border-black bg-white text-gray-600 shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5"
           >
             <X size={16} aria-hidden="true" />
           </button>
         </div>
       </motion.div>
-    </button>
+    </div>
   );
 }
 
@@ -221,7 +221,11 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
         for (const cont of CONTINENTS) {
           const total = COUNTRIES.filter((c) => c.continent === cont).length;
           const done = COUNTRIES.filter((c) => c.continent === cont && codes.has(c.code)).length;
-          prevComplete.current[cont] = done >= total;
+          const complete = done >= total;
+          prevComplete.current[cont] = complete;
+          // Belt-and-suspenders: a continent already complete on load can never
+          // re-trigger the overlay on this mount, even if the ref was cleared.
+          if (complete) shownOverlay.current.add(cont);
         }
       })
       .catch((err: unknown) => {

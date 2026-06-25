@@ -3,6 +3,7 @@ import { Wallet } from 'lucide-react';
 // FHS-376 — "Money Skills" explainer card for the kid. Pure presentation: tells
 // the kid what their stars are worth and the three things they can do with them
 // (spend / save / grow). The savings + invested numbers come from the parent.
+// FHS-399 — accepts `isFinalized` to switch to past-tense framing on closed weeks.
 export function KidMoneySkills({
   stickerBalance,
   savedStickers,
@@ -11,6 +12,7 @@ export function KidMoneySkills({
   planted,
   bonus,
   hasInvestments,
+  isFinalized = false,
 }: {
   stickerBalance: number;
   savedStickers: number;
@@ -19,6 +21,7 @@ export function KidMoneySkills({
   planted: number;
   bonus: number;
   hasInvestments: boolean;
+  isFinalized?: boolean;
 }) {
   return (
     <section
@@ -35,7 +38,10 @@ export function KidMoneySkills({
       <p className="mt-3 text-sm font-bold text-gray-700">
         You have{' '}
         <span className="font-heading text-lg text-yellow-500">{stickerBalance} stars</span>! Every
-        star is worth a little bit of real money. What will you do with them?
+        star is worth a little bit of real money.{' '}
+        {isFinalized
+          ? 'Here’s what you did with your stars this week.'
+          : 'What will you do with them?'}
       </p>
 
       {/* Savings now + growing stars */}
@@ -88,19 +94,25 @@ export function KidMoneySkills({
             🛍️
           </p>
           <h4 className="mt-2 font-heading text-sm uppercase tracking-wide text-black">
-            Spend Now
+            {isFinalized ? 'Spent' : 'Spend Now'}
           </h4>
           <p className="mt-1 text-xs font-bold text-gray-600">
-            Use your stars for small treats in the Rewards Shop today!
+            {isFinalized
+              ? 'Stars used for treats in the Rewards Shop.'
+              : 'Use your stars for small treats in the Rewards Shop today!'}
           </p>
         </div>
         <div className="rounded-xl border-2 border-black bg-blue-50 p-4">
           <p className="text-2xl" aria-hidden="true">
             🐷
           </p>
-          <h4 className="mt-2 font-heading text-sm uppercase tracking-wide text-black">Save Up</h4>
+          <h4 className="mt-2 font-heading text-sm uppercase tracking-wide text-black">
+            {isFinalized ? 'Saved' : 'Save Up'}
+          </h4>
           <p className="mt-1 text-xs font-bold text-gray-600">
-            Keep your stars safe. The more you save, the bigger rewards you can get later!
+            {isFinalized
+              ? 'Stars kept safe in your piggy bank for bigger rewards.'
+              : 'Keep your stars safe. The more you save, the bigger rewards you can get later!'}
           </p>
         </div>
         <div className="rounded-xl border-2 border-black bg-green-50 p-4">
@@ -108,10 +120,12 @@ export function KidMoneySkills({
             🌱
           </p>
           <h4 className="mt-2 font-heading text-sm uppercase tracking-wide text-black">
-            Grow (Invest)
+            {isFinalized ? 'Grew (Invested)' : 'Grow (Invest)'}
           </h4>
           <p className="mt-1 text-xs font-bold text-gray-600">
-            Save your stars like seeds 🌱. Wait and they grow into more!
+            {isFinalized
+              ? 'Stars planted like seeds 🌱 and growing into more!'
+              : 'Save your stars like seeds 🌱. Wait and they grow into more!'}
           </p>
         </div>
       </div>
