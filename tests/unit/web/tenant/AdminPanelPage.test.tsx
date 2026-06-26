@@ -265,6 +265,71 @@ describe('<AdminPanelPage />', () => {
     expect(screen.getByTestId('admin-balance-action-withdraw')).toBeInTheDocument();
   });
 
+  it('FHS-416 — invest with too few stickers shows a clear reason, not the raw 409', async () => {
+    const HABIT = { id: 'habit-1', name: 'Read a book' };
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (/\/api\/me(\?|$)/.test(u))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'u-admin',
+            email: 'sarah@example.com',
+            tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'admin' }],
+          }),
+        });
+      if (u.includes('/api/dashboard/today'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ date: '2026-06-15', callerMemberId: 'admin-1', members: [] }),
+        });
+      if (u.includes('/api/members'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ members: MEMBERS, callerRole: 'admin' }),
+        });
+      if (u.includes('/api/mw/weeks/current'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ week: CURRENT_WEEK }),
+        });
+      if (u.includes('/stats'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => WEEK_STATS });
+      if (u.includes('/api/habits'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: [HABIT] }) });
+      if (u.includes('/api/mw/financial/investments') && init?.method === 'POST')
+        return Promise.resolve({
+          ok: false,
+          status: 409,
+          json: async () => ({
+            error: 'not enough stickers',
+            errorCode: 'INSUFFICIENT_STICKERS',
+            available: 1,
+          }),
+        });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('admin-balance-ready')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('admin-balance-action-invest'));
+    });
+    fireEvent.change(await screen.findByTestId('admin-quick-action-invest-amount'), {
+      target: { value: '10' },
+    });
+    fireEvent.click(await screen.findByText('Read a book'));
+    act(() => {
+      fireEvent.click(screen.getByTestId('admin-quick-action-invest-submit'));
+    });
+    // Friendly reason with have-vs-need, NOT the raw status code.
+    await screen.findByText(/Not enough stickers to invest.*1 available.*10 needed/);
+    expect(screen.queryByText(/Invest failed: 409/)).not.toBeInTheDocument();
+  });
+
   it('switching to Savings tab fetches and renders savings data', async () => {
     renderAt();
     await waitFor(() => expect(screen.getByTestId('admin-panel-tab-savings')).toBeInTheDocument());

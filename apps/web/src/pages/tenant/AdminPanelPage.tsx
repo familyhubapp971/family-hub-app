@@ -479,7 +479,23 @@ function InvestQuickAction({
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({ memberId, habitId: selectedHabitId, stickerCount: num }),
       });
-      if (!res.ok) throw new Error(`Invest failed: ${res.status}`);
+      if (!res.ok) {
+        // FHS-416 — show WHY, not the raw status. The API returns an errorCode
+        // (and how many stickers are actually available) on a 409.
+        const body = (await res.json().catch(() => ({}))) as {
+          errorCode?: string;
+          available?: number;
+        };
+        if (body.errorCode === 'INSUFFICIENT_STICKERS') {
+          throw new Error(
+            `Not enough stickers to invest — ${body.available ?? 0} available, but ${num} needed.`,
+          );
+        }
+        if (body.errorCode === 'ACTIVE_INVESTMENT_EXISTS') {
+          throw new Error('This habit already has an active investment.');
+        }
+        throw new Error('Could not invest right now — please try again.');
+      }
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to invest');
