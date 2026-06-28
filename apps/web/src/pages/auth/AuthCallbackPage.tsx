@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../lib/auth-context';
-import { AuthLayout } from './AuthLayout';
+import { LoadingScreen } from '../../components/LoadingScreen';
 import { supabase } from '../../lib/supabase';
 
 // FHS-331 — Supabase appends auth failures (expired/used magic link, denied
@@ -147,20 +147,9 @@ export function AuthCallbackPage() {
   }, [exchangeState, loading, session, navigate]);
 
   return (
-    <AuthLayout title="Signing you in…">
-      {status.kind === 'error' ? (
-        <p
-          className="font-body text-sm text-red-600"
-          role="alert"
-          data-testid="auth-callback-error"
-        >
-          {status.message}
-        </p>
-      ) : (
-        <p className="font-body text-sm text-gray-700" data-testid="auth-callback">
-          Hold tight — finishing up your login.
-        </p>
-      )}
-    </AuthLayout>
+    <LoadingScreen
+      context="callback"
+      error={status.kind === 'error' ? { message: status.message } : null}
+    />
   );
 }

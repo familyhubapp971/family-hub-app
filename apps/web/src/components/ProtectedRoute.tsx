@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getKidToken, useAuth } from '../lib/auth-context';
 import { BetaFeedbackWidget } from './BetaFeedbackWidget';
+import { LoadingScreen } from './LoadingScreen';
 
 // Gate around an authenticated subtree. Renders a small loading state
 // while the AuthProvider rehydrates the session from localStorage so
@@ -21,14 +22,7 @@ export function ProtectedRoute({
   const location = useLocation();
 
   if (loading) {
-    return (
-      <main
-        className="flex min-h-full items-center justify-center px-4 py-10"
-        data-testid="protected-loading"
-      >
-        <p className="font-body text-sm text-gray-600">Loading…</p>
-      </main>
-    );
+    return <LoadingScreen context="protected" />;
   }
 
   if (!session && !(allowKid && getKidToken())) {
