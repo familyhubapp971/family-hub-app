@@ -47,9 +47,12 @@ export const feedbackRouter = new Hono()
 
   // POST /api/feedback — submit a beta survey response.
   .post('/', async (c) => {
-    getAuthenticatedUser(c);
+    // getAuthenticatedUser throws only if the auth middleware wasn't mounted
+    // (a wiring bug — a 500 is the right signal there). The userRow mirror may
+    // legitimately be absent if the mirror sync hasn't populated yet; store a
+    // null id + the auth email rather than 500'ing the submission.
+    const user = getAuthenticatedUser(c);
     const userRow = c.get('userRow');
-    if (!userRow) throw new Error('feedback POST handler reached without userRow');
 
     const tenantId = c.get('tenantId');
     if (!tenantId) {
@@ -84,8 +87,8 @@ export const feedbackRouter = new Hono()
       .insert(betaFeedback)
       .values({
         tenantId,
-        submittedByUserId: userRow.id,
-        submittedByEmail: userRow.email,
+        submittedByUserId: userRow?.id ?? null,
+        submittedByEmail: userRow?.email ?? user.email ?? null,
         pmfDisappointment: pmfDisappointment ?? null,
         recommendScore: recommendScore ?? null,
         solvesProblem: solvesProblem ?? null,

@@ -5,9 +5,12 @@
  *  - button renders and opens dialog
  *  - submit disabled with nothing answered
  *  - answering one question enables submit
+ *  - recommendScore = 0 is a valid answer (falsy-value guard)
  *  - submit POSTs the right body and shows thank-you
+ *  - re-opening after success shows a blank form (not thank-you)
  *  - error response shows inline error message
- *  - widget not rendered when no Supabase session (kid-only / logged-out)
+ *  - widget renders null when no session
+ *  - widget renders null when session present but no tenant slug
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -15,7 +18,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 // ── Mocks (before import of component) ───────────────────────────────────────
 
-// react-router-dom: useParams always returns { slug: 'test-family' }
+// react-router-dom: useParams returns { slug: 'test-family' } by default
 vi.mock('react-router-dom', () => ({
   useParams: () => ({ slug: 'test-family' }),
 }));
@@ -78,8 +81,7 @@ describe('<BetaFeedbackWidget />', () => {
   it('submit button is disabled with nothing answered', () => {
     renderWidget();
     openDialog();
-    const submit = screen.getByTestId('beta-feedback-submit');
-    expect(submit).toBeDisabled();
+    expect(screen.getByTestId('beta-feedback-submit')).toBeDisabled();
   });
 
   it('submit button becomes enabled after answering one PMF option', () => {
@@ -98,11 +100,35 @@ describe('<BetaFeedbackWidget />', () => {
     expect(screen.getByTestId('beta-feedback-submit')).not.toBeDisabled();
   });
 
-  it('submit button becomes enabled after selecting a recommend score', () => {
+  it('submit button becomes enabled after selecting recommend score = 9', () => {
     renderWidget();
     openDialog();
     fireEvent.click(screen.getByTestId('beta-feedback-recommend-9'));
     expect(screen.getByTestId('beta-feedback-submit')).not.toBeDisabled();
+  });
+
+  // Blocker 1 — falsy-value guard: 0 is a valid recommendScore
+  it('recommendScore = 0 enables submit and is included in the POST body', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({}),
+    });
+
+    renderWidget();
+    openDialog();
+
+    // Score 0 is falsy — must use !== undefined check, not truthiness
+    fireEvent.click(screen.getByTestId('beta-feedback-recommend-0'));
+    expect(screen.getByTestId('beta-feedback-submit')).not.toBeDisabled();
+
+    fireEvent.click(screen.getByTestId('beta-feedback-submit'));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body.recommendScore).toBe(0);
   });
 
   it('POSTs the correct body and shows the thank-you state on 201', async () => {
@@ -115,7 +141,6 @@ describe('<BetaFeedbackWidget />', () => {
     renderWidget();
     openDialog();
 
-    // Answer PMF + a text area
     fireEvent.click(screen.getByTestId('beta-feedback-pmf-somewhat'));
     fireEvent.change(screen.getByTestId('beta-feedback-feature'), {
       target: { value: 'Shared shopping list' },
@@ -125,7 +150,6 @@ describe('<BetaFeedbackWidget />', () => {
 
     await waitFor(() => expect(screen.getByTestId('beta-feedback-thanks')).toBeInTheDocument());
 
-    // Verify the fetch call
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain('/api/feedback');
@@ -134,14 +158,43 @@ describe('<BetaFeedbackWidget />', () => {
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
     expect(body.pmfDisappointment).toBe('somewhat');
     expect(body.featureRequest).toBe('Shared shopping list');
-    // Fields not answered must be absent
     expect(body).not.toHaveProperty('recommendScore');
     expect(body).not.toHaveProperty('solvesProblem');
 
-    // Auth + tenant headers
     const headers = init.headers as Record<string, string>;
     expect(headers['Authorization']).toBe('Bearer parent.jwt.tok');
     expect(headers['x-tenant-slug']).toBe('test-family');
+  });
+
+  // New test — re-opening after success shows a blank form, not thank-you
+  it('re-opening the widget after a successful submit shows a blank form', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({}),
+    });
+
+    renderWidget();
+    openDialog();
+
+    fireEvent.click(screen.getByTestId('beta-feedback-pmf-very'));
+    fireEvent.click(screen.getByTestId('beta-feedback-submit'));
+
+    // Wait for thank-you
+    await waitFor(() => expect(screen.getByTestId('beta-feedback-thanks')).toBeInTheDocument());
+
+    // Close via the thank-you Close button
+    fireEvent.click(screen.getByRole('button', { name: /^Close$/i }));
+
+    // Re-open
+    openDialog();
+
+    // Thank-you state must not be showing
+    expect(screen.queryByTestId('beta-feedback-thanks')).not.toBeInTheDocument();
+    // Submit must be disabled again (blank form)
+    expect(screen.getByTestId('beta-feedback-submit')).toBeDisabled();
+    // The PMF buttons must all be unselected
+    expect(screen.getByTestId('beta-feedback-pmf-very')).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('shows inline error message when the server returns an error', async () => {
@@ -159,9 +212,7 @@ describe('<BetaFeedbackWidget />', () => {
 
     await waitFor(() => expect(screen.getByTestId('beta-feedback-error')).toBeInTheDocument());
     expect(screen.getByTestId('beta-feedback-error').textContent).toMatch(/Internal server error/);
-    // Thank-you state must NOT appear
     expect(screen.queryByTestId('beta-feedback-thanks')).not.toBeInTheDocument();
-    // Submit button should be re-enabled
     expect(screen.getByTestId('beta-feedback-submit')).not.toBeDisabled();
   });
 
@@ -192,7 +243,6 @@ describe('<BetaFeedbackWidget />', () => {
     renderWidget();
     openDialog();
 
-    // Only answer recommend score = 7
     fireEvent.click(screen.getByTestId('beta-feedback-recommend-7'));
     fireEvent.click(screen.getByTestId('beta-feedback-submit'));
 
@@ -206,25 +256,10 @@ describe('<BetaFeedbackWidget />', () => {
     expect(body).not.toHaveProperty('easeOfUse');
     expect(body).not.toHaveProperty('keepUsing');
   });
-
-  it('does not render the floating button when there is no session', () => {
-    vi.doMock('../../../../apps/web/src/lib/auth-context', () => ({
-      useAuth: () => ({ session: null }),
-    }));
-    // Re-render using the component directly with a null-session override
-    // by rendering with a mocked context wrapper.
-    // Since doMock is async-module, we test the guard behaviour via a
-    // simple inline session check — the component returns null when
-    // session is null. Verify the button is absent on first render
-    // (the static mock above has session set, so we test via the guard
-    // logic: if session were null the button testid would not exist).
-    // This test confirms the pattern rather than re-importing (import
-    // order limitation in vitest). Kept as a documentation guard test.
-    expect(true).toBe(true); // placeholder — the real guard is tested below
-  });
 });
 
-// Separate describe that overrides the auth mock to return null session
+// ── Guard tests (no session / no slug) ───────────────────────────────────────
+
 describe('<BetaFeedbackWidget /> — no session', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -233,6 +268,30 @@ describe('<BetaFeedbackWidget /> — no session', () => {
   it('renders nothing when session is null', async () => {
     vi.doMock('../../../../apps/web/src/lib/auth-context', () => ({
       useAuth: () => ({ session: null }),
+    }));
+    const { BetaFeedbackWidget: Widget } = await import(
+      '../../../../apps/web/src/components/BetaFeedbackWidget'
+    );
+    render(<Widget />);
+    expect(screen.queryByTestId('beta-feedback-button')).not.toBeInTheDocument();
+  });
+});
+
+describe('<BetaFeedbackWidget /> — session present, no tenant slug', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('renders nothing when useParams returns no slug (legacy routes)', async () => {
+    // Override react-router-dom to return empty params (no :slug)
+    vi.doMock('react-router-dom', () => ({
+      useParams: () => ({}),
+    }));
+    vi.doMock('../../../../apps/web/src/lib/auth-context', () => ({
+      useAuth: () => ({ session: { access_token: 'tok' } }),
+    }));
+    vi.doMock('../../../../apps/web/src/lib/supabase', () => ({
+      supabase: { auth: { getSession: async () => ({ data: { session: null } }) } },
     }));
     const { BetaFeedbackWidget: Widget } = await import(
       '../../../../apps/web/src/components/BetaFeedbackWidget'

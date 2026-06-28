@@ -2,11 +2,13 @@
  * BetaFeedbackWidget — FHS-418 (frontend)
  *
  * A floating "Give feedback" button fixed to the bottom-right of every
- * signed-in page. Opens a friendly dialog where beta testers answer a
- * few optional questions and submit to POST /api/feedback.
+ * signed-in /t/:slug/* page. Opens a friendly dialog where beta testers
+ * answer a few optional questions and submit to POST /api/feedback.
  *
- * Mounted once in ProtectedRoute (parent sessions only — not kid JWT).
- * Not shown on marketing / auth pages.
+ * Mounted once in ProtectedRoute. Hidden when:
+ *  - no Supabase parent session (kid-JWT-only or logged-out), OR
+ *  - no tenant slug in the URL (legacy /dashboard, /me routes where the
+ *    API would return 400 TENANT_REQUIRED without x-tenant-slug).
  */
 
 import { useState, useCallback, useId } from 'react';
@@ -31,6 +33,8 @@ interface FeedbackBody {
   otherFeedback?: string;
 }
 
+const MAX_CHARS = 2000;
+
 // ── PMF disappointment buttons ────────────────────────────────────────────────
 
 const PMF_OPTIONS: { label: string; value: PmfChoice; testId: string }[] = [
@@ -38,6 +42,18 @@ const PMF_OPTIONS: { label: string; value: PmfChoice; testId: string }[] = [
   { label: 'Somewhat disappointed', value: 'somewhat', testId: 'beta-feedback-pmf-somewhat' },
   { label: 'Not disappointed', value: 'not', testId: 'beta-feedback-pmf-not' },
 ];
+
+// ── Character counter ─────────────────────────────────────────────────────────
+
+function CharCount({ value }: { value: string }) {
+  const len = value.length;
+  const near = len > MAX_CHARS * 0.85;
+  return (
+    <span className={`text-xs ${near ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+      {len}/{MAX_CHARS}
+    </span>
+  );
+}
 
 // ── Rating row (1..N tappable numbers) ───────────────────────────────────────
 
@@ -93,6 +109,8 @@ function RatingRow({
 }
 
 // ── Recommend row (0..10) ─────────────────────────────────────────────────────
+// End labels sit on their own line above the number grid so the 11 buttons
+// can wrap to two centered rows on 375 px mobile without looking broken.
 
 function RecommendRow({
   value,
@@ -102,8 +120,14 @@ function RecommendRow({
   onChange: (n: number) => void;
 }) {
   return (
-    <div className="space-y-1">
-      <div className="flex flex-wrap gap-1.5">
+    <div className="space-y-2">
+      {/* End labels — always on their own line */}
+      <div className="flex justify-between text-xs text-gray-500">
+        <span>Not at all likely</span>
+        <span>Extremely likely</span>
+      </div>
+      {/* Buttons wrap and center when they overflow one line */}
+      <div className="flex flex-wrap justify-center gap-1.5">
         {Array.from({ length: 11 }, (_, i) => {
           const selected = value === i;
           return (
@@ -114,7 +138,8 @@ function RecommendRow({
               onClick={() => onChange(i)}
               data-testid={`beta-feedback-recommend-${i}`}
               className={[
-                'flex h-11 min-w-[44px] items-center justify-center rounded-xl border-2 border-black px-2 text-sm font-black transition-all',
+                'flex h-10 min-w-[36px] items-center justify-center rounded-xl border-2 border-black px-1.5 text-sm font-black transition-all',
+                'sm:h-11 sm:min-w-[40px]',
                 'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
                 selected
                   ? 'bg-pink-400 text-black shadow-neo-sm'
@@ -126,9 +151,41 @@ function RecommendRow({
           );
         })}
       </div>
-      <div className="flex justify-between text-xs text-gray-500">
-        <span>Not at all likely</span>
-        <span>Extremely likely</span>
+    </div>
+  );
+}
+
+// ── Textarea with counter ─────────────────────────────────────────────────────
+
+function CountedTextarea({
+  id,
+  testId,
+  rows,
+  value,
+  onChange,
+  placeholder,
+}: {
+  id: string;
+  testId: string;
+  rows: number;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <textarea
+        id={id}
+        data-testid={testId}
+        rows={rows}
+        value={value}
+        maxLength={MAX_CHARS}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
+      />
+      <div className="flex justify-end">
+        <CharCount value={value} />
       </div>
     </div>
   );
@@ -140,10 +197,10 @@ export function BetaFeedbackWidget() {
   const { session } = useAuth();
   const titleId = useId();
 
-  // Read :slug from the URL if present (works on /t/:slug/* routes).
-  // useParams returns an empty object when no matching param is in scope,
-  // so this is safe to call from outside a TenantProvider.
-  const { slug: tenantSlug = null } = useParams<{ slug?: string }>();
+  // Read :slug from the URL — present on /t/:slug/* routes, absent on legacy
+  // routes like /dashboard and /me. useParams is safe to call outside a
+  // matching route; it just returns an empty object.
+  const { slug: tenantSlug } = useParams<{ slug?: string }>();
 
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
@@ -159,7 +216,8 @@ export function BetaFeedbackWidget() {
   const [feature, setFeature] = useState('');
   const [other, setOther] = useState('');
 
-  // Submit is enabled when at least one answer is provided.
+  // Submit enabled when at least one answer provided.
+  // Use !== undefined (not truthiness) so recommendScore = 0 counts.
   const hasAnswer =
     pmf !== undefined ||
     recommend !== undefined ||
@@ -256,8 +314,9 @@ export function BetaFeedbackWidget() {
     tenantSlug,
   ]);
 
-  // Don't render anything for non-parent sessions.
-  if (!session) return null;
+  // Hide when no parent session or no tenant slug — without the slug the
+  // API rejects the request with 400 TENANT_REQUIRED.
+  if (!session || !tenantSlug) return null;
 
   return (
     <>
@@ -423,14 +482,13 @@ export function BetaFeedbackWidget() {
                   What&apos;s the biggest problem you&apos;re hoping Family Hub solves?
                   <span className="ml-1 font-normal text-gray-400">(optional)</span>
                 </label>
-                <textarea
+                <CountedTextarea
                   id="beta-feedback-pain"
-                  data-testid="beta-feedback-pain"
+                  testId="beta-feedback-pain"
                   rows={3}
                   value={pain}
-                  onChange={(e) => setPain(e.target.value)}
+                  onChange={setPain}
                   placeholder="e.g. Keeping everyone in sync on chores and activities…"
-                  className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
                 />
               </div>
 
@@ -443,14 +501,13 @@ export function BetaFeedbackWidget() {
                   What&apos;s one feature you wish it had?
                   <span className="ml-1 font-normal text-gray-400">(optional)</span>
                 </label>
-                <textarea
+                <CountedTextarea
                   id="beta-feedback-feature"
-                  data-testid="beta-feedback-feature"
+                  testId="beta-feedback-feature"
                   rows={3}
                   value={feature}
-                  onChange={(e) => setFeature(e.target.value)}
+                  onChange={setFeature}
                   placeholder="e.g. A shared shopping list that everyone can add to…"
-                  className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
                 />
               </div>
 
@@ -463,14 +520,13 @@ export function BetaFeedbackWidget() {
                   Anything else?
                   <span className="ml-1 font-normal text-gray-400">(optional)</span>
                 </label>
-                <textarea
+                <CountedTextarea
                   id="beta-feedback-other"
-                  data-testid="beta-feedback-other"
+                  testId="beta-feedback-other"
                   rows={3}
                   value={other}
-                  onChange={(e) => setOther(e.target.value)}
+                  onChange={setOther}
                   placeholder="Anything else on your mind…"
-                  className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
                 />
               </div>
 
