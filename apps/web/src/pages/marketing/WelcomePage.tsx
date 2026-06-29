@@ -20,6 +20,7 @@ import {
 } from '@familyhub/ui';
 import { useAuth, signOutAll, getKidToken } from '../../lib/auth-context';
 import { API_BASE } from '../../lib/api';
+import { BetaFeedbackWidget } from '../../components/BetaFeedbackWidget';
 
 // Hero copy rotates between four ad pitches every 5 seconds, each
 // targeting a different persona:
@@ -284,6 +285,8 @@ export function WelcomePage() {
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-kingdom-bg font-body text-white">
+      {/* Public feedback widget — visible to logged-out AND logged-in visitors on this page */}
+      <BetaFeedbackWidget variant="public" />
       {/* Subtle radial purple glow at the top of the hero. */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.4),rgba(61,16,101,0)_60%)]" />
 

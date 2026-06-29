@@ -1,5 +1,5 @@
 /**
- * Unit tests for BetaFeedbackWidget — FHS-418
+ * Unit tests for BetaFeedbackWidget — FHS-418 (in-app) / FHS-429 (public)
  *
  * Covers:
  *  - button renders and opens dialog
@@ -9,8 +9,12 @@
  *  - submit POSTs the right body and shows thank-you
  *  - re-opening after success shows a blank form (not thank-you)
  *  - error response shows inline error message
- *  - widget renders null when no session
- *  - widget renders null when session present but no tenant slug
+ *  - widget renders null when no session (in-app)
+ *  - widget renders null when session present but no tenant slug (in-app)
+ *  - public variant renders without session/slug
+ *  - public variant: name+email alone do not enable submit
+ *  - public variant: posts to /api/public/feedback with no auth/tenant header
+ *  - public variant: email validation only when non-empty
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -255,6 +259,154 @@ describe('<BetaFeedbackWidget />', () => {
     expect(body).not.toHaveProperty('solvesProblem');
     expect(body).not.toHaveProperty('easeOfUse');
     expect(body).not.toHaveProperty('keepUsing');
+  });
+});
+
+// ── Public variant tests ──────────────────────────────────────────────────────
+
+describe('<BetaFeedbackWidget variant="public" />', () => {
+  it('renders the floating button without a session or tenant slug', () => {
+    // Default mock has session + slug — override both to null/empty to prove
+    // the public variant ignores the guard.
+    vi.doMock('../../../../apps/web/src/lib/auth-context', () => ({
+      useAuth: () => ({ session: null }),
+    }));
+    vi.doMock('react-router-dom', () => ({
+      useParams: () => ({}),
+    }));
+    render(<BetaFeedbackWidget variant="public" />);
+    expect(screen.getByTestId('beta-feedback-button')).toBeInTheDocument();
+  });
+
+  it('submit is disabled when only name and email are filled (no survey answer)', () => {
+    render(<BetaFeedbackWidget variant="public" />);
+    fireEvent.click(screen.getByTestId('beta-feedback-button'));
+
+    fireEvent.change(screen.getByTestId('beta-feedback-name'), {
+      target: { value: 'Sarah' },
+    });
+    fireEvent.change(screen.getByTestId('beta-feedback-email'), {
+      target: { value: 'sarah@example.com' },
+    });
+
+    expect(screen.getByTestId('beta-feedback-submit')).toBeDisabled();
+  });
+
+  it('submit becomes enabled once a survey answer is added alongside name/email', () => {
+    render(<BetaFeedbackWidget variant="public" />);
+    fireEvent.click(screen.getByTestId('beta-feedback-button'));
+
+    fireEvent.change(screen.getByTestId('beta-feedback-name'), {
+      target: { value: 'Sarah' },
+    });
+    fireEvent.change(screen.getByTestId('beta-feedback-email'), {
+      target: { value: 'sarah@example.com' },
+    });
+    fireEvent.click(screen.getByTestId('beta-feedback-pmf-very'));
+
+    expect(screen.getByTestId('beta-feedback-submit')).not.toBeDisabled();
+  });
+
+  it('POSTs to /api/public/feedback with name+email+survey and no auth/tenant headers', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({}),
+    });
+
+    render(<BetaFeedbackWidget variant="public" />);
+    fireEvent.click(screen.getByTestId('beta-feedback-button'));
+
+    fireEvent.change(screen.getByTestId('beta-feedback-name'), {
+      target: { value: 'Sarah' },
+    });
+    fireEvent.change(screen.getByTestId('beta-feedback-email'), {
+      target: { value: 'sarah@example.com' },
+    });
+    fireEvent.click(screen.getByTestId('beta-feedback-pmf-somewhat'));
+    fireEvent.change(screen.getByTestId('beta-feedback-pain'), {
+      target: { value: 'Keeping chores in sync' },
+    });
+
+    fireEvent.click(screen.getByTestId('beta-feedback-submit'));
+
+    await waitFor(() => expect(screen.getByTestId('beta-feedback-thanks')).toBeInTheDocument());
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/public/feedback');
+    expect(init.method).toBe('POST');
+
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body.name).toBe('Sarah');
+    expect(body.email).toBe('sarah@example.com');
+    expect(body.pmfDisappointment).toBe('somewhat');
+    expect(body.painPoint).toBe('Keeping chores in sync');
+
+    const headers = init.headers as Record<string, string>;
+    expect(headers).not.toHaveProperty('Authorization');
+    expect(headers).not.toHaveProperty('x-tenant-slug');
+  });
+
+  it('POSTs to /api/public/feedback without name/email when fields are blank', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({}),
+    });
+
+    render(<BetaFeedbackWidget variant="public" />);
+    fireEvent.click(screen.getByTestId('beta-feedback-button'));
+    fireEvent.click(screen.getByTestId('beta-feedback-pmf-not'));
+    fireEvent.click(screen.getByTestId('beta-feedback-submit'));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/public/feedback');
+
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body).not.toHaveProperty('name');
+    expect(body).not.toHaveProperty('email');
+    expect(body.pmfDisappointment).toBe('not');
+  });
+
+  it('shows inline email error when a malformed email is blurred', () => {
+    render(<BetaFeedbackWidget variant="public" />);
+    fireEvent.click(screen.getByTestId('beta-feedback-button'));
+
+    const emailInput = screen.getByTestId('beta-feedback-email');
+    fireEvent.change(emailInput, { target: { value: 'not-an-email' } });
+    fireEvent.blur(emailInput);
+
+    expect(screen.getByTestId('beta-feedback-email-error')).toBeInTheDocument();
+  });
+
+  it('does NOT show email error when email field is left blank', () => {
+    render(<BetaFeedbackWidget variant="public" />);
+    fireEvent.click(screen.getByTestId('beta-feedback-button'));
+
+    const emailInput = screen.getByTestId('beta-feedback-email');
+    // Blur without entering anything
+    fireEvent.blur(emailInput);
+
+    expect(screen.queryByTestId('beta-feedback-email-error')).not.toBeInTheDocument();
+  });
+
+  it('blocks submit when email field has a malformed value (re-validates on submit)', async () => {
+    render(<BetaFeedbackWidget variant="public" />);
+    fireEvent.click(screen.getByTestId('beta-feedback-button'));
+
+    fireEvent.change(screen.getByTestId('beta-feedback-email'), {
+      target: { value: 'bad-email' },
+    });
+    // Answer a survey question so submit would otherwise be enabled
+    fireEvent.click(screen.getByTestId('beta-feedback-pmf-very'));
+    fireEvent.click(screen.getByTestId('beta-feedback-submit'));
+
+    // fetch should NOT have been called — submit blocked by email validation
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByTestId('beta-feedback-email-error')).toBeInTheDocument();
   });
 });
 
