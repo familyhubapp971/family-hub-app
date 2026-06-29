@@ -452,7 +452,7 @@ export function AssignmentsTabPanel() {
               setSaveError(null);
             }}
             data-testid="assignments-add"
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-gray-400 py-2.5 font-bold text-gray-500 hover:border-black hover:bg-gray-50 hover:text-black motion-safe:transition-colors"
+            className="mt-5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-gray-400 py-2.5 font-bold text-gray-500 hover:border-black hover:bg-gray-50 hover:text-black motion-safe:transition-colors"
           >
             <Plus size={18} aria-hidden="true" /> Add Assignment
           </button>
@@ -513,7 +513,7 @@ function AssignmentRow({
           onClick={() => onToggle(assignment.id, !assignment.done)}
           aria-label={`Mark "${assignment.title}" ${assignment.done ? 'not done' : 'done'}`}
           data-testid={`assignment-toggle-${assignment.id}`}
-          className="shrink-0 text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
         >
           {assignment.done ? (
             <CheckCircle2 size={24} className="fill-green-400" />

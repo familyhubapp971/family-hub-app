@@ -200,7 +200,7 @@ export function LoginPage() {
       <p className="mt-6 text-center font-body text-sm text-gray-700">
         <Link
           to="/signup"
-          className="font-semibold text-purple-700 underline decoration-2 underline-offset-2 hover:text-purple-900"
+          className="inline-block py-2 font-semibold text-purple-700 underline decoration-2 underline-offset-2 hover:text-purple-900"
           data-testid="login-create-family"
         >
           Create a new family
@@ -315,7 +315,7 @@ function KidLoginPanel() {
         type="button"
         onClick={() => setSlug(null)}
         data-testid="login-kid-change-family"
-        className="font-semibold underline"
+        className="inline-block py-2 font-semibold underline"
       >
         Enter a different code
       </button>

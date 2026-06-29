@@ -203,7 +203,7 @@ export function SignupPage() {
 
             <p className="text-center text-sm font-bold text-gray-500">
               By continuing you agree to our{' '}
-              <Link to="/terms" className="underline">
+              <Link to="/terms" className="inline-block py-1.5 underline">
                 Terms
               </Link>
               .
@@ -211,7 +211,7 @@ export function SignupPage() {
 
             <p className="text-center text-sm font-bold text-gray-700">
               Already have an account?{' '}
-              <Link to="/login" className="font-semibold underline">
+              <Link to="/login" className="inline-block py-1.5 font-semibold underline">
                 Log in
               </Link>
             </p>

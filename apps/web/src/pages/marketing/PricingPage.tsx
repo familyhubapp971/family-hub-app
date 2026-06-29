@@ -87,10 +87,13 @@ export function PricingPage() {
           </Link>
         </nav>
         <div className="flex items-center gap-4">
-          <Link to="/login" className="font-bold transition-colors hover:text-yellow-300">
+          <Link
+            to="/login"
+            className="inline-block py-2.5 font-bold transition-colors hover:text-yellow-300"
+          >
             Log in
           </Link>
-          <Button onClick={() => navigate('/signup')} variant="primary">
+          <Button onClick={() => navigate('/signup')} variant="primary" size="lg">
             Start free
           </Button>
         </div>
