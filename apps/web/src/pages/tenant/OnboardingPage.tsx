@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ChevronDown } from 'lucide-react';
 import {
   Button,
   Card,
@@ -25,15 +25,17 @@ import { API_BASE } from '../../lib/api';
 // `tenant.onboarding_completed === true` are bounced to /dashboard
 // before the wizard ever paints.
 //
+// FHS-432 — timezone + currency are now auto-detected from the browser
+// and shown in a confirmation step (step 3). The user only touches the
+// pickers if the detected value is wrong or detection fails.
+//
 // Steps:
 //   1. Welcome
 //   2. Add 1–8 members (name + role + emoji)
-//   3. Pick timezone (FHS-38 will replace the textarea-style input
-//      with a proper IANA picker)
-//   4. Pick currency (FHS-39 will replace with an ISO 4217 picker)
-//   5. Done — POSTs everything, redirects to /dashboard
+//   3. Location — auto-detected timezone + currency with optional Change affordance
+//   4. Done — POSTs everything, redirects to /dashboard
 
-const STEPS = ['Welcome', 'Members', 'Timezone', 'Currency', 'Done'] as const;
+const STEPS = ['Welcome', 'Members', 'Location', 'Done'] as const;
 
 const ROLE_OPTIONS = [
   { value: 'adult', label: 'Adult' },
@@ -70,6 +72,16 @@ interface MeResponse {
   tenants: Array<{ slug: string; onboardingCompleted: boolean }>;
 }
 
+// Detection is considered "failed" for timezone if the value is empty,
+// and for currency if it isn't a valid 3-letter ISO 4217 code.
+function isValidTimezone(tz: string): boolean {
+  return tz.trim().length > 0;
+}
+
+function isValidCurrency(ccy: string): boolean {
+  return /^[A-Z]{3}$/.test(ccy);
+}
+
 export function OnboardingPage() {
   const navigate = useNavigate();
   const slug = useTenantSlug();
@@ -81,8 +93,18 @@ export function OnboardingPage() {
   // The list below holds only the OTHER family members.
   const [yourName, setYourName] = useState('');
   const [members, setMembers] = useState<WizardMember[]>([]);
-  const [timezone, setTimezone] = useState<string>(() => detectBrowserTimezone());
-  const [currency, setCurrency] = useState<string>(() => detectBrowserCurrency());
+
+  // FHS-432 — detect on mount; detection result drives fallback logic.
+  const detectedTimezone = useMemo(() => detectBrowserTimezone(), []);
+  const detectedCurrency = useMemo(() => detectBrowserCurrency(), []);
+
+  const [timezone, setTimezone] = useState<string>(detectedTimezone);
+  const [currency, setCurrency] = useState<string>(detectedCurrency);
+
+  // Whether the user has expanded the "Change" affordance for each field.
+  // Starts true when detection failed so the picker is shown immediately.
+  const [showTimezonePicker, setShowTimezonePicker] = useState(!isValidTimezone(detectedTimezone));
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(!isValidCurrency(detectedCurrency));
 
   // Suggest (never silently submit) a name from auth metadata; the
   // founder sees and can change it before anything is saved.
@@ -142,8 +164,8 @@ export function OnboardingPage() {
         members.every((m) => m.displayName.trim().length >= 1)
       );
     }
-    if (step === 3) return timezone.trim().length > 0;
-    if (step === 4) return /^[A-Z]{3}$/.test(currency);
+    // Location step — both values must be valid (user may have edited them).
+    if (step === 3) return isValidTimezone(timezone) && isValidCurrency(currency);
     return true;
   }, [step, yourName, members, timezone, currency]);
 
@@ -214,7 +236,7 @@ export function OnboardingPage() {
       <div className="mx-auto w-full max-w-3xl">
         <h1 className="mb-2 font-heading text-3xl text-yellow-300">Set up your family</h1>
         <p className="mb-6 text-purple-100">
-          A few quick choices and we&rsquo;ll have your hub ready. Step {step} of {STEPS.length} —{' '}
+          A few quick steps and we&rsquo;ll have your hub ready. Step {step} of {STEPS.length} —{' '}
           <span className="font-bold text-white">{stepLabel}</span>.
         </p>
 
@@ -230,8 +252,8 @@ export function OnboardingPage() {
             <div data-testid="onboarding-step-welcome">
               <h2 className="mb-3 font-heading text-2xl">Welcome aboard.</h2>
               <p className="mb-4 font-bold text-gray-700">
-                Five quick steps and your family is good to go. Add the people in your family, pick
-                your time zone and currency, and you&rsquo;re live.
+                A few quick steps and your family is good to go. Add the people in your family and
+                you&rsquo;re live — we&rsquo;ll handle the timezone and currency automatically.
               </p>
               <p className="text-sm text-gray-600">
                 You can always change any of this later from settings.
@@ -380,48 +402,108 @@ export function OnboardingPage() {
             </div>
           )}
 
+          {/* FHS-432 — Location step: auto-detected values confirmed,
+              pickers hidden unless detection failed or the user taps "Change". */}
           {step === 3 && (
-            <div data-testid="onboarding-step-timezone">
-              <h2 className="mb-3 font-heading text-2xl">Where in the world?</h2>
-              <p className="mb-4 font-bold text-gray-600">
-                We default to your browser&rsquo;s timezone — change it if you&rsquo;re setting this
-                up for someone elsewhere.
+            <div data-testid="onboarding-step-location">
+              <h2 className="mb-3 font-heading text-2xl">Your location</h2>
+              <p className="mb-5 text-gray-600">
+                We&rsquo;ve set these from your device. You can change them here or later in
+                settings.
               </p>
-              <Label htmlFor="onboarding-timezone-trigger">Timezone</Label>
-              <TimezonePicker
-                id="onboarding-timezone-trigger"
-                value={timezone}
-                onChange={setTimezone}
-                testId="onboarding-timezone"
-              />
+
+              {/* Timezone row */}
+              <div className="mb-4" data-testid="onboarding-location-timezone-row">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                      Timezone
+                    </p>
+                    {!showTimezonePicker && (
+                      <p
+                        className="mt-0.5 text-base font-semibold text-gray-900"
+                        data-testid="onboarding-detected-timezone"
+                      >
+                        {timezone || 'Not detected'}
+                      </p>
+                    )}
+                  </div>
+                  {!showTimezonePicker && (
+                    <button
+                      type="button"
+                      onClick={() => setShowTimezonePicker(true)}
+                      className="flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-md border-2 border-black bg-gray-100 px-3 py-2 text-sm font-bold text-gray-700 shadow-neo-sm transition-all hover:-translate-y-0.5"
+                      data-testid="onboarding-timezone-change"
+                      aria-label="Change timezone"
+                    >
+                      Change <ChevronDown size={14} />
+                    </button>
+                  )}
+                </div>
+                {showTimezonePicker && (
+                  <div className="mt-2">
+                    <Label htmlFor="onboarding-timezone-trigger">Timezone</Label>
+                    <TimezonePicker
+                      id="onboarding-timezone-trigger"
+                      value={timezone}
+                      onChange={setTimezone}
+                      testId="onboarding-timezone"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Currency row */}
+              <div className="mb-2" data-testid="onboarding-location-currency-row">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                      Currency
+                    </p>
+                    {!showCurrencyPicker && (
+                      <p
+                        className="mt-0.5 text-base font-semibold text-gray-900"
+                        data-testid="onboarding-detected-currency"
+                      >
+                        {currency || 'Not detected'}
+                      </p>
+                    )}
+                  </div>
+                  {!showCurrencyPicker && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrencyPicker(true)}
+                      className="flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-md border-2 border-black bg-gray-100 px-3 py-2 text-sm font-bold text-gray-700 shadow-neo-sm transition-all hover:-translate-y-0.5"
+                      data-testid="onboarding-currency-change"
+                      aria-label="Change currency"
+                    >
+                      Change <ChevronDown size={14} />
+                    </button>
+                  )}
+                </div>
+                {showCurrencyPicker && (
+                  <div className="mt-2">
+                    <Label htmlFor="onboarding-currency-trigger">Currency</Label>
+                    <CurrencyPicker
+                      id="onboarding-currency-trigger"
+                      value={currency}
+                      onChange={setCurrency}
+                      testId="onboarding-currency"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {step === 4 && (
-            <div data-testid="onboarding-step-currency">
-              <h2 className="mb-3 font-heading text-2xl">Pick a currency</h2>
-              <p className="mb-4 font-bold text-gray-600">
-                We&rsquo;ll show prices and rewards in this currency. Inferred from your
-                browser&rsquo;s region — change it if it&rsquo;s wrong.
-              </p>
-              <Label htmlFor="onboarding-currency-trigger">Currency</Label>
-              <CurrencyPicker
-                id="onboarding-currency-trigger"
-                value={currency}
-                onChange={setCurrency}
-                testId="onboarding-currency"
-              />
-            </div>
-          )}
-
-          {step === 5 && (
             <div data-testid="onboarding-step-done">
               <h2 className="mb-3 font-heading text-2xl">All set?</h2>
               <p className="mb-4 font-bold text-gray-600">
                 You&rsquo;re joining as <span className="text-black">{yourName.trim()}</span>{' '}
                 (admin) with <span className="text-black">{members.length}</span> other family
                 member{members.length === 1 ? '' : 's'}, timezone{' '}
-                <span className="text-black">{timezone}</span>, and pick{' '}
+                <span className="text-black">{timezone}</span>, and{' '}
                 <span className="text-black">{currency}</span> as your currency.
               </p>
               <p className="mb-4 text-sm text-gray-600">

@@ -4,11 +4,19 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { OnboardingPage } from '../../../../apps/web/src/pages/tenant/OnboardingPage';
 import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
 
-// FHS-36 — OnboardingWizard tests. Cover the four AC dimensions:
+// FHS-36 / FHS-432 — OnboardingWizard tests.
+//
+// FHS-432 changes: timezone + currency are auto-detected and applied
+// silently in step 3 (Location). No manual selection required on the
+// happy path. Tests cover:
 // - gate (skip wizard if onboarding_completed=true on mount)
-// - back/forward without losing state
-// - final submit POSTs everything in one request → /dashboard
-// - progress bar reflects the current step
+// - back/forward without losing member-step state
+// - auto-detected values are applied and submitted without the user
+//   touching the pickers
+// - "Change" affordance reveals the picker when clicked
+// - fallback: manual picker shown when detection returns empty/invalid
+// - final submit POSTs timezone + currency (payload unchanged)
+// - progress bar reflects the current step count (now 4 steps)
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
@@ -17,6 +25,20 @@ const authState: { session: { access_token?: string } | null } = {
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
+
+// Controls what the browser detection helpers return. Default: valid values.
+const detectionMocks = {
+  timezone: 'Europe/London',
+  currency: 'GBP',
+};
+vi.mock('@familyhub/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@familyhub/ui')>();
+  return {
+    ...actual,
+    detectBrowserTimezone: () => detectionMocks.timezone,
+    detectBrowserCurrency: () => detectionMocks.currency,
+  };
+});
 
 function renderAt(initial: string) {
   return render(
@@ -39,10 +61,20 @@ function renderAt(initial: string) {
   );
 }
 
+function mockNotOnboarded() {
+  fetchMock.mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({ tenants: [{ slug: 'khans', onboardingCompleted: false }] }),
+  });
+}
+
 beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
   authState.session = { access_token: 'fake-jwt' };
+  // Reset to valid defaults.
+  detectionMocks.timezone = 'Europe/London';
+  detectionMocks.currency = 'GBP';
 });
 
 afterEach(() => {
@@ -70,25 +102,17 @@ describe('<OnboardingPage />', () => {
   });
 
   it('renders the wizard when the tenant has not been onboarded', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        tenants: [{ slug: 'khans', onboardingCompleted: false }],
-      }),
-    });
+    mockNotOnboarded();
     renderAt('/t/khans/onboarding');
     await waitFor(() => expect(screen.getByTestId('onboarding-step-welcome')).toBeInTheDocument());
-    // Stepper shows step 1.
+    // Stepper now shows 4 steps (FHS-432: Welcome, Members, Location, Done).
     expect(screen.getByTestId('onboarding-stepper').getAttribute('aria-label')).toMatch(
-      /step 1 of 5/i,
+      /step 1 of 4/i,
     );
   });
 
   it('walks forward and back without losing member-step state', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ tenants: [{ slug: 'khans', onboardingCompleted: false }] }),
-    });
+    mockNotOnboarded();
     renderAt('/t/khans/onboarding');
     await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
 
@@ -105,9 +129,9 @@ describe('<OnboardingPage />', () => {
       target: { value: 'Iman' },
     });
 
-    // Step 2 → 3 (timezone).
+    // Step 2 → 3 (Location — no manual entry needed).
     fireEvent.click(screen.getByTestId('onboarding-next'));
-    expect(screen.getByTestId('onboarding-step-timezone')).toBeInTheDocument();
+    expect(screen.getByTestId('onboarding-step-location')).toBeInTheDocument();
 
     // Back to step 2 — both names should still be there.
     fireEvent.click(screen.getByTestId('onboarding-back'));
@@ -116,10 +140,7 @@ describe('<OnboardingPage />', () => {
   });
 
   it('disables Next on the members step until your name is filled (FHS-274)', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ tenants: [{ slug: 'khans', onboardingCompleted: false }] }),
-    });
+    mockNotOnboarded();
     renderAt('/t/khans/onboarding');
     await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
 
@@ -139,12 +160,99 @@ describe('<OnboardingPage />', () => {
     expect(next.disabled).toBe(false);
   });
 
+  it('FHS-432: auto-detected timezone + currency shown on Location step without picker', async () => {
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+
+    // Welcome → Members (fill name) → Location.
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), { target: { value: 'Sarah' } });
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+
+    expect(screen.getByTestId('onboarding-step-location')).toBeInTheDocument();
+
+    // Detected values are displayed as text, not as pickers.
+    expect(screen.getByTestId('onboarding-detected-timezone').textContent).toBe('Europe/London');
+    expect(screen.getByTestId('onboarding-detected-currency').textContent).toBe('GBP');
+
+    // Pickers are hidden by default on the happy path.
+    expect(screen.queryByTestId('onboarding-timezone')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('onboarding-currency')).not.toBeInTheDocument();
+
+    // Next is enabled because both values are valid.
+    expect((screen.getByTestId('onboarding-next') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('FHS-432: Change button reveals the timezone picker', async () => {
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), { target: { value: 'Sarah' } });
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+
+    // Click the timezone Change button.
+    fireEvent.click(screen.getByTestId('onboarding-timezone-change'));
+    // Picker should now appear.
+    expect(screen.getByTestId('onboarding-timezone')).toBeInTheDocument();
+  });
+
+  it('FHS-432: Change button reveals the currency picker', async () => {
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), { target: { value: 'Sarah' } });
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+
+    fireEvent.click(screen.getByTestId('onboarding-currency-change'));
+    expect(screen.getByTestId('onboarding-currency')).toBeInTheDocument();
+  });
+
+  it('FHS-432: fallback — shows timezone picker immediately when detection returns empty', async () => {
+    detectionMocks.timezone = ''; // detection failure
+    detectionMocks.currency = 'USD';
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), { target: { value: 'Sarah' } });
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+
+    // Picker shown immediately because timezone is empty.
+    expect(screen.getByTestId('onboarding-timezone')).toBeInTheDocument();
+    // Currency picker NOT shown (detection succeeded).
+    expect(screen.queryByTestId('onboarding-currency')).not.toBeInTheDocument();
+    // Next blocked until user fills timezone.
+    expect((screen.getByTestId('onboarding-next') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('FHS-432: fallback — shows currency picker immediately when detection returns invalid code', async () => {
+    detectionMocks.timezone = 'America/Chicago';
+    detectionMocks.currency = 'XX'; // not a valid 3-letter code
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), { target: { value: 'Sarah' } });
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+
+    // Currency picker shown immediately.
+    expect(screen.getByTestId('onboarding-currency')).toBeInTheDocument();
+    // Timezone picker NOT shown.
+    expect(screen.queryByTestId('onboarding-timezone')).not.toBeInTheDocument();
+    // Next blocked until user selects a valid currency.
+    expect((screen.getByTestId('onboarding-next') as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('final submit POSTs all wizard state to /api/onboarding/complete and redirects', async () => {
     // First call: /api/me (gate check).
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ tenants: [{ slug: 'khans', onboardingCompleted: false }] }),
-    });
+    mockNotOnboarded();
     // Second call: POST /api/onboarding/complete.
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -153,7 +261,8 @@ describe('<OnboardingPage />', () => {
     renderAt('/t/khans/onboarding');
     await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
 
-    // Welcome → Members → fill → Timezone → Currency → Done → Finish.
+    // Welcome → Members → fill → Location (auto) → Done → Finish.
+    // FHS-432: no manual timezone/currency steps — Location auto-applies.
     fireEvent.click(screen.getByTestId('onboarding-next'));
     fireEvent.change(screen.getByTestId('onboarding-your-name'), {
       target: { value: 'Sarah' },
@@ -166,23 +275,24 @@ describe('<OnboardingPage />', () => {
     fireEvent.change(screen.getByTestId('onboarding-member-email-0'), {
       target: { value: 'iman@example.com' },
     });
-    fireEvent.click(screen.getByTestId('onboarding-next'));
-    fireEvent.click(screen.getByTestId('onboarding-next')); // timezone defaults to browser
-    fireEvent.click(screen.getByTestId('onboarding-next')); // currency defaults USD
+    fireEvent.click(screen.getByTestId('onboarding-next')); // Members → Location
+    fireEvent.click(screen.getByTestId('onboarding-next')); // Location → Done (auto values)
     fireEvent.click(screen.getByTestId('onboarding-finish'));
 
     await waitFor(() =>
       expect(screen.getByTestId('route-marker').textContent).toBe('tenant-dashboard'),
     );
-    // Inspect the POST payload shape.
+    // Inspect the POST payload — timezone + currency still sent.
     const submitCall = fetchMock.mock.calls.find(
       ([url]) => url === 'http://localhost:3001/api/onboarding/complete',
     );
     expect(submitCall).toBeDefined();
     const init = submitCall![1] as RequestInit;
     expect(init.method).toBe('POST');
-    expect(JSON.parse(init.body as string)).toMatchObject({
-      currency: 'USD',
+    const payload = JSON.parse(init.body as string);
+    expect(payload).toMatchObject({
+      timezone: 'Europe/London',
+      currency: 'GBP',
       yourName: 'Sarah',
       members: [{ displayName: 'Iman', role: 'adult', email: 'iman@example.com' }],
     });
