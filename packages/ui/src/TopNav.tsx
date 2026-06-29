@@ -68,8 +68,12 @@ export function TopNav({
           )}
         </div>
 
-        {/* Row 2 — tab strip. */}
-        <div className="flex gap-2 overflow-x-auto pb-0" role="tablist" aria-label="Primary">
+        {/* Row 2 — tab strip. Scrollbar hidden visually; right-edge fade signals more tabs. */}
+        <div
+          className="relative flex gap-2 overflow-x-auto pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_85%,transparent)]"
+          role="tablist"
+          aria-label="Primary"
+        >
           {tabs.map((tab) => {
             const active = tab.id === activeTab;
             return (
@@ -81,7 +85,7 @@ export function TopNav({
                 aria-controls={`panel-${tab.id}`}
                 onClick={() => onTabChange(tab.id)}
                 className={[
-                  'flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-5 py-2.5 text-sm font-bold transition-colors',
+                  'flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-bold transition-colors sm:px-5',
                   'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400',
                   active
                     ? 'border-2 border-black bg-pink-400 text-black shadow-neo-xs'

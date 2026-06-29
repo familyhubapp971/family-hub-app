@@ -57,7 +57,7 @@ export function KidHabitCard({
       </div>
 
       {/* RIGHT: 7 day cells */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+      <div className="grid grid-cols-7 gap-1">
         {DAY_LABELS.map((label, i) => {
           const done = habit.days[i];
           const isOpen = i === firstOpenDay;
@@ -75,12 +75,12 @@ export function KidHabitCard({
                 }`}
                 className={
                   done
-                    ? 'grid h-9 w-9 place-items-center rounded-lg border-2 sm:h-10 sm:w-10 border-pink-200 bg-pink-100'
+                    ? 'grid min-h-[40px] w-9 place-items-center rounded-lg border-2 sm:min-h-[44px] sm:w-10 border-pink-200 bg-pink-100'
                     : isOpen
-                      ? 'grid h-9 w-9 place-items-center rounded-lg border-2 sm:h-10 sm:w-10 border-black bg-white'
+                      ? 'grid min-h-[40px] w-9 place-items-center rounded-lg border-2 sm:min-h-[44px] sm:w-10 border-black bg-white'
                       : isPastMissed
-                        ? 'grid h-9 w-9 place-items-center rounded-lg border-2 sm:h-10 sm:w-10 border-gray-100 bg-gray-50'
-                        : 'grid h-9 w-9 place-items-center rounded-lg border-2 sm:h-10 sm:w-10 border-gray-100 bg-gray-50'
+                        ? 'grid min-h-[40px] w-9 place-items-center rounded-lg border-2 sm:min-h-[44px] sm:w-10 border-gray-100 bg-gray-50'
+                        : 'grid min-h-[40px] w-9 place-items-center rounded-lg border-2 sm:min-h-[44px] sm:w-10 border-gray-100 bg-gray-50'
                 }
               >
                 {done ? (
