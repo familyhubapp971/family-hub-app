@@ -250,7 +250,7 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
                               onClick={() => setDecliningId(null)}
                               disabled={busyId === r.id}
                               aria-label={`Cancel decline of ${r.rewardName}`}
-                              className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 hover:border-black hover:bg-gray-50 disabled:opacity-50 md:flex-none"
+                              className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 hover:border-black hover:bg-gray-50 disabled:opacity-50 min-h-[44px] md:flex-none"
                             >
                               Cancel
                             </button>
@@ -260,7 +260,7 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
                               onClick={() => void decide(r.id, 'decline')}
                               disabled={busyId === r.id}
                               aria-label={`Confirm declining ${r.rewardName} for ${r.memberName}`}
-                              className="flex-1 rounded-lg border-2 border-black bg-red-400 px-4 py-2 text-sm font-bold text-black shadow-neo-xs motion-safe:hover:-translate-y-0.5 disabled:opacity-50 md:flex-none"
+                              className="flex-1 rounded-lg border-2 border-black bg-red-400 px-4 py-2 text-sm font-bold text-black shadow-neo-xs motion-safe:hover:-translate-y-0.5 disabled:opacity-50 min-h-[44px] md:flex-none"
                             >
                               {busyId === r.id ? 'Declining…' : 'Confirm Decline'}
                             </button>
@@ -274,7 +274,7 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
                               onClick={() => setDecliningId(r.id)}
                               disabled={busyId === r.id}
                               aria-label={`Decline ${r.rewardName} for ${r.memberName}`}
-                              className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 hover:border-black hover:bg-gray-50 disabled:opacity-50 md:flex-none"
+                              className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 hover:border-black hover:bg-gray-50 disabled:opacity-50 min-h-[44px] md:flex-none"
                             >
                               Decline
                             </button>
@@ -284,7 +284,7 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
                               onClick={() => void decide(r.id, 'approve')}
                               disabled={busyId === r.id}
                               aria-label={`Approve ${r.rewardName} for ${r.memberName}`}
-                              className="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-black bg-green-400 px-4 py-2 text-sm font-bold text-black shadow-neo-xs motion-safe:hover:-translate-y-0.5 disabled:opacity-50 md:flex-none"
+                              className="flex flex-1 items-center justify-center gap-2 rounded-lg border-2 border-black bg-green-400 px-4 py-2 text-sm font-bold text-black shadow-neo-xs motion-safe:hover:-translate-y-0.5 disabled:opacity-50 min-h-[44px] md:flex-none"
                             >
                               <Check size={16} strokeWidth={3} aria-hidden="true" />
                               {busyId === r.id ? 'Approving…' : 'Approve'}

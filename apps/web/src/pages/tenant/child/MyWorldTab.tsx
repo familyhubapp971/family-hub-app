@@ -1407,7 +1407,7 @@ export function MyWorldTab(
                   >
                     Choose Color
                   </label>
-                  <div id="habit-add-color-group" className="grid grid-cols-8 gap-2">
+                  <div id="habit-add-color-group" className="grid grid-cols-6 gap-2 sm:grid-cols-8">
                     {colorOptions.map((opt) => (
                       <button
                         key={opt.color}
@@ -1582,7 +1582,10 @@ export function MyWorldTab(
                   >
                     Choose Color
                   </label>
-                  <div id="habit-edit-color-group" className="grid grid-cols-8 gap-2">
+                  <div
+                    id="habit-edit-color-group"
+                    className="grid grid-cols-6 gap-2 sm:grid-cols-8"
+                  >
                     {colorOptions.map((opt) => (
                       <button
                         key={opt.color}

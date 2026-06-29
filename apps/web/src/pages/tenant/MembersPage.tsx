@@ -678,14 +678,14 @@ function RemoveButton({
           data-testid={`members-row-${rowIdx}-remove-confirm`}
           onClick={onConfirm}
           title="Their personal tasks and meals are removed too"
-          className="rounded border-2 border-black bg-red-100 px-2 py-1 text-xs font-bold text-red-700"
+          className="max-w-full truncate rounded border-2 border-black bg-red-100 px-2 py-1 text-xs font-bold text-red-700 min-h-[44px]"
         >
           Remove {name}? (their tasks &amp; meals go too)
         </button>
         <button
           type="button"
           onClick={() => setArmed(false)}
-          className="text-xs font-bold text-gray-500 hover:text-black"
+          className="inline-block py-2 text-xs font-bold text-gray-500 hover:text-black"
         >
           Keep
         </button>
@@ -699,7 +699,7 @@ function RemoveButton({
       disabled={disabled}
       onClick={() => setArmed(true)}
       title={`Remove ${name}`}
-      className={`flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold transition-colors ${
+      className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded px-2 py-1 text-sm font-bold transition-colors ${
         disabled
           ? 'cursor-not-allowed text-gray-300'
           : 'text-red-500 hover:bg-red-50 hover:text-red-700'

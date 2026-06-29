@@ -598,7 +598,7 @@ export function CalendarTabPanel() {
                                     wear: ev.wear ?? '',
                                   });
                                 }}
-                                className="flex h-7 w-7 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-black hover:text-black"
+                                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-black hover:text-black"
                               >
                                 <Pencil size={12} aria-hidden="true" />
                               </button>
@@ -607,7 +607,7 @@ export function CalendarTabPanel() {
                                 aria-label={`Delete ${ev.title}`}
                                 data-testid={`calendar-delete-${ev.id}`}
                                 onClick={() => setPendingDelete({ id: ev.id, title: ev.title })}
-                                className="flex h-7 w-7 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-red-500 hover:text-red-600"
+                                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-red-500 hover:text-red-600"
                               >
                                 <Trash2 size={12} aria-hidden="true" />
                               </button>

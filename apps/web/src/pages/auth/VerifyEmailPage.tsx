@@ -156,7 +156,7 @@ export function VerifyEmailPage() {
             type="button"
             onClick={onResend}
             disabled={!email || resend.kind === 'sending' || resend.kind === 'cooldown'}
-            className="text-gray-500 transition-colors hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-block py-2.5 px-3 text-gray-500 transition-colors hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
             data-testid="verify-email-resend"
           >
             {resend.kind === 'sending'
@@ -174,7 +174,7 @@ export function VerifyEmailPage() {
 
           <Link
             to="/signup"
-            className="text-purple-600 transition-colors hover:text-purple-800"
+            className="inline-block py-2.5 px-3 text-purple-600 transition-colors hover:text-purple-800"
             data-testid="verify-email-back"
           >
             Or go back
