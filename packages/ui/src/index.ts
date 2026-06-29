@@ -24,3 +24,12 @@ export {
 export { TimezonePicker, detectBrowserTimezone, type TimezonePickerProps } from './TimezonePicker';
 export { CurrencyPicker, detectBrowserCurrency, type CurrencyPickerProps } from './CurrencyPicker';
 export { useBodyScrollLock } from './useBodyScrollLock';
+export { AvatarEmojiPicker, type AvatarEmojiPickerProps } from './AvatarEmojiPicker';
+export {
+  applyTone,
+  isToneable,
+  stripTone,
+  SKIN_TONES,
+  TONEABLE_BASES,
+  type SkinToneModifier,
+} from './emojiTone';
