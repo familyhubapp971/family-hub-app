@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, ChevronDown } from 'lucide-react';
 import {
+  AvatarEmojiPicker,
   Button,
   Card,
   CurrencyPicker,
@@ -43,8 +44,6 @@ const ROLE_OPTIONS = [
   { value: 'child', label: 'Child' },
   { value: 'guest', label: 'Guest' },
 ] as const;
-
-const EMOJI_PALETTE = ['👩', '👨', '👧', '👦', '🧒', '👵', '👴', '🐱', '🐶', '⭐'];
 
 interface WizardMember {
   // Local-only id so React can key the rows; never sent to the server.
@@ -297,7 +296,8 @@ export function OnboardingPage() {
                     className="rounded-md border-2 border-black bg-yellow-50 p-3 shadow-neo-sm"
                     data-testid={`onboarding-member-${idx}`}
                   >
-                    <div className="grid gap-3 md:grid-cols-[1fr,140px,90px,40px]">
+                    {/* Name + Role + Remove on one row */}
+                    <div className="grid gap-3 md:grid-cols-[1fr,140px,40px]">
                       <div>
                         <Label htmlFor={`member-name-${m.uiId}`}>Name</Label>
                         <Input
@@ -325,39 +325,6 @@ export function OnboardingPage() {
                           ))}
                         </Select>
                       </div>
-                      <div>
-                        <Label htmlFor={`member-emoji-${m.uiId}`}>Emoji</Label>
-                        <Select
-                          id={`member-emoji-${m.uiId}`}
-                          value={m.avatarEmoji ?? ''}
-                          onChange={(e) => {
-                            // exactOptionalPropertyTypes wants the key
-                            // omitted (not set-to-undefined) when the
-                            // user clears the picker.
-                            const next = e.target.value;
-                            setMembers((prev) =>
-                              prev.map((row) => {
-                                if (row.uiId !== m.uiId) return row;
-                                if (next) return { ...row, avatarEmoji: next };
-                                const cleared: WizardMember = {
-                                  uiId: row.uiId,
-                                  displayName: row.displayName,
-                                  role: row.role,
-                                };
-                                return cleared;
-                              }),
-                            );
-                          }}
-                          data-testid={`onboarding-member-emoji-${idx}`}
-                        >
-                          <option value="">—</option>
-                          {EMOJI_PALETTE.map((emoji) => (
-                            <option key={emoji} value={emoji}>
-                              {emoji}
-                            </option>
-                          ))}
-                        </Select>
-                      </div>
                       <div className="flex items-end justify-end">
                         <button
                           type="button"
@@ -369,6 +336,30 @@ export function OnboardingPage() {
                           <Trash2 size={16} />
                         </button>
                       </div>
+                    </div>
+                    {/* Emoji picker — full width below the inline row */}
+                    <div className="mt-2">
+                      <Label>Emoji (optional)</Label>
+                      <AvatarEmojiPicker
+                        value={m.avatarEmoji ?? ''}
+                        onSelect={(next) => {
+                          // exactOptionalPropertyTypes: omit the key
+                          // when clearing rather than setting undefined.
+                          setMembers((prev) =>
+                            prev.map((row) => {
+                              if (row.uiId !== m.uiId) return row;
+                              if (next) return { ...row, avatarEmoji: next };
+                              const cleared: WizardMember = {
+                                uiId: row.uiId,
+                                displayName: row.displayName,
+                                role: row.role,
+                              };
+                              return cleared;
+                            }),
+                          );
+                        }}
+                        testId={`onboarding-member-emoji-${idx}`}
+                      />
                     </div>
                     {m.role === 'adult' && (
                       <div className="mt-3">
