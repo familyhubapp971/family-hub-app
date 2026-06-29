@@ -99,4 +99,22 @@ describeFeature(feature, ({ Background, Scenario }) => {
       expect(lastRes.status).toBe(400);
     });
   });
+
+  Scenario('POST with a survey answer but a malformed email returns 400', ({ When, Then }) => {
+    When(
+      'an anonymous visitor POSTs public feedback with pmfDisappointment {string} and a malformed email {string}',
+      async (_ctx, pmf: string, email: string) => {
+        lastRes = await app.request('/api/public/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pmfDisappointment: pmf, email }),
+        });
+        lastBody = await lastRes.json();
+      },
+    );
+
+    Then('the public feedback POST status is 400', () => {
+      expect(lastRes.status).toBe(400);
+    });
+  });
 });

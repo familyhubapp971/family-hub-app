@@ -17,3 +17,7 @@ Feature: POST /api/public/feedback (FHS-429)
   Scenario: POST with junk types returns 400
     When an anonymous visitor POSTs public feedback with invalid body
     Then the public feedback POST status is 400
+
+  Scenario: POST with a survey answer but a malformed email returns 400
+    When an anonymous visitor POSTs public feedback with pmfDisappointment "very" and a malformed email "not-an-email"
+    Then the public feedback POST status is 400

@@ -495,6 +495,8 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                       onChange={(e) => handleEmailChange(e.target.value)}
                       onBlur={handleEmailBlur}
                       placeholder="e.g. sarah@example.com"
+                      aria-invalid={emailError ? true : undefined}
+                      aria-describedby={emailError ? 'beta-feedback-email-error' : undefined}
                       className={[
                         'w-full rounded-xl border-2 p-3 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400',
                         emailError ? 'border-red-400' : 'border-black',
@@ -502,7 +504,9 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                     />
                     {emailError && (
                       <p
+                        id="beta-feedback-email-error"
                         data-testid="beta-feedback-email-error"
+                        role="alert"
                         className="mt-1 text-xs font-medium text-red-600"
                       >
                         {emailError}
