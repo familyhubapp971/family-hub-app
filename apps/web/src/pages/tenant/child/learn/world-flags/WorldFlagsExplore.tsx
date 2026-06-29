@@ -477,7 +477,7 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
               className="flex flex-col gap-3 border-t-2 border-black p-5"
             >
               {/* Landmark photo + capital map */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 xs:grid-cols-2">
                 <div className="flex flex-col overflow-hidden rounded-lg border-2 border-purple-200 bg-purple-50 p-1.5">
                   <div className="aspect-[4/3] overflow-hidden rounded bg-gray-900">
                     <LandmarkImage landmark={currentCountry.landmark} />

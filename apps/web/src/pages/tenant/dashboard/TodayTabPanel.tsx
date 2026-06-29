@@ -167,7 +167,7 @@ export function TodayTabPanel() {
             </h2>
             <span className="text-sm font-bold text-purple-200">{formatDate(date)}</span>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <SnapshotTile
               testId="today-snapshot-habits"
               icon={<CheckSquare size={18} className="text-pink-600" />}
@@ -420,7 +420,7 @@ function SnapshotTile({
   return (
     <div
       data-testid={testId}
-      className="flex flex-col items-center rounded-xl border-2 border-black bg-white p-4 text-center shadow-neo-sm"
+      className="flex min-w-0 flex-col items-center rounded-xl border-2 border-black bg-white p-4 text-center shadow-neo-sm"
     >
       <span
         aria-hidden="true"
@@ -428,7 +428,7 @@ function SnapshotTile({
       >
         {icon}
       </span>
-      <span className="font-heading text-2xl text-black">{value}</span>
+      <span className="font-heading text-xl text-black sm:text-2xl">{value}</span>
       <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">
         {label}
       </span>

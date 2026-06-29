@@ -98,7 +98,7 @@ function SubtractionVisual({ a, b, emoji }: { a: number; b: number; emoji: strin
 function MultiplicationVisual({ a, b, emoji }: { a: number; b: number; emoji: string }) {
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="flex flex-wrap gap-2 justify-center">
+      <div className="max-h-40 overflow-y-auto flex flex-wrap gap-2 justify-center">
         {Array.from({ length: a }).map((_, i) => (
           <div key={i} className="bg-purple-50 border-2 border-purple-200 rounded-xl p-2 sm:p-3">
             <EmojiGroup count={b} emoji={emoji} />

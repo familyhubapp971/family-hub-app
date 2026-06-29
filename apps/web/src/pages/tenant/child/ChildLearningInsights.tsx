@@ -514,12 +514,12 @@ export function ChildLearningInsights({ memberId }: ChildLearningInsightsProps) 
             </p>
 
             {/* 3 stat tiles */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <div
                 data-testid="stat-avg-progress"
-                className="flex flex-col items-center rounded-xl border-2 border-black bg-purple-100 p-3 text-center shadow-neo-xs"
+                className="flex min-w-0 flex-col items-center rounded-xl border-2 border-black bg-purple-100 p-3 text-center shadow-neo-xs"
               >
-                <span className="font-heading text-2xl text-purple-700 md:text-3xl">
+                <span className="font-heading text-xl text-purple-700 sm:text-2xl md:text-3xl">
                   {avgProgress}%
                 </span>
                 <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-gray-600 sm:text-xs">
@@ -528,9 +528,9 @@ export function ChildLearningInsights({ memberId }: ChildLearningInsightsProps) 
               </div>
               <div
                 data-testid="stat-need-help"
-                className="flex flex-col items-center rounded-xl border-2 border-black bg-red-100 p-3 text-center shadow-neo-xs"
+                className="flex min-w-0 flex-col items-center rounded-xl border-2 border-black bg-red-100 p-3 text-center shadow-neo-xs"
               >
-                <span className="font-heading text-2xl text-red-600 md:text-3xl">
+                <span className="font-heading text-xl text-red-600 sm:text-2xl md:text-3xl">
                   {needsHelpCount}
                 </span>
                 <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-gray-600 sm:text-xs">
@@ -539,9 +539,9 @@ export function ChildLearningInsights({ memberId }: ChildLearningInsightsProps) 
               </div>
               <div
                 data-testid="stat-certificates"
-                className="flex flex-col items-center rounded-xl border-2 border-black bg-yellow-100 p-3 text-center shadow-neo-xs"
+                className="flex min-w-0 flex-col items-center rounded-xl border-2 border-black bg-yellow-100 p-3 text-center shadow-neo-xs"
               >
-                <span className="font-heading text-2xl text-yellow-600 md:text-3xl">
+                <span className="font-heading text-xl text-yellow-600 sm:text-2xl md:text-3xl">
                   {totalCerts}
                 </span>
                 <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-gray-600 sm:text-xs">

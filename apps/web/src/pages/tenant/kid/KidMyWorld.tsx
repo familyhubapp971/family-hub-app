@@ -135,13 +135,13 @@ export function KidMyWorld({
   return (
     <motion.div
       data-testid="kid-myworld"
-      className={`grid grid-cols-1 gap-6 ${isFinalized ? '' : 'xl:grid-cols-12'}`}
+      className={`grid grid-cols-1 gap-6 ${isFinalized ? '' : 'lg:grid-cols-12'}`}
       initial={playEnter ? { opacity: 0, y: 12 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
       {/* LEFT column (full-width on finalized; 8/12 on live) */}
-      <div className={`flex flex-col gap-4 ${isFinalized ? '' : 'xl:col-span-8'}`}>
+      <div className={`flex flex-col gap-4 ${isFinalized ? '' : 'lg:col-span-8'}`}>
         {/* Toggle */}
         <div
           role="tablist"
@@ -436,7 +436,7 @@ export function KidMyWorld({
 
       {/* RIGHT column — live weeks only. Hidden on finalized weeks (single-column). */}
       {!isFinalized && (
-        <div className="flex flex-col gap-6 xl:col-span-4">
+        <div className="flex flex-col gap-6 lg:col-span-4">
           <KidRewardShop
             rewards={data.rewards}
             savingsStars={savingsStars}
