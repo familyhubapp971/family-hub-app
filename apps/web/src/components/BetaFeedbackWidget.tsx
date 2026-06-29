@@ -192,7 +192,7 @@ function CountedTextarea({
         maxLength={MAX_CHARS}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
+        className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
       />
       <div className="flex justify-end">
         <CharCount value={value} />
@@ -475,7 +475,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                       maxLength={120}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Sarah"
-                      className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
+                      className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
                     />
                   </div>
                   <div>
@@ -498,7 +498,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                       aria-invalid={emailError ? true : undefined}
                       aria-describedby={emailError ? 'beta-feedback-email-error' : undefined}
                       className={[
-                        'w-full rounded-xl border-2 p-3 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400',
+                        'w-full rounded-xl border-2 p-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400',
                         emailError ? 'border-red-400' : 'border-black',
                       ].join(' ')}
                     />
