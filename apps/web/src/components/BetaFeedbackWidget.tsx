@@ -1,14 +1,17 @@
 /**
- * BetaFeedbackWidget — FHS-418 (frontend)
+ * BetaFeedbackWidget — FHS-418 (in-app) / FHS-429 (public)
  *
- * A floating "Give feedback" button fixed to the bottom-right of every
- * signed-in /t/:slug/* page. Opens a friendly dialog where beta testers
- * answer a few optional questions and submit to POST /api/feedback.
+ * variant='in-app'  (default): floating bottom-right on every signed-in
+ *   /t/:slug/* page. Hidden when no Supabase session or no tenant slug.
+ *   Posts to POST /api/feedback with Authorization + x-tenant-slug headers.
  *
- * Mounted once in ProtectedRoute. Hidden when:
- *  - no Supabase parent session (kid-JWT-only or logged-out), OR
- *  - no tenant slug in the URL (legacy /dashboard, /me routes where the
- *    API would return 400 TENANT_REQUIRED without x-tenant-slug).
+ * variant='public': always rendered on marketing pages (no auth required).
+ *   Shows two optional identity fields (name + email) at the top of the
+ *   dialog. Posts to POST /api/public/feedback with no auth headers.
+ *
+ * Mounted once in:
+ *   - ProtectedRoute (variant='in-app', no prop needed — default)
+ *   - WelcomePage + PricingPage (variant='public')
  */
 
 import { useState, useCallback, useId } from 'react';
@@ -23,6 +26,8 @@ import { API_BASE } from '../lib/api';
 type PmfChoice = 'very' | 'somewhat' | 'not';
 
 interface FeedbackBody {
+  name?: string;
+  email?: string;
   pmfDisappointment?: PmfChoice;
   recommendScore?: number;
   solvesProblem?: number;
@@ -34,6 +39,11 @@ interface FeedbackBody {
 }
 
 const MAX_CHARS = 2000;
+
+// Simple email format check — only validates when non-empty.
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 
 // ── PMF disappointment buttons ────────────────────────────────────────────────
 
@@ -193,7 +203,11 @@ function CountedTextarea({
 
 // ── Main widget ───────────────────────────────────────────────────────────────
 
-export function BetaFeedbackWidget() {
+interface BetaFeedbackWidgetProps {
+  variant?: 'in-app' | 'public';
+}
+
+export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetProps) {
   const { session } = useAuth();
   const titleId = useId();
 
@@ -206,7 +220,12 @@ export function BetaFeedbackWidget() {
   const [state, setState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Answers
+  // Public-only identity fields
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+
+  // Survey answers
   const [pmf, setPmf] = useState<PmfChoice | undefined>();
   const [recommend, setRecommend] = useState<number | undefined>();
   const [solves, setSolves] = useState<number | undefined>();
@@ -216,7 +235,8 @@ export function BetaFeedbackWidget() {
   const [feature, setFeature] = useState('');
   const [other, setOther] = useState('');
 
-  // Submit enabled when at least one answer provided.
+  // Submit enabled when at least one SURVEY answer provided.
+  // Name/email alone do not enable submit.
   // Use !== undefined (not truthiness) so recommendScore = 0 counts.
   const hasAnswer =
     pmf !== undefined ||
@@ -229,6 +249,9 @@ export function BetaFeedbackWidget() {
     other.trim() !== '';
 
   const resetForm = useCallback(() => {
+    setName('');
+    setEmail('');
+    setEmailError('');
     setPmf(undefined);
     setRecommend(undefined);
     setSolves(undefined);
@@ -250,12 +273,44 @@ export function BetaFeedbackWidget() {
     setOpen(false);
   }, []);
 
+  const handleEmailChange = useCallback(
+    (value: string) => {
+      setEmail(value);
+      // Clear error while typing; re-validate on blur
+      if (emailError) setEmailError('');
+    },
+    [emailError],
+  );
+
+  const handleEmailBlur = useCallback(() => {
+    if (email.trim() && !isValidEmail(email.trim())) {
+      setEmailError('Enter a valid email address or leave this blank.');
+    } else {
+      setEmailError('');
+    }
+  }, [email]);
+
   const handleSubmit = useCallback(async () => {
     if (!hasAnswer || state === 'submitting') return;
+
+    // Re-validate email on submit (catches paste-without-blur)
+    if (email.trim() && !isValidEmail(email.trim())) {
+      setEmailError('Enter a valid email address or leave this blank.');
+      return;
+    }
+
     setState('submitting');
     setErrorMsg('');
 
     const body: FeedbackBody = {};
+
+    // Public identity fields (variant='public' only, optional)
+    if (variant === 'public') {
+      if (name.trim()) body.name = name.trim();
+      if (email.trim()) body.email = email.trim();
+    }
+
+    // Survey fields (shared between variants)
     if (pmf !== undefined) body.pmfDisappointment = pmf;
     if (recommend !== undefined) body.recommendScore = recommend;
     if (solves !== undefined) body.solvesProblem = solves;
@@ -265,19 +320,26 @@ export function BetaFeedbackWidget() {
     if (feature.trim()) body.featureRequest = feature.trim();
     if (other.trim()) body.otherFeedback = other.trim();
 
+    const isPublic = variant === 'public';
+    const endpoint = isPublic ? `${API_BASE}/api/public/feedback` : `${API_BASE}/api/feedback`;
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     };
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
-    }
-    if (tenantSlug) {
-      headers['x-tenant-slug'] = tenantSlug;
+
+    // In-app variant: attach auth + tenant headers when available
+    if (!isPublic) {
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      if (tenantSlug) {
+        headers['x-tenant-slug'] = tenantSlug;
+      }
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/feedback`, {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
@@ -302,6 +364,9 @@ export function BetaFeedbackWidget() {
   }, [
     hasAnswer,
     state,
+    variant,
+    name,
+    email,
     pmf,
     recommend,
     solves,
@@ -314,9 +379,9 @@ export function BetaFeedbackWidget() {
     tenantSlug,
   ]);
 
-  // Hide when no parent session or no tenant slug — without the slug the
-  // API rejects the request with 400 TENANT_REQUIRED.
-  if (!session || !tenantSlug) return null;
+  // In-app guard: hide when no parent session or no tenant slug.
+  // Public variant: always render.
+  if (variant === 'in-app' && (!session || !tenantSlug)) return null;
 
   return (
     <>
@@ -388,6 +453,65 @@ export function BetaFeedbackWidget() {
             </div>
           ) : (
             <div className="space-y-6 px-5 py-5">
+              {/* Public-only: optional name + email */}
+              {variant === 'public' && (
+                <div className="space-y-4 rounded-xl border-2 border-black bg-yellow-50 p-4">
+                  <p className="text-xs font-medium text-gray-600">
+                    Optional — leave your email if you&apos;re happy to be contacted.
+                  </p>
+                  <div>
+                    <label
+                      htmlFor="beta-feedback-name"
+                      className="mb-1 block font-black text-sm text-black"
+                    >
+                      Name
+                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <input
+                      id="beta-feedback-name"
+                      data-testid="beta-feedback-name"
+                      type="text"
+                      value={name}
+                      maxLength={120}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Sarah"
+                      className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="beta-feedback-email"
+                      className="mb-1 block font-black text-sm text-black"
+                    >
+                      Email
+                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <input
+                      id="beta-feedback-email"
+                      data-testid="beta-feedback-email"
+                      type="email"
+                      value={email}
+                      maxLength={200}
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      onBlur={handleEmailBlur}
+                      placeholder="e.g. sarah@example.com"
+                      className={[
+                        'w-full rounded-xl border-2 p-3 text-sm font-medium placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400',
+                        emailError ? 'border-red-400' : 'border-black',
+                      ].join(' ')}
+                    />
+                    {emailError && (
+                      <p
+                        data-testid="beta-feedback-email-error"
+                        className="mt-1 text-xs font-medium text-red-600"
+                      >
+                        {emailError}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Q1 — PMF */}
               <fieldset>
                 <legend className="mb-2 font-black text-sm text-black">
