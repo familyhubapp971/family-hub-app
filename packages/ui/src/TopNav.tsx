@@ -68,9 +68,11 @@ export function TopNav({
           )}
         </div>
 
-        {/* Row 2 — tab strip. Scrollbar hidden visually; right-edge fade signals more tabs. */}
+        {/* Row 2 — tab strip. Scrollbar hidden visually; on small screens (where the
+            tabs overflow) a right-edge fade signals more tabs. No fade at lg+ where
+            the tabs fit, so the last tab isn't dimmed on desktop. */}
         <div
-          className="relative flex gap-2 overflow-x-auto pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_85%,transparent)]"
+          className="relative flex gap-2 overflow-x-auto pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-lg:[mask-image:linear-gradient(to_right,black_85%,transparent)]"
           role="tablist"
           aria-label="Primary"
         >
