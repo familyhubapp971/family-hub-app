@@ -283,7 +283,7 @@ export function WelcomePage() {
   }
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-kingdom-bg font-body text-white">
+    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-kingdom-bg font-body text-white">
       {/* Subtle radial purple glow at the top of the hero. */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.4),rgba(61,16,101,0)_60%)]" />
 
@@ -460,11 +460,15 @@ export function WelcomePage() {
               <button
                 key={s.id}
                 onClick={() => setCurrentSlide(idx)}
-                className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                  currentSlide === idx ? 'bg-yellow-300' : 'bg-purple-400 hover:bg-purple-300'
-                }`}
+                className="grid min-h-[44px] min-w-[44px] place-items-center p-3 -m-3"
                 aria-label={`Go to slide ${idx + 1}`}
-              />
+              >
+                <span
+                  className={`block h-2.5 w-2.5 rounded-full transition-colors ${
+                    currentSlide === idx ? 'bg-yellow-300' : 'bg-purple-400 hover:bg-purple-300'
+                  }`}
+                />
+              </button>
             ))}
           </div>
 

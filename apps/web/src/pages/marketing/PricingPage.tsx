@@ -69,7 +69,7 @@ export function PricingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex h-screen flex-col bg-kingdom-bg font-body text-white">
+    <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-white">
       {/* Header — slim, mirrors Welcome page so cross-page nav feels stable */}
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
         <Link
@@ -97,7 +97,7 @@ export function PricingPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-6 pb-6 pt-6 md:pt-10">
-        <div className="mb-16 text-center md:mb-20">
+        <div className="mb-6 text-center sm:mb-16 md:mb-20">
           <h1 className="mb-1 font-heading text-2xl md:text-3xl lg:text-4xl">
             Simple, honest pricing
           </h1>
@@ -107,7 +107,7 @@ export function PricingPage() {
           </p>
         </div>
 
-        <div className="grid w-full max-w-5xl grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
           {tiers.map((tier) => (
             <PricingCard
               key={tier.name}

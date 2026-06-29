@@ -972,7 +972,7 @@ export function MyWorldTab(
     >
       <div className="flex flex-col md:flex-row md:items-center gap-6">
         {/* LEFT: icon + name + progress + sticker badges */}
-        <div className={`flex items-center gap-4 md:w-1/3 ${editEnabled ? 'pr-8' : ''}`}>
+        <div className={`flex items-center gap-4 md:w-1/3 ${editEnabled ? 'sm:pr-8' : ''}`}>
           <div
             className={`w-10 h-10 sm:w-14 sm:h-14 flex-shrink-0 ${habit.color} border-2 sm:border-3 border-black rounded-xl flex items-center justify-center shadow-neo`}
           >
@@ -1078,7 +1078,7 @@ export function MyWorldTab(
               </span>
             </div>
           )}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {daysShort.map((day, index) => {
               const dayValue = habit.progress[index];
               const isSticker = typeof dayValue === 'string';
@@ -1104,7 +1104,7 @@ export function MyWorldTab(
                       setDayStickerDialog({ habitId: habit.id, dayIndex: index });
                     }}
                     disabled={!editDayFn(index)}
-                    className={`w-full aspect-square rounded-lg border-2 flex items-center justify-center transition-all ${
+                    className={`w-full aspect-square min-h-[40px] sm:min-h-[44px] rounded-lg border-2 flex items-center justify-center transition-all ${
                       isSticker && sticker
                         ? editDayFn(index)
                           ? `${sticker.color} shadow-neo-xs translate-x-[-2px] translate-y-[-2px] border-black hover:opacity-80`
