@@ -2019,7 +2019,7 @@ export function MyWorldTab(
                               <span className="text-slate-400">Originally</span>
                               <span
                                 data-testid="investment-original"
-                                className="justify-self-end whitespace-nowrap font-bold text-slate-200"
+                                className="justify-self-end break-words font-bold text-slate-200"
                               >
                                 {inv.originalInvestedStickers} stickers ({currency}{' '}
                                 {(inv.originalInvestedStickers! * 0.5).toFixed(2)})
@@ -2029,7 +2029,7 @@ export function MyWorldTab(
                           <span className="text-slate-400">Invested</span>
                           <span
                             data-testid="investment-invested"
-                            className="justify-self-end whitespace-nowrap font-bold text-yellow-400"
+                            className="justify-self-end break-words font-bold text-yellow-400"
                           >
                             {inv.investedStickers} stickers ({currency}{' '}
                             {(inv.investedStickers * 0.5).toFixed(2)})
@@ -2037,7 +2037,7 @@ export function MyWorldTab(
                           <span className="text-slate-400">Now</span>
                           <span
                             data-testid="investment-current"
-                            className="justify-self-end whitespace-nowrap font-black text-fuchsia-300"
+                            className="justify-self-end break-words font-black text-fuchsia-300"
                           >
                             {inv.currentValueStickers} stickers ({currency}{' '}
                             {inv.currentValue.toFixed(2)})
