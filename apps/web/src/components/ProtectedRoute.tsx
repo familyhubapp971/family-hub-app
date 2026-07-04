@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getKidToken, useAuth } from '../lib/auth-context';
-import { BetaFeedbackWidget } from './BetaFeedbackWidget';
 import { LoadingScreen } from './LoadingScreen';
 
 // Gate around an authenticated subtree. Renders a small loading state
@@ -29,10 +28,7 @@ export function ProtectedRoute({
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  return (
-    <>
-      {children}
-      <BetaFeedbackWidget />
-    </>
-  );
+  // FHS-434 — the feedback widget lives on the public homepage only; it was
+  // obscuring content on every in-app screen, so it's no longer mounted here.
+  return children;
 }
