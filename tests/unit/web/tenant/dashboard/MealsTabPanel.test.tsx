@@ -122,6 +122,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -282,6 +283,66 @@ describe('<MealsTabPanel />', () => {
       memberId: ALI,
       recurring: true,
     });
+  });
+
+  it('defaults the Add Meal slot to breakfast in the morning (FHS-442)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-06T08:30:00')); // 08:30 → breakfast
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    expect(
+      within(screen.getByTestId('meals-editor-slot')).getByRole('button').textContent,
+    ).toContain('Breakfast');
+  });
+
+  it('defaults the Add Meal slot to lunch around midday (FHS-442)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-06T12:15:00')); // 12:15 → lunch
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    expect(
+      within(screen.getByTestId('meals-editor-slot')).getByRole('button').textContent,
+    ).toContain('Lunch');
+  });
+
+  it('defaults the Add Meal slot to dinner in the evening (FHS-442)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-06T18:00:00')); // 18:00 → dinner
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    expect(
+      within(screen.getByTestId('meals-editor-slot')).getByRole('button').textContent,
+    ).toContain('Dinner');
+  });
+
+  it('defaults the Add Meal slot to snack late at night (FHS-442)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-06T22:00:00')); // 22:00 → snack
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    expect(
+      within(screen.getByTestId('meals-editor-slot')).getByRole('button').textContent,
+    ).toContain('Snack');
   });
 
   it('the snack add button pre-sets slot=snack and saves a snack (FHS-317)', async () => {

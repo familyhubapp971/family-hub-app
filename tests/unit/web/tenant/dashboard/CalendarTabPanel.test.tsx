@@ -56,6 +56,17 @@ function mondayIso(): string {
   return `${y}-${m}-${d}`;
 }
 
+// FHS-438 — "today" (not Monday) is the one day in the default-loaded week
+// that's guaranteed never to be in the past, whatever weekday the suite
+// runs on. Add-activity tests use this instead of mondayIso().
+function todayIso(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function ev(over: Partial<Ev>): Ev {
   return {
     id: 'e1',
@@ -142,6 +153,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -258,9 +270,11 @@ describe('<CalendarTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
 
-    const monday = mondayIso();
+    // FHS-438 — the day card must be today or later, since past days no
+    // longer show an Add Activity button.
+    const today = todayIso();
     act(() => {
-      fireEvent.click(screen.getByTestId(`calendar-add-${monday}`));
+      fireEvent.click(screen.getByTestId(`calendar-add-${today}`));
     });
     expect(screen.getByTestId('calendar-add-form')).toBeInTheDocument();
     act(() => {
@@ -283,7 +297,7 @@ describe('<CalendarTabPanel />', () => {
     await waitFor(() => expect(screen.getByText('Swimming Lesson')).toBeInTheDocument());
     const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
     expect(JSON.parse((postCall![1] as RequestInit).body as string)).toEqual({
-      date: monday,
+      date: today,
       title: 'Swimming Lesson',
       startTime: '15:00',
       endTime: null,
@@ -300,9 +314,9 @@ describe('<CalendarTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
 
-    const monday = mondayIso();
+    const today = todayIso();
     act(() => {
-      fireEvent.click(screen.getByTestId(`calendar-add-${monday}`));
+      fireEvent.click(screen.getByTestId(`calendar-add-${today}`));
     });
     act(() => {
       fireEvent.click(screen.getByTestId(`calendar-form-child-${AMINA}`));
@@ -391,9 +405,9 @@ describe('<CalendarTabPanel />', () => {
     act(() => {
       fireEvent.click(screen.getByTestId('calendar-subtab-home'));
     });
-    const monday = mondayIso();
+    const today = todayIso();
     act(() => {
-      fireEvent.click(screen.getByTestId(`calendar-add-${monday}`));
+      fireEvent.click(screen.getByTestId(`calendar-add-${today}`));
     });
     act(() => {
       fireEvent.change(screen.getByTestId('calendar-form-title'), {
@@ -413,6 +427,27 @@ describe('<CalendarTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
     expect(screen.getByTestId(`calendar-day-${mondayIso()}-empty`)).toBeInTheDocument();
     expect(screen.getAllByText('No activities scheduled').length).toBeGreaterThan(0);
+  });
+
+  it('blocks adding an activity on a day before today (FHS-438)', async () => {
+    // Fri 2026-07-10 → its Monday (2026-07-06) is a past day in the same
+    // default-loaded week. Fake only Date so fetch/waitFor keep working.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-10T09:00:00'));
+    const pastMonday = '2026-07-06';
+    const today = '2026-07-10';
+
+    installApi({});
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+    // Past day: no Add Activity button, a friendly inline message instead.
+    expect(screen.queryByTestId(`calendar-add-${pastMonday}`)).not.toBeInTheDocument();
+    const blocked = screen.getByTestId(`calendar-add-blocked-${pastMonday}`);
+    expect(blocked.textContent).toMatch(/passed.*today or a future date/i);
+
+    // Today still allows adding.
+    expect(screen.getByTestId(`calendar-add-${today}`)).toBeInTheDocument();
   });
 
   it('passes the bearer token + tenant slug and a weekStart query', async () => {

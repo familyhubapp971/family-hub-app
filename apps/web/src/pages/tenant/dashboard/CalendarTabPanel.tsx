@@ -248,6 +248,12 @@ export function CalendarTabPanel() {
       setSaveError('Give the activity a name.');
       return;
     }
+    // FHS-438 — belt-and-braces: the Add button is already hidden for past
+    // days, but guard the save itself too in case draft state gets stale.
+    if (editingId === null && draft.date < localTodayIso()) {
+      setSaveError('Pick today or a future date.');
+      return;
+    }
     // Exactly one child checked → that child; none or several → the
     // whole family (our data model stores one member per event).
     const memberId = draft.memberIds.size === 1 ? [...draft.memberIds][0]! : null;
@@ -456,6 +462,10 @@ export function CalendarTabPanel() {
       <div className="space-y-6">
         {days.map((dayIso) => {
           const isToday = dayIso === todayIso;
+          // FHS-438 — can't add NEW activities to a day that's already
+          // passed (editing/deleting existing ones on a past day is
+          // still fine — see the "Add Activity" block below).
+          const isPastDay = dayIso < todayIso;
           const dayEvents = visible
             .filter((e) => e.date === dayIso)
             .sort((a, b) => (a.startTime ?? '99:99').localeCompare(b.startTime ?? '99:99'));
@@ -650,6 +660,13 @@ export function CalendarTabPanel() {
                         setSaveError(null);
                       }}
                     />
+                  ) : isPastDay ? (
+                    <p
+                      data-testid={`calendar-add-blocked-${dayIso}`}
+                      className="flex min-h-[44px] w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-400"
+                    >
+                      This day has passed — pick today or a future date to add an activity.
+                    </p>
                   ) : (
                     <button
                       type="button"
