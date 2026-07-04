@@ -1,6 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, PricingCard, type PricingFeature } from '@familyhub/ui';
-import { BetaFeedbackWidget } from '../../components/BetaFeedbackWidget';
 
 // Pricing page — port of Magic Patterns design
 // kudjspxd3xxroueg5jw11o pages/Pricing.tsx. Tier copy is the source of
@@ -71,7 +70,6 @@ export function PricingPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-white">
-      <BetaFeedbackWidget variant="public" />
       {/* Header — slim, mirrors Welcome page so cross-page nav feels stable */}
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
         <Link
