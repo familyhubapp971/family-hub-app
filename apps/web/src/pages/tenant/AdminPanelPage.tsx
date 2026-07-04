@@ -1404,7 +1404,7 @@ function HistoryTab({
                       onClick={() => setRepairTarget(week.id)}
                       className="min-h-[44px] bg-purple-50 border border-purple-200 text-purple-700 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 hover:bg-purple-100 transition-colors"
                     >
-                      <Wrench className="w-3 h-3" /> Repair
+                      <Wrench className="w-3 h-3" /> Recalculate Week
                     </button>
                     <button
                       data-testid={`admin-history-week-close-btn-${week.id}`}
@@ -1583,9 +1583,9 @@ function HistoryTab({
       />
       <ConfirmDialog
         isOpen={repairTarget !== null}
-        title="Repair this week?"
-        message="This re-runs the week calculation to fix any inconsistencies."
-        confirmLabel="Repair"
+        title="Recalculate this week?"
+        message="This recalculates the week's totals to fix any mismatches."
+        confirmLabel="Recalculate Week"
         busy={actionBusy}
         onConfirm={() => {
           if (repairTarget) void doRepair(repairTarget);
@@ -1657,7 +1657,7 @@ function UsersTab({ headers, slug }: { headers: Record<string, string> | null; s
         </div>
         <div>
           <h3 className="text-xl font-black text-white">Family Members</h3>
-          <p className="text-sm text-indigo-400 font-medium">Read-only roster</p>
+          <p className="text-sm text-indigo-400 font-medium">View only</p>
         </div>
       </div>
 
@@ -1668,7 +1668,7 @@ function UsersTab({ headers, slug }: { headers: Record<string, string> | null; s
           <Link to={`/t/${slug}/members`} className="underline font-bold">
             Manage Members
           </Link>{' '}
-          page. This view is a read-only snapshot.
+          page. This page is for viewing only.
         </p>
       </div>
 
@@ -1812,7 +1812,7 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
             data-testid="admin-app-info-name-display"
             className="text-2xl font-black text-gray-900"
           >
-            {settings.appName || <span className="text-gray-400 italic">Not set</span>}
+            {settings.appName || <span className="text-gray-400 italic">Add an app name</span>}
           </p>
         </div>
         <div>
@@ -1821,7 +1821,7 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
             data-testid="admin-app-info-subtitle-display"
             className="text-base font-medium text-gray-700"
           >
-            {settings.appSubtitle || <span className="text-gray-400 italic">Not set</span>}
+            {settings.appSubtitle || <span className="text-gray-400 italic">Add a subtitle</span>}
           </p>
         </div>
       </Card>

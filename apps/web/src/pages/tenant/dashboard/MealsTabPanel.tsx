@@ -191,6 +191,17 @@ function todayDayKey(now: Date = new Date()): Day | null {
   return map[now.getDay()] ?? null;
 }
 
+// FHS-442 — the Add Meal default should match the time of day it's added,
+// not always "dinner". Breakfast before ~11:00, lunch until ~15:00, dinner
+// until ~21:00, snack after that. The user can still pick any slot.
+function defaultMealSlot(now: Date = new Date()): Slot {
+  const hour = now.getHours();
+  if (hour < 11) return 'breakfast';
+  if (hour < 15) return 'lunch';
+  if (hour < 21) return 'dinner';
+  return 'snack';
+}
+
 export function MealsTabPanel() {
   const slug = useTenantSlug();
   const { session } = useAuth();
@@ -577,7 +588,7 @@ export function MealsTabPanel() {
                       setEditor({
                         day,
                         mealId: null,
-                        slot: 'dinner',
+                        slot: defaultMealSlot(),
                         name: '',
                         memberId: filter === 'all' || filter === 'family' ? null : filter,
                         recurring: false,

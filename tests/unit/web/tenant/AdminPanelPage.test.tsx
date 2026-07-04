@@ -85,7 +85,10 @@ const APP_SETTINGS = { appName: 'Iman World', appSubtitle: 'Track habits and ear
 
 // ── Mock fetch router ─────────────────────────────────────────────────────────
 
-function installApi(callerRole = 'admin') {
+function installApi(
+  callerRole = 'admin',
+  appSettings: Partial<typeof APP_SETTINGS> = APP_SETTINGS,
+) {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url);
 
@@ -166,7 +169,7 @@ function installApi(callerRole = 'admin') {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
     }
     if (u.includes('/api/admin/settings')) {
-      return Promise.resolve({ ok: true, status: 200, json: async () => APP_SETTINGS });
+      return Promise.resolve({ ok: true, status: 200, json: async () => appSettings });
     }
     // Fallback
     return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
@@ -456,6 +459,21 @@ describe('<AdminPanelPage />', () => {
       const body = JSON.parse((putCall![1] as RequestInit).body as string) as { value: string };
       expect(body.value).toBe('Amina World');
     });
+  });
+
+  it('App Info shows a friendly placeholder, not "Not set", on a brand-new family (FHS-447)', async () => {
+    installApi('admin', { appName: '', appSubtitle: '' });
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-app-info')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('admin-panel-tab-app-info'));
+    });
+    await waitFor(() => expect(screen.getByTestId('admin-app-info-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('admin-app-info-name-display').textContent).not.toBe('Not set');
+    expect(screen.getByTestId('admin-app-info-name-display').textContent).toBe('Add an app name');
+    expect(screen.getByTestId('admin-app-info-subtitle-display').textContent).toBe(
+      'Add a subtitle',
+    );
   });
 
   it('Users tab shows a read-only roster (no duplicate Manage button)', async () => {
