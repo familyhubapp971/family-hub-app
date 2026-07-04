@@ -205,6 +205,10 @@ export function SignupPage() {
               By continuing you agree to our{' '}
               <Link to="/terms" className="inline-block py-1.5 underline">
                 Terms
+              </Link>{' '}
+              and{' '}
+              <Link to="/privacy" className="inline-block py-1.5 underline">
+                Privacy Policy
               </Link>
               .
             </p>

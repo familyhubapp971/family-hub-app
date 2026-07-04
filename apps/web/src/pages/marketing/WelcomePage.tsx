@@ -508,6 +508,17 @@ export function WelcomePage() {
           </div>
         </main>
       )}
+
+      {/* FHS-435 — small, unobtrusive footer so /privacy is reachable from
+          the homepage without competing with the hero CTA. */}
+      <footer className="relative z-10 mx-auto flex w-full max-w-7xl justify-center px-6 pb-6">
+        <Link
+          to="/privacy"
+          className="flex min-h-[44px] items-center px-2 text-sm font-bold text-purple-200 transition-colors hover:text-yellow-300"
+        >
+          Privacy
+        </Link>
+      </footer>
     </div>
   );
 }
