@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LandingPage } from './pages/marketing/LandingPage';
 import { WelcomePage } from './pages/marketing/WelcomePage';
 import { PricingPage } from './pages/marketing/PricingPage';
+import { PrivacyPage } from './pages/marketing/PrivacyPage';
 import { KidLoginPage } from './pages/auth/KidLoginPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
@@ -34,6 +35,8 @@ export function App() {
           {/* Marketing + auth — no tenant context. */}
           <Route path="/" element={<WelcomePage />} />
           <Route path="/pricing" element={<PricingPage />} />
+          {/* FHS-435 — public draft privacy policy + signup consent link target. */}
+          <Route path="/privacy" element={<PrivacyPage />} />
           {/* Legacy /api/hello debug card preserved at /_health so the
               FHS-198 staging-deploy spec keeps validating end-to-end. */}
           <Route path="/_health" element={<LandingPage />} />
