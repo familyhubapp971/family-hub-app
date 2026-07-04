@@ -54,6 +54,7 @@ const SAVINGS = {
   savedStickers: 5,
   savedCash: 3.5,
   cashEquivalent: 6,
+  currency: 'AED',
 };
 
 const WEEKS_LIST = [
@@ -81,7 +82,11 @@ const WEEKS_LIST = [
   },
 ];
 
-const APP_SETTINGS = { appName: 'Iman World', appSubtitle: 'Track habits and earn!' };
+const APP_SETTINGS = {
+  appName: 'Iman World',
+  appSubtitle: 'Track habits and earn!',
+  currency: 'AED',
+};
 
 // ── Mock fetch router ─────────────────────────────────────────────────────────
 
@@ -344,6 +349,49 @@ describe('<AdminPanelPage />', () => {
     expect(screen.getByTestId('admin-savings-sticker-display').textContent).toBe('5');
   });
 
+  it('Savings tab shows the family currency from the API, not a hardcoded AED (FHS-441)', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (/\/api\/me(\?|$)/.test(u))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'u-admin',
+            email: 'sarah@example.com',
+            tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'admin' }],
+          }),
+        });
+      if (u.includes('/api/dashboard/today'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ date: '2026-06-15', callerMemberId: 'admin-1', members: [] }),
+        });
+      if (u.includes('/api/members'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ members: MEMBERS, callerRole: 'admin' }),
+        });
+      if (u.includes('/api/mw/financial/savings'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ ...SAVINGS, currency: 'GBP' }),
+        });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-savings')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('admin-panel-tab-savings'));
+    });
+    await waitFor(() => expect(screen.getByTestId('admin-savings-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('admin-savings-cash-display').textContent).toContain('GBP');
+    expect(screen.getByTestId('admin-savings-cash-display').textContent).not.toContain('AED');
+  });
+
   it('Savings edit issues PUT to admin-set endpoint', async () => {
     renderAt();
     await waitFor(() => expect(screen.getByTestId('admin-panel-tab-savings')).toBeInTheDocument());
@@ -474,6 +522,50 @@ describe('<AdminPanelPage />', () => {
     expect(screen.getByTestId('admin-app-info-subtitle-display').textContent).toBe(
       'Add a subtitle',
     );
+    // FHS-441 — currency always has a value (defaults to USD server-side)
+    // even when a brand-new family hasn't set appName/appSubtitle yet.
+    expect(screen.getByTestId('admin-app-info-currency-display').textContent).toBe('USD');
+  });
+
+  it('App Info tab shows the current currency and saving a new one issues a currency PUT (FHS-441)', async () => {
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-app-info')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('admin-panel-tab-app-info'));
+    });
+    await waitFor(() => expect(screen.getByTestId('admin-app-info-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('admin-app-info-currency-display').textContent).toBe('AED');
+
+    // Open edit — the CurrencyPicker starts on the currently-saved currency.
+    act(() => {
+      fireEvent.click(screen.getByTestId('admin-app-info-edit-btn'));
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId('admin-app-info-currency-trigger')).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('admin-app-info-currency-trigger').textContent).toContain('AED');
+
+    // Switch to GBP via the searchable dropdown.
+    act(() => {
+      fireEvent.click(screen.getByTestId('admin-app-info-currency-trigger'));
+    });
+    const gbpOption = await screen.findByTestId('admin-app-info-currency-option-GBP');
+    act(() => {
+      fireEvent.click(gbpOption);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('admin-app-info-save-btn'));
+    });
+
+    await waitFor(() => {
+      const putCall = fetchMock.mock.calls.find(
+        ([u, fetchInit]) =>
+          String(u).includes('/api/admin/settings/currency') && fetchInit?.method === 'PUT',
+      );
+      expect(putCall).toBeTruthy();
+      const body = JSON.parse((putCall![1] as RequestInit).body as string) as { value: string };
+      expect(body.value).toBe('GBP');
+    });
   });
 
   it('Users tab shows a read-only roster (no duplicate Manage button)', async () => {

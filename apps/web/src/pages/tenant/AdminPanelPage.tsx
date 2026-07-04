@@ -30,7 +30,7 @@ import {
   X,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Card, ConfirmDialog } from '@familyhub/ui';
+import { Button, Card, ConfirmDialog, CurrencyPicker, Label } from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
@@ -67,6 +67,9 @@ interface SavingsData {
   savedStickers: number;
   savedCash: number;
   cashEquivalent: number;
+  // FHS-441 — GET /api/mw/financial/savings already returns the family's
+  // currency; the Savings tab previously ignored it and hardcoded "AED".
+  currency?: string;
 }
 
 interface WeekRow {
@@ -92,6 +95,10 @@ interface WeekAction {
 interface AppSettings {
   appName: string;
   appSubtitle: string;
+  // FHS-441 — the family's currency (AED, GBP, …). Lives on tenants.currency
+  // server-side but is surfaced through this same settings map so the App
+  // Info tab has one save flow for all three fields.
+  currency: string;
 }
 
 // Sub-dialog types for Balance Quick Actions
@@ -1014,6 +1021,10 @@ function SavingsTab({
   const savedCash = data?.savedCash ?? 0;
   const savedStickers = data?.savedStickers ?? 0;
   const cashEquiv = (savedStickers * 0.5 + savedCash).toFixed(2);
+  // FHS-441 — GET /api/mw/financial/savings already returns the family's
+  // currency; use it instead of a hardcoded "AED" so a family that changed
+  // currency in App Info sees it reflected here too.
+  const currency = data?.currency ?? 'AED';
 
   return (
     <div
@@ -1061,7 +1072,7 @@ function SavingsTab({
             data-testid="admin-savings-cash-display"
             className="text-3xl font-black text-green-700"
           >
-            AED {savedCash.toFixed(2)}
+            {currency} {savedCash.toFixed(2)}
           </span>
           <p className="text-xs text-gray-400 font-medium mt-2">Liquid cash for withdrawal</p>
         </Card>
@@ -1086,7 +1097,9 @@ function SavingsTab({
         <p className="text-xs font-black text-orange-600 uppercase tracking-wide mb-1">
           Cash Equivalent
         </p>
-        <span className="text-3xl font-black text-orange-700">AED {cashEquiv}</span>
+        <span className="text-3xl font-black text-orange-700">
+          {currency} {cashEquiv}
+        </span>
       </Card>
 
       {editing && (
@@ -1106,7 +1119,7 @@ function SavingsTab({
                 htmlFor="savings-cash-input"
                 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block"
               >
-                Cash Savings (AED)
+                Cash Savings ({currency})
               </label>
               <input
                 id="savings-cash-input"
@@ -1708,12 +1721,17 @@ function UsersTab({ headers, slug }: { headers: Record<string, string> | null; s
 // ── App Info tab ──────────────────────────────────────────────────────────────
 
 function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
-  const [settings, setSettings] = useState<AppSettings>({ appName: '', appSubtitle: '' });
+  const [settings, setSettings] = useState<AppSettings>({
+    appName: '',
+    appSubtitle: '',
+    currency: 'USD',
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [tempName, setTempName] = useState('');
   const [tempSubtitle, setTempSubtitle] = useState('');
+  const [tempCurrency, setTempCurrency] = useState('USD');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -1722,7 +1740,11 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
     fetch(`${API_BASE}/api/admin/settings`, { headers })
       .then((r) => (r.ok ? r.json() : {}))
       .then((b: Partial<AppSettings>) =>
-        setSettings({ appName: b.appName ?? '', appSubtitle: b.appSubtitle ?? '' }),
+        setSettings({
+          appName: b.appName ?? '',
+          appSubtitle: b.appSubtitle ?? '',
+          currency: b.currency ?? 'USD',
+        }),
       )
       .catch(() => setError('Failed to load settings'))
       .finally(() => setLoading(false));
@@ -1731,6 +1753,7 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
   const startEdit = () => {
     setTempName(settings.appName);
     setTempSubtitle(settings.appSubtitle);
+    setTempCurrency(settings.currency);
     setEditing(true);
   };
 
@@ -1742,6 +1765,7 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
       const updates: [string, string][] = [];
       if (tempName !== settings.appName) updates.push(['appName', tempName]);
       if (tempSubtitle !== settings.appSubtitle) updates.push(['appSubtitle', tempSubtitle]);
+      if (tempCurrency !== settings.currency) updates.push(['currency', tempCurrency]);
       for (const [key, value] of updates) {
         const res = await fetch(`${API_BASE}/api/admin/settings/${key}`, {
           method: 'PUT',
@@ -1750,7 +1774,7 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
         });
         if (!res.ok) throw new Error(`Settings update failed: ${res.status}`);
       }
-      setSettings({ appName: tempName, appSubtitle: tempSubtitle });
+      setSettings({ appName: tempName, appSubtitle: tempSubtitle, currency: tempCurrency });
       setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save settings');
@@ -1824,6 +1848,15 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
             {settings.appSubtitle || <span className="text-gray-400 italic">Add a subtitle</span>}
           </p>
         </div>
+        <div>
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Currency</p>
+          <p
+            data-testid="admin-app-info-currency-display"
+            className="text-base font-medium text-gray-700"
+          >
+            {settings.currency}
+          </p>
+        </div>
       </Card>
 
       {editing && (
@@ -1859,6 +1892,15 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
                 onChange={(e) => setTempSubtitle(e.target.value)}
                 data-testid="admin-app-info-subtitle-input"
                 className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 font-medium text-gray-900 focus:border-orange-400 outline-none"
+              />
+            </div>
+            <div>
+              <Label htmlFor="app-info-currency-trigger">Currency</Label>
+              <CurrencyPicker
+                id="app-info-currency-trigger"
+                value={tempCurrency}
+                onChange={setTempCurrency}
+                testId="admin-app-info-currency"
               />
             </div>
             <div className="flex gap-3 pt-2">
