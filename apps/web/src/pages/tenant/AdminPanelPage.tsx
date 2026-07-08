@@ -19,19 +19,22 @@ import {
   AlertTriangle,
   Calendar,
   CheckCircle,
+  Download,
   Info,
   Pencil,
   RotateCcw,
+  Settings as SettingsIcon,
   ShieldCheck,
   Sparkles,
   Star,
+  Trash2,
   Users,
   Wrench,
   X,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Card, ConfirmDialog, CurrencyPicker, Label } from '@familyhub/ui';
-import { useAuth } from '../../lib/auth-context';
+import { signOutAll, useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
@@ -39,7 +42,7 @@ import { DEFAULT_TAB } from './dashboard-tabs';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = 'balance' | 'savings' | 'history' | 'users' | 'app-info';
+type Tab = 'balance' | 'savings' | 'history' | 'users' | 'settings';
 
 interface MemberItem {
   id: string;
@@ -93,11 +96,13 @@ interface WeekAction {
 }
 
 interface AppSettings {
-  appName: string;
-  appSubtitle: string;
   // FHS-441 — the family's currency (AED, GBP, …). Lives on tenants.currency
-  // server-side but is surfaced through this same settings map so the App
-  // Info tab has one save flow for all three fields.
+  // server-side but is surfaced through this same settings map.
+  //
+  // FHS-455 — appName/appSubtitle were dropped from this UI: the header
+  // always uses the family name, so those fields were never rendered
+  // anywhere. The backend app_settings keys are left alone (harmless) —
+  // only the UI was removed.
   currency: string;
 }
 
@@ -1718,41 +1723,54 @@ function UsersTab({ headers, slug }: { headers: Record<string, string> | null; s
   );
 }
 
-// ── App Info tab ──────────────────────────────────────────────────────────────
+// ── Settings tab (FHS-455 rename of "App Info"; FHS-435 GDPR data export +
+// account deletion) ─────────────────────────────────────────────────────────
 
-function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
-  const [settings, setSettings] = useState<AppSettings>({
-    appName: '',
-    appSubtitle: '',
-    currency: 'USD',
-  });
+function SettingsTab({ headers, slug }: { headers: Record<string, string> | null; slug: string }) {
+  const navigate = useNavigate();
+
+  const [settings, setSettings] = useState<AppSettings>({ currency: 'USD' });
+  const [familyName, setFamilyName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [tempName, setTempName] = useState('');
-  const [tempSubtitle, setTempSubtitle] = useState('');
   const [tempCurrency, setTempCurrency] = useState('USD');
   const [saving, setSaving] = useState(false);
+
+  // FHS-435 — Download my data.
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  // FHS-435 — Delete my account (irreversible).
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!headers) return;
     setLoading(true);
     fetch(`${API_BASE}/api/admin/settings`, { headers })
       .then((r) => (r.ok ? r.json() : {}))
-      .then((b: Partial<AppSettings>) =>
-        setSettings({
-          appName: b.appName ?? '',
-          appSubtitle: b.appSubtitle ?? '',
-          currency: b.currency ?? 'USD',
-        }),
-      )
+      .then((b: Partial<AppSettings>) => setSettings({ currency: b.currency ?? 'USD' }))
       .catch(() => setError('Failed to load settings'))
       .finally(() => setLoading(false));
   }, [headers]);
 
+  // Family display name — needed for the "type the family name to confirm"
+  // delete gate. /api/me already lists every tenant the caller belongs to.
+  useEffect(() => {
+    if (!headers) return;
+    fetch(`${API_BASE}/api/me`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b: { tenants?: { slug: string; name: string }[] } | null) => {
+        const tenant = b?.tenants?.find((t) => t.slug === slug);
+        if (tenant) setFamilyName(tenant.name);
+      })
+      .catch(() => {});
+  }, [headers, slug]);
+
   const startEdit = () => {
-    setTempName(settings.appName);
-    setTempSubtitle(settings.appSubtitle);
     setTempCurrency(settings.currency);
     setEditing(true);
   };
@@ -1762,19 +1780,15 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
     setSaving(true);
     setError(null);
     try {
-      const updates: [string, string][] = [];
-      if (tempName !== settings.appName) updates.push(['appName', tempName]);
-      if (tempSubtitle !== settings.appSubtitle) updates.push(['appSubtitle', tempSubtitle]);
-      if (tempCurrency !== settings.currency) updates.push(['currency', tempCurrency]);
-      for (const [key, value] of updates) {
-        const res = await fetch(`${API_BASE}/api/admin/settings/${key}`, {
+      if (tempCurrency !== settings.currency) {
+        const res = await fetch(`${API_BASE}/api/admin/settings/currency`, {
           method: 'PUT',
           headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value }),
+          body: JSON.stringify({ value: tempCurrency }),
         });
         if (!res.ok) throw new Error(`Settings update failed: ${res.status}`);
       }
-      setSettings({ appName: tempName, appSubtitle: tempSubtitle, currency: tempCurrency });
+      setSettings({ currency: tempCurrency });
       setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save settings');
@@ -1783,30 +1797,80 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
     }
   };
 
+  const handleExport = async () => {
+    if (!headers) return;
+    setExportBusy(true);
+    setExportError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/export`, { headers });
+      if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const match = /filename="([^"]+)"/.exec(disposition);
+      const filename = match?.[1] ?? 'familyhub-export.json';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : 'Failed to download your data');
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!headers) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/delete-account`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: deleteConfirmText }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(body.detail ?? `Delete failed: ${res.status}`);
+      }
+      // Account is gone — clear the local session (+ any kid PIN token on
+      // this device) and leave the app.
+      await signOutAll();
+      navigate('/', { replace: true });
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Failed to delete account');
+      setDeleteBusy(false);
+    }
+  };
+
   if (loading)
     return (
-      <p data-testid="admin-app-info-loading" className="text-sm text-purple-200">
+      <p data-testid="admin-settings-loading" className="text-sm text-purple-200">
         Loading settings…
       </p>
     );
 
   return (
     <div
-      data-testid="admin-app-info-ready"
+      data-testid="admin-settings-ready"
       className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-purple-500 p-2.5 rounded-xl text-white shadow-sm">
-            <Sparkles className="w-5 h-5" />
+            <SettingsIcon className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-xl font-black text-white">App Info</h3>
-            <p className="text-sm text-purple-400 font-medium">Family app settings</p>
+            <h3 className="text-xl font-black text-white">Settings</h3>
+            <p className="text-sm text-purple-400 font-medium">Family settings</p>
           </div>
         </div>
         <button
-          data-testid="admin-app-info-edit-btn"
+          data-testid="admin-settings-edit-btn"
           onClick={editing ? () => setEditing(false) : startEdit}
           className={[
             'text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors border min-h-[44px]',
@@ -1831,27 +1895,9 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
 
       <Card className="p-5 space-y-4">
         <div>
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">App Name</p>
-          <p
-            data-testid="admin-app-info-name-display"
-            className="text-2xl font-black text-gray-900"
-          >
-            {settings.appName || <span className="text-gray-400 italic">Add an app name</span>}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Subtitle</p>
-          <p
-            data-testid="admin-app-info-subtitle-display"
-            className="text-base font-medium text-gray-700"
-          >
-            {settings.appSubtitle || <span className="text-gray-400 italic">Add a subtitle</span>}
-          </p>
-        </div>
-        <div>
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Currency</p>
           <p
-            data-testid="admin-app-info-currency-display"
+            data-testid="admin-settings-currency-display"
             className="text-base font-medium text-gray-700"
           >
             {settings.currency}
@@ -1863,44 +1909,12 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
         <Card className="p-5 animate-in zoom-in-95 duration-200">
           <div className="space-y-4">
             <div>
-              <label
-                htmlFor="app-info-name-input"
-                className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block"
-              >
-                App Name
-              </label>
-              <input
-                id="app-info-name-input"
-                type="text"
-                value={tempName}
-                onChange={(e) => setTempName(e.target.value)}
-                data-testid="admin-app-info-name-input"
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 font-medium text-gray-900 focus:border-orange-400 outline-none"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="app-info-subtitle-input"
-                className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block"
-              >
-                Subtitle
-              </label>
-              <input
-                id="app-info-subtitle-input"
-                type="text"
-                value={tempSubtitle}
-                onChange={(e) => setTempSubtitle(e.target.value)}
-                data-testid="admin-app-info-subtitle-input"
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 font-medium text-gray-900 focus:border-orange-400 outline-none"
-              />
-            </div>
-            <div>
-              <Label htmlFor="app-info-currency-trigger">Currency</Label>
+              <Label htmlFor="settings-currency-trigger">Currency</Label>
               <CurrencyPicker
-                id="app-info-currency-trigger"
+                id="settings-currency-trigger"
                 value={tempCurrency}
                 onChange={setTempCurrency}
-                testId="admin-app-info-currency"
+                testId="admin-settings-currency"
               />
             </div>
             <div className="flex gap-3 pt-2">
@@ -1910,7 +1924,7 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
                 fullWidth
                 disabled={saving}
                 onClick={() => void handleSave()}
-                testId="admin-app-info-save-btn"
+                testId="admin-settings-save-btn"
               >
                 {saving ? 'Saving…' : 'Save Changes'}
               </Button>
@@ -1921,6 +1935,112 @@ function AppInfoTab({ headers }: { headers: Record<string, string> | null }) {
           </div>
         </Card>
       )}
+
+      {/* FHS-435 — GDPR: Your data */}
+      <Card className="p-5 space-y-4">
+        <div>
+          <h4 className="text-base font-black text-gray-900">Your data</h4>
+          <p className="text-xs text-gray-500 mt-1">
+            See our{' '}
+            <Link
+              to="/privacy"
+              target="_blank"
+              rel="noreferrer"
+              className="underline font-bold text-gray-700"
+            >
+              Privacy Policy
+            </Link>{' '}
+            for how we handle your family&apos;s information.
+          </p>
+        </div>
+
+        <Button
+          variant="secondary"
+          size="md"
+          disabled={exportBusy}
+          onClick={() => void handleExport()}
+          testId="admin-settings-export-btn"
+        >
+          <Download className="w-4 h-4" />
+          <span className="ml-1.5">{exportBusy ? 'Preparing…' : 'Download my data'}</span>
+        </Button>
+        {exportError && (
+          <p data-testid="admin-settings-export-error" className="text-sm text-red-600 font-bold">
+            {exportError}
+          </p>
+        )}
+
+        <div className="border-t border-gray-100 pt-4">
+          <p className="text-xs font-bold text-red-600 uppercase tracking-wide mb-2">Danger zone</p>
+          <Button
+            variant="danger"
+            size="md"
+            onClick={() => {
+              setDeleteConfirmText('');
+              setDeleteError(null);
+              setDeleteOpen(true);
+            }}
+            testId="admin-settings-delete-btn"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span className="ml-1.5">Delete my account</span>
+          </Button>
+          <p className="text-xs text-gray-500 mt-2">
+            This permanently deletes your family and everything in it — members, tasks, meals,
+            habits, savings, everything. This cannot be undone.
+          </p>
+        </div>
+      </Card>
+
+      <ConfirmDialog
+        isOpen={deleteOpen}
+        variant="danger"
+        title="Delete your family's account?"
+        message={
+          <>
+            This <strong>permanently deletes {familyName || 'your family'}</strong> and every
+            member, task, meal, event, habit, and record inside it. This action cannot be undone.
+          </>
+        }
+        confirmLabel="Delete forever"
+        busy={deleteBusy}
+        confirmDisabled={!familyName || deleteConfirmText.trim() !== familyName.trim()}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteOpen(false)}
+        testId="admin-settings-delete-confirm"
+      >
+        <div className="mt-4">
+          <label
+            htmlFor="settings-delete-confirm-input"
+            className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block"
+          >
+            Type{' '}
+            <span
+              data-testid="admin-settings-delete-family-name"
+              className="font-black text-gray-900"
+            >
+              {familyName || '…'}
+            </span>{' '}
+            to confirm
+          </label>
+          <input
+            id="settings-delete-confirm-input"
+            type="text"
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            data-testid="admin-settings-delete-confirm-input"
+            className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 font-medium text-gray-900 focus:border-red-400 outline-none"
+          />
+          {deleteError && (
+            <p
+              data-testid="admin-settings-delete-error"
+              className="text-sm text-red-600 font-bold mt-2"
+            >
+              {deleteError}
+            </p>
+          )}
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }
@@ -2001,7 +2121,7 @@ export function AdminPanelPage() {
     { key: 'savings', icon: <Pencil className="w-4 h-4" />, label: 'Savings' },
     { key: 'history', icon: <Calendar className="w-4 h-4" />, label: 'History' },
     { key: 'users', icon: <Users className="w-4 h-4" />, label: 'Users' },
-    { key: 'app-info', icon: <Sparkles className="w-4 h-4" />, label: 'App Info' },
+    { key: 'settings', icon: <SettingsIcon className="w-4 h-4" />, label: 'Settings' },
   ];
 
   const childScopedTab =
@@ -2124,7 +2244,7 @@ export function AdminPanelPage() {
 
             {activeTab === 'users' && <UsersTab headers={headers} slug={slug} />}
 
-            {activeTab === 'app-info' && <AppInfoTab headers={headers} />}
+            {activeTab === 'settings' && <SettingsTab headers={headers} slug={slug} />}
           </div>
         </div>
       </div>
