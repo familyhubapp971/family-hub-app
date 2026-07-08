@@ -24,6 +24,34 @@ A full kid+parent session is **12–19 requests**, matching what a real
 person actually does when they open the app — not two endpoints in a
 vacuum.
 
+## Quick start (run from this folder)
+
+This folder is self-contained — `cd tests/performance` and use its own
+commands (k6 must be installed: `brew install k6`):
+
+```bash
+cd tests/performance
+
+pnpm seed                 # create throwaway loadtest- tenants + fixtures (needs DATABASE_URL)
+pnpm smoke                # 1 VU, 30s — quick sanity (runs in CI)
+pnpm load                 # 50 VUs, 5m — steady expected load
+pnpm stress               # 200 VUs, 10m — past peak
+pnpm soak                 # 30 VUs, 2h — leak/drift detection
+pnpm smoke:auth           # auth-only smoke
+
+# point at staging + a seeded fixtures file:
+BASE_URL=$STAGING_API_URL pnpm smoke -- -e LOAD_FIXTURES=fixtures/load-tenants.json
+```
+
+(The same scenarios are also exposed from the repo root as
+`pnpm perf:smoke` / `perf:load` / … — either entry point works.)
+
+> ⚠️ Before `load`/`stress`/`soak` against staging: the API rate-limits
+> **100 requests/min per IP**, so a single-machine run measures 429
+> rejections unless `RATE_LIMIT_PER_MINUTE` is raised on staging for the
+> window. See `config.js`. **Only GET-load `loadtest-` synthetic tenants —
+> never write against real family slugs.**
+
 ## 1. Seed synthetic tenants first
 
 The sessions above need real data to read (an empty family makes every
