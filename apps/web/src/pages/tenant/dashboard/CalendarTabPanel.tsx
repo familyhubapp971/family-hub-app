@@ -151,7 +151,7 @@ function formatWeekRange(weekStart: string): string {
       timeZone: 'UTC',
     });
   };
-  return `${fmt(weekStart)} — ${fmt(end)}`;
+  return `${fmt(weekStart)} - ${fmt(end)}`;
 }
 
 function localTodayIso(): string {
@@ -222,7 +222,7 @@ export function CalendarTabPanel() {
         if (!mountedRef.current) return;
         setStatus({
           kind: 'error',
-          message: err instanceof Error ? err.message : 'Network error — try again.',
+          message: err instanceof Error ? err.message : 'Network error. Try again.',
         });
       }
     },
@@ -288,7 +288,7 @@ export function CalendarTabPanel() {
       setAnnouncement(editingId ? `${title} updated` : `${title} added`);
       await load(weekStart);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
+      setSaveError(err instanceof Error ? err.message : 'Network error. Try again.');
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -315,7 +315,7 @@ export function CalendarTabPanel() {
       await load(weekStart);
       setPendingDelete(null);
     } catch (err) {
-      setAnnouncement(err instanceof Error ? err.message : 'Network error — try again.');
+      setAnnouncement(err instanceof Error ? err.message : 'Network error. Try again.');
     } finally {
       setDeleting(false);
     }
@@ -680,7 +680,7 @@ export function CalendarTabPanel() {
                       data-testid={`calendar-add-blocked-${dayIso}`}
                       className="flex min-h-[44px] w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-400"
                     >
-                      This day has passed — pick today or a future date to add an activity.
+                      This day has passed. Pick today or a future date to add an activity.
                     </p>
                   ) : (
                     <button

@@ -599,7 +599,7 @@ export function LessonView({
       )}
       {status === 'error' && (
         <p data-testid="lesson-error" role="alert" className="text-sm font-bold text-red-500">
-          Couldn&rsquo;t load the lesson &mdash; try again.
+          Couldn&rsquo;t load the lesson. Try again.
         </p>
       )}
       {status === 'ready' && !current && (
@@ -607,7 +607,7 @@ export function LessonView({
           data-testid="lesson-empty"
           className="rounded-xl border-2 border-black bg-white p-5 text-sm font-bold text-gray-500 shadow-neo-sm"
         >
-          No questions here yet &mdash; try a different difficulty.
+          No questions here yet. Try a different difficulty.
         </p>
       )}
       {status === 'ready' && current && (
@@ -651,7 +651,7 @@ export function LessonView({
               role="alert"
               className="mt-4 text-sm font-black text-red-600"
             >
-              Something went wrong &mdash; tap a choice to try again.
+              Something went wrong. Tap a choice to try again.
             </p>
           )}
 

@@ -86,7 +86,7 @@ export function KidStats({
         </h3>
         {habits.length === 0 ? (
           <p className="mt-3 text-sm font-bold text-gray-600">
-            No habits yet — ask a grown-up to add some! 🌱
+            No habits yet. Ask a grown-up to add some! 🌱
           </p>
         ) : (
           <ul className="mt-3 flex flex-col gap-4">

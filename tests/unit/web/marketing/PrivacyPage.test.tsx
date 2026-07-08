@@ -20,7 +20,7 @@ describe('<PrivacyPage />', () => {
   it('shows the draft banner so visitors know this is not the final policy', () => {
     renderPage();
     expect(screen.getByTestId('privacy-draft-banner')).toHaveTextContent(
-      'Draft privacy policy — this is our beta; the final version is coming soon.',
+      'Draft privacy policy. This is our beta; the final version is coming soon.',
     );
   });
 

@@ -139,7 +139,7 @@ export function KidFinishedWeekRecap({
           )}
           {actionsStatus === 'ready' && (saved ?? 0) === 0 && (planted ?? 0) === 0 && (
             <p data-testid="kid-recap-no-activity" className="text-sm font-bold text-gray-500">
-              No stars earned this week — there&rsquo;s always next week!
+              No stars earned this week. There&rsquo;s always next week!
             </p>
           )}
           {actionsStatus === 'ready' && (

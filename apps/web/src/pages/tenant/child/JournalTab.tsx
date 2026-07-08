@@ -294,7 +294,7 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
       });
       if (!res.ok) {
         // Try to surface server detail, fall back to generic message (FIX 2).
-        let msg = "Couldn't save — try again.";
+        let msg = "Couldn't save. Try again.";
         try {
           const errBody = (await res.json()) as { message?: string; error?: string };
           if (errBody.message ?? errBody.error) {
@@ -317,7 +317,7 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
       setTimeout(() => setSaveState('idle'), 2000);
     } catch {
       setSaveState('idle');
-      setSaveError("Couldn't save — try again.");
+      setSaveError("Couldn't save. Try again.");
     }
   }, [
     headers,
@@ -352,7 +352,7 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
   if (error) {
     return (
       <p data-testid="journal-error" role="alert" className="text-sm font-bold text-red-300">
-        Couldn&rsquo;t load your journal — try again.
+        Couldn&rsquo;t load your journal. Try again.
       </p>
     );
   }
@@ -454,7 +454,7 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
               </div>
               <div>
                 <p className="text-sm font-bold text-black">&ldquo;{quote.text}&rdquo;</p>
-                <p className="mt-0.5 text-xs text-gray-600">— {quote.author}</p>
+                <p className="mt-0.5 text-xs text-gray-600">({quote.author})</p>
               </div>
             </div>
 

@@ -70,7 +70,7 @@ const slides = [
     id: 'sarah',
     headline: 'Your whole family, finally in sync.',
     subtitle:
-      "One beautifully calm place for the schedules, tasks, meals, and learning that make family life hum — so everyone wakes up knowing what's on.",
+      "One beautifully calm place for the schedules, tasks, meals, and learning that make family life hum, so everyone wakes up knowing what's on.",
     // Copy length matched across all 3 slides (~20 chars) so the CTA
     // button doesn't visibly resize during the cross-fade transition.
     cta: 'Start your free trial',
@@ -84,7 +84,7 @@ const slides = [
     id: 'invited-parent',
     headline: null,
     subtitle:
-      "From this week's meals to the kids' assignments, you'll both be looking at the same plan. Tap the link — let's run the week together.",
+      "From this week's meals to the kids' assignments, you'll both be looking at the same plan. Tap the link. Let's run the week together.",
     cta: 'Join the family team',
   },
   {
@@ -96,7 +96,7 @@ const slides = [
     id: 'kid',
     headline: null,
     subtitle:
-      'Lessons done, chores ticked, rewards unlocked — your kids see their own week, build streaks, and feel proud without you nagging.',
+      'Lessons done, chores ticked, rewards unlocked: your kids see their own week, build streaks, and feel proud without you nagging.',
     cta: 'Add your kids today',
   },
   {
@@ -107,7 +107,7 @@ const slides = [
     id: 'dad',
     headline: null,
     subtitle:
-      'Be the dad your kids notice — not because you nagged, but because you showed up. Family Hub puts the wins on your radar so you can land them.',
+      'Be the dad your kids notice, not because you nagged, but because you showed up. Family Hub puts the wins on your radar so you can land them.',
     cta: 'Get in the loop',
   },
 ] as const;
@@ -137,7 +137,7 @@ const featureCards = [
     iconColor: 'text-pink-500',
     Icon: Calendar,
     title: 'One calendar, every child',
-    body: "School runs, swim class, dentist — see everyone's schedule in one place. Color-coded by kid.",
+    body: "School runs, swim class, dentist: see everyone's schedule in one place. Color-coded by kid.",
   },
   {
     accentBar: 'border-l-green-500',
@@ -146,7 +146,7 @@ const featureCards = [
     iconColor: 'text-green-600',
     Icon: CheckSquare,
     title: 'Tasks that actually stick',
-    body: 'Assign chores, track habits, reward effort. No more nagging — the app does it for you.',
+    body: 'Assign chores, track habits, reward effort. No more nagging. The app does it for you.',
   },
   {
     accentBar: 'border-l-blue-500',
@@ -155,7 +155,7 @@ const featureCards = [
     iconColor: 'text-blue-600',
     Icon: BookOpen,
     title: 'Curious minds, every day',
-    body: 'Quran, math, languages, world flags — culturally aware defaults baked in. Bite-sized, kid-friendly, parent-tracked.',
+    body: 'Quran, math, languages, world flags: culturally aware defaults baked in. Bite-sized, kid-friendly, parent-tracked.',
   },
   {
     accentBar: 'border-l-orange-400',
@@ -164,7 +164,7 @@ const featureCards = [
     iconColor: 'text-orange-500',
     Icon: NotebookPen,
     title: 'Memories that last',
-    body: "A shared family journal — milestones, gratitude, the funny things the kids said. Your family's story, safe in one place.",
+    body: "A shared family journal: milestones, gratitude, the funny things the kids said. Your family's story, safe in one place.",
   },
 ] as const;
 
@@ -692,8 +692,8 @@ function LoggedInLanding({
         </h1>
         <p className="mx-auto max-w-2xl text-base font-bold text-purple-100 md:text-lg">
           {isKid
-            ? 'Your hub is ready — jump back in.'
-            : `The ${familyLabel} hub is ready — jump back in where you left off.`}
+            ? 'Your hub is ready. Jump back in.'
+            : `The ${familyLabel} hub is ready. Jump back in where you left off.`}
         </p>
       </div>
 

@@ -334,7 +334,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
   if (learnStatus === 'error' && booksStatus === 'error') {
     return (
       <p data-testid="learn-error" role="alert" className="text-sm font-bold text-red-300">
-        Couldn&rsquo;t load — try again.
+        Couldn&rsquo;t load. Try again.
       </p>
     );
   }
@@ -493,7 +493,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
           )}
           {booksStatus === 'ready' && books.length === 0 && (
             <p data-testid="reading-log-empty" className="text-sm text-gray-500">
-              No books yet — add one above!
+              No books yet. Add one above!
             </p>
           )}
           {booksStatus === 'ready' && books.length > 0 && (

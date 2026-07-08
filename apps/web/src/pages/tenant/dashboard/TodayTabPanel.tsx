@@ -252,7 +252,7 @@ export function TodayTabPanel() {
             </h3>
             {recentActivity.length === 0 ? (
               <p data-testid="today-activity-empty" className="text-sm font-bold text-gray-500">
-                Nothing yet — activity shows up here.
+                Nothing yet. Activity shows up here.
               </p>
             ) : (
               <ul className="space-y-4">
@@ -320,7 +320,7 @@ function MemberCard({
           className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-md border-2 border-yellow-400 bg-yellow-50 px-2 py-1 text-[10px] font-bold text-yellow-800"
         >
           <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-full bg-yellow-500" />
-          Pending &mdash; hasn&rsquo;t signed up
+          Pending: hasn&rsquo;t signed up
         </span>
       )}
 

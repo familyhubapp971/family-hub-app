@@ -15,14 +15,14 @@ const MESSAGES: Record<LoadingContext, string[]> = {
   callback: [
     "Getting your family's space ready…",
     'Checking in with the hub…',
-    'Almost there — just a moment!',
+    'Almost there, just a moment!',
     "Pulling up your family's world…",
     'Fetching the latest from your hub…',
   ],
   protected: [
     'Picking up where you left off…',
     'Checking in with the hub…',
-    'Almost there — just a moment!',
+    'Almost there, just a moment!',
     'Loading your dashboard…',
     'Fetching the latest from your hub…',
   ],
@@ -74,7 +74,7 @@ export function LoadingScreen({
   }, [error]);
 
   const isError = Boolean(error) || timedOut;
-  const errorMessage = error?.message ?? 'Something went wrong — please try again.';
+  const errorMessage = error?.message ?? 'Something went wrong. Please try again.';
 
   return (
     <div

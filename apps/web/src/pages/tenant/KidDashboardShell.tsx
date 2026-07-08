@@ -140,7 +140,7 @@ function KidTasksPanel({ kidToken }: { kidToken: string | null }) {
   if (state.kind === 'error') {
     return (
       <p data-testid="kid-tasks-error" role="alert" className="text-sm font-bold text-red-600">
-        Couldn&rsquo;t load tasks — try again.
+        Couldn&rsquo;t load tasks. Try again.
       </p>
     );
   }
@@ -151,7 +151,7 @@ function KidTasksPanel({ kidToken }: { kidToken: string | null }) {
           ⭐
         </p>
         <h2 className="mt-3 font-heading text-2xl text-black">Tasks</h2>
-        <p className="mt-1 text-sm font-bold text-gray-600">Nothing to do right now — nice!</p>
+        <p className="mt-1 text-sm font-bold text-gray-600">Nothing to do right now. Nice!</p>
       </div>
     );
   }

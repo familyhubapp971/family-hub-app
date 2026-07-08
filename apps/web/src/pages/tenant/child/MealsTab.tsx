@@ -119,7 +119,7 @@ export function MealsTab({ memberId }: { memberId: string }) {
   if (status === 'error') {
     return (
       <p data-testid="meals-error" role="alert" className="text-sm font-bold text-red-300">
-        Couldn&rsquo;t load your meals — try again.
+        Couldn&rsquo;t load your meals. Try again.
       </p>
     );
   }

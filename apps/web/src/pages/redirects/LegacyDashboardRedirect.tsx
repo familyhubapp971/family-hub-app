@@ -161,13 +161,13 @@ function CreateFamilyPanel({ session }: CreateFamilyPanelProps) {
         return;
       }
       if (res.status === 409) {
-        setError('That family URL is taken — try a different one.');
+        setError('That family URL is taken. Try a different one.');
         setSubmitting(false);
         setEditingSlug(true);
         return;
       }
       if (res.status === 400) {
-        setError("Couldn't read your family details — please check the inputs.");
+        setError("Couldn't read your family details. Please check the inputs.");
         setSubmitting(false);
         return;
       }
@@ -176,7 +176,7 @@ function CreateFamilyPanel({ session }: CreateFamilyPanelProps) {
       );
       setSubmitting(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error — try again.');
+      setError(err instanceof Error ? err.message : 'Network error. Try again.');
       setSubmitting(false);
     }
   }

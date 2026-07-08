@@ -427,7 +427,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
               Help shape Family Hub
             </h2>
             <p className="mt-0.5 text-sm font-medium text-black/80">
-              You&apos;re a beta tester — tell us how it&apos;s going (takes ~1 min).
+              You&apos;re a beta tester: tell us how it&apos;s going (takes ~1 min).
             </p>
             <button
               type="button"
@@ -465,7 +465,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
               {variant === 'public' && (
                 <div className="space-y-4 rounded-xl border-2 border-black bg-yellow-50 p-4">
                   <p className="text-xs font-medium text-gray-600">
-                    Optional — leave your email if you&apos;re happy to be contacted.
+                    Optional: leave your email if you&apos;re happy to be contacted.
                   </p>
                   <div>
                     <label

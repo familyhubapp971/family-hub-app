@@ -109,7 +109,7 @@ export function PricingPage() {
             Simple, honest pricing
           </h1>
           <p className="text-sm text-purple-200 md:text-base">
-            One bill for the whole family — mums, dads, kids, the lot. No per-seat surprises, cancel
+            One bill for the whole family: mums, dads, kids, the lot. No per-seat surprises, cancel
             any time, two months free on annual plans.
           </p>
         </div>

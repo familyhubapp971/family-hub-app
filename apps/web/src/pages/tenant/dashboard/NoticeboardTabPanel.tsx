@@ -85,7 +85,7 @@ export function NoticeboardTabPanel() {
     } catch (err) {
       setStatus({
         kind: 'error',
-        message: err instanceof Error ? err.message : 'Network error — try again.',
+        message: err instanceof Error ? err.message : 'Network error. Try again.',
       });
     }
   }, [headers]);
@@ -112,7 +112,7 @@ export function NoticeboardTabPanel() {
         if (cancelled || (err instanceof Error && err.name === 'AbortError')) return;
         setStatus({
           kind: 'error',
-          message: err instanceof Error ? err.message : 'Network error — try again.',
+          message: err instanceof Error ? err.message : 'Network error. Try again.',
         });
       }
     })();
@@ -183,7 +183,7 @@ export function NoticeboardTabPanel() {
         await refetch();
         requestAnimationFrame(() => addButtonRef.current?.focus());
       } catch (err) {
-        setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
+        setSaveError(err instanceof Error ? err.message : 'Network error. Try again.');
       } finally {
         savingRef.current = false;
         setSaving(false);
@@ -211,7 +211,7 @@ export function NoticeboardTabPanel() {
         await refetch();
       } catch (err) {
         setErrorAnnouncement(
-          err instanceof Error ? err.message : "Network error — couldn't delete note.",
+          err instanceof Error ? err.message : "Network error. Couldn't delete note.",
         );
       } finally {
         deletingRef.current.delete(id);
@@ -355,7 +355,7 @@ export function NoticeboardTabPanel() {
             data-testid="notices-empty"
             className="py-4 text-center text-sm font-bold text-lime-800"
           >
-            No notes yet — post the first one.
+            No notes yet. Post the first one.
           </p>
         ) : (
           <ul

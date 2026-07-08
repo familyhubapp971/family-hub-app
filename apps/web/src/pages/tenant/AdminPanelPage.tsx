@@ -519,13 +519,13 @@ function InvestQuickAction({
         };
         if (body.errorCode === 'INSUFFICIENT_STICKERS') {
           throw new Error(
-            `Not enough stickers to invest — ${body.available ?? 0} available, but ${num} needed.`,
+            `Not enough stickers to invest: ${body.available ?? 0} available, but ${num} needed.`,
           );
         }
         if (body.errorCode === 'ACTIVE_INVESTMENT_EXISTS') {
           throw new Error('This habit already has an active investment.');
         }
-        throw new Error('Could not invest right now — please try again.');
+        throw new Error('Could not invest right now. Please try again.');
       }
       onClose();
     } catch (e) {
@@ -940,7 +940,7 @@ function BalanceTab({
         </div>
 
         {/* Admin Override Active banner */}
-        <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3 items-start">
+        <div className="mt-4 bg-amber-50 border-2 border-black rounded-xl p-4 shadow-neo-sm flex gap-3 items-start">
           <ShieldCheck className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-bold text-amber-900">Admin Override Active</p>
@@ -1128,7 +1128,7 @@ function SavingsTab({
 
       {editing && (
         <Card className="p-5 animate-in zoom-in-95 duration-200">
-          <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 flex gap-3 items-start mb-5">
+          <div className="bg-yellow-50 border-2 border-black rounded-xl p-4 shadow-neo-sm flex gap-3 items-start mb-5">
             <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-bold text-yellow-800">Manual Adjustment Warning</p>
@@ -1598,7 +1598,7 @@ function HistoryTab({
         ))}
       </div>
 
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 items-start">
+      <div className="bg-blue-50 border-2 border-black rounded-xl p-4 shadow-neo-sm flex gap-3 items-start">
         <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
         <p className="text-sm text-blue-800 font-medium">
           Week summary data shows what was carried forward and retrieved. Edit cash fields to fix
@@ -1706,7 +1706,7 @@ function UsersTab({ headers, slug }: { headers: Record<string, string> | null; s
         </div>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-2 items-start">
+      <div className="bg-amber-50 border-2 border-black rounded-xl p-3 shadow-neo-sm flex gap-2 items-start">
         <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-amber-800 font-medium">
           Member management (inviting parents, setting PINs, removing members) is done on the{' '}
@@ -2013,7 +2013,7 @@ function SettingsTab({ headers, slug }: { headers: Record<string, string> | null
             <span className="ml-1.5">Delete my account</span>
           </Button>
           <p className="text-xs text-gray-500 mt-2">
-            This permanently deletes your family and everything in it — members, tasks, meals,
+            This permanently deletes your family and everything in it: members, tasks, meals,
             habits, savings, everything. This cannot be undone.
           </p>
         </div>

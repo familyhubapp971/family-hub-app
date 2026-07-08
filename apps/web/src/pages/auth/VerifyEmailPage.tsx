@@ -119,11 +119,11 @@ export function VerifyEmailPage() {
               <span className="text-black" data-testid="verify-email-address">
                 {email}
               </span>
-              . Click the link to sign in — no password needed.
+              . Click the link to sign in. No password needed.
             </>
           ) : (
             <>
-              We&rsquo;ve sent you a magic link. Open the email and click the link to sign in — no
+              We&rsquo;ve sent you a magic link. Open the email and click the link to sign in. No
               password needed.
             </>
           )}

@@ -101,7 +101,7 @@ export function KidMealsPanel({ kidToken }: { kidToken: string | null }) {
   if (status === 'error') {
     return (
       <p data-testid="kid-meals-error" role="alert" className="text-sm font-bold text-red-300">
-        Couldn&rsquo;t load your meals — try again.
+        Couldn&rsquo;t load your meals. Try again.
       </p>
     );
   }

@@ -43,7 +43,7 @@ const sections: Section[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'Family Hub is a tool for **parents/guardians to run their family** — meals, activities, tasks, habits and a kids\' rewards ("sticker") system. **Adults create the account.** Children use the app through a profile that a parent sets up and controls (a name, an avatar, and a PIN). Family Hub is **not** aimed at children signing up on their own.',
+        text: 'Family Hub is a tool for **parents/guardians to run their family**: meals, activities, tasks, habits and a kids\' rewards ("sticker") system. **Adults create the account.** Children use the app through a profile that a parent sets up and controls (a name, an avatar, and a PIN). Family Hub is **not** aimed at children signing up on their own.',
       },
     ],
   },
@@ -56,7 +56,7 @@ const sections: Section[] = [
         items: [
           "Account: email address, display name, the family's name.",
           'Settings: timezone, currency, app name/subtitle.',
-          'Billing (only if you subscribe): handled by **Stripe** — we do not store your card number. «Confirm Stripe.»',
+          'Billing (only if you subscribe): handled by **Stripe**. We do not store your card number. «Confirm Stripe.»',
         ],
       },
       { kind: 'p', text: '**About children in the family (entered/controlled by the parent)**' },
@@ -64,7 +64,7 @@ const sections: Section[] = [
         kind: 'ul',
         items: [
           'Profile: display name (often a first name only), chosen avatar emoji, and a short numeric **PIN** (stored hashed, never in plain text).',
-          'Activity in the app: habits ticked, tasks, meals, calendar activities, learning progress (Maths/Logic/World Flags), and the in-app rewards ("stickers"/savings/investments) — all of which are used only to run the features you use.',
+          'Activity in the app: habits ticked, tasks, meals, calendar activities, learning progress (Maths/Logic/World Flags), and the in-app rewards ("stickers"/savings/investments), all of which are used only to run the features you use.',
         ],
       },
       {
@@ -86,10 +86,10 @@ const sections: Section[] = [
       {
         kind: 'ul',
         items: [
-          '**To provide the service you signed up for** — legal basis: *performance of a contract*.',
-          '**To keep it secure and working** (rate-limiting, error monitoring, backups) — legal basis: *legitimate interests*.',
-          '**Optional feedback** you send us (the beta feedback form) — legal basis: *consent*; you choose whether to leave your name/email.',
-          '**Billing**, if you subscribe — *contract* / *legal obligation*.',
+          '**To provide the service you signed up for**, legal basis: *performance of a contract*.',
+          '**To keep it secure and working** (rate-limiting, error monitoring, backups), legal basis: *legitimate interests*.',
+          '**Optional feedback** you send us (the beta feedback form), legal basis: *consent*; you choose whether to leave your name/email.',
+          '**Billing**, if you subscribe (*contract* / *legal obligation*).',
         ],
       },
       {
@@ -99,13 +99,13 @@ const sections: Section[] = [
     ],
   },
   {
-    title: "5. Children's data — how we protect it",
+    title: "5. Children's data: how we protect it",
     blocks: [
       {
         kind: 'ul',
         items: [
           "A child's profile is **created and controlled by a parent**. Parents can view, edit, and delete their children's data at any time from the app.",
-          "Children's data is used **only** to run the features (rewards, habits, learning, calendar) — never for marketing.",
+          "Children's data is used **only** to run the features (rewards, habits, learning, calendar), never for marketing.",
           "We follow a **data-minimisation** approach and design with the Children's Code in mind (privacy-by-default, no nudge techniques, no behavioural ads).",
           "«If you later add any feature that changes what children's data is used for, update this section and seek consent.»",
         ],
@@ -122,11 +122,11 @@ const sections: Section[] = [
       {
         kind: 'ul',
         items: [
-          '**Supabase** — authentication + database hosting. «Confirm region.»',
-          '**Railway** — application hosting.',
-          '**Stripe** — payments (if you subscribe).',
-          '**«Resend / email provider»** — sending account emails (magic-link sign-in).',
-          '**Sentry** — error monitoring.',
+          '**Supabase**: authentication + database hosting. «Confirm region.»',
+          '**Railway**: application hosting.',
+          '**Stripe**: payments (if you subscribe).',
+          '**«Resend / email provider»**: sending account emails (magic-link sign-in).',
+          '**Sentry**: error monitoring.',
         ],
       },
       {
@@ -202,7 +202,7 @@ const sections: Section[] = [
   },
   {
     title: '13. Contact',
-    blocks: [{ kind: 'p', text: '**«legal entity name»**, «address» — **«privacy@yourdomain»**.' }],
+    blocks: [{ kind: 'p', text: '**«legal entity name»**, «address», **«privacy@yourdomain»**.' }],
   },
 ];
 
@@ -266,7 +266,7 @@ export function PrivacyPage() {
           data-testid="privacy-draft-banner"
           className="mb-6 rounded-md border-2 border-black bg-yellow-300 p-4 font-bold text-black shadow-neo-sm"
         >
-          Draft privacy policy — this is our beta; the final version is coming soon.
+          Draft privacy policy. This is our beta; the final version is coming soon.
         </div>
 
         <div className="rounded-xl border-2 border-black bg-white p-6 text-gray-900 shadow-neo-lg md:p-10">

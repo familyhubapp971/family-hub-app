@@ -378,7 +378,7 @@ export function WorldFlagsCertificates({ memberId, kidToken }: WorldFlagsCertifi
   if (status === 'error') {
     return (
       <p data-testid="wfcert-error" role="alert" className="text-sm font-bold text-red-300">
-        Couldn&rsquo;t load — try again.
+        Couldn&rsquo;t load. Try again.
       </p>
     );
   }

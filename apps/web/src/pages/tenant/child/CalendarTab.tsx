@@ -139,7 +139,7 @@ export function CalendarTab({ memberId }: { memberId: string }) {
   if (status === 'error') {
     return (
       <p data-testid="calendar-error" role="alert" className="text-sm font-bold text-red-300">
-        Couldn&rsquo;t load your calendar — try again.
+        Couldn&rsquo;t load your calendar. Try again.
       </p>
     );
   }

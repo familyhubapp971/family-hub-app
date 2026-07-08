@@ -217,7 +217,7 @@ export function OnboardingPage() {
     } catch (err) {
       setStatus({
         kind: 'error',
-        message: err instanceof Error ? err.message : 'Network error — try again.',
+        message: err instanceof Error ? err.message : 'Network error. Try again.',
       });
     }
   }
@@ -235,7 +235,7 @@ export function OnboardingPage() {
       <div className="mx-auto w-full max-w-3xl">
         <h1 className="mb-2 font-heading text-3xl text-yellow-300">Set up your family</h1>
         <p className="mb-6 text-purple-100">
-          A few quick steps and we&rsquo;ll have your hub ready. Step {step} of {STEPS.length} —{' '}
+          A few quick steps and we&rsquo;ll have your hub ready. Step {step} of {STEPS.length}:{' '}
           <span className="font-bold text-white">{stepLabel}</span>.
         </p>
 
@@ -252,7 +252,7 @@ export function OnboardingPage() {
               <h2 className="mb-3 font-heading text-2xl">Welcome aboard.</h2>
               <p className="mb-4 font-bold text-gray-700">
                 A few quick steps and your family is good to go. Add the people in your family and
-                you&rsquo;re live — we&rsquo;ll handle the timezone and currency automatically.
+                you&rsquo;re live. We&rsquo;ll handle the timezone and currency automatically.
               </p>
               <p className="text-sm text-gray-600">
                 You can always change any of this later from settings.
@@ -264,7 +264,7 @@ export function OnboardingPage() {
             <div data-testid="onboarding-step-members">
               <h2 className="mb-3 font-heading text-2xl">Who&rsquo;s in the family?</h2>
               <p className="mb-4 font-bold text-gray-600">
-                That&rsquo;s you below — then add the rest of the family. You can always invite more
+                That&rsquo;s you below, then add the rest of the family. You can always invite more
                 later.
               </p>
               <div
@@ -364,7 +364,7 @@ export function OnboardingPage() {
                     {m.role === 'adult' && (
                       <div className="mt-3">
                         <Label htmlFor={`member-email-${m.uiId}`}>
-                          Email (optional — we&rsquo;ll invite them to sign in)
+                          Email (optional, we&rsquo;ll invite them to sign in)
                         </Label>
                         <Input
                           id={`member-email-${m.uiId}`}

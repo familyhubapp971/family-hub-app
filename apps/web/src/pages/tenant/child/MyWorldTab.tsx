@@ -1889,7 +1889,7 @@ export function MyWorldTab(
                         >
                           {completionPct >= 50
                             ? 'Great job! You finished'
-                            : 'Here’s how this week went — you finished'}
+                            : 'Here’s how this week went. You finished'}
                         </p>
                         <span
                           data-testid="finalized-completion-pct"
@@ -2156,7 +2156,7 @@ export function MyWorldTab(
                 data-testid="rewards-empty"
                 className="py-3 text-center text-sm font-bold text-gray-500"
               >
-                No rewards yet — a grown-up can add some.
+                No rewards yet. A grown-up can add some.
               </p>
             ) : (
               <ul className="grid grid-cols-1 gap-3" data-testid="rewards-grid">
