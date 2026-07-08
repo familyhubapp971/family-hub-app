@@ -79,6 +79,10 @@ interface WeekRow {
   id: string;
   weekNumber: number;
   year: number;
+  // Monday of this week, e.g. "2026-07-06" — the API already returns it;
+  // FHS-444 uses it to show a real date range next to "Week 27" so the
+  // number reads as a real week, not a mystery code.
+  startDate?: string;
   status: 'Active' | 'Finalized';
   isFinalized?: boolean;
   carriedOverStickers: number;
@@ -121,6 +125,21 @@ const ROLE_STYLE: Record<string, { disc: string; badge: string; label: string }>
 
 function roleStyle(role: string) {
   return ROLE_STYLE[role] ?? ROLE_STYLE['guest']!;
+}
+
+// FHS-444 — "Week 27" alone reads like a mystery code. Show the real
+// Mon–Sun date range underneath it so it's unmistakable, e.g. "6 Jul – 12 Jul".
+// UTC-anchored so the range never shifts a day for users in other timezones
+// (matches the pattern already used on the Calendar tab).
+function weekDateRange(startDate: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return null;
+  const [y, m, d] = startDate.split('-').map((s) => Number.parseInt(s, 10));
+  const start = new Date(Date.UTC(y!, m! - 1, d!));
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 6);
+  const fmt = (dt: Date) =>
+    dt.toLocaleDateString(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  return `${fmt(start)} – ${fmt(end)}`;
 }
 
 function initial(name: string): string {
@@ -1392,6 +1411,14 @@ function HistoryTab({
                 <div>
                   <h4 className="font-bold text-gray-900">
                     Week {week.weekNumber}, {week.year}
+                    {week.startDate && weekDateRange(week.startDate) && (
+                      <span
+                        className="ml-2 font-mono text-xs font-medium text-gray-500"
+                        data-testid={`admin-history-week-${week.id}-range`}
+                      >
+                        {weekDateRange(week.startDate)}
+                      </span>
+                    )}
                   </h4>
                   <span
                     className={[

@@ -479,14 +479,21 @@ export function CalendarTabPanel() {
               }`}
               aria-labelledby={`calendar-day-${dayIso}-h`}
             >
-              {/* Day header */}
+              {/* Day header — FHS-443: today gets an unmistakable pink
+                  header + badge; a passed day in this week is greyed out
+                  and labelled "Past" so it never reads as ambiguous. */}
               <div
                 className={`flex items-center justify-between border-b-2 border-black px-5 py-4 ${
-                  isToday ? 'bg-pink-400 text-black' : 'bg-white'
+                  isToday ? 'bg-pink-400 text-black' : isPastDay ? 'bg-gray-50' : 'bg-white'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <h3 id={`calendar-day-${dayIso}-h`} className="font-heading text-xl">
+                  <h3
+                    id={`calendar-day-${dayIso}-h`}
+                    className={`font-heading text-xl ${
+                      isPastDay && !isToday ? 'text-gray-400' : ''
+                    }`}
+                  >
                     {dayLabel(dayIso)}
                   </h3>
                   {isToday && (
@@ -495,6 +502,14 @@ export function CalendarTabPanel() {
                       className="rounded-full bg-black px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
                     >
                       Today
+                    </span>
+                  )}
+                  {isPastDay && !isToday && (
+                    <span
+                      data-testid={`calendar-past-pill-${dayIso}`}
+                      className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500"
+                    >
+                      Past
                     </span>
                   )}
                   {dayEvents.length > 0 && (
