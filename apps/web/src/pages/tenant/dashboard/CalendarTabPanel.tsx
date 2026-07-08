@@ -16,6 +16,7 @@ import { ConfirmDialog } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
+import { CalendarSyncCard } from './CalendarSyncCard';
 
 // FHS-230 / FHS-265 — CalendarTabPanel (Magic Patterns layout).
 //
@@ -353,6 +354,7 @@ export function CalendarTabPanel() {
       <p aria-live="polite" className="sr-only" data-testid="calendar-announcement">
         {announcement}
       </p>
+      <CalendarSyncCard headers={headers} />
       {/* Header + week navigation */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
