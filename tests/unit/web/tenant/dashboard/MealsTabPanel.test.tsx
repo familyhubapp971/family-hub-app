@@ -164,6 +164,17 @@ describe('<MealsTabPanel />', () => {
     expect(screen.getByTestId('meals-add-mon')).toBeInTheDocument();
   });
 
+  // FHS-444 — "Week N" alone reads like a mystery code; a hover/focus
+  // tooltip spells out the same real date range shown as the page subtitle.
+  it('the Week N pill carries a title tooltip with the real date range', async () => {
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+    const pill = screen.getByTestId('meals-week-number');
+    const range = screen.getByTestId('meals-week-range').textContent;
+    expect(pill.getAttribute('title')).toContain(range);
+  });
+
   it('shows a meal with its name, avatar dot, and a repeat icon when recurring', async () => {
     installApi({
       members: MEMBERS,

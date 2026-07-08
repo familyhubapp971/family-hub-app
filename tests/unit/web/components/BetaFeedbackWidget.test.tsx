@@ -1,11 +1,15 @@
 /**
- * Unit tests for BetaFeedbackWidget — FHS-418 (in-app) / FHS-429 (public)
+ * Unit tests for BetaFeedbackWidget — FHS-418 (in-app) / FHS-429 (public) /
+ * FHS-449 (streamlined layout — PMF + recommend up front, everything else
+ * behind an "A few more (optional)" expander).
  *
  * Covers:
  *  - button renders and opens dialog
  *  - submit disabled with nothing answered
  *  - answering one question enables submit
  *  - recommendScore = 0 is a valid answer (falsy-value guard)
+ *  - the "A few more" expander is collapsed on open and reveals the
+ *    secondary rating rows + free-text boxes once toggled
  *  - submit POSTs the right body and shows thank-you
  *  - re-opening after success shows a blank form (not thank-you)
  *  - error response shows inline error message
@@ -65,6 +69,12 @@ function openDialog() {
   fireEvent.click(screen.getByTestId('beta-feedback-button'));
 }
 
+// FHS-449 — solves/ease/keep + the three free-text boxes live behind the
+// "A few more (optional)" expander; open it before interacting with them.
+function openMore() {
+  fireEvent.click(screen.getByTestId('beta-feedback-more-toggle'));
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('<BetaFeedbackWidget />', () => {
@@ -98,6 +108,7 @@ describe('<BetaFeedbackWidget />', () => {
   it('submit button becomes enabled after entering a pain-point textarea', () => {
     renderWidget();
     openDialog();
+    openMore();
     fireEvent.change(screen.getByTestId('beta-feedback-pain'), {
       target: { value: 'Keeping chores in sync' },
     });
@@ -109,6 +120,73 @@ describe('<BetaFeedbackWidget />', () => {
     openDialog();
     fireEvent.click(screen.getByTestId('beta-feedback-recommend-9'));
     expect(screen.getByTestId('beta-feedback-submit')).not.toBeDisabled();
+  });
+
+  // FHS-449 — the short-form goal: only PMF + recommend show on open.
+  it('opens with only the PMF and recommend questions visible, and the "A few more" expander collapsed', () => {
+    renderWidget();
+    openDialog();
+
+    expect(
+      screen.getByText(/How would you feel if you could no longer use Family Hub/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/How likely are you to recommend it to another family/),
+    ).toBeInTheDocument();
+
+    const toggle = screen.getByTestId('beta-feedback-more-toggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('beta-feedback-more-content')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('beta-feedback-pain')).not.toBeInTheDocument();
+  });
+
+  it('the "A few more" expander reveals the secondary questions and free-text boxes when toggled', () => {
+    renderWidget();
+    openDialog();
+
+    openMore();
+
+    expect(screen.getByTestId('beta-feedback-more-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByTestId('beta-feedback-more-content')).toBeInTheDocument();
+    expect(screen.getByTestId('beta-feedback-solves-3')).toBeInTheDocument();
+    expect(screen.getByTestId('beta-feedback-ease-3')).toBeInTheDocument();
+    expect(screen.getByTestId('beta-feedback-keep-3')).toBeInTheDocument();
+    expect(screen.getByTestId('beta-feedback-pain')).toBeInTheDocument();
+    expect(screen.getByTestId('beta-feedback-feature')).toBeInTheDocument();
+    expect(screen.getByTestId('beta-feedback-other')).toBeInTheDocument();
+
+    // Toggling again collapses it back.
+    openMore();
+    expect(screen.getByTestId('beta-feedback-more-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(screen.queryByTestId('beta-feedback-more-content')).not.toBeInTheDocument();
+  });
+
+  it('submit stays enabled from a primary answer alone with the expander left collapsed', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({}),
+    });
+
+    renderWidget();
+    openDialog();
+    fireEvent.click(screen.getByTestId('beta-feedback-pmf-very'));
+    expect(screen.getByTestId('beta-feedback-submit')).not.toBeDisabled();
+
+    fireEvent.click(screen.getByTestId('beta-feedback-submit'));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body.pmfDisappointment).toBe('very');
+    expect(body).not.toHaveProperty('solvesProblem');
+    expect(body).not.toHaveProperty('painPoint');
   });
 
   // Blocker 1 — falsy-value guard: 0 is a valid recommendScore
@@ -144,6 +222,7 @@ describe('<BetaFeedbackWidget />', () => {
 
     renderWidget();
     openDialog();
+    openMore();
 
     fireEvent.click(screen.getByTestId('beta-feedback-pmf-somewhat'));
     fireEvent.change(screen.getByTestId('beta-feedback-feature'), {
@@ -225,6 +304,7 @@ describe('<BetaFeedbackWidget />', () => {
 
     renderWidget();
     openDialog();
+    openMore();
 
     fireEvent.change(screen.getByTestId('beta-feedback-other'), {
       target: { value: 'Love the app!' },
@@ -324,6 +404,7 @@ describe('<BetaFeedbackWidget variant="public" />', () => {
       target: { value: 'sarah@example.com' },
     });
     fireEvent.click(screen.getByTestId('beta-feedback-pmf-somewhat'));
+    openMore();
     fireEvent.change(screen.getByTestId('beta-feedback-pain'), {
       target: { value: 'Keeping chores in sync' },
     });

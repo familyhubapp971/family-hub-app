@@ -365,7 +365,14 @@ export function MealsTabPanel() {
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
 
-          <span className="rounded-xl border-2 border-black bg-pink-400 px-3 py-1.5 text-sm font-black text-white">
+          {/* FHS-444 — the number alone reads like a mystery code; the title
+              tooltip spells out the real date range on hover/focus, and the
+              range is also shown as the page subtitle above (meals-week-range). */}
+          <span
+            className="rounded-xl border-2 border-black bg-pink-400 px-3 py-1.5 text-sm font-black text-white"
+            title={`Week ${weekNum} — ${weekRange}`}
+            data-testid="meals-week-number"
+          >
             Week {weekNum}
           </span>
 

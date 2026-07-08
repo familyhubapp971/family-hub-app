@@ -64,6 +64,9 @@ const WEEKS_LIST = [
     id: WEEK_ID,
     weekNumber: 23,
     year: 2026,
+    // FHS-444 — the API returns the week's Monday so the UI can show a real
+    // date range next to "Week 23" instead of a bare number.
+    startDate: '2026-06-01',
     status: 'Active',
     isFinalized: false,
     carriedOverStickers: 0,
@@ -75,6 +78,7 @@ const WEEKS_LIST = [
     id: 'week-prev',
     weekNumber: 22,
     year: 2026,
+    startDate: '2026-05-25',
     status: 'Finalized',
     isFinalized: true,
     carriedOverStickers: 2,
@@ -471,6 +475,11 @@ describe('<AdminPanelPage />', () => {
     expect(screen.getByTestId(`admin-history-week-close-btn-${WEEK_ID}`)).toBeInTheDocument();
     // Finalized week has Reopen button
     expect(screen.getByTestId('admin-history-week-reopen-btn-week-prev')).toBeInTheDocument();
+    // FHS-444 — "Week 23" alone reads like a mystery code; the real Mon–Sun
+    // date range shows right next to it (UTC-anchored, matches startDate).
+    expect(screen.getByTestId(`admin-history-week-${WEEK_ID}-range`).textContent).toMatch(
+      /Jun 1.*Jun 7/,
+    );
   });
 
   it('History reopen opens ConfirmDialog and POSTs to /reopen on confirm', async () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 // FHS-265 — CalendarTabPanel (MP layout). School/Home sub-tabs, legend +
@@ -448,6 +448,42 @@ describe('<CalendarTabPanel />', () => {
 
     // Today still allows adding.
     expect(screen.getByTestId(`calendar-add-${today}`)).toBeInTheDocument();
+  });
+
+  // FHS-443 — a beta reviewer saw a Saturday marked "Today" on a weekly
+  // planner and wasn't sure the days were date-driven. This locks down that
+  // the Today badge always lands on the real calendar date (whatever day of
+  // the week it falls on) and that days already passed in the same week
+  // read as visually "Past" so it's never ambiguous which day is which.
+  it('marks the real current date as Today even when it falls on a Saturday, and mutes days already passed', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-11T10:00:00')); // a Saturday
+    const monday = '2026-07-06';
+    const saturday = '2026-07-11';
+    const sunday = '2026-07-12';
+
+    installApi({});
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+    // Today pill sits on the real Saturday card, not Monday or any other day.
+    const satCard = screen.getByTestId(`calendar-day-${saturday}`);
+    expect(within(satCard).getByTestId('calendar-today-pill')).toBeInTheDocument();
+    expect(within(satCard).getByText(/Saturday/)).toBeInTheDocument();
+
+    const monCard = screen.getByTestId(`calendar-day-${monday}`);
+    expect(within(monCard).queryByTestId('calendar-today-pill')).not.toBeInTheDocument();
+    expect(within(monCard).getByText(/Monday/)).toBeInTheDocument();
+
+    // Monday through Friday have already passed this week — muted "Past" tag.
+    expect(within(monCard).getByTestId(`calendar-past-pill-${monday}`)).toBeInTheDocument();
+    // Today itself is never also flagged as Past.
+    expect(within(satCard).queryByTestId(`calendar-past-pill-${saturday}`)).not.toBeInTheDocument();
+
+    // Sunday hasn't happened yet — neither Today nor Past.
+    const sunCard = screen.getByTestId(`calendar-day-${sunday}`);
+    expect(within(sunCard).queryByTestId('calendar-today-pill')).not.toBeInTheDocument();
+    expect(within(sunCard).queryByTestId(`calendar-past-pill-${sunday}`)).not.toBeInTheDocument();
   });
 
   it('passes the bearer token + tenant slug and a weekStart query', async () => {

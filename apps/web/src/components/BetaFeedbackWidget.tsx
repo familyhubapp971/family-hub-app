@@ -16,7 +16,7 @@
 
 import { useState, useCallback, useId } from 'react';
 import { useParams } from 'react-router-dom';
-import { MessageSquare } from 'lucide-react';
+import { ChevronDown, MessageSquare } from 'lucide-react';
 import { Button, Dialog } from '@familyhub/ui';
 import { useAuth } from '../lib/auth-context';
 import { API_BASE } from '../lib/api';
@@ -210,6 +210,13 @@ interface BetaFeedbackWidgetProps {
 export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetProps) {
   const { session } = useAuth();
   const titleId = useId();
+  const moreId = useId();
+
+  // FHS-449 — the survey opens on just the two quickest, highest-signal
+  // questions (PMF + recommend score). Everything else sits behind this
+  // "A few more (optional)" expander so a tester sees a short form, not a
+  // wall of questions. The request body shape is unchanged either way.
+  const [showMore, setShowMore] = useState(false);
 
   // Read :slug from the URL — present on /t/:slug/* routes, absent on legacy
   // routes like /dashboard and /me. useParams is safe to call outside a
@@ -252,6 +259,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
     setName('');
     setEmail('');
     setEmailError('');
+    setShowMore(false);
     setPmf(undefined);
     setRecommend(undefined);
     setSolves(undefined);
@@ -553,110 +561,139 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                 <RecommendRow value={recommend} onChange={setRecommend} />
               </fieldset>
 
-              {/* Q3 — Solves a problem (1..5) */}
-              <fieldset>
-                <legend className="mb-2 font-black text-sm text-black">
-                  How well does it solve a real problem for your family?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </legend>
-                <RatingRow
-                  max={5}
-                  value={solves}
-                  onChange={(n) => setSolves(solves === n ? undefined : n)}
-                  lowLabel="Not at all"
-                  highLabel="Extremely well"
-                  testIdPrefix="beta-feedback-solves"
+              {/* FHS-449 — everything past the two quick questions above sits
+                  behind this expander so the dialog opens short, not long. */}
+              <button
+                type="button"
+                onClick={() => setShowMore((v) => !v)}
+                aria-expanded={showMore}
+                aria-controls={moreId}
+                data-testid="beta-feedback-more-toggle"
+                className={[
+                  'flex min-h-[44px] w-full items-center justify-between rounded-xl border-2 border-black bg-white px-4 py-3 text-left text-sm font-black text-black transition-all',
+                  'hover:bg-yellow-100',
+                  'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
+                ].join(' ')}
+              >
+                <span>A few more (optional)</span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 transition-transform ${showMore ? 'rotate-180' : ''}`}
+                  aria-hidden="true"
                 />
-              </fieldset>
+              </button>
 
-              {/* Q4 — Ease of use (1..5) */}
-              <fieldset>
-                <legend className="mb-2 font-black text-sm text-black">
-                  How easy is it to use?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </legend>
-                <RatingRow
-                  max={5}
-                  value={ease}
-                  onChange={(n) => setEase(ease === n ? undefined : n)}
-                  lowLabel="Very hard"
-                  highLabel="Very easy"
-                  testIdPrefix="beta-feedback-ease"
-                />
-              </fieldset>
-
-              {/* Q5 — Keep using (1..5) */}
-              <fieldset>
-                <legend className="mb-2 font-black text-sm text-black">
-                  After the beta, how likely are you to keep using it?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </legend>
-                <RatingRow
-                  max={5}
-                  value={keep}
-                  onChange={(n) => setKeep(keep === n ? undefined : n)}
-                  lowLabel="Not likely"
-                  highLabel="Definitely"
-                  testIdPrefix="beta-feedback-keep"
-                />
-              </fieldset>
-
-              {/* Q6 — Pain point */}
-              <div>
-                <label
-                  htmlFor="beta-feedback-pain"
-                  className="mb-1 block font-black text-sm text-black"
+              {showMore && (
+                <div
+                  id={moreId}
+                  data-testid="beta-feedback-more-content"
+                  className="space-y-6 rounded-xl border-2 border-dashed border-gray-200 p-4"
                 >
-                  What&apos;s the biggest problem you&apos;re hoping Family Hub solves?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </label>
-                <CountedTextarea
-                  id="beta-feedback-pain"
-                  testId="beta-feedback-pain"
-                  rows={3}
-                  value={pain}
-                  onChange={setPain}
-                  placeholder="e.g. Keeping everyone in sync on chores and activities…"
-                />
-              </div>
+                  {/* Q3 — Solves a problem (1..5) */}
+                  <fieldset>
+                    <legend className="mb-2 font-black text-sm text-black">
+                      How well does it solve a real problem for your family?
+                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                    </legend>
+                    <RatingRow
+                      max={5}
+                      value={solves}
+                      onChange={(n) => setSolves(solves === n ? undefined : n)}
+                      lowLabel="Not at all"
+                      highLabel="Extremely well"
+                      testIdPrefix="beta-feedback-solves"
+                    />
+                  </fieldset>
 
-              {/* Q7 — Feature request */}
-              <div>
-                <label
-                  htmlFor="beta-feedback-feature"
-                  className="mb-1 block font-black text-sm text-black"
-                >
-                  What&apos;s one feature you wish it had?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </label>
-                <CountedTextarea
-                  id="beta-feedback-feature"
-                  testId="beta-feedback-feature"
-                  rows={3}
-                  value={feature}
-                  onChange={setFeature}
-                  placeholder="e.g. A shared shopping list that everyone can add to…"
-                />
-              </div>
+                  {/* Q4 — Ease of use (1..5) */}
+                  <fieldset>
+                    <legend className="mb-2 font-black text-sm text-black">
+                      How easy is it to use?
+                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                    </legend>
+                    <RatingRow
+                      max={5}
+                      value={ease}
+                      onChange={(n) => setEase(ease === n ? undefined : n)}
+                      lowLabel="Very hard"
+                      highLabel="Very easy"
+                      testIdPrefix="beta-feedback-ease"
+                    />
+                  </fieldset>
 
-              {/* Q8 — Anything else */}
-              <div>
-                <label
-                  htmlFor="beta-feedback-other"
-                  className="mb-1 block font-black text-sm text-black"
-                >
-                  Anything else?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </label>
-                <CountedTextarea
-                  id="beta-feedback-other"
-                  testId="beta-feedback-other"
-                  rows={3}
-                  value={other}
-                  onChange={setOther}
-                  placeholder="Anything else on your mind…"
-                />
-              </div>
+                  {/* Q5 — Keep using (1..5) */}
+                  <fieldset>
+                    <legend className="mb-2 font-black text-sm text-black">
+                      After the beta, how likely are you to keep using it?
+                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                    </legend>
+                    <RatingRow
+                      max={5}
+                      value={keep}
+                      onChange={(n) => setKeep(keep === n ? undefined : n)}
+                      lowLabel="Not likely"
+                      highLabel="Definitely"
+                      testIdPrefix="beta-feedback-keep"
+                    />
+                  </fieldset>
+
+                  {/* Q6 — Pain point */}
+                  <div>
+                    <label
+                      htmlFor="beta-feedback-pain"
+                      className="mb-1 block font-black text-sm text-black"
+                    >
+                      What&apos;s the biggest problem you&apos;re hoping Family Hub solves?
+                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <CountedTextarea
+                      id="beta-feedback-pain"
+                      testId="beta-feedback-pain"
+                      rows={3}
+                      value={pain}
+                      onChange={setPain}
+                      placeholder="e.g. Keeping everyone in sync on chores and activities…"
+                    />
+                  </div>
+
+                  {/* Q7 — Feature request */}
+                  <div>
+                    <label
+                      htmlFor="beta-feedback-feature"
+                      className="mb-1 block font-black text-sm text-black"
+                    >
+                      What&apos;s one feature you wish it had?
+                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <CountedTextarea
+                      id="beta-feedback-feature"
+                      testId="beta-feedback-feature"
+                      rows={3}
+                      value={feature}
+                      onChange={setFeature}
+                      placeholder="e.g. A shared shopping list that everyone can add to…"
+                    />
+                  </div>
+
+                  {/* Q8 — Anything else */}
+                  <div>
+                    <label
+                      htmlFor="beta-feedback-other"
+                      className="mb-1 block font-black text-sm text-black"
+                    >
+                      Anything else?
+                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <CountedTextarea
+                      id="beta-feedback-other"
+                      testId="beta-feedback-other"
+                      rows={3}
+                      value={other}
+                      onChange={setOther}
+                      placeholder="Anything else on your mind…"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Error message */}
               {state === 'error' && (
