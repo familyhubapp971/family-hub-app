@@ -309,6 +309,14 @@ export function WelcomePage() {
           <Link to="/" className="hidden px-2 py-2.5 text-yellow-300 md:inline">
             Features
           </Link>
+          {/* FHS-436 — About link, desktop-only here to keep the row from
+              wrapping at 375px; also in the footer for mobile discovery. */}
+          <Link
+            to="/about"
+            className="hidden px-2 py-2.5 transition-colors hover:text-yellow-300 md:inline"
+          >
+            About
+          </Link>
           {/* Padded so the phone tap target clears 44px tall. */}
           <Link to="/pricing" className="px-2 py-2.5 transition-colors hover:text-yellow-300">
             Pricing
@@ -479,6 +487,41 @@ export function WelcomePage() {
             Trusted by 2,400+ families in UAE, UK &amp; US
           </p>
 
+          {/* FHS-436 — a beta reviewer said it wasn't clear what Family Hub
+              actually is. This plain, skimmable strip sits right after the
+              hero so a first-time visitor gets the "what is this" answer
+              before scrolling to the feature cards. */}
+          <section
+            data-testid="welcome-value-prop"
+            className="w-full max-w-3xl rounded-xl border-2 border-black bg-white/95 p-5 text-left text-black shadow-neo-lg md:p-6"
+          >
+            <h2 className="font-heading text-xl md:text-2xl">What is Family Hub?</h2>
+            <p className="mt-2 text-sm font-bold text-gray-700 md:text-base">
+              One shared place for your family&rsquo;s week: the calendar, the tasks, the meals, and
+              the kids&rsquo; habits and learning. Built for parents and kids.
+            </p>
+            <ul className="mt-4 grid grid-cols-1 gap-2 text-sm font-bold sm:grid-cols-2">
+              <li className="flex items-start gap-2">
+                <span aria-hidden="true">📅</span> A shared calendar for the whole family
+              </li>
+              <li className="flex items-start gap-2">
+                <span aria-hidden="true">✅</span> Tasks and habits that actually get done
+              </li>
+              <li className="flex items-start gap-2">
+                <span aria-hidden="true">🍽️</span> Meal planning for the week ahead
+              </li>
+              <li className="flex items-start gap-2">
+                <span aria-hidden="true">⭐</span> Kids earn rewards for habits and lessons
+              </li>
+            </ul>
+            <Link
+              to="/about"
+              className="mt-4 inline-flex min-h-[44px] items-center px-1 text-sm font-bold text-purple-700 underline hover:text-purple-900"
+            >
+              Learn more about Family Hub
+            </Link>
+          </section>
+
           {/* Feature cards — 4 pillars: Calendar, Tasks, Learn, Journal.
             Cultural angle woven into the Learn card description. */}
           <div className="grid w-full grid-cols-1 gap-4 text-left sm:grid-cols-2 lg:grid-cols-4">
@@ -509,9 +552,17 @@ export function WelcomePage() {
         </main>
       )}
 
-      {/* FHS-435 — small, unobtrusive footer so /privacy is reachable from
-          the homepage without competing with the hero CTA. */}
-      <footer className="relative z-10 mx-auto flex w-full max-w-7xl justify-center px-6 pb-6">
+      {/* FHS-435/436 — small, unobtrusive footer so /privacy and /about are
+          reachable from the homepage without competing with the hero CTA.
+          Always visible (not md:-gated) so it's the mobile fallback for
+          the desktop-only "About" nav link above. */}
+      <footer className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-center gap-4 px-6 pb-6">
+        <Link
+          to="/about"
+          className="flex min-h-[44px] items-center px-2 text-sm font-bold text-purple-200 transition-colors hover:text-yellow-300"
+        >
+          About
+        </Link>
         <Link
           to="/privacy"
           className="flex min-h-[44px] items-center px-2 text-sm font-bold text-purple-200 transition-colors hover:text-yellow-300"
