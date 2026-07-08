@@ -713,8 +713,8 @@ function Stat({
   testid: string;
 }) {
   return (
-    <div className="text-center" data-testid={testid}>
-      <p className="text-2xl font-black">
+    <div className="min-w-0 text-center" data-testid={testid}>
+      <p className="truncate text-xl font-black sm:text-2xl">
         <span aria-hidden="true">{emoji}</span> {value}
       </p>
       <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{label}</p>
