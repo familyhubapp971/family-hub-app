@@ -134,7 +134,7 @@ export function PricingPage() {
           to="/privacy"
           className="flex min-h-[44px] items-center px-2 text-sm font-bold text-purple-200 transition-colors hover:text-yellow-300"
         >
-          Privacy
+          Privacy Policy
         </Link>
       </footer>
     </div>
