@@ -224,7 +224,14 @@ export const adminRouter = new Hono()
       const result = await db.execute(
         sql`select * from ${sql.identifier(name)} where tenant_id = ${tenantId}`,
       );
-      data[toCamelCase(name)] = result.rows.map((row) => camelizeRow(row));
+      data[toCamelCase(name)] = result.rows.map((row) => {
+        const camel = camelizeRow(row) as Record<string, unknown>;
+        // FHS-435 — never put the kid PIN hash in a downloadable export: a
+        // 4-digit PIN is trivially brute-forceable, so the hash must not leave
+        // the app in a file the family might share.
+        delete camel.pinHash;
+        return camel;
+      });
     }
 
     const payload = {
