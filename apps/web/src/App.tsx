@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LandingPage } from './pages/marketing/LandingPage';
 import { WelcomePage } from './pages/marketing/WelcomePage';
 import { PricingPage } from './pages/marketing/PricingPage';
+import { AboutPage } from './pages/marketing/AboutPage';
 import { PrivacyPage } from './pages/marketing/PrivacyPage';
 import { KidLoginPage } from './pages/auth/KidLoginPage';
 import { LoginPage } from './pages/auth/LoginPage';
@@ -35,6 +36,9 @@ export function App() {
           {/* Marketing + auth — no tenant context. */}
           <Route path="/" element={<WelcomePage />} />
           <Route path="/pricing" element={<PricingPage />} />
+          {/* FHS-436 — public "what is Family Hub" page for beta reviewers
+              and first-time visitors. */}
+          <Route path="/about" element={<AboutPage />} />
           {/* FHS-435 — public draft privacy policy + signup consent link target. */}
           <Route path="/privacy" element={<PrivacyPage />} />
           {/* Legacy /api/hello debug card preserved at /_health so the
