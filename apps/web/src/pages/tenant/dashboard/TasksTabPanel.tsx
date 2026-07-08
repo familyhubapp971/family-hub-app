@@ -120,7 +120,7 @@ export function TasksTabPanel() {
         if (err instanceof Error && err.name === 'AbortError') return;
         setStatus({
           kind: 'error',
-          message: err instanceof Error ? err.message : 'Network error — try again.',
+          message: err instanceof Error ? err.message : 'Network error. Try again.',
         });
       }
     },
@@ -196,7 +196,7 @@ export function TasksTabPanel() {
         if (!editingId) notifyDashboardStale();
         requestAnimationFrame(() => addButtonRef.current?.focus());
       } catch (err) {
-        setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
+        setSaveError(err instanceof Error ? err.message : 'Network error. Try again.');
       } finally {
         savingRef.current = false;
         setSaving(false);
@@ -245,7 +245,7 @@ export function TasksTabPanel() {
         }
       } catch {
         revert();
-        setErrorAnnouncement("Network error — couldn't update task.");
+        setErrorAnnouncement("Network error. Couldn't update task.");
       } finally {
         togglingRef.current.delete(id);
       }
@@ -269,7 +269,7 @@ export function TasksTabPanel() {
         notifyDashboardStale();
       } catch (err) {
         setErrorAnnouncement(
-          err instanceof Error ? err.message : "Network error — couldn't delete task.",
+          err instanceof Error ? err.message : "Network error. Couldn't delete task.",
         );
       } finally {
         deletingRef.current.delete(id);
@@ -468,7 +468,7 @@ function TaskColumn(props: {
           data-testid={`tasks-column-empty-${memberId}`}
           className="py-3 text-center text-sm font-bold text-gray-500"
         >
-          {isOwn ? 'Nothing yet — add your first task.' : 'Nothing here yet.'}
+          {isOwn ? 'Nothing yet. Add your first task.' : 'Nothing here yet.'}
         </p>
       ) : (
         <ul className="space-y-3 mb-6" data-testid={`tasks-column-list-${memberId}`}>

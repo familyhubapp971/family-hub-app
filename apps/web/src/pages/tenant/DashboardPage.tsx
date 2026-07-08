@@ -134,7 +134,7 @@ function PlaceholderPanel({
         <span className="font-mono text-xs text-gray-500">{ticket}</span>
       </header>
       <p className="text-sm text-gray-700">{description}</p>
-      <p className="mt-4 text-sm font-bold text-gray-600">Coming soon — tracked under {ticket}.</p>
+      <p className="mt-4 text-sm font-bold text-gray-600">Coming soon: tracked under {ticket}.</p>
     </>
   );
 }

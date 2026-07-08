@@ -1327,7 +1327,7 @@ export const COUNTRIES: Country[] = [
     landmark: 'Tallinn Old Town',
     currency: 'Euro',
     currencySymbol: '€',
-    funFact: 'Estonia is one of the most digitally advanced countries—you can even vote online.',
+    funFact: 'Estonia is one of the most digitally advanced countries: you can even vote online.',
   },
   {
     code: 'FI',
@@ -1730,7 +1730,7 @@ export const COUNTRIES: Country[] = [
     landmark: "Nelson's Dockyard",
     currency: 'East Caribbean Dollar',
     currencySymbol: 'EC$',
-    funFact: 'Antigua and Barbuda has 365 beaches—one for every day of the year.',
+    funFact: 'Antigua and Barbuda has 365 beaches: one for every day of the year.',
   },
   {
     code: 'BS',

@@ -104,9 +104,9 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
           setRowError({ id, msg: 'Not enough savings to approve yet.' });
           return;
         }
-        setRowError({ id, msg: "Couldn't update — try again." });
+        setRowError({ id, msg: "Couldn't update. Try again." });
       } catch {
-        setRowError({ id, msg: "Couldn't update — try again." });
+        setRowError({ id, msg: "Couldn't update. Try again." });
       } finally {
         setBusyId(null);
       }

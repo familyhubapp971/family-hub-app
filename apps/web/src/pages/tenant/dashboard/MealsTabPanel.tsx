@@ -174,7 +174,7 @@ function weekRangeFromMonday(mon: Date): string {
     day: 'numeric',
     year: 'numeric',
   });
-  return `${left} — ${right}`;
+  return `${left} - ${right}`;
 }
 
 // Which Day key corresponds to today (if the current week offset is 0).
@@ -263,7 +263,7 @@ export function MealsTabPanel() {
         if (!mountedRef.current) return;
         setStatus({
           kind: 'error',
-          message: err instanceof Error ? err.message : 'Network error — try again.',
+          message: err instanceof Error ? err.message : 'Network error. Try again.',
         });
       }
     },
@@ -303,7 +303,7 @@ export function MealsTabPanel() {
         setEditor(null);
         await load();
       } catch (err) {
-        setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
+        setSaveError(err instanceof Error ? err.message : 'Network error. Try again.');
       } finally {
         setSaving(false);
       }
@@ -370,7 +370,7 @@ export function MealsTabPanel() {
               range is also shown as the page subtitle above (meals-week-range). */}
           <span
             className="rounded-xl border-2 border-black bg-pink-400 px-3 py-1.5 text-sm font-black text-white"
-            title={`Week ${weekNum} — ${weekRange}`}
+            title={`Week ${weekNum}: ${weekRange}`}
             data-testid="meals-week-number"
           >
             Week {weekNum}

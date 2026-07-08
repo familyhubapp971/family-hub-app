@@ -217,7 +217,7 @@ function DivisionVisual({
       <div className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-3 sm:p-4 mb-2">
         <EmojiGrid emoji={emoji} count={total} />
         <p className="text-xs font-bold text-gray-500 text-center mt-1">
-          {total} total — sharing equally
+          {total} total: sharing equally
         </p>
       </div>
       <span className="text-lg font-black text-gray-500">

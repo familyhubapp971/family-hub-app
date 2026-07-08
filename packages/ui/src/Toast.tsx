@@ -17,10 +17,18 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const DEFAULTS: Record<ToastType, number> = { success: 4000, error: 6000, info: 4000 };
+// Neo-brutalist toast look: a black border + hard drop-shadow (no blur) on
+// every toast, same visual language as Card/ConfirmDialog. Colour only
+// varies the fill + icon so success/error/info stay distinguishable.
 const STYLES: Record<ToastType, string> = {
-  success: 'bg-green-50 border-green-300 text-green-800',
-  error: 'bg-red-50 border-red-300 text-red-800',
-  info: 'bg-blue-50 border-blue-300 text-blue-800',
+  success: 'bg-lime-50 text-green-900',
+  error: 'bg-red-50 text-red-900',
+  info: 'bg-cyan-50 text-blue-900',
+};
+const ICON_STYLES: Record<ToastType, string> = {
+  success: 'text-green-600',
+  error: 'text-red-600',
+  info: 'text-blue-600',
 };
 const ICONS: Record<ToastType, typeof CheckCircle> = {
   success: CheckCircle,
@@ -46,16 +54,24 @@ function ToastMessage({ item, onDismiss }: { item: ToastItem; onDismiss: (id: nu
 
   return (
     <div
+      role={item.type === 'error' ? 'alert' : 'status'}
       className={`
-        flex items-center gap-2 px-4 py-3 rounded-xl border-2 shadow-lg font-bold text-sm
-        transition-all duration-300 max-w-md w-full
+        flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-black shadow-neo-sm
+        font-body font-bold text-sm transition-all duration-300 max-w-md w-full
         ${STYLES[item.type]}
         ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}
       `}
     >
-      <Icon className="w-4 h-4 flex-shrink-0" />
+      <Icon className={`w-4 h-4 flex-shrink-0 ${ICON_STYLES[item.type]}`} />
       <span className="flex-1">{item.message}</span>
-      <button onClick={() => { setVisible(false); setTimeout(() => onDismiss(item.id), 300); }} className="flex-shrink-0 opacity-60 hover:opacity-100">
+      <button
+        onClick={() => {
+          setVisible(false);
+          setTimeout(() => onDismiss(item.id), 300);
+        }}
+        aria-label="Dismiss"
+        className="flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center opacity-60 hover:opacity-100"
+      >
         <X className="w-3.5 h-3.5" />
       </button>
     </div>

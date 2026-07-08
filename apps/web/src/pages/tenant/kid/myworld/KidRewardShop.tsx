@@ -168,7 +168,7 @@ export function KidRewardShop({
       <div className="mt-4 flex flex-col gap-3">
         {rewards.length === 0 ? (
           <p className="rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-4 text-center text-sm font-bold text-gray-500">
-            No reward goals yet — ask a grown-up to add some! 🎯
+            No reward goals yet. Ask a grown-up to add some! 🎯
           </p>
         ) : (
           rewards.map((r) => (

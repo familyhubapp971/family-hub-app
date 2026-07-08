@@ -285,7 +285,7 @@ export function KidMyWorld({
                             </span>{' '}
                             habit days ({pct}%)!{' '}
                             {pct >= 50
-                              ? 'Amazing work — you crushed it! 🌟'
+                              ? 'Amazing work, you crushed it! 🌟'
                               : 'Every habit you did was a win. Keep going next week! 💪'}
                           </>
                         );
@@ -383,7 +383,7 @@ export function KidMyWorld({
                     🌱
                   </p>
                   <p className="mt-3 text-sm font-bold text-gray-600">
-                    No habits yet — ask a grown-up to add some!
+                    No habits yet. Ask a grown-up to add some!
                   </p>
                 </div>
               ) : (

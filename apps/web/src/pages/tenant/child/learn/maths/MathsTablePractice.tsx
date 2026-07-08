@@ -125,7 +125,7 @@ function DivisionVisual({ a, b, emoji }: { a: number; b: number; emoji: string }
           ))}
         </div>
         <p className="text-xs font-bold text-gray-500 text-center mt-1">
-          {a} total — sharing equally
+          {a} total: sharing equally
         </p>
       </div>
       <span className="text-lg font-black text-gray-500" aria-hidden="true">

@@ -1012,7 +1012,7 @@ function InvestDialog({
                       }`}
                     >
                       {isInvested && inv
-                        ? `${inv.investedStickers} stickers invested · ${inv.daysCompleted}/7 done${isSelected ? ' — about to remove' : ' — tap to remove'}`
+                        ? `${inv.investedStickers} stickers invested · ${inv.daysCompleted}/7 done${isSelected ? ', about to remove' : ', tap to remove'}`
                         : 'Each completed day = +5 stickers · each missed day = −2'}
                     </p>
                     {isSelected && (

@@ -187,7 +187,7 @@ export function MathsPlacementTest({
           />
         </div>
         <p className="text-xs font-black text-white/70 text-center">
-          {getTableLabel(operation, question.tableNumber)} — Question {currentIndex + 1} of 12
+          {getTableLabel(operation, question.tableNumber)}: Question {currentIndex + 1} of 12
         </p>
 
         <div className="bg-white border-2 sm:border-[3px] border-black rounded-2xl p-6 shadow-neo text-center space-y-6">

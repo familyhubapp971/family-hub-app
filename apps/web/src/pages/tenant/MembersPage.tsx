@@ -104,7 +104,7 @@ export function MembersPage() {
     } catch (err) {
       setStatus({
         kind: 'error',
-        message: err instanceof Error ? err.message : 'Network error — try again.',
+        message: err instanceof Error ? err.message : 'Network error. Try again.',
       });
     }
   }, [session, slug]);
@@ -132,7 +132,7 @@ export function MembersPage() {
         await fetchMembers();
         return true;
       } catch (err) {
-        setActionError(err instanceof Error ? err.message : 'Network error — try again.');
+        setActionError(err instanceof Error ? err.message : 'Network error. Try again.');
         return false;
       }
     },
@@ -299,7 +299,7 @@ export function MembersPage() {
                             aria-hidden="true"
                             className="h-2 w-2 animate-pulse rounded-full bg-yellow-500"
                           />
-                          Pending &mdash; hasn&rsquo;t signed up
+                          Pending: hasn&rsquo;t signed up
                         </span>
                         {m.inviteEmail && (
                           <span className="truncate text-xs font-bold text-gray-500">
@@ -794,11 +794,11 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
         return;
       }
       if (pin !== confirm) {
-        setError("PINs don't match — type the same digits twice.");
+        setError("PINs don't match. Type the same digits twice.");
         return;
       }
       if (!accessToken) {
-        setError('Not signed in — refresh and try again.');
+        setError('Not signed in. Refresh and try again.');
         return;
       }
       setSubmitting(true);
@@ -823,7 +823,7 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
         }
         onDone();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Network error — try again.');
+        setError(err instanceof Error ? err.message : 'Network error. Try again.');
         setSubmitting(false);
       }
     },
@@ -833,7 +833,7 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
   const onRemove = useCallback(async () => {
     setError(null);
     if (!accessToken) {
-      setError('Not signed in — refresh and try again.');
+      setError('Not signed in. Refresh and try again.');
       return;
     }
     setSubmitting(true);
@@ -850,7 +850,7 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
       }
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error — try again.');
+      setError(err instanceof Error ? err.message : 'Network error. Try again.');
       setSubmitting(false);
     }
   }, [member.id, slug, accessToken, onDone]);

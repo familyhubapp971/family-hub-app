@@ -218,7 +218,7 @@ export function LogicCertificates({ kidToken }: LogicCertificatesProps) {
                     key={key}
                     data-testid={`logic-cert-${gt}-${diff}`}
                     className={`bg-gray-50 border-2 border-dashed ${colors.border} rounded-2xl p-4 opacity-50`}
-                    aria-label={`${meta.label} ${diffMeta.label} — locked, ${CERTIFICATE_THRESHOLD} correct to unlock`}
+                    aria-label={`${meta.label} ${diffMeta.label}: locked, ${CERTIFICATE_THRESHOLD} correct to unlock`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center border-2 border-gray-300 flex-shrink-0">

@@ -123,7 +123,7 @@ export function AssignmentsTabPanel() {
         if (err instanceof Error && err.name === 'AbortError') return;
         setStatus({
           kind: 'error',
-          message: err instanceof Error ? err.message : 'Network error — try again.',
+          message: err instanceof Error ? err.message : 'Network error. Try again.',
         });
       }
     },
@@ -193,7 +193,7 @@ export function AssignmentsTabPanel() {
         setErrorAnnouncement('');
         await load();
       } catch (err) {
-        setSaveError(err instanceof Error ? err.message : 'Network error — try again.');
+        setSaveError(err instanceof Error ? err.message : 'Network error. Try again.');
       } finally {
         savingRef.current = false;
         setSaving(false);
@@ -245,7 +245,7 @@ export function AssignmentsTabPanel() {
         }
       } catch {
         revert();
-        setErrorAnnouncement("Network error — couldn't update assignment.");
+        setErrorAnnouncement("Network error. Couldn't update assignment.");
       } finally {
         togglingRef.current.delete(id);
       }
@@ -334,7 +334,7 @@ export function AssignmentsTabPanel() {
             className="py-4 text-center text-sm font-bold text-gray-500"
           >
             {filter === 'all'
-              ? 'Nothing here — add the first assignment.'
+              ? 'Nothing here. Add the first assignment.'
               : 'No assignments for this person yet.'}
           </p>
         ) : (

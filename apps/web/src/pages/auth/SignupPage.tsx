@@ -105,7 +105,7 @@ export function SignupPage() {
         </h1>
         <blockquote className="mb-10 text-xl font-bold text-purple-100 lg:text-2xl">
           &ldquo;I cancelled four subscriptions on day three.&rdquo;
-          <footer className="mt-3 text-base font-normal text-purple-300">— Fatima A., Dubai</footer>
+          <footer className="mt-3 text-base font-normal text-purple-300">(Fatima A., Dubai)</footer>
         </blockquote>
         <ul className="space-y-4 text-lg font-bold">
           <li className="flex items-center gap-3">

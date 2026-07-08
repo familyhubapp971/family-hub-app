@@ -334,7 +334,7 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
   if (status === 'error') {
     return (
       <p data-testid="world-flags-error" role="alert" className="text-sm font-bold text-red-300">
-        Couldn&rsquo;t load — try again.
+        Couldn&rsquo;t load. Try again.
       </p>
     );
   }

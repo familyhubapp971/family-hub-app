@@ -219,7 +219,7 @@ function SpeedChallenge({ operation, tables, milestoneName, onExit }: SpeedChall
               ⚡ {milestoneName} Speed Test
             </h3>
             <p className="text-sm text-gray-500 font-medium">
-              {OPERATION_LABELS[operation]} — Tables {tables[0]}-{tables[tables.length - 1]}
+              {OPERATION_LABELS[operation]}: Tables {tables[0]}-{tables[tables.length - 1]}
             </p>
             <p className="text-sm text-gray-500 font-medium">
               Answer as many questions as you can in 60 seconds!
@@ -272,7 +272,7 @@ function SpeedChallenge({ operation, tables, milestoneName, onExit }: SpeedChall
             {isNewBest ? 'New Best Score!' : "Time's Up!"}
           </h3>
           <p className="text-xs font-black text-purple-400 uppercase tracking-wider">
-            {milestoneName} — {OPERATION_LABELS[operation]}
+            {milestoneName}: {OPERATION_LABELS[operation]}
           </p>
           <div className="flex justify-center gap-6">
             <div className="text-center">

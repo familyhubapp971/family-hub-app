@@ -332,7 +332,7 @@ function KidLoginPanel() {
       } catch {
         /* private mode / storage unavailable — nothing to clear */
       }
-      setNotice("That family link didn't work — enter your family code.");
+      setNotice("That family link didn't work. Enter your family code.");
       setError(null);
     } else {
       setError("We couldn't find that family code. Double-check it with a grown-up and try again.");
@@ -433,7 +433,7 @@ function KidLoginPanel() {
           />
           <p className="mt-1 font-body text-xs text-gray-600">
             It&rsquo;s the short name in your family&rsquo;s web address. Ask a grown-up for your
-            family code &mdash; they can find it on the Members page.
+            family code. They can find it on the Members page.
           </p>
         </div>
 

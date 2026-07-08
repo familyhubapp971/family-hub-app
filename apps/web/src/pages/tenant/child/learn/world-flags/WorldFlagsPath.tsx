@@ -212,7 +212,7 @@ export function WorldFlagsPath({ memberId, kidToken }: WorldFlagsPathProps) {
   if (status === 'error') {
     return (
       <p data-testid="wfpath-error" role="alert" className="text-sm font-bold text-red-300">
-        Couldn&rsquo;t load — try again.
+        Couldn&rsquo;t load. Try again.
       </p>
     );
   }
@@ -352,7 +352,7 @@ export function WorldFlagsPath({ memberId, kidToken }: WorldFlagsPathProps) {
             <ArrowLeft size={16} aria-hidden="true" /> Back
           </button>
           <p className="text-xs font-black text-white/80">
-            Set {currentChunkIndex + 1} — {selectedContinent}
+            Set {currentChunkIndex + 1}: {selectedContinent}
           </p>
         </div>
 

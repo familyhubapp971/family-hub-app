@@ -244,7 +244,7 @@ export function KidSignIn({
         {selectedKid && (
           <section data-testid="kid-login-pin-section">
             <p className="mb-3 text-center font-body text-sm text-gray-600">
-              Hi <span className="font-bold">{selectedKid.displayName}</span> — type your PIN.
+              Hi <span className="font-bold">{selectedKid.displayName}</span>, type your PIN.
             </p>
             <PinInput
               key={pinNonce}

@@ -209,7 +209,7 @@ export function AnalyticsView({
             data-testid="analytics-chart-empty"
             className="text-center text-sm font-bold text-gray-400 py-12"
           >
-            No habit history yet — earn some stickers to see your trend!
+            No habit history yet. Earn some stickers to see your trend!
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={160}>
