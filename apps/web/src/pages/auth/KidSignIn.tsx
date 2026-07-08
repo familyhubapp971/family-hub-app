@@ -48,12 +48,22 @@ export function KidSignIn({
   slug,
   onFamilyLoaded,
   notFoundFooter,
+  onFamilyNotFound,
 }: {
   slug: string | undefined;
   /** Called once the family name resolves, so the page can show it. */
   onFamilyLoaded?: (familyName: string) => void;
   /** Rendered under the not-found / load-failed message (e.g. "try another code"). */
   notFoundFooter?: React.ReactNode;
+  /**
+   * FHS-437 — called once when the slug 404s (no such family). Lets the
+   * caller react instead of stranding the kid on the "couldn't find a
+   * family" message — e.g. the unified /login kid view uses this to forget
+   * a stale remembered family and drop back to the code-entry prompt.
+   * Leave unset to keep the built-in not-found message + notFoundFooter
+   * (used by the /t/:slug/kid-login deep-link route).
+   */
+  onFamilyNotFound?: () => void;
 }) {
   const navigate = useNavigate();
   const [load, setLoad] = useState<LoadState>({ kind: 'loading' });
@@ -106,6 +116,12 @@ export function KidSignIn({
       cancelled = true;
     };
   }, [slug, onFamilyLoaded]);
+
+  useEffect(() => {
+    if (load.kind === 'family-not-found') {
+      onFamilyNotFound?.();
+    }
+  }, [load.kind, onFamilyNotFound]);
 
   const tiles: AvatarTile[] = useMemo(() => {
     if (load.kind !== 'loaded') return [];

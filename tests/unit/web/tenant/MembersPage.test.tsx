@@ -484,6 +484,31 @@ describe('<MembersPage />', () => {
     expect(container).toBeTruthy();
   });
 
+  // FHS-437 — without this card a parent had no way to find or share the
+  // kid-login link/code, so a brand-new family's kid had no working path
+  // in at all.
+  it('shows the kid-login share card with the family code + a working copy button', async () => {
+    membersResponse = { ok: true, json: async () => ({ members: [] }) };
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    });
+    renderAt('/t/khans/members');
+    await waitFor(() => expect(screen.getByTestId('members-kid-login-share')).toBeInTheDocument());
+
+    expect(screen.getByTestId('members-kid-login-code').textContent).toBe('khans');
+    expect(screen.getByTestId('members-kid-login-url').textContent).toContain('/t/khans/kid-login');
+
+    fireEvent.click(screen.getByTestId('members-kid-login-copy'));
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/t/khans/kid-login')),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('members-kid-login-copy').textContent).toContain('Copied'),
+    );
+  });
+
   it('shows the server detail message (not just "forbidden") when a 403 fires', async () => {
     membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: false });
     renderAt('/t/khans/members');

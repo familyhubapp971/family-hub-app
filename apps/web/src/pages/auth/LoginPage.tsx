@@ -302,18 +302,57 @@ function readLastFamily(): { slug: string; name: string } | null {
   return null;
 }
 
+// FHS-437 — where the currently-attempted slug came from. A "remembered"
+// slug that 404s means the device's saved family is stale (deleted /
+// recreated tenant); a "typed" slug that 404s just means the kid mistyped
+// their code. The two need different recoveries (see onFamilyNotFound
+// below), so we track which one is in flight.
+type KidSlugSource = 'remembered' | 'typed';
+
 function KidLoginPanel() {
   const lastFamily = useMemo(() => readLastFamily(), []);
   const [slug, setSlug] = useState<string | null>(lastFamily?.slug ?? null);
+  const [slugSource, setSlugSource] = useState<KidSlugSource | null>(
+    lastFamily ? 'remembered' : null,
+  );
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  // Never leave the kid on the generic "couldn't find a family" dead-end.
+  // A remembered family that no longer resolves gets forgotten and the kid
+  // is dropped straight back to the code-entry prompt with a plain note. A
+  // mistyped code just shows an inline error and keeps what they typed so
+  // they can fix it — and, importantly, does NOT touch localStorage, so a
+  // good remembered family is never wiped out by an unrelated typo.
+  const onFamilyNotFound = useCallback(() => {
+    if (slugSource === 'remembered') {
+      try {
+        localStorage.removeItem(KID_LAST_FAMILY_KEY);
+      } catch {
+        /* private mode / storage unavailable — nothing to clear */
+      }
+      setNotice("That family link didn't work — enter your family code.");
+      setError(null);
+    } else {
+      setError("We couldn't find that family code. Double-check it with a grown-up and try again.");
+      setNotice(null);
+    }
+    setSlug(null);
+    setSlugSource(null);
+  }, [slugSource]);
 
   const changeFamily = (
     <p className="mt-4 text-center font-body text-xs text-gray-600">
       Not your family?{' '}
       <button
         type="button"
-        onClick={() => setSlug(null)}
+        onClick={() => {
+          setSlug(null);
+          setSlugSource(null);
+          setError(null);
+          setNotice(null);
+        }}
         data-testid="login-kid-change-family"
         className="inline-block py-2 font-semibold underline"
       >
@@ -326,16 +365,20 @@ function KidLoginPanel() {
   // Family known → show the avatar tiles + PIN (MP "Who are you?"). The
   // "change family" link sits below in all states (incl. not-found), so it's
   // NOT also passed as KidSignIn's notFoundFooter (that would double it up).
+  // onFamilyNotFound intercepts a 404 before that message ever needs to be
+  // seen — it drops the kid back to the code-entry form instead.
   if (slug) {
     return (
       <section data-testid="login-kid-panel">
-        <KidSignIn slug={slug} />
+        <KidSignIn slug={slug} onFamilyNotFound={onFamilyNotFound} />
         {changeFamily}
       </section>
     );
   }
 
-  // No family yet → ask for the family code.
+  // No family yet → ask for the family code. This is the primary, friendly
+  // path for a kid whose device doesn't remember a family yet — never an
+  // error state.
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const next = code.trim().toLowerCase();
@@ -343,6 +386,9 @@ function KidLoginPanel() {
       setError("That doesn't look like a family code. Ask a grown-up if you're not sure.");
       return;
     }
+    setError(null);
+    setNotice(null);
+    setSlugSource('typed');
     setSlug(next);
   }
 
@@ -351,6 +397,13 @@ function KidLoginPanel() {
       <h2 id="login-kid-heading" className="sr-only">
         Kid log in
       </h2>
+
+      {notice && (
+        <p className="mb-3 font-body text-sm text-purple-700" data-testid="login-kid-notice">
+          {notice}
+        </p>
+      )}
+
       <p className="mb-3 font-body text-sm text-gray-700">
         Type your <span className="font-semibold">family code</span> to see your faces.
       </p>
@@ -373,12 +426,14 @@ function KidLoginPanel() {
             onChange={(e) => {
               setCode(e.target.value);
               if (error) setError(null);
+              if (notice) setNotice(null);
             }}
             placeholder="your-family"
             testId="login-kid-code"
           />
           <p className="mt-1 font-body text-xs text-gray-600">
-            It&rsquo;s the short name in your family&rsquo;s web address.
+            It&rsquo;s the short name in your family&rsquo;s web address. Ask a grown-up for your
+            family code &mdash; they can find it on the Members page.
           </p>
         </div>
 
