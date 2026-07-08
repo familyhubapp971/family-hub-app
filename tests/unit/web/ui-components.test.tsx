@@ -412,4 +412,29 @@ describe('ConfirmDialog', () => {
     expect(screen.getByTestId('cd-confirm')).toBeDisabled();
     expect(screen.getByTestId('cd-cancel')).toBeDisabled();
   });
+
+  // FHS-435 — "type the name to confirm" gate for the delete-account dialog.
+  it('confirmDisabled disables only the confirm button, not cancel', () => {
+    render(
+      <ConfirmDialog
+        isOpen
+        confirmDisabled
+        title="Delete account?"
+        onConfirm={noop}
+        onCancel={noop}
+        testId="cd"
+      />,
+    );
+    expect(screen.getByTestId('cd-confirm')).toBeDisabled();
+    expect(screen.getByTestId('cd-cancel')).not.toBeDisabled();
+  });
+
+  it('renders children below the message (e.g. a confirmation input)', () => {
+    render(
+      <ConfirmDialog isOpen title="Delete account?" onConfirm={noop} onCancel={noop} testId="cd">
+        <input data-testid="cd-extra-input" />
+      </ConfirmDialog>,
+    );
+    expect(screen.getByTestId('cd-extra-input')).toBeInTheDocument();
+  });
 });

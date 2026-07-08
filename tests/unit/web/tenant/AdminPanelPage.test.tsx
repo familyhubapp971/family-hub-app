@@ -5,7 +5,8 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 // FHS-308 — AdminPanelPage unit tests.
 // Uses URL-matched fetch mock — no MSW, no window.confirm.
 // Tests: render with child selected, tab switching, Savings edit PUT,
-// History reopen via ConfirmDialog, App Info PUT.
+// History reopen via ConfirmDialog, Settings tab (FHS-455 rename of "App
+// Info") currency PUT, and FHS-435 GDPR export/delete-account flows.
 
 const fetchMock = vi.fn();
 const authState: {
@@ -25,6 +26,7 @@ vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
 
 import { AdminPanelPage } from '../../../../apps/web/src/pages/tenant/AdminPanelPage';
 import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
+import { signOutAll } from '../../../../apps/web/src/lib/auth-context';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -83,9 +85,15 @@ const WEEKS_LIST = [
 ];
 
 const APP_SETTINGS = {
-  appName: 'Iman World',
-  appSubtitle: 'Track habits and earn!',
   currency: 'AED',
+};
+
+// FHS-435 — a fake downloadable JSON payload + a Content-Disposition header
+// matching what GET /api/admin/export returns.
+const EXPORT_PAYLOAD = {
+  exportedAt: '2026-06-15T00:00:00.000Z',
+  family: { id: 't-1', slug: 'khans', name: 'The Khans' },
+  data: { members: [], tasks: [] },
 };
 
 // ── Mock fetch router ─────────────────────────────────────────────────────────
@@ -170,6 +178,22 @@ function installApi(
     if (u.includes('/api/mw/financial/savings')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => SAVINGS });
     }
+    if (u.includes('/api/admin/export')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (name: string) =>
+            name === 'Content-Disposition'
+              ? 'attachment; filename="familyhub-export-khans-2026-06-15.json"'
+              : null,
+        },
+        blob: async () => new Blob([JSON.stringify(EXPORT_PAYLOAD)], { type: 'application/json' }),
+      });
+    }
+    if (u.includes('/api/admin/delete-account')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ deleted: true }) });
+    }
     if (u.includes('/api/admin/settings/')) {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
     }
@@ -195,6 +219,7 @@ function renderAt(path = '/t/khans/admin') {
         />
         <Route path="/t/:slug/members" element={<div data-testid="members-page" />} />
         <Route path="/t/:slug/dashboard" element={<div data-testid="dashboard-page" />} />
+        <Route path="/" element={<div data-testid="home-page" />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -205,6 +230,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   authState.session = { access_token: 'tok-admin' };
   authState.user = { email: 'sarah@example.com', id: 'u-admin', user_metadata: {} };
+  vi.mocked(signOutAll).mockClear();
   installApi();
 });
 
@@ -474,87 +500,57 @@ describe('<AdminPanelPage />', () => {
     });
   });
 
-  it('App Info tab renders settings and save issues PUT for each changed key', async () => {
+  // FHS-455 — App Info was renamed to Settings and its App Name/Subtitle
+  // fields were dropped (they were never rendered anywhere else in the app).
+  it('Settings tab no longer shows App Name/Subtitle fields; only Currency', async () => {
     renderAt();
-    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-app-info')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-settings')).toBeInTheDocument());
     act(() => {
-      fireEvent.click(screen.getByTestId('admin-panel-tab-app-info'));
+      fireEvent.click(screen.getByTestId('admin-panel-tab-settings'));
     });
-    await waitFor(() => expect(screen.getByTestId('admin-app-info-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('admin-app-info-name-display').textContent).toBe('Iman World');
+    await waitFor(() => expect(screen.getByTestId('admin-settings-ready')).toBeInTheDocument());
 
-    // Open edit
-    act(() => {
-      fireEvent.click(screen.getByTestId('admin-app-info-edit-btn'));
-    });
-    await waitFor(() =>
-      expect(screen.getByTestId('admin-app-info-name-input')).toBeInTheDocument(),
-    );
-    act(() => {
-      fireEvent.change(screen.getByTestId('admin-app-info-name-input'), {
-        target: { value: 'Amina World' },
-      });
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('admin-app-info-save-btn'));
-    });
-    await waitFor(() => {
-      const putCall = fetchMock.mock.calls.find(
-        ([u, fetchInit]) =>
-          String(u).includes('/api/admin/settings/appName') && fetchInit?.method === 'PUT',
-      );
-      expect(putCall).toBeTruthy();
-      const body = JSON.parse((putCall![1] as RequestInit).body as string) as { value: string };
-      expect(body.value).toBe('Amina World');
-    });
+    expect(screen.getByTestId('admin-settings-currency-display').textContent).toBe('AED');
+    expect(screen.queryByTestId('admin-app-info-name-display')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('admin-app-info-subtitle-display')).not.toBeInTheDocument();
+    expect(screen.queryByText('App Name')).not.toBeInTheDocument();
+    expect(screen.queryByText('Subtitle')).not.toBeInTheDocument();
+
+    // The heading + tab label were renamed too (tab label asserted via its
+    // testid above; "Settings" alone would also match the tab button text).
+    expect(screen.getByText('Family settings')).toBeInTheDocument();
+    expect(screen.queryByText('App Info')).not.toBeInTheDocument();
+    expect(screen.queryByText('Family app settings')).not.toBeInTheDocument();
   });
 
-  it('App Info shows a friendly placeholder, not "Not set", on a brand-new family (FHS-447)', async () => {
-    installApi('admin', { appName: '', appSubtitle: '' });
+  it('Settings tab shows the current currency and saving a new one issues a currency PUT (FHS-441)', async () => {
     renderAt();
-    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-app-info')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-settings')).toBeInTheDocument());
     act(() => {
-      fireEvent.click(screen.getByTestId('admin-panel-tab-app-info'));
+      fireEvent.click(screen.getByTestId('admin-panel-tab-settings'));
     });
-    await waitFor(() => expect(screen.getByTestId('admin-app-info-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('admin-app-info-name-display').textContent).not.toBe('Not set');
-    expect(screen.getByTestId('admin-app-info-name-display').textContent).toBe('Add an app name');
-    expect(screen.getByTestId('admin-app-info-subtitle-display').textContent).toBe(
-      'Add a subtitle',
-    );
-    // FHS-441 — currency always has a value (defaults to USD server-side)
-    // even when a brand-new family hasn't set appName/appSubtitle yet.
-    expect(screen.getByTestId('admin-app-info-currency-display').textContent).toBe('USD');
-  });
-
-  it('App Info tab shows the current currency and saving a new one issues a currency PUT (FHS-441)', async () => {
-    renderAt();
-    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-app-info')).toBeInTheDocument());
-    act(() => {
-      fireEvent.click(screen.getByTestId('admin-panel-tab-app-info'));
-    });
-    await waitFor(() => expect(screen.getByTestId('admin-app-info-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('admin-app-info-currency-display').textContent).toBe('AED');
+    await waitFor(() => expect(screen.getByTestId('admin-settings-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('admin-settings-currency-display').textContent).toBe('AED');
 
     // Open edit — the CurrencyPicker starts on the currently-saved currency.
     act(() => {
-      fireEvent.click(screen.getByTestId('admin-app-info-edit-btn'));
+      fireEvent.click(screen.getByTestId('admin-settings-edit-btn'));
     });
     await waitFor(() =>
-      expect(screen.getByTestId('admin-app-info-currency-trigger')).toBeInTheDocument(),
+      expect(screen.getByTestId('admin-settings-currency-trigger')).toBeInTheDocument(),
     );
-    expect(screen.getByTestId('admin-app-info-currency-trigger').textContent).toContain('AED');
+    expect(screen.getByTestId('admin-settings-currency-trigger').textContent).toContain('AED');
 
     // Switch to GBP via the searchable dropdown.
     act(() => {
-      fireEvent.click(screen.getByTestId('admin-app-info-currency-trigger'));
+      fireEvent.click(screen.getByTestId('admin-settings-currency-trigger'));
     });
-    const gbpOption = await screen.findByTestId('admin-app-info-currency-option-GBP');
+    const gbpOption = await screen.findByTestId('admin-settings-currency-option-GBP');
     act(() => {
       fireEvent.click(gbpOption);
     });
     await act(async () => {
-      fireEvent.click(screen.getByTestId('admin-app-info-save-btn'));
+      fireEvent.click(screen.getByTestId('admin-settings-save-btn'));
     });
 
     await waitFor(() => {
@@ -565,6 +561,161 @@ describe('<AdminPanelPage />', () => {
       expect(putCall).toBeTruthy();
       const body = JSON.parse((putCall![1] as RequestInit).body as string) as { value: string };
       expect(body.value).toBe('GBP');
+    });
+  });
+
+  // FHS-435 — GDPR: Download my data.
+  it('Download my data calls GET /api/admin/export and triggers a file download', async () => {
+    // jsdom doesn't implement the Blob URL APIs at all — define them first
+    // so vi.spyOn has something to wrap.
+    URL.createObjectURL ??= () => '';
+    URL.revokeObjectURL ??= () => {};
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    // jsdom doesn't understand the `download` attribute and tries to
+    // "navigate" the fake blob: URL on click — stub the click so the test
+    // only asserts the download was wired up, not a real navigation.
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-settings')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('admin-panel-tab-settings'));
+    });
+    await waitFor(() => expect(screen.getByTestId('admin-settings-ready')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('admin-settings-export-btn'));
+    });
+
+    await waitFor(() => {
+      const exportCall = fetchMock.mock.calls.find(([u]) =>
+        String(u).includes('/api/admin/export'),
+      );
+      expect(exportCall).toBeTruthy();
+    });
+    expect(createObjectURL).toHaveBeenCalled();
+    expect(anchorClick).toHaveBeenCalled();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+
+    createObjectURL.mockRestore();
+    revokeObjectURL.mockRestore();
+    anchorClick.mockRestore();
+  });
+
+  // FHS-435 — GDPR: Delete my account (irreversible; two-step confirm).
+  describe('Delete my account', () => {
+    async function openSettingsAndDeleteDialog() {
+      renderAt();
+      await waitFor(() =>
+        expect(screen.getByTestId('admin-panel-tab-settings')).toBeInTheDocument(),
+      );
+      act(() => {
+        fireEvent.click(screen.getByTestId('admin-panel-tab-settings'));
+      });
+      await waitFor(() => expect(screen.getByTestId('admin-settings-ready')).toBeInTheDocument());
+      act(() => {
+        fireEvent.click(screen.getByTestId('admin-settings-delete-btn'));
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId('admin-settings-delete-confirm')).toBeInTheDocument(),
+      );
+      // Family name is loaded async from /api/me — wait for it to render.
+      await waitFor(() =>
+        expect(screen.getByTestId('admin-settings-delete-family-name').textContent).toBe(
+          'The Khans',
+        ),
+      );
+    }
+
+    it('keeps Delete disabled until the exact family name is typed', async () => {
+      await openSettingsAndDeleteDialog();
+      const confirmBtn = screen.getByTestId('admin-settings-delete-confirm-confirm');
+      expect(confirmBtn).toBeDisabled();
+
+      fireEvent.change(screen.getByTestId('admin-settings-delete-confirm-input'), {
+        target: { value: 'Wrong Name' },
+      });
+      expect(confirmBtn).toBeDisabled();
+
+      fireEvent.change(screen.getByTestId('admin-settings-delete-confirm-input'), {
+        target: { value: 'The Khans' },
+      });
+      expect(confirmBtn).not.toBeDisabled();
+    });
+
+    it('calls POST /api/admin/delete-account and clears the session on success', async () => {
+      await openSettingsAndDeleteDialog();
+      fireEvent.change(screen.getByTestId('admin-settings-delete-confirm-input'), {
+        target: { value: 'The Khans' },
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('admin-settings-delete-confirm-confirm'));
+      });
+
+      await waitFor(() => {
+        const deleteCall = fetchMock.mock.calls.find(
+          ([u, init]) => String(u).includes('/api/admin/delete-account') && init?.method === 'POST',
+        );
+        expect(deleteCall).toBeTruthy();
+        const body = JSON.parse((deleteCall![1] as RequestInit).body as string) as {
+          confirm: string;
+        };
+        expect(body.confirm).toBe('The Khans');
+      });
+      await waitFor(() => expect(signOutAll).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('home-page')).toBeInTheDocument());
+    });
+
+    it('shows an error and does not sign out when the API rejects the request', async () => {
+      fetchMock.mockImplementation((url: string) => {
+        const u = String(url);
+        if (u.includes('/api/admin/delete-account')) {
+          return Promise.resolve({
+            ok: false,
+            status: 400,
+            json: async () => ({
+              error: 'confirmation mismatch',
+              errorCode: 'CONFIRM_MISMATCH',
+              detail: 'confirm must match the family name exactly',
+            }),
+          });
+        }
+        if (/\/api\/me(\?|$)/.test(u)) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              id: 'u-admin',
+              email: 'sarah@example.com',
+              tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'admin' }],
+            }),
+          });
+        }
+        if (u.includes('/api/members')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ members: MEMBERS, callerRole: 'admin' }),
+          });
+        }
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+      });
+      await openSettingsAndDeleteDialog();
+      fireEvent.change(screen.getByTestId('admin-settings-delete-confirm-input'), {
+        target: { value: 'The Khans' },
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('admin-settings-delete-confirm-confirm'));
+      });
+
+      await waitFor(() =>
+        expect(screen.getByTestId('admin-settings-delete-error').textContent).toContain(
+          'confirm must match the family name exactly',
+        ),
+      );
+      expect(signOutAll).not.toHaveBeenCalled();
+      expect(screen.queryByTestId('home-page')).not.toBeInTheDocument();
     });
   });
 

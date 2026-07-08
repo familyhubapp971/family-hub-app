@@ -13,6 +13,11 @@ interface ConfirmDialogProps {
   variant?: 'danger' | 'primary';
   /** Disables the buttons + shows the busy label while an async action runs. */
   busy?: boolean;
+  /** Extra disable condition for the confirm button only (e.g. a "type the
+   *  name to confirm" gate on a destructive action). Cancel stays enabled. */
+  confirmDisabled?: boolean;
+  /** Extra content rendered below the message — e.g. a confirmation input. */
+  children?: React.ReactNode;
   onConfirm: () => void;
   onCancel: () => void;
   testId?: string;
@@ -29,6 +34,8 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   variant = 'primary',
   busy = false,
+  confirmDisabled = false,
+  children,
   onConfirm,
   onCancel,
   testId = 'confirm-dialog',
@@ -53,6 +60,7 @@ export function ConfirmDialog({
               {message}
             </p>
           )}
+          {children}
           <div className="mt-6 flex justify-end gap-3">
             <Button
               variant="secondary"
@@ -65,7 +73,7 @@ export function ConfirmDialog({
             <Button
               variant={variant === 'danger' ? 'danger' : 'primary'}
               onClick={onConfirm}
-              disabled={busy}
+              disabled={busy || confirmDisabled}
               testId={`${testId}-confirm`}
             >
               {busy ? 'Working…' : confirmLabel}
