@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Edit2, Key, Mail, Plus, Settings2, Shield, Trash2, X } from 'lucide-react';
+import { Copy, Edit2, Key, Mail, Plus, Settings2, Shield, Trash2, X } from 'lucide-react';
 import { Button, Card, Input, Label } from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
@@ -181,6 +181,8 @@ export function MembersPage() {
             </div>
           )}
         </div>
+
+        <KidLoginShare slug={slug} />
 
         {activeForm === 'parent' && callerIsAdmin && (
           <InviteParentForm
@@ -432,6 +434,62 @@ export function MembersPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// FHS-437 — parent-side counterpart to the self-serve kid login: without
+// this, a parent had no way to find or share the link/code their kid needs
+// to sign in, so a brand-new family's kid had no working path in at all.
+// Shows the family's kid-login URL + short code with a one-tap copy so the
+// parent can hand it to their kid (AirDrop, text, or typed by hand).
+function KidLoginShare({ slug }: { slug: string }) {
+  const [copied, setCopied] = useState(false);
+  const kidLoginUrl = `${window.location.origin}/t/${slug}/kid-login`;
+
+  const onCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(kidLoginUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard permission blocked / unavailable — the link and code are
+      // still visible on-screen to copy by hand.
+    }
+  }, [kidLoginUrl]);
+
+  return (
+    <Card className="mb-8 bg-cyan-50 p-4 sm:p-5" testId="members-kid-login-share">
+      <p className="mb-1 font-heading text-sm uppercase tracking-wide text-gray-700">Kid login</p>
+      <p className="mb-3 font-body text-sm text-gray-700">
+        Share this with your kid so they can sign in on their own device. They can open the link
+        below, or type the family code{' '}
+        <code
+          className="rounded border-2 border-black bg-white px-1.5 py-0.5 font-mono text-xs font-bold"
+          data-testid="members-kid-login-code"
+        >
+          {slug}
+        </code>{' '}
+        on the &ldquo;I&rsquo;m a Kid&rdquo; tab at <span className="font-semibold">/login</span>.
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <code
+          className="flex-1 truncate rounded-lg border-2 border-black bg-white px-3 py-2.5 font-mono text-xs text-gray-800 sm:text-sm"
+          data-testid="members-kid-login-url"
+        >
+          {kidLoginUrl}
+        </code>
+        <Button
+          type="button"
+          variant="secondary"
+          size="md"
+          onClick={onCopy}
+          testId="members-kid-login-copy"
+          className="w-full sm:w-auto"
+        >
+          <Copy size={16} aria-hidden="true" /> {copied ? 'Copied!' : 'Copy link'}
+        </Button>
+      </div>
+    </Card>
   );
 }
 

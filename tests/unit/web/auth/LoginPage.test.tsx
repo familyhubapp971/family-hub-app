@@ -204,6 +204,80 @@ describe('<LoginPage />', () => {
     expect(screen.queryByTestId('route-kid-login')).toBeNull();
   });
 
+  // FHS-437 — a device with no remembered family must land on the friendly
+  // code-entry prompt, never an error/dead-end screen.
+  it('no remembered family shows the code-entry prompt, not an error', () => {
+    renderPage('/login?role=kid');
+    expect(screen.getByTestId('login-kid-code')).toBeInTheDocument();
+    expect(screen.queryByTestId('kid-login-not-found')).toBeNull();
+    expect(screen.queryByTestId('login-kid-error')).toBeNull();
+    expect(screen.queryByTestId('login-kid-notice')).toBeNull();
+  });
+
+  // FHS-437 — a stale remembered family (deleted / recreated tenant) must
+  // never strand the kid on "we couldn't find a family". It gets forgotten
+  // and the kid is dropped back to the code-entry prompt with a plain note.
+  it('a stale remembered family that 404s is forgotten and drops back to code entry', async () => {
+    localStorage.setItem(
+      'fh.kid.lastFamily',
+      JSON.stringify({ slug: 'ghost-family', name: 'Ghost Family' }),
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })),
+    );
+    renderPage('/login?role=kid');
+
+    await waitFor(() => expect(screen.getByTestId('login-kid-code')).toBeInTheDocument());
+    expect(screen.getByTestId('login-kid-notice').textContent).toMatch(/didn.t work/i);
+    expect(screen.queryByTestId('kid-login-not-found')).toBeNull();
+    expect(localStorage.getItem('fh.kid.lastFamily')).toBeNull();
+  });
+
+  // FHS-437 — a mistyped code (valid format, no such family) must not wipe
+  // out a different, perfectly good remembered family, and shows an inline
+  // error the kid can fix in place instead of a dead-end screen.
+  it('a mistyped code that 404s shows an inline error and leaves a good remembered family alone', async () => {
+    // "smiths" is a genuinely working remembered family on this device.
+    localStorage.setItem(
+      'fh.kid.lastFamily',
+      JSON.stringify({ slug: 'smiths', name: 'The Smiths' }),
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (String(url).includes('/kid-members/smiths')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              family: { slug: 'smiths', name: 'The Smiths' },
+              kids: [{ id: 'k1', displayName: 'Sam', avatarEmoji: '🦊' }],
+            }),
+          };
+        }
+        return { ok: false, status: 404, json: async () => ({}) };
+      }),
+    );
+    renderPage('/login?role=kid');
+    await waitFor(() => expect(screen.getByTestId('kid-login-avatars')).toBeInTheDocument());
+
+    // Kid picks "Enter a different code" and mistypes.
+    fireEvent.click(screen.getByTestId('login-kid-change-family'));
+    fireEvent.change(screen.getByTestId('login-kid-code'), { target: { value: 'no-such-family' } });
+    fireEvent.submit(screen.getByTestId('login-kid-form'));
+
+    await waitFor(() => expect(screen.getByTestId('login-kid-error')).toBeInTheDocument());
+    expect(screen.getByTestId('login-kid-error').textContent).toMatch(
+      /couldn.t find that family code/i,
+    );
+    expect(screen.queryByTestId('login-kid-notice')).toBeNull();
+    // The unrelated remembered family is untouched.
+    expect(localStorage.getItem('fh.kid.lastFamily')).toBe(
+      JSON.stringify({ slug: 'smiths', name: 'The Smiths' }),
+    );
+  });
+
   it('a remembered family shows its kid tiles straight away', async () => {
     localStorage.setItem(
       'fh.kid.lastFamily',
