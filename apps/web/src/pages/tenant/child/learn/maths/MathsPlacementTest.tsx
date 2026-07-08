@@ -288,7 +288,7 @@ export function MathsPlacementTest({
                   <div
                     key={r.tableNumber}
                     aria-label={`Table ${r.tableNumber}: ${r.correct && r.timeSeconds <= 4 ? 'mastered' : r.correct ? 'correct' : 'missed'}`}
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xs font-black ${
+                    className={`aspect-square w-full rounded-lg flex items-center justify-center text-xs font-black ${
                       r.correct && r.timeSeconds <= 4
                         ? 'bg-green-100 text-green-700 border-2 border-green-400'
                         : r.correct

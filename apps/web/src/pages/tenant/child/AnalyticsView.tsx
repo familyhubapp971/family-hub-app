@@ -215,7 +215,7 @@ export function AnalyticsView({
           <ResponsiveContainer width="100%" height={160}>
             <BarChart
               data={weeklyData}
-              barSize={40}
+              maxBarSize={40}
               margin={{ top: 0, right: 8, left: -20, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
@@ -224,6 +224,8 @@ export function AnalyticsView({
                 tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 700 }}
                 axisLine={false}
                 tickLine={false}
+                interval="preserveStartEnd"
+                minTickGap={16}
               />
               <YAxis
                 tick={{ fontSize: 11, fill: '#9ca3af' }}
