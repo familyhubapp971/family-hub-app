@@ -496,10 +496,18 @@ export const dashboardRouter = new Hono().get('/today', async (c) => {
     slot: string | null;
     dayOfWeek: string | null;
     title: string | null;
-    createdAt: Date;
-    decidedAt: Date | null;
+    // db.execute returns raw pg rows: timestamptz comes back as an ISO STRING,
+    // not a Date (unlike the drizzle query builder). Coerced to Date below so
+    // the downstream JS merge (which calls .getTime()) behaves exactly as it
+    // did when these were six drizzle .select() queries.
+    createdAt: Date | string;
+    decidedAt: Date | string | null;
   };
-  const feedRows = activityFeed.rows as ActivityFeedRow[];
+  const feedRows = (activityFeed.rows as ActivityFeedRow[]).map((r) => ({
+    ...r,
+    createdAt: new Date(r.createdAt),
+    decidedAt: r.decidedAt === null ? null : new Date(r.decidedAt),
+  }));
 
   const activityRows = feedRows
     .filter((r) => r.src === 'log')
