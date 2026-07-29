@@ -308,8 +308,8 @@ function MemberCard({
           </div>
         </div>
         {young && (
-          <span className="flex items-center gap-1 rounded border border-purple-200 bg-purple-100 px-2 py-1 text-[10px] font-bold text-purple-600">
-            View World <ArrowRight size={10} strokeWidth={3} />
+          <span className="flex shrink-0 items-center gap-1 rounded-full border-2 border-black bg-purple-300 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-purple-900 shadow-neo-xs">
+            View World <ArrowRight size={12} strokeWidth={3} />
           </span>
         )}
       </div>
