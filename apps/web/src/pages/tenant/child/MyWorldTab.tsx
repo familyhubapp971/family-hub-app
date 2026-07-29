@@ -1258,10 +1258,18 @@ export function MyWorldTab(
                     spell that out right where the pick happens. */}
                 <p
                   data-testid="habit-day-sticker-hint"
-                  className="mb-4 flex items-start gap-1.5 rounded-lg border-2 border-purple-200 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700"
+                  className="mb-2 flex items-start gap-1.5 rounded-lg border-2 border-purple-200 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700"
                 >
                   <Sparkles className="h-3.5 w-3.5 shrink-0 translate-y-0.5" aria-hidden="true" />
                   <span>Just pick your favourite look — it&apos;s worth the same either way.</span>
+                </p>
+                {/* FHS-480 — the sticker→cash rate isn't shown anywhere the
+                    sticker is actually picked; surface it here too. */}
+                <p
+                  data-testid="habit-day-sticker-value"
+                  className="mb-4 text-xs font-bold text-gray-500"
+                >
+                  1 sticker = {currency} 0.50
                 </p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   {AVAILABLE_STICKERS.map((sticker) => (

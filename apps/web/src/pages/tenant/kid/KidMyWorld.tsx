@@ -472,6 +472,7 @@ export function KidMyWorld({
                   savedStickers={savedStickers}
                   savedCash={savedCash}
                   currency={currency}
+                  stickerRate={stickerRate}
                   planted={planted}
                   bonus={bonus}
                   hasInvestments={data.investments.length > 0}
