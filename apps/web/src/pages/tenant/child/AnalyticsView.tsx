@@ -44,6 +44,9 @@ interface HabitStat {
   habitId: string;
   name: string;
   total: number;
+  // FHS-482 — the possible days across every tracked week, so the leaderboard
+  // can show "done of total" instead of a bare completed-days count.
+  totalPossible: number;
   avgWeek: number;
   rate: number;
 }
@@ -105,6 +108,7 @@ export function AnalyticsView({
               habitId: h.habitId,
               name: h.name,
               total: h.completedDays,
+              totalPossible: h.totalDays,
               avgWeek: Math.round((h.completedDays / numWeeks) * 10) / 10,
               rate: h.rate,
             }))
@@ -301,8 +305,8 @@ export function AnalyticsView({
                       >
                         {habit.rate}%
                       </span>
-                      <span className="text-xs text-gray-400 font-medium w-16 text-right">
-                        {habit.total} days
+                      <span className="text-xs text-gray-400 font-medium w-24 text-right whitespace-nowrap">
+                        {habit.total} of {habit.totalPossible} days
                       </span>
                     </div>
                   </div>

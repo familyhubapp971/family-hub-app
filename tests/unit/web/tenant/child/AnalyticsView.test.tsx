@@ -1,4 +1,5 @@
-// FHS-481 — Unit test for AnalyticsView's summary tile label.
+// FHS-481/482 — Unit tests for AnalyticsView's summary tile label and
+// leaderboard completion display.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -40,5 +41,26 @@ describe('<AnalyticsView />', () => {
       'Current Value',
     );
     expect(screen.queryByText('Potential Value')).not.toBeInTheDocument();
+  });
+
+  it('shows a habit\'s leaderboard completion as "X of Y days", not a bare count (FHS-482)', async () => {
+    mockAnalytics({
+      stickersPerWeek: [],
+      habitStats: [
+        {
+          habitId: 'h1',
+          name: 'Read a book',
+          habitIcon: 'heart',
+          totalDays: 21,
+          completedDays: 9,
+          rate: 43,
+        },
+      ],
+    });
+    render(<AnalyticsView analyticsUrl="/api/mw/analytics" headers={{}} />);
+
+    await waitFor(() => expect(screen.getByTestId('analytics-leaderboard')).toBeInTheDocument());
+    expect(screen.getByText('9 of 21 days')).toBeInTheDocument();
+    expect(screen.queryByText('9 days')).not.toBeInTheDocument();
   });
 });
