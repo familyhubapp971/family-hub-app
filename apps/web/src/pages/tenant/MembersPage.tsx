@@ -1,21 +1,27 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Copy, Edit2, Key, Mail, Plus, Settings2, Shield, Trash2, X } from 'lucide-react';
-import { Button, Card, Input, Label } from '@familyhub/ui';
+import { Button, Card, Input, Label, Select } from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
 
-// FHS-108 / FHS-252 / FHS-276 — /t/:slug/members, rebuilt to the Magic
-// Patterns "Manage Members" design: header CTAs (Invite Parent / Add
-// Child) with inline expanding forms, a card grid (one card per member
-// with a coloured initial disc + role badge), a pending-invite box with
-// Resend on unclaimed seats, and per-card actions — Edit name, the
-// parents-only admin toggle (last admin protected), Set PIN on kids,
-// and Remove. Mutations are admin-only; PIN management stays
+// FHS-108 / FHS-252 / FHS-276 / FHS-471 / FHS-472 / FHS-473 — /t/:slug/members,
+// rebuilt to the Magic Patterns "Manage Members" design: header CTAs
+// (Invite Parent / Add member) with inline expanding forms, a card grid
+// (one card per member with a coloured initial disc + role badge), a
+// pending-invite box with Resend on unclaimed seats, and per-card actions
+// — Edit name, the parents-only admin toggle (last admin protected), Set
+// PIN on kids, and Remove. Mutations are admin-only; PIN management stays
 // admin/adult (FHS-252).
+//
+// FHS-472/473 — "Add member" starts generic: pick child / teen / adult,
+// then create. All three go through POST /api/members — the same direct,
+// no-login roster insert onboarding uses for a plain adult row (no email).
+// Inviting someone to actually log in stays a separate action (Invite
+// Parent, unchanged by this ticket).
 
 interface MemberItem {
   id: string;
@@ -73,10 +79,12 @@ export function MembersPage() {
     },
     [navigate, slug],
   );
-  // Which header form is open ('none' | 'parent' | 'child'). The
-  // dashboard dropdown's Add Child deep-links here with ?add=child.
-  const [activeForm, setActiveForm] = useState<'none' | 'parent' | 'child'>(
-    params.get('add') === 'child' ? 'child' : 'none',
+  // Which header form is open ('none' | 'parent' | 'member'). The
+  // dashboard dropdown's Add member deep-links here with ?add=member.
+  // FHS-472 — 'member' replaces the old child-only 'child' form; the
+  // form itself starts with a type picker (child / teen / adult).
+  const [activeForm, setActiveForm] = useState<'none' | 'parent' | 'member'>(
+    params.get('add') === 'member' ? 'member' : 'none',
   );
   const [openPinFor, setOpenPinFor] = useState<string | null>(null);
   const [editingFor, setEditingFor] = useState<string | null>(null);
@@ -173,10 +181,10 @@ export function MembersPage() {
                 type="button"
                 variant="primary"
                 size="md"
-                testId="members-add-child"
-                onClick={() => setActiveForm((f) => (f === 'child' ? 'none' : 'child'))}
+                testId="members-add-member"
+                onClick={() => setActiveForm((f) => (f === 'member' ? 'none' : 'member'))}
               >
-                <Plus size={16} aria-hidden="true" /> Add Child
+                <Plus size={16} aria-hidden="true" /> Add member
               </Button>
             </div>
           )}
@@ -201,15 +209,15 @@ export function MembersPage() {
             error={actionError}
           />
         )}
-        {activeForm === 'child' && callerIsAdmin && (
-          <AddChildForm
+        {activeForm === 'member' && callerIsAdmin && (
+          <AddMemberForm
             onClose={() => setActiveForm('none')}
-            onSubmit={async (displayName, age) => {
+            onSubmit={async (displayName, role, age) => {
               const ok = await mutate('/api/members', {
                 method: 'POST',
                 body: JSON.stringify({
                   displayName,
-                  role: 'child',
+                  role,
                   ...(age !== null ? { age } : {}),
                 }),
               });
@@ -577,85 +585,125 @@ function InviteParentForm({
   );
 }
 
-function AddChildForm({
+// FHS-472/473 — generic "family member" type-picker (child / teen /
+// adult). All three are created the same way onboarding creates a plain
+// adult row (no email): a direct roster insert, no login. Age only
+// matters for child/teen cards (shown as "Child (6)" on Manage Members),
+// so it's hidden once "Adult" is picked.
+type AddMemberRole = 'child' | 'teen' | 'adult';
+
+const ADD_MEMBER_ROLE_OPTIONS: Array<{ value: AddMemberRole; label: string }> = [
+  { value: 'child', label: 'Child' },
+  { value: 'teen', label: 'Teen' },
+  { value: 'adult', label: 'Adult' },
+];
+
+const ADD_MEMBER_HELP: Record<AddMemberRole, string> = {
+  child:
+    'Kids don’t need an email. They log in by tapping their avatar and entering a 4-digit PIN (set one from their card below).',
+  teen: 'Teens don’t need an email either — same PIN login as a child, from their card below.',
+  adult:
+    'This creates a profile on the roster — no login. To let them sign in themselves, use Invite Parent instead.',
+};
+
+function AddMemberForm({
   onClose,
   onSubmit,
   error,
 }: {
   onClose: () => void;
-  onSubmit: (displayName: string, age: number | null) => Promise<void>;
+  onSubmit: (displayName: string, role: AddMemberRole, age: number | null) => Promise<void>;
   error: string | null;
 }) {
+  const [role, setRole] = useState<AddMemberRole>('child');
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const showAge = role === 'child' || role === 'teen';
+
   return (
-    <Card className="relative mb-8 bg-white p-6" data-testid="members-add-child-form">
+    <Card className="relative mb-8 bg-white p-6" testId="members-add-member-form">
       <button
         type="button"
         onClick={onClose}
-        aria-label="Close add-child form"
+        aria-label="Close add-member form"
         className="absolute right-4 top-4 text-gray-500 transition-colors hover:text-black"
       >
         <X size={20} />
       </button>
-      <h2 className="mb-2 font-heading text-2xl text-black">Add a Child</h2>
-      <p className="mb-6 text-sm font-bold text-gray-600">
-        Kids don&rsquo;t need an email. They log in by tapping their avatar and entering a 4-digit
-        PIN (set one from their card below).
-      </p>
+      <h2 className="mb-2 font-heading text-2xl text-black">Add a Family Member</h2>
+      <p className="mb-6 text-sm font-bold text-gray-600">{ADD_MEMBER_HELP[role]}</p>
       <form
-        className="flex flex-col gap-4 sm:flex-row"
+        className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
         onSubmit={(e) => {
           e.preventDefault();
           if (!name.trim()) return;
-          const parsedAge = age.trim() === '' ? null : Number.parseInt(age, 10);
+          const parsedAge = !showAge || age.trim() === '' ? null : Number.parseInt(age, 10);
           setSubmitting(true);
-          void onSubmit(name.trim(), Number.isNaN(parsedAge as number) ? null : parsedAge).finally(
-            () => setSubmitting(false),
-          );
+          void onSubmit(
+            name.trim(),
+            role,
+            Number.isNaN(parsedAge as number) ? null : parsedAge,
+          ).finally(() => setSubmitting(false));
         }}
       >
+        <div className="w-full sm:w-40">
+          <Label htmlFor="add-member-role">Type</Label>
+          <Select
+            id="add-member-role"
+            value={role}
+            onChange={(e) => setRole(e.target.value as AddMemberRole)}
+            data-testid="members-add-member-role"
+          >
+            {ADD_MEMBER_ROLE_OPTIONS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </Select>
+        </div>
         <div className="flex-1">
-          <Label htmlFor="add-child-name" required>
+          <Label htmlFor="add-member-name" required>
             Name
           </Label>
           <Input
-            id="add-child-name"
+            id="add-member-name"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Amina"
-            testId="members-add-child-name"
+            testId="members-add-member-name"
           />
         </div>
-        <div className="w-full sm:w-32">
-          <Label htmlFor="add-child-age">Age</Label>
-          <Input
-            id="add-child-age"
-            type="number"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="e.g. 10"
-            testId="members-add-child-age"
-          />
-        </div>
+        {showAge && (
+          <div className="w-full sm:w-32">
+            <Label htmlFor="add-member-age">Age</Label>
+            <Input
+              id="add-member-age"
+              type="number"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder="e.g. 10"
+              testId="members-add-member-age"
+            />
+          </div>
+        )}
         <div className="flex items-end">
           <Button
             type="submit"
             variant="primary"
             size="md"
             disabled={submitting}
-            testId="members-add-child-save"
+            testId="members-add-member-save"
           >
-            {submitting ? 'Adding…' : 'Add Child'}
+            {submitting ? 'Adding…' : 'Add member'}
           </Button>
         </div>
       </form>
       {error && (
         <p
           role="alert"
-          data-testid="members-add-child-error"
+          data-testid="members-add-member-error"
           className="mt-3 text-sm font-bold text-red-600"
         >
           {error}
