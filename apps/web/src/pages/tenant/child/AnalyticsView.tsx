@@ -170,7 +170,7 @@ export function AnalyticsView({
           className="bg-white border-2 sm:border-3 border-black rounded-2xl p-3 sm:p-4 shadow-neo"
         >
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">
-            Potential Value
+            Current Value
           </p>
           <p className="text-2xl sm:text-3xl font-black text-amber-500">{totalStickers} ⭐</p>
           <p className="text-[10px] text-gray-400 font-medium mt-1">
@@ -240,7 +240,7 @@ export function AnalyticsView({
                 formatter={(value) =>
                   metric === 'completion'
                     ? [`${value}%`, 'Completion']
-                    : [`${value} ⭐`, 'Potential Value']
+                    : [`${value} ⭐`, 'Current Value']
                 }
               />
               <Bar dataKey={metric} radius={[8, 8, 0, 0]}>
@@ -258,7 +258,7 @@ export function AnalyticsView({
 
         <p className="text-xs text-gray-400 text-center mt-2">
           {metric === 'stickers'
-            ? 'Potential Value per week (stickers × bonus × investment)'
+            ? 'Current Value per week (stickers × bonus × investment)'
             : 'Habit consistency per week (days done / total possible days)'}{' '}
           · Latest week is brightest
         </p>
