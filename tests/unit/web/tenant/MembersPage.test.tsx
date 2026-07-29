@@ -509,6 +509,128 @@ describe('<MembersPage />', () => {
     );
   });
 
+  // FHS-471/472/473 — the generic "Add member" flow: a single control
+  // opens a form that starts with a type picker (child / teen / adult)
+  // instead of a child-only "Add Child" button. All three types are
+  // created via the same POST /api/members no-login roster insert.
+  describe('Add a family member (FHS-472/473)', () => {
+    function adminOnlyList() {
+      return {
+        ok: true,
+        json: async () => ({
+          callerRole: 'admin',
+          members: [
+            {
+              id: 'admin-1',
+              displayName: 'Sarah Khan',
+              role: 'admin',
+              avatarEmoji: '👩',
+              status: 'active',
+              createdAt: '2026-05-02T00:00:00.000Z',
+              isChild: false,
+              hasPin: false,
+              age: null,
+              inviteEmail: null,
+              inviteId: null,
+            },
+          ],
+        }),
+      };
+    }
+
+    it('renders an "Add member" control (not "Add Child") on the family view', async () => {
+      membersResponse = adminOnlyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-add-member')).toBeInTheDocument());
+      expect(screen.getByTestId('members-add-member').textContent).toContain('Add member');
+      expect(screen.queryByText('Add Child')).toBeNull();
+    });
+
+    it('opens a type picker defaulting to Child with Name + Age fields', async () => {
+      membersResponse = adminOnlyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-add-member')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('members-add-member'));
+      expect(screen.getByTestId('members-add-member-form')).toBeInTheDocument();
+      expect((screen.getByTestId('members-add-member-role') as HTMLSelectElement).value).toBe(
+        'child',
+      );
+      expect(screen.getByTestId('members-add-member-name')).toBeInTheDocument();
+      expect(screen.getByTestId('members-add-member-age')).toBeInTheDocument();
+    });
+
+    it('picking Adult hides the Age field and skips age in the create request', async () => {
+      membersResponse = adminOnlyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-add-member')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('members-add-member'));
+
+      fireEvent.change(screen.getByTestId('members-add-member-role'), {
+        target: { value: 'adult' },
+      });
+      expect(screen.queryByTestId('members-add-member-age')).toBeNull();
+
+      fireEvent.change(screen.getByTestId('members-add-member-name'), {
+        target: { value: 'Yusuf' },
+      });
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ member: {} }) });
+      fetchMock.mockResolvedValueOnce(adminOnlyList());
+      fireEvent.click(screen.getByTestId('members-add-member-save'));
+
+      await waitFor(() =>
+        expect(screen.queryByTestId('members-add-member-form')).not.toBeInTheDocument(),
+      );
+      const postCall = fetchMock.mock.calls.find(
+        (c) => typeof c[0] === 'string' && c[0].endsWith('/api/members') && c[1]?.method === 'POST',
+      );
+      expect(postCall).toBeDefined();
+      expect(JSON.parse(postCall![1].body as string)).toEqual({
+        displayName: 'Yusuf',
+        role: 'adult',
+      });
+    });
+
+    it('picking Teen creates a teen member (name + optional age, no login)', async () => {
+      membersResponse = adminOnlyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-add-member')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('members-add-member'));
+
+      fireEvent.change(screen.getByTestId('members-add-member-role'), {
+        target: { value: 'teen' },
+      });
+      fireEvent.change(screen.getByTestId('members-add-member-name'), {
+        target: { value: 'Zayd' },
+      });
+      fireEvent.change(screen.getByTestId('members-add-member-age'), {
+        target: { value: '15' },
+      });
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ member: {} }) });
+      fetchMock.mockResolvedValueOnce(adminOnlyList());
+      fireEvent.click(screen.getByTestId('members-add-member-save'));
+
+      await waitFor(() =>
+        expect(screen.queryByTestId('members-add-member-form')).not.toBeInTheDocument(),
+      );
+      const postCall = fetchMock.mock.calls.find(
+        (c) => typeof c[0] === 'string' && c[0].endsWith('/api/members') && c[1]?.method === 'POST',
+      );
+      expect(JSON.parse(postCall![1].body as string)).toEqual({
+        displayName: 'Zayd',
+        role: 'teen',
+        age: 15,
+      });
+    });
+
+    it('the dashboard\'s "+" deep link (?add=member) opens the type picker automatically', async () => {
+      membersResponse = adminOnlyList();
+      renderAt('/t/khans/members?add=member');
+      await waitFor(() =>
+        expect(screen.getByTestId('members-add-member-form')).toBeInTheDocument(),
+      );
+    });
+  });
+
   it('shows the server detail message (not just "forbidden") when a 403 fires', async () => {
     membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: false });
     renderAt('/t/khans/members');

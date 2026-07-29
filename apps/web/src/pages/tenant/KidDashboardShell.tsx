@@ -23,7 +23,7 @@ import { KidLearnPanel } from './kid/KidLearnPanel';
 //
 // A child who finishes kid-login lands here (the dashboard route admits a
 // kid token via ProtectedRoute allowKid). It deliberately shows NONE of the
-// parent surface: no profile pill, no Manage Members / Add Child / admin
+// parent surface: no profile pill, no Manage Members / Add member / admin
 // links — just the kid's own avatar + name + banked stars/cash, the five-tab
 // kid world (My World, Meals, Calendar, Journal, Learn) matching the Magic
 // Patterns design, and a "Switch user" button that drops the kid token and
