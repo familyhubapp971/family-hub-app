@@ -477,6 +477,39 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     expect(screen.queryByTestId('my-world-close-week-banner')).not.toBeInTheDocument();
   });
 
+  it('locks a week that has not started yet — blurred cards, disabled day cells, no edits (FHS-484)', async () => {
+    // Default week fixture starts Mon 2026-02-23; freeze "now" a week earlier
+    // so that week reads as a future week (e.g. this week was finalized early).
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-02-16T10:00:00'));
+    installApi();
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('my-world')).toBeInTheDocument());
+
+    expect(screen.getByTestId('habit-tracker-week-future-badge')).toHaveTextContent('Not Started');
+    expect(screen.getByTestId('habit-tracker-future-week-lock')).toBeInTheDocument();
+    expect(screen.getByTestId(`habit-day-cell-${HABIT}-0`)).toBeDisabled();
+
+    // Clicking a locked day cell doesn't open the sticker picker.
+    fireEvent.click(screen.getByTestId(`habit-day-cell-${HABIT}-0`));
+    expect(screen.queryByTestId('habit-day-sticker-dialog')).not.toBeInTheDocument();
+
+    // Admin-only "Add habit" affordance is hidden too — nothing is editable.
+    expect(screen.queryByTestId('habit-tracker-add-habit-btn')).not.toBeInTheDocument();
+  });
+
+  it('does not lock the live (current) week (FHS-484)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-02-25T10:00:00')); // Wednesday, within the week
+    installApi();
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('my-world')).toBeInTheDocument());
+
+    expect(screen.queryByTestId('habit-tracker-week-future-badge')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('habit-tracker-future-week-lock')).not.toBeInTheDocument();
+    expect(screen.getByTestId(`habit-day-cell-${HABIT}-0`)).toBeEnabled();
+  });
+
   it('hides Add Habit + per-habit edit/delete from a normal user (FHS-342)', async () => {
     installApi();
     renderTab(false); // normal user (not admin)

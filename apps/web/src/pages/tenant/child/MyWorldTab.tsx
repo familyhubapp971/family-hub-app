@@ -609,8 +609,22 @@ export function MyWorldTab(
   // ── Derived week values ───────────────────────────────────────────────────
   const week = weeks[weekIndex];
   const isCurrentWeek = week ? !week.isFinalized : false;
+  // FHS-484 — a week can exist before its Monday arrives (closing this week
+  // early immediately creates next week). "Not finalized" alone doesn't mean
+  // "has started", so this is checked separately from isCurrentWeek. UTC
+  // matches how the rest of My World anchors weeks (see stickerDayRelation).
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const isFutureWeek = week ? week.startDate > todayIso : false;
   // FHS-374 — a kid views read-only: never editable, regardless of week.
-  const canEdit = readOnly ? false : isAdmin ? (week ? !week.isFinalized : false) : isCurrentWeek;
+  const canEdit = readOnly
+    ? false
+    : isFutureWeek
+      ? false
+      : isAdmin
+        ? week
+          ? !week.isFinalized
+          : false
+        : isCurrentWeek;
 
   // FHS-319 — the Close Week banner only appears once the week is actually
   // over: from its last day (Sunday) onward, and stays until the week is
@@ -1670,7 +1684,14 @@ export function MyWorldTab(
                     <span className="font-black text-white text-lg sm:text-xl uppercase tracking-wider">
                       Week {week.weekNumber}, {week.year}
                     </span>
-                    {isCurrentWeek ? (
+                    {isFutureWeek ? (
+                      <span
+                        data-testid="habit-tracker-week-future-badge"
+                        className="bg-gray-400/20 text-gray-200 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-400/30 flex items-center gap-1"
+                      >
+                        <Lock className="w-3 h-3" /> Not Started
+                      </span>
+                    ) : isCurrentWeek ? (
                       <span className="bg-blue-400/20 text-blue-200 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-400/30">
                         Current
                       </span>
@@ -1729,25 +1750,53 @@ export function MyWorldTab(
             {/* ── Invested habits (no investedHabitIds prop here; section renders when empty array) ── */}
             {/* investedHabitIds is Dashboard-level state; hardcode [] for now — section stays hidden */}
 
-            {/* ── Regular Habit Cards ── */}
-            <div className="grid gap-4 sm:gap-6">
-              {habits.map((habit) => (
+            {/* ── Regular Habit Cards — a future week (not yet started) blurs
+                the cards under a lock overlay: nothing to mark done yet
+                (FHS-484). ── */}
+            <div className="relative">
+              {isFutureWeek && habits.length > 0 && (
                 <div
-                  key={habit.id}
-                  className="relative group"
-                  data-testid={`habit-card-${habit.id}`}
+                  data-testid="habit-tracker-future-week-lock"
+                  className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 sm:border-3 border-black bg-white/70 p-6 text-center backdrop-blur-sm"
                 >
-                  <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
-                  {renderHabitCard(
-                    habit,
-                    canEdit,
-                    canEditDay,
-                    investedHabitIds.has(habit.id),
-                    isAdmin && canEdit,
-                    week.isFinalized,
-                  )}
+                  <div className="grid h-12 w-12 place-items-center rounded-full border-2 border-black bg-yellow-300 shadow-neo-xs">
+                    <Lock className="h-5 w-5 text-black" aria-hidden="true" />
+                  </div>
+                  <p className="font-black text-sm uppercase tracking-wide text-black">
+                    This week hasn&apos;t started yet
+                  </p>
+                  <p className="max-w-xs text-xs font-bold text-gray-600">
+                    Come back on{' '}
+                    {new Date(`${week.startDate}T00:00:00`).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}{' '}
+                    to start logging habits.
+                  </p>
                 </div>
-              ))}
+              )}
+              <div
+                className={`grid gap-4 sm:gap-6 ${isFutureWeek ? 'pointer-events-none select-none blur-[2px]' : ''}`}
+                aria-hidden={isFutureWeek || undefined}
+              >
+                {habits.map((habit) => (
+                  <div
+                    key={habit.id}
+                    className="relative group"
+                    data-testid={`habit-card-${habit.id}`}
+                  >
+                    <div className="absolute inset-0 bg-black rounded-2xl translate-x-1.5 translate-y-1.5" />
+                    {renderHabitCard(
+                      habit,
+                      canEdit,
+                      canEditDay,
+                      investedHabitIds.has(habit.id),
+                      isAdmin && canEdit,
+                      week.isFinalized,
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* ── Add New Habit button (admin-only, FHS-342) ── */}
