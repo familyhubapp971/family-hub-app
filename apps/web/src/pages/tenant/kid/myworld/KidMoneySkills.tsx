@@ -4,11 +4,14 @@ import { Wallet } from 'lucide-react';
 // the kid what their stars are worth and the three things they can do with them
 // (spend / save / grow). The savings + invested numbers come from the parent.
 // FHS-399 — accepts `isFinalized` to switch to past-tense framing on closed weeks.
+// FHS-480 — accepts `stickerRate` so the "worth" line states the real figure
+// instead of the vague "a little bit of real money".
 export function KidMoneySkills({
   stickerBalance,
   savedStickers,
   savedCash,
   currency,
+  stickerRate = 0.5,
   planted,
   bonus,
   hasInvestments,
@@ -18,6 +21,7 @@ export function KidMoneySkills({
   savedStickers: number;
   savedCash: number;
   currency: string;
+  stickerRate?: number;
   planted: number;
   bonus: number;
   hasInvestments: boolean;
@@ -38,7 +42,11 @@ export function KidMoneySkills({
       <p className="mt-3 text-sm font-bold text-gray-700">
         You have{' '}
         <span className="font-heading text-lg text-yellow-500">{stickerBalance} stars</span>! Every
-        star is worth a little bit of real money.{' '}
+        star is worth{' '}
+        <span className="font-heading text-yellow-600">
+          {currency} {stickerRate.toFixed(2)}
+        </span>{' '}
+        of real money.{' '}
         {isFinalized
           ? 'Here’s what you did with your stars this week.'
           : 'What will you do with them?'}

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart2, Check, ChevronLeft, ChevronRight, Sparkles, Star } from 'lucide-react';
+import { BarChart2, Check, ChevronLeft, ChevronRight, Lock, Sparkles, Star } from 'lucide-react';
 import { useKidMyWorld } from './myworld/useKidMyWorld';
 import { weekRangeLabel } from './myworld/icons';
 import { KidHabitCard } from './myworld/KidHabitCard';
@@ -220,10 +220,18 @@ export function KidMyWorld({
                       </h2>
                       <span
                         className={`rounded-full border-2 border-black px-2 py-0.5 text-[10px] font-bold uppercase ${
-                          week.isFinalized ? 'bg-green-300 text-black' : 'bg-yellow-300 text-black'
+                          week.isFinalized
+                            ? 'bg-green-300 text-black'
+                            : data.isFutureWeek
+                              ? 'bg-gray-200 text-black'
+                              : 'bg-yellow-300 text-black'
                         }`}
                       >
-                        {week.isFinalized ? '✓ Finalized' : 'Current'}
+                        {week.isFinalized
+                          ? '✓ Finalized'
+                          : data.isFutureWeek
+                            ? '🔒 Not Started'
+                            : 'Current'}
                       </span>
                     </div>
                     <p className="mt-1 text-xs font-bold uppercase tracking-wider text-purple-200">
@@ -258,8 +266,31 @@ export function KidMyWorld({
                 <span className="h-0.5 flex-1 rounded-full bg-pink-200" aria-hidden="true" />
               </div>
 
-              {/* Progress banner — live for current week, recap for finalized */}
-              {week && !data.isCurrentWeek ? (
+              {/* Progress banner — locked for a future week, live for current
+                  week, recap for finalized (FHS-484). */}
+              {week && data.isFutureWeek ? (
+                <div
+                  data-testid="kid-future-week-banner"
+                  className="flex items-center gap-4 rounded-xl border-2 border-black bg-white p-5 shadow-neo-sm"
+                >
+                  <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-black bg-gray-100 text-3xl">
+                    <span aria-hidden="true">🔒</span>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-heading text-base text-black">
+                      This week hasn&rsquo;t started yet
+                    </h3>
+                    <p className="mt-1 text-sm font-bold text-gray-700">
+                      Come back on{' '}
+                      {new Date(`${week.startDate}T00:00:00`).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}{' '}
+                      to start logging habits. 🕒
+                    </p>
+                  </div>
+                </div>
+              ) : week && !data.isCurrentWeek ? (
                 <div
                   data-testid="kid-finished-week-banner"
                   className="flex items-center gap-4 rounded-xl border-2 border-black bg-white p-5 shadow-neo-sm"
@@ -341,58 +372,84 @@ export function KidMyWorld({
               )}
 
               {/* Habit cards — spinner while a navigated week loads, retry on
-                failure, then the real empty/cards state (FHS-377). */}
-              {data.viewWeekStatus === 'loading' ? (
-                <div
-                  data-testid="kid-week-loading"
-                  role="status"
-                  aria-busy="true"
-                  className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm"
-                >
-                  <Sparkles
-                    size={32}
-                    className="mx-auto text-pink-400 motion-safe:animate-pulse"
-                    aria-hidden="true"
-                  />
-                  <p className="mt-3 text-sm font-bold text-gray-600">Loading this week…</p>
-                </div>
-              ) : data.viewWeekStatus === 'error' ? (
-                <div
-                  data-testid="kid-week-error"
-                  role="alert"
-                  className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm"
-                >
-                  <p className="text-4xl" aria-hidden="true">
-                    😕
-                  </p>
-                  <p className="mt-3 text-sm font-bold text-gray-600">
-                    We couldn&rsquo;t load this week.
-                  </p>
-                  <button
-                    type="button"
-                    data-testid="kid-week-retry"
-                    onClick={data.retryWeek}
-                    className="mt-4 rounded-lg border-2 border-black bg-pink-400 px-5 py-2.5 font-heading text-sm uppercase text-black shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5"
+                failure, then the real empty/cards state (FHS-377). A future
+                week (not yet started) blurs the cards under a lock overlay
+                instead — nothing to log or view yet (FHS-484). */}
+              <div className="relative">
+                {data.isFutureWeek && data.habits.length > 0 && (
+                  <div
+                    data-testid="kid-future-week-lock"
+                    className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-black bg-white/70 p-6 text-center backdrop-blur-sm"
                   >
-                    Try again
-                  </button>
+                    <span className="grid h-12 w-12 place-items-center rounded-full border-2 border-black bg-gray-200 shadow-neo-xs">
+                      <Lock size={20} className="text-black" aria-hidden="true" />
+                    </span>
+                    <p className="font-heading text-sm uppercase tracking-wide text-black">
+                      Locked until this week starts
+                    </p>
+                  </div>
+                )}
+                <div
+                  className={data.isFutureWeek ? 'pointer-events-none select-none blur-[2px]' : ''}
+                  aria-hidden={data.isFutureWeek || undefined}
+                >
+                  {data.viewWeekStatus === 'loading' ? (
+                    <div
+                      data-testid="kid-week-loading"
+                      role="status"
+                      aria-busy="true"
+                      className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm"
+                    >
+                      <Sparkles
+                        size={32}
+                        className="mx-auto text-pink-400 motion-safe:animate-pulse"
+                        aria-hidden="true"
+                      />
+                      <p className="mt-3 text-sm font-bold text-gray-600">Loading this week…</p>
+                    </div>
+                  ) : data.viewWeekStatus === 'error' ? (
+                    <div
+                      data-testid="kid-week-error"
+                      role="alert"
+                      className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm"
+                    >
+                      <p className="text-4xl" aria-hidden="true">
+                        😕
+                      </p>
+                      <p className="mt-3 text-sm font-bold text-gray-600">
+                        We couldn&rsquo;t load this week.
+                      </p>
+                      <button
+                        type="button"
+                        data-testid="kid-week-retry"
+                        onClick={data.retryWeek}
+                        className="mt-4 rounded-lg border-2 border-black bg-pink-400 px-5 py-2.5 font-heading text-sm uppercase text-black shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  ) : data.habits.length === 0 ? (
+                    <div className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm">
+                      <p className="text-5xl" aria-hidden="true">
+                        🌱
+                      </p>
+                      <p className="mt-3 text-sm font-bold text-gray-600">
+                        No habits yet. Ask a grown-up to add some!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {data.habits.map((h) => (
+                        <KidHabitCard
+                          key={h.id}
+                          habit={h}
+                          isCurrentWeek={data.isCurrentWeek && !data.isFutureWeek}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ) : data.habits.length === 0 ? (
-                <div className="rounded-xl border-2 border-black bg-white p-8 text-center shadow-neo-sm">
-                  <p className="text-5xl" aria-hidden="true">
-                    🌱
-                  </p>
-                  <p className="mt-3 text-sm font-bold text-gray-600">
-                    No habits yet. Ask a grown-up to add some!
-                  </p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {data.habits.map((h) => (
-                    <KidHabitCard key={h.id} habit={h} isCurrentWeek={data.isCurrentWeek} />
-                  ))}
-                </div>
-              )}
+              </div>
 
               {/* FHS-399 — finalized week: show the recap card.
                   Live week: show Money Skills. */}
@@ -415,6 +472,7 @@ export function KidMyWorld({
                   savedStickers={savedStickers}
                   savedCash={savedCash}
                   currency={currency}
+                  stickerRate={stickerRate}
                   planted={planted}
                   bonus={bonus}
                   hasInvestments={data.investments.length > 0}

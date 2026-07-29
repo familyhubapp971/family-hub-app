@@ -152,7 +152,12 @@ beforeEach(() => {
   mockBoot();
   vi.stubGlobal('fetch', fetchMock);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  // FHS-484 tests fake the clock; always restore it so a failed assertion
+  // can't leave later tests running against a frozen "now".
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe('<KidMyWorld />', () => {
   it('renders habits, money skills, reward goals and my account from the kid endpoints', async () => {
@@ -451,6 +456,32 @@ describe('<KidMyWorld />', () => {
     });
     await waitFor(() => expect(screen.getByTestId('kid-week-error')).toBeInTheDocument());
     expect(screen.getByTestId('kid-week-retry')).toBeInTheDocument();
+  });
+
+  // FHS-484 - a week can exist before its Monday (closing this week early
+  // creates next week right away); it must read as locked, not "current".
+  it('locks a future week — blurred habit cards + a "Not Started" badge (FHS-484)', async () => {
+    // Default WEEK fixture starts Mon 2026-06-15; freeze "now" a week earlier
+    // so it reads as not-yet-started.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-06-08T10:00:00'));
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+
+    await waitFor(() => expect(screen.getByTestId('kid-myworld')).toBeInTheDocument());
+    expect(screen.getByText('🔒 Not Started')).toBeInTheDocument();
+    expect(screen.getByTestId('kid-future-week-banner')).toHaveTextContent(
+      /This week hasn.t started yet/,
+    );
+    expect(screen.getByTestId('kid-future-week-lock')).toBeInTheDocument();
+  });
+
+  it('does not lock the live (current) week (FHS-484)', async () => {
+    // Default mockBoot's WEEK fixture is not finalized and startDate is today
+    // by construction of this test — real clock, no future date involved.
+    render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
+    await waitFor(() => expect(screen.getByTestId('kid-myworld')).toBeInTheDocument());
+    expect(screen.queryByText('🔒 Not Started')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('kid-future-week-lock')).not.toBeInTheDocument();
   });
 
   // FHS-399 - finished-week single-column recap design

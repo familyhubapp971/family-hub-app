@@ -36,6 +36,11 @@ export interface KidMyWorldData {
   goPrevWeek: () => void;
   goNextWeek: () => void;
   isCurrentWeek: boolean; // viewing the latest (live) week → next is disabled
+  // FHS-484 — a fresh week can exist before its Monday arrives (e.g. a parent
+  // finalizes this week early, which immediately creates next week). "Not
+  // finalized" alone doesn't mean "has started", so callers that need to
+  // lock a not-yet-started week check this instead of isCurrentWeek.
+  isFutureWeek: boolean;
 
   // the viewed week's habits + economy headline numbers
   habits: KidHabitView[];
@@ -311,6 +316,12 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
         ? 'error'
         : 'loading';
 
+  // FHS-484 — startDate is a Monday-anchored 'YYYY-MM-DD' UTC string, so a
+  // plain lexicographic compare against today's UTC date tells us the week
+  // hasn't started yet (mirrors the same check in routes/dashboard.ts).
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const isFutureWeek = week ? week.startDate > todayIso : false;
+
   return {
     status,
     reload,
@@ -323,6 +334,7 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
     // A week is "live" only if it isn't finalized — not merely the newest index
     // (when every week is closed, the last one is still a finalized past week).
     isCurrentWeek: weeks[weekIndex]?.isFinalized === false,
+    isFutureWeek,
     habits: active?.habits ?? [],
     balance,
     currency,

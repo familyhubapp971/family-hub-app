@@ -44,6 +44,9 @@ interface HabitStat {
   habitId: string;
   name: string;
   total: number;
+  // FHS-482 — the possible days across every tracked week, so the leaderboard
+  // can show "done of total" instead of a bare completed-days count.
+  totalPossible: number;
   avgWeek: number;
   rate: number;
 }
@@ -105,6 +108,7 @@ export function AnalyticsView({
               habitId: h.habitId,
               name: h.name,
               total: h.completedDays,
+              totalPossible: h.totalDays,
               avgWeek: Math.round((h.completedDays / numWeeks) * 10) / 10,
               rate: h.rate,
             }))
@@ -170,7 +174,7 @@ export function AnalyticsView({
           className="bg-white border-2 sm:border-3 border-black rounded-2xl p-3 sm:p-4 shadow-neo"
         >
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">
-            Potential Value
+            Current Value
           </p>
           <p className="text-2xl sm:text-3xl font-black text-amber-500">{totalStickers} ⭐</p>
           <p className="text-[10px] text-gray-400 font-medium mt-1">
@@ -240,7 +244,7 @@ export function AnalyticsView({
                 formatter={(value) =>
                   metric === 'completion'
                     ? [`${value}%`, 'Completion']
-                    : [`${value} ⭐`, 'Potential Value']
+                    : [`${value} ⭐`, 'Current Value']
                 }
               />
               <Bar dataKey={metric} radius={[8, 8, 0, 0]}>
@@ -258,7 +262,7 @@ export function AnalyticsView({
 
         <p className="text-xs text-gray-400 text-center mt-2">
           {metric === 'stickers'
-            ? 'Potential Value per week (stickers × bonus × investment)'
+            ? 'Current Value per week (stickers × bonus × investment)'
             : 'Habit consistency per week (days done / total possible days)'}{' '}
           · Latest week is brightest
         </p>
@@ -301,8 +305,8 @@ export function AnalyticsView({
                       >
                         {habit.rate}%
                       </span>
-                      <span className="text-xs text-gray-400 font-medium w-16 text-right">
-                        {habit.total} days
+                      <span className="text-xs text-gray-400 font-medium w-24 text-right whitespace-nowrap">
+                        {habit.total} of {habit.totalPossible} days
                       </span>
                     </div>
                   </div>
