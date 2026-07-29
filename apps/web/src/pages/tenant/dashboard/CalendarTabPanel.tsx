@@ -345,7 +345,6 @@ export function CalendarTabPanel() {
   const visible = events.filter((e) => {
     if (e.type !== subTab) return false;
     if (filter === 'all') return true;
-    if (filter === 'family') return e.memberId === null;
     return e.memberId === filter;
   });
 
@@ -441,12 +440,6 @@ export function CalendarTabPanel() {
             active={filter === 'all'}
             onClick={() => setFilter('all')}
             label="All"
-          />
-          <FilterPill
-            testId="calendar-filter-family"
-            active={filter === 'family'}
-            onClick={() => setFilter('family')}
-            label="Family"
           />
           {children.map((c) => (
             <FilterPill

@@ -178,12 +178,21 @@ describe('<CalendarTabPanel />', () => {
     expect(screen.getByTestId('calendar-subtab-home')).toBeInTheDocument();
     expect(screen.getByTestId('calendar-legend')).toBeInTheDocument();
     expect(screen.getByTestId('calendar-filter-all')).toBeInTheDocument();
-    expect(screen.getByTestId('calendar-filter-family')).toBeInTheDocument();
     expect(screen.getByTestId(`calendar-filter-${AMINA}`)).toBeInTheDocument();
     // Only kids get filter pills — the admin doesn't.
     expect(screen.queryByTestId('calendar-filter-p1')).not.toBeInTheDocument();
     expect(screen.getByTestId('calendar-today-pill')).toBeInTheDocument();
     expect(screen.getByTestId('calendar-week-label')).toBeInTheDocument();
+  });
+
+  // FHS-474 — "Family" duplicated "All": both showed the exact same set of
+  // events, so it was a confusing, redundant pill. Only All + per-child
+  // filter pills remain.
+  it('does not render a Family filter pill (FHS-474)', async () => {
+    installApi({});
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+    expect(screen.queryByTestId('calendar-filter-family')).not.toBeInTheDocument();
   });
 
   it('shows an event row with title, when, where, and wear', async () => {
@@ -246,23 +255,6 @@ describe('<CalendarTabPanel />', () => {
     // family event must NOT show under a member-specific filter
     expect(screen.queryByTestId('calendar-event-fam')).not.toBeInTheDocument();
     expect(screen.queryByTestId('calendar-event-ib')).not.toBeInTheDocument();
-  });
-
-  it('Family filter pill shows only family-wide events', async () => {
-    installApi({
-      events: [
-        ev({ id: 'am', title: 'Amina swim', memberId: AMINA }),
-        ev({ id: 'fam', title: 'Family picnic', memberId: null }),
-      ],
-    });
-    renderAt('/t/khans/dashboard');
-    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
-
-    act(() => {
-      fireEvent.click(screen.getByTestId('calendar-filter-family'));
-    });
-    expect(screen.getByTestId('calendar-event-fam')).toBeInTheDocument();
-    expect(screen.queryByTestId('calendar-event-am')).not.toBeInTheDocument();
   });
 
   it('adding an activity POSTs date/title/time/member/type/location/wear and shows it', async () => {
