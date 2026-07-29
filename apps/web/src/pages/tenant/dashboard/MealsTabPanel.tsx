@@ -147,6 +147,14 @@ function labelFor(memberId: string | null, members: MemberLite[]): string {
   return members.find((m) => m.id === memberId)?.displayName ?? 'Family member';
 }
 
+// FHS-477 — shared by the day-grid filter and the just-saved-meal check
+// below, so both agree on what "matches the active filter" means.
+function matchesFilter(memberId: string | null, filter: string): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'family') return memberId === null;
+  return memberId === filter;
+}
+
 // Returns the ISO week number for a given date.
 function isoWeekNumber(d: Date): number {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -210,6 +218,7 @@ export function MealsTabPanel() {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
   // Week navigation offset (0 = current week, -1 = last week, +1 = next week).
   // Chevrons are wired to this state; the API always returns the same data
   // (no server-side week filtering), so this is display-only navigation.
@@ -282,6 +291,7 @@ export function MealsTabPanel() {
     async (override?: Partial<Editor>) => {
       if (!editor || !headers || saving) return;
       const ed = { ...editor, ...override };
+      const trimmedName = ed.name.trim();
       setSaving(true);
       setSaveError(null);
       try {
@@ -291,7 +301,7 @@ export function MealsTabPanel() {
           body: JSON.stringify({
             dayOfWeek: ed.day,
             slot: ed.slot,
-            name: ed.name.trim(),
+            name: trimmedName,
             memberId: ed.memberId,
             recurring: ed.recurring,
           }),
@@ -301,6 +311,17 @@ export function MealsTabPanel() {
           return;
         }
         setEditor(null);
+        // FHS-477 — a save whose owner doesn't match the active filter
+        // used to just vanish with no explanation (it saved fine, but the
+        // filtered view never showed it). Widen to "All" so a just-saved
+        // meal is never silently hidden; skip this for a delete (empty
+        // name) since there's nothing new to surface.
+        if (trimmedName !== '' && !matchesFilter(ed.memberId, filter)) {
+          setFilter('all');
+          setAnnouncement(`${trimmedName} saved — showing All meals so you can see it`);
+        } else if (trimmedName !== '') {
+          setAnnouncement(`${trimmedName} saved`);
+        }
         await load();
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Network error. Try again.');
@@ -308,7 +329,7 @@ export function MealsTabPanel() {
         setSaving(false);
       }
     },
-    [editor, headers, saving, load],
+    [editor, headers, saving, load, filter],
   );
 
   if (status.kind === 'loading') {
@@ -334,17 +355,16 @@ export function MealsTabPanel() {
 
   const { meals, members } = status;
 
-  const isVisible = (m: MealCell) => {
-    if (filter === 'all') return true;
-    if (filter === 'family') return m.memberId === null;
-    return m.memberId === filter;
-  };
+  const isVisible = (m: MealCell) => matchesFilter(m.memberId, filter);
 
   // Separate main slots (breakfast/lunch/dinner) from snack for layout purposes.
   const MAIN_SLOTS: Slot[] = ['breakfast', 'lunch', 'dinner'];
 
   return (
     <div className="space-y-5" data-testid="meals-ready">
+      <p aria-live="polite" className="sr-only" data-testid="meals-announcement">
+        {announcement}
+      </p>
       {/* ── Header: title + week navigator ── */}
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>

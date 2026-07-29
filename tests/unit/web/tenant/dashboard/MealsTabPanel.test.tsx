@@ -296,6 +296,71 @@ describe('<MealsTabPanel />', () => {
     });
   });
 
+  // FHS-477 — a beta tester filtered to one child, added a meal, and it
+  // "disappeared" until they switched back to All. The default Add Meal
+  // pre-fill already targets the active filter's child, so it should show
+  // immediately without the user touching the filter at all.
+  it('a meal added under an active child filter shows immediately, no filter switch needed (FHS-477)', async () => {
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId(`meals-filter-${ALI}`));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    act(() => {
+      fireEvent.change(screen.getByTestId('meals-editor-name'), { target: { value: 'Soup' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('meals-editor-save'));
+    });
+
+    // Still on Ali's filter — the meal is visible without any manual switch.
+    expect(screen.getByTestId(`meals-filter-${ALI}`)).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => expect(screen.getByText('Soup')).toBeInTheDocument());
+  });
+
+  // FHS-477 — if the saved meal's owner does NOT match the active filter
+  // (e.g. assigned to "Everyone" while viewing one child's plan), it used
+  // to save fine but vanish from view with no explanation. The view now
+  // widens to "All" so a just-saved meal is never silently hidden.
+  it('widens to the All filter so a just-saved meal that does not match the active filter is never hidden (FHS-477)', async () => {
+    installApi({ members: MEMBERS });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId(`meals-filter-${ALI}`));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId('meals-add-mon'));
+    });
+    // Deliberately re-target to "Everyone (family)" — no longer matches
+    // the active Ali filter.
+    act(() => {
+      fireEvent.click(within(screen.getByTestId('meals-editor-member')).getByRole('button'));
+    });
+    act(() => {
+      fireEvent.click(within(screen.getByRole('listbox')).getByText('Everyone (family)'));
+    });
+    act(() => {
+      fireEvent.change(screen.getByTestId('meals-editor-name'), { target: { value: 'Toast' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('meals-editor-save'));
+    });
+
+    // Filter auto-widens to All so the saved meal is never silently hidden.
+    await waitFor(() =>
+      expect(screen.getByTestId('meals-filter-all')).toHaveAttribute('aria-pressed', 'true'),
+    );
+    expect(screen.getByText('Toast')).toBeInTheDocument();
+    expect(screen.getByTestId('meals-announcement').textContent).toMatch(/Toast saved/i);
+  });
+
   it('defaults the Add Meal slot to breakfast in the morning (FHS-442)', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-07-06T08:30:00')); // 08:30 → breakfast
