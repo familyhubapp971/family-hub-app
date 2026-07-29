@@ -156,12 +156,12 @@ const AVAILABLE_STICKERS: Array<{
   {
     id: 'gold-star',
     name: 'Gold Star',
-    icon: <Star className="w-6 h-6" />,
+    icon: <Star className="w-8 h-8" />,
     color: 'bg-yellow-400',
   },
-  { id: 'heart', name: 'Heart', icon: <Heart className="w-6 h-6" />, color: 'bg-pink-400' },
-  { id: 'magic', name: 'Magic', icon: <Sparkles className="w-6 h-6" />, color: 'bg-fuchsia-400' },
-  { id: 'trophy', name: 'Trophy', icon: <Award className="w-6 h-6" />, color: 'bg-lime-400' },
+  { id: 'heart', name: 'Heart', icon: <Heart className="w-8 h-8" />, color: 'bg-pink-400' },
+  { id: 'magic', name: 'Magic', icon: <Sparkles className="w-8 h-8" />, color: 'bg-fuchsia-400' },
+  { id: 'trophy', name: 'Trophy', icon: <Award className="w-8 h-8" />, color: 'bg-lime-400' },
 ];
 
 const daysShort = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -1254,7 +1254,16 @@ export function MyWorldTab(
                 </button>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-2 gap-3 mb-4">
+                {/* FHS-479 — the 4 looks are a cosmetic choice only, so
+                    spell that out right where the pick happens. */}
+                <p
+                  data-testid="habit-day-sticker-hint"
+                  className="mb-4 flex items-start gap-1.5 rounded-lg border-2 border-purple-200 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700"
+                >
+                  <Sparkles className="h-3.5 w-3.5 shrink-0 translate-y-0.5" aria-hidden="true" />
+                  <span>Just pick your favourite look — it&apos;s worth the same either way.</span>
+                </p>
+                <div className="grid grid-cols-2 gap-4 mb-4">
                   {AVAILABLE_STICKERS.map((sticker) => (
                     <button
                       key={sticker.id}
@@ -1266,10 +1275,10 @@ export function MyWorldTab(
                           sticker.id,
                         )
                       }
-                      className={`${sticker.color} border-2 sm:border-3 border-black rounded-xl p-4 flex flex-col items-center gap-2 transition-all hover:-translate-y-1 hover:shadow-neo`}
+                      className={`${sticker.color} min-h-[44px] border-2 sm:border-3 border-black rounded-xl p-5 sm:p-6 flex flex-col items-center gap-2 transition-all motion-safe:hover:-translate-y-1 hover:shadow-neo`}
                     >
                       {sticker.icon}
-                      <span className="text-xs font-black uppercase">{sticker.name}</span>
+                      <span className="text-sm font-black uppercase">{sticker.name}</span>
                     </button>
                   ))}
                 </div>
