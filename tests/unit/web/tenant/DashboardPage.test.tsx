@@ -49,7 +49,7 @@ function renderAt(initial: string) {
     <MemoryRouter initialEntries={[initial]}>
       {/* LocationProbe sits above <Routes> so it survives navigation
           and keeps reporting the current URL even after the dashboard
-          route unmounts (e.g. when Add Child pushes /t/<slug>/members). */}
+          route unmounts (e.g. when Add member pushes /t/<slug>/members). */}
       <LocationProbe />
       <Routes>
         <Route
@@ -329,12 +329,27 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     expect(screen.queryByTestId('dashboard-profile-child-m-2')).toBeNull();
   });
 
-  it('Add Child button navigates to the members page with ?add=child', async () => {
+  // FHS-472 — "Add Child" renamed to a generic "Add member"; deep-links
+  // with ?add=member so the members page opens the type picker rather
+  // than a child-only form.
+  it('Add member button navigates to the members page with ?add=member', async () => {
     renderAt('/t/khans/dashboard');
     fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
-    fireEvent.click(screen.getByTestId('dashboard-profile-add-child'));
+    fireEvent.click(screen.getByTestId('dashboard-profile-add-member'));
     await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
-    expect(screen.getByTestId('location-search').textContent).toBe('?add=child');
+    expect(screen.getByTestId('location-search').textContent).toBe('?add=member');
+  });
+
+  // FHS-471 — a tester read the whole dropdown as "my profile" and never
+  // noticed the bottom "Add Child" button as a family-wide action. A
+  // second "+" now sits right next to the member list itself, and it
+  // shows even for a brand-new family with zero children yet.
+  it('the "+" next to the member list also opens the add-member flow', async () => {
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    fireEvent.click(screen.getByTestId('dashboard-profile-add-member-plus'));
+    await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
+    expect(screen.getByTestId('location-search').textContent).toBe('?add=member');
   });
 
   it('Manage members item navigates to the members page (FHS-273)', async () => {

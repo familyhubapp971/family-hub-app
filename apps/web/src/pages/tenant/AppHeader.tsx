@@ -3,7 +3,7 @@
 // Encapsulates:
 //  • FamilyHero brand area (family-initial disc + name + members-active pulse)
 //  • TopNav with the six dashboard tabs + per-tab badges
-//  • ProfilePill dropdown (child links, Add Child, Manage Members)
+//  • ProfilePill dropdown (child links, Add member, Manage Members)
 //  • Logout button
 //
 // Self-fetches family name + members + Tasks badge from /api/me +
@@ -122,13 +122,13 @@ const CHILD_DISC_COLORS = ['bg-yellow-300', 'bg-purple-300', 'bg-pink-300', 'bg-
 function ProfilePill({
   parentName,
   childMembers,
-  onAddChild,
+  onAddMember,
   onManageMembers,
   slug,
 }: {
   parentName: string;
   childMembers: DashboardMember[];
-  onAddChild: () => void;
+  onAddMember: () => void;
   onManageMembers: () => void;
   slug: string;
 }) {
@@ -209,11 +209,30 @@ function ProfilePill({
               </div>
             </div>
           </div>
-          {childMembers.length > 0 && (
-            <div className="px-3 py-2">
-              <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+          {/* FHS-471 — the "+" always shows here (even with zero children)
+              since that's exactly when a tester most wants to add the
+              family's first member; the dropdown was previously read as
+              "my profile" with no obvious add-member control. */}
+          <div className="px-3 py-2">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
                 Children
               </p>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onAddMember();
+                }}
+                aria-label="Add family member"
+                data-testid="dashboard-profile-add-member-plus"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-2 border-black bg-purple-300 text-purple-900 shadow-neo-xs transition-colors motion-safe:hover:-translate-y-0.5 hover:bg-purple-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
+              >
+                <Plus size={16} strokeWidth={3} aria-hidden="true" />
+              </button>
+            </div>
+            {childMembers.length > 0 ? (
               <ul>
                 {childMembers.map((c, i) => (
                   <li key={c.id}>
@@ -244,8 +263,10 @@ function ProfilePill({
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
+            ) : (
+              <p className="px-1 text-xs font-bold text-gray-400">No children yet</p>
+            )}
+          </div>
           <div className="space-y-2 border-t-2 border-black px-3 pb-3 pt-3">
             <button
               type="button"
@@ -265,13 +286,13 @@ function ProfilePill({
               role="menuitem"
               onClick={() => {
                 setOpen(false);
-                onAddChild();
+                onAddMember();
               }}
-              data-testid="dashboard-profile-add-child"
+              data-testid="dashboard-profile-add-member"
               className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-300 px-3 py-2.5 text-purple-500 transition-colors hover:border-purple-500 hover:bg-purple-50 hover:text-purple-700"
             >
               <Plus size={16} strokeWidth={3} aria-hidden="true" />
-              <span className="text-sm font-bold">Add Child</span>
+              <span className="text-sm font-bold">Add member</span>
             </button>
           </div>
         </div>
@@ -365,8 +386,11 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
     navigate('/', { replace: true });
   }, [navigate]);
 
-  const onAddChild = useCallback(() => {
-    navigate(`/t/${slug}/members?add=child`);
+  // FHS-472 — generic "add a family member" deep link; the members page
+  // opens the type picker (child / teen / adult) rather than a
+  // child-only form.
+  const onAddMember = useCallback(() => {
+    navigate(`/t/${slug}/members?add=member`);
   }, [navigate, slug]);
 
   const onManageMembers = useCallback(() => {
@@ -414,7 +438,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
           <ProfilePill
             parentName={parentName}
             childMembers={childMembers}
-            onAddChild={onAddChild}
+            onAddMember={onAddMember}
             onManageMembers={onManageMembers}
             slug={slug}
           />
