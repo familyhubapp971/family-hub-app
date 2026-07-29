@@ -237,7 +237,7 @@ describe('<CalendarTabPanel />', () => {
     expect(screen.getByTestId('calendar-event-hom')).toBeInTheDocument();
   });
 
-  it('member filter pill narrows to only that member — excludes family events', async () => {
+  it('member filter pill narrows to that member + family-wide, excludes the other child', async () => {
     installApi({
       events: [
         ev({ id: 'am', title: 'Amina swim', memberId: AMINA }),
@@ -252,9 +252,44 @@ describe('<CalendarTabPanel />', () => {
       fireEvent.click(screen.getByTestId(`calendar-filter-${AMINA}`));
     });
     expect(screen.getByTestId('calendar-event-am')).toBeInTheDocument();
-    // family event must NOT show under a member-specific filter
-    expect(screen.queryByTestId('calendar-event-fam')).not.toBeInTheDocument();
+    // FHS-475 — a family-wide event shows under every child's filter, not
+    // just "All".
+    expect(screen.getByTestId('calendar-event-fam')).toBeInTheDocument();
+    // Ibrahim's own event still must NOT show under Amina's filter.
     expect(screen.queryByTestId('calendar-event-ib')).not.toBeInTheDocument();
+  });
+
+  // FHS-475 — a beta tester assigned "tennis" to both kids (checking 2+
+  // children writes memberId=null, the model's only way to express
+  // "more than one member" — see the ActivityForm note). Filtering to
+  // Amina alone must still show it, not just events with memberId=AMINA.
+  it('a both-kids activity (family-wide memberId) appears under a single child filter (FHS-475)', async () => {
+    installApi({
+      events: [
+        ev({ id: 'tennis', title: 'Tennis', memberId: null }),
+        ev({ id: 'gym', title: 'Gymnastics', memberId: AMINA }),
+      ],
+    });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId(`calendar-filter-${AMINA}`));
+    });
+    expect(screen.getByTestId('calendar-event-gym')).toBeInTheDocument();
+    expect(screen.getByTestId('calendar-event-tennis')).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByTestId(`calendar-filter-${IBRAHIM}`));
+    });
+    expect(screen.getByTestId('calendar-event-tennis')).toBeInTheDocument();
+    expect(screen.queryByTestId('calendar-event-gym')).not.toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('calendar-filter-all'));
+    });
+    expect(screen.getByTestId('calendar-event-tennis')).toBeInTheDocument();
+    expect(screen.getByTestId('calendar-event-gym')).toBeInTheDocument();
   });
 
   it('adding an activity POSTs date/title/time/member/type/location/wear and shows it', async () => {

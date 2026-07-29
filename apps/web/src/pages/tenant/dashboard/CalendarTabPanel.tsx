@@ -345,7 +345,13 @@ export function CalendarTabPanel() {
   const visible = events.filter((e) => {
     if (e.type !== subTab) return false;
     if (filter === 'all') return true;
-    return e.memberId === filter;
+    // FHS-475 — the data model has one nullable member per event; a
+    // "both kids" activity is written with memberId=null (same as a
+    // whole-family event, see the ActivityForm note below), so a
+    // family-wide/multi-child event must show under EVERY child's
+    // filter too, not just "All" — otherwise filtering to one child
+    // hides activities that child is actually part of.
+    return e.memberId === filter || e.memberId === null;
   });
 
   return (
