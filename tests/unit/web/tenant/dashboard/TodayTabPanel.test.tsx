@@ -100,24 +100,25 @@ describe('<TodayTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('today-error')).toBeInTheDocument());
   });
 
-  it('renders empty states for goals, stars, and activity', async () => {
+  it('renders empty states for no members, goals, stars, and activity', async () => {
     mockJson(makeResponse());
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('today-members-empty')).toBeInTheDocument();
     expect(screen.getByTestId('today-goals-empty')).toBeInTheDocument();
     expect(screen.getByTestId('today-stars-empty')).toBeInTheDocument();
     expect(screen.getByTestId('today-activity-empty')).toBeInTheDocument();
   });
 
-  it('shows the Add-member tile + Manage-members button on Family Overview (FHS-498)', async () => {
+  it('has a prominent Add-member button in the Family Overview header (FHS-498/501)', async () => {
     mockJson(makeResponse());
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
-    // Even with no members, the "+ Add member" tile is the way in.
-    const addTile = screen.getByTestId('today-add-member');
-    expect(addTile.getAttribute('href')).toBe('/t/khans/members?add=member');
-    const manage = screen.getByTestId('today-manage-members');
-    expect(manage.getAttribute('href')).toBe('/t/khans/members');
+    const add = screen.getByTestId('today-add-member');
+    expect(add.textContent).toMatch(/Add member/i);
+    expect(add.getAttribute('href')).toBe('/t/khans/members?add=member');
+    // Manage members moved to the account dropdown — no longer in the header.
+    expect(screen.queryByTestId('today-manage-members')).toBeNull();
   });
 
   it('renders the snapshot ratio tiles (kids habits, tasks done/total, meals/3)', async () => {
