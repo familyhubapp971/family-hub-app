@@ -6,8 +6,10 @@ import {
   CheckCircle2,
   CheckSquare,
   Flame,
+  Plus,
   Star,
   Target,
+  Users,
   Utensils,
 } from 'lucide-react';
 import type {
@@ -144,18 +146,38 @@ export function TodayTabPanel() {
     <div className="space-y-8" data-testid="today-ready">
       {/* Family Overview */}
       <section>
-        <h2 className="mb-4 font-heading text-2xl tracking-wide text-white">Family Overview</h2>
-        {members.length === 0 ? (
-          <p data-testid="today-members-empty" className="font-bold text-purple-200">
-            No family members yet.
-          </p>
-        ) : (
-          <ul className="grid list-none grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {members.map((member, i) => (
-              <MemberCard key={member.id} slug={slug} member={member} index={i} />
-            ))}
-          </ul>
-        )}
+        {/* FHS-498 — beta feedback: the tester expected to add / manage members
+            from the Family Overview itself, not only the profile dropdown. A
+            "Manage members" button sits in the header and an "+ Add member"
+            tile is the last card in the grid (the standard "add to a
+            collection" affordance). Both open the existing flows. */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-heading text-2xl tracking-wide text-white">Family Overview</h2>
+          <Link
+            to={`/t/${slug}/members`}
+            data-testid="today-manage-members"
+            className="flex min-h-[44px] items-center gap-1.5 rounded-lg border-2 border-black bg-white px-3 py-2 font-bold text-gray-800 shadow-neo-xs transition-colors hover:bg-gray-50"
+          >
+            <Users size={16} aria-hidden="true" /> Manage members
+          </Link>
+        </div>
+        <ul className="grid list-none grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {members.map((member, i) => (
+            <MemberCard key={member.id} slug={slug} member={member} index={i} />
+          ))}
+          <li>
+            <Link
+              to={`/t/${slug}/members?add=member`}
+              data-testid="today-add-member"
+              className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-purple-300 bg-white/95 p-6 text-center font-bold text-purple-600 shadow-neo-xs transition-all hover:border-purple-500 hover:bg-white motion-safe:hover:-translate-y-0.5"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-purple-300 bg-purple-100">
+                <Plus size={20} aria-hidden="true" />
+              </span>
+              Add member
+            </Link>
+          </li>
+        </ul>
       </section>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
