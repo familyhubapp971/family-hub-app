@@ -8,20 +8,25 @@ import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
 
-// FHS-108 / FHS-252 / FHS-276 / FHS-471 / FHS-472 / FHS-473 — /t/:slug/members,
-// rebuilt to the Magic Patterns "Manage Members" design: header CTAs
-// (Invite Parent / Add member) with inline expanding forms, a card grid
-// (one card per member with a coloured initial disc + role badge), a
-// pending-invite box with Resend on unclaimed seats, and per-card actions
-// — Edit name, the parents-only admin toggle (last admin protected), Set
-// PIN on kids, and Remove. Mutations are admin-only; PIN management stays
-// admin/adult (FHS-252).
+// FHS-108 / FHS-252 / FHS-276 / FHS-471 / FHS-472 / FHS-473 / FHS-486 —
+// /t/:slug/members, rebuilt to the Magic Patterns "Manage Members" design:
+// header CTAs (Invite member / Add member) with inline expanding forms, a
+// card grid (one card per member with a coloured initial disc + role
+// badge), a pending-invite box with Resend on unclaimed seats, and
+// per-card actions — Edit name, the parents-only admin toggle (last admin
+// protected), Set PIN on kids, and Remove. Mutations are admin-only; PIN
+// management stays admin/adult (FHS-252).
 //
 // FHS-472/473 — "Add member" starts generic: pick child / teen / adult,
 // then create. All three go through POST /api/members — the same direct,
 // no-login roster insert onboarding uses for a plain adult row (no email).
 // Inviting someone to actually log in stays a separate action (Invite
-// Parent, unchanged by this ticket).
+// member).
+//
+// FHS-486 / ADR 0019 — "Invite Parent" renamed "Invite member": the form
+// used to say "Parent" while hardcoding role: 'adult'. It now sends
+// whichever role the caller actually picks (admin/adult/teen/guest); the
+// API enforces that only an existing admin can grant `role: 'admin'`.
 
 interface MemberItem {
   id: string;
@@ -82,11 +87,12 @@ export function MembersPage() {
     },
     [navigate, slug],
   );
-  // Which header form is open ('none' | 'parent' | 'member'). The
+  // Which header form is open ('none' | 'invite' | 'member'). The
   // dashboard dropdown's Add member deep-links here with ?add=member.
   // FHS-472 — 'member' replaces the old child-only 'child' form; the
   // form itself starts with a type picker (child / teen / adult).
-  const [activeForm, setActiveForm] = useState<'none' | 'parent' | 'member'>(
+  // FHS-486 — 'invite' (was 'parent') opens the role-picker invite form.
+  const [activeForm, setActiveForm] = useState<'none' | 'invite' | 'member'>(
     params.get('add') === 'member' ? 'member' : 'none',
   );
   const [openPinFor, setOpenPinFor] = useState<string | null>(null);
@@ -175,10 +181,10 @@ export function MembersPage() {
                 type="button"
                 variant="secondary"
                 size="md"
-                testId="members-invite-parent"
-                onClick={() => setActiveForm((f) => (f === 'parent' ? 'none' : 'parent'))}
+                testId="members-invite-member"
+                onClick={() => setActiveForm((f) => (f === 'invite' ? 'none' : 'invite'))}
               >
-                <Mail size={16} aria-hidden="true" /> Invite Parent
+                <Mail size={16} aria-hidden="true" /> Invite member
               </Button>
               <Button
                 type="button"
@@ -195,15 +201,15 @@ export function MembersPage() {
 
         <KidLoginShare slug={slug} />
 
-        {activeForm === 'parent' && callerIsAdmin && (
-          <InviteParentForm
+        {activeForm === 'invite' && callerIsAdmin && (
+          <InviteMemberForm
             onClose={() => setActiveForm('none')}
-            onSubmit={async (email, name) => {
+            onSubmit={async (email, name, role) => {
               const ok = await mutate('/api/invitations', {
                 method: 'POST',
                 body: JSON.stringify({
                   email,
-                  role: 'adult',
+                  role,
                   ...(name ? { displayName: name } : {}),
                 }),
               });
@@ -504,20 +510,41 @@ function KidLoginShare({ slug }: { slug: string }) {
   );
 }
 
-function InviteParentForm({
+// FHS-486 / ADR 0019 — the role a caller can invite. `child` is excluded:
+// kids use PIN login, never the magic-link invite (ADR 0009 / FHS-234).
+// The server enforces the matching allowlist + the admin-grant safeguard
+// (only an admin caller may pick 'admin') — this picker just mirrors it.
+type InviteRole = 'admin' | 'adult' | 'teen' | 'guest';
+
+const INVITE_ROLE_OPTIONS: Array<{ value: InviteRole; label: string }> = [
+  { value: 'admin', label: 'Parent / partner' },
+  { value: 'adult', label: 'Adult' },
+  { value: 'teen', label: 'Teen' },
+  { value: 'guest', label: 'Guest' },
+];
+
+const INVITE_ROLE_HELP: Record<InviteRole, string> = {
+  admin: 'Full access — everyday tasks, past-date edits, the economy, and family settings.',
+  adult: 'Day-to-day help — grandma, a cousin, a sitter. No past-date edits or admin tools.',
+  teen: 'Their own login — can see everything shared, but can’t edit it.',
+  guest: 'Can log in and see everything, but can’t change anything.',
+};
+
+function InviteMemberForm({
   onClose,
   onSubmit,
   error,
 }: {
   onClose: () => void;
-  onSubmit: (email: string, name: string | null) => Promise<void>;
+  onSubmit: (email: string, name: string | null, role: InviteRole) => Promise<void>;
   error: string | null;
 }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState<InviteRole>('adult');
   const [submitting, setSubmitting] = useState(false);
   return (
-    <Card className="relative mb-8 bg-white p-6" data-testid="members-invite-form">
+    <Card className="relative mb-8 bg-white p-6" testId="members-invite-form">
       <button
         type="button"
         onClick={onClose}
@@ -526,23 +553,40 @@ function InviteParentForm({
       >
         <X size={20} />
       </button>
-      <h2 className="mb-2 font-heading text-2xl text-black">Invite a Parent or Partner</h2>
+      <h2 className="mb-2 font-heading text-2xl text-black">Invite a Family Member</h2>
       <p className="mb-6 text-sm font-bold text-gray-600">
         They&rsquo;ll receive an email with a sign-in link to join the family. No password needed.
       </p>
       <form
-        className="flex flex-col gap-4 sm:flex-row"
+        className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
         onSubmit={(e) => {
           e.preventDefault();
           if (!email.trim()) return;
           setSubmitting(true);
-          void onSubmit(email.trim(), name.trim() || null).finally(() => setSubmitting(false));
+          void onSubmit(email.trim(), name.trim() || null, role).finally(() =>
+            setSubmitting(false),
+          );
         }}
       >
+        <div className="w-full sm:w-52">
+          <Label htmlFor="invite-member-role">Role</Label>
+          <Select
+            id="invite-member-role"
+            value={role}
+            onChange={(e) => setRole(e.target.value as InviteRole)}
+            data-testid="members-invite-role"
+          >
+            {INVITE_ROLE_OPTIONS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </Select>
+        </div>
         <div className="flex-1">
-          <Label htmlFor="invite-parent-name">Name</Label>
+          <Label htmlFor="invite-member-name">Name</Label>
           <Input
-            id="invite-parent-name"
+            id="invite-member-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Yusuf"
@@ -550,11 +594,11 @@ function InviteParentForm({
           />
         </div>
         <div className="flex-1">
-          <Label htmlFor="invite-parent-email" required>
+          <Label htmlFor="invite-member-email" required>
             Email
           </Label>
           <Input
-            id="invite-parent-email"
+            id="invite-member-email"
             type="email"
             required
             value={email}
@@ -575,6 +619,9 @@ function InviteParentForm({
           </Button>
         </div>
       </form>
+      <p className="mt-3 text-xs font-bold text-gray-500" data-testid="members-invite-role-help">
+        {INVITE_ROLE_HELP[role]}
+      </p>
       {error && (
         <p
           role="alert"
@@ -606,7 +653,7 @@ const ADD_MEMBER_HELP: Record<AddMemberRole, string> = {
     'Kids don’t need an email. They log in by tapping their avatar and entering a 4-digit PIN (set one from their card below).',
   teen: 'Teens don’t need an email either — same PIN login as a child, from their card below.',
   adult:
-    'This creates a profile on the roster — no login. To let them sign in themselves, use Invite Parent instead.',
+    'This creates a profile on the roster — no login. To let them sign in themselves, use Invite member instead.',
 };
 
 function AddMemberForm({

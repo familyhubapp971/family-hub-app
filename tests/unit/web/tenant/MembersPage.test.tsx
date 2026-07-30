@@ -632,6 +632,116 @@ describe('<MembersPage />', () => {
     });
   });
 
+  // FHS-486 / ADR 0019 — "Invite Parent" reworked to "Invite member" with a
+  // role picker; the chosen role is sent, not a hardcoded 'adult'.
+  describe('Invite a member (FHS-486)', () => {
+    function adminOnlyList() {
+      return {
+        ok: true,
+        json: async () => ({
+          callerRole: 'admin',
+          members: [
+            {
+              id: 'admin-1',
+              displayName: 'Sarah Khan',
+              role: 'admin',
+              avatarEmoji: '👩',
+              status: 'active',
+              createdAt: '2026-05-02T00:00:00.000Z',
+              isChild: false,
+              hasPin: false,
+              age: null,
+              inviteEmail: null,
+              inviteId: null,
+            },
+          ],
+        }),
+      };
+    }
+
+    it('renders an "Invite member" control (not "Invite Parent")', async () => {
+      membersResponse = adminOnlyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-invite-member')).toBeInTheDocument());
+      expect(screen.getByTestId('members-invite-member').textContent).toContain('Invite member');
+      expect(screen.queryByText('Invite Parent')).toBeNull();
+    });
+
+    it('opens a role picker defaulting to Adult, with a role dropdown', async () => {
+      membersResponse = adminOnlyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-invite-member')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('members-invite-member'));
+      expect(screen.getByTestId('members-invite-form')).toBeInTheDocument();
+      expect((screen.getByTestId('members-invite-role') as HTMLSelectElement).value).toBe('adult');
+      expect(screen.getByTestId('members-invite-name')).toBeInTheDocument();
+      expect(screen.getByTestId('members-invite-email')).toBeInTheDocument();
+    });
+
+    it('sends the chosen role (admin) on submit — not hardcoded "adult"', async () => {
+      membersResponse = adminOnlyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-invite-member')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('members-invite-member'));
+
+      fireEvent.change(screen.getByTestId('members-invite-role'), {
+        target: { value: 'admin' },
+      });
+      fireEvent.change(screen.getByTestId('members-invite-email'), {
+        target: { value: 'partner@example.com' },
+      });
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          invitation: { id: 'inv-1', role: 'admin', status: 'pending' },
+        }),
+      });
+      fetchMock.mockResolvedValueOnce(adminOnlyList());
+      fireEvent.click(screen.getByTestId('members-invite-send'));
+
+      await waitFor(() =>
+        expect(screen.queryByTestId('members-invite-form')).not.toBeInTheDocument(),
+      );
+      const postCall = fetchMock.mock.calls.find(
+        (c) =>
+          typeof c[0] === 'string' && c[0].endsWith('/api/invitations') && c[1]?.method === 'POST',
+      );
+      expect(postCall).toBeDefined();
+      expect(JSON.parse(postCall![1].body as string)).toEqual({
+        email: 'partner@example.com',
+        role: 'admin',
+      });
+    });
+
+    it("surfaces the server's 403 detail when a non-admin tries to invite an admin", async () => {
+      membersResponse = adminOnlyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-invite-member')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('members-invite-member'));
+
+      fireEvent.change(screen.getByTestId('members-invite-role'), {
+        target: { value: 'admin' },
+      });
+      fireEvent.change(screen.getByTestId('members-invite-email'), {
+        target: { value: 'partner@example.com' },
+      });
+
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        json: async () => ({
+          error: 'forbidden',
+          detail: 'only an admin can invite someone as admin',
+        }),
+      });
+      fireEvent.click(screen.getByTestId('members-invite-send'));
+      await waitFor(() =>
+        expect(screen.getByTestId('members-invite-error').textContent).toMatch(/only an admin/i),
+      );
+    });
+  });
+
   it('shows the server detail message (not just "forbidden") when a 403 fires', async () => {
     membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: false });
     renderAt('/t/khans/members');
