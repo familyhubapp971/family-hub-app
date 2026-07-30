@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, LogOut, Plus, Users } from 'lucide-react';
+import { ChevronDown, LogOut, Users } from 'lucide-react';
 import { TopNav, type TopNavTab } from '@familyhub/ui';
 import type { DashboardMember } from '@familyhub/shared';
 import { signOutAll, useAuth } from '../../lib/auth-context';
@@ -122,13 +122,11 @@ const CHILD_DISC_COLORS = ['bg-yellow-300', 'bg-purple-300', 'bg-pink-300', 'bg-
 function ProfilePill({
   parentName,
   childMembers,
-  onAddMember,
   onManageMembers,
   slug,
 }: {
   parentName: string;
   childMembers: DashboardMember[];
-  onAddMember: () => void;
   onManageMembers: () => void;
   slug: string;
 }) {
@@ -214,24 +212,9 @@ function ProfilePill({
               family's first member; the dropdown was previously read as
               "my profile" with no obvious add-member control. */}
           <div className="px-3 py-2">
-            <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Children
-              </p>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setOpen(false);
-                  onAddMember();
-                }}
-                aria-label="Add family member"
-                data-testid="dashboard-profile-add-member-plus"
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-2 border-black bg-purple-300 text-purple-900 shadow-neo-xs transition-colors motion-safe:hover:-translate-y-0.5 hover:bg-purple-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
-              >
-                <Plus size={16} strokeWidth={3} aria-hidden="true" />
-              </button>
-            </div>
+            <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Children
+            </p>
             {childMembers.length > 0 ? (
               <ul>
                 {childMembers.map((c, i) => (
@@ -280,19 +263,6 @@ function ProfilePill({
             >
               <Users size={16} strokeWidth={3} aria-hidden="true" />
               Manage members
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                onAddMember();
-              }}
-              data-testid="dashboard-profile-add-member"
-              className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-300 px-3 py-2.5 text-purple-500 transition-colors hover:border-purple-500 hover:bg-purple-50 hover:text-purple-700"
-            >
-              <Plus size={16} strokeWidth={3} aria-hidden="true" />
-              <span className="text-sm font-bold">Add member</span>
             </button>
           </div>
         </div>
@@ -386,13 +356,6 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
     navigate('/', { replace: true });
   }, [navigate]);
 
-  // FHS-472 — generic "add a family member" deep link; the members page
-  // opens the type picker (child / teen / adult) rather than a
-  // child-only form.
-  const onAddMember = useCallback(() => {
-    navigate(`/t/${slug}/members?add=member`);
-  }, [navigate, slug]);
-
   const onManageMembers = useCallback(() => {
     navigate(`/t/${slug}/members`);
   }, [navigate, slug]);
@@ -438,7 +401,6 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
           <ProfilePill
             parentName={parentName}
             childMembers={childMembers}
-            onAddMember={onAddMember}
             onManageMembers={onManageMembers}
             slug={slug}
           />
