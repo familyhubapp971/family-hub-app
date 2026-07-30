@@ -562,6 +562,8 @@ export const kidRouter = new Hono()
         type: events.type,
         location: events.location,
         wear: events.wear,
+        recurrenceDays: events.recurrenceDays,
+        recurrenceEndDate: events.recurrenceEndDate,
       })
       .from(events)
       .where(
@@ -573,7 +575,16 @@ export const kidRouter = new Hono()
         ),
       )
       .orderBy(asc(events.date), asc(events.startTime));
-    return c.json(listEventsResponseSchema.parse({ weekStart, events: rows }));
+    // FHS-476 — the kid schedule doesn't expand recurring series across
+    // weeks yet (follow-up); it still shows a repeating activity's own
+    // anchor row when that falls in the requested week, with the series
+    // metadata attached so the client can render a "repeats" hint.
+    const eventsOut = rows.map((r) => ({
+      ...r,
+      isRecurring: !!(r.recurrenceDays && r.recurrenceDays.length > 0),
+      seriesStartDate: r.date,
+    }));
+    return c.json(listEventsResponseSchema.parse({ weekStart, events: eventsOut }));
   })
   // FHS-366 — the kid's journal for a day (or null) + the day's quote index.
   .get('/journal', async (c) => {
