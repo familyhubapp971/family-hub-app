@@ -119,13 +119,27 @@ function FamilyHero({
 // yellow/purple). Same order = same colour across reloads.
 const CHILD_DISC_COLORS = ['bg-yellow-300', 'bg-purple-300', 'bg-pink-300', 'bg-cyan-300'];
 
+// FHS-485 / ADR 0019 — the caller's own role line in the profile menu.
+// This used to be hardcoded "Parent · Admin" for everyone, which is wrong
+// for an adult/teen/guest (only `admin` is the parent/partner with full
+// rights). Read the caller's real role and label it to match the matrix.
+const ROLE_PILL_LABEL: Record<string, string> = {
+  admin: 'Parent · Admin',
+  adult: 'Adult',
+  teen: 'Teen',
+  guest: 'Guest',
+  child: 'Child',
+};
+
 function ProfilePill({
   parentName,
+  role,
   childMembers,
   onManageMembers,
   slug,
 }: {
   parentName: string;
+  role: string | null;
   childMembers: DashboardMember[];
   onManageMembers: () => void;
   slug: string;
@@ -201,8 +215,11 @@ function ProfilePill({
                 >
                   {parentName}
                 </p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                  Parent · Admin
+                <p
+                  className="text-[10px] font-bold uppercase tracking-widest text-gray-500"
+                  data-testid="dashboard-profile-role"
+                >
+                  {ROLE_PILL_LABEL[role ?? ''] ?? 'Member'}
                 </p>
               </div>
             </div>
@@ -286,6 +303,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
   const navigate = useNavigate();
 
   const [familyName, setFamilyName] = useState<string | null>(null);
+  const [callerRole, setCallerRole] = useState<string | null>(null);
   const [members, setMembers] = useState<DashboardMember[] | null>(null);
   const [openTasks, setOpenTasks] = useState<number>(0);
   const [headerLoading, setHeaderLoading] = useState(true);
@@ -311,7 +329,10 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
         me && Array.isArray(me.tenants)
           ? (me.tenants as MeResponseTenant[]).find((t) => t.slug === slug)
           : undefined;
-      if (tenant) setFamilyName(tenant.name);
+      if (tenant) {
+        setFamilyName(tenant.name);
+        setCallerRole(tenant.role);
+      }
       if (today && Array.isArray(today.members)) {
         const roster = today.members as DashboardMember[];
         setMembers(roster);
@@ -400,6 +421,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
         <>
           <ProfilePill
             parentName={parentName}
+            role={callerRole}
             childMembers={childMembers}
             onManageMembers={onManageMembers}
             slug={slug}

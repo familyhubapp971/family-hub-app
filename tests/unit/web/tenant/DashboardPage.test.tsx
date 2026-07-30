@@ -422,4 +422,56 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
     expect(screen.getByTestId('dashboard-profile-parent-name').textContent).toBe('Sarah Khan');
   });
+
+  // FHS-485 / ADR 0019 — the profile menu's role line reflects the caller's
+  // real role, not a hardcoded "Parent · Admin" for everyone.
+  it('shows the caller role in the profile menu (admin => Parent · Admin)', async () => {
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await waitFor(() =>
+      expect(screen.getByTestId('dashboard-profile-role').textContent).toBe('Parent · Admin'),
+    );
+  });
+
+  it('labels a non-admin adult caller "Adult" in the profile menu, not Parent', async () => {
+    mocks.fetchMock.mockImplementation(async (url: string) => {
+      if (url.includes('/api/me')) {
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'u-1',
+            email: 'sarah@example.com',
+            tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'adult' }],
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/dashboard/today')) {
+        return {
+          ok: true,
+          json: async () => ({
+            date: '2026-06-10',
+            greetingName: 'Sarah',
+            callerMemberId: 'm-1',
+            counts: {
+              members: 0,
+              habits: 0,
+              rewards: 0,
+              tasksDoneToday: 0,
+              tasksTotalToday: 0,
+              mealsPlanned: 0,
+            },
+            members: [],
+            goals: [],
+            recentActivity: [],
+          }),
+        } as Response;
+      }
+      return { ok: false, status: 404, json: async () => ({}) } as Response;
+    });
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await waitFor(() =>
+      expect(screen.getByTestId('dashboard-profile-role').textContent).toBe('Adult'),
+    );
+  });
 });
