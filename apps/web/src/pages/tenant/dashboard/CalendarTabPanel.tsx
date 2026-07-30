@@ -8,6 +8,7 @@ import {
   MapPin,
   Pencil,
   Plus,
+  Repeat,
   Save,
   Trash2,
   X,
@@ -42,6 +43,15 @@ interface EventItem {
   type: EventType;
   location: string | null;
   wear: string | null;
+  // FHS-476 — weekly recurrence. recurrenceDays/recurrenceEndDate describe
+  // the series; isRecurring flags a virtual occurrence (or a repeating
+  // series row); seriesStartDate is the real anchor date — PUT that back
+  // as `date` when editing, never the occurrence's own `date`, or the
+  // series start silently moves to whichever day was clicked.
+  recurrenceDays: number[] | null;
+  recurrenceEndDate: string | null;
+  isRecurring: boolean;
+  seriesStartDate: string;
 }
 
 interface MemberLite {
@@ -63,7 +73,26 @@ interface DraftForm {
   startTime: string;
   location: string;
   wear: string;
+  // FHS-476 — "Repeat weekly". repeatDays uses 0=Sunday..6=Saturday,
+  // matching the API. anchorDate is only set when editing a recurring
+  // OCCURRENCE (not its anchor day) — it holds the series' real start
+  // date so save sends that back as `date` instead of the day the form
+  // happens to be open on (see EventItem.seriesStartDate).
+  repeatWeekly: boolean;
+  repeatDays: Set<number>;
+  repeatEndDate: string;
+  anchorDate: string | null;
 }
+
+const WEEKDAY_OPTIONS: Array<{ value: number; label: string }> = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 0, label: 'Sun' },
+];
 
 // Family rows are green; each member cycles a distinct colour. Shared
 // by the legend, the filter pills and the activity rows.
@@ -128,6 +157,12 @@ function addDaysIso(iso: string, days: number): string {
   const dt = new Date(Date.UTC(y!, m! - 1, d!));
   dt.setUTCDate(dt.getUTCDate() + days);
   return dt.toISOString().slice(0, 10);
+}
+
+// 0 = Sunday .. 6 = Saturday, matching the API's recurrenceDays.
+function weekdayOfIso(iso: string): number {
+  const [y, m, d] = iso.split('-').map((s) => Number.parseInt(s, 10));
+  return new Date(Date.UTC(y!, m! - 1, d!)).getUTCDay();
 }
 
 // "Monday 15 Jun" — UTC-anchored so the server date never shifts.
@@ -255,15 +290,30 @@ export function CalendarTabPanel() {
       setSaveError('Pick today or a future date.');
       return;
     }
+    // FHS-476 — "Repeat weekly" is on but no day is ticked.
+    if (draft.repeatWeekly && draft.repeatDays.size === 0) {
+      setSaveError('Pick at least one day to repeat on.');
+      return;
+    }
     // Exactly one child checked → that child; none or several → the
     // whole family (our data model stores one member per event).
     const memberId = draft.memberIds.size === 1 ? [...draft.memberIds][0]! : null;
+    const recurrenceDays = draft.repeatWeekly ? [...draft.repeatDays].sort((a, b) => a - b) : null;
+    const recurrenceEndDate =
+      draft.repeatWeekly && draft.repeatEndDate ? draft.repeatEndDate : null;
+    // Editing a non-anchor occurrence of a recurring series must PUT the
+    // series' real start date, not the day the form happened to open on
+    // (see DraftForm.anchorDate). BUT if the user un-checks "Repeat weekly"
+    // to turn this occurrence into a one-off, keep the day they were looking
+    // at — otherwise the event silently jumps back to the old series anchor.
+    const outgoingDate =
+      editingId && draft.anchorDate && draft.repeatWeekly ? draft.anchorDate : draft.date;
     savingRef.current = true;
     setSaving(true);
     setSaveError(null);
     try {
       const body = JSON.stringify({
-        date: draft.date,
+        date: outgoingDate,
         title,
         startTime: draft.startTime || null,
         endTime: null,
@@ -272,6 +322,8 @@ export function CalendarTabPanel() {
         location: draft.location.trim() || null,
         wear: draft.wear.trim() || null,
         notes: null,
+        recurrenceDays,
+        recurrenceEndDate,
       });
       const url = editingId ? `${API_BASE}/api/events/${editingId}` : `${API_BASE}/api/events`;
       const method = editingId ? 'PUT' : 'POST';
@@ -296,8 +348,38 @@ export function CalendarTabPanel() {
     }
   }, [draft, editingId, headers, weekStart, load]);
 
+  // Opens the edit form pre-filled from an event/occurrence. `draft.date`
+  // stays the OCCURRENCE's own date so the inline form renders under the
+  // day card the user actually clicked Edit on; `anchorDate` carries the
+  // series' real start date separately so onSave PUTs the right `date`.
+  const openEditForm = useCallback((ev: EventItem) => {
+    setSaveError(null);
+    setEditingId(ev.id);
+    setDraft({
+      date: ev.date,
+      type: ev.type,
+      memberIds: ev.memberId !== null ? new Set([ev.memberId]) : new Set(),
+      title: ev.title,
+      startTime: ev.startTime ?? '',
+      location: ev.location ?? '',
+      wear: ev.wear ?? '',
+      repeatWeekly: ev.isRecurring,
+      repeatDays: new Set(ev.recurrenceDays ?? []),
+      repeatEndDate: ev.recurrenceEndDate ?? '',
+      anchorDate: ev.isRecurring ? ev.seriesStartDate : null,
+    });
+  }, []);
+
+  // FHS-476 — editing a recurring occurrence changes the WHOLE series, so
+  // a brief confirm gates it before the form opens.
+  const [pendingEditConfirm, setPendingEditConfirm] = useState<EventItem | null>(null);
+
   // App-styled delete confirmation (replaces window.confirm).
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    title: string;
+    isRecurring: boolean;
+  } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const confirmDelete = useCallback(async () => {
@@ -544,10 +626,15 @@ export function CalendarTabPanel() {
                             ? 'Family'
                             : (members.find((m) => m.id === ev.memberId)?.displayName ??
                               'Family member');
+                        // FHS-476 — a recurring series shares ONE id across
+                        // every occurrence in the week (a different day
+                        // each time), so keys/testids must include the
+                        // occurrence's own date to stay unique per row.
+                        const key = `${ev.id}-${ev.date}`;
                         return (
                           <li
-                            key={ev.id}
-                            data-testid={`calendar-event-${ev.id}`}
+                            key={key}
+                            data-testid={`calendar-event-${key}`}
                             className={`grid grid-cols-1 items-center gap-2 rounded-lg border-2 border-l-4 border-black p-3 shadow-neo-xs sm:grid-cols-12 sm:gap-4 ${style.border} ${style.bg} motion-safe:transition-transform motion-safe:hover:-translate-y-0.5`}
                           >
                             <div className="flex items-center gap-3 sm:col-span-4">
@@ -559,16 +646,29 @@ export function CalendarTabPanel() {
                                 {letterFor(ev.memberId, members)}
                               </span>
                               <span className="min-w-0">
-                                <span
-                                  className="block text-sm font-bold leading-tight"
-                                  data-testid={`calendar-event-${ev.id}-title`}
-                                >
-                                  {ev.title}
+                                <span className="flex items-center gap-1.5">
+                                  <span
+                                    className="block text-sm font-bold leading-tight"
+                                    data-testid={`calendar-event-${key}-title`}
+                                  >
+                                    {ev.title}
+                                  </span>
+                                  {ev.isRecurring && (
+                                    <span
+                                      data-testid={`calendar-event-${key}-repeats`}
+                                      title="Repeats weekly"
+                                      className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-black/10 bg-white/70 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-gray-600"
+                                    >
+                                      <Repeat size={9} aria-hidden="true" />
+                                      <span className="sr-only">Repeats weekly</span>
+                                      Repeats
+                                    </span>
+                                  )}
                                 </span>
                                 {ev.notes && (
                                   <span
                                     className="block truncate text-xs italic text-gray-500"
-                                    data-testid={`calendar-event-${ev.id}-notes`}
+                                    data-testid={`calendar-event-${key}-notes`}
                                   >
                                     {ev.notes}
                                   </span>
@@ -593,14 +693,14 @@ export function CalendarTabPanel() {
                                   aria-hidden="true"
                                 />
                               )}
-                              <span data-testid={`calendar-event-${ev.id}-location`}>
+                              <span data-testid={`calendar-event-${key}-location`}>
                                 {ev.location ?? '—'}
                               </span>
                             </div>
                             <div className="sm:col-span-2">
                               <span
                                 className="inline-block rounded border-2 border-black/10 bg-white px-2 py-1 text-[10px] font-bold text-gray-700"
-                                data-testid={`calendar-event-${ev.id}-wear`}
+                                data-testid={`calendar-event-${key}-wear`}
                               >
                                 {ev.wear ?? '—'}
                               </span>
@@ -609,20 +709,13 @@ export function CalendarTabPanel() {
                               <button
                                 type="button"
                                 aria-label={`Edit ${ev.title}`}
-                                data-testid={`calendar-edit-${ev.id}`}
+                                data-testid={`calendar-edit-${key}`}
                                 onClick={() => {
-                                  setSaveError(null);
-                                  setEditingId(ev.id);
-                                  setDraft({
-                                    date: ev.date,
-                                    type: ev.type,
-                                    memberIds:
-                                      ev.memberId !== null ? new Set([ev.memberId]) : new Set(),
-                                    title: ev.title,
-                                    startTime: ev.startTime ?? '',
-                                    location: ev.location ?? '',
-                                    wear: ev.wear ?? '',
-                                  });
+                                  if (ev.isRecurring) {
+                                    setPendingEditConfirm(ev);
+                                  } else {
+                                    openEditForm(ev);
+                                  }
                                 }}
                                 className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-black hover:text-black"
                               >
@@ -631,8 +724,14 @@ export function CalendarTabPanel() {
                               <button
                                 type="button"
                                 aria-label={`Delete ${ev.title}`}
-                                data-testid={`calendar-delete-${ev.id}`}
-                                onClick={() => setPendingDelete({ id: ev.id, title: ev.title })}
+                                data-testid={`calendar-delete-${key}`}
+                                onClick={() =>
+                                  setPendingDelete({
+                                    id: ev.id,
+                                    title: ev.title,
+                                    isRecurring: ev.isRecurring,
+                                  })
+                                }
                                 className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-red-500 hover:text-red-600"
                               >
                                 <Trash2 size={12} aria-hidden="true" />
@@ -697,6 +796,10 @@ export function CalendarTabPanel() {
                           startTime: '',
                           location: '',
                           wear: '',
+                          repeatWeekly: false,
+                          repeatDays: new Set(),
+                          repeatEndDate: '',
+                          anchorDate: null,
                         });
                       }}
                       className={`flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed py-3 font-bold transition-colors hover:border-black hover:bg-gray-50 hover:text-black ${
@@ -717,13 +820,29 @@ export function CalendarTabPanel() {
       <ConfirmDialog
         isOpen={pendingDelete !== null}
         title={pendingDelete ? `Delete "${pendingDelete.title}"?` : ''}
-        message="This activity will be removed from the calendar."
+        message={
+          pendingDelete?.isRecurring
+            ? 'This deletes the whole repeating activity — every day it repeats on, not just this one.'
+            : 'This activity will be removed from the calendar.'
+        }
         confirmLabel="Delete"
         variant="danger"
         busy={deleting}
         onConfirm={() => void confirmDelete()}
         onCancel={() => setPendingDelete(null)}
         testId="calendar-delete-confirm"
+      />
+      <ConfirmDialog
+        isOpen={pendingEditConfirm !== null}
+        title={pendingEditConfirm ? `Edit "${pendingEditConfirm.title}"?` : ''}
+        message="This changes the whole repeating activity, not just this day."
+        confirmLabel="Edit series"
+        onConfirm={() => {
+          if (pendingEditConfirm) openEditForm(pendingEditConfirm);
+          setPendingEditConfirm(null);
+        }}
+        onCancel={() => setPendingEditConfirm(null)}
+        testId="calendar-edit-recurring-confirm"
       />
     </div>
   );
@@ -937,6 +1056,88 @@ function ActivityForm({
               className="w-full rounded-lg border-2 border-black px-3 py-2 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400/50"
             />
           </div>
+        </div>
+
+        <div className="rounded-lg border-2 border-dashed border-gray-200 p-3">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              data-testid="calendar-form-repeat-toggle"
+              className="h-5 w-5 rounded border-2 border-black"
+              checked={draft.repeatWeekly}
+              onChange={(e) => {
+                const repeatWeekly = e.target.checked;
+                onChange({
+                  ...draft,
+                  repeatWeekly,
+                  // Pre-check the activity's own day the first time it's
+                  // turned on; leave an already-populated set alone (e.g.
+                  // re-opening an existing series).
+                  repeatDays:
+                    repeatWeekly && draft.repeatDays.size === 0
+                      ? new Set([weekdayOfIso(draft.date)])
+                      : draft.repeatDays,
+                });
+              }}
+            />
+            <span className="flex items-center gap-1.5 text-sm font-bold">
+              <Repeat size={14} aria-hidden="true" /> Repeat weekly
+            </span>
+          </label>
+
+          {draft.repeatWeekly && (
+            <div className="mt-3 space-y-3">
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">
+                  On these days
+                </p>
+                <div
+                  className="flex flex-wrap gap-3"
+                  role="group"
+                  aria-label="Repeat on these days"
+                >
+                  {WEEKDAY_OPTIONS.map((d) => {
+                    const checked = draft.repeatDays.has(d.value);
+                    return (
+                      <label key={d.value} className="flex cursor-pointer items-center gap-1.5">
+                        <input
+                          type="checkbox"
+                          data-testid={`calendar-form-day-${d.value}`}
+                          aria-label={d.label}
+                          className="h-5 w-5 rounded border-2 border-black"
+                          checked={checked}
+                          onChange={() => {
+                            const next = new Set(draft.repeatDays);
+                            if (next.has(d.value)) next.delete(d.value);
+                            else next.add(d.value);
+                            onChange({ ...draft, repeatDays: next });
+                          }}
+                        />
+                        <span className="text-xs font-bold">{d.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label
+                  className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-500"
+                  htmlFor="calendar-form-repeat-end"
+                >
+                  Ends on (optional)
+                </label>
+                <input
+                  id="calendar-form-repeat-end"
+                  type="date"
+                  data-testid="calendar-form-repeat-end"
+                  value={draft.repeatEndDate}
+                  min={draft.anchorDate ?? draft.date}
+                  onChange={(e) => onChange({ ...draft, repeatEndDate: e.target.value })}
+                  className="w-full rounded-lg border-2 border-black px-3 py-2 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400/50 sm:w-56"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {saveError && (

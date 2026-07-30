@@ -29,6 +29,10 @@ interface Ev {
   type: 'school' | 'home';
   location: string | null;
   wear: string | null;
+  recurrenceDays: number[] | null;
+  recurrenceEndDate: string | null;
+  isRecurring: boolean;
+  seriesStartDate: string;
 }
 interface Member {
   id: string;
@@ -67,10 +71,18 @@ function todayIso(): string {
   return `${y}-${m}-${d}`;
 }
 
+// FHS-476 — 0 = Sunday .. 6 = Saturday, matching the "Repeat weekly" day
+// checkboxes and the API's recurrenceDays.
+function weekdayOfIso(iso: string): number {
+  const [y, m, d] = iso.split('-').map((s) => Number.parseInt(s, 10));
+  return new Date(Date.UTC(y!, m! - 1, d!)).getUTCDay();
+}
+
 function ev(over: Partial<Ev>): Ev {
+  const date = over.date ?? mondayIso();
   return {
     id: 'e1',
-    date: mondayIso(),
+    date,
     startTime: null,
     endTime: null,
     title: 'Event',
@@ -79,6 +91,10 @@ function ev(over: Partial<Ev>): Ev {
     type: 'school',
     location: null,
     wear: null,
+    recurrenceDays: null,
+    recurrenceEndDate: null,
+    isRecurring: false,
+    seriesStartDate: date,
     ...over,
   };
 }
@@ -89,12 +105,19 @@ function installApi(opts: { events?: Ev[]; members?: Member[]; eventsOk?: boolea
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url);
     if (init?.method === 'POST') {
-      const body = JSON.parse(init.body as string) as Omit<Ev, 'id' | 'endTime' | 'notes'>;
+      const body = JSON.parse(init.body as string) as Omit<
+        Ev,
+        'id' | 'endTime' | 'notes' | 'isRecurring' | 'seriesStartDate'
+      >;
       const row: Ev = {
         id: `gen-${++gen}`,
         endTime: null,
         notes: null,
         ...body,
+        // Mirrors the real API: isRecurring/seriesStartDate are derived,
+        // not sent by the client.
+        isRecurring: !!(body.recurrenceDays && body.recurrenceDays.length > 0),
+        seriesStartDate: body.date,
       } as Ev;
       state.events.push(row);
       return Promise.resolve({ ok: true, status: 201, json: async () => row });
@@ -104,7 +127,12 @@ function installApi(opts: { events?: Ev[]; members?: Member[]; eventsOk?: boolea
       const id = idMatch?.[1];
       const body = JSON.parse(init.body as string) as Partial<Ev>;
       const idx = state.events.findIndex((e) => e.id === id);
-      if (idx >= 0) state.events[idx] = { ...state.events[idx]!, ...body };
+      if (idx >= 0) {
+        const merged = { ...state.events[idx]!, ...body };
+        merged.isRecurring = !!(merged.recurrenceDays && merged.recurrenceDays.length > 0);
+        merged.seriesStartDate = merged.date;
+        state.events[idx] = merged;
+      }
       return Promise.resolve({ ok: true, status: 200, json: async () => state.events[idx] });
     }
     if (init?.method === 'DELETE') {
@@ -210,9 +238,15 @@ describe('<CalendarTabPanel />', () => {
     });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('calendar-event-e1-title').textContent).toBe('Swimming Lesson');
-    expect(screen.getByTestId('calendar-event-e1-location').textContent).toBe('Leisure Centre');
-    expect(screen.getByTestId('calendar-event-e1-wear').textContent).toBe('Swimsuit and towel');
+    expect(screen.getByTestId(`calendar-event-e1-${mondayIso()}-title`).textContent).toBe(
+      'Swimming Lesson',
+    );
+    expect(screen.getByTestId(`calendar-event-e1-${mondayIso()}-location`).textContent).toBe(
+      'Leisure Centre',
+    );
+    expect(screen.getByTestId(`calendar-event-e1-${mondayIso()}-wear`).textContent).toBe(
+      'Swimsuit and towel',
+    );
     expect(screen.getByLabelText('Amina')).toBeInTheDocument();
   });
 
@@ -227,14 +261,14 @@ describe('<CalendarTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
 
     // Default = School (founder's call; matches the mockup).
-    expect(screen.getByTestId('calendar-event-sch')).toBeInTheDocument();
-    expect(screen.queryByTestId('calendar-event-hom')).not.toBeInTheDocument();
+    expect(screen.getByTestId(`calendar-event-sch-${mondayIso()}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`calendar-event-hom-${mondayIso()}`)).not.toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByTestId('calendar-subtab-home'));
     });
-    expect(screen.queryByTestId('calendar-event-sch')).not.toBeInTheDocument();
-    expect(screen.getByTestId('calendar-event-hom')).toBeInTheDocument();
+    expect(screen.queryByTestId(`calendar-event-sch-${mondayIso()}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`calendar-event-hom-${mondayIso()}`)).toBeInTheDocument();
   });
 
   it('member filter pill narrows to that member + family-wide, excludes the other child', async () => {
@@ -251,12 +285,12 @@ describe('<CalendarTabPanel />', () => {
     act(() => {
       fireEvent.click(screen.getByTestId(`calendar-filter-${AMINA}`));
     });
-    expect(screen.getByTestId('calendar-event-am')).toBeInTheDocument();
+    expect(screen.getByTestId(`calendar-event-am-${mondayIso()}`)).toBeInTheDocument();
     // FHS-475 — a family-wide event shows under every child's filter, not
     // just "All".
-    expect(screen.getByTestId('calendar-event-fam')).toBeInTheDocument();
+    expect(screen.getByTestId(`calendar-event-fam-${mondayIso()}`)).toBeInTheDocument();
     // Ibrahim's own event still must NOT show under Amina's filter.
-    expect(screen.queryByTestId('calendar-event-ib')).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`calendar-event-ib-${mondayIso()}`)).not.toBeInTheDocument();
   });
 
   // FHS-475 — a beta tester assigned "tennis" to both kids (checking 2+
@@ -276,20 +310,20 @@ describe('<CalendarTabPanel />', () => {
     act(() => {
       fireEvent.click(screen.getByTestId(`calendar-filter-${AMINA}`));
     });
-    expect(screen.getByTestId('calendar-event-gym')).toBeInTheDocument();
-    expect(screen.getByTestId('calendar-event-tennis')).toBeInTheDocument();
+    expect(screen.getByTestId(`calendar-event-gym-${mondayIso()}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`calendar-event-tennis-${mondayIso()}`)).toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByTestId(`calendar-filter-${IBRAHIM}`));
     });
-    expect(screen.getByTestId('calendar-event-tennis')).toBeInTheDocument();
-    expect(screen.queryByTestId('calendar-event-gym')).not.toBeInTheDocument();
+    expect(screen.getByTestId(`calendar-event-tennis-${mondayIso()}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`calendar-event-gym-${mondayIso()}`)).not.toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByTestId('calendar-filter-all'));
     });
-    expect(screen.getByTestId('calendar-event-tennis')).toBeInTheDocument();
-    expect(screen.getByTestId('calendar-event-gym')).toBeInTheDocument();
+    expect(screen.getByTestId(`calendar-event-tennis-${mondayIso()}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`calendar-event-gym-${mondayIso()}`)).toBeInTheDocument();
   });
 
   it('adding an activity POSTs date/title/time/member/type/location/wear and shows it', async () => {
@@ -333,6 +367,8 @@ describe('<CalendarTabPanel />', () => {
       location: 'Leisure Centre',
       wear: 'Swimsuit',
       notes: null,
+      recurrenceDays: null,
+      recurrenceEndDate: null,
     });
   });
 
@@ -374,7 +410,7 @@ describe('<CalendarTabPanel />', () => {
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
 
     act(() => {
-      fireEvent.click(screen.getByTestId('calendar-edit-e-edit'));
+      fireEvent.click(screen.getByTestId(`calendar-edit-e-edit-${mondayIso()}`));
     });
     // Form should be open with pre-filled title
     expect(screen.getByTestId('calendar-add-form')).toBeInTheDocument();
@@ -411,7 +447,7 @@ describe('<CalendarTabPanel />', () => {
 
     // Clicking delete opens the in-app confirm dialog (not window.confirm).
     act(() => {
-      fireEvent.click(screen.getByTestId('calendar-delete-e-del'));
+      fireEvent.click(screen.getByTestId(`calendar-delete-e-del-${mondayIso()}`));
     });
     await waitFor(() => expect(screen.getByTestId('calendar-delete-confirm')).toBeInTheDocument());
     await act(async () => {
@@ -522,6 +558,267 @@ describe('<CalendarTabPanel />', () => {
     expect(init.headers).toMatchObject({
       Authorization: 'Bearer tok-abc',
       'x-tenant-slug': 'khans',
+    });
+  });
+
+  // FHS-476 — recurring activities: the "Repeat weekly" toggle, day picker,
+  // end date, the "Repeats" indicator on a recurring occurrence, and the
+  // edit-changes-the-series confirm.
+  describe('recurring activities (FHS-476)', () => {
+    it('turning on Repeat weekly pre-checks the activity’s own weekday', async () => {
+      installApi({});
+      renderAt('/t/khans/dashboard');
+      await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+      const today = todayIso();
+      act(() => {
+        fireEvent.click(screen.getByTestId(`calendar-add-${today}`));
+      });
+      act(() => {
+        fireEvent.click(screen.getByTestId('calendar-form-repeat-toggle'));
+      });
+      const preChecked = weekdayOfIso(today);
+      expect(
+        (screen.getByTestId(`calendar-form-day-${preChecked}`) as HTMLInputElement).checked,
+      ).toBe(true);
+    });
+
+    it('creating a recurring activity POSTs recurrenceDays + recurrenceEndDate', async () => {
+      // Pin "today" to a known Monday so the day-checkbox clicks below are
+      // deterministic regardless of which weekday the suite actually runs on.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-07-06T09:00:00')); // a Monday
+      const today = '2026-07-06';
+
+      installApi({});
+      renderAt('/t/khans/dashboard');
+      await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+      act(() => {
+        fireEvent.click(screen.getByTestId(`calendar-add-${today}`));
+      });
+      act(() => {
+        fireEvent.change(screen.getByTestId('calendar-form-title'), {
+          target: { value: 'Tennis' },
+        });
+        fireEvent.click(screen.getByTestId('calendar-form-repeat-toggle'));
+      });
+      // Monday (1) is pre-checked; swap it for Tuesday (2) + Thursday (4).
+      act(() => {
+        fireEvent.click(screen.getByTestId('calendar-form-day-1'));
+        fireEvent.click(screen.getByTestId('calendar-form-day-2'));
+        fireEvent.click(screen.getByTestId('calendar-form-day-4'));
+        fireEvent.change(screen.getByTestId('calendar-form-repeat-end'), {
+          target: { value: '2026-12-31' },
+        });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('calendar-form-save'));
+      });
+
+      const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
+      const body = JSON.parse((postCall![1] as RequestInit).body as string) as {
+        recurrenceDays: number[] | null;
+        recurrenceEndDate: string | null;
+      };
+      expect(body.recurrenceDays).toEqual([2, 4]);
+      expect(body.recurrenceEndDate).toBe('2026-12-31');
+    });
+
+    it('blocks saving when Repeat weekly is on but no day is picked', async () => {
+      installApi({});
+      renderAt('/t/khans/dashboard');
+      await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+      const today = todayIso();
+      act(() => {
+        fireEvent.click(screen.getByTestId(`calendar-add-${today}`));
+      });
+      act(() => {
+        fireEvent.change(screen.getByTestId('calendar-form-title'), {
+          target: { value: 'Tennis' },
+        });
+        fireEvent.click(screen.getByTestId('calendar-form-repeat-toggle'));
+      });
+      // Untick the day that got pre-checked, leaving none selected.
+      const preChecked = weekdayOfIso(today);
+      act(() => {
+        fireEvent.click(screen.getByTestId(`calendar-form-day-${preChecked}`));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('calendar-form-save'));
+      });
+
+      expect(screen.getByTestId('calendar-save-error').textContent).toMatch(/pick at least one/i);
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+    });
+
+    it('a recurring occurrence renders with a "Repeats" indicator', async () => {
+      installApi({
+        events: [
+          ev({
+            id: 'series-1',
+            title: 'Tennis',
+            isRecurring: true,
+            recurrenceDays: [weekdayOfIso(mondayIso())],
+            recurrenceEndDate: null,
+          }),
+        ],
+      });
+      renderAt('/t/khans/dashboard');
+      await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+      const key = `series-1-${mondayIso()}`;
+      expect(screen.getByTestId(`calendar-event-${key}-repeats`)).toBeInTheDocument();
+    });
+
+    it('editing a recurring occurrence confirms first, then pre-fills its days + end date', async () => {
+      const seriesEv = ev({
+        id: 'series-2',
+        title: 'Piano',
+        isRecurring: true,
+        recurrenceDays: [2, 4],
+        recurrenceEndDate: '2026-12-31',
+        seriesStartDate: '2026-01-05',
+      });
+      installApi({ events: [seriesEv] });
+      renderAt('/t/khans/dashboard');
+      await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+      const key = `series-2-${mondayIso()}`;
+      act(() => {
+        fireEvent.click(screen.getByTestId(`calendar-edit-${key}`));
+      });
+      // No edit form yet — the confirm gates it.
+      expect(screen.queryByTestId('calendar-add-form')).not.toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.getByTestId('calendar-edit-recurring-confirm')).toBeInTheDocument(),
+      );
+      expect(screen.getByTestId('calendar-edit-recurring-confirm-message').textContent).toMatch(
+        /whole repeating activity/i,
+      );
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('calendar-edit-recurring-confirm-confirm'));
+      });
+
+      expect(screen.getByTestId('calendar-add-form')).toBeInTheDocument();
+      expect((screen.getByTestId('calendar-form-title') as HTMLInputElement).value).toBe('Piano');
+      expect((screen.getByTestId('calendar-form-day-2') as HTMLInputElement).checked).toBe(true);
+      expect((screen.getByTestId('calendar-form-day-4') as HTMLInputElement).checked).toBe(true);
+      expect((screen.getByTestId('calendar-form-repeat-end') as HTMLInputElement).value).toBe(
+        '2026-12-31',
+      );
+
+      // Saving PUTs the series' real anchor date, not the occurrence's own
+      // (this week's) date.
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('calendar-form-save'));
+      });
+      const putCall = fetchMock.mock.calls.find(
+        ([url, init]) => String(url).includes('/api/events/series-2') && init?.method === 'PUT',
+      );
+      expect(putCall).toBeTruthy();
+      const body = JSON.parse((putCall![1] as RequestInit).body as string) as { date: string };
+      expect(body.date).toBe('2026-01-05');
+    });
+
+    it('deleting a recurring occurrence warns it removes the whole series (FHS-476)', async () => {
+      installApi({
+        events: [
+          ev({
+            id: 'series-del',
+            title: 'Tennis',
+            isRecurring: true,
+            recurrenceDays: [weekdayOfIso(mondayIso())],
+            recurrenceEndDate: null,
+          }),
+        ],
+      });
+      renderAt('/t/khans/dashboard');
+      await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+      act(() => {
+        fireEvent.click(screen.getByTestId(`calendar-delete-series-del-${mondayIso()}`));
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId('calendar-delete-confirm')).toBeInTheDocument(),
+      );
+      expect(screen.getByTestId('calendar-delete-confirm-message').textContent).toMatch(
+        /whole repeating activity/i,
+      );
+    });
+
+    it('un-checking Repeat weekly makes a one-off on ITS day, not the anchor (FHS-476)', async () => {
+      installApi({
+        events: [
+          ev({
+            id: 'series-un',
+            title: 'Piano',
+            isRecurring: true,
+            recurrenceDays: [2, 4],
+            recurrenceEndDate: '2026-12-31',
+            seriesStartDate: '2026-01-05',
+          }),
+        ],
+      });
+      renderAt('/t/khans/dashboard');
+      await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+      const key = `series-un-${mondayIso()}`;
+      act(() => {
+        fireEvent.click(screen.getByTestId(`calendar-edit-${key}`));
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId('calendar-edit-recurring-confirm')).toBeInTheDocument(),
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('calendar-edit-recurring-confirm-confirm'));
+      });
+      // Turn OFF the repeat, making this occurrence a plain one-off.
+      act(() => {
+        fireEvent.click(screen.getByTestId('calendar-form-repeat-toggle'));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('calendar-form-save'));
+      });
+
+      const putCall = fetchMock.mock.calls.find(
+        ([url, init]) => String(url).includes('/api/events/series-un') && init?.method === 'PUT',
+      );
+      const body = JSON.parse((putCall![1] as RequestInit).body as string) as {
+        date: string;
+        recurrenceDays: number[] | null;
+      };
+      expect(body.recurrenceDays).toBeNull();
+      // The day the parent was looking at — NOT the 2026-01-05 series anchor.
+      expect(body.date).toBe(mondayIso());
+    });
+
+    it('cancelling the edit-series confirm leaves the form closed', async () => {
+      const seriesEv = ev({
+        id: 'series-3',
+        title: 'Piano',
+        isRecurring: true,
+        recurrenceDays: [weekdayOfIso(mondayIso())],
+      });
+      installApi({ events: [seriesEv] });
+      renderAt('/t/khans/dashboard');
+      await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+      const key = `series-3-${mondayIso()}`;
+      act(() => {
+        fireEvent.click(screen.getByTestId(`calendar-edit-${key}`));
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId('calendar-edit-recurring-confirm')).toBeInTheDocument(),
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('calendar-edit-recurring-confirm-cancel'));
+      });
+
+      expect(screen.queryByTestId('calendar-add-form')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('calendar-edit-recurring-confirm')).not.toBeInTheDocument();
     });
   });
 });
