@@ -211,8 +211,9 @@ describe('<MembersPage />', () => {
     expect(pending.textContent).toContain('signed up');
     expect(pending.textContent).toContain('jumi@example.com');
     expect(screen.getByTestId('members-row-1-resend')).toBeInTheDocument();
-    // The parent role label reads "Parent", not "adult" (MP design).
-    expect(screen.getByTestId('members-row-1-role').textContent).toBe('Parent');
+    // FHS-485 — the 'adult' role label reads "Adult", not "Parent" (a real
+    // parent/partner is `admin`; see ADR 0019).
+    expect(screen.getByTestId('members-row-1-role').textContent).toBe('Adult');
     // FHS-278 — admin toggle visible but DISABLED until they sign up.
     const toggle = screen.getByTestId('members-row-1-admin-toggle') as HTMLButtonElement;
     expect(toggle.disabled).toBe(true);

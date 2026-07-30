@@ -47,9 +47,12 @@ type Status =
   | { kind: 'ready'; members: MemberItem[]; callerRole: string }
   | { kind: 'error'; message: string };
 
+// FHS-485 — 'adult' used to be badged "Parent", which is wrong: a real
+// parent/partner is `admin` (full rights). 'adult' is the everyday,
+// non-admin grown-up (grandma, cousin, sitter) — see ADR 0019.
 const ROLE_STYLE: Record<string, { disc: string; badge: string; label: string }> = {
   admin: { disc: 'bg-pink-300', badge: 'bg-pink-200', label: 'Admin' },
-  adult: { disc: 'bg-cyan-300', badge: 'bg-cyan-200', label: 'Parent' },
+  adult: { disc: 'bg-cyan-300', badge: 'bg-cyan-200', label: 'Adult' },
   teen: { disc: 'bg-yellow-300', badge: 'bg-yellow-200', label: 'Teen' },
   child: { disc: 'bg-purple-300', badge: 'bg-purple-200', label: 'Child' },
   guest: { disc: 'bg-gray-300', badge: 'bg-gray-200', label: 'Guest' },
