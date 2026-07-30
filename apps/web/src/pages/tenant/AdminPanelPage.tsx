@@ -20,6 +20,7 @@ import {
   Calendar,
   CheckCircle,
   Download,
+  Gift,
   Info,
   Pencil,
   RotateCcw,
@@ -39,10 +40,13 @@ import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
+import { RewardsTab } from './admin/RewardsTab';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = 'balance' | 'savings' | 'history' | 'users' | 'settings';
+// FHS-483 — 'rewards' is family-level (not child-scoped), like 'users' and
+// 'settings': the reward shop's catalogue is shared across every kid.
+type Tab = 'balance' | 'savings' | 'history' | 'rewards' | 'users' | 'settings';
 
 interface MemberItem {
   id: string;
@@ -2147,6 +2151,7 @@ export function AdminPanelPage() {
     { key: 'balance', icon: <Star className="w-4 h-4" />, label: 'Balance' },
     { key: 'savings', icon: <Pencil className="w-4 h-4" />, label: 'Savings' },
     { key: 'history', icon: <Calendar className="w-4 h-4" />, label: 'History' },
+    { key: 'rewards', icon: <Gift className="w-4 h-4" />, label: 'Rewards' },
     { key: 'users', icon: <Users className="w-4 h-4" />, label: 'Users' },
     { key: 'settings', icon: <SettingsIcon className="w-4 h-4" />, label: 'Settings' },
   ];
@@ -2268,6 +2273,8 @@ export function AdminPanelPage() {
             {activeTab === 'history' && selectedChildId && (
               <HistoryTab memberId={selectedChildId} headers={headers} />
             )}
+
+            {activeTab === 'rewards' && <RewardsTab headers={headers} />}
 
             {activeTab === 'users' && <UsersTab headers={headers} slug={slug} />}
 
