@@ -329,27 +329,15 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     expect(screen.queryByTestId('dashboard-profile-child-m-2')).toBeNull();
   });
 
-  // FHS-472 — "Add Child" renamed to a generic "Add member"; deep-links
-  // with ?add=member so the members page opens the type picker rather
-  // than a child-only form.
-  it('Add member button navigates to the members page with ?add=member', async () => {
+  // FHS-500 — add-member now lives on the Family Overview (FHS-498), so the
+  // profile dropdown no longer carries a "+" or an "Add member" button.
+  it('the profile dropdown has no add-member controls (FHS-500)', async () => {
     renderAt('/t/khans/dashboard');
     fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
-    fireEvent.click(screen.getByTestId('dashboard-profile-add-member'));
-    await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
-    expect(screen.getByTestId('location-search').textContent).toBe('?add=member');
-  });
-
-  // FHS-471 — a tester read the whole dropdown as "my profile" and never
-  // noticed the bottom "Add Child" button as a family-wide action. A
-  // second "+" now sits right next to the member list itself, and it
-  // shows even for a brand-new family with zero children yet.
-  it('the "+" next to the member list also opens the add-member flow', async () => {
-    renderAt('/t/khans/dashboard');
-    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
-    fireEvent.click(screen.getByTestId('dashboard-profile-add-member-plus'));
-    await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
-    expect(screen.getByTestId('location-search').textContent).toBe('?add=member');
+    expect(screen.queryByTestId('dashboard-profile-add-member')).toBeNull();
+    expect(screen.queryByTestId('dashboard-profile-add-member-plus')).toBeNull();
+    // Manage members stays.
+    expect(screen.getByTestId('dashboard-profile-manage-members')).toBeInTheDocument();
   });
 
   it('Manage members item navigates to the members page (FHS-273)', async () => {
