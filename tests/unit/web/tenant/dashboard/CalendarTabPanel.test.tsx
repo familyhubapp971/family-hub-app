@@ -723,6 +723,78 @@ describe('<CalendarTabPanel />', () => {
       expect(body.date).toBe('2026-01-05');
     });
 
+    it('deleting a recurring occurrence warns it removes the whole series (FHS-476)', async () => {
+      installApi({
+        events: [
+          ev({
+            id: 'series-del',
+            title: 'Tennis',
+            isRecurring: true,
+            recurrenceDays: [weekdayOfIso(mondayIso())],
+            recurrenceEndDate: null,
+          }),
+        ],
+      });
+      renderAt('/t/khans/dashboard');
+      await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+      act(() => {
+        fireEvent.click(screen.getByTestId(`calendar-delete-series-del-${mondayIso()}`));
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId('calendar-delete-confirm')).toBeInTheDocument(),
+      );
+      expect(screen.getByTestId('calendar-delete-confirm-message').textContent).toMatch(
+        /whole repeating activity/i,
+      );
+    });
+
+    it('un-checking Repeat weekly makes a one-off on ITS day, not the anchor (FHS-476)', async () => {
+      installApi({
+        events: [
+          ev({
+            id: 'series-un',
+            title: 'Piano',
+            isRecurring: true,
+            recurrenceDays: [2, 4],
+            recurrenceEndDate: '2026-12-31',
+            seriesStartDate: '2026-01-05',
+          }),
+        ],
+      });
+      renderAt('/t/khans/dashboard');
+      await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
+
+      const key = `series-un-${mondayIso()}`;
+      act(() => {
+        fireEvent.click(screen.getByTestId(`calendar-edit-${key}`));
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId('calendar-edit-recurring-confirm')).toBeInTheDocument(),
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('calendar-edit-recurring-confirm-confirm'));
+      });
+      // Turn OFF the repeat, making this occurrence a plain one-off.
+      act(() => {
+        fireEvent.click(screen.getByTestId('calendar-form-repeat-toggle'));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('calendar-form-save'));
+      });
+
+      const putCall = fetchMock.mock.calls.find(
+        ([url, init]) => String(url).includes('/api/events/series-un') && init?.method === 'PUT',
+      );
+      const body = JSON.parse((putCall![1] as RequestInit).body as string) as {
+        date: string;
+        recurrenceDays: number[] | null;
+      };
+      expect(body.recurrenceDays).toBeNull();
+      // The day the parent was looking at — NOT the 2026-01-05 series anchor.
+      expect(body.date).toBe(mondayIso());
+    });
+
     it('cancelling the edit-series confirm leaves the form closed', async () => {
       const seriesEv = ev({
         id: 'series-3',

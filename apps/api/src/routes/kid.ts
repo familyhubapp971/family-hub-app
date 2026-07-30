@@ -88,6 +88,7 @@ import {
   listCertificates as listLogicCertificates,
 } from '../lib/logic-progress.js';
 import { getLogicQuestions, isLogicGameType, isLogicDifficulty } from '../lib/logic-questions.js';
+import { weekdayOfIso } from '../lib/recurrence.js';
 
 // FHS-395 — response schemas exported for OpenAPI registry.
 import { z as _z } from 'zod';
@@ -576,14 +577,22 @@ export const kidRouter = new Hono()
       )
       .orderBy(asc(events.date), asc(events.startTime));
     // FHS-476 — the kid schedule doesn't expand recurring series across
-    // weeks yet (follow-up); it still shows a repeating activity's own
-    // anchor row when that falls in the requested week, with the series
-    // metadata attached so the client can render a "repeats" hint.
-    const eventsOut = rows.map((r) => ({
-      ...r,
-      isRecurring: !!(r.recurrenceDays && r.recurrenceDays.length > 0),
-      seriesStartDate: r.date,
-    }));
+    // weeks yet (follow-up FHS-495); it still shows a repeating activity's
+    // own anchor row when that falls in the requested week. But a recurring
+    // row's anchor day only counts if its own weekday is one of the chosen
+    // days (matching the parent-side rule) — otherwise a Tue/Thu series would
+    // wrongly appear on its Monday anchor.
+    const eventsOut = rows
+      .filter((r) =>
+        r.recurrenceDays && r.recurrenceDays.length > 0
+          ? r.recurrenceDays.includes(weekdayOfIso(r.date))
+          : true,
+      )
+      .map((r) => ({
+        ...r,
+        isRecurring: !!(r.recurrenceDays && r.recurrenceDays.length > 0),
+        seriesStartDate: r.date,
+      }));
     return c.json(listEventsResponseSchema.parse({ weekStart, events: eventsOut }));
   })
   // FHS-366 — the kid's journal for a day (or null) + the day's quote index.

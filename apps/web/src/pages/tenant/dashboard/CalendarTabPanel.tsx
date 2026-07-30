@@ -303,8 +303,11 @@ export function CalendarTabPanel() {
       draft.repeatWeekly && draft.repeatEndDate ? draft.repeatEndDate : null;
     // Editing a non-anchor occurrence of a recurring series must PUT the
     // series' real start date, not the day the form happened to open on
-    // (see DraftForm.anchorDate).
-    const outgoingDate = editingId && draft.anchorDate ? draft.anchorDate : draft.date;
+    // (see DraftForm.anchorDate). BUT if the user un-checks "Repeat weekly"
+    // to turn this occurrence into a one-off, keep the day they were looking
+    // at — otherwise the event silently jumps back to the old series anchor.
+    const outgoingDate =
+      editingId && draft.anchorDate && draft.repeatWeekly ? draft.anchorDate : draft.date;
     savingRef.current = true;
     setSaving(true);
     setSaveError(null);
@@ -372,7 +375,11 @@ export function CalendarTabPanel() {
   const [pendingEditConfirm, setPendingEditConfirm] = useState<EventItem | null>(null);
 
   // App-styled delete confirmation (replaces window.confirm).
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    title: string;
+    isRecurring: boolean;
+  } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const confirmDelete = useCallback(async () => {
@@ -718,7 +725,13 @@ export function CalendarTabPanel() {
                                 type="button"
                                 aria-label={`Delete ${ev.title}`}
                                 data-testid={`calendar-delete-${key}`}
-                                onClick={() => setPendingDelete({ id: ev.id, title: ev.title })}
+                                onClick={() =>
+                                  setPendingDelete({
+                                    id: ev.id,
+                                    title: ev.title,
+                                    isRecurring: ev.isRecurring,
+                                  })
+                                }
                                 className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-red-500 hover:text-red-600"
                               >
                                 <Trash2 size={12} aria-hidden="true" />
@@ -807,7 +820,11 @@ export function CalendarTabPanel() {
       <ConfirmDialog
         isOpen={pendingDelete !== null}
         title={pendingDelete ? `Delete "${pendingDelete.title}"?` : ''}
-        message="This activity will be removed from the calendar."
+        message={
+          pendingDelete?.isRecurring
+            ? 'This deletes the whole repeating activity — every day it repeats on, not just this one.'
+            : 'This activity will be removed from the calendar.'
+        }
         confirmLabel="Delete"
         variant="danger"
         busy={deleting}
