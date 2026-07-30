@@ -495,5 +495,14 @@ describeFeature(feature, ({ Background, Scenario }) => {
         expect(Number(rows[0]?.count)).toBe(1);
       },
     );
+
+    // Prove the grant actually persisted as admin — not silently downgraded.
+    And('that invitation was persisted with role {string}', async (_ctx, role: string) => {
+      const { rows } = await db.execute<{ role: string }>(
+        sql`SELECT role FROM pending_invitations
+              WHERE email = 'partner@example.com' AND status = 'pending'`,
+      );
+      expect(rows[0]?.role).toBe(role);
+    });
   });
 });

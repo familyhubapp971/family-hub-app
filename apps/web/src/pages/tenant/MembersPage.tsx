@@ -574,7 +574,8 @@ function InviteMemberForm({
             id="invite-member-role"
             value={role}
             onChange={(e) => setRole(e.target.value as InviteRole)}
-            data-testid="members-invite-role"
+            aria-describedby="members-invite-role-help"
+            testId="members-invite-role"
           >
             {INVITE_ROLE_OPTIONS.map((r) => (
               <option key={r.value} value={r.value}>
@@ -619,7 +620,11 @@ function InviteMemberForm({
           </Button>
         </div>
       </form>
-      <p className="mt-3 text-xs font-bold text-gray-500" data-testid="members-invite-role-help">
+      <p
+        id="members-invite-role-help"
+        className="mt-3 text-xs font-bold text-gray-500"
+        data-testid="members-invite-role-help"
+      >
         {INVITE_ROLE_HELP[role]}
       </p>
       {error && (

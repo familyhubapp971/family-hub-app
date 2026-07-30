@@ -50,3 +50,4 @@ Feature: POST /api/invitations (FHS-91)
     When the inviter POSTs an invitation for "partner@example.com" as "admin"
     Then the response status is 201
     And exactly 1 row exists in pending_invitations with email "partner@example.com" and status "pending"
+    And that invitation was persisted with role "admin"

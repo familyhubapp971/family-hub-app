@@ -205,8 +205,15 @@ describe('FHS-91 — POST /api/invitations', () => {
   it('an admin caller CAN invite someone as admin (co-admin)', async () => {
     const app = buildAppWithSeed({ callerRole: 'admin' });
     const inv = fixedInvitation({ role: 'admin', email: 'partner@example.com' });
+    // Capture the persisted row (not just the echoed fixture) so the test
+    // actually proves the handler wrote role: 'admin' to the DB — otherwise
+    // a regression that silently downgraded the grant to 'adult' would pass.
+    let insertedValues: unknown = null;
     dbMock.insert.mockReturnValue({
-      values: () => ({ returning: () => Promise.resolve([inv]) }),
+      values: (val: unknown) => {
+        insertedValues = val;
+        return { returning: () => Promise.resolve([inv]) };
+      },
     });
     dbMock.update.mockReturnValue({
       set: () => ({ where: () => Promise.resolve() }),
@@ -221,6 +228,11 @@ describe('FHS-91 — POST /api/invitations', () => {
     expect(res.status).toBe(201);
     const body = (await res.json()) as { invitation: { role: string } };
     expect(body.invitation.role).toBe('admin');
+    // The DB write and the Supabase invite metadata both carry role: 'admin'.
+    expect(insertedValues).toMatchObject({ tenantId: TENANT_ID, role: 'admin' });
+    expect(inviteUserByEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ role: 'admin' }) }),
+    );
   });
 
   it('returns 409 when the same email already has a pending invite (unique-violation)', async () => {
