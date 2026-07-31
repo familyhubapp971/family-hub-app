@@ -50,6 +50,7 @@ Drafted / scoped:
 - [role-permissions.md](role-permissions.md) — role matrix + invite roles/admin-grant + invite default (FHS-485/486/524; ADR 0019)
 - [reward-economy.md](reward-economy.md) — sticker rate, habit boosts, skip penalty (FHS-512/488/489; ADR 0020)
 - [child-world.md](child-world.md) — per-child screen + its header/nav (FHS-268/401/523)
+- [getting-started.md](getting-started.md) — first-run setup guide card on the dashboard (FHS-511)
 
 Placeholder docs (to be filled as the corresponding features are scoped):
 
