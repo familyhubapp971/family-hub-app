@@ -148,7 +148,7 @@ describe('<MealsTabPanel />', () => {
     expect(urls.some((u) => u.endsWith('/api/members'))).toBe(true);
   });
 
-  it('renders 7 day cards, a legend, and All/Family/member filter pills', async () => {
+  it('renders 7 day cards, a legend, and All/member filter pills (no Family chip)', async () => {
     installApi({ members: MEMBERS });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
@@ -158,7 +158,8 @@ describe('<MealsTabPanel />', () => {
     expect(screen.getByTestId('meals-legend')).toBeInTheDocument();
     expect(screen.getByTestId('meals-week-range')).toBeInTheDocument();
     expect(screen.getByTestId('meals-filter-all')).toBeInTheDocument();
-    expect(screen.getByTestId('meals-filter-family')).toBeInTheDocument();
+    // FHS-525 — the "Family" chip is gone; "All" now means everyone.
+    expect(screen.queryByTestId('meals-filter-family')).not.toBeInTheDocument();
     expect(screen.getByTestId(`meals-filter-${ALI}`)).toBeInTheDocument();
     // Empty day still shows its Add Meal button.
     expect(screen.getByTestId('meals-add-mon')).toBeInTheDocument();
@@ -206,7 +207,7 @@ describe('<MealsTabPanel />', () => {
     expect(screen.queryByTestId('meals-meal-m2-recurring')).not.toBeInTheDocument();
   });
 
-  it('filter pills narrow the view by exact owner (All / Family / member)', async () => {
+  it('filter pills narrow the view by exact owner (All = everyone; member = only theirs)', async () => {
     installApi({
       members: MEMBERS,
       meals: [
@@ -247,12 +248,15 @@ describe('<MealsTabPanel />', () => {
     expect(screen.queryByTestId('meals-meal-fam-name')).not.toBeInTheDocument();
     expect(screen.queryByTestId('meals-meal-sara-name')).not.toBeInTheDocument();
 
-    // Family pill → only whole-family meals.
+    // "All" → everyone: family-wide + every member's meals (FHS-525).
     act(() => {
-      fireEvent.click(screen.getByTestId('meals-filter-family'));
+      fireEvent.click(screen.getByTestId('meals-filter-all'));
     });
     expect(screen.getByTestId('meals-meal-fam-name')).toBeInTheDocument();
-    expect(screen.queryByTestId('meals-meal-ali-name')).not.toBeInTheDocument();
+    expect(screen.getByTestId('meals-meal-ali-name')).toBeInTheDocument();
+    expect(screen.getByTestId('meals-meal-sara-name')).toBeInTheDocument();
+    // No Family chip exists to click.
+    expect(screen.queryByTestId('meals-filter-family')).not.toBeInTheDocument();
   });
 
   it('adding a meal POSTs day/slot/name/memberId/recurring and shows it after refetch', async () => {
@@ -593,14 +597,12 @@ describe('<MealsTabPanel />', () => {
     ).toContain('Sara');
   });
 
-  it('pre-fills the editor who-for as Everyone under the Family or All filter', async () => {
+  it('pre-fills the editor who-for as Everyone under the All filter (FHS-525)', async () => {
     installApi({ members: MEMBERS });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('meals-ready')).toBeInTheDocument());
 
-    act(() => {
-      fireEvent.click(screen.getByTestId('meals-filter-family'));
-    });
+    // Default filter is "All" → a new meal defaults to Everyone (family-wide).
     act(() => {
       fireEvent.click(screen.getByTestId('meals-add-mon'));
     });

@@ -150,8 +150,9 @@ function labelFor(memberId: string | null, members: MemberLite[]): string {
 // FHS-477 — shared by the day-grid filter and the just-saved-meal check
 // below, so both agree on what "matches the active filter" means.
 function matchesFilter(memberId: string | null, filter: string): boolean {
+  // FHS-525 — "all" means everyone (assigned + family-wide); the separate
+  // "Family" chip is gone, so any other value is a specific member id.
   if (filter === 'all') return true;
-  if (filter === 'family') return memberId === null;
   return memberId === filter;
 }
 
@@ -214,7 +215,7 @@ export function MealsTabPanel() {
   const slug = useTenantSlug();
   const { session } = useAuth();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
-  const [filter, setFilter] = useState<string>('all'); // 'all' | 'family' | memberId
+  const [filter, setFilter] = useState<string>('all'); // 'all' | memberId (FHS-525)
   const [editor, setEditor] = useState<Editor | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -439,12 +440,6 @@ export function MealsTabPanel() {
             onClick={() => setFilter('all')}
             label="All"
           />
-          <FilterPill
-            testId="meals-filter-family"
-            active={filter === 'family'}
-            onClick={() => setFilter('family')}
-            label="Family"
-          />
           {members.map((m) => (
             <FilterPill
               key={m.id}
@@ -578,7 +573,7 @@ export function MealsTabPanel() {
                           mealId: null,
                           slot: 'snack',
                           name: '',
-                          memberId: filter === 'all' || filter === 'family' ? null : filter,
+                          memberId: filter === 'all' ? null : filter,
                           recurring: false,
                         });
                       }}
@@ -617,7 +612,7 @@ export function MealsTabPanel() {
                         mealId: null,
                         slot: defaultMealSlot(),
                         name: '',
-                        memberId: filter === 'all' || filter === 'family' ? null : filter,
+                        memberId: filter === 'all' ? null : filter,
                         recurring: false,
                       });
                     }}
