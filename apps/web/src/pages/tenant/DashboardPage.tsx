@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Card } from '@familyhub/ui';
 import { getKidToken, useAuth } from '../../lib/auth-context';
 import { KidDashboardShell } from './KidDashboardShell';
+import { GetStarted } from './dashboard/GetStarted';
 import { TodayTabPanel } from './dashboard/TodayTabPanel';
 import { MealsTabPanel } from './dashboard/MealsTabPanel';
 import { CalendarTabPanel } from './dashboard/CalendarTabPanel';
@@ -82,7 +83,11 @@ function ParentDashboard() {
               redesigned keep the white card until their own MP rebuild
               lands. */}
           {active.id === 'home' ? (
-            <TodayTabPanel />
+            <>
+              {/* FHS-511 — first-run setup guide above the Today content. */}
+              <GetStarted />
+              <TodayTabPanel />
+            </>
           ) : active.id === 'calendar' ? (
             <CalendarTabPanel />
           ) : active.id === 'meals' ? (
