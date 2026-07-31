@@ -448,10 +448,24 @@ describe('<MembersPage />', () => {
       await waitFor(() => expect(screen.getByTestId('members-invite-adult')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('members-invite-adult'));
       expect(screen.getByTestId('members-invite-form')).toBeInTheDocument();
-      expect((screen.getByTestId('members-invite-role') as HTMLSelectElement).value).toBe('adult');
-      const options = screen.getByTestId('members-invite-role').querySelectorAll('option');
-      const labels = Array.from(options).map((o) => o.textContent);
-      expect(labels).toEqual(['Parent / partner', 'Adult', 'Guest']);
+      // Default selection is the Adult card.
+      expect(screen.getByTestId('members-invite-role-adult')).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      expect(screen.getByTestId('members-invite-role-admin')).toHaveAttribute(
+        'aria-checked',
+        'false',
+      );
+      // Exactly 3 role cards, in design order — no Teen card on this form.
+      const cards = screen.getAllByTestId(/^members-invite-role-/);
+      expect(cards.map((c) => c.getAttribute('data-testid'))).toEqual([
+        'members-invite-role-admin',
+        'members-invite-role-adult',
+        'members-invite-role-guest',
+      ]);
+      expect(screen.getByText('Parent / partner')).toBeInTheDocument();
+      expect(screen.getByText('Guest')).toBeInTheDocument();
     });
 
     it('hides the admin-only "Parent / partner" option for a non-admin caller', async () => {
@@ -501,7 +515,7 @@ describe('<MembersPage />', () => {
       await waitFor(() => expect(screen.getByTestId('members-invite-adult')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('members-invite-adult'));
 
-      fireEvent.change(screen.getByTestId('members-invite-role'), { target: { value: 'admin' } });
+      fireEvent.click(screen.getByTestId('members-invite-role-admin'));
       fireEvent.change(screen.getByTestId('members-invite-email'), {
         target: { value: 'partner@example.com' },
       });
@@ -569,18 +583,25 @@ describe('<MembersPage />', () => {
       await waitFor(() => expect(screen.getByTestId('members-add-child')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('members-add-child'));
       expect(screen.getByTestId('members-add-child-form')).toBeInTheDocument();
-      expect((screen.getByTestId('members-add-child-role') as HTMLSelectElement).value).toBe(
-        'child',
+      // Default selection is the Child card.
+      expect(screen.getByTestId('members-add-child-role-child')).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      expect(screen.getByTestId('members-add-child-role-teen')).toHaveAttribute(
+        'aria-checked',
+        'false',
       );
       expect(screen.getByTestId('members-add-child-name')).toBeInTheDocument();
       expect(screen.getByTestId('members-add-child-age')).toBeInTheDocument();
       expect(screen.getByTestId('members-add-child-emoji')).toBeInTheDocument();
-      // No "Adult" option any more — the plain no-login adult path moved
-      // to Invite.
-      const options = Array.from(
-        screen.getByTestId('members-add-child-role').querySelectorAll('option'),
-      ).map((o) => o.textContent);
-      expect(options).toEqual(['Child', 'Teen']);
+      // No "Adult" card any more — the plain no-login adult path moved
+      // to Invite. Exactly the Child + Teen cards render.
+      const cards = screen.getAllByTestId(/^members-add-child-role-/);
+      expect(cards.map((c) => c.getAttribute('data-testid'))).toEqual([
+        'members-add-child-role-child',
+        'members-add-child-role-teen',
+      ]);
     });
 
     it('picking Teen creates a teen member (name + age, no login)', async () => {
@@ -589,9 +610,7 @@ describe('<MembersPage />', () => {
       await waitFor(() => expect(screen.getByTestId('members-add-child')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('members-add-child'));
 
-      fireEvent.change(screen.getByTestId('members-add-child-role'), {
-        target: { value: 'teen' },
-      });
+      fireEvent.click(screen.getByTestId('members-add-child-role-teen'));
       fireEvent.change(screen.getByTestId('members-add-child-name'), {
         target: { value: 'Zayd' },
       });
