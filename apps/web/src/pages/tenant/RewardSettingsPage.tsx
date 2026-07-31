@@ -276,7 +276,7 @@ export function RewardSettingsPage() {
         <div className="mb-4">
           <Link
             to={`/t/${slug}/dashboard`}
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-purple-700 hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm font-bold text-purple-200 hover:text-white"
             data-testid="reward-settings-back-link"
           >
             <ArrowLeft size={16} aria-hidden="true" /> Back to dashboard
@@ -291,10 +291,10 @@ export function RewardSettingsPage() {
             <Coins size={22} aria-hidden="true" />
           </span>
           <div>
-            <h1 className="font-heading text-2xl uppercase tracking-wide text-gray-900 sm:text-3xl">
+            <h1 className="font-heading text-2xl uppercase tracking-wide text-white sm:text-3xl">
               Reward settings
             </h1>
-            <p className="text-sm font-medium text-gray-500">
+            <p className="text-sm font-medium text-purple-200">
               Set how much your kids earn for their habits.
             </p>
           </div>

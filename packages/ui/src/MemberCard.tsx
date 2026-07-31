@@ -37,33 +37,35 @@ export function MemberCard({
 }: MemberCardProps) {
   return (
     <Card
-      className={`flex h-full flex-col bg-white p-5 ${className}`.trim()}
+      className={`flex h-full flex-col bg-white p-5 sm:p-6 ${className}`.trim()}
       {...(testId ? { testId } : {})}
     >
-      <div className="mb-3 flex items-start gap-4">
-        <AvatarDisc role={role} name={name} emoji={avatarEmoji} />
-        <div className="min-w-0 flex-1 pt-1">
-          <h3
-            className="truncate font-heading text-xl text-black"
-            data-testid={testId ? `${testId}-name` : undefined}
-          >
-            {name}
-          </h3>
-          {statusLine && (
-            <p
-              className="mt-0.5 truncate text-xs font-bold text-gray-500"
-              data-testid={testId ? `${testId}-status` : undefined}
+      <div className="mb-3 flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <AvatarDisc role={role} name={name} emoji={avatarEmoji} />
+          <div className="min-w-0 pt-1">
+            <h3
+              className="truncate font-heading text-xl text-black"
+              data-testid={testId ? `${testId}-name` : undefined}
             >
-              {statusLine}
-            </p>
-          )}
-          <div className="mt-1">{badge}</div>
+              {name}
+            </h3>
+            {statusLine && (
+              <p
+                className="mt-0.5 truncate text-sm font-bold text-gray-500"
+                data-testid={testId ? `${testId}-status` : undefined}
+              >
+                {statusLine}
+              </p>
+            )}
+          </div>
         </div>
+        <div className="shrink-0 pt-1">{badge}</div>
       </div>
       {children}
       <div className="flex-1" />
       {footer && (
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t-2 border-gray-100 pt-4">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t-2 border-dashed border-gray-200 pt-4">
           {footer}
         </div>
       )}

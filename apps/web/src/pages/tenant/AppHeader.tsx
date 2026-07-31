@@ -3,8 +3,8 @@
 // Encapsulates:
 //  • FamilyHero brand area (family-initial disc + name + members-active pulse)
 //  • TopNav with the six dashboard tabs + per-tab badges
-//  • ProfilePill dropdown (child links, Add member, Manage Members)
-//  • Logout button
+//  • ProfilePill dropdown (child links, Manage family, Reward settings,
+//    and a Log out button at the bottom of the menu — FHS-520)
 //
 // Self-fetches family name + members + Tasks badge from /api/me +
 // /api/dashboard/today. Listens to fh:dashboard-stale (FHS-309) to
@@ -137,6 +137,8 @@ function ProfilePill({
   childMembers,
   onManageMembers,
   onRewardSettings,
+  onLogout,
+  signingOut,
   slug,
 }: {
   parentName: string;
@@ -144,6 +146,8 @@ function ProfilePill({
   childMembers: DashboardMember[];
   onManageMembers: () => void;
   onRewardSettings: () => void;
+  onLogout: () => void;
+  signingOut: boolean;
   slug: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -318,6 +322,25 @@ function ProfilePill({
               Reward settings
             </button>
           </div>
+          {/* FHS-520 (design-fidelity) — Log out now lives at the bottom of
+              this dropdown (not a separate top-nav button) to match the
+              Magic Patterns mock. */}
+          <div className="border-t-2 border-black bg-gray-50 p-3">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onLogout();
+              }}
+              disabled={signingOut}
+              data-testid="dashboard-logout"
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border-2 border-black bg-red-500 font-heading text-base text-white shadow-neo-xs transition-transform hover:bg-red-600 disabled:opacity-50 motion-safe:hover:-translate-y-0.5"
+            >
+              <LogOut size={16} strokeWidth={3} aria-hidden="true" />
+              {signingOut ? 'Signing out…' : 'Log out'}
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -465,27 +488,16 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
       activeTab={activeTab ?? ''}
       onTabChange={onTabChange}
       rightSlot={
-        <>
-          <ProfilePill
-            parentName={parentName}
-            role={callerRole}
-            childMembers={childMembers}
-            onManageMembers={onManageMembers}
-            onRewardSettings={onRewardSettings}
-            slug={slug}
-          />
-          <button
-            type="button"
-            onClick={() => void onLogout()}
-            disabled={signingOut}
-            aria-label="Logout"
-            data-testid="dashboard-logout"
-            className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-red-500 px-4 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-red-600 disabled:opacity-50 motion-safe:hover:-translate-y-0.5"
-          >
-            <LogOut size={16} strokeWidth={3} aria-hidden="true" />
-            <span className="hidden sm:inline">{signingOut ? 'Signing out…' : 'Logout'}</span>
-          </button>
-        </>
+        <ProfilePill
+          parentName={parentName}
+          role={callerRole}
+          childMembers={childMembers}
+          onManageMembers={onManageMembers}
+          onRewardSettings={onRewardSettings}
+          onLogout={() => void onLogout()}
+          signingOut={signingOut}
+          slug={slug}
+        />
       }
       testId="dashboard-nav"
     />

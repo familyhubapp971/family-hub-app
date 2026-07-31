@@ -110,13 +110,13 @@ describe('<TodayTabPanel />', () => {
     expect(screen.getByTestId('today-activity-empty')).toBeInTheDocument();
   });
 
-  it('has a prominent Add-member button in the Family Overview header (FHS-498/501)', async () => {
+  it('has a prominent "Manage family" button in the Family Overview header (FHS-520)', async () => {
     mockJson(makeResponse());
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('today-ready')).toBeInTheDocument());
     const add = screen.getByTestId('today-add-member');
-    expect(add.textContent).toMatch(/Add member/i);
-    expect(add.getAttribute('href')).toBe('/t/khans/members?add=member');
+    expect(add.textContent).toMatch(/Manage family/i);
+    expect(add.getAttribute('href')).toBe('/t/khans/members');
     // Manage members moved to the account dropdown — no longer in the header.
     expect(screen.queryByTestId('today-manage-members')).toBeNull();
   });
