@@ -59,9 +59,31 @@ const HABITS = [
   },
 ];
 
-function installApi(overrides: { callerRole?: string; rewardConfig?: typeof REWARD_CONFIG } = {}) {
+const HABIT_ID_2 = 'habit-uuid-bbbb';
+const HABITS_TWO = [
+  ...HABITS,
+  {
+    id: HABIT_ID_2,
+    name: 'Make the bed',
+    description: null,
+    color: '#38bdf8',
+    icon: null,
+    isBonus: false,
+    boost: 2,
+    skipPenaltyMinor: 25,
+  },
+];
+
+function installApi(
+  overrides: {
+    callerRole?: string;
+    rewardConfig?: typeof REWARD_CONFIG;
+    habits?: typeof HABITS;
+  } = {},
+) {
   const callerRole = overrides.callerRole ?? 'admin';
   const rewardConfig = overrides.rewardConfig ?? REWARD_CONFIG;
+  const habitsData = overrides.habits ?? HABITS;
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url);
     if (/\/api\/me(\?|$)/.test(u))
@@ -92,11 +114,11 @@ function installApi(overrides: { callerRole?: string; rewardConfig?: typeof REWA
         status: 200,
         json: async () => ({ members: MEMBERS, callerRole }),
       });
-    if (u.includes(`/api/habits/${HABIT_ID}`) && init?.method === 'PUT') {
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...HABITS[0] }) });
+    if (u.includes('/api/habits/') && init?.method === 'PUT') {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...habitsData[0] }) });
     }
     if (u.includes('/api/habits'))
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: HABITS }) });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: habitsData }) });
     return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
   });
 }
@@ -268,12 +290,48 @@ describe('<RewardSettingsPage />', () => {
     });
   });
 
-  it('lists a habit and lets the admin set its boost, showing the live payout preview', async () => {
+  it("pre-selects the family's only habit and shows its name + boost picker without an extra tap", async () => {
     renderAt();
     await waitFor(() =>
-      expect(screen.getByTestId(`reward-settings-habit-${HABIT_ID}`)).toBeInTheDocument(),
+      expect(screen.getByTestId('reward-settings-habit-name').textContent).toBe('Read a book'),
     );
-    fireEvent.click(screen.getByTestId(`reward-settings-habit-${HABIT_ID}`));
+    expect(screen.getByTestId('reward-settings-boost-1')).toBeInTheDocument();
+    // Only one habit → no dropdown needed.
+    expect(screen.queryByTestId('reward-settings-habit-select')).toBeNull();
+  });
+
+  it('shows a habit picker when the child has more than one habit, and Save targets the picked habit', async () => {
+    installApi({ habits: HABITS_TWO });
+    renderAt();
+    // Defaults to the first habit's own saved boost (1x).
+    await waitFor(() =>
+      expect(screen.getByTestId('reward-settings-boost-1')).toHaveAttribute('aria-pressed', 'true'),
+    );
+
+    fireEvent.change(screen.getByTestId('reward-settings-habit-select'), {
+      target: { value: HABIT_ID_2 },
+    });
+    // Switches to the second habit's own saved boost (2x) — not a shared value.
+    await waitFor(() =>
+      expect(screen.getByTestId('reward-settings-boost-2')).toHaveAttribute('aria-pressed', 'true'),
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reward-settings-save-btn'));
+    });
+
+    await waitFor(() => {
+      const putCall = fetchMock.mock.calls.find(
+        ([url, init]) =>
+          String(url).includes(`/api/habits/${HABIT_ID_2}`) &&
+          (init as RequestInit | undefined)?.method === 'PUT',
+      );
+      expect(putCall).toBeDefined();
+    });
+  });
+
+  it('lets the admin set the boost, showing the live payout preview', async () => {
+    renderAt();
     await waitFor(() => expect(screen.getByTestId('reward-settings-boost-3')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('reward-settings-boost-3'));
     // Family rate 0.50 * boost 3 = AED 1.50.
@@ -284,10 +342,6 @@ describe('<RewardSettingsPage />', () => {
 
   it('choosing the skip-penalty option reveals the penalty amount picker', async () => {
     renderAt();
-    await waitFor(() =>
-      expect(screen.getByTestId(`reward-settings-habit-${HABIT_ID}`)).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByTestId(`reward-settings-habit-${HABIT_ID}`));
     await waitFor(() =>
       expect(screen.getByTestId('reward-settings-skip-penalty')).toBeInTheDocument(),
     );
@@ -300,10 +354,6 @@ describe('<RewardSettingsPage />', () => {
 
   it('Save PUTs the habit boost + skipPenaltyMinor as integers', async () => {
     renderAt();
-    await waitFor(() =>
-      expect(screen.getByTestId(`reward-settings-habit-${HABIT_ID}`)).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByTestId(`reward-settings-habit-${HABIT_ID}`));
     await waitFor(() => expect(screen.getByTestId('reward-settings-boost-5')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('reward-settings-boost-5'));
     fireEvent.click(screen.getByTestId('reward-settings-skip-penalty'));
@@ -335,12 +385,8 @@ describe('<RewardSettingsPage />', () => {
     });
   });
 
-  it('choosing "Nothing" sends skipPenaltyMinor: 0 even if a penalty amount was set earlier', async () => {
+  it('choosing "Nothing happens" sends skipPenaltyMinor: 0 even if a penalty amount was set earlier', async () => {
     renderAt();
-    await waitFor(() =>
-      expect(screen.getByTestId(`reward-settings-habit-${HABIT_ID}`)).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByTestId(`reward-settings-habit-${HABIT_ID}`));
     await waitFor(() =>
       expect(screen.getByTestId('reward-settings-skip-penalty')).toBeInTheDocument(),
     );

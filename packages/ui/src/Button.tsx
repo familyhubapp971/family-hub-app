@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'pink';
   size?: 'sm' | 'md' | 'lg';
   /** When true, the button stretches to fill its container width (adds `w-full`). */
   fullWidth?: boolean;
@@ -41,6 +41,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
       'bg-transparent border-transparent shadow-none text-white hover:bg-white/10 motion-safe:hover:translate-y-0 motion-safe:hover:shadow-none',
     danger: 'bg-red-500 text-white shadow-neo hover:bg-red-400',
     success: 'bg-lime-400 text-black shadow-neo hover:bg-lime-300',
+    pink: 'bg-pink-400 text-black shadow-neo hover:bg-pink-300',
   };
   const sizes = {
     sm: 'px-2.5 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm',
