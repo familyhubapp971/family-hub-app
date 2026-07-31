@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  Check,
   Copy,
   Edit2,
   Key,
@@ -758,41 +759,71 @@ function KidLoginHelp({ slug, kidsCount }: { slug: string; kidsCount: number }) 
       tileClassName="bg-purple-300"
       testId="members-kid-login-share"
     >
-      <p className="mb-3 font-body text-sm text-gray-700">
-        Share this with your kid so they can sign in on their own device. They can open the link
-        below, or type the family code{' '}
-        <code
-          className="rounded border-2 border-black bg-white px-1.5 py-0.5 font-mono text-xs font-bold"
-          data-testid="members-kid-login-code"
-        >
-          {slug}
-        </code>{' '}
-        on the &ldquo;I&rsquo;m a Kid&rdquo; tab at <span className="font-semibold">/login</span>.
-      </p>
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <code
-          className="flex-1 truncate rounded-lg border-2 border-black bg-white px-3 py-2.5 font-mono text-xs text-gray-800 sm:text-sm"
-          data-testid="members-kid-login-url"
-        >
-          {kidLoginUrl}
-        </code>
-        <Button
-          type="button"
-          variant="secondary"
-          size="md"
-          onClick={onCopy}
-          testId="members-kid-login-copy"
-          className="w-full sm:w-auto"
-        >
-          <Copy size={16} aria-hidden="true" /> {copied ? 'Copied!' : 'Copy link'}
-        </Button>
-      </div>
-      <ol className="list-inside list-decimal space-y-1 text-sm font-bold text-gray-700">
-        <li>Open the link above, or go to /login on their device.</li>
-        <li>Tap &ldquo;I&rsquo;m a Kid&rdquo; and enter the family code.</li>
-        <li>Pick their name and type their PIN.</li>
+      {/* FHS-521 — the design's 3 numbered steps, not a prose paragraph. */}
+      <ol className="space-y-3">
+        <KidLoginStep number="1" title="Open the kid login page">
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <code
+              className="flex min-h-[48px] flex-1 items-center break-all rounded-xl border-2 border-black bg-gray-50 px-3 text-sm font-bold text-gray-800"
+              data-testid="members-kid-login-url"
+            >
+              {kidLoginUrl}
+            </code>
+            <button
+              type="button"
+              onClick={() => void onCopy()}
+              data-testid="members-kid-login-copy"
+              className="flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-black bg-yellow-300 px-4 text-sm font-bold shadow-neo-xs transition-transform hover:-translate-y-0.5"
+            >
+              {copied ? (
+                <>
+                  <Check size={16} strokeWidth={3} aria-hidden="true" /> Copied
+                </>
+              ) : (
+                <>
+                  <Copy size={16} strokeWidth={3} aria-hidden="true" /> Copy link
+                </>
+              )}
+            </button>
+          </div>
+        </KidLoginStep>
+        <KidLoginStep number="2" title="Or type the family code">
+          <span
+            className="mt-2 inline-block rounded-xl border-2 border-black bg-purple-100 px-4 py-2 font-heading text-xl tracking-[0.2em]"
+            data-testid="members-kid-login-code"
+          >
+            {slug}
+          </span>
+        </KidLoginStep>
+        <KidLoginStep number="3" title="Then tap their face and enter their PIN">
+          <p className="mt-1 text-sm font-bold text-gray-500">Set each PIN on their card below.</p>
+        </KidLoginStep>
       </ol>
     </CollapsibleSection>
+  );
+}
+
+// FHS-521 — one numbered step in the "How your kids sign in" card, matching
+// the design (a yellow round number badge + title + content).
+function KidLoginStep({
+  number,
+  title,
+  children,
+}: {
+  number: string;
+  title: string;
+  children?: ReactNode;
+}) {
+  return (
+    <li className="flex gap-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-black bg-yellow-300 font-heading text-base">
+        {number}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="pt-1 font-heading text-base leading-tight">{title}</p>
+        {children}
+      </div>
+    </li>
   );
 }
 
