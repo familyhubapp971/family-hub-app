@@ -19,6 +19,7 @@ import { AdminPanelPage } from './pages/tenant/AdminPanelPage';
 import { MembersPage } from './pages/tenant/MembersPage';
 import { MePage } from './pages/tenant/MePage';
 import { OnboardingPage } from './pages/tenant/OnboardingPage';
+import { RewardSettingsPage } from './pages/tenant/RewardSettingsPage';
 
 // Top-level routing. AuthProvider wraps every route so useAuth() is
 // available everywhere — including the OAuth callback page that needs
@@ -110,6 +111,17 @@ export function App() {
               <ProtectedRoute>
                 <TenantProvider>
                   <AdminPanelPage />
+                </TenantProvider>
+              </ProtectedRoute>
+            }
+          />
+          {/* FHS-512 — "Pocket money" reward-config settings screen. */}
+          <Route
+            path="/t/:slug/reward-settings"
+            element={
+              <ProtectedRoute>
+                <TenantProvider>
+                  <RewardSettingsPage />
                 </TenantProvider>
               </ProtectedRoute>
             }

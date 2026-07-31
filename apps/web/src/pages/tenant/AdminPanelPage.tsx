@@ -56,11 +56,16 @@ interface MemberItem {
   isChild: boolean;
 }
 
+// FHS-512 — field names match the real GET /mw/weeks/:id/stats response
+// (previously `availableStickers`/`availableCash`, which don't exist on
+// that response — the sticker count silently read as 0). `cashValue` is
+// computed server-side at the child's configured rate, never a hardcoded 0.5.
 interface WeekStats {
-  availableStickers: number;
-  availableCash: number;
-  totalEarned: number;
   weekId: string;
+  totalStickers: number;
+  unallocatedStickers: number;
+  allocatedStickers: number;
+  cashValue: number;
 }
 
 interface CurrentWeek {
@@ -77,6 +82,9 @@ interface SavingsData {
   // FHS-441 — GET /api/mw/financial/savings already returns the family's
   // currency; the Savings tab previously ignored it and hardcoded "AED".
   currency?: string;
+  // FHS-512 — this child's effective (configurable) sticker rate; never
+  // hardcode 0.5 to convert saved stickers into a cash figure.
+  stickerRate?: number;
 }
 
 interface WeekRow {
@@ -822,8 +830,10 @@ function BalanceTab({
       </p>
     );
 
-  const stickers = stats?.availableStickers ?? 0;
-  const cashValue = (stickers * 0.5).toFixed(2);
+  const stickers = stats?.unallocatedStickers ?? 0;
+  // FHS-512 — cashValue comes straight from the API (rate applied server-side
+  // for this child), never recomputed client-side with a hardcoded 0.5.
+  const cashValue = (stats?.cashValue ?? 0).toFixed(2);
 
   return (
     <div
@@ -1050,7 +1060,9 @@ function SavingsTab({
 
   const savedCash = data?.savedCash ?? 0;
   const savedStickers = data?.savedStickers ?? 0;
-  const cashEquiv = (savedStickers * 0.5 + savedCash).toFixed(2);
+  // FHS-512 — this child's effective rate, never a hardcoded 0.5.
+  const stickerRate = data?.stickerRate ?? 0.5;
+  const cashEquiv = (savedStickers * stickerRate + savedCash).toFixed(2);
   // FHS-441 — GET /api/mw/financial/savings already returns the family's
   // currency; use it instead of a hardcoded "AED" so a family that changed
   // currency in App Info sees it reflected here too.
@@ -1127,7 +1139,10 @@ function SavingsTab({
         <p className="text-xs font-black text-orange-600 uppercase tracking-wide mb-1">
           Cash Equivalent
         </p>
-        <span className="text-3xl font-black text-orange-700">
+        <span
+          className="text-3xl font-black text-orange-700"
+          data-testid="admin-savings-cash-equivalent"
+        >
           {currency} {cashEquiv}
         </span>
       </Card>

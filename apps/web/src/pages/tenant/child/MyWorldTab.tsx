@@ -32,6 +32,12 @@ import { type MyWorldDataApi, kidDataApi, parentDataApi } from './myWorldApi';
 // FHS-292 — My World habit grid (legacy HabitTracker UI port).
 // Pixel / behaviour parity with the legacy HabitTracker component.
 
+// FIX 2 (BLOCKER) — a rate <= 0 must never be divided by (Infinity/NaN
+// stickers). Mirrors the api's cashAsStickers guard (apps/api/src/lib/myworld.ts).
+function stickersFromCash(cash: number, rate: number): number {
+  return rate <= 0 ? 0 : cash / rate;
+}
+
 // ── Re-exported for other modules / tests ────────────────────────────────────
 export function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -306,6 +312,9 @@ export function MyWorldTab(
   const [balance, setBalance] = useState(0);
   // Family currency (chosen at registration) for all cash labels.
   const [currency, setCurrency] = useState('USD');
+  // FHS-512 — this child's effective (configurable) sticker rate. 0.5 is
+  // only the fallback shown before the first savings fetch resolves.
+  const [stickerRate, setStickerRate] = useState(0.5);
 
   // Dialogs
   const [editHabitId, setEditHabitId] = useState<string | null>(null);
@@ -469,10 +478,12 @@ export function MyWorldTab(
         savedStickers: number;
         savedCash: number;
         currency?: string;
+        stickerRate?: number;
       };
       setSavedStickers(body.savedStickers ?? 0);
       setSavedCash(body.savedCash ?? 0);
       if (body.currency) setCurrency(body.currency);
+      if (typeof body.stickerRate === 'number') setStickerRate(body.stickerRate);
     } catch {
       // Non-fatal; leave prior values
     }
@@ -663,12 +674,12 @@ export function MyWorldTab(
   );
 
   // ── Savings derived values ────────────────────────────────────────────────
-  const weeklyValue = (unallocatedStickers * 0.5).toFixed(2);
+  const weeklyValue = (unallocatedStickers * stickerRate).toFixed(2);
   const bigRewardProgress = Math.min(100, (savedStickers / 100) * 100);
   // FHS-376 — a kid's reward request is paid from SAVINGS on approval, so the
   // "Ask for this" affordability must match savings (banked stars + banked
-  // cash converted at 0.5/star), not the spendable balance.
-  const savingsStars = savedStickers + Math.floor(savedCash / 0.5);
+  // cash converted at this child's rate), not the spendable balance.
+  const savingsStars = savedStickers + Math.floor(stickersFromCash(savedCash, stickerRate));
 
   // ── Habit state updater ───────────────────────────────────────────────────
   const updateWeekHabits = useCallback(
@@ -1269,7 +1280,7 @@ export function MyWorldTab(
                   data-testid="habit-day-sticker-value"
                   className="mb-4 text-xs font-bold text-gray-500"
                 >
-                  1 sticker = {currency} 0.50
+                  1 sticker = {currency} {stickerRate.toFixed(2)}
                 </p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   {AVAILABLE_STICKERS.map((sticker) => (
@@ -1901,7 +1912,7 @@ export function MyWorldTab(
                           <p className="text-2xl font-black text-yellow-700 leading-none">
                             {week.summary.totalStickers}
                             <span className="text-sm font-bold text-yellow-600 ml-2">
-                              = {currency} {(week.summary.totalStickers * 0.5).toFixed(2)}
+                              = {currency} {(week.summary.totalStickers * stickerRate).toFixed(2)}
                             </span>
                           </p>
                         </div>
@@ -2001,11 +2012,12 @@ export function MyWorldTab(
                   </div>
                   <div className="text-right">
                     <span className="text-2xl sm:text-3xl font-black text-yellow-400">
-                      {savedStickers + Math.floor(savedCash / 0.5)}
+                      {savedStickers + Math.floor(stickersFromCash(savedCash, stickerRate))}
                     </span>
                     {savedCash > 0 && savedStickers > 0 && (
                       <p className="text-[10px] text-purple-300 font-bold mt-0.5">
-                        {savedStickers} saved + {Math.floor(savedCash / 0.5)} from cash
+                        {savedStickers} saved +{' '}
+                        {Math.floor(stickersFromCash(savedCash, stickerRate))} from cash
                       </p>
                     )}
                   </div>
@@ -2020,7 +2032,7 @@ export function MyWorldTab(
                     </span>
                   </div>
                   <span className="text-2xl sm:text-3xl font-black text-lime-400">
-                    {currency} {(savedStickers * 0.5 + savedCash).toFixed(2)}
+                    {currency} {(savedStickers * stickerRate + savedCash).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -2088,7 +2100,7 @@ export function MyWorldTab(
                                 className="justify-self-end break-words font-bold text-slate-200"
                               >
                                 {inv.originalInvestedStickers} stickers ({currency}{' '}
-                                {(inv.originalInvestedStickers! * 0.5).toFixed(2)})
+                                {(inv.originalInvestedStickers! * stickerRate).toFixed(2)})
                               </span>
                             </>
                           )}
@@ -2098,7 +2110,7 @@ export function MyWorldTab(
                             className="justify-self-end break-words font-bold text-yellow-400"
                           >
                             {inv.investedStickers} stickers ({currency}{' '}
-                            {(inv.investedStickers * 0.5).toFixed(2)})
+                            {(inv.investedStickers * stickerRate).toFixed(2)})
                           </span>
                           <span className="text-slate-400">Now</span>
                           <span
@@ -2335,10 +2347,10 @@ export function MyWorldTab(
                   <Star size={22} className="fill-yellow-400 text-yellow-500" aria-hidden="true" />
                 </p>
                 <p className="text-lg font-black text-emerald-700" data-testid="kid-account-cash">
-                  {currency} {(balance * 0.5).toFixed(2)}
+                  {currency} {(balance * stickerRate).toFixed(2)}
                 </p>
                 <p className="text-[10px] font-bold text-emerald-600">
-                  Each star is worth {currency} 0.50
+                  Each star is worth {currency} {stickerRate.toFixed(2)}
                 </p>
               </div>
               {habits.some((h) => h.total > 0) && (
@@ -2396,7 +2408,7 @@ export function MyWorldTab(
                         </span>
                       </div>
                       <p className="text-[10px] text-purple-400 mt-2 font-mono">
-                        Each star = 0.5 {currency}
+                        Each star = {stickerRate.toFixed(2)} {currency}
                       </p>
                     </div>
                   </div>
@@ -2433,8 +2445,8 @@ export function MyWorldTab(
                   />
                 </div>
                 <p className="text-purple-400 text-xs font-mono mt-2">
-                  {savedStickers} stickers saved ({currency} {(savedStickers * 0.5).toFixed(2)})
-                  towards big prizes
+                  {savedStickers} stickers saved ({currency}{' '}
+                  {(savedStickers * stickerRate).toFixed(2)}) towards big prizes
                 </p>
               </div>
             </>

@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, LogOut, Users } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, Users } from 'lucide-react';
 import { TopNav, type TopNavTab } from '@familyhub/ui';
 import type { DashboardMember } from '@familyhub/shared';
 import { signOutAll, useAuth } from '../../lib/auth-context';
@@ -136,12 +136,14 @@ function ProfilePill({
   role,
   childMembers,
   onManageMembers,
+  onRewardSettings,
   slug,
 }: {
   parentName: string;
   role: string | null;
   childMembers: DashboardMember[];
   onManageMembers: () => void;
+  onRewardSettings: () => void;
   slug: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -281,6 +283,20 @@ function ProfilePill({
               <Users size={16} strokeWidth={3} aria-hidden="true" />
               Manage members
             </button>
+            {/* FHS-512 / FHS-514 — reward-config ("Pocket money") settings. */}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onRewardSettings();
+              }}
+              data-testid="dashboard-profile-reward-settings"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-gray-100"
+            >
+              <Settings size={16} strokeWidth={3} aria-hidden="true" />
+              Reward settings
+            </button>
           </div>
         </div>
       )}
@@ -384,6 +400,10 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
     navigate(`/t/${slug}/members`);
   }, [navigate, slug]);
 
+  const onRewardSettings = useCallback(() => {
+    navigate(`/t/${slug}/reward-settings`);
+  }, [navigate, slug]);
+
   // FHS-506 — prefer the caller's roster display name (the name shown on their
   // member card) over the auth email. Magic-link signups often carry no
   // full_name, so the email used to leak into the account menu.
@@ -431,6 +451,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
             role={callerRole}
             childMembers={childMembers}
             onManageMembers={onManageMembers}
+            onRewardSettings={onRewardSettings}
             slug={slug}
           />
           <button
