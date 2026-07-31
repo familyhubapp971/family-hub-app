@@ -274,10 +274,15 @@ describe('<MembersPage />', () => {
   it('shows the family name + "N members · M waiting to join" summary', async () => {
     membersResponse = fullFamilyList();
     renderAt('/t/khans/members');
-    await waitFor(() => expect(screen.getByTestId('members-summary')).toBeInTheDocument());
     // 3 members (admin + adult + kid) count as "members"; the unclaimed
-    // adult ("Jumi") counts as "waiting to join", not as a member.
-    expect(screen.getByTestId('members-summary').textContent).toBe('3 members · 1 waiting to join');
+    // adult ("Jumi") counts as "waiting to join", not as a member. Wait for
+    // the loaded text — the summary renders "0 members · 0 waiting to join"
+    // before the fetch resolves, so asserting on presence alone races.
+    await waitFor(() =>
+      expect(screen.getByTestId('members-summary').textContent).toBe(
+        '3 members · 1 waiting to join',
+      ),
+    );
   });
 
   describe('Grown-ups / Kids groups', () => {
