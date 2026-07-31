@@ -322,7 +322,7 @@ describe('<MembersPage />', () => {
       renderAt('/t/khans/members');
       await waitFor(() => expect(screen.getByTestId('members-kid-0-name')).toBeInTheDocument());
       expect(screen.getByTestId('members-kid-0-account-note').textContent).toContain(
-        'signs in with a PIN, cannot be given admin',
+        'Signs in with a PIN, cannot be given admin',
       );
     });
 
@@ -556,7 +556,9 @@ describe('<MembersPage />', () => {
       renderAt('/t/khans/members');
       await waitFor(() => expect(screen.getByTestId('members-invite-adult')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('members-invite-adult'));
-      expect(screen.getByTestId('members-invite-send').textContent).toBe('Send sign-in link');
+      expect(screen.getByTestId('members-invite-send').textContent?.trim()).toBe(
+        'Send sign-in link',
+      );
     });
   });
 
@@ -644,7 +646,9 @@ describe('<MembersPage />', () => {
       renderAt('/t/khans/members');
       await waitFor(() => expect(screen.getByTestId('members-add-child')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('members-add-child'));
-      expect(screen.getByTestId('members-add-child-save').textContent).toBe('Add to the family');
+      expect(screen.getByTestId('members-add-child-save').textContent?.trim()).toBe(
+        'Add to the family',
+      );
     });
   });
 

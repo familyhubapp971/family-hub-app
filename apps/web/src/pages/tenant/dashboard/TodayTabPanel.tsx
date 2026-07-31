@@ -6,9 +6,9 @@ import {
   CheckCircle2,
   CheckSquare,
   Flame,
-  Plus,
   Star,
   Target,
+  Users,
   Utensils,
 } from 'lucide-react';
 import type {
@@ -137,18 +137,19 @@ export function TodayTabPanel() {
     <div className="space-y-8" data-testid="today-ready">
       {/* Family Overview */}
       <section>
-        {/* FHS-498 / FHS-501 — add-member lives on the Family Overview as a
-            prominent yellow header button (the tester expected to add members
-            here, not only in the profile dropdown). "Manage members" stays in
-            the account dropdown. */}
+        {/* FHS-520 (design-fidelity) — the Family Overview header button
+            links to the full Manage Family screen (Grown-ups/Kids groups,
+            invite + add-child forms live there); it no longer deep-links
+            straight into the add-child form via ?add=member (that query
+            param still works for any other entry point that sets it). */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading text-2xl tracking-wide text-white">Family Overview</h2>
           <Link
-            to={`/t/${slug}/members?add=member`}
+            to={`/t/${slug}/members`}
             data-testid="today-add-member"
             className="flex min-h-[44px] items-center gap-1.5 rounded-lg border-2 border-black bg-yellow-300 px-4 py-2.5 font-bold text-black shadow-neo-xs transition-all hover:bg-yellow-400 motion-safe:hover:-translate-y-0.5"
           >
-            <Plus size={18} strokeWidth={3} aria-hidden="true" /> Add member
+            Manage family <Users size={18} strokeWidth={3} aria-hidden="true" />
           </Link>
         </div>
         {members.length === 0 ? (

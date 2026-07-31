@@ -1,9 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Copy, Edit2, Key, Mail, Plus, Settings2, Shield, Trash2 } from 'lucide-react';
 import {
+  ArrowLeft,
+  Copy,
+  Edit2,
+  Key,
+  Mail,
+  Plus,
+  Send,
+  Settings2,
+  Trash2,
+  UserPlus,
+} from 'lucide-react';
+import {
+  AvatarDisc,
   AvatarEmojiPicker,
   Button,
+  Card,
   CollapsibleSection,
   FormCard,
   Input,
@@ -86,9 +99,9 @@ export function MembersPage() {
     [navigate, slug],
   );
 
-  // Which header form is open. The dashboard's "+ Add member" deep-links
-  // here with ?add=member — kept as-is so that CTA (Family Overview /
-  // AppHeader) doesn't need a matching change; it now opens "Add a child".
+  // Which header form is open. ?add=member still opens the "Add a child"
+  // form for any entry point that deep-links here with it (FHS-471/501) —
+  // the Family Overview button (FHS-520) now just links to this page plain.
   const [activeForm, setActiveForm] = useState<'none' | 'invite' | 'child'>(
     params.get('add') === 'member' ? 'child' : 'none',
   );
@@ -191,15 +204,15 @@ export function MembersPage() {
         <div className="mb-2">
           <Link
             to={`/t/${slug}/dashboard`}
-            className="text-sm font-bold text-purple-200 hover:text-yellow-300"
+            className="inline-flex min-h-[44px] items-center gap-2 text-sm font-bold text-purple-200 hover:text-white"
           >
-            ← Dashboard
+            <ArrowLeft size={16} aria-hidden="true" /> Back
           </Link>
         </div>
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div className="mb-6 mt-1 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
             <h1
-              className="font-heading text-3xl text-white md:text-4xl"
+              className="font-heading text-3xl text-white sm:text-4xl"
               data-testid="members-family-name"
             >
               {familyName ?? 'Your family'}
@@ -297,21 +310,18 @@ export function MembersPage() {
 
         {ready && allMembers.length > 0 && (
           <div className="space-y-6">
-            <CollapsibleSection
-              emoji="🧑‍🤝‍🧑"
-              title="Grown-ups"
-              subtitle="Sign in with email"
-              count={grownUps.length}
-              headerClassName="bg-cyan-200"
-              testId="members-group-grownups"
-            >
-              {grownUps.length === 0 ? (
-                <p data-testid="members-grownups-empty" className="text-sm font-bold text-gray-500">
-                  No grown-ups yet.
-                </p>
-              ) : (
+            {grownUps.length > 0 && (
+              <CollapsibleSection
+                variant="group"
+                emoji="🧑🏽"
+                title="Grown-ups"
+                subtitle="Sign in with email"
+                count={grownUps.length}
+                headerClassName="bg-cyan-300 text-black"
+                testId="members-group-grownups"
+              >
                 <ul
-                  className="grid grid-cols-1 gap-6 md:grid-cols-2"
+                  className="grid grid-cols-1 gap-5 lg:grid-cols-2"
                   data-testid="members-grownups-list"
                 >
                   {grownUps.map((m, idx) => (
@@ -330,24 +340,21 @@ export function MembersPage() {
                     </li>
                   ))}
                 </ul>
-              )}
-            </CollapsibleSection>
+              </CollapsibleSection>
+            )}
 
-            <CollapsibleSection
-              emoji="🧒"
-              title="Kids"
-              subtitle="Sign in with a PIN"
-              count={kids.length}
-              headerClassName="bg-yellow-200"
-              testId="members-group-kids"
-            >
-              {kids.length === 0 ? (
-                <p data-testid="members-kids-empty" className="text-sm font-bold text-gray-500">
-                  No kids added yet.
-                </p>
-              ) : (
+            {kids.length > 0 && (
+              <CollapsibleSection
+                variant="group"
+                emoji="🧒🏽"
+                title="Kids"
+                subtitle="Sign in with a PIN"
+                count={kids.length}
+                headerClassName="bg-yellow-300 text-black"
+                testId="members-group-kids"
+              >
                 <ul
-                  className="grid grid-cols-1 gap-6 md:grid-cols-2"
+                  className="grid grid-cols-1 gap-5 lg:grid-cols-2"
                   data-testid="members-kids-list"
                 >
                   {kids.map((m, idx) => (
@@ -369,21 +376,23 @@ export function MembersPage() {
                     </li>
                   ))}
                 </ul>
-              )}
-            </CollapsibleSection>
+              </CollapsibleSection>
+            )}
 
-            <KidLoginHelp slug={slug} />
+            <KidLoginHelp slug={slug} kidsCount={kids.length} />
 
             {waiting.length > 0 && (
-              <section data-testid="members-waiting-section">
-                <h2 className="mb-3 font-heading text-xl text-white">Waiting to join</h2>
-                <ul
-                  className="grid grid-cols-1 gap-6 md:grid-cols-2"
-                  data-testid="members-waiting-list"
-                >
+              <Card testId="members-waiting-section" className="mt-2">
+                <h2 className="mb-1 flex items-center gap-2 font-heading text-xl text-black">
+                  <Send size={18} aria-hidden="true" /> Waiting to join
+                </h2>
+                <p className="mb-4 text-sm font-bold text-gray-500">
+                  They have an email sign-in link that has not been used yet.
+                </p>
+                <ul className="space-y-3" data-testid="members-waiting-list">
                   {waiting.map((m, idx) => (
                     <li key={m.id} className="list-none">
-                      <WaitingCard
+                      <WaitingRow
                         member={m}
                         idx={idx}
                         callerIsAdmin={callerIsAdmin}
@@ -392,7 +401,7 @@ export function MembersPage() {
                     </li>
                   ))}
                 </ul>
-              </section>
+              </Card>
             )}
           </div>
         )}
@@ -430,6 +439,8 @@ function GrownUpCard({
   const lastAdminLock = m.role === 'admin' && adminCount <= 1;
   const testId = `members-grownup-${idx}`;
 
+  const isAdminRole = m.role === 'admin';
+
   return (
     <MemberCard
       role={m.role}
@@ -439,71 +450,88 @@ function GrownUpCard({
       badge={<RoleBadge role={m.role} testId={`${testId}-role`} />}
       testId={testId}
       footer={
-        <>
-          {callerIsAdmin && (
-            <button
-              type="button"
-              data-testid={`${testId}-edit-name`}
-              onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
-              className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-100 hover:text-black"
-            >
-              <Edit2 size={14} aria-hidden="true" /> Edit name
-            </button>
-          )}
-          {callerIsAdmin && (
-            <button
-              type="button"
-              data-testid={`${testId}-change-email`}
-              disabled
-              title="Coming soon — changing a member's sign-in email (FHS-510)"
-              className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-gray-300"
-            >
-              <Mail size={14} aria-hidden="true" /> Change email
-            </button>
-          )}
-          {callerIsAdmin && isParentRow && (
-            <button
-              type="button"
-              data-testid={`${testId}-admin-toggle`}
-              disabled={lastAdminLock}
-              onClick={() =>
-                void mutate(`/api/members/${m.id}`, {
-                  method: 'PATCH',
-                  body: JSON.stringify({ role: m.role === 'admin' ? 'adult' : 'admin' }),
-                })
-              }
-              className={`flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold transition-colors ${
-                lastAdminLock
-                  ? 'cursor-not-allowed text-gray-400'
-                  : 'text-purple-600 hover:bg-purple-50 hover:text-purple-800'
-              }`}
-            >
-              <Shield size={14} aria-hidden="true" />
-              {m.role === 'admin' ? 'Remove admin' : 'Make admin'}
-            </button>
-          )}
-          <div className="flex-1" />
-          {callerIsAdmin && m.role === 'admin' && (
-            <button
-              type="button"
-              data-testid="members-admin-panel-btn"
-              onClick={() => navigate(`/t/${slug}/admin`)}
-              className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-orange-600 transition-colors hover:bg-orange-50 hover:text-orange-800"
-            >
-              <Settings2 size={14} aria-hidden="true" /> Admin Panel
-            </button>
-          )}
-          {callerIsAdmin && (
+        callerIsAdmin ? (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                data-testid={`${testId}-edit-name`}
+                onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
+                className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-black transition-colors hover:bg-gray-50"
+              >
+                <Edit2 size={14} aria-hidden="true" /> Edit name
+              </button>
+              <button
+                type="button"
+                data-testid={`${testId}-change-email`}
+                disabled
+                title="Coming soon — changing a member's sign-in email (FHS-510)"
+                className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-gray-300"
+              >
+                <Mail size={14} aria-hidden="true" /> Change email
+              </button>
+              {isAdminRole && (
+                <button
+                  type="button"
+                  data-testid="members-admin-panel-btn"
+                  onClick={() => navigate(`/t/${slug}/admin`)}
+                  className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-orange-600 transition-colors hover:bg-orange-50"
+                >
+                  <Settings2 size={14} aria-hidden="true" /> Admin Panel
+                </button>
+              )}
+            </div>
             <RemoveButton
               testId={testId}
               disabled={lastAdminLock}
               name={m.displayName}
               onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
             />
-          )}
-        </>
+          </>
+        ) : null
       }
     >
+      {callerIsAdmin && isParentRow && (
+        <div
+          className="mt-4 flex items-center gap-3 rounded-xl border-2 border-black bg-gray-50 p-3"
+          data-testid={`${testId}-admin-panel`}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="font-heading text-sm text-black">Admin</p>
+            <p className="text-xs font-bold text-gray-500">
+              {lastAdminLock
+                ? 'The last admin cannot be removed.'
+                : isAdminRole
+                  ? 'Can change family settings.'
+                  : 'Give full family access.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isAdminRole}
+            data-testid={`${testId}-admin-toggle`}
+            disabled={lastAdminLock}
+            onClick={() =>
+              void mutate(`/api/members/${m.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ role: isAdminRole ? 'adult' : 'admin' }),
+              })
+            }
+            className={`relative inline-flex h-[34px] w-[60px] shrink-0 items-center rounded-full border-2 border-black transition-colors ${
+              isAdminRole ? 'bg-emerald-400' : 'bg-gray-200'
+            } ${lastAdminLock ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
+          >
+            <span
+              aria-hidden="true"
+              className={`inline-block h-[26px] w-[26px] rounded-full border-2 border-black bg-white shadow-neo-xs transition-transform ${
+                isAdminRole ? 'translate-x-[26px]' : 'translate-x-0.5'
+              }`}
+            />
+            <span className="sr-only">{isAdminRole ? 'Remove admin' : 'Make admin'}</span>
+          </button>
+        </div>
+      )}
       {editingFor === m.id && (
         <EditNameForm
           current={m.displayName}
@@ -565,46 +593,50 @@ function KidCard({
       badge={<RoleBadge role={m.role} age={m.age} testId={`${testId}-role`} />}
       testId={testId}
       footer={
-        <>
-          {callerIsAdmin && (
-            <button
-              type="button"
-              data-testid={`${testId}-edit-name`}
-              onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
-              className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-100 hover:text-black"
-            >
-              <Edit2 size={14} aria-hidden="true" /> Edit name
-            </button>
-          )}
-          {callerCanManagePin && (
-            <button
-              type="button"
-              data-testid={`${testId}-pin-toggle`}
-              onClick={() => setOpenPinFor(openPinFor === m.id ? null : m.id)}
-              className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800"
-            >
-              <Key size={14} aria-hidden="true" />
-              {openPinFor === m.id ? 'Cancel' : m.hasPin ? 'Reset PIN' : 'Set PIN'}
-            </button>
-          )}
-          <div className="flex-1" />
-          {callerIsAdmin && (
+        callerIsAdmin ? (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                data-testid={`${testId}-edit-name`}
+                onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
+                className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-black transition-colors hover:bg-gray-50"
+              >
+                <Edit2 size={14} aria-hidden="true" /> Edit name
+              </button>
+              {callerCanManagePin && (
+                <button
+                  type="button"
+                  data-testid={`${testId}-pin-toggle`}
+                  onClick={() => setOpenPinFor(openPinFor === m.id ? null : m.id)}
+                  className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-50"
+                >
+                  <Key size={14} aria-hidden="true" />
+                  {openPinFor === m.id ? 'Cancel' : m.hasPin ? 'Reset PIN' : 'Set PIN'}
+                </button>
+              )}
+            </div>
             <RemoveButton
               testId={testId}
               disabled={false}
               name={m.displayName}
               onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
             />
-          )}
-        </>
+          </>
+        ) : null
       }
     >
-      <p
-        className="mb-3 rounded-md border-2 border-purple-200 bg-purple-50 p-2 text-xs font-bold text-purple-800"
+      <div
+        className="mt-4 rounded-xl border-2 border-black bg-gray-50 p-3"
         data-testid={`${testId}-account-note`}
       >
-        {m.role === 'teen' ? 'Teen' : 'Child'} account — signs in with a PIN, cannot be given admin
-      </p>
+        <p className="font-heading text-sm text-black">
+          {m.role === 'teen' ? 'Teen account' : 'Child account'}
+        </p>
+        <p className="text-xs font-bold text-gray-500">
+          Signs in with a PIN, cannot be given admin access.
+        </p>
+      </div>
       {editingFor === m.id && (
         <EditNameForm
           current={m.displayName}
@@ -635,7 +667,10 @@ function KidCard({
   );
 }
 
-// ── Waiting-to-join card (unclaimed grown-up seats) ─────────────────────────
+// ── Waiting-to-join row (unclaimed grown-up seats) ──────────────────────────
+// FHS-520 (design-fidelity) — a compact horizontal row (avatar, name,
+// email, role badge, resend/remove) inside the "Waiting to join" white
+// card, matching the Magic Patterns mock — no longer a full MemberCard.
 
 interface WaitingCardProps {
   member: MemberItem;
@@ -644,48 +679,54 @@ interface WaitingCardProps {
   mutate: (path: string, init: RequestInit) => Promise<boolean>;
 }
 
-function WaitingCard({ member: m, idx, callerIsAdmin, mutate }: WaitingCardProps) {
+function WaitingRow({ member: m, idx, callerIsAdmin, mutate }: WaitingCardProps) {
   const testId = `members-waiting-${idx}`;
-  const footer = callerIsAdmin ? (
-    <>
-      {m.inviteId && (
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          testId={`${testId}-resend`}
-          onClick={() => void mutate(`/api/invitations/${m.inviteId}/resend`, { method: 'POST' })}
-        >
-          Resend invite
-        </Button>
-      )}
-      <div className="flex-1" />
-      <RemoveButton
-        testId={testId}
-        disabled={false}
-        name={m.displayName}
-        onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
-      />
-    </>
-  ) : null;
   return (
-    <MemberCard
-      role={m.role}
-      name={m.displayName}
-      avatarEmoji={m.avatarEmoji}
-      statusLine={m.inviteEmail ?? 'No email on file'}
-      badge={<RoleBadge role={m.role} testId={`${testId}-role`} />}
-      testId={testId}
-      footer={footer}
+    <div
+      data-testid={testId}
+      className="flex flex-col gap-3 rounded-xl border-2 border-black bg-gray-50 p-3 sm:flex-row sm:items-center"
     >
-      <p
-        className="flex items-center gap-2 text-sm font-bold text-yellow-800"
-        data-testid={`${testId}-pending`}
-      >
-        <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-full bg-yellow-500" />
-        Pending: hasn&rsquo;t signed up
-      </p>
-    </MemberCard>
+      <AvatarDisc role={m.role} name={m.displayName} emoji={m.avatarEmoji} size="sm" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-heading text-base text-black" data-testid={`${testId}-name`}>
+          {m.displayName}
+        </p>
+        <p className="truncate text-xs font-bold text-gray-500" data-testid={`${testId}-status`}>
+          {m.inviteEmail ?? 'No email on file'}
+        </p>
+        <p
+          className="mt-1 flex items-center gap-1.5 text-xs font-bold text-yellow-800"
+          data-testid={`${testId}-pending`}
+        >
+          <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-full bg-yellow-500" />
+          Pending: hasn&rsquo;t signed up
+        </p>
+      </div>
+      <RoleBadge role={m.role} testId={`${testId}-role`} />
+      {callerIsAdmin && (
+        <div className="flex shrink-0 items-center gap-2">
+          {m.inviteId && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              testId={`${testId}-resend`}
+              onClick={() =>
+                void mutate(`/api/invitations/${m.inviteId}/resend`, { method: 'POST' })
+              }
+            >
+              Resend
+            </Button>
+          )}
+          <RemoveButton
+            testId={testId}
+            disabled={false}
+            name={m.displayName}
+            onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -694,7 +735,7 @@ function WaitingCard({ member: m, idx, callerIsAdmin, mutate }: WaitingCardProps
 // to sign in, so a brand-new family's kid had no working path in at all.
 // FHS-513 — now a collapsible "How your kids sign in" card with the same
 // link/code + copy button, plus the 3-step walkthrough from the design.
-function KidLoginHelp({ slug }: { slug: string }) {
+function KidLoginHelp({ slug, kidsCount }: { slug: string; kidsCount: number }) {
   const [copied, setCopied] = useState(false);
   const kidLoginUrl = `${window.location.origin}/t/${slug}/kid-login`;
 
@@ -713,7 +754,8 @@ function KidLoginHelp({ slug }: { slug: string }) {
     <CollapsibleSection
       emoji="🔑"
       title="How your kids sign in"
-      headerClassName="bg-purple-100"
+      subtitle={`${kidsCount} kid${kidsCount === 1 ? '' : 's'} use your family code and their own PIN.`}
+      tileClassName="bg-purple-300"
       testId="members-kid-login-share"
     >
       <p className="mb-3 font-body text-sm text-gray-700">
@@ -855,12 +897,12 @@ function InviteAdultForm({
         <div className="flex items-end">
           <Button
             type="submit"
-            variant="primary"
+            variant="purple"
             size="md"
             disabled={submitting}
             testId="members-invite-send"
           >
-            {submitting ? 'Sending…' : 'Send sign-in link'}
+            <Send size={16} aria-hidden="true" /> {submitting ? 'Sending…' : 'Send sign-in link'}
           </Button>
         </div>
       </form>
@@ -991,12 +1033,12 @@ function AddChildForm({
         <div className="flex items-center">
           <Button
             type="submit"
-            variant="primary"
+            variant="purple"
             size="md"
             disabled={submitting}
             testId="members-add-child-save"
           >
-            {submitting ? 'Adding…' : 'Add to the family'}
+            <UserPlus size={16} aria-hidden="true" /> {submitting ? 'Adding…' : 'Add to the family'}
           </Button>
         </div>
       </form>
@@ -1105,13 +1147,11 @@ function RemoveButton({
       disabled={disabled}
       onClick={() => setArmed(true)}
       title={`Remove ${name}`}
-      className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded px-2 py-1 text-sm font-bold transition-colors ${
-        disabled
-          ? 'cursor-not-allowed text-gray-300'
-          : 'text-red-500 hover:bg-red-50 hover:text-red-700'
+      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-white transition-colors ${
+        disabled ? 'cursor-not-allowed text-gray-300' : 'text-red-600 hover:bg-red-50'
       }`}
     >
-      <Trash2 size={16} aria-hidden="true" />
+      <Trash2 size={18} aria-hidden="true" />
     </button>
   );
 }

@@ -35,11 +35,11 @@ export function FormCard({
         type="button"
         onClick={onClose}
         aria-label={closeLabel}
-        className="absolute right-4 top-4 text-gray-500 transition-colors hover:text-black"
+        className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-xl border-2 border-black bg-white text-gray-500 transition-colors hover:text-black"
       >
         <X size={20} />
       </button>
-      <h2 className="mb-2 font-heading text-2xl text-black">{title}</h2>
+      <h2 className="mb-2 pr-12 font-heading text-2xl text-black">{title}</h2>
       {description && <p className="mb-6 text-sm font-bold text-gray-600">{description}</p>}
       {children}
     </Card>

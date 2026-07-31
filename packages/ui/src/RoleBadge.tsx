@@ -33,6 +33,11 @@ export interface RoleBadgeProps {
   testId?: string;
 }
 
+// FHS-520 (design-fidelity) — the Magic Patterns mock uses the same
+// -300 shade for the RoleBadge pill as the avatar disc (not the softer
+// -200 badge tone `roleStyle().badge` carries for other surfaces like
+// the Today tab's role pill) — reuse `style.disc` here so the two design
+// tokens don't have to be duplicated.
 /** Small pill badge — role label, coloured per `ROLE_STYLE`. */
 export function RoleBadge({ role, age = null, className = '', testId }: RoleBadgeProps) {
   const style = roleStyle(role);
@@ -40,7 +45,7 @@ export function RoleBadge({ role, age = null, className = '', testId }: RoleBadg
   return (
     <span
       data-testid={testId}
-      className={`inline-block rounded-full border-2 border-black px-2 py-0.5 text-[11px] font-bold ${style.badge} ${className}`.trim()}
+      className={`inline-block rounded-full border-2 border-black px-3 py-1 text-xs font-bold uppercase tracking-wide ${style.disc} ${className}`.trim()}
     >
       {style.label}
       {showAge ? ` (${age})` : ''}

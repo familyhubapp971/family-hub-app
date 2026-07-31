@@ -420,10 +420,13 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
   });
 
-  it('standalone Logout button is always visible and calls signOutAll()', async () => {
+  it('Log out lives at the bottom of the profile menu and calls signOutAll()', async () => {
     renderAt('/t/khans/dashboard');
-    // No dropdown needed — the red Logout button sits in the nav (MP).
+    // FHS-520 (design-fidelity) — Log out is no longer a standalone nav
+    // button; it's the last item inside the account dropdown (MP).
     expect(screen.queryByTestId('dashboard-profile-menu')).toBeNull();
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    expect(screen.getByTestId('dashboard-profile-menu')).toBeInTheDocument();
     await act(async () => {
       fireEvent.click(screen.getByTestId('dashboard-logout'));
     });
