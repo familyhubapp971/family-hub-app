@@ -1,18 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  ArrowLeft,
-  CalendarDays,
-  GraduationCap,
-  Home,
-  LogOut,
-  PenLine,
-  Utensils,
-} from 'lucide-react';
-import { TopNav, type TopNavTab, Dropdown } from '@familyhub/ui';
+import { CalendarDays, GraduationCap, Home, PenLine, Utensils } from 'lucide-react';
+import { TopNav, type TopNavTab } from '@familyhub/ui';
 import { useAuth, signOutAll } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
+import { ProfilePill } from '../AppHeader';
 import { MyWorldTab } from './MyWorldTab';
 import { MealsTab } from './MealsTab';
 import { CalendarTab } from './CalendarTab';
@@ -54,23 +47,20 @@ interface MemberLite {
   isChild: boolean;
 }
 
-interface ChildBalance {
-  savedStickers: number;
-  savedCash: number;
-}
-
 export function ChildWorldPage() {
   const slug = useTenantSlug();
   const { memberId = '' } = useParams();
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { user, session } = useAuth();
   const [activeTab, setActiveTab] = useState<string>(DEFAULT_TAB);
   const [members, setMembers] = useState<MemberLite[]>([]);
   // FHS-336 — the caller's role in this family (from /api/members), so My World
   // hides admin-only controls from a normal user. Null until loaded.
   const [callerRole, setCallerRole] = useState<string | null>(null);
-  // FHS-288 — the child's banked balance for the header chips.
-  const [balance, setBalance] = useState<ChildBalance | null>(null);
+  // FHS-523 — the caller's own member id, so the account pill shows their roster
+  // name rather than leaking their login email.
+  const [callerMemberId, setCallerMemberId] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   const headers = useMemo(
     () =>
@@ -87,6 +77,7 @@ export function ChildWorldPage() {
         if (cancelled || !body) return;
         setMembers(((body.members as MemberLite[]) ?? []).map((m) => ({ ...m })));
         setCallerRole(typeof body.callerRole === 'string' ? body.callerRole : null);
+        setCallerMemberId(typeof body.callerMemberId === 'string' ? body.callerMemberId : null);
       })
       .catch(() => {
         /* leave members empty — header falls back to a generic greeting */
@@ -96,39 +87,38 @@ export function ChildWorldPage() {
     };
   }, [headers]);
 
-  // FHS-288 — the child's banked balance (stars + cash) for the header chips.
-  useEffect(() => {
-    if (!headers || !memberId) return;
-    let cancelled = false;
-    fetch(`${API_BASE}/api/mw/financial/savings?memberId=${memberId}`, { headers })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((body) => {
-        if (cancelled || !body) return;
-        setBalance({
-          savedStickers: Number(body.savedStickers ?? 0),
-          savedCash: Number(body.savedCash ?? 0),
-        });
-      })
-      .catch(() => {
-        /* leave balance null — the chips just hide */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [headers, memberId]);
-
   const member = useMemo(() => members.find((m) => m.id === memberId) ?? null, [members, memberId]);
-  const siblings = useMemo(() => members.filter((m) => m.isChild), [members]);
+  // FHS-523 — the family's children power the account pill's "View World" links
+  // (the switcher), and the caller's own row supplies the pill's name.
+  const childMembers = useMemo(() => members.filter((m) => m.isChild), [members]);
+  const callerMember = useMemo(
+    () => members.find((m) => m.id === callerMemberId) ?? null,
+    [members, callerMemberId],
+  );
 
-  const onBack = useCallback(() => navigate(`/t/${slug}/dashboard`), [navigate, slug]);
-  const onSelectChild = useCallback(
-    (id: string) => {
-      if (id && id !== memberId) navigate(`/t/${slug}/child/${id}`);
-    },
-    [navigate, slug, memberId],
+  // FHS-506/FHS-523 — prefer a real name over the login email: the auth
+  // full_name, else the caller's roster display name, else email as last resort.
+  const parentName =
+    (user?.user_metadata?.full_name as string | undefined) ??
+    (user?.user_metadata?.name as string | undefined) ??
+    callerMember?.displayName ??
+    user?.email ??
+    'You';
+
+  const onHome = useCallback(() => navigate(`/t/${slug}/dashboard`), [navigate, slug]);
+  const onManageMembers = useCallback(() => navigate(`/t/${slug}/members`), [navigate, slug]);
+  const onRewardSettings = useCallback(
+    () => navigate(`/t/${slug}/reward-settings`),
+    [navigate, slug],
   );
   const onLogout = useCallback(async () => {
-    await signOutAll();
+    setSigningOut(true);
+    const { error } = await signOutAll();
+    if (error) {
+      console.error('signOut failed', error);
+      setSigningOut(false);
+      return;
+    }
     navigate('/login', { replace: true });
   }, [navigate]);
 
@@ -155,91 +145,55 @@ export function ChildWorldPage() {
     >
       <TopNav
         brand={
-          <div className="flex items-center gap-3" data-testid="child-world-brand">
+          <div className="flex items-center gap-2 sm:gap-3" data-testid="child-world-brand">
             <span
               aria-hidden="true"
-              className="grid h-12 w-12 place-items-center rounded-full border-2 border-black bg-gradient-to-br from-cyan-300 to-violet-400 text-2xl shadow-neo-sm"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-black bg-gradient-to-br from-cyan-300 to-violet-400 text-xl shadow-neo-sm sm:h-12 sm:w-12 sm:text-2xl"
             >
               {member?.avatarEmoji ?? '🌟'}
             </span>
-            <div>
+            {/* FHS-523 — breadcrumb "Family Hub / {Child}'s World", matching the
+                rest of the app. "Family Hub" returns to the family dashboard. */}
+            <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                onClick={onHome}
+                data-testid="child-world-home"
+                className="shrink-0 rounded font-heading text-xs uppercase tracking-wide text-white/70 transition-colors hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 sm:text-sm"
+              >
+                Family Hub
+              </button>
+              <span aria-hidden="true" className="shrink-0 text-white/40">
+                /
+              </span>
               <h1
-                className="font-heading text-2xl uppercase tracking-wide text-white drop-shadow-md md:text-3xl"
+                className="min-w-0 max-w-[8rem] truncate font-heading text-lg uppercase tracking-wide text-white drop-shadow-md xs:max-w-[11rem] sm:max-w-[20rem] sm:text-2xl md:max-w-none md:text-3xl"
                 data-testid="child-world-name"
               >
                 {childName === 'My' ? 'My World' : `${childName}'s World`}
               </h1>
-              <p className="mt-0.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-green-300">
-                <span
-                  aria-hidden="true"
-                  className="h-2.5 w-2.5 rounded-full border border-black bg-green-400 motion-safe:animate-pulse"
-                />
-                Magic Active
-              </p>
-            </div>
+            </nav>
           </div>
         }
         tabs={navTabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         rightSlot={
-          <div className="flex items-center gap-2">
-            {/* FHS-288 — the child's banked balance (stars + cash). Always
-                visible: one compact combined badge on phones, two chips from sm. */}
-            {balance && (
-              <div className="flex items-center gap-2" data-testid="child-world-balance">
-                <span
-                  aria-label={`${balance.savedStickers} stars, ${balance.savedCash} cash`}
-                  className="flex items-center gap-1.5 rounded-md border-2 border-black bg-yellow-200 px-2 py-1.5 text-xs font-bold text-black shadow-neo-sm sm:hidden"
-                >
-                  <span aria-hidden="true">⭐ {balance.savedStickers}</span>
-                  <span aria-hidden="true">💰 {balance.savedCash}</span>
-                </span>
-                <span className="hidden items-center gap-1 rounded-md border-2 border-black bg-yellow-300 px-2.5 py-1.5 text-sm font-bold text-black shadow-neo-sm sm:flex">
-                  <span aria-hidden="true">⭐</span>
-                  <span aria-label="stars">{balance.savedStickers}</span>
-                </span>
-                <span className="hidden items-center gap-1 rounded-md border-2 border-black bg-green-300 px-2.5 py-1.5 text-sm font-bold text-black shadow-neo-sm sm:flex">
-                  <span aria-hidden="true">💰</span>
-                  <span aria-label="cash">{balance.savedCash}</span>
-                </span>
-              </div>
-            )}
-            {/* FHS-288 — switch to a sibling's world (only when there's more than
-                one kid). FHS-359 — in-app dropdown, not the native OS menu. */}
-            {siblings.length > 1 && (
-              <Dropdown
-                ariaLabel="Switch child"
-                testId="child-world-switcher"
-                value={memberId}
-                onChange={onSelectChild}
-                options={siblings.map((s) => ({
-                  value: s.id,
-                  label: `${s.avatarEmoji ?? '🌟'} ${s.displayName}`,
-                }))}
-              />
-            )}
-            <button
-              type="button"
-              onClick={onBack}
-              aria-label="Back to family"
-              data-testid="child-world-back"
-              className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-[#4a1578] px-3 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-[#5a1d8a] motion-safe:hover:-translate-y-0.5"
-            >
-              <ArrowLeft size={16} strokeWidth={3} aria-hidden="true" />
-              <span className="hidden lg:inline">Back to family</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => void onLogout()}
-              aria-label="Log out"
-              data-testid="child-world-logout"
-              className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-white px-3 py-2 font-bold text-purple-900 shadow-neo-sm transition-transform hover:bg-red-50 motion-safe:hover:-translate-y-0.5"
-            >
-              <LogOut size={16} strokeWidth={3} aria-hidden="true" />
-              <span className="hidden lg:inline">Logout</span>
-            </button>
-          </div>
+          // FHS-523 — the same account pill as the parent dashboard. Its
+          // "View World" links switch between children (replacing the old
+          // switcher) and its menu holds Manage family / Reward settings / Log
+          // out (replacing the old Back + Logout buttons).
+          <ProfilePill
+            parentName={parentName}
+            role={callerRole}
+            childMembers={childMembers}
+            onManageMembers={onManageMembers}
+            onRewardSettings={onRewardSettings}
+            onLogout={() => void onLogout()}
+            onSelectChild={(id) => navigate(`/t/${slug}/child/${id}`)}
+            signingOut={signingOut}
+            slug={slug}
+          />
         }
         testId="child-world-nav"
       />

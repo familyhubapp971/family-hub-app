@@ -131,22 +131,30 @@ const ROLE_PILL_LABEL: Record<string, string> = {
   child: 'Child',
 };
 
-function ProfilePill({
+// FHS-523 — exported so the child-world header (ChildWorldPage) renders the
+// same account pill as the parent dashboard, matching the design.
+export function ProfilePill({
   parentName,
   role,
   childMembers,
   onManageMembers,
   onRewardSettings,
   onLogout,
+  onSelectChild,
   signingOut,
   slug,
 }: {
   parentName: string;
   role: string | null;
-  childMembers: DashboardMember[];
+  // Only id + displayName are read here (the "View World" links), so accept the
+  // minimal shape — both the dashboard roster and the child-world roster fit.
+  childMembers: Array<{ id: string; displayName: string }>;
   onManageMembers: () => void;
   onRewardSettings: () => void;
   onLogout: () => void;
+  // FHS-523 — when provided, "View World" switches child via this handler
+  // (in-app SPA nav). Without it, we hard-navigate (dashboard's default).
+  onSelectChild?: (childId: string) => void;
   signingOut: boolean;
   slug: string;
 }) {
@@ -247,7 +255,8 @@ function ProfilePill({
                       role="menuitem"
                       onClick={() => {
                         setOpen(false);
-                        window.location.assign(`/t/${slug}/child/${c.id}`);
+                        if (onSelectChild) onSelectChild(c.id);
+                        else window.location.assign(`/t/${slug}/child/${c.id}`);
                       }}
                       data-testid={`dashboard-profile-child-${c.id}`}
                       className="group flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-gray-100"

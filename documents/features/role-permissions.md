@@ -72,6 +72,11 @@ non-admin adult as "Parent."
 use PIN login, never a magic-link invite). Teens are added via "Add a child",
 not invited.
 
+The invite form pre-selects **Parent / partner** (admin) for an admin sender so
+inviting a co-parent is one tap ([FHS-524](https://qualicion2.atlassian.net/browse/FHS-524)).
+A non-admin never sees that option, so for them the default stays **Adult** —
+the admin-grant safeguard is what gates the default, not just the option list.
+
 ### Story 4: Invite a second admin, safely
 
 **As an** admin
