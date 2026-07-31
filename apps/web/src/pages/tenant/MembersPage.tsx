@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import {
   AvatarDisc,
-  AvatarEmojiPicker,
   Button,
   Card,
   CollapsibleSection,
@@ -82,6 +81,17 @@ const GROWN_UP_ROLES = new Set(['admin', 'adult', 'guest']);
 const KID_ROLES = new Set(['child', 'teen']);
 const ADMIN_OR_ADULT = new Set(['admin', 'adult']);
 const PIN_ELIGIBLE_ROLES = new Set(['child', 'teen']);
+
+// FHS-521 — show the family name as "The {Name} Family" to match the design
+// (tenant name "Khan" → "The Khan Family"). If the stored name already reads
+// like a family name (contains "family"), show it verbatim; empty → neutral.
+function familyTitle(name: string | null): string {
+  const n = (name ?? '').trim();
+  if (!n) return 'Your family';
+  if (/\bfamily\b/i.test(n)) return n;
+  const titled = n.replace(/\b\w/g, (ch) => ch.toUpperCase());
+  return `The ${titled} Family`;
+}
 
 export function MembersPage() {
   const slug = useTenantSlug();
@@ -215,7 +225,7 @@ export function MembersPage() {
               className="font-heading text-3xl text-white sm:text-4xl"
               data-testid="members-family-name"
             >
-              {familyName ?? 'Your family'}
+              {familyTitle(familyName)}
             </h1>
             <p className="mt-1 text-sm font-bold text-purple-200" data-testid="members-summary">
               {memberCount} member{memberCount === 1 ? '' : 's'} · {waiting.length} waiting to join
@@ -266,15 +276,10 @@ export function MembersPage() {
         {activeForm === 'child' && callerIsAdmin && (
           <AddChildForm
             onClose={() => setActiveForm('none')}
-            onSubmit={async (displayName, role, age, avatarEmoji) => {
+            onSubmit={async (displayName, role) => {
               const ok = await mutate('/api/members', {
                 method: 'POST',
-                body: JSON.stringify({
-                  displayName,
-                  role,
-                  ...(age !== null ? { age } : {}),
-                  ...(avatarEmoji ? { avatarEmoji } : {}),
-                }),
+                body: JSON.stringify({ displayName, role }),
               });
               if (ok) setActiveForm('none');
             }}
@@ -306,6 +311,14 @@ export function MembersPage() {
           >
             {actionError}
           </p>
+        )}
+
+        {/* FHS-521 — "How your kids sign in" sits above the member groups,
+            matching the design's order (header/forms → kid-login → groups). */}
+        {ready && (
+          <div className="mb-6">
+            <KidLoginHelp slug={slug} kidsCount={kids.length} />
+          </div>
         )}
 
         {ready && allMembers.length > 0 && (
@@ -378,8 +391,6 @@ export function MembersPage() {
                 </ul>
               </CollapsibleSection>
             )}
-
-            <KidLoginHelp slug={slug} kidsCount={kids.length} />
 
             {waiting.length > 0 && (
               <Card testId="members-waiting-section" className="mt-2">
@@ -1055,18 +1066,11 @@ function AddChildForm({
   error,
 }: {
   onClose: () => void;
-  onSubmit: (
-    displayName: string,
-    role: AddChildRole,
-    age: number | null,
-    avatarEmoji: string | null,
-  ) => Promise<void>;
+  onSubmit: (displayName: string, role: AddChildRole) => Promise<void>;
   error: string | null;
 }) {
   const [role, setRole] = useState<AddChildRole>('child');
   const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [avatarEmoji, setAvatarEmoji] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   return (
@@ -1082,14 +1086,8 @@ function AddChildForm({
         onSubmit={(e) => {
           e.preventDefault();
           if (!name.trim()) return;
-          const parsedAge = age.trim() === '' ? null : Number.parseInt(age, 10);
           setSubmitting(true);
-          void onSubmit(
-            name.trim(),
-            role,
-            Number.isNaN(parsedAge as number) ? null : parsedAge,
-            avatarEmoji || null,
-          ).finally(() => setSubmitting(false));
+          void onSubmit(name.trim(), role).finally(() => setSubmitting(false));
         }}
       >
         <div>
@@ -1122,27 +1120,6 @@ function AddChildForm({
               />
             ))}
           </div>
-        </div>
-        {/* FHS-472 — avatar picker + exact age are real features the design
-            mock omits; kept below the Name/type cards rather than dropped. */}
-        <div className="w-full sm:w-32">
-          <Label htmlFor="add-child-age">Age</Label>
-          <Input
-            id="add-child-age"
-            type="number"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="e.g. 10"
-            testId="members-add-child-age"
-          />
-        </div>
-        <div>
-          <Label htmlFor="add-child-emoji">Avatar</Label>
-          <AvatarEmojiPicker
-            value={avatarEmoji}
-            onSelect={setAvatarEmoji}
-            testId="members-add-child-emoji"
-          />
         </div>
         <div className="flex items-center">
           <Button
