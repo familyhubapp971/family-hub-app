@@ -475,18 +475,19 @@ describe('<MembersPage />', () => {
   });
 
   describe('Invite an adult (FHS-486 role picker, no Teen)', () => {
-    it('opens a role picker defaulting to Adult, with no Teen option', async () => {
+    it('opens a role picker defaulting to Parent / partner for an admin, with no Teen option', async () => {
       membersResponse = adminOnlyList();
       renderAt('/t/khans/members');
       await waitFor(() => expect(screen.getByTestId('members-invite-adult')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('members-invite-adult'));
       expect(screen.getByTestId('members-invite-form')).toBeInTheDocument();
-      // Default selection is the Adult card.
-      expect(screen.getByTestId('members-invite-role-adult')).toHaveAttribute(
+      // FHS-524 — default selection is the Parent / partner (admin) card, so
+      // inviting a co-parent is one tap. The form only opens for admins.
+      expect(screen.getByTestId('members-invite-role-admin')).toHaveAttribute(
         'aria-checked',
         'true',
       );
-      expect(screen.getByTestId('members-invite-role-admin')).toHaveAttribute(
+      expect(screen.getByTestId('members-invite-role-adult')).toHaveAttribute(
         'aria-checked',
         'false',
       );

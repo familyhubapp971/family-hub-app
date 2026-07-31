@@ -916,7 +916,9 @@ function InviteAdultForm({
 }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<InviteRole>('adult');
+  // FHS-524 — default to "Parent / partner" (admin) so inviting a co-parent is
+  // one tap. Non-admins can't pick (or see) admin, so they fall back to "adult".
+  const [role, setRole] = useState<InviteRole>(callerIsAdmin ? 'admin' : 'adult');
   const [submitting, setSubmitting] = useState(false);
   const options = INVITE_ROLE_OPTIONS.filter((r) => !r.adminOnly || callerIsAdmin);
 
