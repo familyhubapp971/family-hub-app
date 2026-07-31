@@ -250,7 +250,7 @@ function ProfilePill({
                         window.location.assign(`/t/${slug}/child/${c.id}`);
                       }}
                       data-testid={`dashboard-profile-child-${c.id}`}
-                      className="group flex min-h-11 w-full items-center gap-3 rounded-lg border-2 border-black bg-white px-3 py-2.5 text-left shadow-neo-xs transition-colors motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-neo-sm hover:bg-purple-50"
+                      className="group flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-gray-100"
                     >
                       <span
                         aria-hidden="true"
@@ -261,7 +261,7 @@ function ProfilePill({
                       <span className="truncate text-sm font-bold">{c.displayName}</span>
                       <span
                         aria-hidden="true"
-                        className="ml-auto shrink-0 rounded-full border-2 border-black bg-purple-300 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-900 group-hover:bg-purple-400"
+                        className="ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400 group-hover:text-purple-600"
                       >
                         View World →
                       </span>

@@ -593,8 +593,6 @@ describe('<MembersPage />', () => {
         'false',
       );
       expect(screen.getByTestId('members-add-child-name')).toBeInTheDocument();
-      expect(screen.getByTestId('members-add-child-age')).toBeInTheDocument();
-      expect(screen.getByTestId('members-add-child-emoji')).toBeInTheDocument();
       // No "Adult" card any more — the plain no-login adult path moved
       // to Invite. Exactly the Child + Teen cards render.
       const cards = screen.getAllByTestId(/^members-add-child-role-/);
@@ -604,7 +602,7 @@ describe('<MembersPage />', () => {
       ]);
     });
 
-    it('picking Teen creates a teen member (name + age, no login)', async () => {
+    it('picking Teen creates a teen member (no login)', async () => {
       membersResponse = adminOnlyList();
       renderAt('/t/khans/members');
       await waitFor(() => expect(screen.getByTestId('members-add-child')).toBeInTheDocument());
@@ -614,9 +612,6 @@ describe('<MembersPage />', () => {
       fireEvent.change(screen.getByTestId('members-add-child-name'), {
         target: { value: 'Zayd' },
       });
-      fireEvent.change(screen.getByTestId('members-add-child-age'), {
-        target: { value: '15' },
-      });
       fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ member: {} }) });
       fetchMock.mockResolvedValueOnce(adminOnlyList());
       fireEvent.click(screen.getByTestId('members-add-child-save'));
@@ -627,37 +622,11 @@ describe('<MembersPage />', () => {
       const postCall = fetchMock.mock.calls.find(
         (c) => typeof c[0] === 'string' && c[0].endsWith('/api/members') && c[1]?.method === 'POST',
       );
+      // FHS-521 — the design's Add-a-child sends just name + role (avatar/age dropped).
       expect(JSON.parse(postCall![1].body as string)).toEqual({
         displayName: 'Zayd',
         role: 'teen',
-        age: 15,
       });
-    });
-
-    it('picking an avatar emoji includes it in the create request', async () => {
-      membersResponse = adminOnlyList();
-      renderAt('/t/khans/members');
-      await waitFor(() => expect(screen.getByTestId('members-add-child')).toBeInTheDocument());
-      fireEvent.click(screen.getByTestId('members-add-child'));
-
-      fireEvent.change(screen.getByTestId('members-add-child-name'), {
-        target: { value: 'Amina' },
-      });
-      fireEvent.click(screen.getByTestId('members-add-child-emoji-emoji-0'));
-
-      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ member: {} }) });
-      fetchMock.mockResolvedValueOnce(adminOnlyList());
-      fireEvent.click(screen.getByTestId('members-add-child-save'));
-
-      await waitFor(() =>
-        expect(screen.queryByTestId('members-add-child-form')).not.toBeInTheDocument(),
-      );
-      const postCall = fetchMock.mock.calls.find(
-        (c) => typeof c[0] === 'string' && c[0].endsWith('/api/members') && c[1]?.method === 'POST',
-      );
-      const body = JSON.parse(postCall![1].body as string);
-      expect(body.displayName).toBe('Amina');
-      expect(body.avatarEmoji).toBeTruthy();
     });
 
     it('the submit button reads "Add to the family"', async () => {
