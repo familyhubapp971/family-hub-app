@@ -46,8 +46,9 @@ names so traceability between this folder and the test suite is automatic.
 
 Drafted / scoped:
 
-- [family-members.md](family-members.md)
-- [role-permissions.md](role-permissions.md) — Owner tier + rights matrix (epic FHS-333)
+- [family-members.md](family-members.md) — member model + the Manage Family page (FHS-513/485/486/514/520/521)
+- [role-permissions.md](role-permissions.md) — role matrix + invite roles/admin-grant (FHS-485/486; ADR 0019)
+- [reward-economy.md](reward-economy.md) — sticker rate, habit boosts, skip penalty (FHS-512/488/489; ADR 0020)
 
 Placeholder docs (to be filled as the corresponding features are scoped):
 

@@ -1,8 +1,14 @@
 # Feature: Family members
 
-**Jira:** TBD (Sprint 1 — Tenant Foundation, expected under [FHS-1](https://qualicion2.atlassian.net/browse/FHS-1) / [FHS-12](https://qualicion2.atlassian.net/browse/FHS-12))
-**Status:** draft (informs Sprint 1 schema design; no code yet)
+**Jira:** [FHS-1](https://qualicion2.atlassian.net/browse/FHS-1) (schema) · [FHS-513](https://qualicion2.atlassian.net/browse/FHS-513)/[FHS-485](https://qualicion2.atlassian.net/browse/FHS-485)/[FHS-486](https://qualicion2.atlassian.net/browse/FHS-486)/[FHS-514](https://qualicion2.atlassian.net/browse/FHS-514)/[FHS-520](https://qualicion2.atlassian.net/browse/FHS-520)/[FHS-521](https://qualicion2.atlassian.net/browse/FHS-521) (Manage Family redesign)
+**Status:** shipped — member data model + the Manage Family page
 **Owner:** product-manager
+**ADR:** [0015](../decisions/0015-role-model-owner-flag.md), [0019](../decisions/0019-role-privilege-matrix.md)
+
+> **Note (roles):** the real member role enum is `admin | adult | teen |
+child | guest` (ADR 0015/0019). Earlier drafts of this doc referenced a
+> `guardian`/`grandparent` role that was never built — a grandparent or
+> nanny is added today as `adult` (helps day-to-day) or `guest` (read-only).
 
 The model for "who is in this family". Captures parents, children, and
 other adults living in the household (grandparents, nannies, guardians).
@@ -155,8 +161,93 @@ through the transition.
 - **And** every historical task, milestone, photo previously assigned to
   me remains attached to the same id (no dangling references)
 
+## Part 2 — the Manage Family page (shipped)
+
+`/t/:slug/members` is where an admin sees the whole household, split into two
+collapsible groups — **Grown-ups** (sign in with email) and **Kids** (sign in
+with a PIN) — invites new grown-ups, adds new kids, and manages each person's
+name, PIN, admin rights, or removal.
+
+### Story 5: See the household at a glance
+
+**As a** family member **I want** to see who's in my family, grouped by how
+they sign in **so that** I understand the household shape at a glance.
+
+**Scenario: Members are grouped into Grown-ups and Kids**
+
+- **Given** I open Manage Family
+- **Then** I see a "Grown-ups" section (admin/adult/guest, "Sign in with email")
+- **And** a "Kids" section (child/teen, "Sign in with a PIN")
+- **And** each section starts collapsed, showing just its count, until I expand it
+
+**Scenario: Header shows a live member + pending count**
+
+- **Given** my family has 4 active members and 1 person invited but not signed up
+- **Then** the header reads "The {Name} Family" and "4 members · 1 waiting to join"
+
+### Story 6: Learn how my kids sign in
+
+**As an** admin **I want** a plain explanation of how my kids log in **so
+that** I can walk them through it.
+
+**Scenario: "How your kids sign in" card explains the 3 steps**
+
+- **Given** I open Manage Family and expand the "How your kids sign in" card
+- **Then** I see: 1) the kid-login page link with a copy button, 2) the family
+  code (the family slug), 3) "tap their face and enter their PIN"
+
+### Story 7: Invite an adult or add a child
+
+**As an** admin **I want** two purpose-built forms — one for grown-ups, one
+for kids **so that** the right fields show for each kind of person.
+
+**Scenario: Invite an adult sends an email sign-in link**
+
+- **Given** I am an admin opening "Invite an adult"
+- **When** I enter a name + email and pick a role (Parent/partner, Adult, Guest)
+- **Then** only an admin can see/select "Parent / partner" (admin) — see
+  [role-permissions.md](role-permissions.md) for the server-side safeguard
+- **And** on submit they appear under "Waiting to join" until they accept
+
+**Scenario: Add a child needs no email**
+
+- **Given** I am an admin opening "Add a child"
+- **When** I enter a name and pick "Child" or "Teen"
+- **Then** the member is created immediately (no invite) and appears under
+  "Kids" with "No PIN yet" until I set one
+
+### Story 8: Manage an existing member
+
+**As an** admin **I want** to edit a name, set/reset a PIN, grant/remove admin,
+or remove someone **so that** the roster stays accurate.
+
+**Scenario: Toggle another grown-up's admin rights**
+
+- **Given** I am an admin viewing another admin/adult's card
+- **When** I flip their "Admin" switch
+- **Then** their role changes between admin and adult
+- **And** the switch is disabled ("The last admin cannot be removed") when they
+  are the family's only admin
+
+**Scenario: Set or reset a kid's PIN**
+
+- **Given** I am an admin viewing a child/teen card
+- **When** I choose "Set PIN", enter and confirm 4 matching digits, and save
+- **Then** the PIN is saved; a mismatch or non-4-digit entry is rejected inline
+
+### Story 9: Reach family-wide settings from the profile menu
+
+**Scenario: Profile menu lists children, Manage family, Reward settings, Log out**
+
+- **Given** I open the profile menu from any dashboard page
+- **Then** I see each child with a "View World →" link into their world
+- **And** "Manage family" and "Reward settings" (edits admin-only server-side —
+  see [reward-economy.md](reward-economy.md)), with "Log out" at the bottom
+
 ## Out of scope
 
+- **"Change email" for a grown-up** (FHS-510) — the button renders but is
+  disabled ("Coming soon"); no backend yet.
 - **Schema implementation** — lives under FHS-1 (Tenant Foundation
   epic) when Sprint 1 starts. This doc only constrains what the schema
   must support.

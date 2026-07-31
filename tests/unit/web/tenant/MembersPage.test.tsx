@@ -94,6 +94,19 @@ function renderAt(initial: string) {
   );
 }
 
+// FHS-522 — the Grown-ups / Kids / "How your kids sign in" sections now
+// start collapsed, so their body content (member cards, kid-login steps)
+// isn't in the DOM until the header is clicked. Waits for the header to
+// render, then clicks its toggle to reveal the body.
+async function expandGroup(testId: string) {
+  await waitFor(() => expect(screen.getByTestId(testId)).toBeInTheDocument());
+  fireEvent.click(screen.getByTestId(`${testId}-toggle`));
+}
+
+const expandGrownups = () => expandGroup('members-group-grownups');
+const expandKids = () => expandGroup('members-group-kids');
+const expandKidLogin = () => expandGroup('members-kid-login-share');
+
 beforeEach(() => {
   membersResponse = null;
   fetchMock.mockReset();
@@ -286,10 +299,20 @@ describe('<MembersPage />', () => {
   });
 
   describe('Grown-ups / Kids groups', () => {
+    it('renders the Grown-ups and Kids groups collapsed by default', async () => {
+      membersResponse = fullFamilyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-group-grownups')).toBeInTheDocument());
+      expect(screen.queryByTestId('members-grownup-0-name')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('members-kid-0-name')).not.toBeInTheDocument();
+    });
+
     it('splits members into the Grown-ups and Kids collapsible groups', async () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
       await waitFor(() => expect(screen.getByTestId('members-group-grownups')).toBeInTheDocument());
+      await expandGrownups();
+      await expandKids();
 
       expect(screen.getByTestId('members-grownup-0-name').textContent).toBe('Sarah Khan');
       expect(screen.getByTestId('members-grownup-1-name').textContent).toBe('Yusuf');
@@ -311,15 +334,18 @@ describe('<MembersPage />', () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
       await waitFor(() => expect(screen.getByTestId('members-group-grownups')).toBeInTheDocument());
-      fireEvent.click(screen.getByTestId('members-group-grownups-toggle'));
+      // Starts collapsed (FHS-522) — the body isn't in the DOM yet.
       expect(screen.queryByTestId('members-grownup-0-name')).not.toBeInTheDocument();
       fireEvent.click(screen.getByTestId('members-group-grownups-toggle'));
       expect(screen.getByTestId('members-grownup-0-name')).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('members-group-grownups-toggle'));
+      expect(screen.queryByTestId('members-grownup-0-name')).not.toBeInTheDocument();
     });
 
     it('shows the child/teen "signs in with a PIN, cannot be given admin" panel on a kid card', async () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
+      await expandKids();
       await waitFor(() => expect(screen.getByTestId('members-kid-0-name')).toBeInTheDocument());
       expect(screen.getByTestId('members-kid-0-account-note').textContent).toContain(
         'Signs in with a PIN, cannot be given admin',
@@ -329,6 +355,8 @@ describe('<MembersPage />', () => {
     it('shows role badges with the design colours (admin/adult/teen/child/guest)', async () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
+      await expandGrownups();
+      await expandKids();
       await waitFor(() => expect(screen.getByTestId('members-grownup-0-role')).toBeInTheDocument());
       expect(screen.getByTestId('members-grownup-0-role').textContent).toBe('Admin');
       expect(screen.getByTestId('members-grownup-1-role').textContent).toBe('Adult');
@@ -396,6 +424,7 @@ describe('<MembersPage />', () => {
       await waitFor(() =>
         expect(screen.getByTestId('members-kid-login-share')).toBeInTheDocument(),
       );
+      await expandKidLogin();
 
       expect(screen.getByText('How your kids sign in')).toBeInTheDocument();
       expect(screen.getByTestId('members-kid-login-code').textContent).toBe('khans');
@@ -418,6 +447,10 @@ describe('<MembersPage />', () => {
       await waitFor(() =>
         expect(screen.getByTestId('members-kid-login-share')).toBeInTheDocument(),
       );
+      // Starts collapsed (FHS-522) — the body isn't in the DOM yet.
+      expect(screen.queryByTestId('members-kid-login-url')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('members-kid-login-share-toggle'));
+      expect(screen.getByTestId('members-kid-login-url')).toBeInTheDocument();
       fireEvent.click(screen.getByTestId('members-kid-login-share-toggle'));
       expect(screen.queryByTestId('members-kid-login-url')).not.toBeInTheDocument();
     });
@@ -646,6 +679,7 @@ describe('<MembersPage />', () => {
     it('admin sees a "Set PIN" toggle on a kid card + can submit a fresh PIN', async () => {
       membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: false });
       renderAt('/t/khans/members');
+      await expandKids();
       await waitFor(() =>
         expect(screen.getByTestId('members-kid-0-pin-toggle')).toBeInTheDocument(),
       );
@@ -684,6 +718,7 @@ describe('<MembersPage />', () => {
     it('mismatched PIN + Confirm shows inline error and does NOT call the API', async () => {
       membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: false });
       renderAt('/t/khans/members');
+      await expandKids();
       await waitFor(() =>
         expect(screen.getByTestId('members-kid-0-pin-toggle')).toBeInTheDocument(),
       );
@@ -707,6 +742,7 @@ describe('<MembersPage />', () => {
     it('"Remove kid login" DELETEs the PIN and reloads the list', async () => {
       membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: true });
       renderAt('/t/khans/members');
+      await expandKids();
       await waitFor(() =>
         expect(screen.getByTestId('members-kid-0-pin-toggle')).toBeInTheDocument(),
       );
@@ -736,6 +772,7 @@ describe('<MembersPage />', () => {
     it('a child role caller does NOT see the PIN toggle (admin/adult only)', async () => {
       membersResponse = listWithKid({ callerRole: 'child', kidHasPin: false });
       renderAt('/t/khans/members');
+      await expandKids();
       await waitFor(() => expect(screen.getByTestId('members-kid-0-name')).toBeInTheDocument());
       expect(screen.queryByTestId('members-kid-0-pin-toggle')).not.toBeInTheDocument();
     });
@@ -743,6 +780,7 @@ describe('<MembersPage />', () => {
     it('a teen role caller does NOT see the PIN toggle either', async () => {
       membersResponse = listWithKid({ callerRole: 'teen', kidHasPin: false });
       renderAt('/t/khans/members');
+      await expandKids();
       await waitFor(() => expect(screen.getByTestId('members-kid-0-name')).toBeInTheDocument());
       expect(screen.queryByTestId('members-kid-0-pin-toggle')).not.toBeInTheDocument();
     });
@@ -750,6 +788,7 @@ describe('<MembersPage />', () => {
     it('shows the server detail message (not just "forbidden") when a 403 fires', async () => {
       membersResponse = listWithKid({ callerRole: 'admin', kidHasPin: false });
       renderAt('/t/khans/members');
+      await expandKids();
       await waitFor(() =>
         expect(screen.getByTestId('members-kid-0-pin-toggle')).toBeInTheDocument(),
       );
@@ -779,6 +818,7 @@ describe('<MembersPage />', () => {
     it('edits a grown-up name via the inline edit form', async () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
+      await expandGrownups();
       await waitFor(() =>
         expect(screen.getByTestId('members-grownup-1-edit-name')).toBeInTheDocument(),
       );
@@ -801,6 +841,7 @@ describe('<MembersPage />', () => {
     it('the "Change email" button is disabled with a coming-soon note (FHS-510 not built yet)', async () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
+      await expandGrownups();
       await waitFor(() =>
         expect(screen.getByTestId('members-grownup-0-change-email')).toBeInTheDocument(),
       );
@@ -812,6 +853,7 @@ describe('<MembersPage />', () => {
     it('admin toggle is disabled for the last admin and enabled ("Make admin") on another parent', async () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
+      await expandGrownups();
       await waitFor(() =>
         expect(screen.getByTestId('members-grownup-0-admin-toggle')).toBeInTheDocument(),
       );
@@ -842,6 +884,7 @@ describe('<MembersPage />', () => {
           </Routes>
         </MemoryRouter>,
       );
+      await expandGrownups();
       await waitFor(() =>
         expect(screen.getByTestId('members-admin-panel-btn')).toBeInTheDocument(),
       );
@@ -852,6 +895,7 @@ describe('<MembersPage />', () => {
     it('remove is last-admin-protected on the sole admin, and works on a second grown-up', async () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
+      await expandGrownups();
       await waitFor(() =>
         expect(screen.getByTestId('members-grownup-0-remove')).toBeInTheDocument(),
       );

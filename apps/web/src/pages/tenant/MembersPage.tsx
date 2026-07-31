@@ -326,6 +326,7 @@ export function MembersPage() {
             {grownUps.length > 0 && (
               <CollapsibleSection
                 variant="group"
+                defaultOpen={false}
                 emoji="🧑🏽"
                 title="Grown-ups"
                 subtitle="Sign in with email"
@@ -359,6 +360,7 @@ export function MembersPage() {
             {kids.length > 0 && (
               <CollapsibleSection
                 variant="group"
+                defaultOpen={false}
                 emoji="🧒🏽"
                 title="Kids"
                 subtitle="Sign in with a PIN"
@@ -763,6 +765,7 @@ function KidLoginHelp({ slug, kidsCount }: { slug: string; kidsCount: number }) 
 
   return (
     <CollapsibleSection
+      defaultOpen={false}
       emoji="🔑"
       title="How your kids sign in"
       subtitle={`${kidsCount} kid${kidsCount === 1 ? '' : 's'} use your family code and their own PIN.`}
