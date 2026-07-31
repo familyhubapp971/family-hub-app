@@ -403,12 +403,60 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     await waitFor(() => expect(screen.queryByTestId('tab-tasks-badge')).not.toBeInTheDocument());
   });
 
-  it('falls back to the auth email as parent name when no display name is set', async () => {
+  // FHS-506 — the account menu shows the person's roster name, not their email,
+  // when the login carries no name (common for magic-link signups).
+  it('uses the roster display name (not the email) when the login has no name', async () => {
     authState.user = { email: 'sarah@example.com', id: 'u-1', user_metadata: {} };
     renderAt('/t/khans/dashboard');
     fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
-    expect(screen.getByTestId('dashboard-profile-parent-name').textContent).toBe(
-      'sarah@example.com',
+    // Default mock: caller m-1's roster displayName is 'Sarah'.
+    await waitFor(() =>
+      expect(screen.getByTestId('dashboard-profile-parent-name').textContent).toBe('Sarah'),
+    );
+  });
+
+  it('falls back to the email only when there is no auth name and no roster name', async () => {
+    authState.user = { email: 'sarah@example.com', id: 'u-1', user_metadata: {} };
+    mocks.fetchMock.mockImplementation(async (url: string) => {
+      if (url.includes('/api/me')) {
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'u-1',
+            email: 'sarah@example.com',
+            tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'admin' }],
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/dashboard/today')) {
+        return {
+          ok: true,
+          json: async () => ({
+            date: '2026-06-10',
+            greetingName: 'Sarah',
+            callerMemberId: 'm-x',
+            counts: {
+              members: 0,
+              habits: 0,
+              rewards: 0,
+              tasksDoneToday: 0,
+              tasksTotalToday: 0,
+              mealsPlanned: 0,
+            },
+            members: [],
+            goals: [],
+            recentActivity: [],
+          }),
+        } as Response;
+      }
+      return { ok: false, status: 404, json: async () => ({}) } as Response;
+    });
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await waitFor(() =>
+      expect(screen.getByTestId('dashboard-profile-parent-name').textContent).toBe(
+        'sarah@example.com',
+      ),
     );
   });
 

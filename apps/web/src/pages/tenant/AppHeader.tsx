@@ -304,6 +304,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
 
   const [familyName, setFamilyName] = useState<string | null>(null);
   const [callerRole, setCallerRole] = useState<string | null>(null);
+  const [callerName, setCallerName] = useState<string | null>(null);
   const [members, setMembers] = useState<DashboardMember[] | null>(null);
   const [openTasks, setOpenTasks] = useState<number>(0);
   const [headerLoading, setHeaderLoading] = useState(true);
@@ -338,6 +339,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
         setMembers(roster);
         const caller = roster.find((m) => m.id === (today.callerMemberId as string | undefined));
         setOpenTasks(caller?.tasksPending ?? 0);
+        setCallerName(caller?.displayName?.trim() || null);
       }
       setHeaderLoading(false);
     });
@@ -360,6 +362,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
           setMembers(roster);
           const caller = roster.find((m) => m.id === (today.callerMemberId as string | undefined));
           setOpenTasks(caller?.tasksPending ?? 0);
+          setCallerName(caller?.displayName?.trim() || null);
         }
       })
       .catch(() => {});
@@ -381,9 +384,13 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
     navigate(`/t/${slug}/members`);
   }, [navigate, slug]);
 
+  // FHS-506 — prefer the caller's roster display name (the name shown on their
+  // member card) over the auth email. Magic-link signups often carry no
+  // full_name, so the email used to leak into the account menu.
   const parentName =
     (user?.user_metadata?.full_name as string | undefined) ??
     (user?.user_metadata?.name as string | undefined) ??
+    callerName ??
     user?.email ??
     'You';
 
