@@ -23,6 +23,7 @@ import {
   Card,
   ChoiceRow,
   ResultBanner,
+  Select,
   Toggle,
 } from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
@@ -172,14 +173,27 @@ export function RewardSettingsPage() {
   const loadHabits = useCallback(async () => {
     if (!headers || !selectedKidId) {
       setHabits([]);
+      setSelectedHabitId(null);
       return;
     }
     try {
       const res = await fetch(`${API_BASE}/api/habits?memberId=${selectedKidId}`, { headers });
       if (!res.ok) return;
       const body = (await res.json()) as { habits: HabitItem[] };
-      setHabits(body.habits ?? []);
-      setSelectedHabitId(null);
+      const nextHabits = body.habits ?? [];
+      setHabits(nextHabits);
+      // Pre-select the first habit so its config (boost + skip penalty) is
+      // visible immediately, matching the mock's "one sample habit already
+      // shown" presentation instead of requiring an extra tap to reveal it.
+      const first = nextHabits[0];
+      if (first) {
+        setSelectedHabitId(first.id);
+        setHabitBoost(first.boost);
+        setSkipChoice(first.skipPenaltyMinor > 0 ? 'penalty' : 'none');
+        setPenaltyMinor(first.skipPenaltyMinor > 0 ? first.skipPenaltyMinor : 50);
+      } else {
+        setSelectedHabitId(null);
+      }
     } catch {
       setHabits([]);
     }
@@ -258,7 +272,7 @@ export function RewardSettingsPage() {
       data-testid="reward-settings-page"
     >
       <AppHeader activeTab={null} onTabChange={onHeaderTabChange} />
-      <div className="mx-auto w-full max-w-3xl flex-1 p-4 pb-32 sm:p-6">
+      <div className="mx-auto w-full max-w-5xl flex-1 p-4 pb-40 sm:p-6 sm:pb-36">
         <div className="mb-4">
           <Link
             to={`/t/${slug}/dashboard`}
@@ -311,214 +325,237 @@ export function RewardSettingsPage() {
         )}
 
         {status === 'ready' && (
-          <div className="space-y-6">
-            {/* ── Step 1 — family default rate ── */}
-            <Card testId="reward-settings-step-1">
-              <StepHeading number={1} title="How much is one sticker worth?" />
-              <AmountPicker
-                valueMinor={familyRateMinor}
-                currency={currency}
-                maxMinor={RATE_MINOR_MAX}
-                onChange={setFamilyRateMinor}
-                label="Every family member starts with this rate"
-                testId="reward-settings-family-rate"
-              />
-            </Card>
+          <>
+            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+              {/* ── Left column — steps 1 + 2 ── */}
+              <div className="space-y-5">
+                {/* ── Step 1 — family default rate ── */}
+                <Card testId="reward-settings-step-1">
+                  <StepHeading number={1} title="How much is one sticker worth?" />
+                  <AmountPicker
+                    valueMinor={familyRateMinor}
+                    currency={currency}
+                    maxMinor={RATE_MINOR_MAX}
+                    onChange={setFamilyRateMinor}
+                    label="Every family member starts with this rate"
+                    testId="reward-settings-family-rate"
+                  />
+                </Card>
 
-            {/* ── Step 2 — per-child overrides ── */}
-            <Card testId="reward-settings-step-2">
-              <StepHeading number={2} title="Different amount for a child?" />
-              {kids.length === 0 && (
-                <p className="text-sm text-gray-500">No kids in this family yet.</p>
-              )}
-              <div className="space-y-3">
-                {kids.map((kid) => {
-                  const o = overrides[kid.memberId] ?? {
-                    enabled: false,
-                    rateMinor: familyRateMinor,
-                  };
-                  return (
-                    <div
-                      key={kid.memberId}
-                      data-testid={`reward-settings-kid-${kid.memberId}`}
-                      className="rounded-xl border-2 border-gray-200 p-3.5"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5">
-                          <span
-                            aria-hidden="true"
-                            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-purple-200 font-heading text-sm"
-                          >
-                            {kid.avatarEmoji ?? initial(kid.displayName)}
-                          </span>
-                          <span className="text-sm font-bold text-gray-900">
-                            Different amount for {kid.displayName}
-                          </span>
+                {/* ── Step 2 — per-child overrides ── */}
+                <Card testId="reward-settings-step-2">
+                  <StepHeading number={2} title="Does one child earn a different amount?" />
+                  {kids.length === 0 && (
+                    <p className="text-sm text-gray-500">No kids in this family yet.</p>
+                  )}
+                  <div className="space-y-3">
+                    {kids.map((kid) => {
+                      const o = overrides[kid.memberId] ?? {
+                        enabled: false,
+                        rateMinor: familyRateMinor,
+                      };
+                      return (
+                        <div
+                          key={kid.memberId}
+                          data-testid={`reward-settings-kid-${kid.memberId}`}
+                          className="rounded-xl border-2 border-gray-200 p-3.5"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5">
+                              <span
+                                aria-hidden="true"
+                                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-purple-200 font-heading text-sm"
+                              >
+                                {kid.avatarEmoji ?? initial(kid.displayName)}
+                              </span>
+                              <span className="text-sm font-bold text-gray-900">
+                                Different amount for {kid.displayName}
+                              </span>
+                            </div>
+                            <Toggle
+                              checked={o.enabled}
+                              onChange={(checked) =>
+                                setOverrides((prev) => ({
+                                  ...prev,
+                                  [kid.memberId]: { ...o, enabled: checked },
+                                }))
+                              }
+                              label={`Different amount for ${kid.displayName}`}
+                              testId={`reward-settings-kid-${kid.memberId}-toggle`}
+                            />
+                          </div>
+                          {o.enabled && (
+                            <div className="mt-3">
+                              <AmountPicker
+                                valueMinor={o.rateMinor}
+                                currency={currency}
+                                maxMinor={RATE_MINOR_MAX}
+                                onChange={(rateMinor) =>
+                                  setOverrides((prev) => ({
+                                    ...prev,
+                                    [kid.memberId]: { ...o, rateMinor },
+                                  }))
+                                }
+                                testId={`reward-settings-kid-${kid.memberId}-rate`}
+                              />
+                            </div>
+                          )}
                         </div>
-                        <Toggle
-                          checked={o.enabled}
-                          onChange={(checked) =>
-                            setOverrides((prev) => ({
-                              ...prev,
-                              [kid.memberId]: { ...o, enabled: checked },
-                            }))
-                          }
-                          label={`Different amount for ${kid.displayName}`}
-                          testId={`reward-settings-kid-${kid.memberId}-toggle`}
+                      );
+                    })}
+                  </div>
+                </Card>
+              </div>
+
+              {/* ── Right column — step 3: boost a habit or set a skip penalty ── */}
+              <Card testId="reward-settings-step-3">
+                <StepHeading number={3} title="Should big habits pay more?" />
+
+                {allKids.length > 1 && (
+                  <div
+                    className="mb-4 flex flex-wrap gap-2"
+                    data-testid="reward-settings-kid-picker"
+                  >
+                    {allKids.map((kid) => (
+                      <button
+                        key={kid.id}
+                        type="button"
+                        data-testid={`reward-settings-kid-picker-${kid.id}`}
+                        onClick={() => setSelectedKidId(kid.id)}
+                        className={[
+                          'min-h-11 rounded-xl border-2 border-black px-3 py-2 text-sm font-bold transition-all',
+                          kid.id === selectedKidId
+                            ? 'bg-yellow-400 shadow-neo-xs'
+                            : 'bg-white hover:bg-gray-50',
+                        ].join(' ')}
+                      >
+                        {kid.displayName}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {habits.length === 0 && (
+                  <p className="text-sm text-gray-500">No habits for this child yet.</p>
+                )}
+
+                {habits.length > 1 && (
+                  <div className="mb-4">
+                    <label
+                      htmlFor="reward-settings-habit-select"
+                      className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500"
+                    >
+                      Which habit?
+                    </label>
+                    <Select
+                      id="reward-settings-habit-select"
+                      testId="reward-settings-habit-select"
+                      value={selectedHabitId ?? ''}
+                      onChange={(e) => {
+                        const habit = habits.find((h) => h.id === e.target.value);
+                        if (habit) selectHabit(habit);
+                      }}
+                    >
+                      {habits.map((habit) => (
+                        <option key={habit.id} value={habit.id}>
+                          {habit.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+
+                {selectedHabit && (
+                  <div className="space-y-5">
+                    {habits.length === 1 && (
+                      <p
+                        data-testid="reward-settings-habit-name"
+                        className="font-heading text-base uppercase tracking-wide text-gray-900"
+                      >
+                        {selectedHabit.name}
+                      </p>
+                    )}
+
+                    <div>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                        Boost
+                      </p>
+                      <div className="flex gap-2">
+                        <BoostButton
+                          multiplier={1}
+                          selected={habitBoost === 1}
+                          onClick={() => setHabitBoost(1)}
+                          testId="reward-settings-boost-1"
                         />
-                      </div>
-                      {o.enabled && (
-                        <div className="mt-3">
-                          <AmountPicker
-                            valueMinor={o.rateMinor}
-                            currency={currency}
-                            maxMinor={RATE_MINOR_MAX}
-                            onChange={(rateMinor) =>
-                              setOverrides((prev) => ({
-                                ...prev,
-                                [kid.memberId]: { ...o, rateMinor },
-                              }))
-                            }
-                            testId={`reward-settings-kid-${kid.memberId}-rate`}
+                        {BOOST_PRESETS.map((n) => (
+                          <BoostButton
+                            key={n}
+                            multiplier={n}
+                            selected={habitBoost === n}
+                            onClick={() => setHabitBoost(n)}
+                            testId={`reward-settings-boost-${n}`}
                           />
+                        ))}
+                      </div>
+                      {habitResultLine && (
+                        <div className="mt-3">
+                          <ResultBanner testId="reward-settings-boost-result">
+                            {habitResultLine}
+                          </ResultBanner>
                         </div>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-            </Card>
 
-            {/* ── Step 3 — per-habit boost + skip penalty ── */}
-            <Card testId="reward-settings-step-3">
-              <StepHeading number={3} title="Boost a habit or set a skip penalty" />
-              {allKids.length > 1 && (
-                <div className="mb-4 flex flex-wrap gap-2" data-testid="reward-settings-kid-picker">
-                  {allKids.map((kid) => (
-                    <button
-                      key={kid.id}
-                      type="button"
-                      data-testid={`reward-settings-kid-picker-${kid.id}`}
-                      onClick={() => setSelectedKidId(kid.id)}
-                      className={[
-                        'min-h-11 rounded-xl border-2 border-black px-3 py-2 text-sm font-bold transition-all',
-                        kid.id === selectedKidId
-                          ? 'bg-yellow-400 shadow-neo-xs'
-                          : 'bg-white hover:bg-gray-50',
-                      ].join(' ')}
-                    >
-                      {kid.displayName}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {habits.length === 0 && (
-                <p className="text-sm text-gray-500">No habits for this child yet.</p>
-              )}
-              <div className="space-y-2" data-testid="reward-settings-habit-list">
-                {habits.map((habit) => (
-                  <button
-                    key={habit.id}
-                    type="button"
-                    data-testid={`reward-settings-habit-${habit.id}`}
-                    onClick={() => selectHabit(habit)}
-                    className={[
-                      'flex w-full items-center justify-between rounded-xl border-2 border-black px-3.5 py-2.5 text-left transition-all',
-                      habit.id === selectedHabitId
-                        ? 'bg-purple-50 shadow-neo-xs'
-                        : 'bg-white hover:bg-gray-50',
-                    ].join(' ')}
-                  >
-                    <span className="text-sm font-bold text-gray-900">{habit.name}</span>
-                    <span className="text-xs font-black uppercase text-gray-400">
-                      {habit.boost}x{habit.skipPenaltyMinor > 0 ? ' · penalty' : ''}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {selectedHabit && (
-                <div className="mt-5 space-y-5 border-t-2 border-gray-100 pt-5">
-                  <div>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-                      Boost
-                    </p>
-                    <div className="flex gap-2">
-                      <BoostButton
-                        multiplier={1}
-                        selected={habitBoost === 1}
-                        onClick={() => setHabitBoost(1)}
-                        testId="reward-settings-boost-1"
-                      />
-                      {BOOST_PRESETS.map((n) => (
-                        <BoostButton
-                          key={n}
-                          multiplier={n}
-                          selected={habitBoost === n}
-                          onClick={() => setHabitBoost(n)}
-                          testId={`reward-settings-boost-${n}`}
+                    <div className="border-t-2 border-dashed border-gray-200 pt-5">
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                        What happens on a day they skip it?
+                      </p>
+                      <div role="radiogroup" className="space-y-2">
+                        <ChoiceRow
+                          selected={skipChoice === 'none'}
+                          onClick={() => setSkipChoice('none')}
+                          title="Nothing happens"
+                          description="Missing a day just means no sticker that day."
+                          icon="🙂"
+                          testId="reward-settings-skip-none"
                         />
-                      ))}
-                    </div>
-                    {habitResultLine && (
-                      <div className="mt-3">
-                        <ResultBanner testId="reward-settings-boost-result">
-                          {habitResultLine}
-                        </ResultBanner>
+                        <ChoiceRow
+                          selected={skipChoice === 'penalty'}
+                          onClick={() => setSkipChoice('penalty')}
+                          title="They lose some money"
+                          description="A missed day deducts from their savings when the week closes."
+                          icon="⚠️"
+                          testId="reward-settings-skip-penalty"
+                        />
                       </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-                      What happens on a day they skip it?
-                    </p>
-                    <div role="radiogroup" className="space-y-2">
-                      <ChoiceRow
-                        selected={skipChoice === 'none'}
-                        onClick={() => setSkipChoice('none')}
-                        title="Nothing"
-                        description="Missing a day just means no sticker that day."
-                        icon="🙂"
-                        testId="reward-settings-skip-none"
-                      />
-                      <ChoiceRow
-                        selected={skipChoice === 'penalty'}
-                        onClick={() => setSkipChoice('penalty')}
-                        title="They lose some money"
-                        description="A missed day deducts from their savings when the week closes."
-                        icon="⚠️"
-                        testId="reward-settings-skip-penalty"
-                      />
-                    </div>
-                    {skipChoice === 'penalty' && (
-                      <div className="mt-3">
-                        <AmountPicker
-                          valueMinor={penaltyMinor}
-                          currency={currency}
-                          maxMinor={RATE_MINOR_MAX}
-                          onChange={setPenaltyMinor}
-                          label="Amount lost per missed day"
-                          testId="reward-settings-penalty-amount"
-                        />
+                      {skipChoice === 'penalty' && (
                         <div className="mt-3">
-                          <ResultBanner tone="warning" testId="reward-settings-penalty-result">
-                            Missing a day docks {formatMinor(penaltyMinor, currency)} from savings
-                            when the week closes.
-                          </ResultBanner>
+                          <AmountPicker
+                            valueMinor={penaltyMinor}
+                            currency={currency}
+                            maxMinor={RATE_MINOR_MAX}
+                            onChange={setPenaltyMinor}
+                            label="Amount lost per missed day"
+                            testId="reward-settings-penalty-amount"
+                          />
+                          <div className="mt-3">
+                            <ResultBanner tone="warning" testId="reward-settings-penalty-result">
+                              Missing a day docks {formatMinor(penaltyMinor, currency)} from savings
+                              when the week closes.
+                            </ResultBanner>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </Card>
+                )}
+              </Card>
+            </div>
 
             {saveError && (
               <div
                 data-testid="reward-settings-save-error"
-                className="flex items-start gap-2 rounded-xl border-2 border-red-400 bg-red-50 p-3.5"
+                className="mt-5 flex items-start gap-2 rounded-xl border-2 border-red-400 bg-red-50 p-3.5"
               >
                 <AlertTriangle
                   size={16}
@@ -531,21 +568,21 @@ export function RewardSettingsPage() {
             {savedAt && !saveError && (
               <p
                 data-testid="reward-settings-saved-notice"
-                className="text-sm font-bold text-green-700"
+                className="mt-5 text-sm font-bold text-green-700"
               >
                 Saved!
               </p>
             )}
-          </div>
+          </>
         )}
       </div>
 
       {/* ── Fixed bottom Save bar ── */}
       {status === 'ready' && isAdmin && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-black bg-pink-400 p-4 shadow-neo-lg">
-          <div className="mx-auto flex w-full max-w-3xl items-center justify-end gap-3">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-black bg-kingdom-950 p-3 shadow-neo-lg">
+          <div className="mx-auto flex w-full max-w-5xl items-center justify-end gap-3">
             <Button
-              variant="primary"
+              variant="pink"
               size="lg"
               disabled={saving}
               onClick={() => void handleSave()}
@@ -563,7 +600,7 @@ export function RewardSettingsPage() {
 function StepHeading({ number, title }: { number: number; title: string }) {
   return (
     <div className="mb-3 flex items-center gap-2.5">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-xs font-black text-white">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-black bg-yellow-400 text-xs font-black text-gray-900">
         {number}
       </span>
       <h2 className="font-heading text-sm uppercase tracking-wide text-gray-900 sm:text-base">
