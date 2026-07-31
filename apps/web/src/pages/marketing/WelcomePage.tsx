@@ -8,6 +8,7 @@ import {
   NotebookPen,
   LayoutDashboard,
   Users,
+  Settings,
   ArrowRight,
   LogOut,
 } from 'lucide-react';
@@ -657,7 +658,7 @@ function LoggedInLanding({
       ? []
       : [
           {
-            title: 'Manage members',
+            title: 'Manage family',
             desc: 'Invite a partner, add kids, set PINs and roles.',
             Icon: Users,
             headerBg: 'bg-cyan-200',
@@ -665,6 +666,16 @@ function LoggedInLanding({
             accentBar: 'border-l-cyan-500',
             iconColor: 'text-blue-600',
             onClick: () => navigate(slug ? `/t/${slug}/members` : '/dashboard'),
+          },
+          {
+            title: 'Reward settings',
+            desc: 'Set what a sticker is worth and big-habit bonuses.',
+            Icon: Settings,
+            headerBg: 'bg-emerald-200',
+            cardBg: 'bg-emerald-50',
+            accentBar: 'border-l-emerald-500',
+            iconColor: 'text-emerald-600',
+            onClick: () => navigate(slug ? `/t/${slug}/reward-settings` : '/dashboard'),
           },
         ]),
     ...(isKid

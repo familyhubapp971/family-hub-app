@@ -266,7 +266,27 @@ function ProfilePill({
                 ))}
               </ul>
             ) : (
-              <p className="px-1 text-xs font-bold text-gray-400">No children yet</p>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onManageMembers();
+                }}
+                data-testid="dashboard-profile-add-first-child"
+                className="flex min-h-11 w-full items-center gap-3 rounded-lg border-2 border-dashed border-gray-300 px-3 py-3 text-left transition-colors hover:border-black hover:bg-gray-50"
+              >
+                <span
+                  aria-hidden="true"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-black bg-yellow-300 text-base"
+                >
+                  👋
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold">No kids added yet</span>
+                  <span className="text-xs font-bold text-gray-500">Add your first child</span>
+                </span>
+              </button>
             )}
           </div>
           <div className="space-y-2 border-t-2 border-black px-3 pb-3 pt-3">
@@ -281,7 +301,7 @@ function ProfilePill({
               className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-gray-100"
             >
               <Users size={16} strokeWidth={3} aria-hidden="true" />
-              Manage members
+              Manage family
             </button>
             {/* FHS-512 / FHS-514 — reward-config ("Pocket money") settings. */}
             <button

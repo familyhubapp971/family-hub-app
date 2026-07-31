@@ -278,7 +278,7 @@ export function RewardSettingsPage() {
           </span>
           <div>
             <h1 className="font-heading text-2xl uppercase tracking-wide text-gray-900 sm:text-3xl">
-              Pocket money
+              Reward settings
             </h1>
             <p className="text-sm font-medium text-gray-500">
               Set how much your kids earn for their habits.

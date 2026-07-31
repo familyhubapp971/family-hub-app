@@ -106,7 +106,8 @@ describe('<WelcomePage /> — logged-in state (FHS-358)', () => {
     expect(screen.queryByText('Start free')).not.toBeInTheDocument();
     // Quick links: dashboard, manage members, and the child's world.
     await waitFor(() => expect(screen.getByText("Iman's World")).toBeInTheDocument());
-    expect(screen.getByText('Manage members')).toBeInTheDocument();
+    expect(screen.getByText('Manage family')).toBeInTheDocument();
+    expect(screen.getByText('Reward settings')).toBeInTheDocument();
     expect(screen.getAllByText('Go to your dashboard').length).toBeGreaterThan(0);
   });
 
@@ -129,7 +130,8 @@ describe('<WelcomePage /> — logged-in state (FHS-358)', () => {
     await waitFor(() => expect(screen.getByTestId('welcome-loggedin')).toBeInTheDocument());
     expect(screen.getByTestId('welcome-logout')).toBeInTheDocument();
     expect(screen.getAllByText('Go to my hub').length).toBeGreaterThan(0);
-    expect(screen.queryByText('Manage members')).not.toBeInTheDocument();
+    expect(screen.queryByText('Manage family')).not.toBeInTheDocument();
+    expect(screen.queryByText('Reward settings')).not.toBeInTheDocument();
     expect(screen.queryByText('Start free')).not.toBeInTheDocument();
   });
 });
