@@ -17,6 +17,7 @@ import type {
   DashboardMember,
   DashboardTodayResponse,
 } from '@familyhub/shared';
+import { roleStyle } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -29,23 +30,14 @@ import { API_BASE } from '../../../lib/api';
 // row of Today's Snapshot (three round-icon stat tiles) and the purple
 // Family Goals card (top goal bar + Kids' Star Balances) above the
 // Recent Activity feed.
+//
+// FHS-513 — role → colour/label map now lives in @familyhub/ui
+// (`roleStyle`) so it isn't duplicated between here and MembersPage.
 
 type Status =
   | { kind: 'loading' }
   | { kind: 'ready'; data: DashboardTodayResponse }
   | { kind: 'error'; message: string };
-
-const ROLE_STYLE: Record<string, { disc: string; badge: string; label: string }> = {
-  admin: { disc: 'bg-pink-300', badge: 'bg-pink-200', label: 'Admin' },
-  adult: { disc: 'bg-cyan-300', badge: 'bg-cyan-200', label: 'Adult' },
-  teen: { disc: 'bg-yellow-300', badge: 'bg-yellow-200', label: 'Teen' },
-  child: { disc: 'bg-purple-300', badge: 'bg-purple-200', label: 'Child' },
-  guest: { disc: 'bg-gray-300', badge: 'bg-gray-200', label: 'Guest' },
-};
-
-function roleStyle(role: string) {
-  return ROLE_STYLE[role] ?? ROLE_STYLE.guest!;
-}
 
 function isYoungMember(role: string): boolean {
   return role === 'child' || role === 'teen';

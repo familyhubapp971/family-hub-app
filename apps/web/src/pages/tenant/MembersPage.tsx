@@ -1,32 +1,39 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Copy, Edit2, Key, Mail, Plus, Settings2, Shield, Trash2, X } from 'lucide-react';
-import { Button, Card, Input, Label, Select } from '@familyhub/ui';
+import { Copy, Edit2, Key, Mail, Plus, Settings2, Shield, Trash2 } from 'lucide-react';
+import {
+  AvatarEmojiPicker,
+  Button,
+  CollapsibleSection,
+  FormCard,
+  Input,
+  Label,
+  MemberCard,
+  RoleBadge,
+  Select,
+} from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
 
-// FHS-108 / FHS-252 / FHS-276 / FHS-471 / FHS-472 / FHS-473 / FHS-486 —
-// /t/:slug/members, rebuilt to the Magic Patterns "Manage Members" design:
-// header CTAs (Invite member / Add member) with inline expanding forms, a
-// card grid (one card per member with a coloured initial disc + role
-// badge), a pending-invite box with Resend on unclaimed seats, and
-// per-card actions — Edit name, the parents-only admin toggle (last admin
-// protected), Set PIN on kids, and Remove. Mutations are admin-only; PIN
-// management stays admin/adult (FHS-252).
+// FHS-513 — Manage Family rebuild to the finalised Magic Patterns
+// design: a family-name header with a "{N} members · {M} waiting to
+// join" summary and two CTAs ("Invite an adult" / "Add a child"),
+// members split into two collapsible groups ("Grown-ups" — sign in
+// with email; "Kids" — sign in with a PIN), a collapsible "How your
+// kids sign in" helper card, and a separate "Waiting to join" section
+// for unclaimed grown-up seats.
 //
-// FHS-472/473 — "Add member" starts generic: pick child / teen / adult,
-// then create. All three go through POST /api/members — the same direct,
-// no-login roster insert onboarding uses for a plain adult row (no email).
-// Inviting someone to actually log in stays a separate action (Invite
-// member).
+// This is a VISUAL/STRUCTURAL rebuild only — every existing API call,
+// admin-only mutation gate, and last-admin protection carries over
+// unchanged from the pre-FHS-513 page (FHS-108 / FHS-252 / FHS-276 /
+// FHS-471/472/473 / FHS-486). See each handler below for its history.
 //
-// FHS-486 / ADR 0019 — "Invite Parent" renamed "Invite member": the form
-// used to say "Parent" while hardcoding role: 'adult'. It now sends
-// whichever role the caller actually picks (admin/adult/teen/guest); the
-// API enforces that only an existing admin can grant `role: 'admin'`.
+// "Change email" (FHS-510) has no backend yet — its button renders
+// disabled with a "Coming soon" note rather than being wired to a
+// non-existent endpoint.
 
 interface MemberItem {
   id: string;
@@ -47,30 +54,19 @@ interface ListMembersResponse {
   callerRole: string;
 }
 
+interface MeResponseTenant {
+  slug: string;
+  name: string;
+  role: string;
+}
+
 type Status =
   | { kind: 'loading' }
   | { kind: 'ready'; members: MemberItem[]; callerRole: string }
   | { kind: 'error'; message: string };
 
-// FHS-485 — 'adult' used to be badged "Parent", which is wrong: a real
-// parent/partner is `admin` (full rights). 'adult' is the everyday,
-// non-admin grown-up (grandma, cousin, sitter) — see ADR 0019.
-const ROLE_STYLE: Record<string, { disc: string; badge: string; label: string }> = {
-  admin: { disc: 'bg-pink-300', badge: 'bg-pink-200', label: 'Admin' },
-  adult: { disc: 'bg-cyan-300', badge: 'bg-cyan-200', label: 'Adult' },
-  teen: { disc: 'bg-yellow-300', badge: 'bg-yellow-200', label: 'Teen' },
-  child: { disc: 'bg-purple-300', badge: 'bg-purple-200', label: 'Child' },
-  guest: { disc: 'bg-gray-300', badge: 'bg-gray-200', label: 'Guest' },
-};
-
-function roleStyle(role: string) {
-  return ROLE_STYLE[role] ?? ROLE_STYLE.guest!;
-}
-
-function initial(name: string): string {
-  return [...name.trim()][0]?.toUpperCase() ?? '?';
-}
-
+const GROWN_UP_ROLES = new Set(['admin', 'adult', 'guest']);
+const KID_ROLES = new Set(['child', 'teen']);
 const ADMIN_OR_ADULT = new Set(['admin', 'adult']);
 const PIN_ELIGIBLE_ROLES = new Set(['child', 'teen']);
 
@@ -80,6 +76,8 @@ export function MembersPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
+  const [familyName, setFamilyName] = useState<string | null>(null);
+
   // FHS-322 — render the shared app header; nav tabs route to the dashboard.
   const onHeaderTabChange = useCallback(
     (tabId: string) => {
@@ -87,13 +85,12 @@ export function MembersPage() {
     },
     [navigate, slug],
   );
-  // Which header form is open ('none' | 'invite' | 'member'). The
-  // dashboard dropdown's Add member deep-links here with ?add=member.
-  // FHS-472 — 'member' replaces the old child-only 'child' form; the
-  // form itself starts with a type picker (child / teen / adult).
-  // FHS-486 — 'invite' (was 'parent') opens the role-picker invite form.
-  const [activeForm, setActiveForm] = useState<'none' | 'invite' | 'member'>(
-    params.get('add') === 'member' ? 'member' : 'none',
+
+  // Which header form is open. The dashboard's "+ Add member" deep-links
+  // here with ?add=member — kept as-is so that CTA (Family Overview /
+  // AppHeader) doesn't need a matching change; it now opens "Add a child".
+  const [activeForm, setActiveForm] = useState<'none' | 'invite' | 'child'>(
+    params.get('add') === 'member' ? 'child' : 'none',
   );
   const [openPinFor, setOpenPinFor] = useState<string | null>(null);
   const [editingFor, setEditingFor] = useState<string | null>(null);
@@ -130,6 +127,24 @@ export function MembersPage() {
     void fetchMembers();
   }, [fetchMembers]);
 
+  // Family name for the header — same /api/me lookup AppHeader already
+  // does. Best-effort: on failure the heading falls back to "Your family".
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    fetch(`${API_BASE}/api/me`, { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((me: { tenants?: MeResponseTenant[] } | null) => {
+        if (cancelled || !me?.tenants) return;
+        const tenant = me.tenants.find((t) => t.slug === slug);
+        if (tenant) setFamilyName(tenant.name);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [session, slug]);
+
   // Shared mutation helper: fires, surfaces the server's `detail` on
   // failure, refreshes the list on success.
   const mutate = useCallback(
@@ -159,7 +174,15 @@ export function MembersPage() {
 
   const ready = status.kind === 'ready';
   const callerIsAdmin = ready && status.callerRole === 'admin';
-  const adminCount = ready ? status.members.filter((m) => m.role === 'admin').length : 0;
+  const allMembers = ready ? status.members : [];
+  const adminCount = allMembers.filter((m) => m.role === 'admin').length;
+
+  // Grown-ups actually signed in vs still waiting on their invite; kids
+  // are never "waiting" (PIN login, no signup step) — see FHS-276.
+  const grownUps = allMembers.filter((m) => GROWN_UP_ROLES.has(m.role) && m.status === 'active');
+  const waiting = allMembers.filter((m) => GROWN_UP_ROLES.has(m.role) && m.status !== 'active');
+  const kids = allMembers.filter((m) => KID_ROLES.has(m.role));
+  const memberCount = grownUps.length + kids.length;
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-gray-900">
@@ -173,36 +196,45 @@ export function MembersPage() {
             ← Dashboard
           </Link>
         </div>
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <h1 className="font-heading text-3xl text-white md:text-4xl">Manage Members</h1>
+        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-start">
+          <div>
+            <h1
+              className="font-heading text-3xl text-white md:text-4xl"
+              data-testid="members-family-name"
+            >
+              {familyName ?? 'Your family'}
+            </h1>
+            <p className="mt-1 text-sm font-bold text-purple-200" data-testid="members-summary">
+              {memberCount} member{memberCount === 1 ? '' : 's'} · {waiting.length} waiting to join
+            </p>
+          </div>
           {callerIsAdmin && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Button
                 type="button"
                 variant="secondary"
                 size="md"
-                testId="members-invite-member"
+                testId="members-invite-adult"
                 onClick={() => setActiveForm((f) => (f === 'invite' ? 'none' : 'invite'))}
               >
-                <Mail size={16} aria-hidden="true" /> Invite member
+                <Mail size={16} aria-hidden="true" /> Invite an adult
               </Button>
               <Button
                 type="button"
                 variant="primary"
                 size="md"
-                testId="members-add-member"
-                onClick={() => setActiveForm((f) => (f === 'member' ? 'none' : 'member'))}
+                testId="members-add-child"
+                onClick={() => setActiveForm((f) => (f === 'child' ? 'none' : 'child'))}
               >
-                <Plus size={16} aria-hidden="true" /> Add member
+                <Plus size={16} aria-hidden="true" /> Add a child
               </Button>
             </div>
           )}
         </div>
 
-        <KidLoginShare slug={slug} />
-
         {activeForm === 'invite' && callerIsAdmin && (
-          <InviteMemberForm
+          <InviteAdultForm
+            callerIsAdmin={callerIsAdmin}
             onClose={() => setActiveForm('none')}
             onSubmit={async (email, name, role) => {
               const ok = await mutate('/api/invitations', {
@@ -218,16 +250,17 @@ export function MembersPage() {
             error={actionError}
           />
         )}
-        {activeForm === 'member' && callerIsAdmin && (
-          <AddMemberForm
+        {activeForm === 'child' && callerIsAdmin && (
+          <AddChildForm
             onClose={() => setActiveForm('none')}
-            onSubmit={async (displayName, role, age) => {
+            onSubmit={async (displayName, role, age, avatarEmoji) => {
               const ok = await mutate('/api/members', {
                 method: 'POST',
                 body: JSON.stringify({
                   displayName,
                   role,
                   ...(age !== null ? { age } : {}),
+                  ...(avatarEmoji ? { avatarEmoji } : {}),
                 }),
               });
               if (ok) setActiveForm('none');
@@ -246,9 +279,9 @@ export function MembersPage() {
             {status.message}
           </p>
         )}
-        {ready && status.members.length === 0 && (
+        {ready && allMembers.length === 0 && (
           <p data-testid="members-empty" className="text-sm font-bold text-purple-200">
-            No members yet.
+            Nobody here yet
           </p>
         )}
 
@@ -262,204 +295,406 @@ export function MembersPage() {
           </p>
         )}
 
-        {ready && status.members.length > 0 && (
-          <ul
-            className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
-            data-testid="members-list"
-          >
-            {status.members.map((m, idx) => {
-              const rs = roleStyle(m.role);
-              const isParentRow = m.role === 'admin' || m.role === 'adult';
-              const lastAdminLock = m.role === 'admin' && adminCount <= 1;
-              // FHS-278 — admin only becomes available once the seat has a
-              // real login. Button stays visible (founder's call), disabled.
-              const adminToggleDisabled = lastAdminLock || m.status === 'unclaimed';
-              const callerCanManagePin =
-                ADMIN_OR_ADULT.has(status.callerRole) && PIN_ELIGIBLE_ROLES.has(m.role);
-              return (
-                <li key={m.id} className="list-none">
-                  <Card
-                    className="flex h-full flex-col bg-white p-5"
-                    data-testid={`members-row-${idx}`}
-                  >
-                    <div className="mb-4 flex items-start gap-4">
-                      <div
-                        aria-hidden="true"
-                        className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-black font-heading text-2xl shadow-neo-sm ${rs.disc}`}
-                      >
-                        {m.avatarEmoji ?? initial(m.displayName)}
-                      </div>
-                      <div className="min-w-0 flex-1 pt-1">
-                        <h3
-                          className="truncate font-heading text-xl text-black"
-                          data-testid={`members-row-${idx}-name`}
-                        >
-                          {m.displayName}
-                        </h3>
-                        <span
-                          data-testid={`members-row-${idx}-role`}
-                          className={`mt-1 inline-block rounded-full border-2 border-black px-2 py-0.5 text-[11px] font-bold ${rs.badge}`}
-                        >
-                          {rs.label}
-                          {PIN_ELIGIBLE_ROLES.has(m.role) && m.age !== null ? ` (${m.age})` : ''}
-                        </span>
-                      </div>
-                    </div>
-
-                    {m.status === 'unclaimed' && isParentRow && (
-                      <div
-                        className="mb-4 flex flex-col gap-2 rounded-md border-2 border-yellow-400 bg-yellow-50 p-3"
-                        data-testid={`members-row-${idx}-pending`}
-                      >
-                        <span className="flex items-center gap-2 text-sm font-bold text-yellow-800">
-                          <span
-                            aria-hidden="true"
-                            className="h-2 w-2 animate-pulse rounded-full bg-yellow-500"
-                          />
-                          Pending: hasn&rsquo;t signed up
-                        </span>
-                        {m.inviteEmail && (
-                          <span className="truncate text-xs font-bold text-gray-500">
-                            {m.inviteEmail}
-                          </span>
-                        )}
-                        {m.inviteId && callerIsAdmin && (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            testId={`members-row-${idx}-resend`}
-                            onClick={() =>
-                              void mutate(`/api/invitations/${m.inviteId}/resend`, {
-                                method: 'POST',
-                              })
-                            }
-                          >
-                            Resend invite
-                          </Button>
-                        )}
-                      </div>
-                    )}
-
-                    {editingFor === m.id && (
-                      <EditNameForm
-                        current={m.displayName}
-                        rowIdx={idx}
-                        onCancel={() => setEditingFor(null)}
-                        onSave={async (name) => {
-                          const ok = await mutate(`/api/members/${m.id}`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({ displayName: name }),
-                          });
-                          if (ok) setEditingFor(null);
-                        }}
-                      />
-                    )}
-
-                    {callerCanManagePin && openPinFor === m.id && (
-                      <KidPinForm
+        {ready && allMembers.length > 0 && (
+          <div className="space-y-6">
+            <CollapsibleSection
+              emoji="🧑‍🤝‍🧑"
+              title="Grown-ups"
+              subtitle="Sign in with email"
+              count={grownUps.length}
+              headerClassName="bg-cyan-200"
+              testId="members-group-grownups"
+            >
+              {grownUps.length === 0 ? (
+                <p data-testid="members-grownups-empty" className="text-sm font-bold text-gray-500">
+                  No grown-ups yet.
+                </p>
+              ) : (
+                <ul
+                  className="grid grid-cols-1 gap-6 md:grid-cols-2"
+                  data-testid="members-grownups-list"
+                >
+                  {grownUps.map((m, idx) => (
+                    <li key={m.id} className="list-none">
+                      <GrownUpCard
                         member={m}
+                        idx={idx}
+                        callerIsAdmin={callerIsAdmin}
+                        adminCount={adminCount}
+                        editingFor={editingFor}
+                        setEditingFor={setEditingFor}
+                        navigate={navigate}
                         slug={slug}
-                        accessToken={session?.access_token}
-                        rowIdx={idx}
-                        onDone={() => {
-                          setOpenPinFor(null);
-                          void fetchMembers();
-                        }}
+                        mutate={mutate}
                       />
-                    )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CollapsibleSection>
 
-                    <div className="flex-1" />
-                    <div className="mt-4 flex flex-wrap items-center gap-2 border-t-2 border-gray-100 pt-4">
-                      {callerIsAdmin && (
-                        <button
-                          type="button"
-                          data-testid={`members-row-${idx}-edit-name`}
-                          onClick={() => setEditingFor((p) => (p === m.id ? null : m.id))}
-                          className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-100 hover:text-black"
-                        >
-                          <Edit2 size={14} aria-hidden="true" /> Edit name
-                        </button>
-                      )}
-                      {callerIsAdmin && isParentRow && (
-                        <button
-                          type="button"
-                          data-testid={`members-row-${idx}-admin-toggle`}
-                          disabled={adminToggleDisabled}
-                          title={
-                            m.status === 'unclaimed'
-                              ? 'Available once they finish signing up'
-                              : undefined
-                          }
-                          onClick={() =>
-                            void mutate(`/api/members/${m.id}`, {
-                              method: 'PATCH',
-                              body: JSON.stringify({
-                                role: m.role === 'admin' ? 'adult' : 'admin',
-                              }),
-                            })
-                          }
-                          className={`flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold transition-colors ${
-                            adminToggleDisabled
-                              ? 'cursor-not-allowed text-gray-400'
-                              : 'text-purple-600 hover:bg-purple-50 hover:text-purple-800'
-                          }`}
-                        >
-                          <Shield size={14} aria-hidden="true" />
-                          {m.role === 'admin' ? 'Remove admin' : 'Make admin'}
-                        </button>
-                      )}
-                      {callerCanManagePin && (
-                        <button
-                          type="button"
-                          data-testid={`members-row-${idx}-pin-toggle`}
-                          onClick={() => setOpenPinFor((prev) => (prev === m.id ? null : m.id))}
-                          className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800"
-                        >
-                          <Key size={14} aria-hidden="true" />
-                          {openPinFor === m.id ? 'Cancel' : m.hasPin ? 'Reset PIN' : 'Set PIN'}
-                        </button>
-                      )}
-                      <div className="flex-1" />
-                      {/* FHS-308 — Admin Panel button on the admin's own card */}
-                      {callerIsAdmin && m.role === 'admin' && (
-                        <button
-                          type="button"
-                          data-testid="members-admin-panel-btn"
-                          onClick={() => navigate(`/t/${slug}/admin`)}
-                          className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-orange-600 transition-colors hover:bg-orange-50 hover:text-orange-800"
-                        >
-                          <Settings2 size={14} aria-hidden="true" /> Admin Panel
-                        </button>
-                      )}
-                      {callerIsAdmin && (
-                        <RemoveButton
-                          rowIdx={idx}
-                          disabled={lastAdminLock}
-                          name={m.displayName}
-                          onConfirm={() =>
-                            void mutate(`/api/members/${m.id}`, { method: 'DELETE' })
-                          }
-                        />
-                      )}
-                    </div>
-                  </Card>
-                </li>
-              );
-            })}
-          </ul>
+            <CollapsibleSection
+              emoji="🧒"
+              title="Kids"
+              subtitle="Sign in with a PIN"
+              count={kids.length}
+              headerClassName="bg-yellow-200"
+              testId="members-group-kids"
+            >
+              {kids.length === 0 ? (
+                <p data-testid="members-kids-empty" className="text-sm font-bold text-gray-500">
+                  No kids added yet.
+                </p>
+              ) : (
+                <ul
+                  className="grid grid-cols-1 gap-6 md:grid-cols-2"
+                  data-testid="members-kids-list"
+                >
+                  {kids.map((m, idx) => (
+                    <li key={m.id} className="list-none">
+                      <KidCard
+                        member={m}
+                        idx={idx}
+                        callerRole={status.callerRole}
+                        callerIsAdmin={callerIsAdmin}
+                        editingFor={editingFor}
+                        setEditingFor={setEditingFor}
+                        openPinFor={openPinFor}
+                        setOpenPinFor={setOpenPinFor}
+                        slug={slug}
+                        session={session}
+                        fetchMembers={fetchMembers}
+                        mutate={mutate}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CollapsibleSection>
+
+            <KidLoginHelp slug={slug} />
+
+            {waiting.length > 0 && (
+              <section data-testid="members-waiting-section">
+                <h2 className="mb-3 font-heading text-xl text-white">Waiting to join</h2>
+                <ul
+                  className="grid grid-cols-1 gap-6 md:grid-cols-2"
+                  data-testid="members-waiting-list"
+                >
+                  {waiting.map((m, idx) => (
+                    <li key={m.id} className="list-none">
+                      <WaitingCard
+                        member={m}
+                        idx={idx}
+                        callerIsAdmin={callerIsAdmin}
+                        mutate={mutate}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
         )}
       </div>
     </div>
   );
 }
 
+// ── Grown-ups group card ────────────────────────────────────────────────────
+
+interface GrownUpCardProps {
+  member: MemberItem;
+  idx: number;
+  callerIsAdmin: boolean;
+  adminCount: number;
+  editingFor: string | null;
+  setEditingFor: (id: string | null) => void;
+  navigate: ReturnType<typeof useNavigate>;
+  slug: string;
+  mutate: (path: string, init: RequestInit) => Promise<boolean>;
+}
+
+function GrownUpCard({
+  member: m,
+  idx,
+  callerIsAdmin,
+  adminCount,
+  editingFor,
+  setEditingFor,
+  navigate,
+  slug,
+  mutate,
+}: GrownUpCardProps) {
+  const isParentRow = m.role === 'admin' || m.role === 'adult';
+  const lastAdminLock = m.role === 'admin' && adminCount <= 1;
+  const testId = `members-grownup-${idx}`;
+
+  return (
+    <MemberCard
+      role={m.role}
+      name={m.displayName}
+      avatarEmoji={m.avatarEmoji}
+      statusLine="Signed in"
+      badge={<RoleBadge role={m.role} testId={`${testId}-role`} />}
+      testId={testId}
+      footer={
+        <>
+          {callerIsAdmin && (
+            <button
+              type="button"
+              data-testid={`${testId}-edit-name`}
+              onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
+              className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-100 hover:text-black"
+            >
+              <Edit2 size={14} aria-hidden="true" /> Edit name
+            </button>
+          )}
+          {callerIsAdmin && (
+            <button
+              type="button"
+              data-testid={`${testId}-change-email`}
+              disabled
+              title="Coming soon — changing a member's sign-in email (FHS-510)"
+              className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-gray-300"
+            >
+              <Mail size={14} aria-hidden="true" /> Change email
+            </button>
+          )}
+          {callerIsAdmin && isParentRow && (
+            <button
+              type="button"
+              data-testid={`${testId}-admin-toggle`}
+              disabled={lastAdminLock}
+              onClick={() =>
+                void mutate(`/api/members/${m.id}`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({ role: m.role === 'admin' ? 'adult' : 'admin' }),
+                })
+              }
+              className={`flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold transition-colors ${
+                lastAdminLock
+                  ? 'cursor-not-allowed text-gray-400'
+                  : 'text-purple-600 hover:bg-purple-50 hover:text-purple-800'
+              }`}
+            >
+              <Shield size={14} aria-hidden="true" />
+              {m.role === 'admin' ? 'Remove admin' : 'Make admin'}
+            </button>
+          )}
+          <div className="flex-1" />
+          {callerIsAdmin && m.role === 'admin' && (
+            <button
+              type="button"
+              data-testid="members-admin-panel-btn"
+              onClick={() => navigate(`/t/${slug}/admin`)}
+              className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-orange-600 transition-colors hover:bg-orange-50 hover:text-orange-800"
+            >
+              <Settings2 size={14} aria-hidden="true" /> Admin Panel
+            </button>
+          )}
+          {callerIsAdmin && (
+            <RemoveButton
+              testId={testId}
+              disabled={lastAdminLock}
+              name={m.displayName}
+              onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
+            />
+          )}
+        </>
+      }
+    >
+      {editingFor === m.id && (
+        <EditNameForm
+          current={m.displayName}
+          testId={testId}
+          onCancel={() => setEditingFor(null)}
+          onSave={async (name) => {
+            const ok = await mutate(`/api/members/${m.id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ displayName: name }),
+            });
+            if (ok) setEditingFor(null);
+          }}
+        />
+      )}
+    </MemberCard>
+  );
+}
+
+// ── Kids group card ──────────────────────────────────────────────────────────
+
+interface KidCardProps {
+  member: MemberItem;
+  idx: number;
+  callerRole: string;
+  callerIsAdmin: boolean;
+  editingFor: string | null;
+  setEditingFor: (id: string | null) => void;
+  openPinFor: string | null;
+  setOpenPinFor: (id: string | null) => void;
+  slug: string;
+  session: { access_token?: string } | null;
+  fetchMembers: () => Promise<void>;
+  mutate: (path: string, init: RequestInit) => Promise<boolean>;
+}
+
+function KidCard({
+  member: m,
+  idx,
+  callerRole,
+  callerIsAdmin,
+  editingFor,
+  setEditingFor,
+  openPinFor,
+  setOpenPinFor,
+  slug,
+  session,
+  fetchMembers,
+  mutate,
+}: KidCardProps) {
+  const callerCanManagePin = ADMIN_OR_ADULT.has(callerRole) && PIN_ELIGIBLE_ROLES.has(m.role);
+  const testId = `members-kid-${idx}`;
+
+  return (
+    <MemberCard
+      role={m.role}
+      name={m.displayName}
+      avatarEmoji={m.avatarEmoji}
+      statusLine={m.hasPin ? 'PIN set' : 'No PIN yet'}
+      badge={<RoleBadge role={m.role} age={m.age} testId={`${testId}-role`} />}
+      testId={testId}
+      footer={
+        <>
+          {callerIsAdmin && (
+            <button
+              type="button"
+              data-testid={`${testId}-edit-name`}
+              onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
+              className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-100 hover:text-black"
+            >
+              <Edit2 size={14} aria-hidden="true" /> Edit name
+            </button>
+          )}
+          {callerCanManagePin && (
+            <button
+              type="button"
+              data-testid={`${testId}-pin-toggle`}
+              onClick={() => setOpenPinFor(openPinFor === m.id ? null : m.id)}
+              className="flex items-center gap-1.5 rounded px-2 py-1 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800"
+            >
+              <Key size={14} aria-hidden="true" />
+              {openPinFor === m.id ? 'Cancel' : m.hasPin ? 'Reset PIN' : 'Set PIN'}
+            </button>
+          )}
+          <div className="flex-1" />
+          {callerIsAdmin && (
+            <RemoveButton
+              testId={testId}
+              disabled={false}
+              name={m.displayName}
+              onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
+            />
+          )}
+        </>
+      }
+    >
+      <p
+        className="mb-3 rounded-md border-2 border-purple-200 bg-purple-50 p-2 text-xs font-bold text-purple-800"
+        data-testid={`${testId}-account-note`}
+      >
+        {m.role === 'teen' ? 'Teen' : 'Child'} account — signs in with a PIN, cannot be given admin
+      </p>
+      {editingFor === m.id && (
+        <EditNameForm
+          current={m.displayName}
+          testId={testId}
+          onCancel={() => setEditingFor(null)}
+          onSave={async (name) => {
+            const ok = await mutate(`/api/members/${m.id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ displayName: name }),
+            });
+            if (ok) setEditingFor(null);
+          }}
+        />
+      )}
+      {callerCanManagePin && openPinFor === m.id && (
+        <KidPinForm
+          member={m}
+          slug={slug}
+          accessToken={session?.access_token}
+          testId={testId}
+          onDone={() => {
+            setOpenPinFor(null);
+            void fetchMembers();
+          }}
+        />
+      )}
+    </MemberCard>
+  );
+}
+
+// ── Waiting-to-join card (unclaimed grown-up seats) ─────────────────────────
+
+interface WaitingCardProps {
+  member: MemberItem;
+  idx: number;
+  callerIsAdmin: boolean;
+  mutate: (path: string, init: RequestInit) => Promise<boolean>;
+}
+
+function WaitingCard({ member: m, idx, callerIsAdmin, mutate }: WaitingCardProps) {
+  const testId = `members-waiting-${idx}`;
+  const footer = callerIsAdmin ? (
+    <>
+      {m.inviteId && (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          testId={`${testId}-resend`}
+          onClick={() => void mutate(`/api/invitations/${m.inviteId}/resend`, { method: 'POST' })}
+        >
+          Resend invite
+        </Button>
+      )}
+      <div className="flex-1" />
+      <RemoveButton
+        testId={testId}
+        disabled={false}
+        name={m.displayName}
+        onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
+      />
+    </>
+  ) : null;
+  return (
+    <MemberCard
+      role={m.role}
+      name={m.displayName}
+      avatarEmoji={m.avatarEmoji}
+      statusLine={m.inviteEmail ?? 'No email on file'}
+      badge={<RoleBadge role={m.role} testId={`${testId}-role`} />}
+      testId={testId}
+      footer={footer}
+    >
+      <p
+        className="flex items-center gap-2 text-sm font-bold text-yellow-800"
+        data-testid={`${testId}-pending`}
+      >
+        <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-full bg-yellow-500" />
+        Pending: hasn&rsquo;t signed up
+      </p>
+    </MemberCard>
+  );
+}
+
 // FHS-437 — parent-side counterpart to the self-serve kid login: without
 // this, a parent had no way to find or share the link/code their kid needs
 // to sign in, so a brand-new family's kid had no working path in at all.
-// Shows the family's kid-login URL + short code with a one-tap copy so the
-// parent can hand it to their kid (AirDrop, text, or typed by hand).
-function KidLoginShare({ slug }: { slug: string }) {
+// FHS-513 — now a collapsible "How your kids sign in" card with the same
+// link/code + copy button, plus the 3-step walkthrough from the design.
+function KidLoginHelp({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
   const kidLoginUrl = `${window.location.origin}/t/${slug}/kid-login`;
 
@@ -475,8 +710,12 @@ function KidLoginShare({ slug }: { slug: string }) {
   }, [kidLoginUrl]);
 
   return (
-    <Card className="mb-8 bg-cyan-50 p-4 sm:p-5" testId="members-kid-login-share">
-      <p className="mb-1 font-heading text-sm uppercase tracking-wide text-gray-700">Kid login</p>
+    <CollapsibleSection
+      emoji="🔑"
+      title="How your kids sign in"
+      headerClassName="bg-purple-100"
+      testId="members-kid-login-share"
+    >
       <p className="mb-3 font-body text-sm text-gray-700">
         Share this with your kid so they can sign in on their own device. They can open the link
         below, or type the family code{' '}
@@ -488,7 +727,7 @@ function KidLoginShare({ slug }: { slug: string }) {
         </code>{' '}
         on the &ldquo;I&rsquo;m a Kid&rdquo; tab at <span className="font-semibold">/login</span>.
       </p>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <code
           className="flex-1 truncate rounded-lg border-2 border-black bg-white px-3 py-2.5 font-mono text-xs text-gray-800 sm:text-sm"
           data-testid="members-kid-login-url"
@@ -506,35 +745,44 @@ function KidLoginShare({ slug }: { slug: string }) {
           <Copy size={16} aria-hidden="true" /> {copied ? 'Copied!' : 'Copy link'}
         </Button>
       </div>
-    </Card>
+      <ol className="list-inside list-decimal space-y-1 text-sm font-bold text-gray-700">
+        <li>Open the link above, or go to /login on their device.</li>
+        <li>Tap &ldquo;I&rsquo;m a Kid&rdquo; and enter the family code.</li>
+        <li>Pick their name and type their PIN.</li>
+      </ol>
+    </CollapsibleSection>
   );
 }
 
-// FHS-486 / ADR 0019 — the role a caller can invite. `child` is excluded:
-// kids use PIN login, never the magic-link invite (ADR 0009 / FHS-234).
-// The server enforces the matching allowlist + the admin-grant safeguard
-// (only an admin caller may pick 'admin') — this picker just mirrors it.
-type InviteRole = 'admin' | 'adult' | 'teen' | 'guest';
+// FHS-486 / ADR 0019 — the role a caller can invite from Manage Members.
+// `child` is excluded: kids use PIN login, never the magic-link invite
+// (ADR 0009 / FHS-234). FHS-513 — `teen` is also dropped from THIS form
+// (the design routes teens through "Add a child" instead); the server
+// still accepts a teen invite for backward compatibility, this UI just
+// no longer offers it. The server enforces the admin-grant safeguard
+// (only an admin caller may pick 'admin') — this picker mirrors it by
+// hiding the option entirely for a non-admin caller.
+type InviteRole = 'admin' | 'adult' | 'guest';
 
-const INVITE_ROLE_OPTIONS: Array<{ value: InviteRole; label: string }> = [
-  { value: 'admin', label: 'Parent / partner' },
+const INVITE_ROLE_OPTIONS: Array<{ value: InviteRole; label: string; adminOnly?: boolean }> = [
+  { value: 'admin', label: 'Parent / partner', adminOnly: true },
   { value: 'adult', label: 'Adult' },
-  { value: 'teen', label: 'Teen' },
   { value: 'guest', label: 'Guest' },
 ];
 
 const INVITE_ROLE_HELP: Record<InviteRole, string> = {
   admin: 'Full access — everyday tasks, past-date edits, the economy, and family settings.',
   adult: 'Day-to-day help — grandma, a cousin, a sitter. No past-date edits or admin tools.',
-  teen: 'Their own login — can see everything shared, but can’t edit it.',
   guest: 'Can log in and see everything, but can’t change anything.',
 };
 
-function InviteMemberForm({
+function InviteAdultForm({
+  callerIsAdmin,
   onClose,
   onSubmit,
   error,
 }: {
+  callerIsAdmin: boolean;
   onClose: () => void;
   onSubmit: (email: string, name: string | null, role: InviteRole) => Promise<void>;
   error: string | null;
@@ -543,20 +791,16 @@ function InviteMemberForm({
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<InviteRole>('adult');
   const [submitting, setSubmitting] = useState(false);
+  const options = INVITE_ROLE_OPTIONS.filter((r) => !r.adminOnly || callerIsAdmin);
+
   return (
-    <Card className="relative mb-8 bg-white p-6" testId="members-invite-form">
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close invite form"
-        className="absolute right-4 top-4 text-gray-500 transition-colors hover:text-black"
-      >
-        <X size={20} />
-      </button>
-      <h2 className="mb-2 font-heading text-2xl text-black">Invite a Family Member</h2>
-      <p className="mb-6 text-sm font-bold text-gray-600">
-        They&rsquo;ll receive an email with a sign-in link to join the family. No password needed.
-      </p>
+    <FormCard
+      title="Invite an adult"
+      description="They'll receive an email with a sign-in link to join the family. No password needed."
+      onClose={onClose}
+      closeLabel="Close invite form"
+      testId="members-invite-form"
+    >
       <form
         className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
         onSubmit={(e) => {
@@ -569,15 +813,15 @@ function InviteMemberForm({
         }}
       >
         <div className="w-full sm:w-52">
-          <Label htmlFor="invite-member-role">Role</Label>
+          <Label htmlFor="invite-adult-role">Role</Label>
           <Select
-            id="invite-member-role"
+            id="invite-adult-role"
             value={role}
             onChange={(e) => setRole(e.target.value as InviteRole)}
             aria-describedby="members-invite-role-help"
             testId="members-invite-role"
           >
-            {INVITE_ROLE_OPTIONS.map((r) => (
+            {options.map((r) => (
               <option key={r.value} value={r.value}>
                 {r.label}
               </option>
@@ -585,9 +829,9 @@ function InviteMemberForm({
           </Select>
         </div>
         <div className="flex-1">
-          <Label htmlFor="invite-member-name">Name</Label>
+          <Label htmlFor="invite-adult-name">Name</Label>
           <Input
-            id="invite-member-name"
+            id="invite-adult-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Yusuf"
@@ -595,11 +839,11 @@ function InviteMemberForm({
           />
         </div>
         <div className="flex-1">
-          <Label htmlFor="invite-member-email" required>
+          <Label htmlFor="invite-adult-email" required>
             Email
           </Label>
           <Input
-            id="invite-member-email"
+            id="invite-adult-email"
             type="email"
             required
             value={email}
@@ -616,7 +860,7 @@ function InviteMemberForm({
             disabled={submitting}
             testId="members-invite-send"
           >
-            {submitting ? 'Sending…' : 'Send Invite'}
+            {submitting ? 'Sending…' : 'Send sign-in link'}
           </Button>
         </div>
       </form>
@@ -636,146 +880,147 @@ function InviteMemberForm({
           {error}
         </p>
       )}
-    </Card>
+    </FormCard>
   );
 }
 
-// FHS-472/473 — generic "family member" type-picker (child / teen /
-// adult). All three are created the same way onboarding creates a plain
-// adult row (no email): a direct roster insert, no login. Age only
-// matters for child/teen cards (shown as "Child (6)" on Manage Members),
-// so it's hidden once "Adult" is picked.
-type AddMemberRole = 'child' | 'teen' | 'adult';
+// FHS-513 — "Add a child" is now Child/Teen only (no-login, PIN-based
+// seats), matching the finalised design's two-CTA header. The previous
+// "Add member → Adult (no login)" path is removed from this form; the
+// POST /api/members endpoint still accepts role: 'adult' unchanged, an
+// admin/adult grown-up seat is created going forward via Invite instead.
+type AddChildRole = 'child' | 'teen';
 
-const ADD_MEMBER_ROLE_OPTIONS: Array<{ value: AddMemberRole; label: string }> = [
+const ADD_CHILD_ROLE_OPTIONS: Array<{ value: AddChildRole; label: string }> = [
   { value: 'child', label: 'Child' },
   { value: 'teen', label: 'Teen' },
-  { value: 'adult', label: 'Adult' },
 ];
 
-const ADD_MEMBER_HELP: Record<AddMemberRole, string> = {
-  child:
-    'Kids don’t need an email. They log in by tapping their avatar and entering a 4-digit PIN (set one from their card below).',
-  teen: 'Teens don’t need an email either — same PIN login as a child, from their card below.',
-  adult:
-    'This creates a profile on the roster — no login. To let them sign in themselves, use Invite member instead.',
-};
-
-function AddMemberForm({
+function AddChildForm({
   onClose,
   onSubmit,
   error,
 }: {
   onClose: () => void;
-  onSubmit: (displayName: string, role: AddMemberRole, age: number | null) => Promise<void>;
+  onSubmit: (
+    displayName: string,
+    role: AddChildRole,
+    age: number | null,
+    avatarEmoji: string | null,
+  ) => Promise<void>;
   error: string | null;
 }) {
-  const [role, setRole] = useState<AddMemberRole>('child');
+  const [role, setRole] = useState<AddChildRole>('child');
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
+  const [avatarEmoji, setAvatarEmoji] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const showAge = role === 'child' || role === 'teen';
 
   return (
-    <Card className="relative mb-8 bg-white p-6" testId="members-add-member-form">
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close add-member form"
-        className="absolute right-4 top-4 text-gray-500 transition-colors hover:text-black"
-      >
-        <X size={20} />
-      </button>
-      <h2 className="mb-2 font-heading text-2xl text-black">Add a Family Member</h2>
-      <p className="mb-6 text-sm font-bold text-gray-600">{ADD_MEMBER_HELP[role]}</p>
+    <FormCard
+      title="Add a child"
+      description="Kids don't need an email. They sign in by tapping their avatar and entering a 4-digit PIN — set one from their card below."
+      onClose={onClose}
+      closeLabel="Close add-a-child form"
+      testId="members-add-child-form"
+    >
       <form
-        className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           if (!name.trim()) return;
-          const parsedAge = !showAge || age.trim() === '' ? null : Number.parseInt(age, 10);
+          const parsedAge = age.trim() === '' ? null : Number.parseInt(age, 10);
           setSubmitting(true);
           void onSubmit(
             name.trim(),
             role,
             Number.isNaN(parsedAge as number) ? null : parsedAge,
+            avatarEmoji || null,
           ).finally(() => setSubmitting(false));
         }}
       >
-        <div className="w-full sm:w-40">
-          <Label htmlFor="add-member-role">Type</Label>
-          <Select
-            id="add-member-role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as AddMemberRole)}
-            data-testid="members-add-member-role"
-          >
-            {ADD_MEMBER_ROLE_OPTIONS.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div className="flex-1">
-          <Label htmlFor="add-member-name" required>
-            Name
-          </Label>
-          <Input
-            id="add-member-name"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Amina"
-            testId="members-add-member-name"
-          />
-        </div>
-        {showAge && (
-          <div className="w-full sm:w-32">
-            <Label htmlFor="add-member-age">Age</Label>
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="w-full sm:w-40">
+            <Label htmlFor="add-child-role">Type</Label>
+            <Select
+              id="add-child-role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as AddChildRole)}
+              testId="members-add-child-role"
+            >
+              {ADD_CHILD_ROLE_OPTIONS.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="flex-1">
+            <Label htmlFor="add-child-name" required>
+              Name
+            </Label>
             <Input
-              id="add-member-age"
+              id="add-child-name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Amina"
+              testId="members-add-child-name"
+            />
+          </div>
+          <div className="w-full sm:w-32">
+            <Label htmlFor="add-child-age">Age</Label>
+            <Input
+              id="add-child-age"
               type="number"
               value={age}
               onChange={(e) => setAge(e.target.value)}
               placeholder="e.g. 10"
-              testId="members-add-member-age"
+              testId="members-add-child-age"
             />
           </div>
-        )}
-        <div className="flex items-end">
+        </div>
+        <div>
+          <Label htmlFor="add-child-emoji">Avatar</Label>
+          <AvatarEmojiPicker
+            value={avatarEmoji}
+            onSelect={setAvatarEmoji}
+            testId="members-add-child-emoji"
+          />
+        </div>
+        <div className="flex items-center">
           <Button
             type="submit"
             variant="primary"
             size="md"
             disabled={submitting}
-            testId="members-add-member-save"
+            testId="members-add-child-save"
           >
-            {submitting ? 'Adding…' : 'Add member'}
+            {submitting ? 'Adding…' : 'Add to the family'}
           </Button>
         </div>
       </form>
       {error && (
         <p
           role="alert"
-          data-testid="members-add-member-error"
+          data-testid="members-add-child-error"
           className="mt-3 text-sm font-bold text-red-600"
         >
           {error}
         </p>
       )}
-    </Card>
+    </FormCard>
   );
 }
 
 function EditNameForm({
   current,
-  rowIdx,
+  testId,
   onCancel,
   onSave,
 }: {
   current: string;
-  rowIdx: number;
+  testId: string;
   onCancel: () => void;
   onSave: (name: string) => Promise<void>;
 }) {
@@ -784,7 +1029,7 @@ function EditNameForm({
   return (
     <form
       className="mb-4 flex items-end gap-2"
-      data-testid={`members-row-${rowIdx}-edit-form`}
+      data-testid={`${testId}-edit-form`}
       onSubmit={(e) => {
         e.preventDefault();
         if (!name.trim()) return;
@@ -793,12 +1038,12 @@ function EditNameForm({
       }}
     >
       <div className="flex-1">
-        <Label htmlFor={`edit-name-${rowIdx}`}>New name</Label>
+        <Label htmlFor={`edit-name-${testId}`}>New name</Label>
         <Input
-          id={`edit-name-${rowIdx}`}
+          id={`edit-name-${testId}`}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          testId={`members-row-${rowIdx}-edit-input`}
+          testId={`${testId}-edit-input`}
         />
       </div>
       <Button
@@ -806,7 +1051,7 @@ function EditNameForm({
         variant="primary"
         size="sm"
         disabled={submitting}
-        testId={`members-row-${rowIdx}-edit-save`}
+        testId={`${testId}-edit-save`}
       >
         Save
       </Button>
@@ -820,12 +1065,12 @@ function EditNameForm({
 // Two-tap remove: first tap arms ("Really remove?"), second confirms.
 // Avoids a window.confirm (untestable + jarring) without a full dialog.
 function RemoveButton({
-  rowIdx,
+  testId,
   disabled,
   name,
   onConfirm,
 }: {
-  rowIdx: number;
+  testId: string;
   disabled: boolean;
   name: string;
   onConfirm: () => void;
@@ -836,7 +1081,7 @@ function RemoveButton({
       <span className="flex items-center gap-2">
         <button
           type="button"
-          data-testid={`members-row-${rowIdx}-remove-confirm`}
+          data-testid={`${testId}-remove-confirm`}
           onClick={onConfirm}
           title="Their personal tasks and meals are removed too"
           className="max-w-full truncate rounded border-2 border-black bg-red-100 px-2 py-1 text-xs font-bold text-red-700 min-h-[44px]"
@@ -856,7 +1101,7 @@ function RemoveButton({
   return (
     <button
       type="button"
-      data-testid={`members-row-${rowIdx}-remove`}
+      data-testid={`${testId}-remove`}
       disabled={disabled}
       onClick={() => setArmed(true)}
       title={`Remove ${name}`}
@@ -871,18 +1116,19 @@ function RemoveButton({
   );
 }
 
-// FHS-252 — inline form for setting / resetting / clearing a kid PIN.
-// Unchanged behaviour from the pre-FHS-276 page.
+// FHS-252 — inline form for setting / resetting a kid PIN. Unchanged
+// behaviour from the pre-FHS-513 page — just re-keyed off the new
+// per-card `testId` prefix instead of a row index.
 
 interface KidPinFormProps {
   member: { id: string; displayName: string; hasPin: boolean };
   slug: string;
   accessToken: string | undefined;
-  rowIdx: number;
+  testId: string;
   onDone: () => void;
 }
 
-function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormProps) {
+function KidPinForm({ member, slug, accessToken, testId, onDone }: KidPinFormProps) {
   const [pin, setPin] = useState('');
   const [confirm, setConfirm] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -962,7 +1208,7 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
     <form
       onSubmit={onSet}
       className="mb-4 space-y-3 rounded-md border-2 border-dashed border-black bg-white p-3"
-      data-testid={`members-row-${rowIdx}-pin-form`}
+      data-testid={`${testId}-pin-form`}
     >
       <p className="font-body text-sm text-gray-700">
         Set a 4-digit PIN for <span className="font-bold text-black">{member.displayName}</span>.
@@ -981,7 +1227,7 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
           required
-          testId={`members-row-${rowIdx}-pin-input`}
+          testId={`${testId}-pin-input`}
         />
       </div>
       <div>
@@ -997,14 +1243,14 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
           value={confirm}
           onChange={(e) => setConfirm(e.target.value.replace(/\D/g, '').slice(0, 4))}
           required
-          testId={`members-row-${rowIdx}-pin-confirm`}
+          testId={`${testId}-pin-confirm`}
         />
       </div>
       {error && (
         <p
           className="text-sm font-bold text-red-600"
           role="alert"
-          data-testid={`members-row-${rowIdx}-pin-error`}
+          data-testid={`${testId}-pin-error`}
         >
           {error}
         </p>
@@ -1015,7 +1261,7 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
           variant="primary"
           size="sm"
           disabled={submitting}
-          testId={`members-row-${rowIdx}-pin-save`}
+          testId={`${testId}-pin-save`}
         >
           {submitting ? 'Saving…' : 'Save PIN'}
         </Button>
@@ -1026,7 +1272,7 @@ function KidPinForm({ member, slug, accessToken, rowIdx, onDone }: KidPinFormPro
             size="sm"
             disabled={submitting}
             onClick={() => void onRemove()}
-            testId={`members-row-${rowIdx}-pin-remove`}
+            testId={`${testId}-pin-remove`}
           >
             Remove kid login
           </Button>
