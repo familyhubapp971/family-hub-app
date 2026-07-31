@@ -24,7 +24,6 @@ import {
   Label,
   MemberCard,
   RoleBadge,
-  Select,
 } from '@familyhub/ui';
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
@@ -849,6 +848,47 @@ const INVITE_ROLE_HELP: Record<InviteRole, string> = {
   guest: 'Can log in and see everything, but can’t change anything.',
 };
 
+// FHS-521 — one selectable card in the "What can they do?" role picker,
+// matching the Magic Patterns design: a radio circle (Check when active),
+// the role label, and its one-line note, all in one clickable card.
+function RoleOptionCard({
+  value,
+  label,
+  note,
+  selected,
+  onSelect,
+}: {
+  value: InviteRole;
+  label: string;
+  note: string;
+  selected: boolean;
+  onSelect: (value: InviteRole) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      data-testid={`members-invite-role-${value}`}
+      onClick={() => onSelect(value)}
+      className={`flex items-start gap-3 rounded-xl border-2 border-black p-3 text-left transition-colors ${
+        selected ? 'bg-pink-400 shadow-neo-xs' : 'bg-white hover:bg-gray-50'
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white"
+      >
+        {selected && <Check size={14} strokeWidth={3} aria-hidden="true" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-heading text-base">{label}</span>
+        <span className="mt-0.5 block text-xs font-bold text-gray-600">{note}</span>
+      </span>
+    </button>
+  );
+}
+
 function InviteAdultForm({
   callerIsAdmin,
   onClose,
@@ -869,13 +909,13 @@ function InviteAdultForm({
   return (
     <FormCard
       title="Invite an adult"
-      description="They'll receive an email with a sign-in link to join the family. No password needed."
+      description="For grown-ups only. We email them a sign-in link, no password needed. Kids are added with a PIN instead."
       onClose={onClose}
       closeLabel="Close invite form"
       testId="members-invite-form"
     >
       <form
-        className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           if (!email.trim()) return;
@@ -885,47 +925,50 @@ function InviteAdultForm({
           );
         }}
       >
-        <div className="w-full sm:w-52">
-          <Label htmlFor="invite-adult-role">Role</Label>
-          <Select
-            id="invite-adult-role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as InviteRole)}
-            aria-describedby="members-invite-role-help"
-            testId="members-invite-role"
-          >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="invite-adult-name">Name</Label>
+            <Input
+              id="invite-adult-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Yusuf"
+              testId="members-invite-name"
+            />
+          </div>
+          <div>
+            <Label htmlFor="invite-adult-email" required>
+              Email
+            </Label>
+            <Input
+              id="invite-adult-email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="yusuf@example.com"
+              testId="members-invite-email"
+            />
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
+            What can they do?
+          </p>
+          <div className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2" role="radiogroup">
             {options.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
+              <RoleOptionCard
+                key={r.value}
+                value={r.value}
+                label={r.label}
+                note={INVITE_ROLE_HELP[r.value]}
+                selected={role === r.value}
+                onSelect={setRole}
+              />
             ))}
-          </Select>
+          </div>
         </div>
-        <div className="flex-1">
-          <Label htmlFor="invite-adult-name">Name</Label>
-          <Input
-            id="invite-adult-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Yusuf"
-            testId="members-invite-name"
-          />
-        </div>
-        <div className="flex-1">
-          <Label htmlFor="invite-adult-email" required>
-            Email
-          </Label>
-          <Input
-            id="invite-adult-email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="yusuf@example.com"
-            testId="members-invite-email"
-          />
-        </div>
-        <div className="flex items-end">
+        <div className="flex items-center">
           <Button
             type="submit"
             variant="purple"
@@ -937,13 +980,6 @@ function InviteAdultForm({
           </Button>
         </div>
       </form>
-      <p
-        id="members-invite-role-help"
-        className="mt-3 text-xs font-bold text-gray-500"
-        data-testid="members-invite-role-help"
-      >
-        {INVITE_ROLE_HELP[role]}
-      </p>
       {error && (
         <p
           role="alert"
@@ -964,10 +1000,54 @@ function InviteAdultForm({
 // admin/adult grown-up seat is created going forward via Invite instead.
 type AddChildRole = 'child' | 'teen';
 
-const ADD_CHILD_ROLE_OPTIONS: Array<{ value: AddChildRole; label: string }> = [
-  { value: 'child', label: 'Child' },
-  { value: 'teen', label: 'Teen' },
+const ADD_CHILD_ROLE_OPTIONS: Array<{
+  value: AddChildRole;
+  emoji: string;
+  label: string;
+  note: string;
+}> = [
+  { value: 'child', emoji: '🧒🏽', label: 'Child', note: 'Younger kid. Habits, stars and rewards.' },
+  { value: 'teen', emoji: '🧑🏽', label: 'Teen', note: 'Older kid. Same world, more grown-up.' },
 ];
+
+// FHS-521 — one selectable card in the "How old are they?" picker,
+// matching the Magic Patterns design: an emoji, the type label, and its
+// one-line note, all in one clickable card (no radio circle — the
+// active fill is the only selected-state indicator here, per the mock).
+function ChildTypeCard({
+  value,
+  emoji,
+  label,
+  note,
+  selected,
+  onSelect,
+}: {
+  value: AddChildRole;
+  emoji: string;
+  label: string;
+  note: string;
+  selected: boolean;
+  onSelect: (value: AddChildRole) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      data-testid={`members-add-child-role-${value}`}
+      onClick={() => onSelect(value)}
+      className={`rounded-xl border-2 border-black p-3 text-left transition-colors ${
+        selected ? 'bg-yellow-300 shadow-neo-xs' : 'bg-white hover:bg-gray-50'
+      }`}
+    >
+      <span className="text-2xl" aria-hidden="true">
+        {emoji}
+      </span>
+      <span className="mt-1 block font-heading text-base">{label}</span>
+      <span className="mt-0.5 block text-xs font-bold text-gray-600">{note}</span>
+    </button>
+  );
+}
 
 function AddChildForm({
   onClose,
@@ -992,7 +1072,7 @@ function AddChildForm({
   return (
     <FormCard
       title="Add a child"
-      description="Kids don't need an email. They sign in by tapping their avatar and entering a 4-digit PIN — set one from their card below."
+      description="No email needed. They sign in with a 4-digit PIN you set on their card."
       onClose={onClose}
       closeLabel="Close add-a-child form"
       testId="members-add-child-form"
@@ -1012,46 +1092,49 @@ function AddChildForm({
           ).finally(() => setSubmitting(false));
         }}
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="w-full sm:w-40">
-            <Label htmlFor="add-child-role">Type</Label>
-            <Select
-              id="add-child-role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as AddChildRole)}
-              testId="members-add-child-role"
-            >
-              {ADD_CHILD_ROLE_OPTIONS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </Select>
+        <div>
+          <Label htmlFor="add-child-name" required>
+            Name
+          </Label>
+          <Input
+            id="add-child-name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Amina"
+            testId="members-add-child-name"
+          />
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
+            How old are they?
+          </p>
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup">
+            {ADD_CHILD_ROLE_OPTIONS.map((r) => (
+              <ChildTypeCard
+                key={r.value}
+                value={r.value}
+                emoji={r.emoji}
+                label={r.label}
+                note={r.note}
+                selected={role === r.value}
+                onSelect={setRole}
+              />
+            ))}
           </div>
-          <div className="flex-1">
-            <Label htmlFor="add-child-name" required>
-              Name
-            </Label>
-            <Input
-              id="add-child-name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Amina"
-              testId="members-add-child-name"
-            />
-          </div>
-          <div className="w-full sm:w-32">
-            <Label htmlFor="add-child-age">Age</Label>
-            <Input
-              id="add-child-age"
-              type="number"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              placeholder="e.g. 10"
-              testId="members-add-child-age"
-            />
-          </div>
+        </div>
+        {/* FHS-472 — avatar picker + exact age are real features the design
+            mock omits; kept below the Name/type cards rather than dropped. */}
+        <div className="w-full sm:w-32">
+          <Label htmlFor="add-child-age">Age</Label>
+          <Input
+            id="add-child-age"
+            type="number"
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            placeholder="e.g. 10"
+            testId="members-add-child-age"
+          />
         </div>
         <div>
           <Label htmlFor="add-child-emoji">Avatar</Label>
