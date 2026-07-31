@@ -53,6 +53,55 @@ Key: ✓ = allowed · ✗ = blocked · **self** = only on their own record/data.
 | View another member's data                                | ✓     | ✓           | ✗    | ✗            |
 | View own data                                             | ✓     | ✓           | ✓    | ✓            |
 
+## Invite roles & the admin-grant safeguard
+
+[ADR 0019](../decisions/0019-role-privilege-matrix.md) formalised who can be
+invited as what, and closed a gap: the invite endpoint originally couldn't
+create a second admin at all, and the Manage Members badge mislabelled every
+non-admin adult as "Parent."
+
+| Role      | Who                                        | Rights                                                                                     |
+| --------- | ------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| **admin** | Parent / partner (registrant is one)       | Full: everyday + past-date edits, week close, economy settings, member management, billing |
+| **adult** | Invited grown-up (grandma, cousin, sitter) | Everyday + current/future-day writes. Not past-date edits, not admin actions               |
+| **teen**  | Own PIN login                              | View-only on shared family content; writes only their own kid-scoped data                  |
+| **child** | Own PIN login                              | Same as teen — view-only on shared content, writes only their own data                     |
+| **guest** | Login, no write rights                     | Read-only everywhere                                                                       |
+
+`POST /api/invitations` accepts `admin | adult | guest` (never `child` — kids
+use PIN login, never a magic-link invite). Teens are added via "Add a child",
+not invited.
+
+### Story 4: Invite a second admin, safely
+
+**As an** admin
+**I want** to invite another grown-up directly as an admin (a co-parent or
+co-guardian) **so that** two parents can both hold full rights from day one,
+without a separate promotion step — but only an admin can hand out that power.
+
+#### Acceptance criteria
+
+**Scenario: Admin invites a co-parent as admin**
+
+- **Given** I am an admin sending an invite
+- **When** I pick the "Parent / partner" role and send it
+- **Then** the invite is created with role `admin`
+- **And** once accepted, that person has full admin rights immediately
+
+**Scenario: Non-admin adult cannot invite someone as admin**
+
+- **Given** I am a normal user (adult, not admin) sending an invite
+- **When** I try to set the invited person's role to admin
+- **Then** the request is rejected with a 403 "admin-only" error
+- **And** the invite is not created
+
+**Scenario: The invite role picker matches what's actually granted**
+
+- **Given** I am opening the "Invite an adult" form as a non-admin
+- **When** the form renders
+- **Then** the "Parent / partner" (admin) option is not shown to me at all
+- **And** the roles I can pick (Adult, Guest) are exactly what gets granted on submit
+
 ## User stories
 
 ### Story 1: Registrant is the admin; admins set who else is admin or normal
