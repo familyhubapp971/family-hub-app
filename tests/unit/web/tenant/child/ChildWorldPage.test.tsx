@@ -1,12 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 
 // FHS-268 — ChildWorld shell: five tabs (My World active, the rest
 // placeholders) + a "Back to family" button.
 
 const fetchMock = vi.fn();
-const authState: { session: { access_token?: string } | null } = {
+const authState: {
+  user: { email?: string; id?: string; user_metadata?: Record<string, unknown> } | null;
+  session: { access_token?: string } | null;
+} = {
+  // No full_name in the JWT — parentName must fall back to the roster display
+  // name, never the login email (FHS-506/FHS-523).
+  user: { email: 'parent@example.com', id: 'u-1', user_metadata: {} },
   session: { access_token: 'tok-abc' },
 };
 vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
@@ -19,6 +25,7 @@ import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
 
 const MEMBER = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const SIBLING = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const CALLER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 const STUB_INSIGHTS = {
   memberId: MEMBER,
@@ -93,7 +100,9 @@ function installApi() {
         status: 200,
         json: async () => ({
           callerRole: 'admin',
+          callerMemberId: CALLER,
           members: [
+            { id: CALLER, displayName: 'Nadia Khan', avatarEmoji: '👩', isChild: false },
             { id: MEMBER, displayName: 'Ali', avatarEmoji: '👦', isChild: true },
             { id: SIBLING, displayName: 'Sara', avatarEmoji: '👧', isChild: true },
           ],
@@ -163,6 +172,7 @@ beforeEach(() => {
   fetchMock.mockReset();
   installApi();
   vi.stubGlobal('fetch', fetchMock);
+  authState.user = { email: 'parent@example.com', id: 'u-1', user_metadata: {} };
   authState.session = { access_token: 'tok-abc' };
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -211,99 +221,55 @@ describe('<ChildWorldPage />', () => {
     await waitFor(() => expect(screen.getByTestId('journal-tab')).toBeInTheDocument());
   });
 
-  it('Back to family returns to the dashboard', async () => {
+  // FHS-523 — header: the shared account pill (parent name, child switcher via
+  // "View World" links, log out) + a "Family Hub" breadcrumb to the dashboard.
+  it("shows the parent's account pill with their name, not their login email", async () => {
     renderAt();
-    await waitFor(() => expect(screen.getByTestId('child-world-back')).toBeInTheDocument());
+    const pill = await screen.findByTestId('dashboard-profile-pill');
+    await waitFor(() => expect(pill.textContent).toMatch(/Nadia/));
+    expect(pill.textContent).not.toMatch(/parent@example\.com/);
+  });
+
+  it('the "Family Hub" breadcrumb returns to the dashboard', async () => {
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('child-world-home')).toBeInTheDocument());
     await act(async () => {
-      fireEvent.click(screen.getByTestId('child-world-back'));
+      fireEvent.click(screen.getByTestId('child-world-home'));
     });
     await waitFor(() => expect(screen.getByTestId('dashboard-page')).toBeInTheDocument());
   });
 
-  // FHS-288 — header: balance chips, switch-child, logout.
-  it("shows the child's stars + cash balance in the header", async () => {
+  it("the account menu lists each child's world (the switcher) and logs out to /login", async () => {
     renderAt();
-    const chips = await screen.findByTestId('child-world-balance');
-    expect(chips).toHaveTextContent('12'); // stars
-    expect(chips).toHaveTextContent('5'); // cash
-  });
-
-  it('switch-child navigates to the sibling world (in-app dropdown)', async () => {
-    renderAt();
-    const switcher = await screen.findByTestId('child-world-switcher');
-    // Open the in-app dropdown (trigger button), then pick the sibling.
+    const pill = await screen.findByTestId('dashboard-profile-pill');
+    await waitFor(() => expect(pill.textContent).toMatch(/Nadia/));
     await act(async () => {
-      fireEvent.click(within(switcher).getByRole('button'));
+      fireEvent.click(pill);
     });
+    // The sibling appears as a "View World" link — this replaces the old switcher.
+    expect(await screen.findByTestId(`dashboard-profile-child-${SIBLING}`)).toBeInTheDocument();
+    // Log out from the menu → /login.
     await act(async () => {
-      fireEvent.click(screen.getByText(/Sara/));
-    });
-    await waitFor(() =>
-      expect(screen.getByTestId('location').textContent).toBe(`/t/khan/child/${SIBLING}`),
-    );
-  });
-
-  it('logout signs out and lands on /login', async () => {
-    renderAt();
-    await waitFor(() => expect(screen.getByTestId('child-world-logout')).toBeInTheDocument());
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('child-world-logout'));
+      fireEvent.click(screen.getByTestId('dashboard-logout'));
     });
     await waitFor(() => expect(screen.getByTestId('login-page')).toBeInTheDocument());
   });
 
-  it('hides the switcher when there is only one child', async () => {
-    fetchMock.mockImplementation((url: string) => {
-      const u = String(url);
-      if (u.includes('/api/mw/financial/savings')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({ savedStickers: 0, savedCash: 0 }),
-        });
-      }
-      if (u.includes('/api/members')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            callerRole: 'admin',
-            members: [{ id: MEMBER, displayName: 'Ali', avatarEmoji: '👦', isChild: true }],
-          }),
-        });
-      }
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: [] }) });
-    });
+  it('switching to a sibling from the account menu navigates in-app to their world', async () => {
     renderAt();
-    await waitFor(() =>
-      expect(screen.getByTestId('child-world-name').textContent).toContain('Ali'),
-    );
-    expect(screen.queryByTestId('child-world-switcher')).not.toBeInTheDocument();
-  });
-
-  it('hides the balance chips when the savings fetch fails', async () => {
-    fetchMock.mockImplementation((url: string) => {
-      const u = String(url);
-      if (u.includes('/api/mw/financial/savings')) {
-        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
-      }
-      if (u.includes('/api/members')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            callerRole: 'admin',
-            members: [{ id: MEMBER, displayName: 'Ali', avatarEmoji: '👦', isChild: true }],
-          }),
-        });
-      }
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ habits: [] }) });
+    const pill = await screen.findByTestId('dashboard-profile-pill');
+    await waitFor(() => expect(pill.textContent).toMatch(/Nadia/));
+    await act(async () => {
+      fireEvent.click(pill);
     });
-    renderAt();
+    // FHS-523 — "View World" must switch child via SPA nav (react-router), not a
+    // full page reload, so the URL changes without leaving the app.
+    await act(async () => {
+      fireEvent.click(await screen.findByTestId(`dashboard-profile-child-${SIBLING}`));
+    });
     await waitFor(() =>
-      expect(screen.getByTestId('child-world-name').textContent).toContain('Ali'),
+      expect(screen.getByTestId('location').textContent).toBe(`/t/khan/child/${SIBLING}`),
     );
-    expect(screen.queryByTestId('child-world-balance')).not.toBeInTheDocument();
   });
 
   // FHS-401 — Learning Insights tab visibility gated by callerRole.
@@ -376,32 +342,5 @@ describe('<ChildWorldPage />', () => {
     // Other tabs still present
     expect(screen.getByRole('tab', { name: /My World/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Journal/ })).toBeInTheDocument();
-  });
-
-  it('switching child while on Insights tab lands on My World for the new child', async () => {
-    // Start on the Insights tab as admin, then switch child → navigates to new child URL
-    // (ChildWorldPage remounts at the new :memberId, defaulting to My World tab).
-    renderAt();
-    // Wait for callerRole='admin' so the Insights tab is visible.
-    await waitFor(() =>
-      expect(screen.getByRole('tab', { name: /Learning Insights/ })).toBeInTheDocument(),
-    );
-    // Switch to Insights tab
-    act(() => {
-      fireEvent.click(screen.getByRole('tab', { name: /Learning Insights/ }));
-    });
-    expect(screen.getByTestId('child-panel-insights')).toBeInTheDocument();
-    // Switch child
-    const switcher = await screen.findByTestId('child-world-switcher');
-    await act(async () => {
-      fireEvent.click(within(switcher).getByRole('button'));
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByText(/Sara/));
-    });
-    // Navigation moves to sibling URL — the route remounts → My World panel
-    await waitFor(() =>
-      expect(screen.getByTestId('location').textContent).toBe(`/t/khan/child/${SIBLING}`),
-    );
   });
 });
