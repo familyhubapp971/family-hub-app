@@ -21,20 +21,30 @@ export function Toggle({ checked, onChange, label, disabled = false, testId }: T
       disabled={disabled}
       data-testid={testId}
       onClick={() => onChange(!checked)}
+      // FIX 4 (BLOCKER, merge gate) — the track was h-8 (32px), under the
+      // 44x44px minimum tap target. min-h-[44px] + a flex-centred track
+      // keeps the visual pill the same size while making the whole button
+      // (the actual tap target) at least 44px tall.
       className={[
-        'relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border-2 border-black transition-colors',
+        'relative inline-flex min-h-[44px] w-14 shrink-0 items-center justify-center rounded-full',
         'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2',
         disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
-        checked ? 'bg-lime-400' : 'bg-gray-200',
       ].join(' ')}
     >
       <span
         aria-hidden="true"
         className={[
-          'inline-block h-6 w-6 rounded-full border-2 border-black bg-white shadow-neo-xs transition-transform motion-safe:duration-150',
-          checked ? 'translate-x-6' : 'translate-x-0.5',
+          'inline-flex h-8 w-14 items-center rounded-full border-2 border-black transition-colors',
+          checked ? 'bg-lime-400' : 'bg-gray-200',
         ].join(' ')}
-      />
+      >
+        <span
+          className={[
+            'inline-block h-6 w-6 rounded-full border-2 border-black bg-white shadow-neo-xs transition-transform motion-safe:duration-150',
+            checked ? 'translate-x-6' : 'translate-x-0.5',
+          ].join(' ')}
+        />
+      </span>
     </button>
   );
 }

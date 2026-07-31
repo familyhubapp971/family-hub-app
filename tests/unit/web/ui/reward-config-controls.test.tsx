@@ -25,6 +25,13 @@ describe('Toggle', () => {
     fireEvent.click(screen.getByTestId('tg'));
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  // FIX 4 (BLOCKER) — the track used to be h-8 (32px), under the 44x44px
+  // minimum finger-sized tap target the responsive-design rule requires.
+  it('meets the 44px minimum tap target', () => {
+    render(<Toggle checked={false} onChange={() => {}} testId="tg" />);
+    expect(screen.getByTestId('tg').className).toContain('min-h-[44px]');
+  });
 });
 
 describe('BoostButton', () => {

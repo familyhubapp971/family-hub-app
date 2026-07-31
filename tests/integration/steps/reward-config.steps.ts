@@ -167,11 +167,19 @@ describeFeature(feature, ({ Background, Scenario }) => {
     memberIds[name] = row!.id;
   }
 
+  // FIX 5 — applySkipPenalties now only penalises days on/after a habit's
+  // createdAt. Every OTHER scenario in this file seeds a habit and closes
+  // the CURRENT (real) week expecting all 7 days to be due, regardless of
+  // which real-world weekday the test happens to run on — so seedHabit
+  // backdates createdAt well before any week's Monday by default. The
+  // FIX 5 scenario passes its own createdAt to exercise the exclusion.
+  const HABIT_SAFELY_BEFORE_ANY_WEEK = new Date('2020-01-01T00:00:00.000Z');
+
   async function seedHabit(
     slug: string,
     name: string,
     memberName: string,
-    opts: { boost?: number; skipPenaltyMinor?: number } = {},
+    opts: { boost?: number; skipPenaltyMinor?: number; createdAt?: Date } = {},
   ) {
     const [row] = await db
       .insert(habits)
@@ -181,6 +189,7 @@ describeFeature(feature, ({ Background, Scenario }) => {
         name,
         boost: opts.boost ?? 1,
         skipPenaltyMinor: opts.skipPenaltyMinor ?? 0,
+        createdAt: opts.createdAt ?? HABIT_SAFELY_BEFORE_ANY_WEEK,
       })
       .returning();
     habitIds[name] = row!.id;
@@ -569,6 +578,62 @@ describeFeature(feature, ({ Background, Scenario }) => {
       expect(after).toBeCloseTo(savedCashBefore);
     });
   });
+
+  // ── FIX 1 (BLOCKER) — floor + reopen must never fabricate money ─────────
+  //
+  // The penalty (5.00) exceeds what "Ali" has saved (1.00), so close-week
+  // floors the deduction to the available 1.00 and writes a compensating
+  // 'floor' audit row. Reopening must restore exactly that 1.00 — restoring
+  // the full nominal 5.00 penalty would create money from nothing.
+
+  Scenario(
+    'Reopening a floored week restores only what was actually debited, never fabricating money',
+    ({ Given, And, When, Then }) => {
+      Given(
+        'the {string} tenant has a habit {string} for {string} with a skip penalty of {int} minor units',
+        async (_c, slug, name, member, penalty: number) => {
+          await seedHabit(slug as string, name as string, member as string, {
+            skipPenaltyMinor: penalty,
+          });
+        },
+      );
+      And(
+        '{string} has {number} saved cash and no saved stickers',
+        async (_c, name, cash: number) => {
+          await db.insert(mwSavings).values({
+            tenantId: tenantIds['khan']!,
+            memberId: memberIds[name as string]!,
+            savedStickers: 0,
+            savedCash: String(cash),
+          });
+        },
+      );
+      When('the caller closes the current week for {string}', async (_c, m: string) => {
+        const result = await finalize(m);
+        expect(result.status).toBe(200);
+      });
+      Then('{string} saved cash is {int}', async (_c, m, n: number) => {
+        const savings = await savingsFor(m as string);
+        expect(savings.savedCash).toBe(n);
+      });
+      When('the caller reopens that floored week for {string}', async (_c, m: string) => {
+        const res = await app.request(`/api/mw/weeks?memberId=${memberIds[m as string]!}`, {
+          headers: headers('khan'),
+        });
+        const body = (await res.json()) as { weeks: { id: string; isFinalized: boolean }[] };
+        lastFinalizedWeekId = body.weeks.find((w) => w.isFinalized)?.id ?? body.weeks[0]!.id;
+        const result = await reopen(m as string);
+        expect(result.status).toBe(200);
+      });
+      Then(
+        '{string} saved cash is restored to {int}, not the full nominal penalty',
+        async (_c, m, n: number) => {
+          const savings = await savingsFor(m as string);
+          expect(savings.savedCash).toBe(n);
+        },
+      );
+    },
+  );
 
   // ── Tenant isolation ─────────────────────────────────────────────────────
 

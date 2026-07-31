@@ -25,6 +25,13 @@ import {
 } from 'lucide-react';
 import { API_BASE } from '../../../lib/api';
 
+// FIX 2 (BLOCKER) — a rate <= 0 must never be divided by (Infinity/NaN
+// stickers would make "how many stickers is this cash worth" undefined).
+// Mirrors the api's cashAsStickers guard (apps/api/src/lib/myworld.ts).
+function stickersFromCash(cash: number, rate: number): number {
+  return rate <= 0 ? 0 : cash / rate;
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type SubDialog = null | 'claim' | 'cashout' | 'save' | 'invest' | 'withdraw';
@@ -112,7 +119,7 @@ function ClaimDialog({
   onBack: () => void;
   onDone: (action: ActionRecord) => void;
 }) {
-  const combinedSavings = savingsStickers + Math.floor(savedCash / stickerRate);
+  const combinedSavings = savingsStickers + Math.floor(stickersFromCash(savedCash, stickerRate));
   const totalStickers = combinedSavings + weeklyStickers;
   const [selected, setSelected] = useState<Reward | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
@@ -274,7 +281,7 @@ function CashOutDialog({
   onBack: () => void;
   onDone: (action: ActionRecord) => void;
 }) {
-  const totalStickers = savedStickers + Math.floor(savedCash / stickerRate);
+  const totalStickers = savedStickers + Math.floor(stickersFromCash(savedCash, stickerRate));
   const totalCash = savedCash + savedStickers * stickerRate;
 
   const [mode, setMode] = useState<'stickers' | 'cash'>('stickers');
@@ -282,7 +289,8 @@ function CashOutDialog({
   const [submitting, setSubmitting] = useState(false);
 
   const cashAmount = mode === 'stickers' ? amount * stickerRate : amount;
-  const stickersUsed = mode === 'stickers' ? amount : Math.round(amount / stickerRate);
+  const stickersUsed =
+    mode === 'stickers' ? amount : Math.round(stickersFromCash(amount, stickerRate));
   const cashValue = cashAmount.toFixed(2);
   const remaining = totalStickers - stickersUsed;
 
@@ -291,7 +299,7 @@ function CashOutDialog({
     if (newMode === 'cash') {
       setAmount(Math.min(amount * stickerRate, totalCash));
     } else {
-      setAmount(Math.min(Math.round(amount / stickerRate), totalStickers));
+      setAmount(Math.min(Math.round(stickersFromCash(amount, stickerRate)), totalStickers));
     }
     setMode(newMode);
   };
@@ -1794,7 +1802,7 @@ export function CloseWeekDialog({
             stickers={
               availableStickers +
               savingsBalance.savedStickers +
-              Math.floor(savingsBalance.savedCash / stickerRate)
+              Math.floor(stickersFromCash(savingsBalance.savedCash, stickerRate))
             }
             stickerRate={stickerRate}
             weekId={weekId}

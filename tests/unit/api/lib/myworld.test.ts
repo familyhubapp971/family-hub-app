@@ -147,6 +147,16 @@ describe('cashAsStickers', () => {
     expect(cashAsStickers(2.4)).toBe(4); // 2.4/0.5 = 4.8 -> 4
     expect(cashAsStickers(0)).toBe(0);
   });
+
+  // FIX 2 (BLOCKER) — a rate of 0 must never be divided by: with real saved
+  // cash and no guard, 2/0 is Infinity, so `balance < cost` never blocks a
+  // redemption ("free unlimited redemption"). A rate <= 0 resolves to 0
+  // stickers instead of dividing.
+  it('resolves to 0 stickers instead of dividing when the rate is 0 or negative', () => {
+    expect(cashAsStickers(2, 0)).toBe(0);
+    expect(cashAsStickers(100, 0)).toBe(0);
+    expect(cashAsStickers(2, -0.5)).toBe(0);
+  });
 });
 
 // FHS-463 — stickerBalances() batches the per-member star balance into a FIXED

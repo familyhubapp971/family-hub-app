@@ -18,6 +18,12 @@ import { KidFinishedWeekRecap } from './myworld/KidFinishedWeekRecap';
 
 type View = 'habits' | 'analytics';
 
+// FIX 2 (BLOCKER) — a rate <= 0 must never be divided by (Infinity/NaN
+// stickers). Mirrors the api's cashAsStickers guard (apps/api/src/lib/myworld.ts).
+function stickersFromCash(cash: number, rate: number): number {
+  return rate <= 0 ? 0 : cash / rate;
+}
+
 export function KidMyWorld({
   kidToken,
   displayName,
@@ -109,7 +115,7 @@ export function KidMyWorld({
   // FHS-376 — a reward request is paid from SAVINGS on approval, so Reward Goals
   // affordability + "more to go" are measured against savings (banked stars +
   // banked cash at stickerRate/star), not the spendable week balance.
-  const savingsStars = savedStickers + Math.floor(savedCash / stickerRate);
+  const savingsStars = savedStickers + Math.floor(stickersFromCash(savedCash, stickerRate));
   const planted = data.investments.reduce((s, inv) => s + inv.originalInvestedStickers, 0);
   const bonus = Math.max(
     0,

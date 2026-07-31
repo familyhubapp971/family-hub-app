@@ -32,6 +32,10 @@ import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
 
 const BOOST_PRESETS = [2, 3, 5] as const;
+// FIX 3 (BLOCKER) — matches the API's cap on rateMinor / skipPenaltyMinor
+// (apps/api/src/routes/reward-config.ts, apps/api/src/routes/habits.ts) so
+// the UI can't even try to submit a value the server will 400 on.
+const RATE_MINOR_MAX = 100_000; // 1000.00 in the tenant's currency
 
 interface KidRate {
   memberId: string;
@@ -314,6 +318,7 @@ export function RewardSettingsPage() {
               <AmountPicker
                 valueMinor={familyRateMinor}
                 currency={currency}
+                maxMinor={RATE_MINOR_MAX}
                 onChange={setFamilyRateMinor}
                 label="Every family member starts with this rate"
                 testId="reward-settings-family-rate"
@@ -367,6 +372,7 @@ export function RewardSettingsPage() {
                           <AmountPicker
                             valueMinor={o.rateMinor}
                             currency={currency}
+                            maxMinor={RATE_MINOR_MAX}
                             onChange={(rateMinor) =>
                               setOverrides((prev) => ({
                                 ...prev,
@@ -491,6 +497,7 @@ export function RewardSettingsPage() {
                         <AmountPicker
                           valueMinor={penaltyMinor}
                           currency={currency}
+                          maxMinor={RATE_MINOR_MAX}
                           onChange={setPenaltyMinor}
                           label="Amount lost per missed day"
                           testId="reward-settings-penalty-amount"

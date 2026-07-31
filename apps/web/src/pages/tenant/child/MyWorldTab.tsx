@@ -32,6 +32,12 @@ import { type MyWorldDataApi, kidDataApi, parentDataApi } from './myWorldApi';
 // FHS-292 — My World habit grid (legacy HabitTracker UI port).
 // Pixel / behaviour parity with the legacy HabitTracker component.
 
+// FIX 2 (BLOCKER) — a rate <= 0 must never be divided by (Infinity/NaN
+// stickers). Mirrors the api's cashAsStickers guard (apps/api/src/lib/myworld.ts).
+function stickersFromCash(cash: number, rate: number): number {
+  return rate <= 0 ? 0 : cash / rate;
+}
+
 // ── Re-exported for other modules / tests ────────────────────────────────────
 export function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -673,7 +679,7 @@ export function MyWorldTab(
   // FHS-376 — a kid's reward request is paid from SAVINGS on approval, so the
   // "Ask for this" affordability must match savings (banked stars + banked
   // cash converted at this child's rate), not the spendable balance.
-  const savingsStars = savedStickers + Math.floor(savedCash / stickerRate);
+  const savingsStars = savedStickers + Math.floor(stickersFromCash(savedCash, stickerRate));
 
   // ── Habit state updater ───────────────────────────────────────────────────
   const updateWeekHabits = useCallback(
@@ -2006,11 +2012,12 @@ export function MyWorldTab(
                   </div>
                   <div className="text-right">
                     <span className="text-2xl sm:text-3xl font-black text-yellow-400">
-                      {savedStickers + Math.floor(savedCash / stickerRate)}
+                      {savedStickers + Math.floor(stickersFromCash(savedCash, stickerRate))}
                     </span>
                     {savedCash > 0 && savedStickers > 0 && (
                       <p className="text-[10px] text-purple-300 font-bold mt-0.5">
-                        {savedStickers} saved + {Math.floor(savedCash / stickerRate)} from cash
+                        {savedStickers} saved +{' '}
+                        {Math.floor(stickersFromCash(savedCash, stickerRate))} from cash
                       </p>
                     )}
                   </div>

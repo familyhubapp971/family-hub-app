@@ -17,6 +17,10 @@ import { loadHabitsForWeek, stickerDayRelation } from '../lib/myworld.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STICKER_TYPES = ['gold-star', 'heart', 'magic', 'trophy'] as const;
+// FIX 3 (BLOCKER) — no upper bound let an oversized skip penalty reach
+// Postgres' numeric(12,2) money column and 500. Same cap as reward-config's
+// rate fields (1000.00 in minor units).
+const SKIP_PENALTY_MINOR_MAX = 100_000;
 
 export const habitItemSchema = z.object({
   id: z.string().uuid(),
@@ -30,7 +34,7 @@ export const habitItemSchema = z.object({
   // money screen's presets are 2/3/5.
   boost: z.number().int().min(1),
   // Money (integer minor units) deducted at close-week for a due day missed. 0 = none.
-  skipPenaltyMinor: z.number().int().min(0),
+  skipPenaltyMinor: z.number().int().min(0).max(SKIP_PENALTY_MINOR_MAX),
 });
 
 export const stickerItemSchema = z.object({
@@ -69,7 +73,7 @@ export const createHabitRequestSchema = z.object({
   color: z.string().trim().max(40).optional(),
   isBonus: z.boolean().optional(),
   boost: z.number().int().min(1).max(20).optional(),
-  skipPenaltyMinor: z.number().int().min(0).optional(),
+  skipPenaltyMinor: z.number().int().min(0).max(SKIP_PENALTY_MINOR_MAX).optional(),
 });
 export const updateHabitRequestSchema = z.object({
   memberId: z.string().uuid(),
@@ -78,7 +82,7 @@ export const updateHabitRequestSchema = z.object({
   color: z.string().trim().max(40).optional(),
   isBonus: z.boolean().optional(),
   boost: z.number().int().min(1).max(20).optional(),
-  skipPenaltyMinor: z.number().int().min(0).optional(),
+  skipPenaltyMinor: z.number().int().min(0).max(SKIP_PENALTY_MINOR_MAX).optional(),
 });
 const deleteSchema = z.object({
   memberId: z.string().uuid(),

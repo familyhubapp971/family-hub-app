@@ -96,6 +96,23 @@ describe('AmountPicker', () => {
     expect(onChange).toHaveBeenCalledWith(0);
   });
 
+  // FIX 3 (BLOCKER) — an oversized rate/penalty must never reach the API
+  // (numeric(12,2) overflow → 500); the UI clamps it before onChange fires.
+  it('typing an amount above an explicit maximum clamps to the maximum — an over-cap value is rejected', () => {
+    const onChange = vi.fn();
+    render(
+      <AmountPicker
+        valueMinor={50}
+        currency="AED"
+        maxMinor={100000}
+        onChange={onChange}
+        testId="ap"
+      />,
+    );
+    fireEvent.change(screen.getByTestId('ap-input'), { target: { value: '5000' } });
+    expect(onChange).toHaveBeenCalledWith(100000);
+  });
+
   it('ignores an unparseable typed value instead of calling onChange with NaN', () => {
     const onChange = vi.fn();
     render(<AmountPicker valueMinor={50} currency="AED" onChange={onChange} testId="ap" />);

@@ -16,30 +16,39 @@ import { effectiveRateMinor } from '../lib/reward-config.js';
 //
 // MONEY RULE: every rate here is an INTEGER in minor currency units — the
 // request/response schemas reject a float or a fractional value.
+//
+// FIX 2 (BLOCKER) — a rate of 0 makes "1 sticker = free money": every
+// cash→stickers conversion divides by the rate, so 0 resolves to
+// Infinity/NaN stickers and `balance < cost` never blocks a redemption.
+// Rates are `.min(1)` (never 0), not `.min(0)`.
+// FIX 3 (BLOCKER) — no upper bound let an oversized rate reach Postgres'
+// numeric(12,2) column and 500. `.max(100000)` caps it at 1000.00/sticker,
+// matching the existing `boost.max(20)` pattern.
+const RATE_MINOR_MAX = 100_000; // 1000.00 in the tenant's currency
 
 const memberRateSchema = z.object({
   memberId: z.string().uuid(),
   displayName: z.string(),
   avatarEmoji: z.string().nullable(),
   // null = this child uses the family default.
-  rateMinor: z.number().int().min(0).nullable(),
-  effectiveRateMinor: z.number().int().min(0),
+  rateMinor: z.number().int().min(1).max(RATE_MINOR_MAX).nullable(),
+  effectiveRateMinor: z.number().int().min(1).max(RATE_MINOR_MAX),
 });
 
 export const rewardConfigResponseSchema = z.object({
   currency: z.string(),
-  familyRateMinor: z.number().int().min(0),
+  familyRateMinor: z.number().int().min(1).max(RATE_MINOR_MAX),
   members: z.array(memberRateSchema),
 });
 
 export const rewardConfigPutRequestSchema = z.object({
-  familyRateMinor: z.number().int().min(0).optional(),
+  familyRateMinor: z.number().int().min(1).max(RATE_MINOR_MAX).optional(),
   memberOverrides: z
     .array(
       z.object({
         memberId: z.string().uuid(),
         // null clears the override (back to the family default).
-        rateMinor: z.number().int().min(0).nullable(),
+        rateMinor: z.number().int().min(1).max(RATE_MINOR_MAX).nullable(),
       }),
     )
     .optional(),

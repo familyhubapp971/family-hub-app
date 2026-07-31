@@ -182,6 +182,43 @@ describe('PUT /api/reward-config — admin-only', () => {
     expect(res.status).toBe(400);
   });
 
+  // FIX 2 (BLOCKER) — rate 0 makes cashAsStickers divide by 0 (Infinity/NaN
+  // stickers), so `balance < cost` never blocks a redemption. 0 must be
+  // rejected, same as any other invalid rate.
+  it('400 on a zero familyRateMinor — a free rate is rejected, not just a negative one', async () => {
+    const res = await buildApp({ callerRole: 'admin' }).request(
+      '/api/reward-config',
+      put({ familyRateMinor: 0 }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it('400 on a zero memberOverrides rateMinor', async () => {
+    const res = await buildApp({ callerRole: 'admin' }).request(
+      '/api/reward-config',
+      put({ memberOverrides: [{ memberId: KID_ID, rateMinor: 0 }] }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  // FIX 3 (BLOCKER) — no upper bound let an oversized rate reach Postgres'
+  // numeric(12,2) column and 500.
+  it('400 when familyRateMinor exceeds the cap (100000 = 1000.00)', async () => {
+    const res = await buildApp({ callerRole: 'admin' }).request(
+      '/api/reward-config',
+      put({ familyRateMinor: 100001 }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it('400 when a memberOverrides rateMinor exceeds the cap', async () => {
+    const res = await buildApp({ callerRole: 'admin' }).request(
+      '/api/reward-config',
+      put({ memberOverrides: [{ memberId: KID_ID, rateMinor: 999999 }] }),
+    );
+    expect(res.status).toBe(400);
+  });
+
   it('200 for an admin updating the family rate', async () => {
     let updatedSet: Record<string, unknown> | undefined;
     dbMock.update.mockImplementation(() => ({

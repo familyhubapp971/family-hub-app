@@ -151,7 +151,9 @@ export const mwFinancialRouter = new Hono()
     const { db, tenantId, rate } = g;
     const week = await getOrCreateCurrentWeek(db, tenantId, memberId);
     // stickers to draw from this week (cash save converts at this child's rate).
-    const stickersNeeded = type === 'cash' ? Math.ceil(amount / rate) : amount;
+    // FIX 2 — guard the divide: a rate <= 0 must never be divided by (see
+    // cashAsStickers' doc comment for why); treat it as needing 0 stickers.
+    const stickersNeeded = type === 'cash' ? (rate <= 0 ? 0 : Math.ceil(amount / rate)) : amount;
 
     const outcome = await db.transaction(async (tx) => {
       await tx.execute(
@@ -883,7 +885,11 @@ export const mwFinancialRouter = new Hono()
       remaining -= cashDeducted;
       let stickersDeducted = 0;
       let refundCash = 0;
-      if (remaining > 0 && s.savedStickers > 0) {
+      // FIX 2 — guard the divide: `totalAvailable` above already means
+      // `remaining` is 0 here whenever rate <= 0 (stickers contribute 0 to
+      // totalAvailable when rate <= 0), so this is unreachable in practice —
+      // guarded anyway so a rate of 0 can never divide-by-zero.
+      if (remaining > 0 && s.savedStickers > 0 && rate > 0) {
         // Stickers come in `rate`-sized units; if the remainder isn't a whole
         // multiple, the rounded-up sticker over-delivers — refund that
         // surplus back to saved cash so no value is destroyed.

@@ -14,7 +14,12 @@ import {
   tenants,
   type MwWeek,
 } from '../db/schema.js';
-import { effectiveRateMinor, getEffectiveRateMinor, rateMinorToDecimal } from './reward-config.js';
+import {
+  DEFAULT_STICKER_RATE_MINOR,
+  effectiveRateMinor,
+  getEffectiveRateMinor,
+  rateMinorToDecimal,
+} from './reward-config.js';
 
 // FHS-290 — shared My World economy helpers.
 //
@@ -197,8 +202,15 @@ export async function getOrCreateSavings(
   return getSavings(db, tenantId, memberId);
 }
 
-/** Cash savings expressed as whole sticker-equivalents, at the given (decimal) rate. */
+/**
+ * Cash savings expressed as whole sticker-equivalents, at the given (decimal)
+ * rate. FIX 2 — a rate of 0 must NOT divide (Infinity/NaN stickers would make
+ * every redemption look "free" since `balance < cost` never blocks). The
+ * reward-config API now rejects a 0 rate at the source, but this stays
+ * defensive for any rate value that reaches here another way.
+ */
 export function cashAsStickers(savedCash: number, rate: number = STICKER_TO_CASH): number {
+  if (rate <= 0) return 0;
   return Math.floor(savedCash / rate);
 }
 
@@ -352,7 +364,7 @@ export async function stickerBalances(
   for (const memberId of memberIds) {
     const unalloc = unallocByMember.get(memberId) ?? 0;
     const saved = savingsByMember.get(memberId) ?? { savedStickers: 0, savedCash: 0 };
-    const rate = rateMinorToDecimal(rateByMember.get(memberId) ?? 50);
+    const rate = rateMinorToDecimal(rateByMember.get(memberId) ?? DEFAULT_STICKER_RATE_MINOR);
     balances.set(memberId, unalloc + saved.savedStickers + cashAsStickers(saved.savedCash, rate));
   }
   return balances;

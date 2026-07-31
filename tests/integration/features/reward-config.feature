@@ -69,6 +69,14 @@ Feature: Configurable reward economy (FHS-512)
     And the caller reopens that week for "Ali"
     Then "Ali" saved cash is back to what it was before close
 
+  Scenario: Reopening a floored week restores only what was actually debited, never fabricating money
+    Given the "khan" tenant has a habit "Brush teeth" for "Ali" with a skip penalty of 500 minor units
+    And "Ali" has 1.00 saved cash and no saved stickers
+    When the caller closes the current week for "Ali"
+    Then "Ali" saved cash is 0
+    When the caller reopens that floored week for "Ali"
+    Then "Ali" saved cash is restored to 1, not the full nominal penalty
+
   Scenario: reward-config is tenant-isolated
     Given a second tenant "smith" exists with its own admin caller
     When the "smith" caller PUTs their family rate to 200 minor units

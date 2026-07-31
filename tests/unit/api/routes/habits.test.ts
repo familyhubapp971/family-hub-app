@@ -359,6 +359,16 @@ describe('FHS-512 — habit boost + skipPenaltyMinor validation', () => {
     expect(res.status).toBe(400);
   });
 
+  // FIX 3 (BLOCKER) — no upper bound let an oversized penalty reach
+  // Postgres' numeric(12,2) column and 500.
+  it('400 when skipPenaltyMinor exceeds the cap (100000 = 1000.00)', async () => {
+    const res = await buildApp({ memberChecks: [[{ id: 'caller', role: 'admin' }]] }).request(
+      '/api/habits',
+      json('POST', { memberId: MEMBER_ID, name: 'Read', skipPenaltyMinor: 100001 }),
+    );
+    expect(res.status).toBe(400);
+  });
+
   it('POST with explicit boost=3 creates the habit with boost=3 and isBonus derived true', async () => {
     let insertedValues: Record<string, unknown> | undefined;
     const app = buildApp({
