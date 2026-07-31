@@ -361,6 +361,65 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     await waitFor(() => expect(screen.getByTestId('reward-settings-route')).toBeInTheDocument());
   });
 
+  // FHS-514 — with no kids, the account menu shows an actionable "add your first child" row.
+  it('shows an "add your first child" row in the account menu when there are no kids', async () => {
+    mocks.fetchMock.mockImplementation(async (url: string) => {
+      if (url.includes('/api/me')) {
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'u-1',
+            email: 'sarah@example.com',
+            tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'admin' }],
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/dashboard/today')) {
+        return {
+          ok: true,
+          json: async () => ({
+            date: '2026-06-10',
+            greetingName: 'Sarah',
+            callerMemberId: 'm-1',
+            counts: {
+              members: 1,
+              habits: 0,
+              rewards: 0,
+              tasksDoneToday: 0,
+              tasksTotalToday: 0,
+              mealsPlanned: 0,
+            },
+            members: [
+              {
+                id: 'm-1',
+                displayName: 'Sarah',
+                role: 'admin',
+                avatarEmoji: null,
+                habitsDone: 0,
+                habitsTotal: 0,
+                streak: 0,
+                tasksPending: 0,
+                statusText: '',
+                starBalance: 0,
+                pendingSignup: false,
+              },
+            ],
+            goals: [],
+            recentActivity: [],
+          }),
+        } as Response;
+      }
+      return { ok: false, status: 404, json: async () => ({}) } as Response;
+    });
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await waitFor(() =>
+      expect(screen.getByTestId('dashboard-profile-add-first-child')).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId('dashboard-profile-add-first-child'));
+    await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
+  });
+
   it('standalone Logout button is always visible and calls signOutAll()', async () => {
     renderAt('/t/khans/dashboard');
     // No dropdown needed — the red Logout button sits in the nav (MP).
