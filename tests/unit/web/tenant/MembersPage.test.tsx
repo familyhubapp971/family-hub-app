@@ -355,6 +355,9 @@ describe('<MembersPage />', () => {
       expect(screen.getByTestId('members-waiting-0-status').textContent).toBe('jumi@example.com');
       expect(screen.getByTestId('members-waiting-0-pending').textContent).toContain('signed up');
       expect(screen.getByTestId('members-waiting-0-resend')).toBeInTheDocument();
+      // FHS-278 lock — an unclaimed seat never exposes an admin toggle (you
+      // can't promote someone who hasn't signed up yet).
+      expect(screen.queryByTestId('members-waiting-0-admin-toggle')).not.toBeInTheDocument();
 
       fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ resent: true }) });
       fireEvent.click(screen.getByTestId('members-waiting-0-resend'));
