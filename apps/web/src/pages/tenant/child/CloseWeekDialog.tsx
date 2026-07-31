@@ -97,6 +97,7 @@ function ClaimDialog({
   savingsStickers,
   savedCash,
   weeklyStickers,
+  stickerRate,
   memberId,
   headers,
   onBack,
@@ -105,12 +106,13 @@ function ClaimDialog({
   savingsStickers: number;
   savedCash: number;
   weeklyStickers: number;
+  stickerRate: number;
   memberId: string;
   headers: Headers | null;
   onBack: () => void;
   onDone: (action: ActionRecord) => void;
 }) {
-  const combinedSavings = savingsStickers + Math.floor(savedCash / 0.5);
+  const combinedSavings = savingsStickers + Math.floor(savedCash / stickerRate);
   const totalStickers = combinedSavings + weeklyStickers;
   const [selected, setSelected] = useState<Reward | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
@@ -256,6 +258,7 @@ function ClaimDialog({
 function CashOutDialog({
   savedStickers,
   savedCash,
+  stickerRate,
   memberId,
   currency,
   headers,
@@ -264,30 +267,31 @@ function CashOutDialog({
 }: {
   savedStickers: number;
   savedCash: number;
+  stickerRate: number;
   memberId: string;
   currency: string;
   headers: Headers | null;
   onBack: () => void;
   onDone: (action: ActionRecord) => void;
 }) {
-  const totalStickers = savedStickers + Math.floor(savedCash / 0.5);
-  const totalCash = savedCash + savedStickers * 0.5;
+  const totalStickers = savedStickers + Math.floor(savedCash / stickerRate);
+  const totalCash = savedCash + savedStickers * stickerRate;
 
   const [mode, setMode] = useState<'stickers' | 'cash'>('stickers');
   const [amount, setAmount] = useState(totalStickers);
   const [submitting, setSubmitting] = useState(false);
 
-  const cashAmount = mode === 'stickers' ? amount * 0.5 : amount;
-  const stickersUsed = mode === 'stickers' ? amount : Math.round(amount / 0.5);
+  const cashAmount = mode === 'stickers' ? amount * stickerRate : amount;
+  const stickersUsed = mode === 'stickers' ? amount : Math.round(amount / stickerRate);
   const cashValue = cashAmount.toFixed(2);
   const remaining = totalStickers - stickersUsed;
 
   const handleModeSwitch = (newMode: 'stickers' | 'cash') => {
     if (newMode === mode) return;
     if (newMode === 'cash') {
-      setAmount(Math.min(amount * 0.5, totalCash));
+      setAmount(Math.min(amount * stickerRate, totalCash));
     } else {
-      setAmount(Math.min(Math.round(amount / 0.5), totalStickers));
+      setAmount(Math.min(Math.round(amount / stickerRate), totalStickers));
     }
     setMode(newMode);
   };
@@ -383,7 +387,7 @@ function CashOutDialog({
                     type="number"
                     min={0}
                     max={mode === 'stickers' ? totalStickers : totalCash}
-                    step={mode === 'cash' ? 0.5 : 1}
+                    step={mode === 'cash' ? stickerRate : 1}
                     value={amount}
                     onChange={(e) => handleAmountChange(Number(e.target.value))}
                     data-testid="close-week-cashout-amount-input"
@@ -442,6 +446,7 @@ function CashOutDialog({
 // ─── Sub-dialog: Save for Later ───────────────────────────────────────────────
 function SaveDialog({
   stickers,
+  stickerRate,
   memberId,
   currency,
   headers,
@@ -449,6 +454,7 @@ function SaveDialog({
   onDone,
 }: {
   stickers: number;
+  stickerRate: number;
   memberId: string;
   currency: string;
   headers: Headers | null;
@@ -470,14 +476,14 @@ function SaveDialog({
         body: JSON.stringify({
           memberId,
           type: saveType,
-          amount: saveType === 'cash' ? num * 0.5 : num,
+          amount: saveType === 'cash' ? num * stickerRate : num,
         }),
       });
       if (!res.ok) throw new Error(`save failed: ${res.status}`);
       if (saveType === 'stickers') {
         onDone({ type: 'save', stickersUsed: num });
       } else {
-        onDone({ type: 'save', cashAmount: num * 0.5 });
+        onDone({ type: 'save', cashAmount: num * stickerRate });
       }
     } catch {
       setSubmitting(false);
@@ -629,6 +635,7 @@ function SaveDialog({
 // ─── Sub-dialog: Invest & Grow ────────────────────────────────────────────────
 function InvestDialog({
   stickers,
+  stickerRate,
   weekId,
   memberId,
   currency,
@@ -637,6 +644,7 @@ function InvestDialog({
   onDone,
 }: {
   stickers: number;
+  stickerRate: number;
   weekId: string;
   memberId: string;
   currency: string;
@@ -659,7 +667,7 @@ function InvestDialog({
   const isOverMax = num > stickers;
   const isBelowMin = num > 0 && num < 10;
   const notEnoughToInvest = stickers < 10;
-  const cashVal = amount ? (num * 0.5).toFixed(2) : '0.00';
+  const cashVal = amount ? (num * stickerRate).toFixed(2) : '0.00';
 
   const investmentByHabitId = new Map(activeInvestments.map((inv) => [inv.habitId, inv]));
   const selectedInvestment = selectedHabit ? investmentByHabitId.get(selectedHabit.id) : undefined;
@@ -705,7 +713,7 @@ function InvestDialog({
         type: 'invest',
         habitName: selectedHabit.name,
         stickersUsed: stickerCount,
-        cashAmount: stickerCount * 0.5,
+        cashAmount: stickerCount * stickerRate,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create investment');
@@ -904,7 +912,7 @@ function InvestDialog({
               <>
                 <p className="text-xs text-gray-500 font-bold mt-1">
                   = {currency} {cashVal} invested, worth {currency}{' '}
-                  {(num * 0.5 + num * 5 * 0.5).toFixed(2)} at +5/day (7 days)
+                  {(num * stickerRate + num * 5 * stickerRate).toFixed(2)} at +5/day (7 days)
                 </p>
                 {isBelowMin && (
                   <p className="text-xs text-red-500 font-bold mt-1">
@@ -1106,12 +1114,14 @@ function InvestDialog({
 function WithdrawDialog({
   memberId,
   currency,
+  stickerRate,
   headers,
   onBack,
   onDone,
 }: {
   memberId: string;
   currency: string;
+  stickerRate: number;
   headers: Headers | null;
   onBack: () => void;
   onDone: (action: ActionRecord) => void;
@@ -1240,7 +1250,7 @@ function WithdrawDialog({
               {investments.map((inv) => {
                 const totalStickers = inv.currentValueStickers;
                 const selectedStickers = withdrawAmounts[inv.id] ?? totalStickers;
-                const selectedCash = (selectedStickers * 0.5).toFixed(2);
+                const selectedCash = (selectedStickers * stickerRate).toFixed(2);
                 const isFullWithdrawal = selectedStickers >= totalStickers;
 
                 return (
@@ -1380,6 +1390,9 @@ export function CloseWeekDialog({
   const [activeInvestments, setActiveInvestments] = useState<Investment[]>([]);
   const [availableStickers, setAvailableStickers] = useState(weeklyStickers);
   const [savingsBalance, setSavingsBalance] = useState({ savedStickers: 0, savedCash: 0 });
+  // FHS-512 — this child's effective sticker rate. 0.5 is only the fallback
+  // before the first savings fetch resolves (matches the old fixed default).
+  const [stickerRate, setStickerRate] = useState(0.5);
   const [initialized, setInitialized] = useState(false);
 
   const refreshBalances = async () => {
@@ -1397,11 +1410,13 @@ export function CloseWeekDialog({
         const savings = (await savingsRes.json()) as {
           savedStickers: number;
           savedCash: number;
+          stickerRate?: number;
         };
         setSavingsBalance({
           savedStickers: savings.savedStickers ?? 0,
           savedCash: savings.savedCash ?? 0,
         });
+        if (typeof savings.stickerRate === 'number') setStickerRate(savings.stickerRate);
       }
     } catch {
       // Non-fatal
@@ -1429,17 +1444,19 @@ export function CloseWeekDialog({
           .catch(() => {});
 
         fetch(`${API_BASE}/api/mw/financial/savings?memberId=${memberId}`, { headers })
-          .then((r) =>
-            r.ok
-              ? (r.json() as Promise<{ savedStickers: number; savedCash: number }>)
-              : { savedStickers: 0, savedCash: 0 },
-          )
-          .then((b) =>
+          .then(async (r) => {
+            if (!r.ok) return;
+            const b = (await r.json()) as {
+              savedStickers: number;
+              savedCash: number;
+              stickerRate?: number;
+            };
             setSavingsBalance({
               savedStickers: b.savedStickers ?? 0,
               savedCash: b.savedCash ?? 0,
-            }),
-          )
+            });
+            if (typeof b.stickerRate === 'number') setStickerRate(b.stickerRate);
+          })
           .catch(() => {});
       }
     }
@@ -1742,6 +1759,7 @@ export function CloseWeekDialog({
             savingsStickers={savingsBalance.savedStickers}
             savedCash={savingsBalance.savedCash}
             weeklyStickers={availableStickers}
+            stickerRate={stickerRate}
             memberId={memberId}
             headers={headers}
             onBack={handleBack}
@@ -1752,6 +1770,7 @@ export function CloseWeekDialog({
           <CashOutDialog
             savedStickers={savingsBalance.savedStickers}
             savedCash={savingsBalance.savedCash}
+            stickerRate={stickerRate}
             memberId={memberId}
             currency={currency}
             headers={headers}
@@ -1762,6 +1781,7 @@ export function CloseWeekDialog({
         {subDialog === 'save' && (
           <SaveDialog
             stickers={availableStickers}
+            stickerRate={stickerRate}
             memberId={memberId}
             currency={currency}
             headers={headers}
@@ -1774,8 +1794,9 @@ export function CloseWeekDialog({
             stickers={
               availableStickers +
               savingsBalance.savedStickers +
-              Math.floor(savingsBalance.savedCash / 0.5)
+              Math.floor(savingsBalance.savedCash / stickerRate)
             }
+            stickerRate={stickerRate}
             weekId={weekId}
             memberId={memberId}
             currency={currency}
@@ -1786,6 +1807,7 @@ export function CloseWeekDialog({
         )}
         {subDialog === 'withdraw' && (
           <WithdrawDialog
+            stickerRate={stickerRate}
             memberId={memberId}
             currency={currency}
             headers={headers}

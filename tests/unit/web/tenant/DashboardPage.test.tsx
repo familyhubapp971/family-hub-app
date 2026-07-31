@@ -61,6 +61,10 @@ function renderAt(initial: string) {
           }
         />
         <Route path="/t/:slug/members" element={<div data-testid="members-route" />} />
+        <Route
+          path="/t/:slug/reward-settings"
+          element={<div data-testid="reward-settings-route" />}
+        />
         <Route path="/" element={<div data-testid="welcome-route" />} />
       </Routes>
     </MemoryRouter>,
@@ -346,6 +350,15 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     fireEvent.click(screen.getByTestId('dashboard-profile-manage-members'));
     await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
     expect(screen.getByTestId('location-search').textContent).toBe('');
+  });
+
+  // FHS-512 / FHS-514 — "Reward settings" opens the Pocket money screen.
+  it('the profile dropdown has a Reward settings item that navigates to /t/:slug/reward-settings', async () => {
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    expect(screen.getByTestId('dashboard-profile-reward-settings')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('dashboard-profile-reward-settings'));
+    await waitFor(() => expect(screen.getByTestId('reward-settings-route')).toBeInTheDocument());
   });
 
   it('standalone Logout button is always visible and calls signOutAll()', async () => {

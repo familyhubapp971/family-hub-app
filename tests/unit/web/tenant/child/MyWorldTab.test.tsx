@@ -35,6 +35,7 @@ interface St {
   savedStickers: number;
   savedCash: number;
   unallocated: number;
+  stickerRate: number;
   rewards: Array<{
     id: string;
     name: string;
@@ -74,6 +75,7 @@ function installApi(over: Partial<St> = {}) {
     savedStickers: over.savedStickers ?? 0,
     savedCash: over.savedCash ?? 0,
     unallocated: over.unallocated ?? 0,
+    stickerRate: over.stickerRate ?? 0.5,
     rewards: over.rewards ?? [
       { id: REWARD, name: 'Ice cream', description: null, stickerCost: 2, icon: '🍦' },
     ],
@@ -138,6 +140,8 @@ function installApi(over: Partial<St> = {}) {
           savedStickers: state.savedStickers,
           savedCash: state.savedCash,
           currency: 'AED',
+          stickerRate: state.stickerRate,
+          stickerRateMinor: Math.round(state.stickerRate * 100),
         }),
       });
     }
@@ -150,7 +154,7 @@ function installApi(over: Partial<St> = {}) {
           totalStickers: 0,
           unallocatedStickers: state.unallocated,
           allocatedStickers: 0,
-          cashValue: state.unallocated * 0.5,
+          cashValue: state.unallocated * state.stickerRate,
         }),
       });
     }
@@ -333,6 +337,18 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     // Total value = 5 cash + 10*0.5 = 10.00, in AED
     expect(screen.getByTestId('your-savings').textContent).toContain('AED');
     expect(screen.getByTestId('bankable-week')).toBeInTheDocument();
+  });
+
+  // FHS-512 — the total-value conversion must use THIS child's configured
+  // rate (from GET /mw/financial/savings), never a hardcoded 0.5. A rate of
+  // 0.5 would show 10.00; the configured 1.25 rate must show 17.50.
+  it('Your Savings total value uses the configured sticker rate, not a hardcoded 0.5', async () => {
+    installApi({ savedStickers: 10, savedCash: 5, unallocated: 4, stickerRate: 1.25 });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('your-savings')).toBeInTheDocument());
+    // Total value = 5 cash + 10*1.25 = 17.50 — NOT 10.00 (the old fixed-0.5 result).
+    expect(screen.getByTestId('your-savings').textContent).toContain('17.50');
+    expect(screen.getByTestId('your-savings').textContent).not.toContain('10.00');
   });
 
   it('hides live current-week widgets when viewing a finalised past week (FHS-316)', async () => {

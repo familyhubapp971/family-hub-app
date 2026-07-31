@@ -45,11 +45,16 @@ const CURRENT_WEEK = {
   isFinalized: false,
 };
 
+// FHS-512 — field names + values match the real GET /mw/weeks/:id/stats
+// response (previously `availableStickers`/`availableCash`, which the real
+// API never returns — the display silently always read 0). cashValue is
+// what the server computes at this child's configured rate.
 const WEEK_STATS = {
-  availableStickers: 12,
-  availableCash: 6,
-  totalEarned: 20,
   weekId: WEEK_ID,
+  totalStickers: 20,
+  unallocatedStickers: 12,
+  allocatedStickers: 8,
+  cashValue: 6,
 };
 
 const SAVINGS = {
@@ -293,6 +298,63 @@ describe('<AdminPanelPage />', () => {
     expect(screen.getByTestId('admin-balance-cash-display').textContent).toBe('AED 6.00');
   });
 
+  // FHS-512 — the Balance tab must show the SERVER-computed cashValue
+  // verbatim, never recompute it client-side at a hardcoded 0.5. Uses a
+  // cashValue that would NOT match stickers*0.5, so a regression to the old
+  // client-side recompute fails this test.
+  it('Balance tab shows the cash value from the API, not a client-side 0.5 recompute', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (/\/api\/me(\?|$)/.test(u))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'u-admin',
+            email: 'sarah@example.com',
+            tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'admin' }],
+          }),
+        });
+      if (u.includes('/api/dashboard/today'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ date: '2026-06-15', callerMemberId: 'admin-1', members: [] }),
+        });
+      if (u.includes('/api/members'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ members: MEMBERS, callerRole: 'admin' }),
+        });
+      if (u.includes('/api/mw/weeks/current'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ week: CURRENT_WEEK }),
+        });
+      if (u.includes('/api/mw/weeks/') && u.includes('/stats'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          // 12 stickers at a 1.25 rate = 15.00 — NOT 6.00 (12 * the old
+          // hardcoded 0.5). A client-side recompute would show the wrong number.
+          json: async () => ({
+            weekId: WEEK_ID,
+            totalStickers: 20,
+            unallocatedStickers: 12,
+            allocatedStickers: 8,
+            cashValue: 15,
+          }),
+        });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('admin-balance-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('admin-balance-cash-display').textContent).toContain('15.00');
+    expect(screen.getByTestId('admin-balance-cash-display').textContent).not.toContain('6.00');
+  });
+
   it('renders all five Quick Action buttons', async () => {
     renderAt();
     await waitFor(() => expect(screen.getByTestId('admin-balance-ready')).toBeInTheDocument());
@@ -420,6 +482,60 @@ describe('<AdminPanelPage />', () => {
     await waitFor(() => expect(screen.getByTestId('admin-savings-ready')).toBeInTheDocument());
     expect(screen.getByTestId('admin-savings-cash-display').textContent).toContain('GBP');
     expect(screen.getByTestId('admin-savings-cash-display').textContent).not.toContain('AED');
+  });
+
+  // FHS-512 — the sticker→cash conversion must use THIS child's configured
+  // rate, never a hardcoded 0.5. Locks the regression where a non-default
+  // rate would previously be silently ignored client-side.
+  it('Savings tab converts saved stickers to cash using the configured rate, not a hardcoded 0.5', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const u = String(url);
+      if (/\/api\/me(\?|$)/.test(u))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'u-admin',
+            email: 'sarah@example.com',
+            tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'admin' }],
+          }),
+        });
+      if (u.includes('/api/dashboard/today'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ date: '2026-06-15', callerMemberId: 'admin-1', members: [] }),
+        });
+      if (u.includes('/api/members'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ members: MEMBERS, callerRole: 'admin' }),
+        });
+      if (u.includes('/api/mw/financial/savings'))
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          // 5 saved stickers + 0 saved cash at a 1.00 rate = 5.00, NOT 2.50
+          // (what a hardcoded 0.5 would wrongly compute).
+          json: async () => ({
+            savedStickers: 5,
+            savedCash: 0,
+            currency: 'AED',
+            stickerRate: 1,
+            stickerRateMinor: 100,
+          }),
+        });
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    });
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-savings')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('admin-panel-tab-savings'));
+    });
+    await waitFor(() => expect(screen.getByTestId('admin-savings-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('admin-savings-cash-equivalent').textContent).toContain('5.00');
+    expect(screen.getByTestId('admin-savings-cash-equivalent').textContent).not.toContain('2.50');
   });
 
   it('Savings edit issues PUT to admin-set endpoint', async () => {
