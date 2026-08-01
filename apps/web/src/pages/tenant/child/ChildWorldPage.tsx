@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CalendarDays, GraduationCap, Home, PenLine, Utensils } from 'lucide-react';
+import { ArrowLeft, CalendarDays, GraduationCap, Home, PenLine, Utensils } from 'lucide-react';
 import { TopNav, type TopNavTab } from '@familyhub/ui';
 import { useAuth, signOutAll } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
@@ -145,34 +145,54 @@ export function ChildWorldPage() {
     >
       <TopNav
         brand={
-          <div className="flex items-center gap-2 sm:gap-3" data-testid="child-world-brand">
-            <span
-              aria-hidden="true"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-black bg-gradient-to-br from-cyan-300 to-violet-400 text-xl shadow-neo-sm sm:h-12 sm:w-12 sm:text-2xl"
+          <div className="flex min-w-0 flex-col gap-2" data-testid="child-world-brand">
+            {/* FHS-529 — Row 1: breadcrumb "← Family Hub / {Child}'s World".
+                "Family Hub" returns to the family dashboard. */}
+            <nav
+              aria-label="Breadcrumb"
+              className="flex min-w-0 items-center gap-1.5 text-white/70"
             >
-              {member?.avatarEmoji ?? '🌟'}
-            </span>
-            {/* FHS-523 — breadcrumb "Family Hub / {Child}'s World", matching the
-                rest of the app. "Family Hub" returns to the family dashboard. */}
-            <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 sm:gap-2">
               <button
                 type="button"
                 onClick={onHome}
                 data-testid="child-world-home"
-                className="shrink-0 rounded font-heading text-xs uppercase tracking-wide text-white/70 transition-colors hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 sm:text-sm"
+                className="flex shrink-0 items-center gap-1 rounded font-heading text-xs uppercase tracking-wide transition-colors hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 sm:text-sm"
               >
+                <ArrowLeft size={14} strokeWidth={3} aria-hidden="true" />
                 Family Hub
               </button>
               <span aria-hidden="true" className="shrink-0 text-white/40">
                 /
               </span>
-              <h1
-                className="min-w-0 max-w-[8rem] truncate font-heading text-lg uppercase tracking-wide text-white drop-shadow-md xs:max-w-[11rem] sm:max-w-[20rem] sm:text-2xl md:max-w-none md:text-3xl"
-                data-testid="child-world-name"
-              >
+              <span className="min-w-0 truncate text-xs font-bold uppercase tracking-wide text-white/60 sm:text-sm">
                 {childName === 'My' ? 'My World' : `${childName}'s World`}
-              </h1>
+              </span>
             </nav>
+            {/* FHS-529 — Row 2: hero — avatar disc + "{Child}'s Magical World ✨"
+                + a "Magic Active" indicator. */}
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-black bg-yellow-300 font-heading text-xl text-black shadow-neo-sm sm:h-12 sm:w-12"
+              >
+                {member ? ([...member.displayName.trim()][0]?.toUpperCase() ?? '🌟') : '🌟'}
+              </span>
+              <div className="min-w-0">
+                <h1
+                  className="min-w-0 truncate font-heading text-xl uppercase tracking-wide text-white drop-shadow-md sm:text-2xl md:text-3xl"
+                  data-testid="child-world-name"
+                >
+                  {childName === 'My' ? 'My World' : `${childName}'s Magical World ✨`}
+                </h1>
+                <p className="mt-0.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-green-300">
+                  <span
+                    aria-hidden="true"
+                    className="h-2.5 w-2.5 rounded-full border border-black bg-green-400 motion-safe:animate-pulse"
+                  />
+                  Magic Active
+                </p>
+              </div>
+            </div>
           </div>
         }
         tabs={navTabs}
