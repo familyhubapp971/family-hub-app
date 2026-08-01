@@ -274,10 +274,10 @@ export type PendingInvitation = typeof pendingInvitations.$inferSelect;
 export type NewPendingInvitation = typeof pendingInvitations.$inferInsert;
 
 /**
- * `member_email_changes` (FHS-510) — an admin-initiated, one-time-link
- * confirmation of a grown-up's new sign-in email. A row is created when an
- * admin requests the change; it's consumed (used_at set) when the recipient
- * clicks the emailed link and lands on ConfirmEmail. Only the SHA-256 hash of
+ * `member_email_changes` (FHS-510) — a self-serve, one-time-link
+ * confirmation of a grown-up's new sign-in email. A row is created when a
+ * member requests a change to their OWN email; it's consumed (used_at set)
+ * when they click the emailed link and land on ConfirmEmail. Only the SHA-256 hash of
  * the token is stored — never the raw value — so a DB read (or leak) can't
  * hand out a working confirm link. A table (not columns on `members`) so the
  * link is naturally single-use and the change carries its own audit trail;
