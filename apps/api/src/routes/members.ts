@@ -7,7 +7,7 @@ import { getDb, pinRequestTenant } from '../db/client.js';
 import { members, pendingInvitations, memberEmailChanges, tenants, users } from '../db/schema.js';
 import { getAuthenticatedUser } from '../middleware/auth.js';
 import { config } from '../config.js';
-import { sendEmail } from '../lib/email.js';
+import { escapeHtml, sendEmail } from '../lib/email.js';
 import { updateUserEmailById } from '../lib/supabase-admin.js';
 import { createLogger } from '../logger.js';
 import { KID_PIN_BCRYPT_COST, resetKidPinBucketForMember } from './auth-kid-pin.js';
@@ -135,32 +135,40 @@ export const membersRouter = new Hono().get('/', async (c) => {
     inviteRows.filter((r) => r.memberId).map((r) => [r.memberId as string, r]),
   );
 
-  // FHS-510 — current sign-in email per linked userId, so Manage Members can
-  // show "still signs in with {email}" without a second round-trip.
-  const linkedUserIds = rows.map((r) => r.userId).filter((id): id is string => id !== null);
+  // FHS-510 — current sign-in email per linked userId, plus any pending
+  // change, so Manage Members can show "still signs in with {email}" /
+  // "Confirm the new email" without a second round-trip. ADMIN-ONLY: a
+  // grown-up's login email is not roster data every family member should
+  // see, so a non-admin caller gets `email`/`pendingEmail: null` on every
+  // row — the maps below simply stay empty, and neither query runs.
   const emailByUserId = new Map<string, string>();
-  if (linkedUserIds.length > 0) {
-    const userRows = await db
-      .select({ id: users.id, email: users.email })
-      .from(users)
-      .where(sql`${users.id} = ANY(${linkedUserIds})`);
-    for (const u of userRows) emailByUserId.set(u.id, u.email);
-  }
+  const pendingEmailByMember = new Map<string, string>();
+  if (callerRole === 'admin') {
+    const linkedUserIds = rows.map((r) => r.userId).filter((id): id is string => id !== null);
+    if (linkedUserIds.length > 0) {
+      const userRows = await db
+        .select({ id: users.id, email: users.email })
+        .from(users)
+        .where(sql`${users.id} = ANY(${linkedUserIds})`);
+      for (const u of userRows) emailByUserId.set(u.id, u.email);
+    }
 
-  // FHS-510 — pending (unused, unexpired) email changes keyed by member.
-  // At most one active row per member — a new request invalidates the
-  // prior one (see POST /:id/email-change below) — so no dedupe needed.
-  const pendingChangeRows = await db
-    .select({ memberId: memberEmailChanges.memberId, newEmail: memberEmailChanges.newEmail })
-    .from(memberEmailChanges)
-    .where(
-      and(
-        eq(memberEmailChanges.tenantId, tenantId),
-        isNull(memberEmailChanges.usedAt),
-        sql`${memberEmailChanges.expiresAt} > now()`,
-      ),
-    );
-  const pendingEmailByMember = new Map(pendingChangeRows.map((r) => [r.memberId, r.newEmail]));
+    // Pending (unused, unexpired) email changes keyed by member. At most one
+    // active row per member — a new request invalidates the prior one (see
+    // POST /:id/email-change below), enforced further by a partial unique
+    // index — so no dedupe needed.
+    const pendingChangeRows = await db
+      .select({ memberId: memberEmailChanges.memberId, newEmail: memberEmailChanges.newEmail })
+      .from(memberEmailChanges)
+      .where(
+        and(
+          eq(memberEmailChanges.tenantId, tenantId),
+          isNull(memberEmailChanges.usedAt),
+          sql`${memberEmailChanges.expiresAt} > now()`,
+        ),
+      );
+    for (const r of pendingChangeRows) pendingEmailByMember.set(r.memberId, r.newEmail);
+  }
 
   const response: ListMembersResponse = {
     members: rows.map((r) => {
@@ -640,9 +648,23 @@ membersRouter.delete('/:id', async (c) => {
 //     DEFINER function (0043_member_email_changes.sql) — same pattern as
 //     the invite-claim flow's app_claimable_invitations(). It is single-use
 //     (used_at set) and tenant-scoped from the ROW, never from client input.
-//   - Only an admin can start or cancel a change.
+//     A partial unique index (member_id WHERE used_at IS NULL) stops two
+//     concurrent requests from ever creating two live rows for one member.
+//   - Only an admin can start or cancel a change; `email`/`pendingEmail` on
+//     GET /api/members are likewise admin-only (a grown-up's login email is
+//     not roster data every family member should see).
+//   - The CURRENT (old) email is notified on start AND on completion — an
+//     admin silently repointing another admin's login is an account-
+//     takeover primitive otherwise. Both notices are best-effort: a send
+//     failure is logged, never blocks or rolls back the main flow.
+//   - Every value spliced into an email HTML template goes through
+//     escapeHtml() first — displayName is admin/user-controlled.
 //   - New-email uniqueness is checked against `users` before the email
 //     is sent.
+//   - The web ConfirmEmail screen requires an explicit click before it
+//     POSTs the token (never auto-fires on page load) — an email link-
+//     scanner (Safe Links/Proofpoint) that prefetches the URL would
+//     otherwise burn the single-use token before the real recipient sees it.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const memberEmailChangeRequestBodySchema = z.object({
@@ -659,6 +681,12 @@ export type MemberEmailChangeRequestResponse = z.infer<
 
 const EMAIL_CHANGE_TOKEN_TTL_MS = 24 * 60 * 60_000;
 
+// Every value below is user-controlled at some remove (displayName is set by
+// an admin, emails come from the request body) — escapeHtml() on ALL of them
+// is what stops a crafted name/email from injecting markup or a fake link
+// into a branded, trusted-looking auth email. Never splice a raw value into
+// these templates.
+
 function emailChangeHtml(opts: {
   displayName: string;
   currentEmail: string | null;
@@ -668,19 +696,52 @@ function emailChangeHtml(opts: {
   // Modelled on apps/api/auth/email-templates/email_change.html (the
   // Supabase-side template for a user-initiated change) — same voice, but
   // this is admin-initiated so the copy says who asked.
-  const fromLine = opts.currentEmail
-    ? `from <strong>${opts.currentEmail}</strong> to <strong>${opts.newEmail}</strong>`
-    : `to <strong>${opts.newEmail}</strong>`;
+  const displayName = escapeHtml(opts.displayName);
+  const currentEmail = opts.currentEmail ? escapeHtml(opts.currentEmail) : null;
+  const newEmail = escapeHtml(opts.newEmail);
+  const confirmUrl = escapeHtml(opts.confirmUrl);
+  const fromLine = currentEmail
+    ? `from <strong>${currentEmail}</strong> to <strong>${newEmail}</strong>`
+    : `to <strong>${newEmail}</strong>`;
   return `
     <h1>Confirm your new email</h1>
-    <p>Hi ${opts.displayName},</p>
+    <p>Hi ${displayName},</p>
     <p>An admin on your Family Hub family asked to change your sign-in email ${fromLine}. Confirm the change so it takes effect:</p>
     <p>
-      <a href="${opts.confirmUrl}" style="display:inline-block;padding:12px 20px;background:#1f2937;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Confirm new email</a>
+      <a href="${confirmUrl}" style="display:inline-block;padding:12px 20px;background:#1f2937;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Confirm new email</a>
     </p>
     <p>If the button doesn't work, paste this link into your browser:</p>
-    <p><a href="${opts.confirmUrl}">${opts.confirmUrl}</a></p>
-    <p>${opts.currentEmail ? `Your old email (${opts.currentEmail}) keeps working until you click the link above.` : ''} If you weren't expecting this, ask a family admin — nothing changes until this link is clicked.</p>
+    <p><a href="${confirmUrl}">${confirmUrl}</a></p>
+    <p>${currentEmail ? `Your old email (${currentEmail}) keeps working until you click the link above.` : ''} If you weren't expecting this, ask a family admin — nothing changes until this link is clicked.</p>
+    <p>— The Family Hub team</p>
+  `.trim();
+}
+
+// FHS-510 blocker #2 — the CURRENT (old) email gets no signal today, which
+// makes an admin silently repointing another admin's login an account-
+// takeover primitive. Two heads-up notices, sent best-effort (a failure here
+// never blocks or rolls back the main flow — see the call sites below).
+
+function emailChangeStartedOldEmailHtml(opts: { displayName: string; newEmail: string }): string {
+  const displayName = escapeHtml(opts.displayName);
+  const newEmail = escapeHtml(opts.newEmail);
+  return `
+    <h1>Your Family Hub sign-in email is changing</h1>
+    <p>Hi ${displayName},</p>
+    <p>A change of your Family Hub sign-in email to <strong>${newEmail}</strong> was requested by an admin. It only takes effect when the link sent to the new address is confirmed.</p>
+    <p>If this wasn't expected, contact your family admin.</p>
+    <p>— The Family Hub team</p>
+  `.trim();
+}
+
+function emailChangeCompletedOldEmailHtml(opts: { displayName: string; newEmail: string }): string {
+  const displayName = escapeHtml(opts.displayName);
+  const newEmail = escapeHtml(opts.newEmail);
+  return `
+    <h1>Your Family Hub sign-in email was changed</h1>
+    <p>Hi ${displayName},</p>
+    <p>Your Family Hub sign-in email was changed to <strong>${newEmail}</strong>.</p>
+    <p>If this wasn't expected, contact your family admin.</p>
     <p>— The Family Hub team</p>
   `.trim();
 }
@@ -788,12 +849,36 @@ membersRouter.post('/:id/email-change', async (c) => {
   const tokenHash = createHash('sha256').update(rawToken).digest('hex');
   const expiresAt = new Date(Date.now() + EMAIL_CHANGE_TOKEN_TTL_MS);
 
-  const inserted = await db
-    .insert(memberEmailChanges)
-    .values({ tenantId, memberId: target.id, newEmail, tokenHash, expiresAt })
-    .returning({ id: memberEmailChanges.id });
-  const changeId = inserted[0]?.id;
-  if (!changeId) throw new Error('member_email_changes insert returned no row');
+  let changeId: string;
+  try {
+    const inserted = await db
+      .insert(memberEmailChanges)
+      .values({ tenantId, memberId: target.id, newEmail, tokenHash, expiresAt })
+      .returning({ id: memberEmailChanges.id });
+    const insertedId = inserted[0]?.id;
+    if (!insertedId) throw new Error('member_email_changes insert returned no row');
+    changeId = insertedId;
+  } catch (err) {
+    // 23505 = unique_violation. Belt-and-braces against the delete-then-
+    // insert race above: the partial unique index on (member_id) WHERE
+    // used_at IS NULL (0043_member_email_changes.sql) rejects a second
+    // concurrent request for the same member before either one sends mail.
+    const isUniqueViolation =
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      (err as { code?: string }).code === '23505';
+    if (isUniqueViolation) {
+      return c.json(
+        {
+          error: 'a change is already pending for this member',
+          detail: 'Someone else just started a change for this member. Try again in a moment.',
+        },
+        409,
+      );
+    }
+    throw err;
+  }
 
   const confirmUrl = `${baseUrl.replace(/\/$/, '')}/confirm-email/${target.id}?token=${rawToken}`;
   const result = await sendEmail({
@@ -822,6 +907,23 @@ membersRouter.post('/:id/email-change', async (c) => {
       },
       502,
     );
+  }
+
+  // FHS-510 blocker #2 — heads-up the OLD address. Best-effort: a send
+  // failure here is logged but never fails the request or rolls back the
+  // pending row — the primary flow (new-address confirm link) already sent.
+  if (currentEmail) {
+    const notifyResult = await sendEmail({
+      to: currentEmail,
+      subject: 'Your Family Hub sign-in email is changing',
+      html: emailChangeStartedOldEmailHtml({ displayName: target.displayName, newEmail }),
+    });
+    if (!notifyResult.ok) {
+      log.error(
+        { tenantId, memberId: target.id, err: notifyResult.error },
+        'email-change: old-address heads-up notice failed to send (non-fatal)',
+      );
+    }
   }
 
   log.info({ tenantId, memberId: target.id, adminId: userRow.id }, 'email change requested');
@@ -932,10 +1034,21 @@ membersRouter.post('/email-change/confirm', async (c) => {
     // change was requested — treat exactly like an expired link.
     return c.json({ error: 'expired' }, 410);
   }
+  // FHS-510 blocker #2 — capture the OLD email BEFORE anything mutates it,
+  // for the completion heads-up notice sent below on success.
+  const oldUserRows = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.id, target.userId))
+    .limit(1);
+  const oldEmail = oldUserRows[0]?.email ?? null;
 
   try {
     await updateUserEmailById(target.userId, row.new_email);
   } catch (err) {
+    // Nothing was persisted anywhere yet (Supabase itself rejected the
+    // change), so the token is still valid — this is a transient failure,
+    // NOT an expired link. errorCode lets the frontend tell the two apart.
     log.error(
       {
         tenantId: row.tenant_id,
@@ -945,35 +1058,84 @@ membersRouter.post('/email-change/confirm', async (c) => {
       'email-change confirm: Supabase admin update failed',
     );
     return c.json(
-      { error: 'could not update email', detail: 'Please try the link again in a moment.' },
+      {
+        error: 'could not update email',
+        errorCode: 'EMAIL_CHANGE_APPLY_FAILED',
+        detail: 'Please try the link again in a moment.',
+      },
       502,
     );
   }
 
-  await db.transaction(async (tx) => {
-    // FHS-349 — users carries self-scoped RLS keyed on app.current_user;
-    // pin it transaction-locally so this UPDATE passes (same pattern as
-    // getOrCreateUser in lib/user-mirror.ts).
-    await tx.execute(sql`select set_config('app.current_user', ${target.userId}, true)`);
-    await tx
-      .update(users)
-      .set({ email: row.new_email, updatedAt: new Date() })
-      .where(eq(users.id, target.userId as string));
-    // Mark every unused row for this member as consumed — normally just
-    // this one, but this stays correct even if a stray row ever exists.
-    await tx
-      .update(memberEmailChanges)
-      .set({ usedAt: new Date() })
-      .where(
-        and(eq(memberEmailChanges.memberId, row.member_id), isNull(memberEmailChanges.usedAt)),
-      );
-  });
+  // FHS-510 blocker #3 — Supabase now has the new email. If the local apply
+  // below throws, the account is in a DRIFTED state (Supabase changed, our
+  // mirror + used_at did not) — that must be logged distinctly and reported
+  // to the user as a retryable failure, never silently re-shown as
+  // "expired" (which would wrongly suggest nothing happened and the token
+  // is dead, when the token may still be safely retryable).
+  try {
+    await db.transaction(async (tx) => {
+      // FHS-349 — users carries self-scoped RLS keyed on app.current_user;
+      // pin it transaction-locally so this UPDATE passes (same pattern as
+      // getOrCreateUser in lib/user-mirror.ts).
+      await tx.execute(sql`select set_config('app.current_user', ${target.userId}, true)`);
+      await tx
+        .update(users)
+        .set({ email: row.new_email, updatedAt: new Date() })
+        .where(eq(users.id, target.userId as string));
+      // Mark every unused row for this member as consumed — normally just
+      // this one, but this stays correct even if a stray row ever exists.
+      await tx
+        .update(memberEmailChanges)
+        .set({ usedAt: new Date() })
+        .where(
+          and(eq(memberEmailChanges.memberId, row.member_id), isNull(memberEmailChanges.usedAt)),
+        );
+    });
+  } catch (err) {
+    log.error(
+      {
+        tenantId: row.tenant_id,
+        memberId: row.member_id,
+        userId: target.userId,
+        err: err instanceof Error ? err.message : String(err),
+      },
+      'email-change confirm: DRIFT — Supabase email updated but the local apply (users mirror / used_at) failed',
+    );
+    return c.json(
+      {
+        error: 'apply failed',
+        errorCode: 'EMAIL_CHANGE_APPLY_FAILED',
+        detail: 'Something went wrong applying the change. Please try the link again in a moment.',
+      },
+      500,
+    );
+  }
 
   const tenantRows = await db
     .select({ slug: tenants.slug })
     .from(tenants)
     .where(eq(tenants.id, row.tenant_id))
     .limit(1);
+
+  // FHS-510 blocker #2 — completion heads-up to the OLD address.
+  // Best-effort: logged, never blocks the (already-successful) response.
+  if (oldEmail) {
+    const notifyResult = await sendEmail({
+      to: oldEmail,
+      subject: 'Your Family Hub sign-in email was changed',
+      html: emailChangeCompletedOldEmailHtml({
+        displayName: target.displayName,
+        newEmail: row.new_email,
+      }),
+    });
+    if (!notifyResult.ok) {
+      log.error(
+        { tenantId: row.tenant_id, memberId: row.member_id, err: notifyResult.error },
+        'email-change confirm: old-address completion notice failed to send (non-fatal)',
+      );
+    }
+  }
 
   log.info({ tenantId: row.tenant_id, memberId: row.member_id }, 'email change confirmed');
   return c.json(

@@ -11,6 +11,25 @@ import { createLogger } from '../logger.js';
 
 const log = createLogger('email');
 
+/**
+ * Minimal HTML-entity escape for values interpolated into an email
+ * template (e.g. a member's display name, an email address, a URL). This is
+ * NOT a general sanitizer — it only escapes the five characters that matter
+ * for breaking out of HTML text or a quoted attribute, which is exactly what
+ * a template string needs. Every value spliced into an email HTML template
+ * MUST go through this first: a display name is user-controlled (an admin
+ * or the member themselves can set it), so skipping this is an HTML/link
+ * injection hole in a branded, trusted-looking auth email.
+ */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export interface SendEmailOptions {
   to: string;
   subject: string;

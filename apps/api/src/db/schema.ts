@@ -306,6 +306,13 @@ export const memberEmailChanges = pgTable(
     // makes that lookup a single index scan instead of a member_id-only
     // scan + filter.
     index('member_email_changes_member_token_idx').on(t.memberId, t.tokenHash),
+    // Cheap hardening — at most one LIVE (unconfirmed) row per member.
+    // Belt-and-braces alongside the app's delete-then-insert "invalidate
+    // any prior pending row" step; closes the race where two concurrent
+    // requests for the same member both pass that delete and both insert.
+    uniqueIndex('member_email_changes_member_active_uq')
+      .on(t.memberId)
+      .where(sql`used_at is null`),
   ],
 );
 

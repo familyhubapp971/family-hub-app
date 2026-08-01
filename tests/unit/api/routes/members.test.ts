@@ -27,6 +27,12 @@ const FIXED_USER: User = {
 interface SeedOpts {
   noTenant?: boolean;
   callerMissing?: boolean;
+  /** Caller's role in the tenant — drives the FHS-510 email/pendingEmail gate. */
+  callerRole?: string;
+  /** Rows for the admin-only "current sign-in email per linked userId" select. */
+  userRows?: Array<{ id: string; email: string }>;
+  /** Rows for the admin-only "pending email changes" select. */
+  pendingChangeRows?: Array<{ memberId: string; newEmail: string }>;
 }
 
 function buildAppWithSeed(opts: SeedOpts = {}, members: unknown[] = []) {
@@ -37,7 +43,10 @@ function buildAppWithSeed(opts: SeedOpts = {}, members: unknown[] = []) {
     await next();
   };
 
-  // Two selects: caller-membership lookup + members list.
+  // Selects, in order: caller-membership lookup, members list, pending
+  // invites (FHS-276), then — ADMIN CALLER ONLY (FHS-510) — the linked-users
+  // email lookup and the pending-email-changes lookup. A non-admin caller
+  // never triggers the last two selects at all (see routes/members.ts).
   let selectCallIdx = 0;
   dbMock.select.mockImplementation(() => {
     selectCallIdx += 1;
@@ -49,7 +58,11 @@ function buildAppWithSeed(opts: SeedOpts = {}, members: unknown[] = []) {
             // it as `callerRole` for the members page to gate admin-
             // only PIN affordances.
             limit: () =>
-              Promise.resolve(opts.callerMissing ? [] : [{ id: CALLER_MEMBER_ID, role: 'admin' }]),
+              Promise.resolve(
+                opts.callerMissing
+                  ? []
+                  : [{ id: CALLER_MEMBER_ID, role: opts.callerRole ?? 'admin' }],
+              ),
           }),
         }),
       };
@@ -63,10 +76,26 @@ function buildAppWithSeed(opts: SeedOpts = {}, members: unknown[] = []) {
         }),
       };
     }
-    // 3rd select — FHS-276 pending invites (none in these fixtures).
+    if (selectCallIdx === 3) {
+      // FHS-276 pending invites (none in these fixtures).
+      return {
+        from: () => ({
+          where: () => Promise.resolve([]),
+        }),
+      };
+    }
+    if (selectCallIdx === 4) {
+      // FHS-510 — linked-users email lookup (admin caller only).
+      return {
+        from: () => ({
+          where: () => Promise.resolve(opts.userRows ?? []),
+        }),
+      };
+    }
+    // FHS-510 — pending email changes (admin caller only).
     return {
       from: () => ({
-        where: () => Promise.resolve([]),
+        where: () => Promise.resolve(opts.pendingChangeRows ?? []),
       }),
     };
   });
@@ -153,6 +182,69 @@ describe('FHS-108 — GET /api/members', () => {
       role: 'child',
       status: 'unclaimed',
       avatarEmoji: '👧',
+    });
+  });
+
+  // FHS-510 — email / pendingEmail are admin-only.
+  describe('email / pendingEmail gating (FHS-510)', () => {
+    const baseDate = new Date('2026-05-02T00:00:00.000Z');
+    const M1 = '22222222-2222-4222-8222-222222222222';
+
+    function grownUpRow(over: Partial<Record<string, unknown>> = {}) {
+      return {
+        id: M1,
+        displayName: 'Sarah',
+        role: 'admin',
+        avatarEmoji: '👩',
+        userId: USER_ID,
+        createdAt: baseDate,
+        isChild: false,
+        pinHash: null,
+        ...over,
+      };
+    }
+
+    it('an admin caller sees the real email and pendingEmail', async () => {
+      const app = buildAppWithSeed(
+        {
+          callerRole: 'admin',
+          userRows: [{ id: USER_ID, email: 'sarah@example.com' }],
+          pendingChangeRows: [{ memberId: M1, newEmail: 'sarah.new@example.com' }],
+        },
+        [grownUpRow()],
+      );
+      const res = await app.request('/api/members');
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        members: Array<{ email: string | null; pendingEmail: string | null }>;
+      };
+      expect(body.members[0]).toMatchObject({
+        email: 'sarah@example.com',
+        pendingEmail: 'sarah.new@example.com',
+      });
+      // 5 selects: caller, members, invites, linked-user emails, pending changes.
+      expect(dbMock.select).toHaveBeenCalledTimes(5);
+    });
+
+    it('a non-admin caller always gets null on both fields, and the admin-only lookups never run', async () => {
+      const app = buildAppWithSeed(
+        {
+          callerRole: 'adult',
+          // Even if these WOULD resolve to data, a non-admin caller must
+          // never see it — the handler skips the queries entirely.
+          userRows: [{ id: USER_ID, email: 'sarah@example.com' }],
+          pendingChangeRows: [{ memberId: M1, newEmail: 'sarah.new@example.com' }],
+        },
+        [grownUpRow()],
+      );
+      const res = await app.request('/api/members');
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        members: Array<{ email: string | null; pendingEmail: string | null }>;
+      };
+      expect(body.members[0]).toMatchObject({ email: null, pendingEmail: null });
+      // Only 3 selects — the two FHS-510 admin-only lookups never fire.
+      expect(dbMock.select).toHaveBeenCalledTimes(3);
     });
   });
 });

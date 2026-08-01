@@ -29,6 +29,11 @@ ALTER TABLE "member_email_changes" ADD CONSTRAINT "member_email_changes_tenant_i
 ALTER TABLE "member_email_changes" ADD CONSTRAINT "member_email_changes_member_id_members_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "member_email_changes_tenant_member_idx" ON "member_email_changes" USING btree ("tenant_id","member_id");--> statement-breakpoint
 CREATE INDEX "member_email_changes_member_token_idx" ON "member_email_changes" USING btree ("member_id","token_hash");--> statement-breakpoint
+-- Cheap hardening: at most one LIVE (unconfirmed) pending change per member.
+-- Belt-and-braces alongside the app's delete-then-insert "invalidate any
+-- prior pending row" step — closes the race where two concurrent admin
+-- requests for the same member both pass that delete and both insert.
+CREATE UNIQUE INDEX "member_email_changes_member_active_uq" ON "member_email_changes" USING btree ("member_id") WHERE used_at IS NULL;--> statement-breakpoint
 
 -- RLS: deny-by-default tenant isolation, same pattern as 0028_rls_tenant_policies.
 ALTER TABLE "member_email_changes" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
@@ -41,9 +46,9 @@ CREATE POLICY tenant_isolation ON "member_email_changes"
 -- FHS-354-style SECURITY DEFINER reader — the confirm endpoint is public and
 -- has no tenant pinned yet, so a plain SELECT would return zero rows under
 -- RLS. Scoped to (member_id, token_hash): a caller must already hold the
--- high-entropy raw token (hashed client-side... no — server-side, before
--- comparing) to get a hit, so this does not widen the access boundary beyond
--- what the emailed link already grants.
+-- high-entropy raw token — hashed server-side before this call, never sent
+-- as a hash by the client — to get a hit, so this does not widen the access
+-- boundary beyond what the emailed link already grants.
 CREATE OR REPLACE FUNCTION app_find_email_change(p_member_id uuid, p_token_hash text)
 RETURNS TABLE (
   id uuid,

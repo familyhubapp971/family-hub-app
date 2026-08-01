@@ -176,6 +176,36 @@ function adminWithPendingEmailList() {
   };
 }
 
+// FHS-510 blocker #6 — a defensive edge case: an "active" grown-up whose
+// `email` field is null (the API is expected to always populate it for a
+// linked login, but the UI must not assume that and should disable the
+// trigger rather than open a broken form).
+function adminWithNoEmailOnFileList() {
+  return {
+    ok: true,
+    json: async () => ({
+      callerRole: 'admin',
+      members: [
+        {
+          id: 'admin-1',
+          displayName: 'Sarah Khan',
+          role: 'admin',
+          avatarEmoji: '👩',
+          status: 'active',
+          createdAt: '2026-05-02T00:00:00.000Z',
+          isChild: false,
+          hasPin: false,
+          age: null,
+          inviteEmail: null,
+          inviteId: null,
+          email: null,
+          pendingEmail: null,
+        },
+      ],
+    }),
+  };
+}
+
 function fullFamilyList() {
   return {
     ok: true,
@@ -926,18 +956,18 @@ describe('<MembersPage />', () => {
       });
 
       it('is disabled when the member has no sign-in email yet', async () => {
-        membersResponse = fullFamilyList();
+        membersResponse = adminWithNoEmailOnFileList();
         renderAt('/t/khans/members');
         await expandGrownups();
-        // adult-1 (Yusuf) has an email in this fixture; the disabled case is
-        // covered by the pending-change test below instead, which is the
-        // real-world path a grown-up with an email ever hits.
         await waitFor(() =>
-          expect(screen.getByTestId('members-grownup-1-change-email')).toBeInTheDocument(),
+          expect(screen.getByTestId('members-grownup-0-change-email')).toBeInTheDocument(),
         );
-        expect(
-          (screen.getByTestId('members-grownup-1-change-email') as HTMLButtonElement).disabled,
-        ).toBe(false);
+        const btn = screen.getByTestId('members-grownup-0-change-email') as HTMLButtonElement;
+        expect(btn.disabled).toBe(true);
+        expect(btn.title).toMatch(/no sign-in email yet/i);
+        // Clicking a disabled button is a no-op — the form never opens.
+        fireEvent.click(btn);
+        expect(screen.queryByTestId('members-grownup-0-email-change-form')).not.toBeInTheDocument();
       });
 
       it('shows the pending "Confirm the new email" card, disables the trigger button, and supports Resend + Cancel', async () => {
@@ -993,6 +1023,28 @@ describe('<MembersPage />', () => {
         await waitFor(() =>
           expect(screen.queryByTestId('members-grownup-0-pending-email')).not.toBeInTheDocument(),
         );
+      });
+
+      // FHS-510 blocker #7 — defense-in-depth: even if the API ever returned
+      // a pendingEmail to a non-admin caller (it shouldn't — see blocker
+      // #5's backend gate), the UI must still hide the pending card AND the
+      // change-email trigger for a non-admin.
+      it('a non-admin caller sees neither the pending card nor the change-email controls', async () => {
+        membersResponse = {
+          ok: true,
+          json: async () => ({
+            callerRole: 'adult',
+            members: (await adminWithPendingEmailList().json()).members,
+          }),
+        };
+        renderAt('/t/khans/members');
+        await expandGrownups();
+        await waitFor(() =>
+          expect(screen.getByTestId('members-grownup-0-name')).toBeInTheDocument(),
+        );
+        expect(screen.queryByTestId('members-grownup-0-pending-email')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('members-grownup-0-change-email')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('members-grownup-0-email-change-form')).not.toBeInTheDocument();
       });
 
       it("surfaces the server's error detail (e.g. email already registered) via the shared action-error banner", async () => {

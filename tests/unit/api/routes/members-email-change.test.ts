@@ -26,10 +26,18 @@ vi.mock('../../../../apps/api/src/db/client.js', () => ({
   pinRequestTenant: (...args: unknown[]) => pinRequestTenant(...args),
 }));
 
+// Mocks ONLY `sendEmail` — `escapeHtml` stays the real implementation so the
+// HTML-escaping tests below exercise the actual escaping logic, not a stub.
 const sendEmail = vi.fn();
-vi.mock('../../../../apps/api/src/lib/email.js', () => ({
-  sendEmail: (...args: unknown[]) => sendEmail(...args),
-}));
+vi.mock('../../../../apps/api/src/lib/email.js', async () => {
+  const actual = await vi.importActual<typeof import('../../../../apps/api/src/lib/email.js')>(
+    '../../../../apps/api/src/lib/email.js',
+  );
+  return {
+    ...actual,
+    sendEmail: (...args: unknown[]) => sendEmail(...args),
+  };
+});
 
 const updateUserEmailById = vi.fn();
 vi.mock('../../../../apps/api/src/lib/supabase-admin.js', async () => {
@@ -190,7 +198,7 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it('happy path — creates a hashed pending row and emails the NEW address, never the raw token', async () => {
+  it('happy path — creates a hashed pending row, emails the NEW address, and heads-up notices the OLD address', async () => {
     queueSelects(
       [{ id: 'caller-member', role: 'admin' }],
       [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
@@ -228,20 +236,73 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
     );
     expect(Object.keys(insertedValues as object)).not.toContain('token');
 
-    // The email goes to the NEW address, with a confirm link carrying the
-    // member id and a token query param — but the token in that link is
-    // NOT the same string as the stored hash (i.e. it's the raw secret).
-    expect(sendEmail).toHaveBeenCalledTimes(1);
-    const emailArgs = sendEmail.mock.calls[0]![0] as { to: string; html: string };
-    expect(emailArgs.to).toBe('yusuf.new@example.com');
-    const match = /confirm-email\/([^"?]+)\?token=([^"&\s]+)/.exec(emailArgs.html);
+    // TWO emails go out: the confirm link to the NEW address, and a
+    // heads-up (no action link) to the OLD address — FHS-510 blocker #2.
+    expect(sendEmail).toHaveBeenCalledTimes(2);
+
+    const primary = sendEmail.mock.calls[0]![0] as { to: string; html: string };
+    expect(primary.to).toBe('yusuf.new@example.com');
+    const match = /confirm-email\/([^"?]+)\?token=([^"&\s]+)/.exec(primary.html);
     expect(match?.[1]).toBe(TARGET_ID);
     const rawTokenInLink = match?.[2];
     expect(rawTokenInLink).toBeTruthy();
     expect(rawTokenInLink).not.toBe((insertedValues as unknown as { tokenHash: string }).tokenHash);
+
+    const oldAddressNotice = sendEmail.mock.calls[1]![0] as { to: string; html: string };
+    expect(oldAddressNotice.to).toBe('yusuf@old.example.com');
+    expect(oldAddressNotice.html).toContain('yusuf.new@example.com');
+    // No action link in the heads-up — it's informational only.
+    expect(oldAddressNotice.html).not.toContain('confirm-email');
   });
 
-  it('email send failure rolls back the pending row and returns 502', async () => {
+  it('escapes a malicious display name in BOTH emails (HTML/link injection guard)', async () => {
+    const evilName = '<img src=x onerror=alert(1)>Yusuf';
+    queueSelects(
+      [{ id: 'caller-member', role: 'admin' }],
+      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: evilName }],
+      [{ email: 'yusuf@old.example.com' }],
+      [],
+    );
+    const app = seedAuth();
+    const res = await app.request(`/api/members/${TARGET_ID}/email-change`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'new@example.com' }),
+    });
+    expect(res.status).toBe(200);
+    for (const call of sendEmail.mock.calls) {
+      const html = (call[0] as { html: string }).html;
+      expect(html).not.toContain('<img src=x onerror=alert(1)>');
+      expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;Yusuf');
+    }
+  });
+
+  it('a failed old-address heads-up notice is logged but does NOT block the 200', async () => {
+    queueSelects(
+      [{ id: 'caller-member', role: 'admin' }],
+      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ email: 'yusuf@old.example.com' }],
+      [],
+    );
+    sendEmail
+      .mockResolvedValueOnce({ ok: true }) // primary (new address) succeeds
+      .mockResolvedValueOnce({ ok: false, error: 'boom' }); // old-address notice fails
+    const app = seedAuth();
+    const res = await app.request(`/api/members/${TARGET_ID}/email-change`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'new@example.com' }),
+    });
+    expect(res.status).toBe(200);
+    expect(sendEmail).toHaveBeenCalledTimes(2);
+    // delete() is called exactly once here — the "invalidate any prior
+    // pending row" step every request makes. The pending row is NOT rolled
+    // back on top of that; only the PRIMARY send failing triggers a
+    // rollback (see the next test).
+    expect(dbMock.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('email send failure rolls back the pending row and returns 502 (old-address notice never fires)', async () => {
     queueSelects(
       [{ id: 'caller-member', role: 'admin' }],
       [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
@@ -263,6 +324,31 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
     });
     expect(res.status).toBe(502);
     expect(deletedTable).toBe(memberEmailChanges);
+    // Called twice: the "invalidate any prior pending row" step, then the
+    // rollback of the row this request just inserted.
+    expect(dbMock.delete).toHaveBeenCalledTimes(2);
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('a concurrent request for the same member (unique-violation on insert) → 409', async () => {
+    queueSelects(
+      [{ id: 'caller-member', role: 'admin' }],
+      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ email: 'yusuf@old.example.com' }],
+      [],
+    );
+    const uniqueViolation = Object.assign(new Error('duplicate key'), { code: '23505' });
+    dbMock.insert.mockImplementation(() => ({
+      values: () => ({ returning: () => Promise.reject(uniqueViolation) }),
+    }));
+    const app = seedAuth();
+    const res = await app.request(`/api/members/${TARGET_ID}/email-change`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'new@example.com' }),
+    });
+    expect(res.status).toBe(409);
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 });
 
@@ -295,10 +381,29 @@ describe('FHS-510 — POST /api/members/:id/email-change/cancel (admin-only)', (
 });
 
 describe('FHS-510 — POST /api/members/email-change/confirm (PUBLIC)', () => {
-  function txMock() {
+  function txMock(opts: { throws?: Error } = {}) {
     const tx = { execute: vi.fn(async () => ({ rows: [] })), update: vi.fn(() => chain([])) };
-    dbMock.transaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => fn(tx));
+    dbMock.transaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+      if (opts.throws) throw opts.throws;
+      return fn(tx);
+    });
     return tx;
+  }
+
+  function mockPendingRow(over: Partial<Record<string, unknown>> = {}) {
+    dbMock.execute.mockResolvedValue({
+      rows: [
+        {
+          id: CHANGE_ID,
+          tenant_id: TENANT_ID,
+          member_id: TARGET_ID,
+          new_email: 'yusuf.new@example.com',
+          expires_at: new Date(Date.now() + 60_000),
+          used_at: null,
+          ...over,
+        },
+      ],
+    });
   }
 
   it('no matching row (wrong token) → 410 expired, no Supabase call', async () => {
@@ -314,18 +419,7 @@ describe('FHS-510 — POST /api/members/email-change/confirm (PUBLIC)', () => {
   });
 
   it('already-used row → 410 expired', async () => {
-    dbMock.execute.mockResolvedValue({
-      rows: [
-        {
-          id: CHANGE_ID,
-          tenant_id: TENANT_ID,
-          member_id: TARGET_ID,
-          new_email: 'new@example.com',
-          expires_at: new Date(Date.now() + 60_000),
-          used_at: new Date('2026-05-01T00:00:00.000Z'),
-        },
-      ],
-    });
+    mockPendingRow({ used_at: new Date('2026-05-01T00:00:00.000Z') });
     const app = publicApp();
     const res = await app.request('/api/members/email-change/confirm', {
       method: 'POST',
@@ -337,18 +431,7 @@ describe('FHS-510 — POST /api/members/email-change/confirm (PUBLIC)', () => {
   });
 
   it('expired row (past expires_at) → 410 expired', async () => {
-    dbMock.execute.mockResolvedValue({
-      rows: [
-        {
-          id: CHANGE_ID,
-          tenant_id: TENANT_ID,
-          member_id: TARGET_ID,
-          new_email: 'new@example.com',
-          expires_at: new Date(Date.now() - 1000),
-          used_at: null,
-        },
-      ],
-    });
+    mockPendingRow({ expires_at: new Date(Date.now() - 1000) });
     const app = publicApp();
     const res = await app.request('/api/members/email-change/confirm', {
       method: 'POST',
@@ -359,23 +442,14 @@ describe('FHS-510 — POST /api/members/email-change/confirm (PUBLIC)', () => {
     expect(updateUserEmailById).not.toHaveBeenCalled();
   });
 
-  it('happy path — pins the row tenant, updates Supabase + the users mirror, marks used, returns the new email', async () => {
-    dbMock.execute.mockResolvedValue({
-      rows: [
-        {
-          id: CHANGE_ID,
-          tenant_id: TENANT_ID,
-          member_id: TARGET_ID,
-          new_email: 'yusuf.new@example.com',
-          expires_at: new Date(Date.now() + 60_000),
-          used_at: null,
-        },
-      ],
-    });
-    // select #1: target member lookup. select #2 (after the transaction):
-    // tenants.slug lookup.
+  it('happy path — pins the tenant, updates Supabase + the mirror, marks used, notifies the OLD address, returns the new email', async () => {
+    mockPendingRow();
+    // select #1: target member lookup. select #2: the OLD (soon-to-be-
+    // replaced) email, captured BEFORE anything mutates it. select #3
+    // (after the transaction): tenants.slug lookup.
     queueSelects(
       [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ email: 'yusuf.old@example.com' }],
       [{ slug: 'khans' }],
     );
     updateUserEmailById.mockResolvedValue(undefined);
@@ -406,21 +480,38 @@ describe('FHS-510 — POST /api/members/email-change/confirm (PUBLIC)', () => {
     const expectedHash = createHash('sha256').update('the-raw-token').digest('hex');
     const executedSql = dbMock.execute.mock.calls[0]![0] as { queryChunks?: unknown };
     expect(JSON.stringify(executedSql)).toContain(expectedHash);
+
+    // FHS-510 blocker #2 — the OLD address gets a completion notice.
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    const notice = sendEmail.mock.calls[0]![0] as { to: string; html: string };
+    expect(notice.to).toBe('yusuf.old@example.com');
+    expect(notice.html).toContain('yusuf.new@example.com');
+  });
+
+  it('a failed old-address completion notice is logged but does NOT change the 200 response', async () => {
+    mockPendingRow();
+    queueSelects(
+      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ email: 'yusuf.old@example.com' }],
+      [{ slug: 'khans' }],
+    );
+    updateUserEmailById.mockResolvedValue(undefined);
+    txMock();
+    sendEmail.mockResolvedValue({ ok: false, error: 'boom' });
+
+    const app = publicApp();
+    const res = await app.request('/api/members/email-change/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberId: TARGET_ID, token: 'the-raw-token' }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { newEmail: string };
+    expect(body.newEmail).toBe('yusuf.new@example.com');
   });
 
   it('member removed / unlinked since the request → 410 expired (no Supabase call)', async () => {
-    dbMock.execute.mockResolvedValue({
-      rows: [
-        {
-          id: CHANGE_ID,
-          tenant_id: TENANT_ID,
-          member_id: TARGET_ID,
-          new_email: 'new@example.com',
-          expires_at: new Date(Date.now() + 60_000),
-          used_at: null,
-        },
-      ],
-    });
+    mockPendingRow();
     queueSelects([]); // target lookup: member gone
     const app = publicApp();
     const res = await app.request('/api/members/email-change/confirm', {
@@ -432,20 +523,12 @@ describe('FHS-510 — POST /api/members/email-change/confirm (PUBLIC)', () => {
     expect(updateUserEmailById).not.toHaveBeenCalled();
   });
 
-  it('Supabase admin update failure → 502, users mirror NOT touched', async () => {
-    dbMock.execute.mockResolvedValue({
-      rows: [
-        {
-          id: CHANGE_ID,
-          tenant_id: TENANT_ID,
-          member_id: TARGET_ID,
-          new_email: 'new@example.com',
-          expires_at: new Date(Date.now() + 60_000),
-          used_at: null,
-        },
-      ],
-    });
-    queueSelects([{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }]);
+  it('Supabase admin update failure → 502 EMAIL_CHANGE_APPLY_FAILED (retryable, NOT expired), users mirror untouched', async () => {
+    mockPendingRow();
+    queueSelects(
+      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ email: 'yusuf.old@example.com' }],
+    );
     updateUserEmailById.mockRejectedValue(new Error('supabase down'));
     const app = publicApp();
     const res = await app.request('/api/members/email-change/confirm', {
@@ -454,6 +537,35 @@ describe('FHS-510 — POST /api/members/email-change/confirm (PUBLIC)', () => {
       body: JSON.stringify({ memberId: TARGET_ID, token: 'some-token' }),
     });
     expect(res.status).toBe(502);
+    const body = (await res.json()) as { errorCode: string };
+    expect(body.errorCode).toBe('EMAIL_CHANGE_APPLY_FAILED');
     expect(dbMock.transaction).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  // FHS-510 blocker #3 — Supabase succeeds but the local apply (users
+  // mirror + used_at) throws: this is a DRIFT, must be reported distinctly
+  // and NEVER re-shown to the user as "the link expired" (that would
+  // suggest nothing happened, when in fact Supabase already changed).
+  it('local-apply failure AFTER a successful Supabase update → 500 EMAIL_CHANGE_APPLY_FAILED (drift, not expired)', async () => {
+    mockPendingRow();
+    queueSelects(
+      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ email: 'yusuf.old@example.com' }],
+    );
+    updateUserEmailById.mockResolvedValue(undefined);
+    txMock({ throws: new Error('connection reset') });
+
+    const app = publicApp();
+    const res = await app.request('/api/members/email-change/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberId: TARGET_ID, token: 'some-token' }),
+    });
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { errorCode: string };
+    expect(body.errorCode).toBe('EMAIL_CHANGE_APPLY_FAILED');
+    // No completion notice — the local apply never committed.
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 });

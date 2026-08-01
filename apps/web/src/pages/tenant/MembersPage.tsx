@@ -582,24 +582,28 @@ function GrownUpCard({
           }}
         />
       )}
-      {m.pendingEmail ? (
-        <PendingEmailChangeCard member={m} testId={testId} mutate={mutate} />
-      ) : (
-        emailChangeFor === m.id && (
-          <EmailChangeForm
-            displayName={m.displayName}
-            testId={testId}
-            onCancel={() => setEmailChangeFor(null)}
-            onSave={async (email) => {
-              const ok = await mutate(`/api/members/${m.id}/email-change`, {
-                method: 'POST',
-                body: JSON.stringify({ email }),
-              });
-              if (ok) setEmailChangeFor(null);
-            }}
-          />
-        )
-      )}
+      {/* FHS-510 blocker #5 — pending-change UI + the change-email controls
+          are admin-only (the API already nulls email/pendingEmail for a
+          non-admin caller; this is the matching UI-side gate). */}
+      {callerIsAdmin &&
+        (m.pendingEmail ? (
+          <PendingEmailChangeCard member={m} testId={testId} mutate={mutate} />
+        ) : (
+          emailChangeFor === m.id && (
+            <EmailChangeForm
+              displayName={m.displayName}
+              testId={testId}
+              onCancel={() => setEmailChangeFor(null)}
+              onSave={async (email) => {
+                const ok = await mutate(`/api/members/${m.id}/email-change`, {
+                  method: 'POST',
+                  body: JSON.stringify({ email }),
+                });
+                if (ok) setEmailChangeFor(null);
+              }}
+            />
+          )
+        ))}
     </MemberCard>
   );
 }
