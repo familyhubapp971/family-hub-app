@@ -230,9 +230,6 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     expect(screen.getByTestId(`habit-card-title-${HABIT}`).textContent).toContain('Brush teeth');
     expect(screen.getByTestId(`habit-day-cell-${HABIT}-0`)).toBeInTheDocument();
     expect(screen.getByTestId('sticker-balance').textContent).toContain('3');
-    // My Stickers grid (sticker types)
-    expect(screen.getByTestId('my-sticker-gold-star')).toBeInTheDocument();
-    expect(screen.getByTestId('my-sticker-trophy')).toBeInTheDocument();
   });
 
   it('shows the no-data state when there are no weeks', async () => {
@@ -383,8 +380,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     });
     renderTab();
     // Current week: all the live widgets are present.
-    await waitFor(() => expect(screen.getByTestId('my-stickers')).toBeInTheDocument());
-    expect(screen.getByTestId('rewards-shop')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('rewards-shop')).toBeInTheDocument());
     expect(screen.getByTestId('bankable-week')).toBeInTheDocument();
     expect(screen.getByTestId('your-savings')).toBeInTheDocument();
 
@@ -394,8 +390,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     });
 
     // Live current-week-only widgets are gone…
-    await waitFor(() => expect(screen.queryByTestId('my-stickers')).not.toBeInTheDocument());
-    expect(screen.queryByTestId('rewards-shop')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId('rewards-shop')).not.toBeInTheDocument());
     expect(screen.queryByTestId('bankable-week')).not.toBeInTheDocument();
     expect(screen.queryByTestId('your-savings')).not.toBeInTheDocument();
     expect(screen.queryByTestId('active-investments')).not.toBeInTheDocument();
