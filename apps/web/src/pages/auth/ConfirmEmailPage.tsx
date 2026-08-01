@@ -5,10 +5,10 @@ import { Loader2, Check, MailX, Mail, AlertTriangle } from 'lucide-react';
 import { Button, Card } from '@familyhub/ui';
 import { apiFetch, ApiError } from '../../lib/api';
 
-// FHS-510 — the landing page for an admin-initiated sign-in email change.
-// An admin sets a new email for a grown-up on Manage Members; a one-time
-// link is emailed to the NEW address; clicking it lands here and applies
-// the change. Root-level route (outside ProtectedRoute) — the person
+// FHS-510 — the landing page for a self-serve sign-in email change.
+// A grown-up sets a new email for their OWN account on Manage Members; a
+// one-time link is emailed to the NEW address; clicking it lands here and
+// applies the change. Root-level route (outside ProtectedRoute) — the person
 // clicking may not be signed in at all.
 //
 // Five states:
@@ -113,7 +113,7 @@ export function ConfirmEmailPage() {
               </IconDisc>
               <h1 className="mb-4 font-heading text-3xl">Confirm your new email</h1>
               <p className="mb-8 font-bold text-gray-600">
-                An admin asked to update your Family Hub sign-in email. Tap below to confirm it.
+                You asked to update your Family Hub sign-in email. Tap below to confirm it.
               </p>
               <Button
                 type="button"
@@ -151,7 +151,7 @@ export function ConfirmEmailPage() {
               <h1 className="mb-4 font-heading text-3xl">Email updated</h1>
               <p className="mb-1 font-bold text-gray-600">{status.memberName} now signs in with</p>
               <p
-                className="mb-8 font-heading text-xl text-black"
+                className="mb-8 break-all font-heading text-xl text-black"
                 data-testid="confirm-email-new-address"
               >
                 {status.newEmail}

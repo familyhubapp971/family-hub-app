@@ -49,8 +49,9 @@ export const memberItemSchema = z.object({
   // FHS-510 — the grown-up's current sign-in email (null for kids and
   // unclaimed seats). Lets Manage Members gate + label "Change email".
   email: z.string().nullable(),
-  // FHS-510 — a new email awaiting confirmation, if an admin has one in
-  // flight for this member. Null when there's no pending change.
+  // FHS-510 — a new email awaiting confirmation for the caller's OWN row, if
+  // they have a change in flight. Null otherwise (and always null on other
+  // members' rows — a login email is not roster data).
   pendingEmail: z.string().nullable(),
 });
 
@@ -627,14 +628,14 @@ membersRouter.delete('/:id', async (c) => {
 // FHS-510 — admin changes a grown-up's sign-in email, confirmed by a one-time
 // emailed link.
 //
-// POST /api/members/:id/email-change          — admin-only. Starts a change:
-//   emails a confirm link to the NEW address; the old address keeps working
-//   until it's clicked.
+// POST /api/members/:id/email-change          — self-serve. A member starts a
+//   change of their OWN sign-in email: emails a confirm link to the NEW
+//   address; the old address keeps working until it's clicked.
 // POST /api/members/email-change/confirm       — PUBLIC (no auth — the
 //   recipient may not be signed in). Applies the change if the token is
 //   valid, unexpired, and unused.
-// POST /api/members/:id/email-change/cancel    — admin-only. Drops the
-//   pending row so the admin can start over.
+// POST /api/members/:id/email-change/cancel    — self-serve. Drops the caller's
+//   OWN pending row so they can start over.
 //
 // Security (do not relax without re-reading this block):
 //   - The raw token is NEVER stored or logged — only its SHA-256 hash
@@ -647,15 +648,17 @@ membersRouter.delete('/:id', async (c) => {
 //     (used_at set) and tenant-scoped from the ROW, never from client input.
 //     A partial unique index (member_id WHERE used_at IS NULL) stops two
 //     concurrent requests from ever creating two live rows for one member.
-//   - Only an admin can start or cancel a change; `email`/`pendingEmail` on
-//     GET /api/members are likewise admin-only (a grown-up's login email is
-//     not roster data every family member should see).
-//   - The CURRENT (old) email is notified on start AND on completion — an
-//     admin silently repointing another admin's login is an account-
-//     takeover primitive otherwise. Both notices are best-effort: a send
-//     failure is logged, never blocks or rolls back the main flow.
+//   - Self-serve ONLY: a member can start or cancel a change for their OWN
+//     row and no other (the start/cancel handlers 403 unless the target is
+//     the caller's own member row). `email`/`pendingEmail` on GET
+//     /api/members are returned ONLY for the caller's own row — a grown-up's
+//     login email is not roster data other family members should see.
+//   - The CURRENT (old) email is notified on start AND on completion — if a
+//     hijacked session repoints the owner's own login, the real owner still
+//     gets a heads-up at the old address. Both notices are best-effort: a
+//     send failure is logged, never blocks or rolls back the main flow.
 //   - Every value spliced into an email HTML template goes through
-//     escapeHtml() first — displayName is admin/user-controlled.
+//     escapeHtml() first — displayName is user-controlled.
 //   - New-email uniqueness is checked against `users` before the email
 //     is sent.
 //   - The web ConfirmEmail screen requires an explicit click before it
@@ -691,8 +694,8 @@ function emailChangeHtml(opts: {
   confirmUrl: string;
 }): string {
   // Modelled on apps/api/auth/email-templates/email_change.html (the
-  // Supabase-side template for a user-initiated change) — same voice, but
-  // this is admin-initiated so the copy says who asked.
+  // Supabase-side template for a user-initiated change) — self-serve, so the
+  // recipient of this email is the person who asked for the change.
   const displayName = escapeHtml(opts.displayName);
   const currentEmail = opts.currentEmail ? escapeHtml(opts.currentEmail) : null;
   const newEmail = escapeHtml(opts.newEmail);
@@ -703,21 +706,21 @@ function emailChangeHtml(opts: {
   return `
     <h1>Confirm your new email</h1>
     <p>Hi ${displayName},</p>
-    <p>An admin on your Family Hub family asked to change your sign-in email ${fromLine}. Confirm the change so it takes effect:</p>
+    <p>You asked to change your Family Hub sign-in email ${fromLine}. Confirm the change so it takes effect:</p>
     <p>
       <a href="${confirmUrl}" style="display:inline-block;padding:12px 20px;background:#1f2937;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Confirm new email</a>
     </p>
     <p>If the button doesn't work, paste this link into your browser:</p>
     <p><a href="${confirmUrl}">${confirmUrl}</a></p>
-    <p>${currentEmail ? `Your old email (${currentEmail}) keeps working until you click the link above.` : ''} If you weren't expecting this, ask a family admin — nothing changes until this link is clicked.</p>
+    <p>${currentEmail ? `Your old email (${currentEmail}) keeps working until you click the link above.` : ''} If you didn't request this, you can safely ignore this email — nothing changes until this link is clicked.</p>
     <p>— The Family Hub team</p>
   `.trim();
 }
 
-// FHS-510 blocker #2 — the CURRENT (old) email gets no signal today, which
-// makes an admin silently repointing another admin's login an account-
-// takeover primitive. Two heads-up notices, sent best-effort (a failure here
-// never blocks or rolls back the main flow — see the call sites below).
+// FHS-510 blocker #2 — the CURRENT (old) email is always notified, so if a
+// hijacked session repoints the owner's own login, the real owner still gets a
+// heads-up at the address they still control. Two notices, sent best-effort (a
+// failure here never blocks or rolls back the main flow — see the call sites).
 
 function emailChangeStartedOldEmailHtml(opts: { displayName: string; newEmail: string }): string {
   const displayName = escapeHtml(opts.displayName);
@@ -725,8 +728,8 @@ function emailChangeStartedOldEmailHtml(opts: { displayName: string; newEmail: s
   return `
     <h1>Your Family Hub sign-in email is changing</h1>
     <p>Hi ${displayName},</p>
-    <p>A change of your Family Hub sign-in email to <strong>${newEmail}</strong> was requested by an admin. It only takes effect when the link sent to the new address is confirmed.</p>
-    <p>If this wasn't expected, contact your family admin.</p>
+    <p>A request was made to change your Family Hub sign-in email to <strong>${newEmail}</strong>. It only takes effect when the link sent to the new address is confirmed.</p>
+    <p>If this wasn't you, don't confirm anything — change your password to secure your account.</p>
     <p>— The Family Hub team</p>
   `.trim();
 }
@@ -738,12 +741,13 @@ function emailChangeCompletedOldEmailHtml(opts: { displayName: string; newEmail:
     <h1>Your Family Hub sign-in email was changed</h1>
     <p>Hi ${displayName},</p>
     <p>Your Family Hub sign-in email was changed to <strong>${newEmail}</strong>.</p>
-    <p>If this wasn't expected, contact your family admin.</p>
+    <p>If this wasn't you, change your password to secure your account.</p>
     <p>— The Family Hub team</p>
   `.trim();
 }
 
-// POST /api/members/:id/email-change — admin-only.
+// POST /api/members/:id/email-change — self-serve: a member changes their OWN
+// sign-in email (403 for any other target). See the security block above.
 membersRouter.post('/:id/email-change', async (c) => {
   getAuthenticatedUser(c);
   const userRow = c.get('userRow');
@@ -788,21 +792,13 @@ membersRouter.post('/:id/email-change', async (c) => {
     .limit(1);
   const target = targetRows[0];
   if (!target) return c.json({ error: 'member not found' }, 404);
-  // FHS-510 — self-serve: the target must be the caller's own member row.
+  // FHS-510 — self-serve: the target must be the caller's own member row. A
+  // null target.userId (unclaimed seat) can never equal the caller's own
+  // non-null user id, so this also covers the "no sign-in email yet" case.
   if (target.userId !== userRow.id) {
     return c.json(
       { error: 'forbidden', detail: 'you can only change your own sign-in email' },
       403,
-    );
-  }
-  if (!target.userId) {
-    return c.json(
-      {
-        error: 'forbidden',
-        errorCode: 'NO_LOGIN_EMAIL',
-        detail: 'this member has no sign-in email yet — invite them first',
-      },
-      400,
     );
   }
 

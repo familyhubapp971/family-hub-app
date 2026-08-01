@@ -43,9 +43,9 @@ import { DEFAULT_TAB } from './dashboard-tabs';
 // unchanged from the pre-FHS-513 page (FHS-108 / FHS-252 / FHS-276 /
 // FHS-471/472/473 / FHS-486). See each handler below for its history.
 //
-// "Change email" (FHS-510) has no backend yet — its button renders
-// disabled with a "Coming soon" note rather than being wired to a
-// non-existent endpoint.
+// "Change email" (FHS-510) is self-serve: the button renders ONLY on the
+// caller's own grown-up card and starts a confirm-by-email change of their
+// own sign-in address (a member can never change another member's email).
 
 interface MemberItem {
   id: string;
@@ -710,7 +710,7 @@ function PendingEmailChangeCard({
       data-testid={`${testId}-pending-email`}
     >
       <p className="font-heading text-sm text-black">Confirm the new email</p>
-      <p className="text-xs font-bold text-gray-700">
+      <p className="break-words text-xs font-bold text-gray-700">
         We sent a link to {member.pendingEmail}. Until it is clicked, {member.displayName} still
         signs in with {member.email}.
       </p>
