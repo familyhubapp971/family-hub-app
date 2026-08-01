@@ -20,10 +20,26 @@ interface CurrencyEntry {
   name: string;
 }
 
+/**
+ * FHS-515 — decimal places for an ISO-4217 currency (JPY→0, USD→2, KWD→3);
+ * 2 on any bad/unknown code. Node + browsers ship full ICU, so this is
+ * reliable in tests too.
+ */
+export function currencyDecimals(code: string): number {
+  try {
+    return (
+      new Intl.NumberFormat('en', { style: 'currency', currency: code }).resolvedOptions()
+        .maximumFractionDigits ?? 2
+    );
+  } catch {
+    return 2;
+  }
+}
+
 // Curated list — covers the ticket's named examples (GBP, USD, EUR, NGN,
 // AED) plus the rest of the top-30 by global GDP. Order keeps frequent
 // pickers near the top before alphabetical fall-through.
-const CURRENCIES: readonly CurrencyEntry[] = [
+const ALL_CURRENCIES: readonly CurrencyEntry[] = [
   { code: 'USD', symbol: '$', name: 'US Dollar' },
   { code: 'EUR', symbol: '€', name: 'Euro' },
   { code: 'GBP', symbol: '£', name: 'British Pound' },
@@ -55,6 +71,15 @@ const CURRENCIES: readonly CurrencyEntry[] = [
   { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit' },
   { code: 'THB', symbol: '฿', name: 'Thai Baht' },
 ];
+
+// FHS-515 — the sticker economy hardcodes 2-decimal money math (centi-unit
+// storage, ÷100 display, quarter-unit stepper). A 0-decimal (JPY, KRW) or
+// 3-decimal (KWD) currency would show wrong figures and a wrong stepper, so
+// until full multi-decimal support lands we only OFFER 2-decimal currencies —
+// no family can end up on a currency the money math can't render correctly.
+const CURRENCIES: readonly CurrencyEntry[] = ALL_CURRENCIES.filter(
+  (c) => currencyDecimals(c.code) === 2,
+);
 
 /**
  * Best-effort currency detection from the browser's locale. Uses

@@ -164,8 +164,13 @@ but were unrelated.
 - **Migrating legacy decimal money columns** (`saved_cash`,
   `invested_amount`, etc.) to the new integer-minor-unit representation —
   ADR 0020 keeps the two representations side by side for now.
-- **Zero/3-decimal currencies** (JPY, KWD) — money formatting still assumes
-  2 decimals (tracked as [FHS-515](https://qualicion2.atlassian.net/browse/FHS-515)).
+- **Zero/3-decimal currencies** (JPY, KWD) — the money math still assumes
+  2 decimals everywhere. [FHS-515](https://qualicion2.atlassian.net/browse/FHS-515)
+  handled this by **constraining the onboarding currency picker to 2-decimal
+  currencies** (via `currencyDecimals()`), so no family can land on a currency
+  the sticker economy would render wrong. Full multi-decimal support (native
+  minor units + currency-aware display everywhere) is a follow-up if a
+  0/3-decimal market is needed.
 - **The rewards shop / redemption flow itself** — a separate feature; this
   doc only covers what a sticker is _worth_, not spending it.
 
