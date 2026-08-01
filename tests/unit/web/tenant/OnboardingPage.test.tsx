@@ -250,6 +250,49 @@ describe('<OnboardingPage />', () => {
     expect((screen.getByTestId('onboarding-next') as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('FHS-487: shows an age input for a child row and includes it in the submit payload', async () => {
+    mockNotOnboarded();
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ tenant: { onboardingCompleted: true }, membersAdded: 1 }),
+    });
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), { target: { value: 'Sarah' } });
+    fireEvent.click(screen.getByTestId('onboarding-add-member'));
+    fireEvent.change(screen.getByTestId('onboarding-member-name-0'), {
+      target: { value: 'Iman' },
+    });
+
+    // Default role is 'adult' — no age field shown.
+    expect(screen.queryByTestId('onboarding-member-age-0')).not.toBeInTheDocument();
+
+    // Switch role to 'child' — age field appears; email field (adult-only) disappears.
+    fireEvent.change(screen.getByTestId('onboarding-member-role-0'), {
+      target: { value: 'child' },
+    });
+    expect(screen.getByTestId('onboarding-member-age-0')).toBeInTheDocument();
+    expect(screen.queryByTestId('onboarding-member-email-0')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId('onboarding-member-age-0'), { target: { value: '6' } });
+
+    fireEvent.click(screen.getByTestId('onboarding-next')); // Members → Location
+    fireEvent.click(screen.getByTestId('onboarding-next')); // Location → Done
+    fireEvent.click(screen.getByTestId('onboarding-finish'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('route-marker').textContent).toBe('tenant-dashboard'),
+    );
+    const submitCall = fetchMock.mock.calls.find(
+      ([url]) => url === 'http://localhost:3001/api/onboarding/complete',
+    );
+    expect(submitCall).toBeDefined();
+    const payload = JSON.parse((submitCall![1] as RequestInit).body as string);
+    expect(payload.members).toEqual([{ displayName: 'Iman', role: 'child', age: 6 }]);
+  });
+
   it('final submit POSTs all wizard state to /api/onboarding/complete and redirects', async () => {
     // First call: /api/me (gate check).
     mockNotOnboarded();

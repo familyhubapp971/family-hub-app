@@ -16,7 +16,8 @@ import { createLogger } from '../logger.js';
 //   - tenant.timezone (IANA TZ string from the picker — FHS-38)
 //   - tenant.currency (ISO 4217 from the picker — FHS-39)
 //   - one members row per family member added in step 2 (1–8 members,
-//     each with name + role + optional emoji)
+//     each with name + role + optional emoji; child rows may also carry
+//     an optional age — FHS-487)
 //   - tenant.onboarding_completed = true (guards the route from being
 //     rendered a second time)
 //
@@ -55,6 +56,11 @@ const wizardMemberSchema = z
     avatarEmoji: z.string().min(1).max(8).optional(),
     // FHS-275 — optional invite email; adults only (kids use PIN login).
     email: z.string().trim().email().max(255).optional(),
+    // FHS-487 — optional age in years, captured for later use (nothing
+    // reads it yet). The UI only surfaces this on child rows; the API
+    // enforces that at insert time (see newMemberRows below) so an age
+    // submitted for a non-child role is silently dropped, not persisted.
+    age: z.number().int().min(0).max(120).optional().nullable(),
   })
   .refine((m) => m.email === undefined || m.role === 'adult', {
     message: 'invite email is only allowed on adult members',
@@ -222,6 +228,9 @@ export const onboardingRouter = new Hono().post('/complete', async (c) => {
         displayName: m.displayName,
         role: m.role,
         avatarEmoji: m.avatarEmoji ?? null,
+        // FHS-487 — only child rows persist an age; adults/teens/guests
+        // always get null, even if a crafted request sends one.
+        age: m.role === 'child' ? (m.age ?? null) : null,
       }));
       if (newMemberRows.length > 0) {
         const inserted = await tx
