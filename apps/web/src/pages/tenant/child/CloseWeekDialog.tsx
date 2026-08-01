@@ -10,7 +10,7 @@
  * - Uses fetch + headers instead of a generated API client.
  */
 import { useEffect, useState } from 'react';
-import { useBodyScrollLock } from '@familyhub/ui';
+import { BoostButton, useBodyScrollLock } from '@familyhub/ui';
 import {
   X,
   ShieldCheck,
@@ -80,7 +80,17 @@ interface Investment {
   currentValueStickers: number;
   daysCompleted: number;
   daysMissed: number;
+  // FHS-534 — how many stickers this investment grows per completed day
+  // (and, on invest, the pay boost applied to the underlying habit).
+  // Optional so a legacy investment record without the field still falls
+  // back to the historical default of 5.
+  coefficient?: number;
 }
+
+// FHS-534 — investment growth-rate presets. Same 1/2/3/5 set as the habit
+// "Boost" picker on the Pocket Money screen (RewardSettingsPage) since the
+// coefficient IS that habit's pay boost while the investment is active.
+const COEFFICIENT_PRESETS = [1, 2, 3, 5] as const;
 
 type Headers = Record<string, string>;
 
@@ -670,6 +680,11 @@ function InvestDialog({
   // FHS-378 — Deductible (default): missed days subtract value. Non-deductible:
   // missed days never reduce the value.
   const [deductible, setDeductible] = useState(true);
+  // FHS-534 — Growth rate: how many stickers the investment grows per
+  // completed day, and (matching) how many stickers the habit pays per
+  // completed day while the investment is active. Defaults to 5x, same as
+  // the API's default.
+  const [coefficient, setCoefficient] = useState<1 | 2 | 3 | 5>(5);
   const [error, setError] = useState('');
   const num = Number(amount) || 0;
   const isOverMax = num > stickers;
@@ -714,7 +729,13 @@ function InvestDialog({
       const res = await fetch(`${API_BASE}/api/mw/financial/investments`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId, habitId: selectedHabit.id, stickerCount, deductible }),
+        body: JSON.stringify({
+          memberId,
+          habitId: selectedHabit.id,
+          stickerCount,
+          deductible,
+          coefficient,
+        }),
       });
       if (!res.ok) throw new Error(`invest failed: ${res.status}`);
       onDone({
@@ -986,6 +1007,33 @@ function InvestDialog({
             </div>
           )}
 
+          {/* FHS-534 — Growth rate (coefficient) for the new investment. */}
+          {!notEnoughToInvest && !selectedIsInvested && (
+            <div className="mb-2" data-testid="close-week-invest-coefficient">
+              <p
+                id="invest-coefficient-label"
+                className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-wider text-gray-900"
+              >
+                <span className="text-xl">📈</span> Growth Rate
+              </p>
+              <div role="group" aria-labelledby="invest-coefficient-label" className="flex gap-2">
+                {COEFFICIENT_PRESETS.map((n) => (
+                  <BoostButton
+                    key={n}
+                    multiplier={n}
+                    selected={coefficient === n}
+                    onClick={() => setCoefficient(n)}
+                    testId={`close-week-invest-coefficient-${n}`}
+                  />
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-500 font-bold mt-1.5">
+                Picking a higher number makes the investment grow faster, and makes the habit pay
+                more stickers too.
+              </p>
+            </div>
+          )}
+
           {/* Habit selection */}
           <div>
             <p className="font-black text-gray-900 uppercase tracking-wider text-sm mb-3 flex items-center gap-2">
@@ -1018,7 +1066,7 @@ function InvestDialog({
                           data-testid={`close-week-invest-habit-${habit.id}-invested-badge`}
                           className="text-[10px] font-black text-white bg-amber-600 px-1.5 py-0.5 rounded-md border border-black uppercase"
                         >
-                          Invested · 5x
+                          Invested · {inv?.coefficient ?? 5}x
                         </span>
                       )}
                     </div>

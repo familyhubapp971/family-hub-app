@@ -455,12 +455,52 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     expect(screen.getByTestId('investment-mode-inv1')).toHaveTextContent('No-penalty');
     // FHS-406 — the invested habit shows its "Invested · 5x" tag (now in-flow
     // above the day grid instead of an absolute badge that overlapped the cells).
-    expect(screen.getByTestId(`habit-card-invested-badge-${HABIT}`)).toBeInTheDocument();
+    // FHS-534 — this investment has no `coefficient` field (legacy record),
+    // so the badge falls back to the historical default of 5x.
+    expect(screen.getByTestId(`habit-card-invested-badge-${HABIT}`)).toHaveTextContent('5x');
     await act(async () => {
       fireEvent.click(screen.getByTestId('investment-toggle-inv1'));
     });
     await waitFor(() => expect(settingsCalls.length).toBe(1));
     expect(settingsCalls[0]).toContain('/api/mw/financial/investments/inv1/settings');
+  });
+
+  it('shows the investment\'s real coefficient on the "Invested · Nx" badge (FHS-534)', async () => {
+    installApi();
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/api/mw/financial/investments')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            investments: [
+              {
+                id: 'inv1',
+                habitId: HABIT,
+                habitName: 'Brush teeth',
+                habitIcon: 'star',
+                investedStickers: 10,
+                originalInvestedStickers: 10,
+                currentValue: 5,
+                currentValueStickers: 12,
+                daysCompleted: 2,
+                daysMissed: 0,
+                deductible: true,
+                coefficient: 3,
+              },
+            ],
+          }),
+        });
+      }
+      return base(url, init);
+    });
+    renderTab(true);
+    await waitFor(() => expect(screen.getByTestId('investment-card-inv1')).toBeInTheDocument());
+    // A coefficient-3 investment shows "3x", never the hardcoded "5x".
+    expect(screen.getByTestId(`habit-card-invested-badge-${HABIT}`)).toHaveTextContent('3x');
+    expect(screen.getByTestId(`habit-card-invested-badge-${HABIT}`)).not.toHaveTextContent('5x');
   });
 
   it('shows the Close Week banner only from the last day of the week (FHS-319)', async () => {

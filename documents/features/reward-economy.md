@@ -1,6 +1,6 @@
 # Feature: Reward economy (sticker rate, habit boosts, skip penalty)
 
-**Jira:** [FHS-512](https://qualicion2.atlassian.net/browse/FHS-512) (build), [FHS-488](https://qualicion2.atlassian.net/browse/FHS-488) (rate placement), [FHS-489](https://qualicion2.atlassian.net/browse/FHS-489) (boosts + skip penalty)
+**Jira:** [FHS-512](https://qualicion2.atlassian.net/browse/FHS-512) (build), [FHS-488](https://qualicion2.atlassian.net/browse/FHS-488) (rate placement), [FHS-489](https://qualicion2.atlassian.net/browse/FHS-489) (boosts + skip penalty), [FHS-534](https://qualicion2.atlassian.net/browse/FHS-534) (investment coefficient → pay + growth)
 **Status:** shipped
 **Owner:** product-manager
 **ADR:** [0020 — configurable reward economy (rate, boost, skip penalty)](../decisions/0020-configurable-reward-economy.md)
@@ -109,6 +109,51 @@ child a different rate
 - **Then** their balance is floored at zero, never negative
 - **And** closing then reopening that week restores exactly what was deducted
   (no money is created — see ADR 0020's floor-compensation rule)
+
+### Story 4: Invest in a habit to boost its pay and grow faster (FHS-534)
+
+**As an** admin
+**I want** to pick a coefficient (1x/2x/3x/5x) when I invest my child's stickers in a habit
+**so that** one choice makes the habit both pay more per day and grow the investment faster.
+
+Background: a My World "investment" is the child putting earned stickers into a
+habit; the invested value grew by a fixed +5 per completed day. FHS-534 makes
+that daily growth a **parent-chosen coefficient** that _also_ sets the habit's
+pay boost — unifying the two "multiplier" numbers that previously looked alike
+but were unrelated.
+
+#### Acceptance criteria
+
+**Scenario: Parent picks a coefficient when investing**
+
+- **Given** I open the invest flow for a habit
+- **When** I choose a `5x` coefficient and invest
+- **Then** the investment is created with coefficient 5x
+- **And** the habit's pay boost is set to 5x (so completing it pays 5× the rate)
+- **And** Reward Settings shows 5x for that habit
+
+**Scenario: Only the presets are offered**
+
+- **When** picking a coefficient
+- **Then** only 1x, 2x, 3x and 5x are selectable
+
+**Scenario: The investment grows at the chosen coefficient**
+
+- **Given** an investment created with coefficient 3x
+- **When** the child completes 4 days that week
+- **Then** the invested value grows by 3 per completed day (not the old fixed 5)
+
+**Scenario: Existing investments are unchanged**
+
+- **Given** an investment created before this change
+- **Then** it keeps a coefficient of 5x (backfilled) and its growth is identical to before
+
+**Scenario: Editing the habit's pay later does not disturb an active investment**
+
+- **Given** a habit at 5x with an active investment
+- **When** the parent changes the habit to 2x in Reward Settings
+- **Then** future completions pay 2x
+- **And** the active investment keeps growing at its own snapshotted 5x
 
 ## Out of scope
 

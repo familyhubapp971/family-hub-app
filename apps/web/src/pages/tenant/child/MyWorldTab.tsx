@@ -117,6 +117,11 @@ interface Investment {
   daysMissed: number;
   // FHS-378 — when false, missed days don't subtract value (no-penalty mode).
   deductible: boolean;
+  // FHS-534 — how many stickers this investment grows per completed day
+  // (and, on invest, the pay boost applied to the underlying habit).
+  // Optional so a legacy investment record without the field still falls
+  // back to the historical default of 5.
+  coefficient?: number;
 }
 
 // ── Local rich-habit model (mirrors legacy HabitTracker Habit interface) ─────
@@ -672,6 +677,12 @@ export function MyWorldTab(
     () => new Set(investments.map((inv) => inv.habitId)),
     [investments],
   );
+  // FHS-534 — per-habit growth rate, so the "Invested · Nx" badge shows the
+  // real coefficient instead of a hardcoded 5x.
+  const investedCoefficientByHabitId = useMemo(
+    () => new Map(investments.map((inv) => [inv.habitId, inv.coefficient])),
+    [investments],
+  );
 
   // ── Savings derived values ────────────────────────────────────────────────
   const weeklyValue = (unallocatedStickers * stickerRate).toFixed(2);
@@ -985,6 +996,10 @@ export function MyWorldTab(
     // FHS-399 — when true, replace the live "Progress this week" label with
     // the finalized "PROGRESS THAT WEEK X/7" pill used in the kid view.
     weekIsFinalized = false,
+    // FHS-534 — the invested habit's real growth rate (stickers/day). Falls
+    // back to the legacy default of 5 when the investment record predates
+    // the coefficient field.
+    investedCoefficient?: number,
   ) => (
     <div
       className={`relative ${
@@ -1099,7 +1114,8 @@ export function MyWorldTab(
                 data-testid={`habit-card-invested-badge-${habit.id}`}
                 className="inline-flex items-center gap-1 rounded-full border border-amber-600 bg-amber-500 px-2 py-0.5 text-[10px] font-black uppercase text-white"
               >
-                <BarChart2 className="w-3 h-3" aria-hidden="true" /> Invested · 5x
+                <BarChart2 className="w-3 h-3" aria-hidden="true" /> Invested ·{' '}
+                {investedCoefficient ?? 5}x
               </span>
             </div>
           )}
@@ -1821,6 +1837,7 @@ export function MyWorldTab(
                       investedHabitIds.has(habit.id),
                       isAdmin && canEdit,
                       week.isFinalized,
+                      investedCoefficientByHabitId.get(habit.id),
                     )}
                   </div>
                 ))}
