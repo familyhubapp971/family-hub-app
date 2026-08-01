@@ -1,7 +1,7 @@
 import { randomBytes, createHash } from 'node:crypto';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { getDb, pinRequestTenant } from '../db/client.js';
 import { members, pendingInvitations, memberEmailChanges, tenants, users } from '../db/schema.js';
@@ -135,39 +135,35 @@ export const membersRouter = new Hono().get('/', async (c) => {
     inviteRows.filter((r) => r.memberId).map((r) => [r.memberId as string, r]),
   );
 
-  // FHS-510 — current sign-in email per linked userId, plus any pending
-  // change, so Manage Members can show "still signs in with {email}" /
-  // "Confirm the new email" without a second round-trip. ADMIN-ONLY: a
-  // grown-up's login email is not roster data every family member should
-  // see, so a non-admin caller gets `email`/`pendingEmail: null` on every
-  // row — the maps below simply stay empty, and neither query runs.
+  // FHS-510 — self-serve: a member sees ONLY their OWN sign-in email + any
+  // in-flight change of their own. Other members' private login emails are
+  // never exposed on the roster. Both maps only ever hold the caller's own row.
   const emailByUserId = new Map<string, string>();
   const pendingEmailByMember = new Map<string, string>();
-  if (callerRole === 'admin') {
-    const linkedUserIds = rows.map((r) => r.userId).filter((id): id is string => id !== null);
-    if (linkedUserIds.length > 0) {
-      const userRows = await db
-        .select({ id: users.id, email: users.email })
-        .from(users)
-        .where(inArray(users.id, linkedUserIds));
-      for (const u of userRows) emailByUserId.set(u.id, u.email);
-    }
+  {
+    // The caller's own current sign-in email.
+    const ownEmailRows = await db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, userRow.id))
+      .limit(1);
+    if (ownEmailRows[0]) emailByUserId.set(userRow.id, ownEmailRows[0].email);
 
-    // Pending (unused, unexpired) email changes keyed by member. At most one
-    // active row per member — a new request invalidates the prior one (see
-    // POST /:id/email-change below), enforced further by a partial unique
-    // index — so no dedupe needed.
-    const pendingChangeRows = await db
+    // The caller's own pending (unused, unexpired) email change, if any. At
+    // most one active row per member (partial unique index), so limit 1.
+    const ownPendingRows = await db
       .select({ memberId: memberEmailChanges.memberId, newEmail: memberEmailChanges.newEmail })
       .from(memberEmailChanges)
       .where(
         and(
           eq(memberEmailChanges.tenantId, tenantId),
+          eq(memberEmailChanges.memberId, callerMemberId),
           isNull(memberEmailChanges.usedAt),
           sql`${memberEmailChanges.expiresAt} > now()`,
         ),
-      );
-    for (const r of pendingChangeRows) pendingEmailByMember.set(r.memberId, r.newEmail);
+      )
+      .limit(1);
+    for (const r of ownPendingRows) pendingEmailByMember.set(r.memberId, r.newEmail);
   }
 
   const response: ListMembersResponse = {
@@ -186,8 +182,9 @@ export const membersRouter = new Hono().get('/', async (c) => {
         age: r.age ?? null,
         inviteEmail: invite?.email ?? null,
         inviteId: invite?.id ?? null,
-        email: r.userId ? (emailByUserId.get(r.userId) ?? null) : null,
-        pendingEmail: pendingEmailByMember.get(r.id) ?? null,
+        // self only — the caller's own row carries email + pendingEmail; others null.
+        email: r.id === callerMemberId ? (emailByUserId.get(userRow.id) ?? null) : null,
+        pendingEmail: r.id === callerMemberId ? (pendingEmailByMember.get(r.id) ?? null) : null,
       };
     }),
     callerRole,
@@ -763,12 +760,9 @@ membersRouter.post('/:id/email-change', async (c) => {
   if (!caller) {
     return c.json({ error: 'forbidden', detail: 'caller is not a member of this tenant' }, 403);
   }
-  if (caller.role !== 'admin') {
-    return c.json(
-      { error: 'forbidden', detail: "only admins can change a member's sign-in email" },
-      403,
-    );
-  }
+  // FHS-510 — self-serve only: a member may change ONLY their OWN sign-in email
+  // (never an admin changing someone else's). The self-check runs after the
+  // target row is loaded (target.userId must be the caller's own user id).
 
   const parsed = memberEmailChangeRequestBodySchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) {
@@ -794,6 +788,13 @@ membersRouter.post('/:id/email-change', async (c) => {
     .limit(1);
   const target = targetRows[0];
   if (!target) return c.json({ error: 'member not found' }, 404);
+  // FHS-510 — self-serve: the target must be the caller's own member row.
+  if (target.userId !== userRow.id) {
+    return c.json(
+      { error: 'forbidden', detail: 'you can only change your own sign-in email' },
+      403,
+    );
+  }
   if (!target.userId) {
     return c.json(
       {
@@ -930,7 +931,7 @@ membersRouter.post('/:id/email-change', async (c) => {
   return c.json(memberEmailChangeRequestResponseSchema.parse({ pendingEmail: newEmail }), 200);
 });
 
-// POST /api/members/:id/email-change/cancel — admin-only.
+// POST /api/members/:id/email-change/cancel — self-only.
 membersRouter.post('/:id/email-change/cancel', async (c) => {
   getAuthenticatedUser(c);
   const userRow = c.get('userRow');
@@ -947,11 +948,9 @@ membersRouter.post('/:id/email-change/cancel', async (c) => {
   if (!caller) {
     return c.json({ error: 'forbidden', detail: 'caller is not a member of this tenant' }, 403);
   }
-  if (caller.role !== 'admin') {
-    return c.json(
-      { error: 'forbidden', detail: 'only admins can cancel a pending email change' },
-      403,
-    );
+  // FHS-510 — self-serve: you can only cancel your OWN pending email change.
+  if (params.data.id !== caller.id) {
+    return c.json({ error: 'forbidden', detail: 'you can only cancel your own email change' }, 403);
   }
 
   await db

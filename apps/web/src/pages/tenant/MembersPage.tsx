@@ -68,6 +68,7 @@ interface MemberItem {
 interface ListMembersResponse {
   members: MemberItem[];
   callerRole: string;
+  callerMemberId: string;
 }
 
 interface MeResponseTenant {
@@ -78,7 +79,7 @@ interface MeResponseTenant {
 
 type Status =
   | { kind: 'loading' }
-  | { kind: 'ready'; members: MemberItem[]; callerRole: string }
+  | { kind: 'ready'; members: MemberItem[]; callerRole: string; callerMemberId: string }
   | { kind: 'error'; message: string };
 
 const GROWN_UP_ROLES = new Set(['admin', 'adult', 'guest']);
@@ -143,7 +144,12 @@ export function MembersPage() {
         return;
       }
       const body = (await res.json()) as ListMembersResponse;
-      setStatus({ kind: 'ready', members: body.members, callerRole: body.callerRole });
+      setStatus({
+        kind: 'ready',
+        members: body.members,
+        callerRole: body.callerRole,
+        callerMemberId: body.callerMemberId,
+      });
     } catch (err) {
       setStatus({
         kind: 'error',
@@ -203,6 +209,9 @@ export function MembersPage() {
 
   const ready = status.kind === 'ready';
   const callerIsAdmin = ready && status.callerRole === 'admin';
+  // FHS-510 — the caller's own member id, so a grown-up can change THEIR OWN
+  // sign-in email (self-serve) from their own card, admin or not.
+  const callerMemberId = ready ? status.callerMemberId : null;
   const allMembers = ready ? status.members : [];
   const adminCount = allMembers.filter((m) => m.role === 'admin').length;
 
@@ -350,6 +359,7 @@ export function MembersPage() {
                         member={m}
                         idx={idx}
                         callerIsAdmin={callerIsAdmin}
+                        callerMemberId={callerMemberId}
                         adminCount={adminCount}
                         editingFor={editingFor}
                         setEditingFor={setEditingFor}
@@ -437,6 +447,7 @@ interface GrownUpCardProps {
   member: MemberItem;
   idx: number;
   callerIsAdmin: boolean;
+  callerMemberId: string | null;
   adminCount: number;
   editingFor: string | null;
   setEditingFor: (id: string | null) => void;
@@ -451,6 +462,7 @@ function GrownUpCard({
   member: m,
   idx,
   callerIsAdmin,
+  callerMemberId,
   adminCount,
   editingFor,
   setEditingFor,
@@ -465,6 +477,8 @@ function GrownUpCard({
   const testId = `members-grownup-${idx}`;
 
   const isAdminRole = m.role === 'admin';
+  // FHS-510 — self-serve: only the caller's OWN card gets the change-email control.
+  const isOwnCard = callerMemberId !== null && m.id === callerMemberId;
 
   return (
     <MemberCard
@@ -475,38 +489,43 @@ function GrownUpCard({
       badge={<RoleBadge role={m.role} testId={`${testId}-role`} />}
       testId={testId}
       footer={
-        callerIsAdmin ? (
+        callerIsAdmin || isOwnCard ? (
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                data-testid={`${testId}-edit-name`}
-                onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
-                className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-black transition-colors hover:bg-gray-50"
-              >
-                <Edit2 size={14} aria-hidden="true" /> Edit name
-              </button>
-              <button
-                type="button"
-                data-testid={`${testId}-change-email`}
-                disabled={!m.email || Boolean(m.pendingEmail)}
-                title={
-                  m.pendingEmail
-                    ? 'A change is already pending — see below'
-                    : !m.email
-                      ? 'This member has no sign-in email yet'
-                      : undefined
-                }
-                onClick={() => setEmailChangeFor(emailChangeFor === m.id ? null : m.id)}
-                className={`flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black px-4 text-sm font-bold transition-colors ${
-                  !m.email || m.pendingEmail
-                    ? 'bg-white text-gray-300'
-                    : 'bg-white text-black hover:bg-gray-50'
-                }`}
-              >
-                <Mail size={14} aria-hidden="true" /> Change email
-              </button>
-              {isAdminRole && (
+              {callerIsAdmin && (
+                <button
+                  type="button"
+                  data-testid={`${testId}-edit-name`}
+                  onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
+                  className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-black transition-colors hover:bg-gray-50"
+                >
+                  <Edit2 size={14} aria-hidden="true" /> Edit name
+                </button>
+              )}
+              {/* FHS-510 — self-serve: only your OWN card shows "Change email". */}
+              {isOwnCard && (
+                <button
+                  type="button"
+                  data-testid={`${testId}-change-email`}
+                  disabled={!m.email || Boolean(m.pendingEmail)}
+                  title={
+                    m.pendingEmail
+                      ? 'A change is already pending — see below'
+                      : !m.email
+                        ? 'You have no sign-in email yet'
+                        : undefined
+                  }
+                  onClick={() => setEmailChangeFor(emailChangeFor === m.id ? null : m.id)}
+                  className={`flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black px-4 text-sm font-bold transition-colors ${
+                    !m.email || m.pendingEmail
+                      ? 'bg-white text-gray-300'
+                      : 'bg-white text-black hover:bg-gray-50'
+                  }`}
+                >
+                  <Mail size={14} aria-hidden="true" /> Change email
+                </button>
+              )}
+              {callerIsAdmin && isAdminRole && (
                 <button
                   type="button"
                   data-testid="members-admin-panel-btn"
@@ -517,12 +536,14 @@ function GrownUpCard({
                 </button>
               )}
             </div>
-            <RemoveButton
-              testId={testId}
-              disabled={lastAdminLock}
-              name={m.displayName}
-              onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
-            />
+            {callerIsAdmin && (
+              <RemoveButton
+                testId={testId}
+                disabled={lastAdminLock}
+                name={m.displayName}
+                onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
+              />
+            )}
           </>
         ) : null
       }
@@ -582,10 +603,10 @@ function GrownUpCard({
           }}
         />
       )}
-      {/* FHS-510 blocker #5 — pending-change UI + the change-email controls
-          are admin-only (the API already nulls email/pendingEmail for a
-          non-admin caller; this is the matching UI-side gate). */}
-      {callerIsAdmin &&
+      {/* FHS-510 — self-serve: the pending-change card + the change-email form
+          only ever render on the caller's OWN card. The API also nulls
+          email/pendingEmail on every other row, so this can't leak. */}
+      {isOwnCard &&
         (m.pendingEmail ? (
           <PendingEmailChangeCard member={m} testId={testId} mutate={mutate} />
         ) : (
