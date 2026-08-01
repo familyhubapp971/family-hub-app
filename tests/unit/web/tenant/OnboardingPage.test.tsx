@@ -250,7 +250,7 @@ describe('<OnboardingPage />', () => {
     expect((screen.getByTestId('onboarding-next') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('FHS-487: shows an age input for a child row and includes it in the submit payload', async () => {
+  it('FHS-487: shows an age input for kid rows (child + teen) and includes it in the submit payload', async () => {
     mockNotOnboarded();
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -275,6 +275,15 @@ describe('<OnboardingPage />', () => {
     });
     expect(screen.getByTestId('onboarding-member-age-0')).toBeInTheDocument();
     expect(screen.queryByTestId('onboarding-member-email-0')).not.toBeInTheDocument();
+
+    // Teen rows also get the age field (FHS-487), then back to child for the rest.
+    fireEvent.change(screen.getByTestId('onboarding-member-role-0'), {
+      target: { value: 'teen' },
+    });
+    expect(screen.getByTestId('onboarding-member-age-0')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('onboarding-member-role-0'), {
+      target: { value: 'child' },
+    });
 
     fireEvent.change(screen.getByTestId('onboarding-member-age-0'), { target: { value: '6' } });
 

@@ -241,7 +241,7 @@ describe('FHS-37 — POST /api/onboarding/complete', () => {
     expect(new Set(insertedTables)).toEqual(new Set([members, habits, rewards]));
   });
 
-  it('FHS-487 — a child member submitted with an age persists it; adults get null age', async () => {
+  it('FHS-487 — a child/teen with an age persists it; a grown-up age is dropped to null', async () => {
     const app = buildAppWithSeed();
     const updated = fixedTenant({ onboardingCompleted: true });
 
@@ -257,7 +257,7 @@ describe('FHS-37 — POST /api/onboarding/complete', () => {
                 : table === rewards
                   ? [{ id: 'r1' }, { id: 'r2' }, { id: 'r3' }]
                   : table === members
-                    ? [{ id: 'm1' }, { id: 'm2' }]
+                    ? [{ id: 'm1' }, { id: 'm2' }, { id: 'm3' }]
                     : [];
             return { returning: () => Promise.resolve(rowsForTable) };
           },
@@ -277,7 +277,9 @@ describe('FHS-37 — POST /api/onboarding/complete', () => {
         currency: 'AED',
         members: [
           { displayName: 'Iman', role: 'child', age: 6 },
-          { displayName: 'Yusuf', role: 'adult' },
+          { displayName: 'Layla', role: 'teen', age: 15 },
+          // a valid-range age crafted onto a grown-up must be dropped to null
+          { displayName: 'Yusuf', role: 'adult', age: 20 },
         ],
       }),
     });
@@ -285,6 +287,7 @@ describe('FHS-37 — POST /api/onboarding/complete', () => {
     expect(res.status).toBe(200);
     expect(capturedMemberValues).toEqual([
       expect.objectContaining({ displayName: 'Iman', role: 'child', age: 6 }),
+      expect.objectContaining({ displayName: 'Layla', role: 'teen', age: 15 }),
       expect.objectContaining({ displayName: 'Yusuf', role: 'adult', age: null }),
     ]);
   });
@@ -333,14 +336,14 @@ describe('FHS-37 — POST /api/onboarding/complete', () => {
     ]);
   });
 
-  it('FHS-487 — age outside 0-120 is rejected with 400', async () => {
+  it('FHS-487 — age outside 1-25 is rejected with 400', async () => {
     const app = buildAppWithSeed();
     const res = await app.request('/api/onboarding/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...VALID_BODY,
-        members: [{ displayName: 'Iman', role: 'child', age: 121 }],
+        members: [{ displayName: 'Iman', role: 'child', age: 26 }],
       }),
     });
     expect(res.status).toBe(400);

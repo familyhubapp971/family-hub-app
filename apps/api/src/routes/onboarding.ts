@@ -56,11 +56,11 @@ const wizardMemberSchema = z
     avatarEmoji: z.string().min(1).max(8).optional(),
     // FHS-275 — optional invite email; adults only (kids use PIN login).
     email: z.string().trim().email().max(255).optional(),
-    // FHS-487 — optional age in years, captured for later use (nothing
-    // reads it yet). The UI only surfaces this on child rows; the API
-    // enforces that at insert time (see newMemberRows below) so an age
-    // submitted for a non-child role is silently dropped, not persisted.
-    age: z.number().int().min(0).max(120).optional().nullable(),
+    // FHS-487 — optional age in years for kids (child or teen). Same bound as
+    // the Manage Members "Add a child" form (1–25). The UI only surfaces this
+    // on kid rows; the API enforces that at insert time (see newMemberRows
+    // below) so an age submitted for a grown-up role is dropped, not persisted.
+    age: z.number().int().min(1).max(25).optional().nullable(),
   })
   .refine((m) => m.email === undefined || m.role === 'adult', {
     message: 'invite email is only allowed on adult members',
@@ -228,9 +228,9 @@ export const onboardingRouter = new Hono().post('/complete', async (c) => {
         displayName: m.displayName,
         role: m.role,
         avatarEmoji: m.avatarEmoji ?? null,
-        // FHS-487 — only child rows persist an age; adults/teens/guests
+        // FHS-487 — only kid rows (child/teen) persist an age; grown-up roles
         // always get null, even if a crafted request sends one.
-        age: m.role === 'child' ? (m.age ?? null) : null,
+        age: m.role === 'child' || m.role === 'teen' ? (m.age ?? null) : null,
       }));
       if (newMemberRows.length > 0) {
         const inserted = await tx

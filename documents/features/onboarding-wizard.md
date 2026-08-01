@@ -16,7 +16,7 @@ the wizard renders.
    plus 0–7 other family members. Each row has a name, a role
    (Adult / Teen / Child / Guest), an optional emoji, and:
    - **Adults only** — an optional email that sends a sign-in invite.
-   - **Children only** — an optional age in years (FHS-487).
+   - **Kids only (Child or Teen)** — an optional age in years, 1–25 (FHS-487).
 3. **Location** — timezone + currency are auto-detected from the
    browser and shown read-only; a "Change" link reveals a manual
    picker only if detection failed or the value is wrong.
@@ -50,44 +50,43 @@ the wizard renders.
 - **When** I navigate to `/t/:slug/onboarding`
 - **Then** I am redirected straight to `/dashboard` without seeing the wizard
 
-### Story 2: Capture a child's age (FHS-487)
+### Story 2: Capture a kid's age (FHS-487)
 
-**As an** admin adding a child during onboarding
+**As an** admin adding a kid (child or teen) during onboarding
 **I want to** optionally note their age
-**so that** it's on file for later features to use (nothing reads it yet)
+**so that** it shows on their Manage Members card and is on file for later features
 
 #### Acceptance criteria
 
-**Scenario: Admin adds a child with an age**
+**Scenario: Admin adds a kid with an age**
 
 - **Given** I am on the Members step of onboarding
-- **And** I have added a member with the role "Child"
-- **When** I enter "6" in that row's Age field
+- **And** I have added a member with the role "Child" (or "Teen")
+- **When** I enter "6" in that row's Age field (a whole number 1–25)
 - **And** I finish onboarding
-- **Then** the child's member record is saved with age 6
+- **Then** that member's record is saved with age 6
+- **And** it shows on their Manage Members card as "Child (6)"
 
-**Scenario: Admin leaves the child's age blank**
+**Scenario: Admin leaves the kid's age blank**
 
 - **Given** I am on the Members step of onboarding
-- **And** I have added a member with the role "Child"
+- **And** I have added a member with the role "Child" (or "Teen")
 - **When** I finish onboarding without entering an age
-- **Then** the child's member record is saved with age set to nothing (null)
+- **Then** that member's record is saved with age set to nothing (null)
 
-**Scenario: Age field only appears for child rows**
+**Scenario: Age field only appears for kid rows**
 
 - **Given** I have added a member with the role "Adult"
 - **Then** no age field appears for that row
-- **When** I switch that row's role to "Child"
+- **When** I switch that row's role to "Child" or "Teen"
 - **Then** an age field appears for that row
 
 ## Out of scope
 
-- **Anything that reads the age value.** FHS-487 only captures and
-  stores it — no dashboard, ChildWorld panel, or age-based gating
-  consumes it yet.
-- **Age for non-child roles.** Adults, teens, and guests never get an
-  age field in the wizard; the API forces their `age` to null even if
-  one is somehow submitted.
+- **Age for grown-up roles.** Adults and guests never get an age field in the
+  wizard; the API forces their `age` to null even if one is somehow submitted.
+- **Age-based behaviour.** Nothing gates content on age yet — it's captured and
+  displayed (on the Manage Members card) for later features to build on.
 - **Editing age after onboarding.** The Manage Family "Add a child"
   form already has its own age field (FHS-276); this doc only covers
   the onboarding wizard's copy of that capability.

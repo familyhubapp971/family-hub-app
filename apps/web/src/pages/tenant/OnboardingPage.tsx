@@ -196,7 +196,10 @@ export function OnboardingPage() {
         if (row.uiId !== uiId) return row;
         if (raw !== '') {
           const n = Number(raw);
-          if (!Number.isFinite(n) || n < 0) return row;
+          // Only whole numbers 1–25 (matches the server schema + the Manage
+          // Members "Add a child" form). Reject anything else so we never
+          // submit a value the server would 400 the whole wizard on.
+          if (!Number.isInteger(n) || n < 1 || n > 25) return row;
           return { ...row, age: n };
         }
         const cleared: WizardMember = {
@@ -231,7 +234,9 @@ export function OnboardingPage() {
             role: m.role,
             ...(m.avatarEmoji ? { avatarEmoji: m.avatarEmoji } : {}),
             ...(m.role === 'adult' && m.email?.trim() ? { email: m.email.trim() } : {}),
-            ...(m.role === 'child' && typeof m.age === 'number' ? { age: m.age } : {}),
+            ...((m.role === 'child' || m.role === 'teen') && typeof m.age === 'number'
+              ? { age: m.age }
+              : {}),
           })),
         }),
       });
@@ -379,11 +384,16 @@ export function OnboardingPage() {
                             prev.map((row) => {
                               if (row.uiId !== m.uiId) return row;
                               if (next) return { ...row, avatarEmoji: next };
+                              // Clearing the emoji must keep the row's other
+                              // optional fields (email, age) — rebuild without
+                              // just avatarEmoji.
                               const cleared: WizardMember = {
                                 uiId: row.uiId,
                                 displayName: row.displayName,
                                 role: row.role,
                               };
+                              if (row.email) cleared.email = row.email;
+                              if (typeof row.age === 'number') cleared.age = row.age;
                               return cleared;
                             }),
                           );
@@ -406,17 +416,17 @@ export function OnboardingPage() {
                         />
                       </div>
                     )}
-                    {/* FHS-487 — optional age, child rows only. Captured for
-                        later use; nothing reads it yet. */}
-                    {m.role === 'child' && (
+                    {/* FHS-487 — optional age for kids (child or teen). Shows on
+                        their Manage Members card (e.g. "Child (6)"). */}
+                    {(m.role === 'child' || m.role === 'teen') && (
                       <div className="mt-3">
                         <Label htmlFor={`member-age-${m.uiId}`}>Age (optional)</Label>
                         <Input
                           id={`member-age-${m.uiId}`}
                           type="number"
                           inputMode="numeric"
-                          min={0}
-                          max={17}
+                          min={1}
+                          max={25}
                           value={m.age ?? ''}
                           onChange={(e) => patchMemberAge(m.uiId, e.target.value)}
                           placeholder="e.g. 6"
