@@ -1,6 +1,6 @@
 # Feature: Child world (a per-child screen)
 
-**Jira:** [FHS-268](https://qualicion2.atlassian.net/browse/FHS-268) (shell) · [FHS-401](https://qualicion2.atlassian.net/browse/FHS-401) (Learning Insights) · [FHS-523](https://qualicion2.atlassian.net/browse/FHS-523) (header matches the app)
+**Jira:** [FHS-268](https://qualicion2.atlassian.net/browse/FHS-268) (shell) · [FHS-401](https://qualicion2.atlassian.net/browse/FHS-401) (Learning Insights) · [FHS-523](https://qualicion2.atlassian.net/browse/FHS-523) (account pill) · [FHS-529](https://qualicion2.atlassian.net/browse/FHS-529) (header matches the design)
 **Status:** shipped
 **Owner:** product-manager
 
@@ -23,11 +23,12 @@ account menu's "View World" links.
 
 #### Acceptance criteria
 
-**Scenario: The child-world header shows the account pill + a breadcrumb**
+**Scenario: The child-world header matches the design (breadcrumb + hero + pill)**
 
 - **Given** I am a signed-in grown-up on a child's world
-- **Then** the top-right shows the same account pill as the family dashboard
-- **And** the top-left shows a "Family Hub / {Child}'s World" breadcrumb
+- **Then** the top-left shows a "← Family Hub / {Child}'s World" breadcrumb
+- **And** below it a hero row: the child's avatar disc, a "{Child}'s Magical World ✨" title, and a "Magic Active" indicator
+- **And** the top-right shows the same account pill as the family dashboard
 
 **Scenario: "Family Hub" goes back to the family dashboard**
 
