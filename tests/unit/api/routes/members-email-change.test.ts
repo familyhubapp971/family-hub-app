@@ -6,12 +6,13 @@ import { membersRouter } from '../../../../apps/api/src/routes/members.js';
 import { memberEmailChanges, users } from '../../../../apps/api/src/db/schema.js';
 import type { User } from '../../../../apps/api/src/db/schema.js';
 
-// FHS-510 — admin changes a grown-up's sign-in email, confirmed by a
-// one-time emailed link.
+// FHS-510 — a member changes THEIR OWN sign-in email, confirmed by a
+// one-time emailed link. Self-serve only: nobody can change someone
+// else's login email, admin or not.
 //
-//   POST /api/members/:id/email-change          — admin-only, starts it.
+//   POST /api/members/:id/email-change          — self-serve, starts it.
 //   POST /api/members/email-change/confirm       — PUBLIC, applies it.
-//   POST /api/members/:id/email-change/cancel    — admin-only, drops it.
+//   POST /api/members/:id/email-change/cancel    — self-serve, drops it.
 
 const pinRequestTenant = vi.fn(async () => undefined);
 const dbMock = {
@@ -61,14 +62,22 @@ vi.mock('../../../../apps/api/src/config.js', async () => {
 });
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
-const ADMIN_USER_ID = '00000000-0000-4000-8000-000000000777';
+// The authenticated caller's Supabase user id (JWT `sub`) — seeded onto
+// every request by seedAuth() below.
+const CALLER_USER_ID = '00000000-0000-4000-8000-000000000777';
+// TARGET_ID doubles as: (a) the "self" member row id in the START/CANCEL
+// self-serve tests (the caller's own seat), and (b) the member row the
+// PUBLIC confirm endpoint applies a change to (an unrelated fixture, since
+// that describe block seeds no caller at all).
 const TARGET_ID = '22222222-2222-4222-8222-222222222222';
+// Another member's linked Supabase user id — used only to prove the
+// self-serve check rejects a caller targeting someone else's row.
 const TARGET_USER_ID = '33333333-3333-4333-8333-333333333333';
 const CHANGE_ID = '44444444-4444-4444-8444-444444444444';
 
-const FIXED_ADMIN: User = {
-  id: ADMIN_USER_ID,
-  email: 'admin@example.com',
+const FIXED_CALLER: User = {
+  id: CALLER_USER_ID,
+  email: 'caller@example.com',
   createdAt: new Date('2026-05-01T00:00:00.000Z'),
   updatedAt: new Date('2026-05-01T00:00:00.000Z'),
 };
@@ -102,8 +111,8 @@ function queueSelects(...sequence: unknown[][]) {
 
 function seedAuth() {
   const seed: MiddlewareHandler = async (c, next) => {
-    c.set('user', { id: ADMIN_USER_ID, email: FIXED_ADMIN.email, claims: {} });
-    c.set('userRow', FIXED_ADMIN);
+    c.set('user', { id: CALLER_USER_ID, email: FIXED_CALLER.email, claims: {} });
+    c.set('userRow', FIXED_CALLER);
     c.set('tenantId', TENANT_ID);
     await next();
   };
@@ -137,9 +146,9 @@ beforeEach(() => {
   sendEmail.mockResolvedValue({ ok: true });
 });
 
-describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the change)', () => {
-  it('non-admin caller → 403, nothing written, no email sent', async () => {
-    queueSelects([{ id: 'caller-member', role: 'adult' }]);
+describe('FHS-510 — POST /api/members/:id/email-change (self-serve, starts the change)', () => {
+  it('caller is not a member of this tenant → 403, nothing written, no email sent', async () => {
+    queueSelects([]); // caller lookup empty
     const app = seedAuth();
     const res = await app.request(`/api/members/${TARGET_ID}/email-change`, {
       method: 'POST',
@@ -151,8 +160,27 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it('target not in this tenant → 404', async () => {
-    queueSelects([{ id: 'caller-member', role: 'admin' }], []); // target lookup empty
+  it("caller targeting ANOTHER member's row → 403, nothing written, no email sent (self-serve enforcement)", async () => {
+    queueSelects(
+      [{ id: 'caller-member-id', role: 'adult' }],
+      // target belongs to someone else — a different linked userId.
+      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+    );
+    const app = seedAuth();
+    const res = await app.request(`/api/members/${TARGET_ID}/email-change`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'new@example.com' }),
+    });
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { detail: string };
+    expect(body.detail).toMatch(/you can only change your own sign-in email/i);
+    expect(dbMock.insert).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('target member id not found in this tenant → 404', async () => {
+    queueSelects([{ id: 'caller-member-id', role: 'adult' }], []); // target lookup empty
     const app = seedAuth();
     const res = await app.request(`/api/members/${TARGET_ID}/email-change`, {
       method: 'POST',
@@ -163,27 +191,18 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it('target has no linked login (userId null) → 400 NO_LOGIN_EMAIL', async () => {
-    queueSelects(
-      [{ id: 'caller-member', role: 'admin' }],
-      [{ id: TARGET_ID, userId: null, displayName: 'Iman' }],
-    );
-    const app = seedAuth();
-    const res = await app.request(`/api/members/${TARGET_ID}/email-change`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'new@example.com' }),
-    });
-    expect(res.status).toBe(400);
-    const body = (await res.json()) as { errorCode: string };
-    expect(body.errorCode).toBe('NO_LOGIN_EMAIL');
-    expect(sendEmail).not.toHaveBeenCalled();
-  });
+  // NOTE: a "target has no linked login (userId null) → NO_LOGIN_EMAIL"
+  // branch exists in the handler for defence-in-depth, but it is
+  // unreachable through self-serve: the caller's own userId (from their
+  // JWT) is never null, so `target.userId !== userRow.id` always trips
+  // first and returns 403 before that check runs. No test can legitimately
+  // reach it under the self-serve contract.
 
   it('new email already registered to another account → 409, no insert/send', async () => {
     queueSelects(
-      [{ id: 'caller-member', role: 'admin' }],
-      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ id: TARGET_ID, role: 'adult' }],
+      // self-serve happy path: target IS the caller's own row.
+      [{ id: TARGET_ID, userId: CALLER_USER_ID, displayName: 'Yusuf' }],
       [{ email: 'yusuf@old.example.com' }], // current email lookup
       [{ id: 'some-other-user-id' }], // existing-email lookup: a collision
     );
@@ -198,10 +217,10 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it('happy path — creates a hashed pending row, emails the NEW address, and heads-up notices the OLD address', async () => {
+  it('happy path — a member changes their OWN email: creates a hashed pending row, emails the NEW address, and heads-up notices the OLD address', async () => {
     queueSelects(
-      [{ id: 'caller-member', role: 'admin' }],
-      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ id: TARGET_ID, role: 'adult' }],
+      [{ id: TARGET_ID, userId: CALLER_USER_ID, displayName: 'Yusuf' }],
       [{ email: 'yusuf@old.example.com' }],
       [], // no email collision
     );
@@ -258,8 +277,8 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
   it('escapes a malicious display name in BOTH emails (HTML/link injection guard)', async () => {
     const evilName = '<img src=x onerror=alert(1)>Yusuf';
     queueSelects(
-      [{ id: 'caller-member', role: 'admin' }],
-      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: evilName }],
+      [{ id: TARGET_ID, role: 'adult' }],
+      [{ id: TARGET_ID, userId: CALLER_USER_ID, displayName: evilName }],
       [{ email: 'yusuf@old.example.com' }],
       [],
     );
@@ -279,8 +298,8 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
 
   it('a failed old-address heads-up notice is logged but does NOT block the 200', async () => {
     queueSelects(
-      [{ id: 'caller-member', role: 'admin' }],
-      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ id: TARGET_ID, role: 'adult' }],
+      [{ id: TARGET_ID, userId: CALLER_USER_ID, displayName: 'Yusuf' }],
       [{ email: 'yusuf@old.example.com' }],
       [],
     );
@@ -304,8 +323,8 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
 
   it('email send failure rolls back the pending row and returns 502 (old-address notice never fires)', async () => {
     queueSelects(
-      [{ id: 'caller-member', role: 'admin' }],
-      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ id: TARGET_ID, role: 'adult' }],
+      [{ id: TARGET_ID, userId: CALLER_USER_ID, displayName: 'Yusuf' }],
       [{ email: 'yusuf@old.example.com' }],
       [],
     );
@@ -332,8 +351,8 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
 
   it('a concurrent request for the same member (unique-violation on insert) → 409', async () => {
     queueSelects(
-      [{ id: 'caller-member', role: 'admin' }],
-      [{ id: TARGET_ID, userId: TARGET_USER_ID, displayName: 'Yusuf' }],
+      [{ id: TARGET_ID, role: 'adult' }],
+      [{ id: TARGET_ID, userId: CALLER_USER_ID, displayName: 'Yusuf' }],
       [{ email: 'yusuf@old.example.com' }],
       [],
     );
@@ -352,9 +371,9 @@ describe('FHS-510 — POST /api/members/:id/email-change (admin-only, starts the
   });
 });
 
-describe('FHS-510 — POST /api/members/:id/email-change/cancel (admin-only)', () => {
-  it('non-admin caller → 403, no delete', async () => {
-    queueSelects([{ id: 'caller-member', role: 'adult' }]);
+describe('FHS-510 — POST /api/members/:id/email-change/cancel (self-serve)', () => {
+  it('caller is not a member of this tenant → 403, no delete', async () => {
+    queueSelects([]);
     const app = seedAuth();
     const res = await app.request(`/api/members/${TARGET_ID}/email-change/cancel`, {
       method: 'POST',
@@ -363,8 +382,23 @@ describe('FHS-510 — POST /api/members/:id/email-change/cancel (admin-only)', (
     expect(dbMock.delete).not.toHaveBeenCalled();
   });
 
-  it('admin caller → 200 { cancelled: true }, deletes the pending row', async () => {
-    queueSelects([{ id: 'caller-member', role: 'admin' }]);
+  it("cancelling ANOTHER member's pending change → 403, no delete", async () => {
+    // caller.id ('some-other-member-id') does not match the :id path param
+    // (TARGET_ID) — you can only cancel your own change.
+    queueSelects([{ id: 'some-other-member-id', role: 'adult' }]);
+    const app = seedAuth();
+    const res = await app.request(`/api/members/${TARGET_ID}/email-change/cancel`, {
+      method: 'POST',
+    });
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { detail: string };
+    expect(body.detail).toMatch(/you can only cancel your own email change/i);
+    expect(dbMock.delete).not.toHaveBeenCalled();
+  });
+
+  it('self-cancel → 200 { cancelled: true }, deletes the pending row', async () => {
+    // caller.id matches the :id path param — cancelling your OWN change.
+    queueSelects([{ id: TARGET_ID, role: 'adult' }]);
     let deletedTable: unknown = null;
     dbMock.delete.mockImplementation((table: unknown) => {
       deletedTable = table;

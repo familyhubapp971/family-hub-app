@@ -247,8 +247,9 @@ or remove someone **so that** the roster stays accurate.
 
 ## Out of scope
 
-- **"Change email" for a grown-up** (FHS-510) — the button renders but is
-  disabled ("Coming soon"); no backend yet.
+- **A grown-up changing their sign-in email** (FHS-510) — shipped as a
+  self-serve flow on their own card only; see
+  [change-email.md](change-email.md) for the full behaviour.
 - **Schema implementation** — lives under FHS-1 (Tenant Foundation
   epic) when Sprint 1 starts. This doc only constrains what the schema
   must support.

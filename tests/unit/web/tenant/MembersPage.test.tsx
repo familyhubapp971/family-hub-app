@@ -127,6 +127,10 @@ function adminOnlyList() {
     ok: true,
     json: async () => ({
       callerRole: 'admin',
+      // FHS-510 — self-serve: the change-email control only renders on the
+      // caller's OWN card, so fixtures must echo callerMemberId matching the
+      // row that should be treated as "me" (here, admin-1 / Sarah Khan).
+      callerMemberId: 'admin-1',
       members: [
         {
           id: 'admin-1',
@@ -149,12 +153,13 @@ function adminOnlyList() {
 }
 
 // FHS-510 — same single-admin roster, but with a pending email change in
-// flight for the admin (the "Confirm the new email" yellow card state).
+// flight for the caller (the "Confirm the new email" yellow card state).
 function adminWithPendingEmailList() {
   return {
     ok: true,
     json: async () => ({
       callerRole: 'admin',
+      callerMemberId: 'admin-1',
       members: [
         {
           id: 'admin-1',
@@ -185,6 +190,7 @@ function adminWithNoEmailOnFileList() {
     ok: true,
     json: async () => ({
       callerRole: 'admin',
+      callerMemberId: 'admin-1',
       members: [
         {
           id: 'admin-1',
@@ -211,6 +217,7 @@ function fullFamilyList() {
     ok: true,
     json: async () => ({
       callerRole: 'admin',
+      callerMemberId: 'admin-1',
       members: [
         {
           id: 'admin-1',
@@ -1026,14 +1033,18 @@ describe('<MembersPage />', () => {
       });
 
       // FHS-510 blocker #7 — defense-in-depth: even if the API ever returned
-      // a pendingEmail to a non-admin caller (it shouldn't — see blocker
-      // #5's backend gate), the UI must still hide the pending card AND the
-      // change-email trigger for a non-admin.
-      it('a non-admin caller sees neither the pending card nor the change-email controls', async () => {
+      // pendingEmail data for a card that isn't the caller's own (it
+      // shouldn't — self-serve gates purely on identity, not role, per the
+      // backend's `target.userId !== userRow.id` check), the UI must still
+      // hide the pending card AND the change-email trigger for that row.
+      // Deliberately uses an ADMIN caller here to prove the gate is about
+      // "is this my row?", not "am I an admin?".
+      it("a caller viewing another member's card sees neither the pending card nor the change-email controls", async () => {
         membersResponse = {
           ok: true,
           json: async () => ({
-            callerRole: 'adult',
+            callerRole: 'admin',
+            callerMemberId: 'someone-else-id', // caller is NOT the admin-1 row below
             members: (await adminWithPendingEmailList().json()).members,
           }),
         };
