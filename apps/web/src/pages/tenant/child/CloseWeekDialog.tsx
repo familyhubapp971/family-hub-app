@@ -822,10 +822,11 @@ function InvestDialog({
             <div className="space-y-2">
               <div className="flex items-center gap-3 bg-green-50 p-2 rounded-lg border border-green-200">
                 <span className="bg-green-500 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black uppercase">
-                  +5/day
+                  +{coefficient}/day
                 </span>
                 <p className="text-xs font-bold text-green-800">
-                  Each completed day adds 5 stickers to your investment
+                  Each completed day adds {coefficient} sticker{coefficient === 1 ? '' : 's'} to
+                  your investment, and sets this habit&rsquo;s pay to {coefficient}× per day
                 </p>
               </div>
               <div className="flex items-center gap-3 bg-red-50 p-2 rounded-lg border border-red-200">
@@ -941,7 +942,8 @@ function InvestDialog({
               <>
                 <p className="text-xs text-gray-500 font-bold mt-1">
                   = {currency} {cashVal} invested, worth {currency}{' '}
-                  {(num * stickerRate + num * 5 * stickerRate).toFixed(2)} at +5/day (7 days)
+                  {(num * stickerRate + num * coefficient * stickerRate).toFixed(2)} at +
+                  {coefficient}/day (7 days)
                 </p>
                 {isBelowMin && (
                   <p className="text-xs text-red-500 font-bold mt-1">
@@ -1077,7 +1079,7 @@ function InvestDialog({
                     >
                       {isInvested && inv
                         ? `${inv.investedStickers} stickers invested · ${inv.daysCompleted}/7 done${isSelected ? ', about to remove' : ', tap to remove'}`
-                        : 'Each completed day = +5 stickers · each missed day = −2'}
+                        : `Each completed day = +${coefficient} sticker${coefficient === 1 ? '' : 's'} · each missed day = −2`}
                     </p>
                     {isSelected && (
                       <div

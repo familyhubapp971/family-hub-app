@@ -248,6 +248,29 @@ describe('<CloseWeekDialog /> — InvestDialog growth-rate coefficient (FHS-534)
     });
   });
 
+  // FHS-534 — the growth banner + value projection must track the picked
+  // coefficient, not the old hardcoded +5/day (a 1x pick projected 5x too high).
+  it('projects growth at the chosen coefficient, not a hardcoded +5/day', async () => {
+    installFetch({ savedStickers: 0, savedCash: 0, habits: [{ id: 'h1', name: 'Read a book' }] });
+    renderDialog('invest', { weeklyStickers: 20 });
+    await waitFor(() => expect(screen.getByTestId('close-week-invest-dialog')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('close-week-invest-coefficient-3'));
+    });
+    act(() => {
+      fireEvent.change(screen.getByTestId('close-week-invest-amount-input'), {
+        target: { value: '10' },
+      });
+    });
+
+    // Banner + projection now read "+3/day"; the old "+5/day" is gone.
+    await waitFor(() => {
+      expect(screen.getAllByText(/\+3\/day/i).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/\+5\/day/i)).toBeNull();
+    });
+  });
+
   it('defaults to coefficient 5 in the POST body when the picker is untouched', async () => {
     installFetch({ savedStickers: 0, savedCash: 0, habits: [{ id: 'h1', name: 'Read a book' }] });
     renderDialog('invest', { weeklyStickers: 20 });
