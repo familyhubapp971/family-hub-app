@@ -1,7 +1,7 @@
 import { randomBytes, createHash } from 'node:crypto';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { getDb, pinRequestTenant } from '../db/client.js';
 import { members, pendingInvitations, memberEmailChanges, tenants, users } from '../db/schema.js';
@@ -149,7 +149,7 @@ export const membersRouter = new Hono().get('/', async (c) => {
       const userRows = await db
         .select({ id: users.id, email: users.email })
         .from(users)
-        .where(sql`${users.id} = ANY(${linkedUserIds})`);
+        .where(inArray(users.id, linkedUserIds));
       for (const u of userRows) emailByUserId.set(u.id, u.email);
     }
 
