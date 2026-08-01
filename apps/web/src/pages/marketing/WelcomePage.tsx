@@ -22,6 +22,7 @@ import {
 import { useAuth, signOutAll, getKidToken } from '../../lib/auth-context';
 import { API_BASE } from '../../lib/api';
 import { BetaFeedbackWidget } from '../../components/BetaFeedbackWidget';
+import { SiteHeader, SiteFooter } from '../../components/SiteChrome';
 
 // Hero copy rotates between four ad pitches every 5 seconds, each
 // targeting a different persona:
@@ -296,39 +297,31 @@ export function WelcomePage() {
 
       {/* Header — kept slim so the hero + feature cards both fit
           above the fold on a 1080p viewport. */}
-      <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-4 md:px-6">
-        <Link
-          to="/"
-          className="shrink-0 font-heading text-xl text-white transition-opacity hover:opacity-90 md:text-2xl"
-        >
-          FamilyHub
-        </Link>
-        {/* FHS-277 — nav must exist on phones too (70%+ of users):
-            Pricing always shows; the same-page Features link stays
-            desktop-only to keep the row from wrapping at 375px. */}
-        <nav className="flex items-center gap-1 font-bold md:gap-8">
-          <Link to="/" className="hidden px-2 py-2.5 text-yellow-300 md:inline">
-            Features
-          </Link>
-          {/* FHS-436 — About link, desktop-only here to keep the row from
-              wrapping at 375px; also in the footer for mobile discovery. */}
+      {loggedIn ? (
+        <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-4 md:px-6">
           <Link
-            to="/about"
-            className="hidden px-2 py-2.5 transition-colors hover:text-yellow-300 md:inline"
+            to="/"
+            className="shrink-0 font-heading text-xl text-white transition-opacity hover:opacity-90 md:text-2xl"
           >
-            About
+            FamilyHub
           </Link>
-          {/* Padded so the phone tap target clears 44px tall. */}
-          <Link to="/pricing" className="px-2 py-2.5 transition-colors hover:text-yellow-300">
-            Pricing
-          </Link>
-          {/* FHS-541 — surface the legal hub from the homepage. Always visible
-              (it's the mobile fallback too, alongside Pricing). */}
-          <Link to="/legal" className="px-2 py-2.5 transition-colors hover:text-yellow-300">
-            Legal
-          </Link>
-        </nav>
-        {loggedIn ? (
+          <nav className="flex items-center gap-1 font-bold md:gap-8">
+            <Link to="/" className="hidden px-2 py-2.5 text-yellow-300 md:inline">
+              Features
+            </Link>
+            <Link
+              to="/about"
+              className="hidden px-2 py-2.5 transition-colors hover:text-yellow-300 md:inline"
+            >
+              About
+            </Link>
+            <Link to="/pricing" className="px-2 py-2.5 transition-colors hover:text-yellow-300">
+              Pricing
+            </Link>
+            <Link to="/legal" className="px-2 py-2.5 transition-colors hover:text-yellow-300">
+              Legal
+            </Link>
+          </nav>
           <div className="flex items-center gap-2 md:gap-3" data-testid="welcome-loggedin-actions">
             <button
               type="button"
@@ -358,20 +351,12 @@ export function WelcomePage() {
               <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
-        ) : (
-          <div className="flex items-center gap-1 md:gap-4">
-            <Link
-              to="/login"
-              className="px-2 py-2.5 font-bold transition-colors hover:text-yellow-300"
-            >
-              Log in
-            </Link>
-            <Button onClick={() => navigate('/signup')} variant="primary">
-              Start free
-            </Button>
-          </div>
-        )}
-      </header>
+        </header>
+      ) : (
+        /* FHS-544 — the logged-out homepage uses the shared SiteHeader so the
+           header matches the legal + marketing pages exactly (no drift). */
+        <SiteHeader current="features" />
+      )}
 
       {/* FHS-358 — logged-in landing replaces the ad hero. */}
       {loggedIn && (
@@ -523,23 +508,9 @@ export function WelcomePage() {
         </main>
       )}
 
-      {/* FHS-541 — homepage footer surfaces the legal hub + privacy. Always
-          visible (not md:-gated) so it's the mobile fallback for the header
-          Legal link too. About lives in the header nav, not here. */}
-      <footer className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-center gap-4 px-6 pb-6">
-        <Link
-          to="/legal"
-          className="flex min-h-[44px] items-center px-2 text-sm font-bold text-purple-200 transition-colors hover:text-yellow-300"
-        >
-          Legal
-        </Link>
-        <Link
-          to="/legal/privacy"
-          className="flex min-h-[44px] items-center px-2 text-sm font-bold text-purple-200 transition-colors hover:text-yellow-300"
-        >
-          Privacy Policy
-        </Link>
-      </footer>
+      {/* FHS-544 — shared site footer (same legal links + branding as the
+          legal/marketing pages) so the homepage never drifts from the rest. */}
+      <SiteFooter />
     </div>
   );
 }

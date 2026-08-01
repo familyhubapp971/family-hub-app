@@ -81,15 +81,25 @@ describe('<WelcomePage /> — logged-in state (FHS-358)', () => {
     expect(screen.queryByTestId('welcome-value-prop')).not.toBeInTheDocument();
     // About still reachable from the header nav.
     expect(screen.getByRole('link', { name: /^about$/i })).toHaveAttribute('href', '/about');
-    // Legal hub surfaced — header + footer both link to /legal.
-    const legalLinks = screen.getAllByRole('link', { name: /^legal$/i });
-    expect(legalLinks.length).toBeGreaterThanOrEqual(1);
-    legalLinks.forEach((link) => expect(link).toHaveAttribute('href', '/legal'));
-    // Footer Privacy points straight at the legal privacy page.
-    expect(screen.getByRole('link', { name: /privacy policy/i })).toHaveAttribute(
+    // FHS-544 — the logged-out homepage now uses the shared SiteHeader +
+    // SiteFooter, so the chrome matches the legal/marketing pages exactly.
+    // Header Legal link → /legal.
+    expect(screen.getByRole('link', { name: /^legal$/i })).toHaveAttribute('href', '/legal');
+    // Shared footer: the full legal-links set.
+    expect(screen.getByRole('link', { name: /^privacy$/i })).toHaveAttribute(
       'href',
       '/legal/privacy',
     );
+    expect(screen.getByRole('link', { name: /children & parents/i })).toHaveAttribute(
+      'href',
+      '/legal/children',
+    );
+    expect(screen.getByRole('link', { name: /^terms$/i })).toHaveAttribute('href', '/legal/terms');
+    expect(screen.getByRole('link', { name: /^cookies$/i })).toHaveAttribute(
+      'href',
+      '/legal/cookies',
+    );
+    expect(screen.getByRole('link', { name: /all legal/i })).toHaveAttribute('href', '/legal');
   });
 
   it('while the session is restoring: shows a splash, not the logged-out hero', () => {
