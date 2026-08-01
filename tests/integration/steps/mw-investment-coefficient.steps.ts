@@ -147,6 +147,42 @@ describeFeature(feature, ({ Background, Scenario }) => {
     return rows[0]?.boost;
   }
 
+  async function withdraw(memberName: string, stickers?: number) {
+    const [inv] = await loadInvestments(memberName);
+    const body: Record<string, unknown> = { memberId: memberIds[memberName]! };
+    if (stickers !== undefined) body['stickers'] = stickers;
+    const res = await app.request(`/api/mw/financial/investments/${inv!.id}/withdraw`, {
+      method: 'POST',
+      headers: headers('khan'),
+      body: JSON.stringify(body),
+    });
+    return {
+      status: res.status,
+      body: (await res.json().catch(() => ({}))) as Record<string, unknown>,
+    };
+  }
+
+  async function finalizeWeek(memberName: string) {
+    const weekId = await currentWeekId(memberName);
+    const res = await app.request(`/api/mw/weeks/${weekId}/finalize`, {
+      method: 'POST',
+      headers: headers('khan'),
+      body: JSON.stringify({ memberId: memberIds[memberName]!, continueInvestmentIds: [] }),
+    });
+    return {
+      status: res.status,
+      body: (await res.json().catch(() => ({}))) as Record<string, unknown>,
+    };
+  }
+
+  async function setHabitBoost(habitName: string, memberName: string, boost: number) {
+    return app.request(`/api/habits/${habitIds[habitName]!}`, {
+      method: 'PUT',
+      headers: headers('khan'),
+      body: JSON.stringify({ memberId: memberIds[memberName]!, boost }),
+    });
+  }
+
   async function seedTenant(slug: string) {
     const [tenant] = await db
       .insert(tenants)
@@ -364,4 +400,113 @@ describeFeature(feature, ({ Background, Scenario }) => {
       expect(lastInvest.status).toBe(n),
     );
   });
+
+  Scenario(
+    'Withdrawing an active investment uses its own coefficient, not a hardcoded rate',
+    ({ Given, And, When, Then }) => {
+      let lastWithdraw: { status: number; body: Record<string, unknown> };
+      Given(
+        'the caller completes all 7 days of {string} for {string}',
+        async (_c, h: string, m: string) => {
+          for (let day = 0; day < 7; day++) await placeSticker(h, m, day);
+        },
+      );
+      And(
+        'the caller invests {int} stickers in {string} for {string} with coefficient {int}',
+        async (_c, n: number, h: string, m: string, coeff: number) => {
+          const res = await invest(h, m, n, { coefficient: coeff });
+          expect(res.status).toBe(201);
+        },
+      );
+      When(
+        'the caller withdraws {int} stickers from the investment for {string}',
+        async (_c, n: number, m: string) => {
+          lastWithdraw = await withdraw(m, n);
+        },
+      );
+      Then('the withdraw response withdrawn stickers is {int}', (_c, n: number) =>
+        // 10 invested + 7 completed*2 (coefficient) - 0 missed = 24 available;
+        // withdrawing 10 must succeed and report exactly 10 — a hardcoded
+        // +5/day rate would still allow this (24 or 45 both cover 10), so the
+        // remaining-balance assertion below is what actually pins the rate.
+        expect(lastWithdraw.body['withdrawnStickers']).toBe(n),
+      );
+      And('the withdraw response remaining stickers is {int}', (_c, n: number) =>
+        // 24 total - 10 withdrawn = 14. A hardcoded +5/day rate would leave
+        // 45 - 10 = 35 instead — this is the assertion that actually proves
+        // the withdraw recompute used the investment's own coefficient.
+        expect(lastWithdraw.body['remainingStickers']).toBe(n),
+      );
+    },
+  );
+
+  Scenario(
+    'Closing the week matures an active investment at its own coefficient, not a hardcoded rate',
+    ({ Given, And, When, Then }) => {
+      let lastFinalize: { status: number; body: Record<string, unknown> };
+      Given(
+        'the caller completes all 7 days of {string} for {string}',
+        async (_c, h: string, m: string) => {
+          for (let day = 0; day < 7; day++) await placeSticker(h, m, day);
+        },
+      );
+      And(
+        'the caller invests {int} stickers in {string} for {string} with coefficient {int}',
+        async (_c, n: number, h: string, m: string, coeff: number) => {
+          const res = await invest(h, m, n, { coefficient: coeff });
+          expect(res.status).toBe(201);
+        },
+      );
+      When('the caller closes the current week for {string}', async (_c, m: string) => {
+        lastFinalize = await finalizeWeek(m);
+      });
+      Then('the finalize response investment returns is {number}', (_c, n: number) =>
+        // 10 invested + 7 completed*3 (coefficient) - 0 missed = 31 stickers,
+        // matured to cash at the default 0.5 rate = 15.5. A hardcoded +5/day
+        // rate would mature to 45 stickers (22.5 cash) instead.
+        expect(Number(lastFinalize.body['investmentReturns'])).toBeCloseTo(n, 5),
+      );
+    },
+  );
+
+  Scenario(
+    "Editing the habit's pay later does not disturb an active investment's growth",
+    ({ Given, And, When, Then }) => {
+      Given(
+        'the caller invests {int} stickers in {string} for {string} with coefficient {int}',
+        async (_c, n: number, h: string, m: string, coeff: number) => {
+          const res = await invest(h, m, n, { coefficient: coeff });
+          expect(res.status).toBe(201);
+        },
+      );
+      And(
+        'the caller completes all 7 days of {string} for {string}',
+        async (_c, h: string, m: string) => {
+          for (let day = 0; day < 7; day++) await placeSticker(h, m, day);
+        },
+      );
+      When(
+        'the caller sets {string} habit boost to {int} for {string}',
+        async (_c, h: string, n: number, m: string) => {
+          const res = await setHabitBoost(h, m, n);
+          expect(res.status).toBe(200);
+        },
+      );
+      And('the caller opens investments for {string}', async (_c, m: string) => {
+        const [first] = await loadInvestments(m);
+        investmentValueStickers = first?.currentValueStickers ?? -1;
+      });
+      Then('{string} first investment is worth {int} stickers', (_c, _m: string, n: number) => {
+        // 10 invested + 7 completed*5 (the investment's OWN snapshotted
+        // coefficient) - 0 missed = 45 — unaffected by the habit-boost edit
+        // below. A leaked boost of 2 would give 10 + 7*2 = 24 instead.
+        expect(investmentValueStickers).toBe(n);
+      });
+      And('{string} habit boost is {int}', async (_c, h: string, n: number) => {
+        // Confirms the edit actually landed (so the assertion above is
+        // proving snapshot separation, not that the PUT silently no-op'd).
+        expect(await habitBoost(h)).toBe(n);
+      });
+    },
+  );
 });
