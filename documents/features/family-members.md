@@ -190,11 +190,12 @@ they sign in **so that** I understand the household shape at a glance.
 **As an** admin **I want** a plain explanation of how my kids log in **so
 that** I can walk them through it.
 
-**Scenario: "How your kids sign in" card explains the 3 steps**
+**Scenario: "How your kids sign in" card explains how to reach the login (FHS-530)**
 
 - **Given** I open Manage Family and expand the "How your kids sign in" card
-- **Then** I see: 1) the kid-login page link with a copy button, 2) the family
-  code (the family slug), 3) "tap their face and enter their PIN"
+- **Then** step 1 ("Open their login page") shows two ways to open the login —
+  the kid-login page link with a copy button, **or** the family code (the family slug)
+- **And** step 2 is "They tap their face and enter their PIN"
 
 ### Story 7: Invite an adult or add a child
 
