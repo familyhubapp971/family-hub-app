@@ -2175,47 +2175,13 @@ export function MyWorldTab(
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
-          RIGHT COLUMN (lg:col-span-4) — My Stickers + Rewards Shop + Bankable +
-          Saving Stickers. Narrower 4/12 so the habit tracker gets more room
-          (FHS-327). Live, current-week-only controls; a finalised week hides
-          the whole column (FHS-316).
+          RIGHT COLUMN (lg:col-span-4) — Reward Requests + Rewards Shop + Bankable.
+          Narrower 4/12 so the habit tracker gets more room (FHS-327). Live,
+          current-week-only controls; a finalised week hides the whole column
+          (FHS-316). (FHS-537/539 removed the Big-Rewards + My-Stickers cards.)
           ════════════════════════════════════════════════════════════════════ */}
       {isCurrentWeek && (
         <div className="space-y-4 lg:col-span-4">
-          {/* My Stickers — sticker palette (parent view; hidden for kids, FHS-376) */}
-          {!readOnly && (
-            <section
-              aria-labelledby="my-stickers-heading"
-              className="rounded-2xl border-2 border-black bg-white p-4 shadow-neo sm:border-3"
-              data-testid="my-stickers"
-            >
-              <h2
-                id="my-stickers-heading"
-                className="mb-3 flex items-center gap-2 text-xl font-black uppercase text-black"
-              >
-                <span
-                  aria-hidden="true"
-                  className="grid h-8 w-8 place-items-center rounded-lg border-2 border-black bg-pink-400"
-                >
-                  <Star className="h-4 w-4" />
-                </span>
-                My Stickers 💖
-              </h2>
-              <div className="grid grid-cols-2 gap-3">
-                {AVAILABLE_STICKERS.map((s) => (
-                  <div
-                    key={s.id}
-                    data-testid={`my-sticker-${s.id}`}
-                    className={`flex flex-col items-center gap-1 rounded-xl border-2 border-black p-3 shadow-neo-xs ${s.color}`}
-                  >
-                    <span aria-hidden="true">{s.icon}</span>
-                    <span className="text-xs font-black uppercase text-black">{s.name}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
           {/* FHS-392 — Reward Requests in-context sidebar (parent/admin only).
               The panel handles its own admin gate; showing the list to any
               non-kid viewer matches the Magic Patterns mock. */}
