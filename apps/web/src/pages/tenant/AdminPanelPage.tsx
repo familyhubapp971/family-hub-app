@@ -6,12 +6,10 @@
  * pill tab bar, neo-brutalist cards, Quick-Actions grid, Admin Override Active
  * amber banner) and adapts it to the per-child economy: a child selector at
  * the top controls which member's data is shown in Balance / Savings /
- * History. Users and App Info are family-level and not child-scoped.
+ * History. App Info is family-level and not child-scoped.
  *
- * Users tab divergence: this app already ships a full member-management
- * experience on the Manage Members page. The Users tab here is therefore
- * a read-only roster — no permission toggles, no add-user form, no contact
- * editing. A "Manage in Members →" link sends the admin there for mutations.
+ * Member management lives entirely on the Manage Members page — FHS-535
+ * removed the redundant read-only Users tab that used to duplicate it here.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -29,7 +27,6 @@ import {
   Sparkles,
   Star,
   Trash2,
-  Users,
   Wrench,
   X,
 } from 'lucide-react';
@@ -44,9 +41,9 @@ import { RewardsTab } from './admin/RewardsTab';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-// FHS-483 — 'rewards' is family-level (not child-scoped), like 'users' and
-// 'settings': the reward shop's catalogue is shared across every kid.
-type Tab = 'balance' | 'savings' | 'history' | 'rewards' | 'users' | 'settings';
+// FHS-483 — 'rewards' is family-level (not child-scoped), like 'settings':
+// the reward shop's catalogue is shared across every kid.
+type Tab = 'balance' | 'savings' | 'history' | 'rewards' | 'settings';
 
 interface MemberItem {
   id: string;
@@ -1675,102 +1672,6 @@ function HistoryTab({
   );
 }
 
-// ── Users tab (read-only roster) ──────────────────────────────────────────────
-
-/**
- * Users tab divergence from legacy:
- * The legacy AdminPanel had full add-user / permissions / contact-edit flows.
- * This app already provides that on Manage Members (/t/:slug/members).
- * This tab is therefore a read-only roster — avatars, names, role badges —
- * with a "Manage in Members →" link for any mutations.
- */
-function UsersTab({ headers, slug }: { headers: Record<string, string> | null; slug: string }) {
-  const [members, setMembers] = useState<MemberItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!headers) return;
-    setLoading(true);
-    fetch(`${API_BASE}/api/members`, { headers })
-      .then((r) => (r.ok ? r.json() : { members: [] }))
-      .then((b: { members: MemberItem[] }) => setMembers(b.members ?? []))
-      .catch(() => setError('Failed to load members'))
-      .finally(() => setLoading(false));
-  }, [headers]);
-
-  if (loading)
-    return (
-      <p data-testid="admin-users-loading" className="text-sm text-purple-200">
-        Loading members…
-      </p>
-    );
-  if (error)
-    return (
-      <p data-testid="admin-users-error" className="text-sm text-red-300">
-        {error}
-      </p>
-    );
-
-  return (
-    <div
-      data-testid="admin-users-ready"
-      className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
-    >
-      <div className="flex items-center gap-3">
-        <div className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-sm">
-          <Users className="w-5 h-5" />
-        </div>
-        <div>
-          <h3 className="text-xl font-black text-white">Family Members</h3>
-          <p className="text-sm text-indigo-400 font-medium">View only</p>
-        </div>
-      </div>
-
-      <div className="bg-amber-50 border-2 border-black rounded-xl p-3 shadow-neo-sm flex gap-2 items-start">
-        <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-800 font-medium">
-          Member management (inviting parents, setting PINs, removing members) is done on the{' '}
-          <Link to={`/t/${slug}/members`} className="underline font-bold">
-            Manage Members
-          </Link>{' '}
-          page. This page is for viewing only.
-        </p>
-      </div>
-
-      <ul
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-        data-testid="admin-users-list"
-      >
-        {members.map((m, idx) => {
-          const rs = roleStyle(m.role);
-          return (
-            <li key={m.id} data-testid={`admin-users-row-${idx}`} className="list-none">
-              <Card className="flex items-center gap-3 p-4 bg-white">
-                <span
-                  aria-hidden="true"
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-black font-heading text-xl ${rs.disc}`}
-                >
-                  {m.avatarEmoji ?? initial(m.displayName)}
-                </span>
-                <div className="min-w-0">
-                  <p className="font-bold text-gray-900 truncate">{m.displayName}</p>
-                  <span
-                    data-testid={`admin-users-row-${idx}-role`}
-                    className={`inline-block mt-0.5 rounded-full border-2 border-black px-2 py-0.5 text-[10px] font-bold ${rs.badge}`}
-                  >
-                    {rs.label}
-                  </span>
-                </div>
-              </Card>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
 // ── Settings tab (FHS-455 rename of "App Info"; FHS-435 GDPR data export +
 // account deletion) ─────────────────────────────────────────────────────────
 
@@ -2169,7 +2070,6 @@ export function AdminPanelPage() {
     { key: 'savings', icon: <Pencil className="w-4 h-4" />, label: 'Savings' },
     { key: 'history', icon: <Calendar className="w-4 h-4" />, label: 'History' },
     { key: 'rewards', icon: <Gift className="w-4 h-4" />, label: 'Rewards' },
-    { key: 'users', icon: <Users className="w-4 h-4" />, label: 'Users' },
     { key: 'settings', icon: <SettingsIcon className="w-4 h-4" />, label: 'Settings' },
   ];
 
@@ -2292,8 +2192,6 @@ export function AdminPanelPage() {
             )}
 
             {activeTab === 'rewards' && <RewardsTab headers={headers} />}
-
-            {activeTab === 'users' && <UsersTab headers={headers} slug={slug} />}
 
             {activeTab === 'settings' && <SettingsTab headers={headers} slug={slug} />}
           </div>
