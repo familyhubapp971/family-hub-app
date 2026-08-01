@@ -48,6 +48,7 @@ Drafted / scoped:
 
 - [family-members.md](family-members.md) — member model + the Manage Family page (FHS-513/485/486/514/520/521)
 - [change-email.md](change-email.md) — self-serve sign-in email change + one-time confirm link (FHS-510)
+- [legal-pages.md](legal-pages.md) — Legal section (Privacy/Children & Parents/Terms/Cookies) + `/privacy` redirect (FHS-509)
 - [role-permissions.md](role-permissions.md) — role matrix + invite roles/admin-grant + invite default (FHS-485/486/524; ADR 0019)
 - [reward-economy.md](reward-economy.md) — sticker rate, habit boosts, skip penalty (FHS-512/488/489; ADR 0020)
 - [child-world.md](child-world.md) — per-child screen + its header/nav (FHS-268/401/523)
