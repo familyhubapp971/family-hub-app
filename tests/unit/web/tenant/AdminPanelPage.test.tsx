@@ -844,19 +844,12 @@ describe('<AdminPanelPage />', () => {
     });
   });
 
-  it('Users tab shows a read-only roster (no duplicate Manage button)', async () => {
+  // FHS-535 — the read-only "Users" tab was removed (redundant with Manage
+  // Members); add a guard that it no longer appears.
+  it('has no Users tab (member management lives on Manage Members)', async () => {
     renderAt();
-    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-users')).toBeInTheDocument());
-    act(() => {
-      fireEvent.click(screen.getByTestId('admin-panel-tab-users'));
-    });
-    await waitFor(() => expect(screen.getByTestId('admin-users-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('admin-users-list')).toBeInTheDocument();
-    // FHS-315 — the redundant header "Manage in Members" button was removed
-    // (the same link still lives in the info box below the roster).
-    expect(screen.queryByTestId('admin-users-manage-link')).not.toBeInTheDocument();
-    // No add-user button — divergence from legacy
-    expect(screen.queryByTestId('admin-users-add-btn')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-balance')).toBeInTheDocument());
+    expect(screen.queryByTestId('admin-panel-tab-users')).not.toBeInTheDocument();
   });
 
   it('passes bearer token and tenant slug on every request', async () => {
