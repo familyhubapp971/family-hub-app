@@ -399,7 +399,6 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     expect(screen.queryByTestId('bankable-week')).not.toBeInTheDocument();
     expect(screen.queryByTestId('your-savings')).not.toBeInTheDocument();
     expect(screen.queryByTestId('active-investments')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('saving-big-rewards')).not.toBeInTheDocument();
     // …but the week record itself still renders.
     expect(screen.getByTestId('habit-tracker-week-label')).toBeInTheDocument();
   });

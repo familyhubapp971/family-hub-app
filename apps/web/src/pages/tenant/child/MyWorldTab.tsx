@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Coins,
   Edit2,
-  Gift,
   Heart,
   Lock,
   PiggyBank,
@@ -686,7 +685,6 @@ export function MyWorldTab(
 
   // ── Savings derived values ────────────────────────────────────────────────
   const weeklyValue = (unallocatedStickers * stickerRate).toFixed(2);
-  const bigRewardProgress = Math.min(100, (savedStickers / 100) * 100);
   // FHS-376 — a kid's reward request is paid from SAVINGS on approval, so the
   // "Ask for this" affordability must match savings (banked stars + banked
   // cash converted at this child's rate), not the spendable balance.
@@ -2430,41 +2428,6 @@ export function MyWorldTab(
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* ── Saving Stickers for Big Rewards ── */}
-              <div
-                data-testid="saving-big-rewards"
-                className="bg-purple-900 rounded-2xl p-4 sm:p-5 text-center border-2 sm:border-3 border-pink-400/30"
-              >
-                <h3 className="text-white font-black uppercase mb-1">
-                  Saving Stickers for Big Rewards 💖
-                </h3>
-                <p className="text-purple-300 text-xs font-mono mb-4">
-                  Invest your stars across weeks to unlock bigger prizes!
-                </p>
-                <div className="flex items-center justify-center gap-2 text-white font-mono text-sm">
-                  <div className="bg-lime-400 text-black px-2 py-1 rounded border-2 border-black font-black">
-                    WK 1
-                  </div>
-                  <span className="text-purple-300">+</span>
-                  <div className="bg-purple-700 px-2 py-1 rounded border-2 border-purple-500">
-                    WK 2
-                  </div>
-                  <span className="text-purple-300">=</span>
-                  <Gift className="w-6 h-6 text-yellow-400 animate-bounce" />
-                  <span className="text-yellow-400 font-black text-xs">BIG PRIZE!</span>
-                </div>
-                <div className="w-full bg-purple-800 h-4 rounded-full mt-4 border-2 border-purple-600 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-pink-400 to-yellow-400"
-                    style={{ width: `${bigRewardProgress}%` }}
-                  />
-                </div>
-                <p className="text-purple-400 text-xs font-mono mt-2">
-                  {savedStickers} stickers saved ({currency}{' '}
-                  {(savedStickers * stickerRate).toFixed(2)}) towards big prizes
-                </p>
               </div>
             </>
           )}
