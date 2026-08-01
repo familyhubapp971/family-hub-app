@@ -73,20 +73,23 @@ describe('<WelcomePage /> — logged-in state (FHS-358)', () => {
     expect(screen.queryByTestId('welcome-loggedin')).not.toBeInTheDocument();
   });
 
-  // FHS-436 — a beta reviewer said it wasn't clear what Family Hub is.
-  // The homepage now shows a plain "what is this" section right after
-  // the hero, with a link into the full /about page.
-  it('logged out: shows the "What is Family Hub" value section with a link to /about', () => {
+  // FHS-541 — the "What is Family Hub" value-prop card was removed (its content
+  // lives on the About page, reachable from the header). The homepage now
+  // surfaces the /legal hub in the header nav and the footer.
+  it('logged out: no value-prop card; About stays in the header, Legal is surfaced', () => {
     renderPage();
-    const valueSection = screen.getByTestId('welcome-value-prop');
-    expect(valueSection).toHaveTextContent('What is Family Hub?');
-    expect(valueSection).toHaveTextContent(/one shared place for your family/i);
-    expect(valueSection).toHaveTextContent('A shared calendar for the whole family');
-    expect(valueSection).toHaveTextContent('Tasks and habits that actually get done');
-    expect(valueSection).toHaveTextContent('Meal planning for the week ahead');
-    expect(valueSection).toHaveTextContent('Kids earn rewards for habits and lessons');
-    const learnMoreLink = screen.getByRole('link', { name: /learn more about family hub/i });
-    expect(learnMoreLink).toHaveAttribute('href', '/about');
+    expect(screen.queryByTestId('welcome-value-prop')).not.toBeInTheDocument();
+    // About still reachable from the header nav.
+    expect(screen.getByRole('link', { name: /^about$/i })).toHaveAttribute('href', '/about');
+    // Legal hub surfaced — header + footer both link to /legal.
+    const legalLinks = screen.getAllByRole('link', { name: /^legal$/i });
+    expect(legalLinks.length).toBeGreaterThanOrEqual(1);
+    legalLinks.forEach((link) => expect(link).toHaveAttribute('href', '/legal'));
+    // Footer Privacy points straight at the legal privacy page.
+    expect(screen.getByRole('link', { name: /privacy policy/i })).toHaveAttribute(
+      'href',
+      '/legal/privacy',
+    );
   });
 
   it('while the session is restoring: shows a splash, not the logged-out hero', () => {

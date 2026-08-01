@@ -1,6 +1,6 @@
 # Feature: Legal pages
 
-**Jira:** [FHS-509](https://qualicion2.atlassian.net/browse/FHS-509)
+**Jira:** [FHS-509](https://qualicion2.atlassian.net/browse/FHS-509), [FHS-541](https://qualicion2.atlassian.net/browse/FHS-541) (homepage entry points)
 **Status:** shipped
 **Owner:** product-manager
 
@@ -85,6 +85,15 @@ Shared shell: `apps/web/src/pages/legal/LegalLayout.tsx` (title card, pill nav,
 table of contents, numbered sections) plus `apps/web/src/components/SiteChrome.tsx`
 (`SiteHeader`/`SiteFooter`, reused by the marketing header/footer look already on
 `WelcomePage`/`PricingPage`/`AboutPage`).
+
+## Entry points (FHS-541)
+
+- The homepage (`WelcomePage`) header nav has a **Legal** link → `/legal`; the
+  footer links **Legal** (`/legal`) + **Privacy Policy** (`/legal/privacy`).
+  **About** stays in the header (not the footer). The old "What is Family Hub?"
+  value-prop card was removed — that content lives on the About page.
+- `AboutPage`, `PricingPage`, `SignupPage`, and the Admin Panel link to
+  `/privacy`, which redirects to `/legal/privacy`.
 
 ## Out of scope
 
