@@ -104,9 +104,10 @@ table of contents, numbered sections) plus `apps/web/src/components/SiteChrome.t
   strictly-necessary storage, so no consent banner is needed (matches the old
   `/privacy` page's stance) — revisit if analytics/marketing cookies are ever
   added.
-- **Retrofitting the marketing pages' header/footer to `SiteChrome`.**
-  `WelcomePage`/`PricingPage`/`AboutPage` keep their own inline header/footer;
-  only the new Legal pages use the shared `SiteChrome` component.
+- **Retrofitting the remaining marketing pages to `SiteChrome`.** FHS-544 moved
+  the homepage (`WelcomePage`, logged-out) onto the shared `SiteHeader` +
+  `SiteFooter`; `PricingPage`/`AboutPage` still keep their own inline
+  header/footer for now — a follow-up if full-site consistency is wanted.
 
 ## Open questions
 
