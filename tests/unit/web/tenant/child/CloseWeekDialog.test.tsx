@@ -192,3 +192,153 @@ describe('<CloseWeekDialog /> — configurable sticker rate (FHS-512)', () => {
     });
   });
 });
+
+describe('<CloseWeekDialog /> — InvestDialog growth-rate coefficient (FHS-534)', () => {
+  it('renders the 1x/2x/3x/5x growth-rate picker, defaulting to 5x', async () => {
+    installFetch({ savedStickers: 0, savedCash: 0 });
+    renderDialog('invest', { weeklyStickers: 20 });
+    await waitFor(() => expect(screen.getByTestId('close-week-invest-dialog')).toBeInTheDocument());
+
+    for (const n of [1, 2, 3, 5]) {
+      expect(screen.getByTestId(`close-week-invest-coefficient-${n}`)).toBeInTheDocument();
+    }
+    expect(screen.getByTestId('close-week-invest-coefficient-5').getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(screen.getByTestId('close-week-invest-coefficient-3').getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+  });
+
+  it('sends the chosen coefficient in the invest POST body', async () => {
+    installFetch({ savedStickers: 0, savedCash: 0, habits: [{ id: 'h1', name: 'Read a book' }] });
+    renderDialog('invest', { weeklyStickers: 20 });
+    await waitFor(() => expect(screen.getByTestId('close-week-invest-dialog')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('close-week-invest-habit-h1')).toBeInTheDocument(),
+    );
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('close-week-invest-coefficient-3'));
+    });
+    act(() => {
+      fireEvent.change(screen.getByTestId('close-week-invest-amount-input'), {
+        target: { value: '10' },
+      });
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId('close-week-invest-habit-h1'));
+    });
+    await waitFor(() => expect(screen.getByTestId('close-week-invest-submit-btn')).toBeEnabled());
+    act(() => {
+      fireEvent.click(screen.getByTestId('close-week-invest-submit-btn'));
+    });
+
+    await waitFor(() => {
+      const postCall = fetchMock.mock.calls.find(
+        ([url, init]) =>
+          String(url).includes('/api/mw/financial/investments') &&
+          (init as RequestInit | undefined)?.method === 'POST',
+      );
+      expect(postCall).toBeDefined();
+      const body = JSON.parse((postCall![1] as RequestInit).body as string) as {
+        coefficient: number;
+      };
+      expect(body.coefficient).toBe(3);
+    });
+  });
+
+  // FHS-534 — the growth banner + value projection must track the picked
+  // coefficient, not the old hardcoded +5/day (a 1x pick projected 5x too high).
+  it('projects growth at the chosen coefficient, not a hardcoded +5/day', async () => {
+    installFetch({ savedStickers: 0, savedCash: 0, habits: [{ id: 'h1', name: 'Read a book' }] });
+    renderDialog('invest', { weeklyStickers: 20 });
+    await waitFor(() => expect(screen.getByTestId('close-week-invest-dialog')).toBeInTheDocument());
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('close-week-invest-coefficient-3'));
+    });
+    act(() => {
+      fireEvent.change(screen.getByTestId('close-week-invest-amount-input'), {
+        target: { value: '10' },
+      });
+    });
+
+    // Banner + projection now read "+3/day"; the old "+5/day" is gone.
+    await waitFor(() => {
+      expect(screen.getAllByText(/\+3\/day/i).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/\+5\/day/i)).toBeNull();
+    });
+  });
+
+  it('defaults to coefficient 5 in the POST body when the picker is untouched', async () => {
+    installFetch({ savedStickers: 0, savedCash: 0, habits: [{ id: 'h1', name: 'Read a book' }] });
+    renderDialog('invest', { weeklyStickers: 20 });
+    await waitFor(() => expect(screen.getByTestId('close-week-invest-dialog')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId('close-week-invest-habit-h1')).toBeInTheDocument(),
+    );
+
+    act(() => {
+      fireEvent.change(screen.getByTestId('close-week-invest-amount-input'), {
+        target: { value: '10' },
+      });
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId('close-week-invest-habit-h1'));
+    });
+    await waitFor(() => expect(screen.getByTestId('close-week-invest-submit-btn')).toBeEnabled());
+    act(() => {
+      fireEvent.click(screen.getByTestId('close-week-invest-submit-btn'));
+    });
+
+    await waitFor(() => {
+      const postCall = fetchMock.mock.calls.find(
+        ([url, init]) =>
+          String(url).includes('/api/mw/financial/investments') &&
+          (init as RequestInit | undefined)?.method === 'POST',
+      );
+      expect(postCall).toBeDefined();
+      const body = JSON.parse((postCall![1] as RequestInit).body as string) as {
+        coefficient: number;
+      };
+      expect(body.coefficient).toBe(5);
+    });
+  });
+
+  it("shows the real coefficient on an already-invested habit's badge, not a hardcoded 5x", async () => {
+    installFetch({
+      savedStickers: 0,
+      savedCash: 0,
+      habits: [
+        { id: 'h1', name: 'Read a book' },
+        { id: 'h2', name: 'Make bed' },
+      ],
+      investments: [
+        {
+          id: 'inv1',
+          habitId: 'h1',
+          habitName: 'Read a book',
+          habitIcon: null,
+          investedStickers: 10,
+          originalInvestedStickers: 10,
+          currentValue: 5,
+          currentValueStickers: 10,
+          daysCompleted: 2,
+          daysMissed: 0,
+          coefficient: 2,
+        },
+      ],
+    });
+    renderDialog('invest', { weeklyStickers: 20 });
+    await waitFor(() =>
+      expect(screen.getByTestId('close-week-invest-habit-h1-invested-badge')).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('close-week-invest-habit-h1-invested-badge').textContent).toContain(
+      '2x',
+    );
+    expect(
+      screen.getByTestId('close-week-invest-habit-h1-invested-badge').textContent,
+    ).not.toContain('5x');
+  });
+});
