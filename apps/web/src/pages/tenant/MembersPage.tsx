@@ -772,9 +772,15 @@ function KidLoginHelp({ slug, kidsCount }: { slug: string; kidsCount: number }) 
       tileClassName="bg-purple-300"
       testId="members-kid-login-share"
     >
-      {/* FHS-521 — the design's 3 numbered steps, not a prose paragraph. */}
+      {/* FHS-530 — two clear steps, not a misleading 1/2/3 sequence: step 1 is
+          how to REACH the login (a link OR the family code — either opens it),
+          step 2 is what the kid does once there. */}
       <ol className="space-y-3">
-        <KidLoginStep number="1" title="Open the kid login page">
+        <KidLoginStep number="1" title="Open their login page">
+          <p className="mt-1 text-sm font-bold text-gray-500">
+            Send them this link, or have them type your family code on the kid-login page — either
+            one opens it.
+          </p>
           <div className="mt-2 flex flex-col gap-2 sm:flex-row">
             <code
               className="flex min-h-[48px] flex-1 items-center break-all rounded-xl border-2 border-black bg-gray-50 px-3 text-sm font-bold text-gray-800"
@@ -799,16 +805,17 @@ function KidLoginHelp({ slug, kidsCount }: { slug: string; kidsCount: number }) 
               )}
             </button>
           </div>
-        </KidLoginStep>
-        <KidLoginStep number="2" title="Or type the family code">
+          <p className="mt-3 text-xs font-bold uppercase tracking-widest text-gray-400">
+            Or your family code
+          </p>
           <span
-            className="mt-2 inline-block rounded-xl border-2 border-black bg-purple-100 px-4 py-2 font-heading text-xl tracking-[0.2em]"
+            className="mt-1 inline-block rounded-xl border-2 border-black bg-purple-100 px-4 py-2 font-heading text-xl tracking-[0.2em]"
             data-testid="members-kid-login-code"
           >
             {slug}
           </span>
         </KidLoginStep>
-        <KidLoginStep number="3" title="Then tap their face and enter their PIN">
+        <KidLoginStep number="2" title="They tap their face and enter their PIN">
           <p className="mt-1 text-sm font-bold text-gray-500">Set each PIN on their card below.</p>
         </KidLoginStep>
       </ol>
