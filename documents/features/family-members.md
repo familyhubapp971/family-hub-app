@@ -1,6 +1,6 @@
 # Feature: Family members
 
-**Jira:** [FHS-1](https://qualicion2.atlassian.net/browse/FHS-1) (schema) · [FHS-513](https://qualicion2.atlassian.net/browse/FHS-513)/[FHS-485](https://qualicion2.atlassian.net/browse/FHS-485)/[FHS-486](https://qualicion2.atlassian.net/browse/FHS-486)/[FHS-514](https://qualicion2.atlassian.net/browse/FHS-514)/[FHS-520](https://qualicion2.atlassian.net/browse/FHS-520)/[FHS-521](https://qualicion2.atlassian.net/browse/FHS-521) (Manage Family redesign)
+**Jira:** [FHS-1](https://qualicion2.atlassian.net/browse/FHS-1) (schema) · [FHS-513](https://qualicion2.atlassian.net/browse/FHS-513)/[FHS-485](https://qualicion2.atlassian.net/browse/FHS-485)/[FHS-486](https://qualicion2.atlassian.net/browse/FHS-486)/[FHS-514](https://qualicion2.atlassian.net/browse/FHS-514)/[FHS-520](https://qualicion2.atlassian.net/browse/FHS-520)/[FHS-521](https://qualicion2.atlassian.net/browse/FHS-521) (Manage Family redesign) · [FHS-519](https://qualicion2.atlassian.net/browse/FHS-519) (Manage Family follow-up cleanups)
 **Status:** shipped — member data model + the Manage Family page
 **Owner:** product-manager
 **ADR:** [0015](../decisions/0015-role-model-owner-flag.md), [0019](../decisions/0019-role-privilege-matrix.md)
@@ -9,6 +9,16 @@
 child | guest` (ADR 0015/0019). Earlier drafts of this doc referenced a
 > `guardian`/`grandparent` role that was never built — a grandparent or
 > nanny is added today as `adult` (helps day-to-day) or `guest` (read-only).
+>
+> **Note (Part 1 vs Part 2):** Part 1 below is the **original pre-Sprint-1
+> design brief** — it captured the family shapes the schema needed to
+> support (twins, blended families, multi-generational households) before
+> any table existed. Some of its ideas were never built as literal columns:
+> there is no `birth_rank` or `multiple_birth_group_id` field, and the role
+> names shipped as `admin | adult | teen | child | guest`, not
+> `parent | child | guardian | other`. **Part 2** describes what actually
+> shipped — the real `/t/:slug/members` "Manage Family" page — and is the
+> one to read for current behaviour.
 
 The model for "who is in this family". Captures parents, children, and
 other adults living in the household (grandparents, nannies, guardians).
@@ -185,6 +195,12 @@ they sign in **so that** I understand the household shape at a glance.
 - **Given** my family has 4 active members and 1 person invited but not signed up
 - **Then** the header reads "The {Name} Family" and "4 members · 1 waiting to join"
 
+**Scenario: A group with nobody in it shows a placeholder, not a gap (FHS-519)**
+
+- **Given** my family has grown-ups but no kids yet (or the reverse)
+- **Then** the empty group shows a short placeholder ("No kids yet" /
+  "No grown-ups yet") instead of just disappearing from the page
+
 ### Story 6: Learn how my kids sign in
 
 **As an** admin **I want** a plain explanation of how my kids log in **so
@@ -229,6 +245,24 @@ or remove someone **so that** the roster stays accurate.
 - **Then** their role changes between admin and adult
 - **And** the switch is disabled ("The last admin cannot be removed") when they
   are the family's only admin
+
+**Scenario: An admin cannot demote themselves (FHS-519)**
+
+- **Given** my family has a second admin, so I am not the last admin
+- **When** I flip my OWN "Admin" switch off
+- **Then** the switch is not client-side blocked (a second admin exists,
+  so the last-admin rule doesn't apply)
+- **And** the server rejects the change with "ask another admin to remove
+  your admin access", shown as an inline error on the page
+
+**Scenario: A seat waiting to join can't be made admin yet (FHS-278/FHS-519)**
+
+- **Given** I am an admin viewing an invited adult/parent under "Waiting to
+  join" (they haven't signed up yet)
+- **Then** I see a disabled "Admin" switch with the caption "Available once
+  they sign up"
+- **And** a guest-role invite never shows the switch at all (guests are
+  never admin-eligible)
 
 **Scenario: Set or reset a kid's PIN**
 

@@ -338,7 +338,7 @@ export function MembersPage() {
 
         {ready && allMembers.length > 0 && (
           <div className="space-y-6">
-            {grownUps.length > 0 && (
+            {grownUps.length > 0 ? (
               <CollapsibleSection
                 variant="group"
                 defaultOpen={false}
@@ -373,9 +373,23 @@ export function MembersPage() {
                   ))}
                 </ul>
               </CollapsibleSection>
+            ) : (
+              // FHS-519 — a family can (briefly) have kids/waiting seats but
+              // no active grown-up yet; show a placeholder instead of just
+              // silently dropping the "Grown-ups" group from the page.
+              <EmptyGroupPlaceholder
+                testId="members-group-grownups-empty"
+                emoji="🧑🏽"
+                title="No grown-ups yet"
+                hint={
+                  callerIsAdmin
+                    ? 'Tap "Invite an adult" above to bring one in.'
+                    : 'Nobody has joined as a grown-up yet.'
+                }
+              />
             )}
 
-            {kids.length > 0 && (
+            {kids.length > 0 ? (
               <CollapsibleSection
                 variant="group"
                 defaultOpen={false}
@@ -410,6 +424,17 @@ export function MembersPage() {
                   ))}
                 </ul>
               </CollapsibleSection>
+            ) : (
+              <EmptyGroupPlaceholder
+                testId="members-group-kids-empty"
+                emoji="🧒🏽"
+                title="No kids yet"
+                hint={
+                  callerIsAdmin
+                    ? 'Tap "Add a child" above to bring them into the family.'
+                    : 'No kids in this family yet.'
+                }
+              />
             )}
 
             {waiting.length > 0 && (
@@ -436,6 +461,40 @@ export function MembersPage() {
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// FHS-519 — stand-in for a member group ("Grown-ups" / "Kids") when it has
+// no rows but the OTHER group (or the "Waiting to join" section) does, so
+// the group isn't just silently missing from the page. Styled to sit next
+// to the dark `CollapsibleSection variant="group"` cards it replaces.
+function EmptyGroupPlaceholder({
+  testId,
+  emoji,
+  title,
+  hint,
+}: {
+  testId: string;
+  emoji: string;
+  title: string;
+  hint: string;
+}) {
+  return (
+    <div
+      data-testid={testId}
+      className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-white/40 bg-black/10 p-4"
+    >
+      <span
+        aria-hidden="true"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-white text-xl shadow-neo-xs"
+      >
+        {emoji}
+      </span>
+      <div className="min-w-0">
+        <p className="font-heading text-lg text-white">{title}</p>
+        <p className="text-sm font-bold text-purple-200">{hint}</p>
       </div>
     </div>
   );
@@ -882,6 +941,11 @@ interface WaitingCardProps {
 
 function WaitingRow({ member: m, idx, callerIsAdmin, mutate }: WaitingCardProps) {
   const testId = `members-waiting-${idx}`;
+  // FHS-278 / FHS-519 — a seat that hasn't signed up yet can't be made
+  // admin (the API rejects the promote — see `target.userId === null` in
+  // members.ts). Mirrors GrownUpCard's `isParentRow`: only admin/adult
+  // candidates ever show the affordance — a guest is never admin-eligible.
+  const isParentRow = m.role === 'admin' || m.role === 'adult';
   return (
     <div
       data-testid={testId}
@@ -904,6 +968,31 @@ function WaitingRow({ member: m, idx, callerIsAdmin, mutate }: WaitingCardProps)
         </p>
       </div>
       <RoleBadge role={m.role} testId={`${testId}-role`} />
+      {callerIsAdmin && isParentRow && (
+        <div
+          className="flex shrink-0 items-center gap-2"
+          data-testid={`${testId}-admin-panel`}
+          title="Available once they sign up"
+        >
+          <button
+            type="button"
+            role="switch"
+            aria-checked={false}
+            aria-label="Make admin — available once they sign up"
+            data-testid={`${testId}-admin-toggle`}
+            disabled
+            className="relative inline-flex h-[34px] w-[60px] shrink-0 cursor-not-allowed items-center rounded-full border-2 border-black bg-gray-200 opacity-40"
+          >
+            <span
+              aria-hidden="true"
+              className="inline-block h-[26px] w-[26px] translate-x-0.5 rounded-full border-2 border-black bg-white shadow-neo-xs"
+            />
+          </button>
+          <span className="max-w-[7rem] text-xs font-bold text-gray-500">
+            Available once they sign up
+          </span>
+        </div>
+      )}
       {callerIsAdmin && (
         <div className="flex shrink-0 items-center gap-2">
           {m.inviteId && (
@@ -1040,13 +1129,17 @@ function KidLoginStep({
 // (ADR 0009 / FHS-234). FHS-513 — `teen` is also dropped from THIS form
 // (the design routes teens through "Add a child" instead); the server
 // still accepts a teen invite for backward compatibility, this UI just
-// no longer offers it. The server enforces the admin-grant safeguard
-// (only an admin caller may pick 'admin') — this picker mirrors it by
-// hiding the option entirely for a non-admin caller.
+// no longer offers it.
+// FHS-519 — this form only ever renders for an admin caller
+// (`activeForm === 'invite' && callerIsAdmin` at the call site), so all
+// three options are always safe to show; a per-option `adminOnly` filter
+// here was dead code (always true). The server independently enforces
+// the admin-grant safeguard (only an admin may hand out 'admin' via the
+// API) — this UI doesn't need to re-filter it.
 type InviteRole = 'admin' | 'adult' | 'guest';
 
-const INVITE_ROLE_OPTIONS: Array<{ value: InviteRole; label: string; adminOnly?: boolean }> = [
-  { value: 'admin', label: 'Parent / partner', adminOnly: true },
+const INVITE_ROLE_OPTIONS: Array<{ value: InviteRole; label: string }> = [
+  { value: 'admin', label: 'Parent / partner' },
   { value: 'adult', label: 'Adult' },
   { value: 'guest', label: 'Guest' },
 ];
@@ -1115,7 +1208,6 @@ function InviteAdultForm({
   // one tap. Non-admins can't pick (or see) admin, so they fall back to "adult".
   const [role, setRole] = useState<InviteRole>(callerIsAdmin ? 'admin' : 'adult');
   const [submitting, setSubmitting] = useState(false);
-  const options = INVITE_ROLE_OPTIONS.filter((r) => !r.adminOnly || callerIsAdmin);
 
   return (
     <FormCard
@@ -1167,7 +1259,7 @@ function InviteAdultForm({
             What can they do?
           </p>
           <div className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2" role="radiogroup">
-            {options.map((r) => (
+            {INVITE_ROLE_OPTIONS.map((r) => (
               <RoleOptionCard
                 key={r.value}
                 value={r.value}

@@ -325,6 +325,153 @@ function listWithKid(opts: { callerRole: string; kidHasPin: boolean }) {
   };
 }
 
+// FHS-519 — two active admins, caller is admin-1. Used to cover (a)
+// demoting the OTHER admin, and (b) the server-enforced rule that an
+// admin can't demote THEMSELF.
+function twoAdminFamily(opts: { secondRole?: 'admin' | 'adult' } = {}) {
+  return {
+    ok: true,
+    json: async () => ({
+      callerRole: 'admin',
+      callerMemberId: 'admin-1',
+      members: [
+        {
+          id: 'admin-1',
+          displayName: 'Sarah Khan',
+          role: 'admin',
+          avatarEmoji: '👩',
+          status: 'active',
+          createdAt: '2026-05-02T00:00:00.000Z',
+          isChild: false,
+          hasPin: false,
+          age: null,
+          inviteEmail: null,
+          inviteId: null,
+          email: 'sarah@example.com',
+          pendingEmail: null,
+        },
+        {
+          id: 'admin-2',
+          displayName: 'Malik Khan',
+          role: opts.secondRole ?? 'admin',
+          avatarEmoji: '👨',
+          status: 'active',
+          createdAt: '2026-05-02T00:00:00.000Z',
+          isChild: false,
+          hasPin: false,
+          age: null,
+          inviteEmail: null,
+          inviteId: null,
+          email: 'malik@example.com',
+          pendingEmail: null,
+        },
+      ],
+    }),
+  };
+}
+
+// FHS-519 — a guest-role grown-up viewing their own card. `guest` is a
+// GROWN_UP_ROLES member (sign-in with email) but never admin-eligible.
+function guestSelfList() {
+  return {
+    ok: true,
+    json: async () => ({
+      callerRole: 'guest',
+      callerMemberId: 'guest-1',
+      members: [
+        {
+          id: 'admin-1',
+          displayName: 'Sarah Khan',
+          role: 'admin',
+          avatarEmoji: '👩',
+          status: 'active',
+          createdAt: '2026-05-02T00:00:00.000Z',
+          isChild: false,
+          hasPin: false,
+          age: null,
+          inviteEmail: null,
+          inviteId: null,
+          email: 'sarah@example.com',
+          pendingEmail: null,
+        },
+        {
+          id: 'guest-1',
+          displayName: 'Grandma Rukayat',
+          role: 'guest',
+          avatarEmoji: null,
+          status: 'active',
+          createdAt: '2026-05-02T00:00:00.000Z',
+          isChild: false,
+          hasPin: false,
+          age: null,
+          inviteEmail: null,
+          inviteId: null,
+          email: 'rukayat@example.com',
+          pendingEmail: null,
+        },
+      ],
+    }),
+  };
+}
+
+// FHS-519 — grown-ups only, no kids at all.
+function grownUpsOnlyList() {
+  return {
+    ok: true,
+    json: async () => ({
+      callerRole: 'admin',
+      callerMemberId: 'admin-1',
+      members: [
+        {
+          id: 'admin-1',
+          displayName: 'Sarah Khan',
+          role: 'admin',
+          avatarEmoji: '👩',
+          status: 'active',
+          createdAt: '2026-05-02T00:00:00.000Z',
+          isChild: false,
+          hasPin: false,
+          age: null,
+          inviteEmail: null,
+          inviteId: null,
+          email: 'sarah@example.com',
+          pendingEmail: null,
+        },
+      ],
+    }),
+  };
+}
+
+// FHS-519 — kids only, no active grown-up (caller here is a non-admin
+// role purely so the fixture is self-consistent; the placeholder itself
+// doesn't depend on who's viewing).
+function kidsOnlyList() {
+  return {
+    ok: true,
+    json: async () => ({
+      callerRole: 'adult',
+      callerMemberId: null,
+      members: [
+        {
+          id: 'kid-1',
+          displayName: 'Iman',
+          role: 'child',
+          avatarEmoji: null,
+          status: 'active',
+          createdAt: '2026-05-02T00:00:00.000Z',
+          isChild: true,
+          hasPin: false,
+          age: 6,
+          inviteEmail: null,
+          inviteId: null,
+          email: null,
+          pendingEmail: null,
+        },
+      ],
+    }),
+  };
+}
+
 describe('<MembersPage />', () => {
   it('renders a loading hint while the request is in flight', () => {
     fetchMock.mockImplementation((url: string) => {
@@ -457,6 +604,56 @@ describe('<MembersPage />', () => {
     });
   });
 
+  // FHS-519 — a `guest` grown-up (read-only, GROWN_UP_ROLES includes it):
+  // no admin toggle ever, but the self-serve change-email control still
+  // shows on their OWN card, same as any other grown-up role.
+  describe('Guest role member (FHS-519)', () => {
+    it('shows the "Guest" badge, no admin toggle, and the Change-email control on their own card', async () => {
+      membersResponse = guestSelfList();
+      renderAt('/t/khans/members');
+      await expandGrownups();
+      await waitFor(() => expect(screen.getByTestId('members-grownup-1-name')).toBeInTheDocument());
+
+      expect(screen.getByTestId('members-grownup-1-name').textContent).toBe('Grandma Rukayat');
+      expect(screen.getByTestId('members-grownup-1-role').textContent).toBe('Guest');
+      // No admin panel/toggle at all for a guest row, regardless of caller.
+      expect(screen.queryByTestId('members-grownup-1-admin-panel')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('members-grownup-1-admin-toggle')).not.toBeInTheDocument();
+      // The guest is viewing their OWN card — the change-email trigger
+      // shows even though they aren't an admin.
+      const changeEmailBtn = screen.getByTestId(
+        'members-grownup-1-change-email',
+      ) as HTMLButtonElement;
+      expect(changeEmailBtn.disabled).toBe(false);
+      // Not an admin — no "Edit name" or "Admin Panel" buttons.
+      expect(screen.queryByTestId('members-grownup-1-edit-name')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('members-admin-panel-btn')).not.toBeInTheDocument();
+    });
+  });
+
+  // FHS-519 — a group with zero members shows a placeholder instead of
+  // just vanishing from the page.
+  describe('Empty group placeholders (FHS-519)', () => {
+    it('shows the Kids-group empty placeholder for a grown-ups-only family', async () => {
+      membersResponse = grownUpsOnlyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-group-grownups')).toBeInTheDocument());
+      expect(screen.queryByTestId('members-group-kids')).not.toBeInTheDocument();
+      const placeholder = screen.getByTestId('members-group-kids-empty');
+      expect(placeholder.textContent).toContain('No kids yet');
+      expect(placeholder.textContent).toContain('Add a child');
+    });
+
+    it('shows the Grown-ups-group empty placeholder for a kids-only family', async () => {
+      membersResponse = kidsOnlyList();
+      renderAt('/t/khans/members');
+      await waitFor(() => expect(screen.getByTestId('members-group-kids')).toBeInTheDocument());
+      expect(screen.queryByTestId('members-group-grownups')).not.toBeInTheDocument();
+      const placeholder = screen.getByTestId('members-group-grownups-empty');
+      expect(placeholder.textContent).toContain('No grown-ups yet');
+    });
+  });
+
   describe('Waiting to join', () => {
     it('renders a "Waiting to join" section with the pending email + a Resend button', async () => {
       membersResponse = fullFamilyList();
@@ -467,9 +664,17 @@ describe('<MembersPage />', () => {
       expect(screen.getByTestId('members-waiting-0-status').textContent).toBe('jumi@example.com');
       expect(screen.getByTestId('members-waiting-0-pending').textContent).toContain('signed up');
       expect(screen.getByTestId('members-waiting-0-resend')).toBeInTheDocument();
-      // FHS-278 lock — an unclaimed seat never exposes an admin toggle (you
-      // can't promote someone who hasn't signed up yet).
-      expect(screen.queryByTestId('members-waiting-0-admin-toggle')).not.toBeInTheDocument();
+      // FHS-278 / FHS-519 — an unclaimed adult/admin-candidate seat shows the
+      // admin toggle so the affordance isn't just missing, but it's DISABLED
+      // (you can't promote someone who hasn't signed up yet) with a hint.
+      const waitingToggle = screen.getByTestId(
+        'members-waiting-0-admin-toggle',
+      ) as HTMLButtonElement;
+      expect(waitingToggle.disabled).toBe(true);
+      expect(waitingToggle.getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByTestId('members-waiting-0-admin-panel').textContent).toContain(
+        'Available once they sign up',
+      );
 
       fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ resent: true }) });
       fireEvent.click(screen.getByTestId('members-waiting-0-resend'));
@@ -1103,6 +1308,82 @@ describe('<MembersPage />', () => {
       expect(make.textContent).toContain('Make admin');
       // Kid cards never show an admin toggle.
       expect(screen.queryByTestId('members-kid-0-admin-toggle')).not.toBeInTheDocument();
+    });
+
+    // FHS-519 — a two-admin family: demoting the OTHER admin works and
+    // leaves the family with its remaining admin; demoting yourself is
+    // blocked by the server (not the client — the toggle isn't disabled
+    // for your own row when a second admin exists), and the rejection
+    // surfaces via the shared action-error banner.
+    describe('Two-admin family (FHS-519)', () => {
+      it('demoting the other admin fires the PATCH and the family keeps its remaining admin', async () => {
+        membersResponse = twoAdminFamily();
+        renderAt('/t/khans/members');
+        await expandGrownups();
+        await waitFor(() =>
+          expect(screen.getByTestId('members-grownup-1-admin-toggle')).toBeInTheDocument(),
+        );
+        // Neither toggle is last-admin-locked — two admins exist.
+        expect(
+          (screen.getByTestId('members-grownup-0-admin-toggle') as HTMLButtonElement).disabled,
+        ).toBe(false);
+        const otherToggle = screen.getByTestId(
+          'members-grownup-1-admin-toggle',
+        ) as HTMLButtonElement;
+        expect(otherToggle.disabled).toBe(false);
+
+        fetchMock.mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ member: { id: 'admin-2', role: 'adult' } }),
+        });
+        fetchMock.mockResolvedValueOnce(twoAdminFamily({ secondRole: 'adult' }));
+        fireEvent.click(otherToggle);
+
+        await waitFor(() =>
+          expect(screen.getByTestId('members-grownup-1-role').textContent).toBe('Adult'),
+        );
+        const patchCall = fetchMock.mock.calls.find(
+          (c) => typeof c[0] === 'string' && c[0].endsWith('/admin-2') && c[1]?.method === 'PATCH',
+        );
+        expect(patchCall).toBeDefined();
+        expect(JSON.parse(patchCall![1].body as string)).toEqual({ role: 'adult' });
+        // The caller (admin-1) keeps their admin role — the family always
+        // has one.
+        expect(screen.getByTestId('members-grownup-0-role').textContent).toBe('Admin');
+        expect(screen.queryByTestId('members-action-error')).not.toBeInTheDocument();
+      });
+
+      it("an admin cannot demote their OWN row — the server's rejection surfaces via the action-error banner", async () => {
+        membersResponse = twoAdminFamily();
+        renderAt('/t/khans/members');
+        await expandGrownups();
+        await waitFor(() =>
+          expect(screen.getByTestId('members-grownup-0-admin-toggle')).toBeInTheDocument(),
+        );
+        const ownToggle = screen.getByTestId('members-grownup-0-admin-toggle') as HTMLButtonElement;
+        // Not client-side disabled — a second admin exists, so the
+        // last-admin lock doesn't apply. The server is what blocks this.
+        expect(ownToggle.disabled).toBe(false);
+
+        fetchMock.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          json: async () => ({
+            error: 'forbidden',
+            detail: 'ask another admin to remove your admin access',
+          }),
+        });
+        fireEvent.click(ownToggle);
+
+        await waitFor(() =>
+          expect(screen.getByTestId('members-action-error').textContent).toMatch(
+            /ask another admin/i,
+          ),
+        );
+        // The failed PATCH never refreshed the list — the caller is still
+        // shown as admin.
+        expect(screen.getByTestId('members-grownup-0-role').textContent).toBe('Admin');
+      });
     });
 
     it('renders the Admin Panel button on the admin card and navigates on click', async () => {
