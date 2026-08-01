@@ -6,7 +6,11 @@ import { LandingPage } from './pages/marketing/LandingPage';
 import { WelcomePage } from './pages/marketing/WelcomePage';
 import { PricingPage } from './pages/marketing/PricingPage';
 import { AboutPage } from './pages/marketing/AboutPage';
-import { PrivacyPage } from './pages/marketing/PrivacyPage';
+import { LegalIndexPage } from './pages/legal/LegalIndexPage';
+import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
+import { ChildrenPrivacyPage } from './pages/legal/ChildrenPrivacyPage';
+import { TermsOfServicePage } from './pages/legal/TermsOfServicePage';
+import { CookiesPage } from './pages/legal/CookiesPage';
 import { KidLoginPage } from './pages/auth/KidLoginPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
@@ -41,8 +45,18 @@ export function App() {
           {/* FHS-436 — public "what is Family Hub" page for beta reviewers
               and first-time visitors. */}
           <Route path="/about" element={<AboutPage />} />
-          {/* FHS-435 — public draft privacy policy + signup consent link target. */}
-          <Route path="/privacy" element={<PrivacyPage />} />
+          {/* FHS-509 — Legal pages (Privacy, Children & Parents, Terms,
+              Cookies) + an index. */}
+          <Route path="/legal" element={<LegalIndexPage />} />
+          <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/legal/children" element={<ChildrenPrivacyPage />} />
+          <Route path="/legal/terms" element={<TermsOfServicePage />} />
+          <Route path="/legal/cookies" element={<CookiesPage />} />
+          {/* FHS-435's public draft privacy policy page moved under /legal
+              (FHS-509). Redirect so the signup consent link + the other
+              pages still linking to /privacy (AdminPanelPage, SignupPage,
+              AboutPage, PricingPage, WelcomePage) keep working. */}
+          <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
           {/* Legacy /api/hello debug card preserved at /_health so the
               FHS-198 staging-deploy spec keeps validating end-to-end. */}
           <Route path="/_health" element={<LandingPage />} />
