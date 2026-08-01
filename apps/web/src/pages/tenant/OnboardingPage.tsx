@@ -54,6 +54,9 @@ interface WizardMember {
   // FHS-275 — optional invite email (adults only): they get a sign-in
   // link and become this member on first login.
   email?: string;
+  // FHS-487 — optional age in years, child rows only. Captured for
+  // later use — nothing reads it yet. Adults/teens/guests never set this.
+  age?: number;
 }
 
 function makeUiId(): string {
@@ -182,6 +185,35 @@ export function OnboardingPage() {
     setMembers((prev) => prev.map((m) => (m.uiId === uiId ? { ...m, ...patch } : m)));
   }
 
+  // FHS-487 — separate setter (not patchMember) because clearing the age
+  // field must OMIT the key rather than set it to undefined
+  // (exactOptionalPropertyTypes forbids `age: undefined` on an `age?:
+  // number` field). Same rebuild-without-the-key approach as the emoji
+  // clear handler above.
+  function patchMemberAge(uiId: string, raw: string) {
+    setMembers((prev) =>
+      prev.map((row) => {
+        if (row.uiId !== uiId) return row;
+        if (raw !== '') {
+          const n = Number(raw);
+          // Only whole numbers 1–25 (matches the server schema + the Manage
+          // Members "Add a child" form). Reject anything else so we never
+          // submit a value the server would 400 the whole wizard on.
+          if (!Number.isInteger(n) || n < 1 || n > 25) return row;
+          return { ...row, age: n };
+        }
+        const cleared: WizardMember = {
+          uiId: row.uiId,
+          displayName: row.displayName,
+          role: row.role,
+        };
+        if (row.avatarEmoji) cleared.avatarEmoji = row.avatarEmoji;
+        if (row.email) cleared.email = row.email;
+        return cleared;
+      }),
+    );
+  }
+
   async function submit() {
     if (!session) return;
     setStatus({ kind: 'submitting' });
@@ -202,6 +234,9 @@ export function OnboardingPage() {
             role: m.role,
             ...(m.avatarEmoji ? { avatarEmoji: m.avatarEmoji } : {}),
             ...(m.role === 'adult' && m.email?.trim() ? { email: m.email.trim() } : {}),
+            ...((m.role === 'child' || m.role === 'teen') && typeof m.age === 'number'
+              ? { age: m.age }
+              : {}),
           })),
         }),
       });
@@ -349,11 +384,16 @@ export function OnboardingPage() {
                             prev.map((row) => {
                               if (row.uiId !== m.uiId) return row;
                               if (next) return { ...row, avatarEmoji: next };
+                              // Clearing the emoji must keep the row's other
+                              // optional fields (email, age) — rebuild without
+                              // just avatarEmoji.
                               const cleared: WizardMember = {
                                 uiId: row.uiId,
                                 displayName: row.displayName,
                                 role: row.role,
                               };
+                              if (row.email) cleared.email = row.email;
+                              if (typeof row.age === 'number') cleared.age = row.age;
                               return cleared;
                             }),
                           );
@@ -373,6 +413,24 @@ export function OnboardingPage() {
                           onChange={(e) => patchMember(m.uiId, { email: e.target.value })}
                           placeholder="e.g. yusuf@example.com"
                           testId={`onboarding-member-email-${idx}`}
+                        />
+                      </div>
+                    )}
+                    {/* FHS-487 — optional age for kids (child or teen). Shows on
+                        their Manage Members card (e.g. "Child (6)"). */}
+                    {(m.role === 'child' || m.role === 'teen') && (
+                      <div className="mt-3">
+                        <Label htmlFor={`member-age-${m.uiId}`}>Age (optional)</Label>
+                        <Input
+                          id={`member-age-${m.uiId}`}
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={25}
+                          value={m.age ?? ''}
+                          onChange={(e) => patchMemberAge(m.uiId, e.target.value)}
+                          placeholder="e.g. 6"
+                          testId={`onboarding-member-age-${idx}`}
                         />
                       </div>
                     )}
