@@ -22,7 +22,12 @@ export {
   type SearchableOption,
 } from './SearchableSelect';
 export { TimezonePicker, detectBrowserTimezone, type TimezonePickerProps } from './TimezonePicker';
-export { CurrencyPicker, detectBrowserCurrency, type CurrencyPickerProps } from './CurrencyPicker';
+export {
+  CurrencyPicker,
+  detectBrowserCurrency,
+  currencyDecimals,
+  type CurrencyPickerProps,
+} from './CurrencyPicker';
 export { useBodyScrollLock } from './useBodyScrollLock';
 export { AvatarEmojiPicker, type AvatarEmojiPickerProps } from './AvatarEmojiPicker';
 export {
