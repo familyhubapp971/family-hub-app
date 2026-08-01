@@ -127,6 +127,10 @@ function adminOnlyList() {
     ok: true,
     json: async () => ({
       callerRole: 'admin',
+      // FHS-510 — self-serve: the change-email control only renders on the
+      // caller's OWN card, so fixtures must echo callerMemberId matching the
+      // row that should be treated as "me" (here, admin-1 / Sarah Khan).
+      callerMemberId: 'admin-1',
       members: [
         {
           id: 'admin-1',
@@ -140,6 +144,68 @@ function adminOnlyList() {
           age: null,
           inviteEmail: null,
           inviteId: null,
+          email: 'sarah@example.com',
+          pendingEmail: null,
+        },
+      ],
+    }),
+  };
+}
+
+// FHS-510 — same single-admin roster, but with a pending email change in
+// flight for the caller (the "Confirm the new email" yellow card state).
+function adminWithPendingEmailList() {
+  return {
+    ok: true,
+    json: async () => ({
+      callerRole: 'admin',
+      callerMemberId: 'admin-1',
+      members: [
+        {
+          id: 'admin-1',
+          displayName: 'Sarah Khan',
+          role: 'admin',
+          avatarEmoji: '👩',
+          status: 'active',
+          createdAt: '2026-05-02T00:00:00.000Z',
+          isChild: false,
+          hasPin: false,
+          age: null,
+          inviteEmail: null,
+          inviteId: null,
+          email: 'sarah@example.com',
+          pendingEmail: 'sarah.new@example.com',
+        },
+      ],
+    }),
+  };
+}
+
+// FHS-510 blocker #6 — a defensive edge case: an "active" grown-up whose
+// `email` field is null (the API is expected to always populate it for a
+// linked login, but the UI must not assume that and should disable the
+// trigger rather than open a broken form).
+function adminWithNoEmailOnFileList() {
+  return {
+    ok: true,
+    json: async () => ({
+      callerRole: 'admin',
+      callerMemberId: 'admin-1',
+      members: [
+        {
+          id: 'admin-1',
+          displayName: 'Sarah Khan',
+          role: 'admin',
+          avatarEmoji: '👩',
+          status: 'active',
+          createdAt: '2026-05-02T00:00:00.000Z',
+          isChild: false,
+          hasPin: false,
+          age: null,
+          inviteEmail: null,
+          inviteId: null,
+          email: null,
+          pendingEmail: null,
         },
       ],
     }),
@@ -151,6 +217,7 @@ function fullFamilyList() {
     ok: true,
     json: async () => ({
       callerRole: 'admin',
+      callerMemberId: 'admin-1',
       members: [
         {
           id: 'admin-1',
@@ -164,6 +231,8 @@ function fullFamilyList() {
           age: null,
           inviteEmail: null,
           inviteId: null,
+          email: 'sarah@example.com',
+          pendingEmail: null,
         },
         {
           id: 'adult-1',
@@ -177,6 +246,8 @@ function fullFamilyList() {
           age: null,
           inviteEmail: null,
           inviteId: null,
+          email: 'yusuf@example.com',
+          pendingEmail: null,
         },
         {
           id: 'kid-1',
@@ -190,6 +261,8 @@ function fullFamilyList() {
           age: 6,
           inviteEmail: null,
           inviteId: null,
+          email: null,
+          pendingEmail: null,
         },
         {
           id: 'pending-1',
@@ -203,6 +276,8 @@ function fullFamilyList() {
           age: null,
           inviteEmail: 'jumi@example.com',
           inviteId: '44444444-4444-4444-8444-444444444444',
+          email: null,
+          pendingEmail: null,
         },
       ],
     }),
@@ -227,6 +302,8 @@ function listWithKid(opts: { callerRole: string; kidHasPin: boolean }) {
           age: null,
           inviteEmail: null,
           inviteId: null,
+          email: 'sarah@example.com',
+          pendingEmail: null,
         },
         {
           id: 'kid-id',
@@ -240,6 +317,8 @@ function listWithKid(opts: { callerRole: string; kidHasPin: boolean }) {
           age: null,
           inviteEmail: null,
           inviteId: null,
+          email: null,
+          pendingEmail: null,
         },
       ],
     }),
@@ -839,16 +918,174 @@ describe('<MembersPage />', () => {
       expect(JSON.parse(patchCall![1].body as string)).toEqual({ displayName: 'Yusuf Khan' });
     });
 
-    it('the "Change email" button is disabled with a coming-soon note (FHS-510 not built yet)', async () => {
-      membersResponse = fullFamilyList();
-      renderAt('/t/khans/members');
-      await expandGrownups();
-      await waitFor(() =>
-        expect(screen.getByTestId('members-grownup-0-change-email')).toBeInTheDocument(),
-      );
-      const btn = screen.getByTestId('members-grownup-0-change-email') as HTMLButtonElement;
-      expect(btn.disabled).toBe(true);
-      expect(btn.title).toMatch(/coming soon/i);
+    // FHS-510 — admin changes a grown-up's sign-in email, confirmed by a
+    // one-time emailed link.
+    describe('Change email (FHS-510)', () => {
+      it('opens the "New email for …" form and sends the request on submit', async () => {
+        membersResponse = fullFamilyList();
+        renderAt('/t/khans/members');
+        await expandGrownups();
+        await waitFor(() =>
+          expect(screen.getByTestId('members-grownup-0-change-email')).toBeInTheDocument(),
+        );
+        const btn = screen.getByTestId('members-grownup-0-change-email') as HTMLButtonElement;
+        expect(btn.disabled).toBe(false);
+
+        fireEvent.click(btn);
+        expect(screen.getByTestId('members-grownup-0-email-change-form')).toBeInTheDocument();
+        expect(screen.getByText('New email for Sarah Khan')).toBeInTheDocument();
+
+        fireEvent.change(screen.getByTestId('members-grownup-0-email-change-input'), {
+          target: { value: 'sarah.new@example.com' },
+        });
+        fetchMock.mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ pendingEmail: 'sarah.new@example.com' }),
+        });
+        fetchMock.mockResolvedValueOnce(adminWithPendingEmailList());
+        fireEvent.click(screen.getByTestId('members-grownup-0-email-change-send'));
+
+        await waitFor(() =>
+          expect(
+            screen.queryByTestId('members-grownup-0-email-change-form'),
+          ).not.toBeInTheDocument(),
+        );
+        const postCall = fetchMock.mock.calls.find(
+          (c) =>
+            typeof c[0] === 'string' &&
+            c[0].endsWith('/admin-1/email-change') &&
+            c[1]?.method === 'POST',
+        );
+        expect(postCall).toBeDefined();
+        expect(JSON.parse(postCall![1].body as string)).toEqual({
+          email: 'sarah.new@example.com',
+        });
+      });
+
+      it('is disabled when the member has no sign-in email yet', async () => {
+        membersResponse = adminWithNoEmailOnFileList();
+        renderAt('/t/khans/members');
+        await expandGrownups();
+        await waitFor(() =>
+          expect(screen.getByTestId('members-grownup-0-change-email')).toBeInTheDocument(),
+        );
+        const btn = screen.getByTestId('members-grownup-0-change-email') as HTMLButtonElement;
+        expect(btn.disabled).toBe(true);
+        expect(btn.title).toMatch(/no sign-in email yet/i);
+        // Clicking a disabled button is a no-op — the form never opens.
+        fireEvent.click(btn);
+        expect(screen.queryByTestId('members-grownup-0-email-change-form')).not.toBeInTheDocument();
+      });
+
+      it('shows the pending "Confirm the new email" card, disables the trigger button, and supports Resend + Cancel', async () => {
+        membersResponse = adminWithPendingEmailList();
+        renderAt('/t/khans/members');
+        await expandGrownups();
+        await waitFor(() =>
+          expect(screen.getByTestId('members-grownup-0-pending-email')).toBeInTheDocument(),
+        );
+        expect(screen.getByTestId('members-grownup-0-pending-email').textContent).toContain(
+          'sarah.new@example.com',
+        );
+        expect(screen.getByTestId('members-grownup-0-pending-email').textContent).toContain(
+          'sarah@example.com',
+        );
+        expect(
+          (screen.getByTestId('members-grownup-0-change-email') as HTMLButtonElement).disabled,
+        ).toBe(true);
+
+        // Resend re-POSTs the same pending address.
+        fetchMock.mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ pendingEmail: 'sarah.new@example.com' }),
+        });
+        fetchMock.mockResolvedValueOnce(adminWithPendingEmailList());
+        fireEvent.click(screen.getByTestId('members-grownup-0-pending-email-resend'));
+        await waitFor(() => {
+          const resendCall = fetchMock.mock.calls.find(
+            (c) =>
+              typeof c[0] === 'string' &&
+              c[0].endsWith('/admin-1/email-change') &&
+              c[1]?.method === 'POST',
+          );
+          expect(resendCall).toBeDefined();
+          expect(JSON.parse(resendCall![1].body as string)).toEqual({
+            email: 'sarah.new@example.com',
+          });
+        });
+
+        // Cancel clears the pending change and the page reloads without it.
+        fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ cancelled: true }) });
+        fetchMock.mockResolvedValueOnce(adminOnlyList());
+        fireEvent.click(screen.getByTestId('members-grownup-0-pending-email-cancel'));
+        await waitFor(() => {
+          const cancelCall = fetchMock.mock.calls.find(
+            (c) =>
+              typeof c[0] === 'string' &&
+              c[0].endsWith('/admin-1/email-change/cancel') &&
+              c[1]?.method === 'POST',
+          );
+          expect(cancelCall).toBeDefined();
+        });
+        await waitFor(() =>
+          expect(screen.queryByTestId('members-grownup-0-pending-email')).not.toBeInTheDocument(),
+        );
+      });
+
+      // FHS-510 blocker #7 — defense-in-depth: even if the API ever returned
+      // pendingEmail data for a card that isn't the caller's own (it
+      // shouldn't — self-serve gates purely on identity, not role, per the
+      // backend's `target.userId !== userRow.id` check), the UI must still
+      // hide the pending card AND the change-email trigger for that row.
+      // Deliberately uses an ADMIN caller here to prove the gate is about
+      // "is this my row?", not "am I an admin?".
+      it("a caller viewing another member's card sees neither the pending card nor the change-email controls", async () => {
+        membersResponse = {
+          ok: true,
+          json: async () => ({
+            callerRole: 'admin',
+            callerMemberId: 'someone-else-id', // caller is NOT the admin-1 row below
+            members: (await adminWithPendingEmailList().json()).members,
+          }),
+        };
+        renderAt('/t/khans/members');
+        await expandGrownups();
+        await waitFor(() =>
+          expect(screen.getByTestId('members-grownup-0-name')).toBeInTheDocument(),
+        );
+        expect(screen.queryByTestId('members-grownup-0-pending-email')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('members-grownup-0-change-email')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('members-grownup-0-email-change-form')).not.toBeInTheDocument();
+      });
+
+      it("surfaces the server's error detail (e.g. email already registered) via the shared action-error banner", async () => {
+        membersResponse = fullFamilyList();
+        renderAt('/t/khans/members');
+        await expandGrownups();
+        await waitFor(() =>
+          expect(screen.getByTestId('members-grownup-0-change-email')).toBeInTheDocument(),
+        );
+        fireEvent.click(screen.getByTestId('members-grownup-0-change-email'));
+        fireEvent.change(screen.getByTestId('members-grownup-0-email-change-input'), {
+          target: { value: 'taken@example.com' },
+        });
+        fetchMock.mockResolvedValueOnce({
+          ok: false,
+          status: 409,
+          json: async () => ({
+            error: 'email already registered',
+            detail: 'That email already belongs to a Family Hub account.',
+          }),
+        });
+        fireEvent.click(screen.getByTestId('members-grownup-0-email-change-send'));
+        await waitFor(() =>
+          expect(screen.getByTestId('members-action-error').textContent).toMatch(
+            /already belongs to a family hub account/i,
+          ),
+        );
+        // The form stays open so the admin can correct the address and retry.
+        expect(screen.getByTestId('members-grownup-0-email-change-form')).toBeInTheDocument();
+      });
     });
 
     it('admin toggle is disabled for the last admin and enabled ("Make admin") on another parent', async () => {

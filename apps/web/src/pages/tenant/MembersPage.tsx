@@ -43,9 +43,9 @@ import { DEFAULT_TAB } from './dashboard-tabs';
 // unchanged from the pre-FHS-513 page (FHS-108 / FHS-252 / FHS-276 /
 // FHS-471/472/473 / FHS-486). See each handler below for its history.
 //
-// "Change email" (FHS-510) has no backend yet — its button renders
-// disabled with a "Coming soon" note rather than being wired to a
-// non-existent endpoint.
+// "Change email" (FHS-510) is self-serve: the button renders ONLY on the
+// caller's own grown-up card and starts a confirm-by-email change of their
+// own sign-in address (a member can never change another member's email).
 
 interface MemberItem {
   id: string;
@@ -59,11 +59,16 @@ interface MemberItem {
   age: number | null;
   inviteEmail: string | null;
   inviteId: string | null;
+  // FHS-510 — the grown-up's current sign-in email (null for kids and
+  // unclaimed seats), and any new email awaiting confirmation.
+  email: string | null;
+  pendingEmail: string | null;
 }
 
 interface ListMembersResponse {
   members: MemberItem[];
   callerRole: string;
+  callerMemberId: string;
 }
 
 interface MeResponseTenant {
@@ -74,7 +79,7 @@ interface MeResponseTenant {
 
 type Status =
   | { kind: 'loading' }
-  | { kind: 'ready'; members: MemberItem[]; callerRole: string }
+  | { kind: 'ready'; members: MemberItem[]; callerRole: string; callerMemberId: string }
   | { kind: 'error'; message: string };
 
 const GROWN_UP_ROLES = new Set(['admin', 'adult', 'guest']);
@@ -117,6 +122,8 @@ export function MembersPage() {
   );
   const [openPinFor, setOpenPinFor] = useState<string | null>(null);
   const [editingFor, setEditingFor] = useState<string | null>(null);
+  // FHS-510 — which grown-up's "New email for …" inline form is open.
+  const [emailChangeFor, setEmailChangeFor] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const authedHeaders = session
@@ -137,7 +144,12 @@ export function MembersPage() {
         return;
       }
       const body = (await res.json()) as ListMembersResponse;
-      setStatus({ kind: 'ready', members: body.members, callerRole: body.callerRole });
+      setStatus({
+        kind: 'ready',
+        members: body.members,
+        callerRole: body.callerRole,
+        callerMemberId: body.callerMemberId,
+      });
     } catch (err) {
       setStatus({
         kind: 'error',
@@ -197,6 +209,9 @@ export function MembersPage() {
 
   const ready = status.kind === 'ready';
   const callerIsAdmin = ready && status.callerRole === 'admin';
+  // FHS-510 — the caller's own member id, so a grown-up can change THEIR OWN
+  // sign-in email (self-serve) from their own card, admin or not.
+  const callerMemberId = ready ? status.callerMemberId : null;
   const allMembers = ready ? status.members : [];
   const adminCount = allMembers.filter((m) => m.role === 'admin').length;
 
@@ -344,9 +359,12 @@ export function MembersPage() {
                         member={m}
                         idx={idx}
                         callerIsAdmin={callerIsAdmin}
+                        callerMemberId={callerMemberId}
                         adminCount={adminCount}
                         editingFor={editingFor}
                         setEditingFor={setEditingFor}
+                        emailChangeFor={emailChangeFor}
+                        setEmailChangeFor={setEmailChangeFor}
                         navigate={navigate}
                         slug={slug}
                         mutate={mutate}
@@ -429,9 +447,12 @@ interface GrownUpCardProps {
   member: MemberItem;
   idx: number;
   callerIsAdmin: boolean;
+  callerMemberId: string | null;
   adminCount: number;
   editingFor: string | null;
   setEditingFor: (id: string | null) => void;
+  emailChangeFor: string | null;
+  setEmailChangeFor: (id: string | null) => void;
   navigate: ReturnType<typeof useNavigate>;
   slug: string;
   mutate: (path: string, init: RequestInit) => Promise<boolean>;
@@ -441,9 +462,12 @@ function GrownUpCard({
   member: m,
   idx,
   callerIsAdmin,
+  callerMemberId,
   adminCount,
   editingFor,
   setEditingFor,
+  emailChangeFor,
+  setEmailChangeFor,
   navigate,
   slug,
   mutate,
@@ -453,6 +477,8 @@ function GrownUpCard({
   const testId = `members-grownup-${idx}`;
 
   const isAdminRole = m.role === 'admin';
+  // FHS-510 — self-serve: only the caller's OWN card gets the change-email control.
+  const isOwnCard = callerMemberId !== null && m.id === callerMemberId;
 
   return (
     <MemberCard
@@ -463,27 +489,43 @@ function GrownUpCard({
       badge={<RoleBadge role={m.role} testId={`${testId}-role`} />}
       testId={testId}
       footer={
-        callerIsAdmin ? (
+        callerIsAdmin || isOwnCard ? (
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                data-testid={`${testId}-edit-name`}
-                onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
-                className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-black transition-colors hover:bg-gray-50"
-              >
-                <Edit2 size={14} aria-hidden="true" /> Edit name
-              </button>
-              <button
-                type="button"
-                data-testid={`${testId}-change-email`}
-                disabled
-                title="Coming soon — changing a member's sign-in email (FHS-510)"
-                className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-gray-300"
-              >
-                <Mail size={14} aria-hidden="true" /> Change email
-              </button>
-              {isAdminRole && (
+              {callerIsAdmin && (
+                <button
+                  type="button"
+                  data-testid={`${testId}-edit-name`}
+                  onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
+                  className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-black transition-colors hover:bg-gray-50"
+                >
+                  <Edit2 size={14} aria-hidden="true" /> Edit name
+                </button>
+              )}
+              {/* FHS-510 — self-serve: only your OWN card shows "Change email". */}
+              {isOwnCard && (
+                <button
+                  type="button"
+                  data-testid={`${testId}-change-email`}
+                  disabled={!m.email || Boolean(m.pendingEmail)}
+                  title={
+                    m.pendingEmail
+                      ? 'A change is already pending — see below'
+                      : !m.email
+                        ? 'You have no sign-in email yet'
+                        : undefined
+                  }
+                  onClick={() => setEmailChangeFor(emailChangeFor === m.id ? null : m.id)}
+                  className={`flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black px-4 text-sm font-bold transition-colors ${
+                    !m.email || m.pendingEmail
+                      ? 'bg-white text-gray-300'
+                      : 'bg-white text-black hover:bg-gray-50'
+                  }`}
+                >
+                  <Mail size={14} aria-hidden="true" /> Change email
+                </button>
+              )}
+              {callerIsAdmin && isAdminRole && (
                 <button
                   type="button"
                   data-testid="members-admin-panel-btn"
@@ -494,12 +536,14 @@ function GrownUpCard({
                 </button>
               )}
             </div>
-            <RemoveButton
-              testId={testId}
-              disabled={lastAdminLock}
-              name={m.displayName}
-              onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
-            />
+            {callerIsAdmin && (
+              <RemoveButton
+                testId={testId}
+                disabled={lastAdminLock}
+                name={m.displayName}
+                onConfirm={() => void mutate(`/api/members/${m.id}`, { method: 'DELETE' })}
+              />
+            )}
           </>
         ) : null
       }
@@ -559,7 +603,151 @@ function GrownUpCard({
           }}
         />
       )}
+      {/* FHS-510 — self-serve: the pending-change card + the change-email form
+          only ever render on the caller's OWN card. The API also nulls
+          email/pendingEmail on every other row, so this can't leak. */}
+      {isOwnCard &&
+        (m.pendingEmail ? (
+          <PendingEmailChangeCard member={m} testId={testId} mutate={mutate} />
+        ) : (
+          emailChangeFor === m.id && (
+            <EmailChangeForm
+              displayName={m.displayName}
+              testId={testId}
+              onCancel={() => setEmailChangeFor(null)}
+              onSave={async (email) => {
+                const ok = await mutate(`/api/members/${m.id}/email-change`, {
+                  method: 'POST',
+                  body: JSON.stringify({ email }),
+                });
+                if (ok) setEmailChangeFor(null);
+              }}
+            />
+          )
+        ))}
     </MemberCard>
+  );
+}
+
+// FHS-510 — step-1 inline form: an admin types the new address and it
+// emails a one-time confirm link. Stays open on failure (the page-level
+// actionError banner surfaces the reason), same pattern as EditNameForm.
+function EmailChangeForm({
+  displayName,
+  testId,
+  onCancel,
+  onSave,
+}: {
+  displayName: string;
+  testId: string;
+  onCancel: () => void;
+  onSave: (email: string) => Promise<void>;
+}) {
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!email.trim()) return;
+        setSubmitting(true);
+        void onSave(email.trim()).finally(() => setSubmitting(false));
+      }}
+      className="mb-4 space-y-3 rounded-md border-2 border-dashed border-black bg-white p-3"
+      data-testid={`${testId}-email-change-form`}
+    >
+      <p className="font-heading text-sm text-black">New email for {displayName}</p>
+      <p className="text-xs font-bold text-gray-500">
+        We send a confirm link to the new address. The old one keeps working until they click it.
+      </p>
+      <div>
+        <Label htmlFor={`email-change-${testId}`} required>
+          New email
+        </Label>
+        <Input
+          id={`email-change-${testId}`}
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="new@example.com"
+          testId={`${testId}-email-change-input`}
+        />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="submit"
+          variant="primary"
+          size="sm"
+          disabled={submitting}
+          testId={`${testId}-email-change-send`}
+        >
+          {submitting ? 'Sending…' : 'Send confirm link'}
+        </Button>
+        <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// FHS-510 — the yellow "a change is in flight" card: shows while the old
+// email still works and nobody's clicked the emailed link yet.
+function PendingEmailChangeCard({
+  member,
+  testId,
+  mutate,
+}: {
+  member: MemberItem;
+  testId: string;
+  mutate: (path: string, init: RequestInit) => Promise<boolean>;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  return (
+    <div
+      className="mt-4 rounded-xl border-2 border-black bg-yellow-100 p-3"
+      data-testid={`${testId}-pending-email`}
+    >
+      <p className="font-heading text-sm text-black">Confirm the new email</p>
+      <p className="break-words text-xs font-bold text-gray-700">
+        We sent a link to {member.pendingEmail}. Until it is clicked, {member.displayName} still
+        signs in with {member.email}.
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={submitting}
+          testId={`${testId}-pending-email-resend`}
+          onClick={() => {
+            setSubmitting(true);
+            void mutate(`/api/members/${member.id}/email-change`, {
+              method: 'POST',
+              body: JSON.stringify({ email: member.pendingEmail }),
+            }).finally(() => setSubmitting(false));
+          }}
+        >
+          Resend
+        </Button>
+        <Button
+          type="button"
+          variant="danger"
+          size="sm"
+          disabled={submitting}
+          testId={`${testId}-pending-email-cancel`}
+          onClick={() => {
+            setSubmitting(true);
+            void mutate(`/api/members/${member.id}/email-change/cancel`, {
+              method: 'POST',
+            }).finally(() => setSubmitting(false));
+          }}
+        >
+          Cancel change
+        </Button>
+      </div>
+    </div>
   );
 }
 

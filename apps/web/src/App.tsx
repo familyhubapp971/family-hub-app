@@ -11,6 +11,7 @@ import { KidLoginPage } from './pages/auth/KidLoginPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
+import { ConfirmEmailPage } from './pages/auth/ConfirmEmailPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { DashboardPage } from './pages/tenant/DashboardPage';
 import { ChildWorldPage } from './pages/tenant/child/ChildWorldPage';
@@ -53,6 +54,11 @@ export function App() {
           <Route path="/auth/reset-request" element={<Navigate to="/login" replace />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          {/* FHS-510 — admin-initiated email-change confirm link. Root-level
+              and outside ProtectedRoute: the recipient may not be signed in
+              at all — the one-time token in the query string is the
+              credential, verified server-side. */}
+          <Route path="/confirm-email/:memberId" element={<ConfirmEmailPage />} />
 
           {/* FHS-238 — kid login. Tenant-scoped (slug in URL) but NOT
               behind ProtectedRoute: the kid hasn't authenticated yet,
