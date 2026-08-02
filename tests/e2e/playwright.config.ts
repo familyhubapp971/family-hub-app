@@ -1,7 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
-import { e2eTestJwksJson } from './support/auth/test-key.js';
-import { tryResolveSupabaseUrl } from './support/auth/env.js';
 
 // In CI the workflow exports DATABASE_URL with credentials matching the
 // `postgres:16-alpine` service (e.g. fh_test:fh_test@localhost). Inline
@@ -12,21 +10,13 @@ import { tryResolveSupabaseUrl } from './support/auth/env.js';
 // the local-dev convention only when it isn't.
 const apiDatabaseUrl = process.env.DATABASE_URL ?? 'postgres://localhost:5432/familyhub_test';
 
-// FHS-516 — the authed e2e fixture's test JWKS + the Supabase project URL
-// the api verifies tokens' `iss` claim against. See support/fixtures.ts for
-// the full picture and apps/api/src/middleware/auth.ts for the api-side
-// hook. tryResolveSupabaseUrl() reads SUPABASE_URL from the job env in CI,
-// or repo-root .env.local locally — same source the api's own `dev` script
-// uses, so both processes agree on the issuer without coordination. It's
-// the NON-throwing lookup deliberately: this file loads for every e2e spec,
-// including ones that never touch the authed fixture, so a contributor
-// machine with no Supabase configured must still be able to run those.
-// Only a spec that actually requests `authedFamily` fails (loudly, via the
-// throwing resolveSupabaseUrl() inside support/fixtures.ts).
-const supabaseUrl = tryResolveSupabaseUrl();
-const apiWebServerEnv = supabaseUrl
-  ? { SUPABASE_URL: supabaseUrl, E2E_TEST_JWKS: e2eTestJwksJson() }
-  : undefined;
+// FHS-545 — this full matrix does NOT set E2E_TEST_JWKS on the api. Its one
+// authed spec (auth.feature, FHS-196) does a REAL Supabase login and must be
+// verified against the REAL Supabase JWKS, so the api boots exactly as it did
+// pre-FHS-516 (SUPABASE_URL from the CI job env / repo .env.local, no test
+// override). The test-JWKS harness's @authed-local specs are excluded from
+// this matrix (see the `tags` filter below) and run only in
+// playwright.critical.config.ts, which DOES wire E2E_TEST_JWKS.
 
 // Generates Playwright spec files from .feature files into .features-gen/.
 // Scenario names in features/ MUST mirror Gherkin scenarios in
@@ -85,27 +75,17 @@ export default defineConfig({
   // locally we reuse if already running. Bumped timeout to 120s for
   // cold pnpm + tsx + vite startup on a fresh CI runner.
   //
-  // FHS-516 GOTCHA: `reuseExistingServer` means that if you already have
-  // `pnpm dev` (or a leftover api process) bound to :3001 from another
-  // terminal, Playwright reuses THAT process — which never got
-  // E2E_TEST_JWKS — instead of starting its own. Every existing spec still
-  // passes (they don't hit the api with a bearer token), but the authed
-  // fixture's spec(s) fail with 401s that look like a fixture bug. If an
-  // authed spec starts failing locally, check `lsof -i :3001` first and
-  // kill anything already listening before re-running.
   webServer: [
     {
+      // FHS-545 — no E2E_TEST_JWKS here: the api validates against the REAL
+      // Supabase JWKS (via SUPABASE_URL from the CI job env / .env.local) so
+      // auth.feature's real login works. In CI, VITE_API_URL is unset (its
+      // .env.development.local is gitignored), so the web app calls this local
+      // api — which is exactly why it must trust real Supabase tokens.
       command: `NODE_ENV=test PORT=3001 LOG_LEVEL=error DATABASE_URL=${apiDatabaseUrl} pnpm --filter @familyhub/api dev`,
       url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      // FHS-516 — merged with process.env by Playwright (doesn't replace
-      // it), same override precedence as the inline DATABASE_URL above:
-      // these win over whatever apps/api's own `--env-file=.env.local`
-      // loading would otherwise set for the same keys. Undefined (Supabase
-      // unconfigured on this machine) means the api falls back to exactly
-      // its pre-FHS-516 behaviour — no E2E_TEST_JWKS, real remote JWKS.
-      env: apiWebServerEnv,
     },
     {
       command: 'pnpm --filter @familyhub/web dev',
