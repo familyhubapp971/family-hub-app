@@ -43,6 +43,12 @@ const testDir = defineBddConfig({
   // (support/ isn't in it), so it needs pointing at the fixtures file
   // explicitly to generate specs that import the right `test` instance.
   importTestFrom: 'support/fixtures.ts',
+  // FHS-516 — @authed-local specs need the local api booted with the
+  // E2E_TEST_JWKS override; this full matrix points web at the real staging
+  // api (for the legacy real-login auth.feature spec), so it CANNOT also serve
+  // the test-JWKS harness. Those specs run in playwright.critical.config.ts
+  // instead (which points web at the local api). Excluded here.
+  tags: 'not @authed-local',
 });
 
 export default defineConfig({
@@ -106,12 +112,13 @@ export default defineConfig({
       url: 'http://localhost:5273',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      // FHS-516 — the web app reads VITE_API_URL (apps/web/src/lib/api.ts), and
-      // apps/web/.env.development.local points it at the STAGING api by default
-      // (a local-dev convenience). For e2e the browser MUST hit the local api on
-      // :3001 — the only one that trusts the test-minted JWT via E2E_TEST_JWKS.
-      // Vite gives a real env var priority over .env files.
-      env: { VITE_API_URL: 'http://localhost:3001' },
+      // FHS-516 — the full matrix deliberately does NOT override VITE_API_URL:
+      // its one authed spec (auth.feature, FHS-196) does a REAL Supabase login
+      // and needs the real staging api that trusts real Supabase tokens (which
+      // apps/web/.env.development.local already points VITE_API_URL at). The
+      // test-JWKS harness's @authed-local specs, which need the local api, are
+      // excluded from this matrix (see the `tags` filter above) and run in
+      // playwright.critical.config.ts, which pins VITE_API_URL at the local api.
     },
   ],
 });
