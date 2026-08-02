@@ -1,5 +1,6 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { Button, PricingCard, type PricingFeature } from '@familyhub/ui';
+import { useNavigate } from 'react-router-dom';
+import { PricingCard, type PricingFeature } from '@familyhub/ui';
+import { SiteHeader, SiteFooter } from '../../components/SiteChrome';
 
 // Pricing page — port of Magic Patterns design
 // kudjspxd3xxroueg5jw11o pages/Pricing.tsx. Tier copy is the source of
@@ -70,38 +71,9 @@ export function PricingPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-white">
-      {/* Header — slim, mirrors Welcome page so cross-page nav feels stable */}
-      <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
-        <Link
-          to="/"
-          className="font-heading text-2xl text-white transition-opacity hover:opacity-90"
-        >
-          FamilyHub
-        </Link>
-        <nav className="hidden items-center gap-8 font-bold md:flex">
-          <Link to="/" className="transition-colors hover:text-yellow-300">
-            Features
-          </Link>
-          {/* FHS-436 — About link, mirrors the WelcomePage nav. */}
-          <Link to="/about" className="transition-colors hover:text-yellow-300">
-            About
-          </Link>
-          <Link to="/pricing" className="text-yellow-300">
-            Pricing
-          </Link>
-        </nav>
-        <div className="flex items-center gap-4">
-          <Link
-            to="/login"
-            className="inline-block py-2.5 font-bold transition-colors hover:text-yellow-300"
-          >
-            Log in
-          </Link>
-          <Button onClick={() => navigate('/signup')} variant="primary" size="lg">
-            Start free
-          </Button>
-        </div>
-      </header>
+      {/* FHS-546 — shared chrome so Pricing matches the homepage + /legal
+          (Legal link in the nav, full legal footer). */}
+      <SiteHeader current="pricing" />
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-6 pb-6 pt-6 md:pt-10">
         <div className="mb-6 text-center sm:mb-16 md:mb-20">
@@ -131,23 +103,7 @@ export function PricingPage() {
         </div>
       </main>
 
-      {/* FHS-435/436 — small, unobtrusive footer so /privacy and /about are
-          reachable from the pricing page without competing with the tier
-          CTAs. */}
-      <footer className="mx-auto flex w-full max-w-7xl items-center justify-center gap-4 px-6 pb-6">
-        <Link
-          to="/about"
-          className="flex min-h-[44px] items-center px-2 text-sm font-bold text-purple-200 transition-colors hover:text-yellow-300"
-        >
-          About
-        </Link>
-        <Link
-          to="/privacy"
-          className="flex min-h-[44px] items-center px-2 text-sm font-bold text-purple-200 transition-colors hover:text-yellow-300"
-        >
-          Privacy Policy
-        </Link>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
