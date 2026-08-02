@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, CheckSquare, Utensils, Star, ArrowRight } from 'lucide-react';
 import { Button, FeatureCard } from '@familyhub/ui';
+import { SiteHeader, SiteFooter } from '../../components/SiteChrome';
 
 // AboutPage — public /about route (FHS-436). A beta reviewer said it
 // wasn't clear WHAT Family Hub is, WHO it's for, and its value. This
@@ -53,40 +54,9 @@ export function AboutPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-white">
-      {/* Header — mirrors WelcomePage/PricingPage so cross-page nav feels stable. */}
-      <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-4 md:px-6">
-        <Link
-          to="/"
-          className="shrink-0 font-heading text-xl text-white transition-opacity hover:opacity-90 md:text-2xl"
-        >
-          FamilyHub
-        </Link>
-        <nav className="flex items-center gap-1 font-bold md:gap-8">
-          <Link
-            to="/"
-            className="hidden px-2 py-2.5 transition-colors hover:text-yellow-300 md:inline"
-          >
-            Features
-          </Link>
-          <Link to="/about" className="px-2 py-2.5 text-yellow-300">
-            About
-          </Link>
-          <Link to="/pricing" className="px-2 py-2.5 transition-colors hover:text-yellow-300">
-            Pricing
-          </Link>
-        </nav>
-        <div className="flex items-center gap-1 md:gap-4">
-          <Link
-            to="/login"
-            className="px-2 py-2.5 font-bold transition-colors hover:text-yellow-300"
-          >
-            Log in
-          </Link>
-          <Button onClick={() => navigate('/signup')} variant="primary">
-            Start free
-          </Button>
-        </div>
-      </header>
+      {/* FHS-546 — shared chrome so About matches the homepage + /legal
+          (Legal link in the nav, full legal footer). */}
+      <SiteHeader current="about" />
 
       <main
         className="mx-auto w-full max-w-4xl flex-1 px-4 pb-16 pt-4 md:px-6 md:pt-8"
@@ -178,21 +148,7 @@ export function AboutPage() {
         </section>
       </main>
 
-      {/* Footer — mirrors WelcomePage/PricingPage. */}
-      <footer className="mx-auto flex w-full max-w-7xl items-center justify-center gap-4 px-6 pb-6">
-        <Link
-          to="/"
-          className="flex min-h-[44px] items-center px-2 text-sm font-bold text-purple-200 transition-colors hover:text-yellow-300"
-        >
-          ← Back to home
-        </Link>
-        <Link
-          to="/privacy"
-          className="flex min-h-[44px] items-center px-2 text-sm font-bold text-purple-200 transition-colors hover:text-yellow-300"
-        >
-          Privacy Policy
-        </Link>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

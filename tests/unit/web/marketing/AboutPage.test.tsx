@@ -54,9 +54,26 @@ describe('<AboutPage />', () => {
     privacyLinks.forEach((link) => expect(link).toHaveAttribute('href', '/privacy'));
   });
 
-  it('has a working link back to the homepage', () => {
+  // FHS-546 — About now uses the shared SiteHeader + SiteFooter (like the
+  // homepage + legal pages): Legal in the header nav, the full legal footer,
+  // and the FamilyHub logo linking home.
+  it('uses the shared site chrome (home link, Legal in the header, full legal footer)', () => {
     renderPage();
-    const backLink = screen.getByRole('link', { name: /back to home/i });
-    expect(backLink).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'FamilyHub' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: /^legal$/i })).toHaveAttribute('href', '/legal');
+    expect(screen.getByRole('link', { name: /^privacy$/i })).toHaveAttribute(
+      'href',
+      '/legal/privacy',
+    );
+    expect(screen.getByRole('link', { name: /children & parents/i })).toHaveAttribute(
+      'href',
+      '/legal/children',
+    );
+    expect(screen.getByRole('link', { name: /^terms$/i })).toHaveAttribute('href', '/legal/terms');
+    expect(screen.getByRole('link', { name: /^cookies$/i })).toHaveAttribute(
+      'href',
+      '/legal/cookies',
+    );
+    expect(screen.getByRole('link', { name: /all legal/i })).toHaveAttribute('href', '/legal');
   });
 });
