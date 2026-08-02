@@ -205,3 +205,10 @@ but were unrelated.
 - **Currency:** rates are in the family's onboarding currency
   (`tenants.currency`); the UI formats minor units back to a decimal display
   string via `Intl.NumberFormat`, but never stores or transmits a float.
+- **Atomic rate on redemption (FHS-517):** `redeemReward` and
+  `approveRedemptionRequest` resolve the effective rate _inside_ the locked
+  transaction (via `tx`), so an admin editing the rate mid-request can't split
+  one redemption across two rates. A placed day-sticker stores
+  `stickerValue = the habit's boost at that moment`; re-tapping the same day
+  after the boost changed re-prices it to the new boost (upsert in
+  `POST /api/habits/:id/stickers`).
