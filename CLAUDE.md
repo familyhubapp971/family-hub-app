@@ -402,6 +402,23 @@ If multiple tickets close in quick succession (child close that
 cascades to an epic close), refresh **once at the end**, not per
 transition.
 
+### Demo doc follows every user-visible merge
+
+**Whenever a merged ticket changes what a user can see or do**, refresh
+[`documents/demo/whats-shipped.html`](documents/demo/whats-shipped.html)
+in the same session — not just at sprint close. Founder request
+(FHS-552, 2026-08-03): the demo page is the founder's single view of
+the live product and must never lag reality.
+
+- Add/update the capability card in the matching section (plain words,
+  persona chips, FHS key chip), bump the "Last updated" stamp and the
+  "current through FHS-XXX" marker in the hero.
+- Keep it visual and in the design language (kingdom purple, Fredoka
+  One + Nunito, black borders, offset shadows) — it's a demo prop, not
+  a changelog.
+- Internal-only merges (CI, tests, refactors, docs) skip this; if
+  skipped on a user-visible ticket, say why in the close comment.
+
 ### Epic status follows its children
 
 An epic's status always mirrors the state of its children:

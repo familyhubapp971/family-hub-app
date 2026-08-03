@@ -10,7 +10,7 @@ interface CardProps {
    * Border radius. Default `'xl'` matches the Magic Patterns design
    * (FHS-220 marketing pages and onwards). The legacy `'2xl'` value is
    * preserved as an opt-in for surfaces that want the softer corner —
-   * see `documents/design/personas.html` mockups that pre-date the MP
+   * see the pre-MP mockups (removed in FHS-552, in git history) that pre-date the MP
    * refresh.
    */
   radius?: 'md' | 'xl' | '2xl';
