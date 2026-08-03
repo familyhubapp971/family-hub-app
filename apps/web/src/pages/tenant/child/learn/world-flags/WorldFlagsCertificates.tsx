@@ -219,7 +219,7 @@ function WorldExplorerQuiz({
         <button
           type="button"
           onClick={onExit}
-          className="text-xs font-bold text-gray-400 hover:text-gray-600"
+          className="min-h-[44px] px-2 text-xs font-bold text-gray-400 transition-colors hover:text-gray-600"
         >
           Exit
         </button>
@@ -453,7 +453,7 @@ export function WorldFlagsCertificates({ memberId, kidToken }: WorldFlagsCertifi
                     data-testid={`wfquiz-continent-${continentId(c)}`}
                     type="button"
                     onClick={() => setQuizContinent(c)}
-                    className={`flex items-center gap-1 rounded-full border-2 px-3 py-1.5 text-xs font-black transition-all ${
+                    className={`flex min-h-[44px] items-center gap-1 rounded-full border-2 px-3 py-1.5 text-xs font-black transition-all ${
                       isSelected
                         ? `border-black bg-gradient-to-r ${grad} text-white shadow-neo-xs`
                         : 'border-gray-200 bg-white text-gray-400 hover:border-gray-400'
@@ -510,7 +510,7 @@ export function WorldFlagsCertificates({ memberId, kidToken }: WorldFlagsCertifi
                   data-testid={`wfcert-quiz-${continentId(cert.continent)}`}
                   type="button"
                   onClick={() => startQuiz(cert.continent)}
-                  className="mt-3 flex w-full items-center justify-between rounded-lg border-2 border-indigo-200 bg-indigo-50 px-3 py-2 transition-colors hover:border-indigo-400"
+                  className="mt-3 flex min-h-[44px] w-full items-center justify-between rounded-lg border-2 border-indigo-200 bg-indigo-50 px-3 py-2 transition-colors hover:border-indigo-400"
                 >
                   <span className="flex items-center gap-2 text-xs font-black text-indigo-600">
                     <Timer size={14} aria-hidden="true" /> {cert.continent} Quiz

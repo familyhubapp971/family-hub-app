@@ -38,7 +38,7 @@ export function SiteHeader({ current }: { current?: SiteChromeSection } = {}) {
   const navigate = useNavigate();
 
   return (
-    <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-4 md:px-6">
+    <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between gap-1 px-4 py-4 md:gap-2 md:px-6">
       <Link
         to="/"
         className="shrink-0 font-heading text-xl text-white transition-opacity hover:opacity-90 md:text-2xl"
@@ -54,7 +54,7 @@ export function SiteHeader({ current }: { current?: SiteChromeSection } = {}) {
           <Link
             key={link.to}
             to={link.to}
-            className={`px-2 py-2.5 transition-colors hover:text-yellow-300 ${
+            className={`px-1.5 py-2.5 transition-colors hover:text-yellow-300 md:px-2 ${
               link.mobile ? '' : 'hidden md:inline'
             } ${current === link.section ? 'text-yellow-300' : ''}`}
           >
@@ -64,7 +64,10 @@ export function SiteHeader({ current }: { current?: SiteChromeSection } = {}) {
       </nav>
 
       <div className="flex items-center gap-1 md:gap-4">
-        <Link to="/login" className="px-2 py-2.5 font-bold transition-colors hover:text-yellow-300">
+        <Link
+          to="/login"
+          className="px-1.5 py-2.5 font-bold transition-colors hover:text-yellow-300 md:px-2"
+        >
           Log in
         </Link>
         <Button onClick={() => navigate('/signup')} variant="primary">

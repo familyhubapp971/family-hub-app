@@ -194,14 +194,14 @@ export function AnalyticsView({
             <button
               data-testid="analytics-metric-stickers"
               onClick={() => setMetric('stickers')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${metric === 'stickers' ? 'bg-amber-400 text-black shadow-neo-xs' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`min-h-[44px] flex items-center px-3 py-1.5 rounded-lg text-xs font-black transition-all ${metric === 'stickers' ? 'bg-amber-400 text-black shadow-neo-xs' : 'text-gray-500 hover:text-gray-700'}`}
             >
               ⭐ Stickers
             </button>
             <button
               data-testid="analytics-metric-completion"
               onClick={() => setMetric('completion')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${metric === 'completion' ? 'bg-emerald-400 text-black shadow-neo-xs' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`min-h-[44px] flex items-center px-3 py-1.5 rounded-lg text-xs font-black transition-all ${metric === 'completion' ? 'bg-emerald-400 text-black shadow-neo-xs' : 'text-gray-500 hover:text-gray-700'}`}
             >
               ✅ Completion %
             </button>

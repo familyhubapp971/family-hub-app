@@ -332,7 +332,7 @@ export function OnboardingPage() {
                     data-testid={`onboarding-member-${idx}`}
                   >
                     {/* Name + Role + Remove on one row */}
-                    <div className="grid gap-3 md:grid-cols-[1fr,140px,40px]">
+                    <div className="grid gap-3 md:grid-cols-[1fr,140px,44px]">
                       <div>
                         <Label htmlFor={`member-name-${m.uiId}`}>Name</Label>
                         <Input
@@ -364,7 +364,7 @@ export function OnboardingPage() {
                         <button
                           type="button"
                           onClick={() => removeMember(m.uiId)}
-                          className="rounded-md border-2 border-black bg-red-200 p-2 text-black shadow-neo-sm transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border-2 border-black bg-red-200 p-2 text-black shadow-neo-sm transition-all motion-safe:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label={`Remove member ${idx + 1}`}
                           data-testid={`onboarding-member-remove-${idx}`}
                         >
@@ -481,7 +481,7 @@ export function OnboardingPage() {
                     <button
                       type="button"
                       onClick={() => setShowTimezonePicker(true)}
-                      className="flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-md border-2 border-black bg-gray-100 px-3 py-2 text-sm font-bold text-gray-700 shadow-neo-sm transition-all hover:-translate-y-0.5"
+                      className="flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-md border-2 border-black bg-gray-100 px-3 py-2 text-sm font-bold text-gray-700 shadow-neo-sm transition-all motion-safe:hover:-translate-y-0.5"
                       data-testid="onboarding-timezone-change"
                       aria-label="Change timezone"
                     >
@@ -522,7 +522,7 @@ export function OnboardingPage() {
                     <button
                       type="button"
                       onClick={() => setShowCurrencyPicker(true)}
-                      className="flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-md border-2 border-black bg-gray-100 px-3 py-2 text-sm font-bold text-gray-700 shadow-neo-sm transition-all hover:-translate-y-0.5"
+                      className="flex min-h-[44px] min-w-[44px] items-center gap-1 rounded-md border-2 border-black bg-gray-100 px-3 py-2 text-sm font-bold text-gray-700 shadow-neo-sm transition-all motion-safe:hover:-translate-y-0.5"
                       data-testid="onboarding-currency-change"
                       aria-label="Change currency"
                     >

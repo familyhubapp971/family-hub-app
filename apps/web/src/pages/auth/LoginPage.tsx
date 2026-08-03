@@ -200,7 +200,7 @@ export function LoginPage() {
       <p className="mt-6 text-center font-body text-sm text-gray-700">
         <Link
           to="/signup"
-          className="inline-block py-2 font-semibold text-purple-700 underline decoration-2 underline-offset-2 hover:text-purple-900"
+          className="inline-block py-3 font-semibold text-purple-700 underline decoration-2 underline-offset-2 hover:text-purple-900"
           data-testid="login-create-family"
         >
           Create a new family

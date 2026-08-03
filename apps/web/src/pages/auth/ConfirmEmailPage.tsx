@@ -214,7 +214,7 @@ export function ConfirmEmailPage() {
               <button
                 type="button"
                 onClick={backToFamily}
-                className="mt-3 inline-block py-2.5 px-3 text-sm font-bold text-purple-600 transition-colors hover:text-purple-800"
+                className="mt-3 inline-block py-3 px-3 text-sm font-bold text-purple-600 transition-colors hover:text-purple-800"
                 data-testid="confirm-email-back"
               >
                 Back to the family

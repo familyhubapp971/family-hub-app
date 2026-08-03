@@ -381,7 +381,7 @@ export function MealsTabPanel() {
             type="button"
             aria-label="Previous week"
             onClick={() => setWeekOffset((n) => n - 1)}
-            className="rounded-xl border-2 border-white/20 bg-white/10 p-2 text-white transition-all hover:bg-white/20 motion-safe:transition-colors"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border-2 border-white/20 bg-white/10 p-2 text-white transition-all hover:bg-white/20 motion-safe:transition-colors"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -401,7 +401,7 @@ export function MealsTabPanel() {
             type="button"
             aria-label="Next week"
             onClick={() => setWeekOffset((n) => n + 1)}
-            className="rounded-xl border-2 border-white/20 bg-white/10 p-2 text-white transition-all hover:bg-white/20 motion-safe:transition-colors"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border-2 border-white/20 bg-white/10 p-2 text-white transition-all hover:bg-white/20 motion-safe:transition-colors"
           >
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -577,7 +577,7 @@ export function MealsTabPanel() {
                           recurring: false,
                         });
                       }}
-                      className="flex min-h-[36px] items-center gap-1 rounded-lg border-2 border-dashed border-gray-300 px-3 py-1 text-xs font-bold text-gray-500 hover:border-black hover:text-black motion-safe:transition-colors"
+                      className="flex min-h-[44px] items-center gap-1 rounded-lg border-2 border-dashed border-gray-300 px-3 py-1 text-xs font-bold text-gray-500 hover:border-black hover:text-black motion-safe:transition-colors"
                     >
                       + Add snack
                     </button>
@@ -703,7 +703,7 @@ function FilterPill({
       data-testid={testId}
       onClick={onClick}
       aria-pressed={active}
-      className={`min-h-[36px] rounded-full border-2 border-black px-3 py-1 text-xs font-bold motion-safe:transition-colors ${
+      className={`min-h-[44px] rounded-full border-2 border-black px-3 py-1 text-xs font-bold motion-safe:transition-colors ${
         active ? 'bg-pink-400 text-black shadow-neo-xs' : 'bg-white text-black hover:bg-yellow-50'
       }`}
     >

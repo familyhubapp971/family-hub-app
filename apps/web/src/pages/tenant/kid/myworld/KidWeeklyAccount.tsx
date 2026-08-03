@@ -44,7 +44,7 @@ export function KidWeeklyAccount({
         <p className="text-[10px] font-bold uppercase tracking-widest text-green-700">
           In your account right now
         </p>
-        <p className="mt-1 font-heading text-4xl text-green-700">
+        <p className="mt-1 font-heading text-3xl text-green-700">
           {earnedThisWeek} <span aria-hidden="true">⭐</span>
         </p>
         <span

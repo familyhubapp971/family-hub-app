@@ -214,7 +214,7 @@ export function KidMyWorld({
                     data-testid="kid-week-prev"
                     onClick={data.goPrevWeek}
                     disabled={data.weekIndex === 0}
-                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-black bg-white text-black transition-transform disabled:opacity-30 motion-safe:hover:-translate-y-0.5"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-black bg-white text-black transition-transform disabled:opacity-30 motion-safe:hover:-translate-y-0.5"
                   >
                     <ChevronLeft size={20} strokeWidth={3} aria-hidden="true" />
                   </button>
@@ -254,7 +254,7 @@ export function KidMyWorld({
                     data-testid="kid-week-next"
                     onClick={data.goNextWeek}
                     disabled={data.isCurrentWeek}
-                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-black bg-white text-black transition-transform disabled:opacity-30 motion-safe:hover:-translate-y-0.5"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-black bg-white text-black transition-transform disabled:opacity-30 motion-safe:hover:-translate-y-0.5"
                   >
                     <ChevronRight size={20} strokeWidth={3} aria-hidden="true" />
                   </button>

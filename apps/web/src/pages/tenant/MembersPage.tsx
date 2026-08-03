@@ -1069,7 +1069,7 @@ function KidLoginHelp({ slug, kidsCount }: { slug: string; kidsCount: number }) 
               type="button"
               onClick={() => void onCopy()}
               data-testid="members-kid-login-copy"
-              className="flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-black bg-yellow-300 px-4 text-sm font-bold shadow-neo-xs transition-transform hover:-translate-y-0.5"
+              className="flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-black bg-yellow-300 px-4 text-sm font-bold shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5"
             >
               {copied ? (
                 <>
@@ -1516,7 +1516,7 @@ function RemoveButton({
         <button
           type="button"
           onClick={() => setArmed(false)}
-          className="inline-block py-2 text-xs font-bold text-gray-500 hover:text-black"
+          className="inline-flex min-h-[44px] items-center px-2 text-xs font-bold text-gray-500 hover:text-black"
         >
           Keep
         </button>

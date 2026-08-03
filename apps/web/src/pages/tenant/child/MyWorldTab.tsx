@@ -1005,7 +1005,9 @@ export function MyWorldTab(
           ? 'bg-amber-50 border-2 sm:border-3 border-amber-400'
           : 'bg-white border-2 sm:border-3 border-black'
       } rounded-2xl p-4 md:p-6 transition-transform ${
-        editEnabled ? 'group-hover:-translate-y-1 group-hover:-translate-x-1' : ''
+        editEnabled
+          ? 'motion-safe:group-hover:-translate-y-1 motion-safe:group-hover:-translate-x-1'
+          : ''
       }`}
     >
       <div className="flex flex-col md:flex-row md:items-center gap-6">
@@ -1143,7 +1145,7 @@ export function MyWorldTab(
                       setDayStickerDialog({ habitId: habit.id, dayIndex: index });
                     }}
                     disabled={!editDayFn(index)}
-                    className={`w-full aspect-square min-h-[40px] sm:min-h-[44px] rounded-lg border-2 flex items-center justify-center transition-all ${
+                    className={`w-full aspect-square min-h-[44px] rounded-lg border-2 flex items-center justify-center transition-all ${
                       isSticker && sticker
                         ? editDayFn(index)
                           ? `${sticker.color} shadow-neo-xs translate-x-[-2px] translate-y-[-2px] border-black hover:opacity-80`
@@ -1273,7 +1275,7 @@ export function MyWorldTab(
                 <button
                   data-testid="habit-day-sticker-dialog-close-btn"
                   onClick={() => setDayStickerDialog(null)}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
+                  className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1343,7 +1345,7 @@ export function MyWorldTab(
                 <button
                   data-testid="habit-sticker-dialog-close-btn"
                   onClick={() => setStickerDialogId(null)}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
+                  className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1409,7 +1411,7 @@ export function MyWorldTab(
                 <button
                   data-testid="habit-add-dialog-close-btn"
                   onClick={() => setShowAddHabit(false)}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
+                  className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1584,7 +1586,7 @@ export function MyWorldTab(
                 <button
                   data-testid="habit-edit-dialog-close-btn"
                   onClick={closeEditDialog}
-                  className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
+                  className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center bg-gray-100 hover:bg-red-100 hover:text-red-600 rounded-xl transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1716,7 +1718,7 @@ export function MyWorldTab(
                   data-testid="habit-tracker-week-prev-btn"
                   onClick={() => setWeekIndex((i) => Math.max(0, i - 1))}
                   disabled={weekIndex === 0}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 transition-colors"
+                  className="w-9 h-9 min-h-[44px] min-w-[44px] flex-shrink-0 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 transition-colors"
                 >
                   <ChevronLeft className="w-5 h-5 text-white" />
                 </button>
@@ -1758,7 +1760,7 @@ export function MyWorldTab(
                   data-testid="habit-tracker-week-next-btn"
                   onClick={() => setWeekIndex((i) => Math.min(weeks.length - 1, i + 1))}
                   disabled={weekIndex === weeks.length - 1}
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 transition-colors"
+                  className="w-9 h-9 min-h-[44px] min-w-[44px] flex-shrink-0 flex items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-30 transition-colors"
                 >
                   <ChevronRight className="w-5 h-5 text-white" />
                 </button>

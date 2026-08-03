@@ -87,7 +87,7 @@ export function AvatarEmojiPicker({ value = '', onSelect, testId }: AvatarEmojiP
               onClick={() => handleToneClick(tone.modifier)}
               style={{ backgroundColor: tone.swatch }}
               className={[
-                'h-7 w-7 min-h-[28px] min-w-[28px] rounded-full border-2 transition-all',
+                'h-11 w-11 min-h-[44px] min-w-[44px] rounded-full border-2 transition-all',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
                 isActive
                   ? 'border-black shadow-[2px_2px_0_#000] scale-110'

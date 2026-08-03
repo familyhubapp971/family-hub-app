@@ -591,7 +591,7 @@ function TaskRow({
               onClick={() => onToggle(task.id, !task.done)}
               aria-label={`Mark "${task.title}" ${task.done ? 'not done' : 'done'}`}
               data-testid={`task-toggle-${task.id}`}
-              className="shrink-0 text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+              className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
             >
               {task.done ? (
                 <CheckCircle2 size={20} className="fill-green-400" />

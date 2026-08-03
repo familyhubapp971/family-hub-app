@@ -299,7 +299,7 @@ export function NoticeboardTabPanel() {
                   aria-label={`Use icon ${emoji}`}
                   aria-pressed={draft.icon === emoji}
                   onClick={() => setDraft({ ...draft, icon: emoji })}
-                  className={`flex h-8 w-8 items-center justify-center rounded-md border-2 text-lg ${
+                  className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border-2 text-lg ${
                     draft.icon === emoji ? 'border-black bg-yellow-200' : 'border-gray-300'
                   }`}
                 >

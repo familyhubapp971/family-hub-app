@@ -345,7 +345,7 @@ export function WelcomePage() {
               onClick={() => void onLogout()}
               aria-label="Log out"
               data-testid="welcome-logout"
-              className="flex min-h-[44px] items-center gap-2 rounded-md border-2 border-black bg-red-500 px-3 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-red-600 motion-safe:hover:-translate-y-0.5"
+              className="flex min-h-[44px] min-w-[44px] items-center gap-2 rounded-md border-2 border-black bg-red-500 px-3 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-red-600 motion-safe:hover:-translate-y-0.5"
             >
               <LogOut size={16} strokeWidth={3} aria-hidden="true" />
               <span className="hidden sm:inline">Logout</span>

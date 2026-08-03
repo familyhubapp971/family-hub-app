@@ -148,8 +148,7 @@ function RecommendRow({
               onClick={() => onChange(i)}
               data-testid={`beta-feedback-recommend-${i}`}
               className={[
-                'flex h-10 min-w-[36px] items-center justify-center rounded-xl border-2 border-black px-1.5 text-sm font-black transition-all',
-                'sm:h-11 sm:min-w-[40px]',
+                'flex h-11 min-w-[44px] items-center justify-center rounded-xl border-2 border-black px-1.5 text-sm font-black transition-all',
                 'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
                 selected
                   ? 'bg-pink-400 text-black shadow-neo-sm'

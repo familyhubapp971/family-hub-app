@@ -311,7 +311,7 @@ export function ProfilePill({
                 onManageMembers();
               }}
               data-testid="dashboard-profile-manage-members"
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-gray-100"
+              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-gray-100"
             >
               <Users size={16} strokeWidth={3} aria-hidden="true" />
               Manage family
@@ -325,7 +325,7 @@ export function ProfilePill({
                 onRewardSettings();
               }}
               data-testid="dashboard-profile-reward-settings"
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-gray-100"
+              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-gray-100"
             >
               <Settings size={16} strokeWidth={3} aria-hidden="true" />
               Reward settings

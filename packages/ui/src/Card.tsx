@@ -63,7 +63,7 @@ export function Card({
         radii[radius],
         'border-2 border-black shadow-neo-md p-3 sm:p-4 md:p-5',
         hover
-          ? 'transition-all duration-200 hover:-translate-y-1 hover:shadow-neo-lg cursor-pointer'
+          ? 'transition-all duration-200 motion-safe:hover:-translate-y-1 hover:shadow-neo-lg cursor-pointer'
           : '',
         interactive
           ? 'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2'
