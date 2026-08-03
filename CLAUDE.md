@@ -405,14 +405,18 @@ transition.
 ### Demo doc follows every user-visible merge
 
 **Whenever a merged ticket changes what a user can see or do**, refresh
-[`documents/demo/whats-shipped.html`](documents/demo/whats-shipped.html)
-in the same session — not just at sprint close. Founder request
-(FHS-552, 2026-08-03): the demo page is the founder's single view of
-the live product and must never lag reality.
+the shipped-state demo doc in the same session — not just at sprint
+close. Founder request (FHS-552, 2026-08-03): the demo page is the
+founder's single view of the live product and must never lag reality.
 
-- Add/update the capability card in the matching section (plain words,
-  persona chips, FHS key chip), bump the "Last updated" stamp and the
-  "current through FHS-XXX" marker in the hero.
+- Edit the source `scripts/demo-src/whats-shipped.src.html`: add/update
+  the capability card in the matching section (plain words, persona
+  chips, FHS key chip), bump the "Last updated" stamp and the "current
+  through FHS-XXX" marker in the hero.
+- Render the committed artefact with `node scripts/render-demo-pdf.mjs`
+  → [`documents/demo/whats-shipped.pdf`](documents/demo/whats-shipped.pdf).
+  **Docs folders are PDF-only** (no .html artefacts in `documents/`);
+  commit source + PDF together.
 - Keep it visual and in the design language (kingdom purple, Fredoka
   One + Nunito, black borders, offset shadows) — it's a demo prop, not
   a changelog.

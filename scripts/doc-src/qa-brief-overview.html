@@ -1,0 +1,330 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>QA Brief 1</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --cream: #faf5ea;
+        --ink: #191919;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow: #ffd21e;
+        --micro: #8a94a6;
+      }
+      body {
+        font-family: 'Nunito', sans-serif;
+        color: var(--ink);
+        font-size: 10pt;
+        line-height: 1.5;
+        background: var(--cream);
+      }
+      .page {
+        width: 210mm;
+        min-height: 296mm;
+        padding: 13mm 15mm 10mm;
+        page-break-after: always;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+      .page:last-child {
+        page-break-after: auto;
+      }
+      .eyebrow {
+        display: inline-block;
+        background: var(--pink);
+        border: 2.5px solid #000;
+        border-radius: 999px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 1.2mm 5mm;
+        font-weight: 900;
+        font-size: 8.5pt;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        font-family: 'Fredoka One', cursive;
+        font-size: 23pt;
+        line-height: 1.12;
+        margin: 5mm 0 2.5mm;
+        letter-spacing: 0.01em;
+      }
+      .lede {
+        font-weight: 700;
+        color: #3a3a3a;
+        font-size: 10.5pt;
+        max-width: 150mm;
+      }
+      .dots {
+        margin: 4mm 0 1mm;
+      }
+      .dots span {
+        display: inline-block;
+        width: 4mm;
+        height: 4mm;
+        border-radius: 50%;
+        border: 2px solid #000;
+        margin-right: 2.2mm;
+      }
+      .star {
+        position: absolute;
+        top: 11mm;
+        right: 14mm;
+        font-size: 26pt;
+        color: var(--yellow);
+        -webkit-text-stroke: 1.5px #000;
+      }
+      .row {
+        display: flex;
+        gap: 6mm;
+        align-items: flex-start;
+        margin-top: 5.5mm;
+      }
+      .pill {
+        flex: 0 0 34mm;
+        background: var(--yellow);
+        border: 3px solid #000;
+        border-radius: 6mm;
+        box-shadow: 3.5px 3.5px 0 #000;
+        padding: 3mm 2mm;
+        text-align: center;
+        font-family: 'Fredoka One', cursive;
+        font-size: 11.5pt;
+      }
+      .pill.pink {
+        background: var(--pink);
+      }
+      .pill.green {
+        background: var(--green);
+      }
+      .pill.cyan {
+        background: var(--cyan);
+      }
+      .pill.coral {
+        background: var(--coral);
+      }
+      .pill.yellow {
+        background: var(--yellow);
+      }
+      .row .body {
+        flex: 1;
+        padding-top: 0.5mm;
+      }
+      .micro {
+        font-size: 7pt;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--micro);
+        margin-bottom: 0.8mm;
+      }
+      .body p {
+        font-size: 9.5pt;
+        margin-bottom: 1.6mm;
+      }
+      .body .explore {
+        font-size: 9pt;
+        font-weight: 700;
+      }
+      .body .explore b {
+        color: #000;
+      }
+      .personas {
+        margin-top: 1mm;
+      }
+      .ptag {
+        display: inline-block;
+        border: 2px solid #000;
+        border-radius: 999px;
+        padding: 0 3mm;
+        font-size: 8pt;
+        font-weight: 900;
+        margin-right: 1.6mm;
+        box-shadow: 1.5px 1.5px 0 #000;
+        background: #fff;
+      }
+      .sectionbar {
+        margin-top: 7mm;
+        display: flex;
+        align-items: center;
+        gap: 4mm;
+      }
+      .sectionbar .tag {
+        background: var(--green);
+        border: 3px solid #000;
+        border-radius: 999px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 1.5mm 6mm;
+        font-family: 'Fredoka One', cursive;
+        font-size: 12pt;
+      }
+      .sectionbar .tag.red {
+        background: var(--coral);
+      }
+      .sectionbar .sub {
+        font-size: 8.5pt;
+        font-weight: 800;
+        color: var(--micro);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .foot {
+        margin-top: auto;
+        padding-top: 4mm;
+        display: flex;
+        justify-content: space-between;
+        font-size: 7pt;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #555;
+      }
+      .threecol {
+        display: flex;
+        gap: 6mm;
+        margin-top: 2mm;
+      }
+      .threecol > div {
+        flex: 1;
+      }
+      ul.tight {
+        margin-left: 4.5mm;
+      }
+      ul.tight li {
+        font-size: 9.5pt;
+        margin-bottom: 1.4mm;
+      }
+
+      /* print safety: never split a card/row/section across pages (founder rule) */
+      .card,
+      .row,
+      .threecol,
+      .sectionbar,
+      .chips,
+      .note {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      h1,
+      h2,
+      h3,
+      .micro,
+      .eyebrow {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <span class="star">★</span>
+      <span class="eyebrow">QA Brief 1 · What you're testing</span>
+      <h1>Break it before<br />our families do.</h1>
+      <p class="lede">
+        Family Hub is a private online space for one family. Parents run the household (calendar,
+        meals, tasks, notices); kids sign in with a PIN to earn stickers for good habits, then save,
+        spend or invest them — chores that quietly teach money skills — plus built-in learning
+        games. Private per family, built for real households: big, blended, twins, grandparents,
+        culturally rooted.
+      </p>
+      <div class="dots">
+        <span style="background: var(--cyan)"></span><span style="background: var(--green)"></span
+        ><span style="background: var(--coral)"></span>
+      </div>
+
+      <div class="row">
+        <div class="pill pink">Sarah</div>
+        <div class="body">
+          <div class="micro">The coordinating parent · admin</div>
+          <p>
+            Runs the family's mental load from her phone. Sets up the family, invites people,
+            configures the reward economy. If anything takes more than a few taps between school
+            runs, that's a finding.
+          </p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill cyan">Yusuf</div>
+        <div class="body">
+          <div class="micro">The second adult · invited by email</div>
+          <p>
+            Uses the everyday screens (tasks, calendar, meals) but must never see admin settings.
+            Tech-fluent; notices rough edges.
+          </p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill green">Amina</div>
+        <div class="body">
+          <div class="micro">The teen · PIN sign-in</div>
+          <p>Runs her own habits and money. Too old for anything that feels babyish.</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill yellow">The kids</div>
+        <div class="body">
+          <div class="micro">Ages 5-11 · PIN on a shared tablet or parent's phone</div>
+          <p>
+            Everything they see must be tappable, readable and safe. Parent settings must be
+            unreachable. <b>Not in this beta:</b> community admins (schools/clubs) and billing —
+            everything is free on staging, no card anywhere.
+          </p>
+        </div>
+      </div>
+
+      <div class="sectionbar">
+        <span class="tag">Your mission</span><span class="sub">three kinds of gaps</span>
+      </div>
+      <div class="threecol">
+        <div>
+          <div class="micro">Usability</div>
+          <p>
+            Where would Sarah get stuck, hesitate or mis-tap? Phone-first (375px; most users are on
+            phones), then tablet, then laptop.
+          </p>
+        </div>
+        <div>
+          <div class="micro">Validation</div>
+          <p>
+            Does the idea land? What feels valuable vs confusing or pointless? Would you honestly
+            pay $7.99/month as a parent?
+          </p>
+        </div>
+        <div>
+          <div class="micro">Functional</div>
+          <p>
+            Broken flows, dead ends, wrong money maths, empty states, double-taps, back button,
+            expired sign-in links, wrong PINs.
+          </p>
+        </div>
+      </div>
+
+      <div class="sectionbar">
+        <span class="tag" style="background: var(--cyan)">Reporting</span
+        ><span class="sub">one line per finding</span>
+      </div>
+      <p style="margin-top: 2mm; font-size: 9.5pt">
+        <b>Screen → what you did → what you expected → what happened</b>, plus a screenshot and
+        device/browser. Severity: blocker / annoying / polish. Shared doc or sheet; we triage
+        together weekly.
+      </p>
+      <p style="margin-top: 2mm; font-size: 9.5pt">
+        <b>App:</b> https://fhapp.up.railway.app · sign up free · see Brief 2 for the full feature
+        tour.
+      </p>
+      <div class="foot"><span>Family Hub · QA Brief</span><span>1 / 1</span></div>
+    </div>
+  </body>
+</html>

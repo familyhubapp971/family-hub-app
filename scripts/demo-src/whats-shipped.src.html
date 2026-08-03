@@ -130,6 +130,25 @@
         margin-top: 26px;
         font-size: 0.9rem;
       }
+
+      /* print safety: never split a card/row/section across pages (founder rule) */
+      .card,
+      .row,
+      .threecol,
+      .sectionbar,
+      .chips,
+      .note {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      h1,
+      h2,
+      h3,
+      .micro,
+      .eyebrow {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
     </style>
   </head>
   <body>
@@ -143,7 +162,7 @@
         <span class="stamp">Last updated 2026-08-03 · current through FHS-548</span>
         <p style="margin-top: 10px; font-size: 0.85rem">
           This page is refreshed on every merge that changes what users can see or do (rule in
-          CLAUDE.md). App: frontend-staging-409d.up.railway.app
+          CLAUDE.md). App: fhapp.up.railway.app
         </p>
       </div>
 

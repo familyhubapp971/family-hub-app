@@ -1,0 +1,397 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>QA Brief 2</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --cream: #faf5ea;
+        --ink: #191919;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow: #ffd21e;
+        --micro: #8a94a6;
+      }
+      body {
+        font-family: 'Nunito', sans-serif;
+        color: var(--ink);
+        font-size: 10pt;
+        line-height: 1.5;
+        background: var(--cream);
+      }
+      .page {
+        width: 210mm;
+        min-height: 296mm;
+        padding: 13mm 15mm 10mm;
+        page-break-after: always;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+      .page:last-child {
+        page-break-after: auto;
+      }
+      .eyebrow {
+        display: inline-block;
+        background: var(--pink);
+        border: 2.5px solid #000;
+        border-radius: 999px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 1.2mm 5mm;
+        font-weight: 900;
+        font-size: 8.5pt;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        font-family: 'Fredoka One', cursive;
+        font-size: 23pt;
+        line-height: 1.12;
+        margin: 5mm 0 2.5mm;
+        letter-spacing: 0.01em;
+      }
+      .lede {
+        font-weight: 700;
+        color: #3a3a3a;
+        font-size: 10.5pt;
+        max-width: 150mm;
+      }
+      .dots {
+        margin: 4mm 0 1mm;
+      }
+      .dots span {
+        display: inline-block;
+        width: 4mm;
+        height: 4mm;
+        border-radius: 50%;
+        border: 2px solid #000;
+        margin-right: 2.2mm;
+      }
+      .star {
+        position: absolute;
+        top: 11mm;
+        right: 14mm;
+        font-size: 26pt;
+        color: var(--yellow);
+        -webkit-text-stroke: 1.5px #000;
+      }
+      .row {
+        display: flex;
+        gap: 6mm;
+        align-items: flex-start;
+        margin-top: 5.5mm;
+      }
+      .pill {
+        flex: 0 0 34mm;
+        background: var(--yellow);
+        border: 3px solid #000;
+        border-radius: 6mm;
+        box-shadow: 3.5px 3.5px 0 #000;
+        padding: 3mm 2mm;
+        text-align: center;
+        font-family: 'Fredoka One', cursive;
+        font-size: 11.5pt;
+      }
+      .pill.pink {
+        background: var(--pink);
+      }
+      .pill.green {
+        background: var(--green);
+      }
+      .pill.cyan {
+        background: var(--cyan);
+      }
+      .pill.coral {
+        background: var(--coral);
+      }
+      .pill.yellow {
+        background: var(--yellow);
+      }
+      .row .body {
+        flex: 1;
+        padding-top: 0.5mm;
+      }
+      .micro {
+        font-size: 7pt;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--micro);
+        margin-bottom: 0.8mm;
+      }
+      .body p {
+        font-size: 9.5pt;
+        margin-bottom: 1.6mm;
+      }
+      .body .explore {
+        font-size: 9pt;
+        font-weight: 700;
+      }
+      .body .explore b {
+        color: #000;
+      }
+      .personas {
+        margin-top: 1mm;
+      }
+      .ptag {
+        display: inline-block;
+        border: 2px solid #000;
+        border-radius: 999px;
+        padding: 0 3mm;
+        font-size: 8pt;
+        font-weight: 900;
+        margin-right: 1.6mm;
+        box-shadow: 1.5px 1.5px 0 #000;
+        background: #fff;
+      }
+      .sectionbar {
+        margin-top: 7mm;
+        display: flex;
+        align-items: center;
+        gap: 4mm;
+      }
+      .sectionbar .tag {
+        background: var(--green);
+        border: 3px solid #000;
+        border-radius: 999px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 1.5mm 6mm;
+        font-family: 'Fredoka One', cursive;
+        font-size: 12pt;
+      }
+      .sectionbar .tag.red {
+        background: var(--coral);
+      }
+      .sectionbar .sub {
+        font-size: 8.5pt;
+        font-weight: 800;
+        color: var(--micro);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .foot {
+        margin-top: auto;
+        padding-top: 4mm;
+        display: flex;
+        justify-content: space-between;
+        font-size: 7pt;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #555;
+      }
+      .threecol {
+        display: flex;
+        gap: 6mm;
+        margin-top: 2mm;
+      }
+      .threecol > div {
+        flex: 1;
+      }
+      ul.tight {
+        margin-left: 4.5mm;
+      }
+      ul.tight li {
+        font-size: 9.5pt;
+        margin-bottom: 1.4mm;
+      }
+
+      /* print safety: never split a card/row/section across pages (founder rule) */
+      .card,
+      .row,
+      .threecol,
+      .sectionbar,
+      .chips,
+      .note {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      h1,
+      h2,
+      h3,
+      .micro,
+      .eyebrow {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <span class="star">★</span>
+      <span class="eyebrow" style="background: var(--green)">QA Brief 2 · Feature tour</span>
+      <h1>Everything that's built.<br />Go poke at all of it.</h1>
+      <p class="lede">
+        App: <b>https://fhapp.up.railway.app</b> · sign up free, no card. Test each area phone-first
+        (375px), then tablet, then laptop. Personas from Brief 1: Sarah (admin), Yusuf (second
+        adult), Amina (teen), the kids (PIN).
+      </p>
+      <div class="dots">
+        <span style="background: var(--cyan)"></span><span style="background: var(--green)"></span
+        ><span style="background: var(--coral)"></span>
+      </div>
+
+      <div class="sectionbar">
+        <span class="tag">Built today</span
+        ><span class="sub">explore and report on all of this</span>
+      </div>
+
+      <div class="row">
+        <div class="pill pink">Sign up</div>
+        <div class="body">
+          <div class="micro">Sarah · first contact</div>
+          <p>
+            Welcome, Pricing, About and Legal pages → "Start free" → your own family web address
+            (like /t/khan-family) → email magic link or Google, no passwords → onboarding wizard:
+            members with roles and kids’ ages, timezone and currency auto-detected, starter habits
+            pre-seeded.
+          </p>
+          <p class="explore">
+            <b>Explore:</b> typos in email, expired magic link, going back mid-wizard, tiny screens.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pill cyan">Dashboard</div>
+        <div class="body">
+          <div class="micro">Sarah + Yusuf · the daily driver</div>
+          <p>
+            Six tabs: Today, Meals (week planner + snacks), Calendar (repeating events + a private
+            subscribe link that feeds Google/Apple/Outlook), Assignments, Noticeboard (emoji notes),
+            Tasks (assign, filter by member, mark done).
+          </p>
+          <p class="explore">
+            <b>Explore:</b> member filters, week arrows, long titles, empty tabs.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pill green">Family</div>
+        <div class="body">
+          <div class="micro">Sarah (admin) + Yusuf · people, roles, safety</div>
+          <p>
+            Grown-ups (email) and Kids (PIN) in one Manage Family screen: invite adults, add kids
+            without email, set/reset 4-digit PINs, admin toggle (last admin protected), remove
+            members, change your own email safely.
+          </p>
+          <p class="explore">
+            <b>Explore:</b> what a non-admin can and cannot see; invite the same person twice.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pill yellow">Rewards</div>
+        <div class="body">
+          <div class="micro">Sarah (admin) · chores → money skills</div>
+          <p>
+            Sticker value per family (per-child override), habit pay boosts (2x/3x/5x), optional
+            skip penalty, pocket money. Admin Panel: balances, week history, quick actions (claim,
+            cash out, save, invest, withdraw). Reward shop + kids’ requests.
+          </p>
+          <p class="explore">
+            <b>Explore:</b> change the sticker rate mid-week; can a non-admin reach any of this?
+          </p>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · QA Brief</span><span>1 / 2</span></div>
+    </div>
+    <div class="page">
+      <div class="row">
+        <div class="pill coral">Kid world</div>
+        <div class="body">
+          <div class="micro">Amina + the kids · PIN login</div>
+          <p>
+            Tap your avatar, enter your PIN (lockout after wrong tries). My World: weekly habit
+            tracker, stickers, weekly account (earned / saved / invested), money skills, reward shop
+            and requests, end-of-week recap.
+          </p>
+          <p class="explore">
+            <b>Explore:</b> role-play an 8-year-old; is anything confusing, unreadable, or reachable
+            that shouldn’t be?
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pill pink">Learn</div>
+        <div class="body">
+          <div class="micro">kids only · Sarah sees insights</div>
+          <p>
+            Logic (patterns, odd-one-out, if-then, sorting × 3 difficulties), Maths journey
+            (placement, lessons, times tables, challenges, certificates), World Flags (map,
+            flashcards, quizzes, certificates), reading log. Parents get read-only Learning Insights
+            per child.
+          </p>
+          <p class="explore">
+            <b>Explore:</b> quiz exits, certificates, difficulty jumps, quitting mid-lesson.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pill cyan">Child view</div>
+        <div class="body">
+          <div class="micro">Sarah + Yusuf · one child, whole picture</div>
+          <p>
+            Open any child’s world from the account menu: habits and rewards, meals, calendar,
+            journal, learning insights, and the week-close flow (claim / cash out / save / invest /
+            withdraw with a full audit trail).
+          </p>
+          <p class="explore">
+            <b>Explore:</b> close a week, reopen it, verify the money maths always adds up.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="pill green">Everywhere</div>
+        <div class="body">
+          <div class="micro">everyone · cross-cutting</div>
+          <p>
+            Phone-first layouts, finger-sized tap targets, no sideways scrolling, browser back
+            button, double-taps, two adults in the same family at once, the beta feedback widget
+            (bottom corner), sign out and in.
+          </p>
+          <p class="explore"><b>Explore:</b> anything that works on a laptop but not on a phone.</p>
+        </div>
+      </div>
+
+      <div class="sectionbar">
+        <span class="tag red">Not built yet</span
+        ><span class="sub">don't test or report these</span>
+      </div>
+      <div class="threecol" style="margin-top: 3mm">
+        <div>
+          <div class="micro">Money</div>
+          <ul class="tight">
+            <li>Payments / billing / subscriptions (Stripe lands in Sprint 4)</li>
+            <li>Anything asking for a card</li>
+          </ul>
+        </div>
+        <div>
+          <div class="micro">Organisations</div>
+          <ul class="tight">
+            <li>Community / white-label tiers (schools, clubs)</li>
+            <li>Custom *.familyhub.app web addresses</li>
+          </ul>
+        </div>
+        <div>
+          <div class="micro">Known + coming</div>
+          <ul class="tight">
+            <li>Production domain (you're on staging)</li>
+            <li>
+              One branded loading screen everywhere (designed next, FHS-550) — faint grey loading
+              text is a known issue
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · QA Brief</span><span>2 / 2</span></div>
+    </div>
+  </body>
+</html>
