@@ -1,0 +1,651 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Family Hub · What's Shipped</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --cream: #faf5ea;
+        --ink: #191919;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow: #ffd21e;
+        --micro: #8a94a6;
+      }
+      body {
+        font-family: 'Nunito', sans-serif;
+        color: var(--ink);
+        background: var(--cream);
+      }
+      .slide {
+        width: 296mm;
+        height: 208mm;
+        padding: 11mm 16mm 8mm;
+        page-break-after: always;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+      .slide:last-child {
+        page-break-after: auto;
+      }
+      .eyebrow {
+        align-self: flex-start;
+        background: var(--pink);
+        border: 2.5px solid #000;
+        border-radius: 999px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 1.2mm 5mm;
+        font-weight: 900;
+        font-size: 9pt;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        font-family: 'Fredoka One', cursive;
+        font-size: 30pt;
+        line-height: 1.1;
+        margin: 6mm 0 3mm;
+        text-align: center;
+      }
+      h2 {
+        font-family: 'Fredoka One', cursive;
+        font-size: 19pt;
+        text-align: center;
+        margin: 0 0 1.5mm;
+      }
+      .subtitle {
+        text-align: center;
+        color: #4a4a4a;
+        font-weight: 700;
+        font-size: 10.5pt;
+        margin-bottom: 5mm;
+      }
+      .star {
+        position: absolute;
+        top: 9mm;
+        right: 14mm;
+        font-size: 26pt;
+        color: var(--yellow);
+        -webkit-text-stroke: 1.5px #000;
+      }
+      .dots {
+        text-align: center;
+        margin-top: 5mm;
+      }
+      .dots span {
+        display: inline-block;
+        width: 4.5mm;
+        height: 4.5mm;
+        border-radius: 50%;
+        border: 2px solid #000;
+        margin: 0 1.6mm;
+      }
+      .appbtn {
+        align-self: center;
+        background: var(--yellow);
+        border: 3px solid #000;
+        border-radius: 999px;
+        box-shadow: 4px 4px 0 #000;
+        padding: 3mm 9mm;
+        font-family: 'Fredoka One', cursive;
+        font-size: 14pt;
+        color: #000;
+        text-decoration: none;
+        margin: 6mm 0 2mm;
+      }
+      .stamp {
+        align-self: center;
+        background: #fff;
+        border: 2px solid #000;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 #000;
+        padding: 1mm 6mm;
+        font-weight: 900;
+        font-size: 9pt;
+        margin-top: 3mm;
+      }
+      .rows {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        flex: 1;
+      }
+      .row {
+        display: flex;
+        gap: 9mm;
+        align-items: flex-start;
+      }
+      .pill {
+        flex: 0 0 44mm;
+        background: var(--yellow);
+        border: 3px solid #000;
+        border-radius: 7mm;
+        box-shadow: 4px 4px 0 #000;
+        padding: 3.6mm 2mm;
+        text-align: center;
+        font-family: 'Fredoka One', cursive;
+        font-size: 13pt;
+      }
+      .pill.pink {
+        background: var(--pink);
+      }
+      .pill.green {
+        background: var(--green);
+      }
+      .pill.cyan {
+        background: var(--cyan);
+      }
+      .pill.coral {
+        background: var(--coral);
+      }
+      .pill.yellow {
+        background: var(--yellow);
+      }
+      .cols {
+        flex: 1;
+        display: flex;
+        gap: 9mm;
+      }
+      .col {
+        flex: 2;
+      }
+      .col.who {
+        flex: 0.9;
+      }
+      .col.ref {
+        flex: 0.8;
+      }
+      .micro {
+        font-size: 8pt;
+        font-weight: 900;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: #4a5568;
+        margin-bottom: 2mm;
+        border-bottom: 1.5px solid #e2d9c6;
+        padding-bottom: 0.8mm;
+        display: block;
+        width: max-content;
+      }
+      .col ul {
+        list-style: none;
+      }
+      .col li {
+        font-size: 9.5pt;
+        line-height: 1.5;
+        margin-bottom: 1.6mm;
+        padding-left: 4.5mm;
+        position: relative;
+      }
+      .col li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 1.9mm;
+        width: 2mm;
+        height: 2mm;
+        border-radius: 50%;
+        border: 1.5px solid #000;
+        background: var(--yellow);
+      }
+      .who span:not(.micro),
+      .ref span:not(.micro) {
+        display: inline-block;
+        border: 2px solid #000;
+        border-radius: 999px;
+        background: #fff;
+        box-shadow: 1.5px 1.5px 0 #000;
+        padding: 0.4mm 3.2mm;
+        font-size: 8.5pt;
+        font-weight: 900;
+        margin: 0 1.4mm 1.6mm 0;
+      }
+      .ref span:not(.micro) {
+        background: var(--yellow);
+      }
+      .center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+      }
+      .lede {
+        max-width: 200mm;
+        text-align: center;
+        font-weight: 700;
+        font-size: 12pt;
+        line-height: 1.6;
+      }
+      .foot {
+        margin-top: auto;
+        display: flex;
+        justify-content: space-between;
+        font-size: 7.5pt;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #555;
+      }
+      .row,
+      .rows {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="slide">
+      <span class="star">★</span>
+      <span class="eyebrow">The live product · updated on every merge</span>
+      <div class="center">
+        <h1>Family Hub · What's Shipped</h1>
+        <p class="lede">
+          Everything a family can do on the test site today, in plain words. One slide per area;
+          every row says what you can do, who it's for, and the ticket that shipped it.
+        </p>
+        <a class="appbtn" href="https://fhapp.up.railway.app"
+          >Open the app → fhapp.up.railway.app</a
+        >
+        <span class="stamp">Last updated 2026-08-03 · current through FHS-548</span>
+        <div class="dots">
+          <span style="background: var(--cyan)"></span><span style="background: var(--green)"></span
+          ><span style="background: var(--coral)"></span>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>1 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Getting started</h2>
+      <p class="subtitle">From stranger to signed-in family in minutes.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill pink">Public site</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Welcome, Pricing, About and Legal pages.</li>
+                <li>Free / Family $7.99 / Family Pro $12.99 tiers shown.</li>
+                <li>Shared header and footer across the site.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>visitor</span></div>
+            <div class="col ref">
+              <span class="micro">Shipped in</span><span>FHS-509</span><span>FHS-546</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill cyan">Sign up</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Your own family web address, like /t/khan-family.</li>
+                <li>Passwordless: email magic link or Google.</li>
+                <li>Expired or used links get a clear error screen.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-331</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill green">Onboarding</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Short wizard: members, roles, kids&rsquo; ages.</li>
+                <li>Timezone and currency auto-detected.</li>
+                <li>Starter habits pre-seeded; invites emailed in one go.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-487</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>2 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Parent dashboard</h2>
+      <p class="subtitle">The daily driver: one place for the whole household.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill yellow">Six tabs</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Today, Meals, Calendar, Assignments, Noticeboard, Tasks.</li>
+                <li>Meals: week planner plus snacks.</li>
+                <li>Tasks: assign, filter by member, mark done.</li>
+              </ul>
+            </div>
+            <div class="col who">
+              <span class="micro">Who it's for</span><span>Sarah</span><span>Yusuf</span>
+            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-179</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill pink">Calendar sync</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Events and repeating events.</li>
+                <li>Private subscribe link feeds Google, Apple or Outlook.</li>
+                <li>Admins can rotate a leaked link.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref">
+              <span class="micro">Shipped in</span><span>calendar-sync</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill cyan">Change email</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Self-serve flow with a confirmation screen.</li>
+                <li>An account never gets locked to a dead address.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>any adult</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-510</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>3 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Family management</h2>
+      <p class="subtitle">People, roles and safety for real households.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill green">Manage Family</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Grown-ups (email) and Kids (PIN) in one screen.</li>
+                <li>Invite adults; add kids without email.</li>
+                <li>Set or reset PINs; remove members.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-513</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill coral">Roles</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Admin / adult / teen / child / guest privilege matrix.</li>
+                <li>Kids can never reach parent settings.</li>
+                <li>Money and member powers are admin-only.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>everyone</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-515</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill yellow">Real families</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Twins and triplets without data errors.</li>
+                <li>Blended families with 3+ parents; grandparents as adults or guests.</li>
+                <li>Kids who claim a login later keep their history.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>everyone</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>ADR 0009</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>4 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Reward economy</h2>
+      <p class="subtitle">Chores quietly teach money skills.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill pink">Stickers</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Each family sets what a sticker is worth (per-child override).</li>
+                <li>Habit pay boosts: 2x, 3x or 5x.</li>
+                <li>Optional skip penalty and pocket money.</li>
+              </ul>
+            </div>
+            <div class="col who">
+              <span class="micro">Who it's for</span><span>Sarah</span><span>kids</span>
+            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-290</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill cyan">Invest & grow</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Parents invest a child&rsquo;s stickers into a habit.</li>
+                <li>The habit pays more AND the invested value grows every completed day.</li>
+              </ul>
+            </div>
+            <div class="col who">
+              <span class="micro">Who it's for</span><span>Sarah</span><span>kids</span>
+            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-534</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill green">Admin Panel</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Every child&rsquo;s balances at a glance.</li>
+                <li>Quick actions: claim, cash out, save, invest, withdraw.</li>
+                <li>Audited week history; close and reopen weeks safely.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-308</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>5 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Kid world</h2>
+      <p class="subtitle">PIN login, made for small hands.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill coral">Kid dashboard</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Tap your avatar, enter your PIN; lockout after wrong tries.</li>
+                <li>Six kid tabs: My World, Meals, Calendar, Journal, Learn, Tasks.</li>
+                <li>Weekly habit tracker, stickers, weekly account.</li>
+                <li>Money skills and end-of-week recap.</li>
+              </ul>
+            </div>
+            <div class="col who">
+              <span class="micro">Who it's for</span><span>kids</span><span>teens</span>
+            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-368</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill yellow">Reward shop</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Kids pick a reward and send a request from their shop.</li>
+                <li>Parents approve and redeem at the family&rsquo;s rates.</li>
+              </ul>
+            </div>
+            <div class="col who">
+              <span class="micro">Who it's for</span><span>kids</span><span>Sarah</span>
+            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-517</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill pink">Learn</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Logic puzzles and a full Maths journey with certificates.</li>
+                <li>World Flags: map, flashcards, quizzes.</li>
+                <li>Reading log. All of it kid-only.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>kids</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>ADR 0017</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>6 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Per-child view for parents</h2>
+      <p class="subtitle">One child, the whole picture.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill cyan">Child World</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Open any child&rsquo;s world from the account menu.</li>
+                <li>Habits, rewards, meals, calendar, journal.</li>
+                <li>Read-only Learning Insights.</li>
+              </ul>
+            </div>
+            <div class="col who">
+              <span class="micro">Who it's for</span><span>Sarah</span><span>Yusuf</span>
+            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>child-world</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill green">Week close</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Claim / cash out / save / invest / withdraw dialogs.</li>
+                <li>Money stored to the penny; every action reversible on reopen.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>ADR 0020</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill coral">Phone-ready</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>44px finger-sized tap targets; no sideways scrolling.</li>
+                <li>Layouts stack on phones; reduced motion respected.</li>
+                <li>Locked in by automated tests.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>everyone</span></div>
+            <div class="col ref">
+              <span class="micro">Shipped in</span><span>FHS-547</span><span>FHS-548</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>7 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Not built yet</h2>
+      <p class="subtitle">Coming next; don&rsquo;t demo or test these.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill coral">Payments</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Billing and subscriptions arrive with Stripe in Sprint 4.</li>
+                <li>Nothing should ever ask for a card today.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>future</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>Sprint 4</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill yellow">Organisations</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Community and white-label tiers for schools and clubs.</li>
+                <li>Custom web addresses.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>future</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>Sprint 6</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill cyan">Loading screen</div>
+          <div class="cols">
+            <div class="col">
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>One branded loading screen everywhere is being designed next.</li>
+                <li>Faint grey loading text is a known issue.</li>
+              </ul>
+            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>everyone</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-550</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>8 / 8</span></div>
+    </div>
+  </body>
+</html>
