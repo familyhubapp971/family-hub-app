@@ -38,7 +38,7 @@ export function SiteHeader({ current }: { current?: SiteChromeSection } = {}) {
   const navigate = useNavigate();
 
   return (
-    <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between gap-1 px-4 py-4 md:gap-2 md:px-6">
+    <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between gap-1 px-3 py-4 xs:px-4 md:gap-2 md:px-6">
       <Link
         to="/"
         className="shrink-0 font-heading text-xl text-white transition-opacity hover:opacity-90 md:text-2xl"
