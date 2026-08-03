@@ -1,6 +1,6 @@
 # Demo
 
-Living artefacts that show what Family Hub does **right now** — for
+Living artefacts that show what Family Hub does **right now**: for
 stakeholders, demos, retros, and "what's next" planning.
 
 These docs are cumulative: they grow merge over merge, never reset.
@@ -10,12 +10,12 @@ artefact here is the PDF; the editable source lives under
 
 ## Current artefacts
 
-- [`whats-shipped.pdf`](whats-shipped.pdf) — one card per shipped
+- [`whats-shipped.pdf`](whats-shipped.pdf): one card per shipped
   capability, grouped by area (Getting started → Parent dashboard →
   Family management → Reward economy → Kid world → Per-child view),
   with persona chips and the FHS ticket that shipped it.
 
-## Updating (required on every user-visible merge — see CLAUDE.md)
+## Updating (required on every user-visible merge, see CLAUDE.md)
 
 1. Edit the source: `scripts/demo-src/whats-shipped.src.html`
    (add/update the capability card, bump the "Last updated" stamp and

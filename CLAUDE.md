@@ -744,6 +744,10 @@ across pages. Rules:
 
 ### Code style
 
+- **No em dashes (—), ever.** Not in UI copy, docs, PDFs, commits, Jira
+  comments, README files, or marketing content (founder rule,
+  2026-08-03). Use a comma, colon, parentheses or a period instead.
+  Removal of pre-existing ones across the repo is tracked in FHS-553.
 - TypeScript strict mode everywhere.
 - 2-space indent, LF line endings, UTF-8 (enforced by `.editorconfig`).
 - No comments unless the _why_ is non-obvious.
