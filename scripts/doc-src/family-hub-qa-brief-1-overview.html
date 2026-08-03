@@ -263,6 +263,21 @@
         break-after: avoid;
         page-break-after: avoid;
       }
+
+      .threecol {
+        display: flex;
+        gap: 7mm;
+        margin-top: 4.5mm;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .threecol > div {
+        flex: 1;
+      }
+      .threecol p {
+        font-size: 9.5pt;
+        line-height: 1.55;
+      }
     </style>
   </head>
   <body>
@@ -270,12 +285,29 @@
       <span class="star">★</span>
       <span class="eyebrow">QA Brief 1 · What you're testing</span>
       <h1>Break it before our families do.</h1>
-      <p class="lede">
-        Family Hub is a private online space for one family. Parents run the household: calendar,
-        meals, tasks, notices. Kids sign in with a PIN to earn stickers for good habits, then save,
-        spend or invest them, so chores quietly teach money skills. Built-in learning games
-        included. Private per family; built for real households.
+      <p class="lede" style="margin-top: 1mm">
+        Family Hub is a private online space for one family.
       </p>
+      <div class="threecol">
+        <div>
+          <span class="micro">Parents</span>
+          <p>Run the household in one place: calendar, meals, tasks and notices.</p>
+        </div>
+        <div>
+          <span class="micro">Kids</span>
+          <p>
+            Sign in with their own PIN, earn stickers for good habits, then save, spend or invest
+            them.
+          </p>
+        </div>
+        <div>
+          <span class="micro">Why it matters</span>
+          <p>
+            Chores quietly teach money skills, with learning games built in. Private per family;
+            built for real households.
+          </p>
+        </div>
+      </div>
       <div>
         <a class="appbtn" href="https://fhapp.up.railway.app"
           >Open the app <span>→</span> fhapp.up.railway.app</a
