@@ -65,7 +65,7 @@ export function AvatarGrid({
               'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2',
               selected
                 ? 'shadow-neo-lg ring-4 ring-yellow-300 ring-offset-2 -translate-y-0.5'
-                : 'shadow-neo hover:-translate-y-0.5 hover:shadow-neo-lg',
+                : 'shadow-neo motion-safe:hover:-translate-y-0.5 hover:shadow-neo-lg',
             ].join(' ')}
           >
             <div

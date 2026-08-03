@@ -569,7 +569,7 @@ function IfThenGame({
                 onClick={() => setShowHint(false)}
                 onKeyDown={(e) => e.key === 'Escape' && setShowHint(false)}
                 aria-label="Close hint"
-                className="w-10 h-10 flex items-center justify-center bg-gray-100 motion-safe:hover:bg-red-100 motion-safe:hover:text-red-600 rounded-xl transition-colors text-gray-500"
+                className="w-11 h-11 flex items-center justify-center bg-gray-100 motion-safe:hover:bg-red-100 motion-safe:hover:text-red-600 rounded-xl transition-colors text-gray-500"
               >
                 ✕
               </button>

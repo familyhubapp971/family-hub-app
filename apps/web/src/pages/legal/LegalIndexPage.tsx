@@ -41,7 +41,7 @@ export function LegalIndexPage() {
       <SiteHeader current="legal" />
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6">
-        <h1 className="font-heading text-4xl sm:text-5xl">Legal</h1>
+        <h1 className="font-heading text-3xl sm:text-4xl">Legal</h1>
         <p className="mt-3 max-w-xl font-bold leading-relaxed text-purple-200">
           Short, honest documents written for parents rather than lawyers. Last updated [Effective
           date].
@@ -52,7 +52,7 @@ export function LegalIndexPage() {
             <Link
               key={page.to}
               to={page.to}
-              className="flex flex-col rounded-xl border-2 border-black bg-white p-5 text-black shadow-neo-sm transition-transform hover:-translate-y-1"
+              className="flex flex-col rounded-xl border-2 border-black bg-white p-5 text-black shadow-neo-sm transition-transform motion-safe:hover:-translate-y-1"
             >
               <span className={`mb-4 h-3 w-12 rounded-full border-2 border-black ${page.accent}`} />
               <h2 className="font-heading text-2xl leading-tight">{page.title}</h2>

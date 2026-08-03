@@ -65,7 +65,7 @@ export function LegalLayout({
               <Link
                 key={page.to}
                 to={page.to}
-                className={`flex min-h-[40px] items-center rounded-full border-2 border-black px-3.5 text-sm font-bold transition-transform hover:-translate-y-0.5 ${
+                className={`flex min-h-[44px] items-center rounded-full border-2 border-black px-3.5 text-sm font-bold transition-transform motion-safe:hover:-translate-y-0.5 ${
                   pathname === page.to
                     ? 'bg-kingdom-bg text-white shadow-neo-xs'
                     : 'bg-white text-black hover:bg-gray-50'
@@ -94,7 +94,7 @@ export function LegalLayout({
                           .getElementById(section.id)
                           ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                       }
-                      className="flex min-h-[40px] w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-bold text-gray-600 hover:bg-gray-100 hover:text-black"
+                      className="flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-bold text-gray-600 hover:bg-gray-100 hover:text-black"
                     >
                       <span className="text-gray-400">{index + 1}.</span>
                       {section.title}

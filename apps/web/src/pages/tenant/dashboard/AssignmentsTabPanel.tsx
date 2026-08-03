@@ -479,7 +479,7 @@ function FilterPill({
       data-testid={testId}
       onClick={onClick}
       aria-pressed={active}
-      className={`min-h-[36px] rounded-full border-2 border-black px-3 py-1 text-xs font-bold motion-safe:transition-colors ${
+      className={`min-h-[44px] rounded-full border-2 border-black px-3 py-1 text-xs font-bold motion-safe:transition-colors ${
         active ? 'bg-pink-400 text-black shadow-neo-xs' : 'bg-white text-gray-500 hover:bg-gray-50'
       }`}
     >

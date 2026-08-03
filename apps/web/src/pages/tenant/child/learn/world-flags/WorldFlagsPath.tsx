@@ -347,7 +347,7 @@ export function WorldFlagsPath({ memberId, kidToken }: WorldFlagsPathProps) {
             data-testid="wfpath-study-back"
             type="button"
             onClick={exitToSelect}
-            className="flex items-center gap-1 py-2 text-sm font-bold text-white/80 transition-colors hover:text-white"
+            className="flex min-h-[44px] items-center gap-1 py-2 text-sm font-bold text-white/80 transition-colors hover:text-white"
           >
             <ArrowLeft size={16} aria-hidden="true" /> Back
           </button>
@@ -466,7 +466,7 @@ export function WorldFlagsPath({ memberId, kidToken }: WorldFlagsPathProps) {
           <button
             type="button"
             onClick={exitToSelect}
-            className="flex items-center gap-1 py-2 text-sm font-bold text-white/80 transition-colors hover:text-white"
+            className="flex min-h-[44px] items-center gap-1 py-2 text-sm font-bold text-white/80 transition-colors hover:text-white"
           >
             <ArrowLeft size={16} aria-hidden="true" /> Exit
           </button>
@@ -658,7 +658,7 @@ export function WorldFlagsPath({ memberId, kidToken }: WorldFlagsPathProps) {
             data-testid="wfpath-back"
             type="button"
             onClick={exitToSelect}
-            className="rounded-xl border-2 border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-50"
+            className="min-h-[44px] rounded-xl border-2 border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-50"
           >
             Back to Sets
           </button>

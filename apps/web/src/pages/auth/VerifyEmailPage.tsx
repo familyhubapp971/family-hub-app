@@ -116,7 +116,7 @@ export function VerifyEmailPage() {
           {email ? (
             <>
               We sent a magic link to{' '}
-              <span className="text-black" data-testid="verify-email-address">
+              <span className="break-all text-black" data-testid="verify-email-address">
                 {email}
               </span>
               . Click the link to sign in. No password needed.
@@ -156,7 +156,7 @@ export function VerifyEmailPage() {
             type="button"
             onClick={onResend}
             disabled={!email || resend.kind === 'sending' || resend.kind === 'cooldown'}
-            className="inline-block py-2.5 px-3 text-gray-500 transition-colors hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-block py-3 px-3 text-gray-500 transition-colors hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
             data-testid="verify-email-resend"
           >
             {resend.kind === 'sending'
@@ -174,7 +174,7 @@ export function VerifyEmailPage() {
 
           <Link
             to="/signup"
-            className="inline-block py-2.5 px-3 text-purple-600 transition-colors hover:text-purple-800"
+            className="inline-block py-3 px-3 text-purple-600 transition-colors hover:text-purple-800"
             data-testid="verify-email-back"
           >
             Or go back

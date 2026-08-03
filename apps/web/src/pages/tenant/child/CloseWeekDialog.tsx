@@ -172,11 +172,11 @@ function ClaimDialog({
           <button
             onClick={onBack}
             data-testid="close-week-claim-close-btn"
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-pink-100 transition-colors"
+            className="absolute top-4 right-4 w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-pink-100 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 pr-12">
             <div className="bg-pink-400 p-2 rounded-xl border-2 border-black shadow-neo-xs">
               <Gift className="w-6 h-6 text-white" />
             </div>
@@ -346,7 +346,7 @@ function CashOutDialog({
           <button
             onClick={onBack}
             data-testid="close-week-cashout-close-btn"
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-yellow-100 transition-colors"
+            className="absolute top-4 right-4 w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-yellow-100 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -376,7 +376,7 @@ function CashOutDialog({
                   <button
                     onClick={() => handleModeSwitch('stickers')}
                     data-testid="close-week-cashout-mode-stickers"
-                    className={`flex-1 px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${
+                    className={`flex-1 min-h-[44px] flex items-center justify-center px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${
                       mode === 'stickers'
                         ? 'bg-yellow-400 text-black border-2 border-black shadow-neo-xs'
                         : 'text-gray-500 hover:bg-gray-200'
@@ -387,7 +387,7 @@ function CashOutDialog({
                   <button
                     onClick={() => handleModeSwitch('cash')}
                     data-testid="close-week-cashout-mode-aed"
-                    className={`flex-1 px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${
+                    className={`flex-1 min-h-[44px] flex items-center justify-center px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${
                       mode === 'cash'
                         ? 'bg-yellow-400 text-black border-2 border-black shadow-neo-xs'
                         : 'text-gray-500 hover:bg-gray-200'
@@ -516,11 +516,11 @@ function SaveDialog({
           <button
             onClick={onBack}
             data-testid="close-week-save-close-btn"
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-blue-100 transition-colors"
+            className="absolute top-4 right-4 w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-blue-100 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center gap-3 mb-1 pr-12">
             <div className="bg-blue-400 p-2 rounded-xl border-2 border-black shadow-neo-xs">
               <PiggyBank className="w-6 h-6 text-white" />
             </div>
@@ -794,11 +794,11 @@ function InvestDialog({
           <button
             onClick={onBack}
             data-testid="close-week-invest-close-btn"
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-purple-800 border-2 border-black rounded-full text-white hover:bg-purple-700 transition-colors"
+            className="absolute top-4 right-4 w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center bg-purple-800 border-2 border-black rounded-full text-white hover:bg-purple-700 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pr-12">
             <div className="bg-yellow-400 p-2 rounded-xl border-2 border-black shadow-neo-xs">
               <TrendingUp className="w-6 h-6 text-black" />
             </div>
@@ -1275,11 +1275,11 @@ function WithdrawDialog({
           <button
             onClick={onBack}
             data-testid="close-week-withdraw-close-btn"
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-purple-800 border-2 border-black rounded-full text-white hover:bg-purple-700 transition-colors"
+            className="absolute top-4 right-4 w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center bg-purple-800 border-2 border-black rounded-full text-white hover:bg-purple-700 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pr-12">
             <div className="bg-orange-400 p-2 rounded-xl border-2 border-black shadow-neo-xs">
               <Banknote className="w-6 h-6 text-black" />
             </div>
@@ -1980,7 +1980,7 @@ export function CloseWeekDialog({
                 className="group relative h-24 sm:h-32 bg-pink-400 border-2 sm:border-3 border-black rounded-2xl shadow-neo motion-safe:hover:translate-y-1 motion-safe:hover:shadow-neo-xs active:translate-y-2 active:shadow-none transition-all overflow-hidden"
               >
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
-                <div className="absolute top-2 right-2 text-3xl group-hover:scale-125 transition-transform duration-300">
+                <div className="absolute top-2 right-2 text-3xl motion-safe:group-hover:scale-125 transition-transform duration-300">
                   🎁
                 </div>
                 <div className="absolute bottom-3 left-3 text-left">
@@ -1999,7 +1999,7 @@ export function CloseWeekDialog({
                 className="group relative h-24 sm:h-32 bg-lime-400 border-2 sm:border-3 border-black rounded-2xl shadow-neo motion-safe:hover:translate-y-1 motion-safe:hover:shadow-neo-xs active:translate-y-2 active:shadow-none transition-all overflow-hidden"
               >
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
-                <div className="absolute top-2 right-2 text-3xl group-hover:scale-125 transition-transform duration-300">
+                <div className="absolute top-2 right-2 text-3xl motion-safe:group-hover:scale-125 transition-transform duration-300">
                   💰
                 </div>
                 <div className="absolute bottom-3 left-3 text-left">
@@ -2016,7 +2016,7 @@ export function CloseWeekDialog({
                 className="group relative h-24 sm:h-32 bg-cyan-400 border-2 sm:border-3 border-black rounded-2xl shadow-neo motion-safe:hover:translate-y-1 motion-safe:hover:shadow-neo-xs active:translate-y-2 active:shadow-none transition-all overflow-hidden"
               >
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
-                <div className="absolute top-2 right-2 text-3xl group-hover:scale-125 transition-transform duration-300">
+                <div className="absolute top-2 right-2 text-3xl motion-safe:group-hover:scale-125 transition-transform duration-300">
                   🐷
                 </div>
                 <div className="absolute bottom-3 left-3 text-left">
@@ -2033,7 +2033,7 @@ export function CloseWeekDialog({
                 className="group relative h-24 sm:h-32 bg-yellow-400 border-2 sm:border-3 border-black rounded-2xl shadow-neo motion-safe:hover:translate-y-1 motion-safe:hover:shadow-neo-xs active:translate-y-2 active:shadow-none transition-all overflow-hidden"
               >
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
-                <div className="absolute top-2 right-2 text-3xl group-hover:scale-125 transition-transform duration-300">
+                <div className="absolute top-2 right-2 text-3xl motion-safe:group-hover:scale-125 transition-transform duration-300">
                   📈
                 </div>
                 <div className="absolute bottom-3 left-3 text-left">
@@ -2050,7 +2050,7 @@ export function CloseWeekDialog({
                 className="group relative h-24 sm:h-32 bg-orange-400 border-2 sm:border-3 border-black rounded-2xl shadow-neo motion-safe:hover:translate-y-1 motion-safe:hover:shadow-neo-xs active:translate-y-2 active:shadow-none transition-all col-span-2 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
-                <div className="absolute top-2 right-2 text-3xl group-hover:scale-125 transition-transform duration-300">
+                <div className="absolute top-2 right-2 text-3xl motion-safe:group-hover:scale-125 transition-transform duration-300">
                   🏦
                 </div>
                 <div className="absolute bottom-3 left-3 text-left">

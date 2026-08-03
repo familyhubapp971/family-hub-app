@@ -527,7 +527,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                     aria-label={
                       book.finished ? `Unmark ${book.title}` : `Mark ${book.title} as read`
                     }
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-black transition-colors ${
+                    className={`flex h-8 w-8 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border-2 border-black transition-colors ${
                       book.finished ? 'bg-green-400' : 'bg-white hover:bg-green-100'
                     }`}
                   >
@@ -539,7 +539,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                     type="button"
                     onClick={() => void handleDelete(book.id)}
                     aria-label={`Remove ${book.title}`}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white transition-colors hover:bg-red-100"
+                    className="flex h-8 w-8 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border-2 border-black bg-white transition-colors hover:bg-red-100"
                   >
                     <X size={14} />
                   </button>

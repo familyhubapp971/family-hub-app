@@ -514,7 +514,7 @@ export function ChildLearningInsights({ memberId }: ChildLearningInsightsProps) 
             </p>
 
             {/* 3 stat tiles */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-4">
               <div
                 data-testid="stat-avg-progress"
                 className="flex min-w-0 flex-col items-center rounded-xl border-2 border-black bg-purple-100 p-3 text-center shadow-neo-xs"

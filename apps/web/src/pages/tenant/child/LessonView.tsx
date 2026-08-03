@@ -241,7 +241,7 @@ function StreakOverlay({ message }: { message: string }) {
     >
       {/* motion-safe: required for reduced-motion accessibility */}
       <div className="motion-safe:animate-bounce text-center">
-        <p className="bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500 bg-clip-text text-4xl font-black text-transparent drop-shadow-lg sm:text-6xl">
+        <p className="bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500 bg-clip-text text-3xl font-black text-transparent drop-shadow-lg sm:text-5xl md:text-6xl">
           {message}
         </p>
       </div>

@@ -264,7 +264,7 @@ function ClaimQuickAction({
 
   return (
     <div data-testid="admin-quick-action-claim" className="space-y-4">
-      <h4 className="font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
+      <h4 className="font-black text-gray-900 uppercase tracking-wide flex items-center gap-2 pr-10">
         🎁 Claim Reward
       </h4>
       {loading && <p className="text-sm text-gray-500">Loading rewards…</p>}
@@ -347,7 +347,7 @@ function CashOutQuickAction({
 
   return (
     <div data-testid="admin-quick-action-cashout" className="space-y-4">
-      <h4 className="font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
+      <h4 className="font-black text-gray-900 uppercase tracking-wide flex items-center gap-2 pr-10">
         💰 Cash Out
       </h4>
       <div>
@@ -422,7 +422,7 @@ function SaveQuickAction({
 
   return (
     <div data-testid="admin-quick-action-save" className="space-y-4">
-      <h4 className="font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
+      <h4 className="font-black text-gray-900 uppercase tracking-wide flex items-center gap-2 pr-10">
         🐷 Save for Later
       </h4>
       <div className="flex gap-2">
@@ -547,7 +547,7 @@ function InvestQuickAction({
 
   return (
     <div data-testid="admin-quick-action-invest" className="space-y-4">
-      <h4 className="font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
+      <h4 className="font-black text-gray-900 uppercase tracking-wide flex items-center gap-2 pr-10">
         📈 Invest &amp; Grow
       </h4>
       <div>
@@ -656,7 +656,7 @@ function WithdrawQuickAction({
 
   return (
     <div data-testid="admin-quick-action-withdraw" className="space-y-4">
-      <h4 className="font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
+      <h4 className="font-black text-gray-900 uppercase tracking-wide flex items-center gap-2 pr-10">
         🏦 Withdraw Investment
       </h4>
       {loading && <p className="text-sm text-gray-500">Loading investments…</p>}
@@ -740,7 +740,7 @@ function QuickActionModal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="absolute right-4 top-4 text-gray-500 hover:text-black transition-colors"
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center text-gray-500 hover:text-black transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -1504,7 +1504,7 @@ function HistoryTab({
             </div>
 
             <div className="p-4 sm:p-5 bg-gray-50/50">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase mb-1">Carried Forward</p>
                   <p className="font-medium text-gray-700">
@@ -1528,7 +1528,7 @@ function HistoryTab({
                 <button
                   data-testid={`admin-history-week-actions-btn-${week.id}`}
                   onClick={() => void toggleActions(week.id)}
-                  className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors"
+                  className="min-h-[44px] inline-flex items-center text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors"
                 >
                   {expandedId === week.id ? 'Hide Actions' : 'View Actions'}
                 </button>

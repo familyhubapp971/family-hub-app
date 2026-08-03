@@ -30,10 +30,10 @@ export function KidHabitCard({
   return (
     <div
       data-testid={`kid-habit-card-${habit.id}`}
-      className="flex flex-col gap-4 rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm transition-transform motion-safe:hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-4 rounded-xl border-2 border-black bg-white p-4 shadow-neo-sm transition-transform motion-safe:hover:-translate-y-0.5 md:flex-row md:items-center md:justify-between"
     >
       {/* LEFT: identity */}
-      <div className="flex items-center gap-4 sm:w-1/2">
+      <div className="flex items-center gap-4 md:w-1/2">
         <div
           className={`grid h-16 w-16 shrink-0 place-items-center rounded-xl border-2 border-black text-black shadow-neo-xs ${habit.color}`}
         >

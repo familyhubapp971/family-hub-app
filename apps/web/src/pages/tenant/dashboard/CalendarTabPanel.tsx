@@ -454,7 +454,7 @@ export function CalendarTabPanel() {
             data-testid="calendar-prev-week"
             aria-label="Previous week"
             onClick={() => setWeekStart((w) => addDaysIso(w, -7))}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black bg-white text-black shadow-neo-xs hover:bg-gray-50"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border-2 border-black bg-white text-black shadow-neo-xs hover:bg-gray-50"
           >
             <ChevronLeft size={16} strokeWidth={3} />
           </button>
@@ -469,7 +469,7 @@ export function CalendarTabPanel() {
             data-testid="calendar-next-week"
             aria-label="Next week"
             onClick={() => setWeekStart((w) => addDaysIso(w, 7))}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-black bg-white text-black shadow-neo-xs hover:bg-gray-50"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border-2 border-black bg-white text-black shadow-neo-xs hover:bg-gray-50"
           >
             <ChevronRight size={16} strokeWidth={3} />
           </button>
@@ -895,7 +895,7 @@ function FilterPill({
       data-testid={testId}
       aria-pressed={active}
       onClick={onClick}
-      className={`min-h-[36px] rounded-full border-2 border-black px-4 py-1.5 text-sm font-bold transition-colors ${
+      className={`min-h-[44px] rounded-full border-2 border-black px-4 py-1.5 text-sm font-bold transition-colors ${
         active ? 'bg-pink-400 text-black shadow-neo-xs' : 'bg-white text-gray-500 hover:bg-gray-50'
       }`}
     >

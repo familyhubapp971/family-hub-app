@@ -274,7 +274,7 @@ export function RewardsTab({ headers }: { headers: Record<string, string> | null
                 saveLabel="Save changes"
               />
             ) : (
-              <Card className="flex items-center justify-between gap-3 bg-white p-4">
+              <Card className="flex flex-col gap-3 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   <span
                     aria-hidden="true"
@@ -389,7 +389,7 @@ function RewardFormCard({
           type="button"
           onClick={onCancel}
           aria-label="Cancel"
-          className="text-gray-500 transition-colors hover:text-black"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center text-gray-500 transition-colors hover:text-black"
         >
           <X className="h-4 w-4" />
         </button>
