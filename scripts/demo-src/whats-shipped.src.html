@@ -1,383 +1,725 @@
 <!doctype html>
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Family Hub · What's Shipped</title>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
       :root {
-        --bg: #faf5ea;
-        --accent: #ffd21e;
-        --paper: #fdfcfe;
-        --ink: #2a2438;
-        --soft: #5c5470;
+        --cream: #faf5ea;
+        --ink: #191919;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow: #ffd21e;
+        --micro: #8a94a6;
       }
       body {
         font-family: 'Nunito', sans-serif;
-        background: var(--bg);
         color: var(--ink);
-        padding: 24px 16px 60px;
+        background: var(--cream);
       }
-      .wrap {
-        max-width: 1000px;
-        margin: 0 auto;
+      .slide {
+        width: 296mm;
+        height: 208mm;
+        padding: 11mm 16mm 8mm;
+        page-break-after: always;
+        position: relative;
+        display: flex;
+        flex-direction: column;
       }
-      .hero {
-        background: #fff;
-        border: 3px solid #000;
-        border-radius: 16px;
-        box-shadow: 6px 6px 0 #000;
-        padding: 28px;
-        margin-bottom: 22px;
+      .slide:last-child {
+        page-break-after: auto;
       }
-      .hero h1 {
-        font-family: 'Fredoka One', cursive;
-        font-size: clamp(1.5rem, 4vw, 2.2rem);
-      }
-      .hero p {
-        color: var(--soft);
-        font-weight: 700;
-        margin-top: 6px;
-      }
-      .hero .stamp {
-        display: inline-block;
-        background: var(--accent);
-        border: 2px solid #000;
+      .eyebrow {
+        align-self: flex-start;
+        background: var(--pink);
+        border: 2.5px solid #000;
         border-radius: 999px;
-        padding: 2px 12px;
-        font-weight: 800;
-        font-size: 0.85rem;
-        margin-top: 10px;
-        box-shadow: 2px 2px 0 #000;
+        box-shadow: 3px 3px 0 #000;
+        padding: 1.2mm 5mm;
+        font-weight: 900;
+        font-size: 9pt;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        font-family: 'Fredoka One', cursive;
+        font-size: 30pt;
+        line-height: 1.1;
+        margin: 6mm 0 3mm;
+        text-align: center;
       }
       h2 {
         font-family: 'Fredoka One', cursive;
-        color: #191919;
-        font-size: 1.25rem;
-        margin: 26px 0 12px;
+        font-size: 19pt;
+        text-align: center;
+        margin: 0 0 1.5mm;
       }
-      h2 .key {
-        color: #8a94a6;
-        font-size: 0.8rem;
-        font-family: 'Nunito', sans-serif;
-        font-weight: 800;
-        margin-left: 8px;
+      .subtitle {
+        text-align: center;
+        color: #4a4a4a;
+        font-weight: 700;
+        font-size: 10.5pt;
+        margin-bottom: 4mm;
       }
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 14px;
+      .star {
+        position: absolute;
+        top: 9mm;
+        right: 14mm;
+        font-size: 26pt;
+        color: var(--yellow);
+        -webkit-text-stroke: 1.5px #000;
       }
-      @media (min-width: 640px) {
-        .grid {
-          grid-template-columns: 1fr 1fr;
-        }
+      .dots {
+        text-align: center;
+        margin-top: 5mm;
       }
-      @media (min-width: 1024px) {
-        .grid {
-          grid-template-columns: 1fr 1fr 1fr;
-        }
+      .dots span {
+        display: inline-block;
+        width: 4.5mm;
+        height: 4.5mm;
+        border-radius: 50%;
+        border: 2px solid #000;
+        margin: 0 1.6mm;
       }
-      .card {
-        background: var(--paper);
-        border: 2.5px solid #000;
-        border-radius: 12px;
+      .appbtn {
+        align-self: center;
+        background: var(--yellow);
+        border: 3px solid #000;
+        border-radius: 999px;
         box-shadow: 4px 4px 0 #000;
-        padding: 16px;
+        padding: 3mm 9mm;
+        font-family: 'Fredoka One', cursive;
+        font-size: 14pt;
+        color: #000;
+        text-decoration: none;
+        margin: 6mm 0 2mm;
       }
-      .card h3 {
-        font-size: 1rem;
-        font-weight: 800;
-        margin-bottom: 6px;
+      .stamp {
+        align-self: center;
+        background: #fff;
+        border: 2px solid #000;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 #000;
+        padding: 1mm 6mm;
+        font-weight: 900;
+        font-size: 9pt;
+        margin-top: 3mm;
       }
-      .card p {
-        font-size: 0.9rem;
+      .rows {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        flex: 1;
+      }
+      .row {
+        display: flex;
+        gap: 8mm;
+        align-items: flex-start;
+      }
+      .pill {
+        flex: 0 0 44mm;
+        background: var(--yellow);
+        border: 3px solid #000;
+        border-radius: 7mm;
+        box-shadow: 4px 4px 0 #000;
+        padding: 3.6mm 2mm;
+        text-align: center;
+        font-family: 'Fredoka One', cursive;
+        font-size: 13.5pt;
+      }
+      .pill.pink {
+        background: var(--pink);
+      }
+      .pill.green {
+        background: var(--green);
+      }
+      .pill.cyan {
+        background: var(--cyan);
+      }
+      .pill.coral {
+        background: var(--coral);
+      }
+      .pill.yellow {
+        background: var(--yellow);
+      }
+      .cols {
+        flex: 1;
+        display: flex;
+        gap: 8mm;
+      }
+      .col {
+        flex: 1.9;
+      }
+      .col.who {
+        flex: 1;
+      }
+      .col.ref {
+        flex: 0.9;
+      }
+      .micro {
+        font-size: 8pt;
+        font-weight: 900;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: #4a5568;
+        margin-bottom: 1.6mm;
+        border-bottom: 1.5px solid #e2d9c6;
+        padding-bottom: 0.8mm;
+        display: inline-block;
+      }
+      .col p {
+        font-size: 9.5pt;
         line-height: 1.45;
       }
-      .chips {
-        margin-top: 10px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-      .chip {
-        background: #f3e8ff;
-        border: 1.5px solid #000;
+      .who span,
+      .ref span {
+        display: inline-block;
+        border: 2px solid #000;
         border-radius: 999px;
-        padding: 1px 10px;
-        font-size: 0.72rem;
-        font-weight: 800;
+        background: #fff;
+        box-shadow: 1.5px 1.5px 0 #000;
+        padding: 0.2mm 3mm;
+        font-size: 8pt;
+        font-weight: 900;
+        margin: 0 1.2mm 1.2mm 0;
       }
-      .chip.kid {
-        background: #dcfce7;
+      .ref span {
+        background: var(--yellow);
       }
-      .chip.ref {
-        background: var(--accent);
+      .center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
       }
-      .note {
-        background: #f1eadb;
-        border: 2px dashed rgba(0, 0, 0, 0.45);
-        border-radius: 12px;
-        color: #3a3a3a;
+      .lede {
+        max-width: 200mm;
+        text-align: center;
         font-weight: 700;
-        padding: 14px 18px;
-        margin-top: 26px;
-        font-size: 0.9rem;
+        font-size: 12pt;
+        line-height: 1.6;
       }
-
-      /* print safety: never split a card/row/section across pages (founder rule) */
-      .card,
+      .foot {
+        margin-top: auto;
+        display: flex;
+        justify-content: space-between;
+        font-size: 7.5pt;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #555;
+      }
       .row,
-      .threecol,
-      .sectionbar,
-      .chips,
-      .note {
+      .rows {
         break-inside: avoid;
         page-break-inside: avoid;
-      }
-      h1,
-      h2,
-      h3,
-      .micro,
-      .eyebrow {
-        break-after: avoid;
-        page-break-after: avoid;
       }
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <div class="hero">
+    <div class="slide">
+      <span class="star">★</span>
+      <span class="eyebrow">The live product · updated on every merge</span>
+      <div class="center">
         <h1>Family Hub · What's Shipped</h1>
-        <p>
-          Everything a family can do on staging today, in plain words. One card per capability, with
-          who it's for and the ticket that shipped it.
+        <p class="lede">
+          Everything a family can do on the test site today, in plain words. One slide per area;
+          every row says what you can do, who it's for, and the ticket that shipped it.
         </p>
+        <a class="appbtn" href="https://fhapp.up.railway.app"
+          >Open the app → fhapp.up.railway.app</a
+        >
         <span class="stamp">Last updated 2026-08-03 · current through FHS-548</span>
-        <p style="margin-top: 10px; font-size: 0.85rem">
-          This page is refreshed on every merge that changes what users can see or do (rule in
-          CLAUDE.md). App: fhapp.up.railway.app
-        </p>
-      </div>
-
-      <h2>Getting started <span class="key">signup → first dashboard</span></h2>
-      <div class="grid">
-        <div class="card">
-          <h3>Public site</h3>
-          <p>
-            Welcome, Pricing (Free / Family $7.99 / Family Pro $12.99), About, and full Legal pages
-            (Privacy, Children &amp; Parents, Terms, Cookies) with a shared header/footer.
-          </p>
-          <div class="chips">
-            <span class="chip">visitor</span><span class="chip ref">FHS-509 · 546</span>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Create your family</h3>
-          <p>
-            Sign up with your family's own web address (like /t/khan-family). Passwordless: email
-            magic link or Google. Expired/used links get a clear error screen.
-          </p>
-          <div class="chips">
-            <span class="chip">Sarah</span><span class="chip ref">FHS-331</span>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Onboarding wizard</h3>
-          <p>
-            Add members with roles and kids' ages (child vs teen), timezone and currency
-            auto-detected, starter habits and rewards pre-seeded, adult invites emailed in one go.
-          </p>
-          <div class="chips">
-            <span class="chip">Sarah</span><span class="chip ref">FHS-487</span>
-          </div>
+        <div class="dots">
+          <span style="background: var(--cyan)"></span><span style="background: var(--green)"></span
+          ><span style="background: var(--coral)"></span>
         </div>
       </div>
-
-      <h2>Parent dashboard <span class="key">the daily driver</span></h2>
-      <div class="grid">
-        <div class="card">
-          <h3>Six tabs</h3>
-          <p>
-            Today, Meals (week planner + snacks), Calendar, Assignments, Noticeboard (emoji notes),
-            Tasks (assign, filter by member, mark done). Getting-started guide card for new
-            families.
-          </p>
-          <div class="chips"><span class="chip">Sarah</span><span class="chip">Yusuf</span></div>
-        </div>
-        <div class="card">
-          <h3>Calendar that travels</h3>
-          <p>
-            Events and repeating events, plus a private subscribe link that pushes the family
-            calendar into Google, Apple or Outlook. Admin can rotate a leaked link.
-          </p>
-          <div class="chips">
-            <span class="chip">Sarah</span><span class="chip ref">calendar-sync</span>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>1 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Getting started</h2>
+      <p class="subtitle">From stranger to signed-in family in minutes.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill pink">Public site</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Welcome, Pricing (Free / Family $7.99 / Family Pro $12.99), About, and full Legal
+                pages with a shared header and footer.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>visitor</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-509</span><span>FHS-546</span>
+            </div>
           </div>
         </div>
-        <div class="card">
-          <h3>Change email, safely</h3>
-          <p>
-            Self-serve change-email flow with a confirmation screen, so an account never gets locked
-            to a dead address.
-          </p>
-          <div class="chips">
-            <span class="chip">any adult</span><span class="chip ref">FHS-510</span>
+        <div class="row">
+          <div class="pill cyan">Sign up</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Your own family web address (like /t/khan-family). Passwordless: email magic link or
+                Google. Expired links get a clear error screen.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>Sarah</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-331</span>
+            </div>
           </div>
         </div>
-      </div>
-
-      <h2>Family management <span class="key">people, roles, safety</span></h2>
-      <div class="grid">
-        <div class="card">
-          <h3>Manage Family</h3>
-          <p>
-            Grown-ups (email sign-in) and Kids (PIN sign-in) in one screen: invite adults, add kids
-            without an email, set/reset 4-digit PINs, admin toggle (last admin protected), remove
-            members.
-          </p>
-          <div class="chips">
-            <span class="chip">Sarah</span><span class="chip ref">FHS-513</span>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Real-family roles</h3>
-          <p>
-            Admin / adult / teen / child / guest with a full privilege matrix. Kids can never reach
-            parent settings; sensitive powers (money, members, week close) are admin-only.
-          </p>
-          <div class="chips">
-            <span class="chip">everyone</span><span class="chip ref">FHS-515</span>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Built for real households</h3>
-          <p>
-            Twins/triplets without data errors, blended families with 3+ parents, grandparents and
-            nannies as adults or guests, kids who claim a login later keeping their history.
-          </p>
-          <div class="chips">
-            <span class="chip">everyone</span><span class="chip ref">ADR 0009</span>
+        <div class="row">
+          <div class="pill green">Onboarding</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                A short wizard: members with roles and kids’ ages, timezone and currency
+                auto-detected, starter habits pre-seeded, invites emailed in one go.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>Sarah</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-487</span>
+            </div>
           </div>
         </div>
       </div>
-
-      <h2>Reward economy <span class="key">chores → money skills</span></h2>
-      <div class="grid">
-        <div class="card">
-          <h3>Family-tuned economy</h3>
-          <p>
-            Each family sets what a sticker is worth (per-child override possible). Habit pay boosts
-            (2x/3x/5x), optional skip penalty (never below zero, fully audited), pocket money.
-          </p>
-          <div class="chips">
-            <span class="chip">Sarah</span><span class="chip ref">FHS-290</span>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>2 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Parent dashboard</h2>
+      <p class="subtitle">The daily driver: one place for the whole household.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill yellow">Six tabs</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Today, Meals (week planner plus snacks), Calendar, Assignments, Noticeboard (emoji
+                notes), Tasks (assign, filter by member, mark done).
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>Sarah</span><span>Yusuf</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-179</span>
+            </div>
           </div>
         </div>
-        <div class="card">
-          <h3>Invest &amp; grow</h3>
-          <p>
-            Parents invest a child's stickers into a habit with a growth multiplier: the habit pays
-            more AND the invested value grows each completed day. Compounding, taught by chores.
-          </p>
-          <div class="chips">
-            <span class="chip">Sarah</span><span class="chip kid">kids</span
-            ><span class="chip ref">FHS-534</span>
+        <div class="row">
+          <div class="pill pink">Calendar sync</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Repeating events, plus a private subscribe link that feeds the family calendar into
+                Google, Apple or Outlook. Admins can rotate a leaked link.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>Sarah</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>calendar-sync</span>
+            </div>
           </div>
         </div>
-        <div class="card">
-          <h3>Admin Panel</h3>
-          <p>
-            Every child's balances at a glance, quick actions (claim, cash out, save, invest,
-            withdraw), week history with a full audit trail, week close and reopen that restores
-            money exactly.
-          </p>
-          <div class="chips">
-            <span class="chip">Sarah</span><span class="chip ref">FHS-308</span>
-          </div>
-        </div>
-      </div>
-
-      <h2>Kid world <span class="key">PIN login, made for small hands</span></h2>
-      <div class="grid">
-        <div class="card">
-          <h3>Kid dashboard</h3>
-          <p>
-            Tap your avatar, enter your PIN (lockout after wrong tries). My World: weekly habit
-            tracker, stickers, weekly account (earned/saved/invested), money skills, end-of-week
-            recap.
-          </p>
-          <div class="chips">
-            <span class="chip kid">kids</span><span class="chip kid">teens</span
-            ><span class="chip ref">FHS-368</span>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Reward shop</h3>
-          <p>
-            Kids browse rewards and send requests; parents approve and redeem at the family's rates.
-          </p>
-          <div class="chips">
-            <span class="chip kid">kids</span><span class="chip">Sarah</span
-            ><span class="chip ref">FHS-517</span>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Learn (kid-only)</h3>
-          <p>
-            Logic (patterns, odd-one-out, if-then, sorting × 3 difficulties), Maths journey
-            (placement, lessons, times tables, challenges, certificates), World Flags (map,
-            flashcards, quizzes), reading log.
-          </p>
-          <div class="chips">
-            <span class="chip kid">kids</span><span class="chip ref">ADR 0017</span>
+        <div class="row">
+          <div class="pill cyan">Change email</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Self-serve change-email flow with a confirmation screen, so an account never gets
+                locked to a dead address.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>any adult</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-510</span>
+            </div>
           </div>
         </div>
       </div>
-
-      <h2>Per-child view for parents <span class="key">Child World</span></h2>
-      <div class="grid">
-        <div class="card">
-          <h3>One child, whole picture</h3>
-          <p>
-            Open any child's world from the account menu: habits and rewards, meals, calendar,
-            journal, and read-only Learning Insights (progress, needs-help flags, certificates).
-          </p>
-          <div class="chips"><span class="chip">Sarah</span><span class="chip">Yusuf</span></div>
-        </div>
-        <div class="card">
-          <h3>Week close ceremony</h3>
-          <p>
-            Claim / cash out / save / invest / withdraw dialogs at week end, with money stored to
-            the penny and every action reversible on reopen.
-          </p>
-          <div class="chips">
-            <span class="chip">Sarah</span><span class="chip ref">ADR 0020</span>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>3 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Family management</h2>
+      <p class="subtitle">People, roles and safety for real households.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill green">Manage Family</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Grown-ups (email sign-in) and Kids (PIN sign-in) in one screen: invite adults, add
+                kids without email, set or reset PINs, remove members.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>Sarah</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-513</span>
+            </div>
           </div>
         </div>
-        <div class="card">
-          <h3>Phone &amp; tablet friendly</h3>
-          <p>
-            Full responsive sweep: 44px finger-sized tap targets, no sideways scrolling, layouts
-            that stack on phones, reduced-motion respected. Locked by automated tests.
-          </p>
-          <div class="chips">
-            <span class="chip">everyone</span><span class="chip ref">FHS-547 · 548</span>
+        <div class="row">
+          <div class="pill coral">Roles</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Admin / adult / teen / child / guest with a full privilege matrix. Kids can never
+                reach parent settings; money and member powers are admin-only.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>everyone</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-515</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill yellow">Real families</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Twins and triplets without data errors, blended families with 3+ parents,
+                grandparents as adults or guests, kids who claim a login later keep their history.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>everyone</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>ADR 0009</span>
+            </div>
           </div>
         </div>
       </div>
-
-      <div class="note">
-        Not built yet (don't demo): payments/billing (Stripe, Sprint 4), community/white-label
-        tiers, custom *.familyhub.app subdomains, production environment. Next up on the design
-        side: one branded loading screen everywhere (FHS-550).
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>4 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Reward economy</h2>
+      <p class="subtitle">Chores quietly teach money skills.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill pink">Stickers</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Each family sets what a sticker is worth (per-child override). Habit pay boosts
+                (2x/3x/5x), optional skip penalty, pocket money.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>Sarah</span><span>kids</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-290</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill cyan">Invest & grow</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Parents invest a child’s stickers into a habit with a growth multiplier: it pays
+                more AND the invested value grows every completed day.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>Sarah</span><span>kids</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-534</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill green">Admin Panel</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Every child’s balances at a glance, quick actions (claim, cash out, save, invest,
+                withdraw), audited week history, week close and reopen.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>Sarah</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-308</span>
+            </div>
+          </div>
+        </div>
       </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>5 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Kid world</h2>
+      <p class="subtitle">PIN login, made for small hands.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill coral">Kid dashboard</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Tap your avatar, enter your PIN (lockout after wrong tries). Weekly habit tracker,
+                stickers, weekly account, money skills, end-of-week recap.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>kids</span><span>teens</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-368</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill yellow">Reward shop</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Kids browse rewards and send requests; parents approve and redeem at the family’s
+                rates.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>kids</span><span>Sarah</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-517</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill pink">Learn</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Logic, a full Maths journey (placement, lessons, times tables, certificates), World
+                Flags (map, flashcards, quizzes) and a reading log. Kid-only.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>kids</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>ADR 0017</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>6 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Per-child view for parents</h2>
+      <p class="subtitle">One child, the whole picture.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill cyan">Child World</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Open any child’s world from the account menu: habits, rewards, meals, calendar,
+                journal, and read-only Learning Insights.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>Sarah</span><span>Yusuf</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>child-world</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill green">Week close</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Claim / cash out / save / invest / withdraw dialogs, money stored to the penny,
+                every action reversible on reopen.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>Sarah</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>ADR 0020</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill coral">Phone-ready</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                44px finger-sized tap targets, no sideways scrolling, layouts that stack on phones,
+                reduced-motion respected, locked by automated tests.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>everyone</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-547</span><span>FHS-548</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>7 / 8</span></div>
+    </div>
+    <div class="slide">
+      <span class="star">★</span>
+      <h2>Not built yet</h2>
+      <p class="subtitle">Coming next; don’t demo or test these.</p>
+      <div class="rows">
+        <div class="row">
+          <div class="pill coral">Payments</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Billing and subscriptions arrive with Stripe in Sprint 4. Nothing should ever ask
+                for a card today.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>future</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>Sprint 4</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill yellow">Organisations</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                Community and white-label tiers for schools and clubs, and custom web addresses.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>future</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>Sprint 6</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="pill cyan">Loading screen</div>
+          <div class="cols">
+            <div class="col">
+              <div class="micro">What you can do</div>
+              <p>
+                One branded loading screen everywhere is being designed next; faint grey loading
+                text is a known issue.
+              </p>
+            </div>
+            <div class="col who">
+              <div class="micro">Who it's for</div>
+              <span>everyone</span>
+            </div>
+            <div class="col ref">
+              <div class="micro">Shipped in</div>
+              <span>FHS-550</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span>Family Hub · What's Shipped</span><span>8 / 8</span></div>
     </div>
   </body>
 </html>

@@ -1,6 +1,8 @@
 // Renders scripts/demo-src/whats-shipped.src.html to
-// documents/demo/whats-shipped.pdf (the committed artefact — docs
+// documents/demo/whats-shipped.pdf (the committed artefact; docs
 // folders are PDF-only per founder request, FHS-552).
+// Landscape full-bleed slides: margins must stay 0 or every slide
+// overflows onto a second page.
 //
 // Usage: node scripts/render-demo-pdf.mjs
 // Requires tests/e2e dependencies installed (pnpm install).
@@ -21,8 +23,9 @@ await page.goto('file://' + src, { waitUntil: 'networkidle' });
 await page.pdf({
   path: out,
   format: 'A4',
+  landscape: true,
   printBackground: true,
-  margin: { top: '8mm', bottom: '8mm', left: '6mm', right: '6mm' },
+  margin: { top: 0, bottom: 0, left: 0, right: 0 },
 });
 await browser.close();
 console.log('rendered', path.relative(root, out));
