@@ -54,7 +54,7 @@ export function SiteHeader({ current }: { current?: SiteChromeSection } = {}) {
           <Link
             key={link.to}
             to={link.to}
-            className={`px-1.5 py-2.5 transition-colors hover:text-yellow-300 md:px-2 ${
+            className={`px-1 py-2.5 transition-colors hover:text-yellow-300 xs:px-1.5 md:px-2 ${
               link.mobile ? '' : 'hidden md:inline'
             } ${current === link.section ? 'text-yellow-300' : ''}`}
           >
@@ -66,7 +66,7 @@ export function SiteHeader({ current }: { current?: SiteChromeSection } = {}) {
       <div className="flex items-center gap-1 md:gap-4">
         <Link
           to="/login"
-          className="px-1.5 py-2.5 font-bold transition-colors hover:text-yellow-300 md:px-2"
+          className="px-1 py-2.5 font-bold transition-colors hover:text-yellow-300 xs:px-1.5 md:px-2"
         >
           Log in
         </Link>
