@@ -67,7 +67,7 @@
         color: #4a4a4a;
         font-weight: 700;
         font-size: 10.5pt;
-        margin-bottom: 4mm;
+        margin-bottom: 5mm;
       }
       .star {
         position: absolute;
@@ -121,7 +121,7 @@
       }
       .row {
         display: flex;
-        gap: 8mm;
+        gap: 9mm;
         align-items: flex-start;
       }
       .pill {
@@ -133,7 +133,7 @@
         padding: 3.6mm 2mm;
         text-align: center;
         font-family: 'Fredoka One', cursive;
-        font-size: 13.5pt;
+        font-size: 13pt;
       }
       .pill.pink {
         background: var(--pink);
@@ -153,16 +153,16 @@
       .cols {
         flex: 1;
         display: flex;
-        gap: 8mm;
+        gap: 9mm;
       }
       .col {
-        flex: 1.9;
+        flex: 2;
       }
       .col.who {
-        flex: 1;
+        flex: 0.9;
       }
       .col.ref {
-        flex: 0.9;
+        flex: 0.8;
       }
       .micro {
         font-size: 8pt;
@@ -170,29 +170,46 @@
         letter-spacing: 0.11em;
         text-transform: uppercase;
         color: #4a5568;
-        margin-bottom: 1.6mm;
+        margin-bottom: 2mm;
         border-bottom: 1.5px solid #e2d9c6;
         padding-bottom: 0.8mm;
         display: block;
         width: max-content;
       }
-      .col p {
-        font-size: 9.5pt;
-        line-height: 1.45;
+      .col ul {
+        list-style: none;
       }
-      .who span,
-      .ref span {
+      .col li {
+        font-size: 9.5pt;
+        line-height: 1.5;
+        margin-bottom: 1.6mm;
+        padding-left: 4.5mm;
+        position: relative;
+      }
+      .col li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 1.9mm;
+        width: 2mm;
+        height: 2mm;
+        border-radius: 50%;
+        border: 1.5px solid #000;
+        background: var(--yellow);
+      }
+      .who span:not(.micro),
+      .ref span:not(.micro) {
         display: inline-block;
         border: 2px solid #000;
         border-radius: 999px;
         background: #fff;
         box-shadow: 1.5px 1.5px 0 #000;
-        padding: 0.2mm 3mm;
-        font-size: 8pt;
+        padding: 0.4mm 3.2mm;
+        font-size: 8.5pt;
         font-weight: 900;
-        margin: 0 1.2mm 1.2mm 0;
+        margin: 0 1.4mm 1.6mm 0;
       }
-      .ref span {
+      .ref span:not(.micro) {
         background: var(--yellow);
       }
       .center {
@@ -256,19 +273,16 @@
           <div class="pill pink">Public site</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Welcome, Pricing (Free / Family $7.99 / Family Pro $12.99), About, and full Legal
-                pages with a shared header and footer.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Welcome, Pricing, About and Legal pages.</li>
+                <li>Free / Family $7.99 / Family Pro $12.99 tiers shown.</li>
+                <li>Shared header and footer across the site.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>visitor</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>visitor</span></div>
             <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-509</span><span>FHS-546</span>
+              <span class="micro">Shipped in</span><span>FHS-509</span><span>FHS-546</span>
             </div>
           </div>
         </div>
@@ -276,40 +290,30 @@
           <div class="pill cyan">Sign up</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Your own family web address (like /t/khan-family). Passwordless: email magic link or
-                Google. Expired links get a clear error screen.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Your own family web address, like /t/khan-family.</li>
+                <li>Passwordless: email magic link or Google.</li>
+                <li>Expired or used links get a clear error screen.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>Sarah</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-331</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-331</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill green">Onboarding</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                A short wizard: members with roles and kids’ ages, timezone and currency
-                auto-detected, starter habits pre-seeded, invites emailed in one go.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Short wizard: members, roles, kids&rsquo; ages.</li>
+                <li>Timezone and currency auto-detected.</li>
+                <li>Starter habits pre-seeded; invites emailed in one go.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>Sarah</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-487</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-487</span></div>
           </div>
         </div>
       </div>
@@ -324,39 +328,33 @@
           <div class="pill yellow">Six tabs</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Today, Meals (week planner plus snacks), Calendar, Assignments, Noticeboard (emoji
-                notes), Tasks (assign, filter by member, mark done).
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Today, Meals, Calendar, Assignments, Noticeboard, Tasks.</li>
+                <li>Meals: week planner plus snacks.</li>
+                <li>Tasks: assign, filter by member, mark done.</li>
+              </ul>
             </div>
             <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>Sarah</span><span>Yusuf</span>
+              <span class="micro">Who it's for</span><span>Sarah</span><span>Yusuf</span>
             </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-179</span>
-            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-179</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill pink">Calendar sync</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Repeating events, plus a private subscribe link that feeds the family calendar into
-                Google, Apple or Outlook. Admins can rotate a leaked link.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Events and repeating events.</li>
+                <li>Private subscribe link feeds Google, Apple or Outlook.</li>
+                <li>Admins can rotate a leaked link.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>Sarah</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
             <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>calendar-sync</span>
+              <span class="micro">Shipped in</span><span>calendar-sync</span>
             </div>
           </div>
         </div>
@@ -364,20 +362,14 @@
           <div class="pill cyan">Change email</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Self-serve change-email flow with a confirmation screen, so an account never gets
-                locked to a dead address.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Self-serve flow with a confirmation screen.</li>
+                <li>An account never gets locked to a dead address.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>any adult</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-510</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>any adult</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-510</span></div>
           </div>
         </div>
       </div>
@@ -392,60 +384,45 @@
           <div class="pill green">Manage Family</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Grown-ups (email sign-in) and Kids (PIN sign-in) in one screen: invite adults, add
-                kids without email, set or reset PINs, remove members.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Grown-ups (email) and Kids (PIN) in one screen.</li>
+                <li>Invite adults; add kids without email.</li>
+                <li>Set or reset PINs; remove members.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>Sarah</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-513</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-513</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill coral">Roles</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Admin / adult / teen / child / guest with a full privilege matrix. Kids can never
-                reach parent settings; money and member powers are admin-only.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Admin / adult / teen / child / guest privilege matrix.</li>
+                <li>Kids can never reach parent settings.</li>
+                <li>Money and member powers are admin-only.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>everyone</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-515</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>everyone</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-515</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill yellow">Real families</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Twins and triplets without data errors, blended families with 3+ parents,
-                grandparents as adults or guests, kids who claim a login later keep their history.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Twins and triplets without data errors.</li>
+                <li>Blended families with 3+ parents; grandparents as adults or guests.</li>
+                <li>Kids who claim a login later keep their history.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>everyone</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>ADR 0009</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>everyone</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>ADR 0009</span></div>
           </div>
         </div>
       </div>
@@ -460,60 +437,48 @@
           <div class="pill pink">Stickers</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Each family sets what a sticker is worth (per-child override). Habit pay boosts
-                (2x/3x/5x), optional skip penalty, pocket money.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Each family sets what a sticker is worth (per-child override).</li>
+                <li>Habit pay boosts: 2x, 3x or 5x.</li>
+                <li>Optional skip penalty and pocket money.</li>
+              </ul>
             </div>
             <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>Sarah</span><span>kids</span>
+              <span class="micro">Who it's for</span><span>Sarah</span><span>kids</span>
             </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-290</span>
-            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-290</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill cyan">Invest & grow</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Parents invest a child’s stickers into a habit with a growth multiplier: it pays
-                more AND the invested value grows every completed day.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Parents invest a child&rsquo;s stickers into a habit.</li>
+                <li>The habit pays more AND the invested value grows every completed day.</li>
+              </ul>
             </div>
             <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>Sarah</span><span>kids</span>
+              <span class="micro">Who it's for</span><span>Sarah</span><span>kids</span>
             </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-534</span>
-            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-534</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill green">Admin Panel</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Every child’s balances at a glance, quick actions (claim, cash out, save, invest,
-                withdraw), audited week history, week close and reopen.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Every child&rsquo;s balances at a glance.</li>
+                <li>Quick actions: claim, cash out, save, invest, withdraw.</li>
+                <li>Audited week history; close and reopen weeks safely.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>Sarah</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-308</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-308</span></div>
           </div>
         </div>
       </div>
@@ -528,60 +493,48 @@
           <div class="pill coral">Kid dashboard</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Tap your avatar, enter your PIN (lockout after wrong tries). Weekly habit tracker,
-                stickers, weekly account, money skills, end-of-week recap.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Tap your avatar, enter your PIN; lockout after wrong tries.</li>
+                <li>Weekly habit tracker, stickers, weekly account.</li>
+                <li>Money skills and end-of-week recap.</li>
+              </ul>
             </div>
             <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>kids</span><span>teens</span>
+              <span class="micro">Who it's for</span><span>kids</span><span>teens</span>
             </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-368</span>
-            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-368</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill yellow">Reward shop</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Kids browse rewards and send requests; parents approve and redeem at the family’s
-                rates.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Kids browse rewards and send requests.</li>
+                <li>Parents approve and redeem at the family&rsquo;s rates.</li>
+              </ul>
             </div>
             <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>kids</span><span>Sarah</span>
+              <span class="micro">Who it's for</span><span>kids</span><span>Sarah</span>
             </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-517</span>
-            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-517</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill pink">Learn</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Logic, a full Maths journey (placement, lessons, times tables, certificates), World
-                Flags (map, flashcards, quizzes) and a reading log. Kid-only.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Logic puzzles and a full Maths journey with certificates.</li>
+                <li>World Flags: map, flashcards, quizzes.</li>
+                <li>Reading log. All of it kid-only.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>kids</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>ADR 0017</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>kids</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>ADR 0017</span></div>
           </div>
         </div>
       </div>
@@ -596,59 +549,47 @@
           <div class="pill cyan">Child World</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Open any child’s world from the account menu: habits, rewards, meals, calendar,
-                journal, and read-only Learning Insights.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Open any child&rsquo;s world from the account menu.</li>
+                <li>Habits, rewards, meals, calendar, journal.</li>
+                <li>Read-only Learning Insights.</li>
+              </ul>
             </div>
             <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>Sarah</span><span>Yusuf</span>
+              <span class="micro">Who it's for</span><span>Sarah</span><span>Yusuf</span>
             </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>child-world</span>
-            </div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>child-world</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill green">Week close</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Claim / cash out / save / invest / withdraw dialogs, money stored to the penny,
-                every action reversible on reopen.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Claim / cash out / save / invest / withdraw dialogs.</li>
+                <li>Money stored to the penny; every action reversible on reopen.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>Sarah</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>ADR 0020</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>Sarah</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>ADR 0020</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill coral">Phone-ready</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                44px finger-sized tap targets, no sideways scrolling, layouts that stack on phones,
-                reduced-motion respected, locked by automated tests.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>44px finger-sized tap targets; no sideways scrolling.</li>
+                <li>Layouts stack on phones; reduced motion respected.</li>
+                <li>Locked in by automated tests.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>everyone</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>everyone</span></div>
             <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-547</span><span>FHS-548</span>
+              <span class="micro">Shipped in</span><span>FHS-547</span><span>FHS-548</span>
             </div>
           </div>
         </div>
@@ -658,65 +599,48 @@
     <div class="slide">
       <span class="star">★</span>
       <h2>Not built yet</h2>
-      <p class="subtitle">Coming next; don’t demo or test these.</p>
+      <p class="subtitle">Coming next; don&rsquo;t demo or test these.</p>
       <div class="rows">
         <div class="row">
           <div class="pill coral">Payments</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Billing and subscriptions arrive with Stripe in Sprint 4. Nothing should ever ask
-                for a card today.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Billing and subscriptions arrive with Stripe in Sprint 4.</li>
+                <li>Nothing should ever ask for a card today.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>future</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>Sprint 4</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>future</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>Sprint 4</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill yellow">Organisations</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                Community and white-label tiers for schools and clubs, and custom web addresses.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>Community and white-label tiers for schools and clubs.</li>
+                <li>Custom web addresses.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>future</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>Sprint 6</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>future</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>Sprint 6</span></div>
           </div>
         </div>
         <div class="row">
           <div class="pill cyan">Loading screen</div>
           <div class="cols">
             <div class="col">
-              <div class="micro">What you can do</div>
-              <p>
-                One branded loading screen everywhere is being designed next; faint grey loading
-                text is a known issue.
-              </p>
+              <span class="micro">What you can do</span>
+              <ul>
+                <li>One branded loading screen everywhere is being designed next.</li>
+                <li>Faint grey loading text is a known issue.</li>
+              </ul>
             </div>
-            <div class="col who">
-              <div class="micro">Who it's for</div>
-              <span>everyone</span>
-            </div>
-            <div class="col ref">
-              <div class="micro">Shipped in</div>
-              <span>FHS-550</span>
-            </div>
+            <div class="col who"><span class="micro">Who it's for</span><span>everyone</span></div>
+            <div class="col ref"><span class="micro">Shipped in</span><span>FHS-550</span></div>
           </div>
         </div>
       </div>
