@@ -415,13 +415,13 @@ const patternsEasy: Unidentified<PatternQuestion>[] = [
     ['🔴', '🔵', '🔴', '🔵', '?'],
     ['🔴', '🟢', '🔵', '🟡'],
     '🔴',
-    'The pattern goes red, blue, red, blue, so next is red! 🔴',
+    'The pattern goes red, blue, red, blue. So next is red! 🔴',
   ),
   pat(
     ['⭐', '⭐', '🌙', '⭐', '⭐', '?'],
     ['⭐', '🌙', '☀️', '💫'],
     '🌙',
-    'The pattern is star, star, moon, so next is moon! 🌙',
+    'The pattern is star, star, moon. So next is moon! 🌙',
   ),
   pat(
     ['1', '1', '2', '2', '3', '?'],
@@ -433,7 +433,7 @@ const patternsEasy: Unidentified<PatternQuestion>[] = [
     ['🍎', '🍊', '🍎', '🍊', '?'],
     ['🍎', '🍇', '🍌', '🍊'],
     '🍎',
-    'Apple, orange repeats, so next is apple! 🍎',
+    'Apple, orange repeats. So next is apple! 🍎',
   ),
   pat(
     ['10', '20', '30', '?'],
@@ -445,7 +445,7 @@ const patternsEasy: Unidentified<PatternQuestion>[] = [
     ['🌞', '🌧️', '🌞', '🌧️', '?'],
     ['🌞', '❄️', '🌧️', '⛈️'],
     '🌞',
-    'Sunny, rainy repeats, so next is sunny! ☀️',
+    'Sunny, rainy repeats. So next is sunny! ☀️',
   ),
   pat(
     ['5', '10', '15', '?'],

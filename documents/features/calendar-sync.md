@@ -42,7 +42,7 @@ and is tracked separately.
 - **Then** I get a private subscribe URL
 - **And** fetching that URL (with no login) returns a calendar feed listing our activities
 
-**Scenario: Tenant isolation, a family's feed never includes another family's events**
+**Scenario: Tenant isolation: a family's feed never includes another family's events**
 
 - **Given** family A and family B each have activities
 - **When** family A's subscribe URL is fetched

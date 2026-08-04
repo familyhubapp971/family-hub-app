@@ -713,7 +713,7 @@ function emailChangeHtml(opts: {
     <p>If the button doesn't work, paste this link into your browser:</p>
     <p><a href="${confirmUrl}">${confirmUrl}</a></p>
     <p>${currentEmail ? `Your old email (${currentEmail}) keeps working until you click the link above.` : ''} If you didn't request this, you can safely ignore this email: nothing changes until this link is clicked.</p>
-    <p>- The Family Hub team</p>
+    <p>The Family Hub team</p>
   `.trim();
 }
 
@@ -730,7 +730,7 @@ function emailChangeStartedOldEmailHtml(opts: { displayName: string; newEmail: s
     <p>Hi ${displayName},</p>
     <p>A request was made to change your Family Hub sign-in email to <strong>${newEmail}</strong>. It only takes effect when the link sent to the new address is confirmed.</p>
     <p>If this wasn't you, don't confirm anything: change your password to secure your account.</p>
-    <p>- The Family Hub team</p>
+    <p>The Family Hub team</p>
   `.trim();
 }
 
@@ -742,7 +742,7 @@ function emailChangeCompletedOldEmailHtml(opts: { displayName: string; newEmail:
     <p>Hi ${displayName},</p>
     <p>Your Family Hub sign-in email was changed to <strong>${newEmail}</strong>.</p>
     <p>If this wasn't you, change your password to secure your account.</p>
-    <p>- The Family Hub team</p>
+    <p>The Family Hub team</p>
   `.trim();
 }
 
