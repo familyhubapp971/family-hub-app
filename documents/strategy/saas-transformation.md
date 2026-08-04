@@ -13,7 +13,7 @@ Family Hub is **the operating system for family life**: a single
 multi-tenant platform that combines family admin (calendars, meals,
 announcements, assignments, journaling), beneficial screen time
 (maths, logic, world flags), a child-friendly sticker economy, and
-cultural flexibility (Ramadan journaling, mosque / church integration,
+cultural flexibility (optional cultural journals, community integration,
 extended-family roles).
 
 We are transforming the existing single-family application into a
@@ -22,12 +22,12 @@ organization, can spin up at `<slug>.familyhub.app` in minutes.
 
 ## What we're building
 
-| Pillar                     | Description                                                                                               |
-| -------------------------- | --------------------------------------------------------------------------------------------------------- |
-| **Family Admin Hub**       | Calendars, meals, announcements, assignments, journal: one dashboard replaces five apps.                  |
-| **Beneficial Screen Time** | Maths, world flags, logic games: children earn stickers by learning. Screen time parents feel good about. |
-| **Sticker Economy**        | Earn, save, invest, spend in a rewards shop. Children learn economics through real consequence.           |
-| **Cultural Flexibility**   | Ramadan journal, mosque / church integration, extended-family roles. Built for how real families work.    |
+| Pillar                     | Description                                                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Family Admin Hub**       | Calendars, meals, announcements, assignments, journal: one dashboard replaces five apps.                    |
+| **Beneficial Screen Time** | Maths, world flags, logic games: children earn stickers by learning. Screen time parents feel good about.   |
+| **Sticker Economy**        | Earn, save, invest, spend in a rewards shop. Children learn economics through real consequence.             |
+| **Cultural Flexibility**   | Optional cultural journals, community integration, extended-family roles. Built for how real families work. |
 
 ## How it works
 
@@ -42,12 +42,12 @@ The four-way intersection, **family admin + children's education +
 reward economy + cultural flexibility**, is uncontested. Existing
 players occupy at most two corners:
 
-| Competitor                         | Family admin | Education | Reward economy  | Cultural flex |
-| ---------------------------------- | ------------ | --------- | --------------- | ------------- |
-| Cozi, FamilyWall                   | ✅           | ❌        | ❌              | ❌            |
-| Khan Academy, Prodigy              | ❌           | ✅        | partial         | ❌            |
-| GoHenry, RoosterMoney              | partial      | ❌        | ✅ (money only) | ❌            |
-| Muslim-tech apps (Muslim Pro etc.) | ❌           | ❌        | ❌              | partial       |
+| Competitor            | Family admin | Education | Reward economy  | Cultural flex |
+| --------------------- | ------------ | --------- | --------------- | ------------- |
+| Cozi, FamilyWall      | ✅           | ❌        | ❌              | ❌            |
+| Khan Academy, Prodigy | ❌           | ✅        | partial         | ❌            |
+| GoHenry, RoosterMoney | partial      | ❌        | ✅ (money only) | ❌            |
+| Culture-focused apps  | ❌           | ❌        | ❌              | partial       |
 
 **The whitespace:** no product combines all four pillars. Family Hub
 sits dead-centre.
@@ -58,14 +58,14 @@ sits dead-centre.
 
 - Tech-comfortable parents managing 2+ children's schedules.
 - Households where one parent values structured screen time / educational habits.
-- Multi-faith and Muslim households underserved by Western family apps.
+- Multicultural households underserved by one-size-fits-all family apps.
 - Homeschool and supplemental-learning families.
 
 ### Launch geography (in order)
 
-1. **UAE / Saudi Arabia**: high income, mosque integration, extended-family norms, English-speaking expats.
+1. **UAE / Saudi Arabia**: high income, strong community structures, extended-family norms, English-speaking expats.
 2. **US / Canada / UK**: massive market, high tech adoption, homeschooling growth.
-3. **Indonesia / Pakistan**: large Muslim populations, strong family culture, mobile-first usage.
+3. **Indonesia / Pakistan**: large family-centric populations, strong family culture, mobile-first usage.
 
 ## Pricing strategy
 
@@ -79,7 +79,7 @@ sits dead-centre.
 
 ### Enterprise / white-label tiers
 
-For Islamic schools, madrasahs, mosques, churches, homeschool co-ops,
+For schools, homeschool co-ops, clubs and community organisations,
 community centres, NGOs.
 
 | Org size          | Annual price | Includes                       |
