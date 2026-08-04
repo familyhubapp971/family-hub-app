@@ -35,11 +35,7 @@ export function mintTestJwt(claims: TestJwtClaims): string {
 }
 
 function encodeBase64Url(input: string): string {
-  return Buffer.from(input)
-    .toString('base64')
-    .replace(/=+$/, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
+  return Buffer.from(input).toString('base64url');
 }
 
 function nowPlus(seconds: number): number {
