@@ -44,6 +44,13 @@ const DOCS = [
     out: 'fh-pitch-deck.pdf',
     pageSize: { width: '338.66mm', height: '190.5mm' },
   },
+  {
+    src: 'fh-hub71-answers.html',
+    out: 'family-hub-hub71-answers.pdf',
+    outDir: 'documents/investments',
+    margin: { top: '12mm', bottom: '14mm', left: 0, right: 0 },
+    footerTitle: 'Hub71 application',
+  },
 ];
 
 const browser = await chromium.launch();
@@ -67,7 +74,7 @@ for (const d of DOCS) {
     });
   }
   await page.pdf({
-    path: path.join(root, 'documents/business', d.out),
+    path: path.join(root, d.outDir ?? 'documents/business', d.out),
     ...(d.pageSize ? d.pageSize : { format: 'A4' }),
     landscape: d.landscape ?? false,
     printBackground: true,
