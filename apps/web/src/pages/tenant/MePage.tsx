@@ -3,7 +3,7 @@ import { Card } from '@familyhub/ui';
 import { z } from 'zod';
 import { apiFetch, ApiError } from '../../lib/api';
 
-// FHS-195 — frontend /me route.
+// FHS-195: frontend /me route.
 //
 // Hits GET /api/me with the current Supabase access token, displays
 // "Hello, {email}". Mounted under <ProtectedRoute>, so we know there's

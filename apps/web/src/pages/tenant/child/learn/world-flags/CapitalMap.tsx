@@ -3,7 +3,7 @@ import L from 'leaflet';
 import { MapPin } from 'lucide-react';
 // Bundle Leaflet's marker images through Vite so they're served from our own
 // origin ('self'). The library's default icons resolve via bundler-relative
-// paths that break under Vite, and a CDN URL would need a CSP allowance — local
+// paths that break under Vite, and a CDN URL would need a CSP allowance: local
 // assets sidestep both and keep the pin reliable offline.
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIconUrl from 'leaflet/dist/images/marker-icon.png';
@@ -12,7 +12,7 @@ import { CAPITAL_COORDINATES, type Country } from '../../../../../data/countries
 
 // Mini interactive map pinned on a country's capital (OpenStreetMap tiles via
 // Leaflet). Falls back to a text-only capital label when we don't have
-// coordinates for the country. The map is pan/zoom-locked — it's a static
+// coordinates for the country. The map is pan/zoom-locked: it's a static
 // "here's where it is" visual for kids, not a full map.
 
 const markerIcon = L.icon({

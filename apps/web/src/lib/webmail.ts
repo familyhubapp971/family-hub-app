@@ -1,6 +1,6 @@
 // Maps the most common consumer mail providers to their webmail URL +
 // human-friendly label. Workplace and unknown domains fall through to a
-// generic label with no URL — we can't reliably guess the right webmail
+// generic label with no URL: we can't reliably guess the right webmail
 // for them, and a wrong link is worse than no link.
 
 export interface WebmailTarget {

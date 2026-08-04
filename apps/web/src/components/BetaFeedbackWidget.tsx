@@ -1,5 +1,5 @@
 /**
- * BetaFeedbackWidget — FHS-418 (in-app) / FHS-429 (public)
+ * BetaFeedbackWidget: FHS-418 (in-app) / FHS-429 (public)
  *
  * variant='in-app'  (default): floating bottom-right on every signed-in
  *   /t/:slug/* page. Hidden when no Supabase session or no tenant slug.
@@ -10,7 +10,7 @@
  *   dialog. Posts to POST /api/public/feedback with no auth headers.
  *
  * Mounted once in:
- *   - ProtectedRoute (variant='in-app', no prop needed — default)
+ *   - ProtectedRoute (variant='in-app', no prop needed, default)
  *   - WelcomePage + PricingPage (variant='public')
  */
 
@@ -40,7 +40,7 @@ interface FeedbackBody {
 
 const MAX_CHARS = 2000;
 
-// Simple email format check — only validates when non-empty.
+// Simple email format check: only validates when non-empty.
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -131,7 +131,7 @@ function RecommendRow({
 }) {
   return (
     <div className="space-y-2">
-      {/* End labels — always on their own line */}
+      {/* End labels: always on their own line */}
       <div className="flex justify-between text-xs text-gray-500">
         <span>Not at all likely</span>
         <span>Extremely likely</span>
@@ -211,13 +211,13 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
   const titleId = useId();
   const moreId = useId();
 
-  // FHS-449 — the survey opens on just the two quickest, highest-signal
+  // FHS-449: the survey opens on just the two quickest, highest-signal
   // questions (PMF + recommend score). Everything else sits behind this
   // "A few more (optional)" expander so a tester sees a short form, not a
   // wall of questions. The request body shape is unchanged either way.
   const [showMore, setShowMore] = useState(false);
 
-  // Read :slug from the URL — present on /t/:slug/* routes, absent on legacy
+  // Read :slug from the URL: present on /t/:slug/* routes, absent on legacy
   // routes like /dashboard and /me. useParams is safe to call outside a
   // matching route; it just returns an empty object.
   const { slug: tenantSlug } = useParams<{ slug?: string }>();
@@ -523,7 +523,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                 </div>
               )}
 
-              {/* Q1 — PMF */}
+              {/* Q1: PMF */}
               <fieldset>
                 <legend className="mb-2 font-black text-sm text-black">
                   How would you feel if you could no longer use Family Hub?
@@ -551,7 +551,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                 </div>
               </fieldset>
 
-              {/* Q2 — Recommend (0..10) */}
+              {/* Q2: Recommend (0..10) */}
               <fieldset>
                 <legend className="mb-2 font-black text-sm text-black">
                   How likely are you to recommend it to another family?
@@ -560,7 +560,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                 <RecommendRow value={recommend} onChange={setRecommend} />
               </fieldset>
 
-              {/* FHS-449 — everything past the two quick questions above sits
+              {/* FHS-449: everything past the two quick questions above sits
                   behind this expander so the dialog opens short, not long. */}
               <button
                 type="button"
@@ -587,7 +587,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                   data-testid="beta-feedback-more-content"
                   className="space-y-6 rounded-xl border-2 border-dashed border-gray-200 p-4"
                 >
-                  {/* Q3 — Solves a problem (1..5) */}
+                  {/* Q3: Solves a problem (1..5) */}
                   <fieldset>
                     <legend className="mb-2 font-black text-sm text-black">
                       How well does it solve a real problem for your family?
@@ -603,7 +603,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                     />
                   </fieldset>
 
-                  {/* Q4 — Ease of use (1..5) */}
+                  {/* Q4: Ease of use (1..5) */}
                   <fieldset>
                     <legend className="mb-2 font-black text-sm text-black">
                       How easy is it to use?
@@ -619,7 +619,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                     />
                   </fieldset>
 
-                  {/* Q5 — Keep using (1..5) */}
+                  {/* Q5: Keep using (1..5) */}
                   <fieldset>
                     <legend className="mb-2 font-black text-sm text-black">
                       After the beta, how likely are you to keep using it?
@@ -635,7 +635,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                     />
                   </fieldset>
 
-                  {/* Q6 — Pain point */}
+                  {/* Q6: Pain point */}
                   <div>
                     <label
                       htmlFor="beta-feedback-pain"
@@ -654,7 +654,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                     />
                   </div>
 
-                  {/* Q7 — Feature request */}
+                  {/* Q7: Feature request */}
                   <div>
                     <label
                       htmlFor="beta-feedback-feature"
@@ -673,7 +673,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
                     />
                   </div>
 
-                  {/* Q8 — Anything else */}
+                  {/* Q8: Anything else */}
                   <div>
                     <label
                       htmlFor="beta-feedback-other"

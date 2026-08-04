@@ -1,19 +1,19 @@
-// AppHeader — shared top-navigation header for all authenticated parent pages.
+// AppHeader: shared top-navigation header for all authenticated parent pages.
 //
 // Encapsulates:
 //  • FamilyHero brand area (family-initial disc + name + members-active pulse)
 //  • TopNav with the six dashboard tabs + per-tab badges
 //  • ProfilePill dropdown (child links, Manage family, Reward settings,
-//    and a Log out button at the bottom of the menu — FHS-520)
+//    and a Log out button at the bottom of the menu: FHS-520)
 //
 // Self-fetches family name + members + Tasks badge from /api/me +
 // /api/dashboard/today. Listens to fh:dashboard-stale (FHS-309) to
 // refresh badge counts live when a task mutation fires in any tab.
 //
 // Props:
-//  activeTab   — which tab to highlight; pass null when no tab is active
+//  activeTab: which tab to highlight; pass null when no tab is active
 //                (e.g. Admin Panel, Members page).
-//  onTabChange — called with the tab id when the user clicks a tab;
+//  onTabChange: called with the tab id when the user clicks a tab;
 //                the caller decides how to handle the navigation.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,7 +27,7 @@ import { API_BASE } from '../../lib/api';
 import { useDashboardStaleSignal } from '../../lib/dashboard-refresh';
 import { TABS, DEFAULT_TAB } from './dashboard-tabs';
 
-// In-app tab badge counts — typed map so wiring is in place for FHS-262.
+// In-app tab badge counts: typed map so wiring is in place for FHS-262.
 type TabBadgeMap = Partial<Record<(typeof TABS)[number]['id'], number>>;
 
 interface MeResponseTenant {
@@ -119,7 +119,7 @@ function FamilyHero({
 // yellow/purple). Same order = same colour across reloads.
 const CHILD_DISC_COLORS = ['bg-yellow-300', 'bg-purple-300', 'bg-pink-300', 'bg-cyan-300'];
 
-// FHS-485 / ADR 0019 — the caller's own role line in the profile menu.
+// FHS-485 / ADR 0019: the caller's own role line in the profile menu.
 // This used to be hardcoded "Parent · Admin" for everyone, which is wrong
 // for an adult/teen/guest (only `admin` is the parent/partner with full
 // rights). Read the caller's real role and label it to match the matrix.
@@ -131,7 +131,7 @@ const ROLE_PILL_LABEL: Record<string, string> = {
   child: 'Child',
 };
 
-// FHS-523 — exported so the child-world header (ChildWorldPage) renders the
+// FHS-523: exported so the child-world header (ChildWorldPage) renders the
 // same account pill as the parent dashboard, matching the design.
 export function ProfilePill({
   parentName,
@@ -147,12 +147,12 @@ export function ProfilePill({
   parentName: string;
   role: string | null;
   // Only id + displayName are read here (the "View World" links), so accept the
-  // minimal shape — both the dashboard roster and the child-world roster fit.
+  // minimal shape: both the dashboard roster and the child-world roster fit.
   childMembers: Array<{ id: string; displayName: string }>;
   onManageMembers: () => void;
   onRewardSettings: () => void;
   onLogout: () => void;
-  // FHS-523 — when provided, "View World" switches child via this handler
+  // FHS-523: when provided, "View World" switches child via this handler
   // (in-app SPA nav). Without it, we hard-navigate (dashboard's default).
   onSelectChild?: (childId: string) => void;
   signingOut: boolean;
@@ -238,7 +238,7 @@ export function ProfilePill({
               </div>
             </div>
           </div>
-          {/* FHS-471 — the "+" always shows here (even with zero children)
+          {/* FHS-471: the "+" always shows here (even with zero children)
               since that's exactly when a tester most wants to add the
               family's first member; the dropdown was previously read as
               "my profile" with no obvious add-member control. */}
@@ -316,7 +316,7 @@ export function ProfilePill({
               <Users size={16} strokeWidth={3} aria-hidden="true" />
               Manage family
             </button>
-            {/* FHS-512 / FHS-514 — reward-config ("Pocket money") settings. */}
+            {/* FHS-512 / FHS-514: reward-config ("Pocket money") settings. */}
             <button
               type="button"
               role="menuitem"
@@ -331,7 +331,7 @@ export function ProfilePill({
               Reward settings
             </button>
           </div>
-          {/* FHS-520 (design-fidelity) — Log out now lives at the bottom of
+          {/* FHS-520 (design-fidelity): Log out now lives at the bottom of
               this dropdown (not a separate top-nav button) to match the
               Magic Patterns mock. */}
           <div className="border-t-2 border-black bg-gray-50 p-3">
@@ -416,7 +416,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
     };
   }, [session, slug]);
 
-  // FHS-309 — refresh badge counts when a task/notice mutation elsewhere
+  // FHS-309: refresh badge counts when a task/notice mutation elsewhere
   // fires the dashboard-stale signal so the badge updates live.
   const refreshToday = useCallback(() => {
     if (!session) return;
@@ -456,7 +456,7 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
     navigate(`/t/${slug}/reward-settings`);
   }, [navigate, slug]);
 
-  // FHS-506 — prefer the caller's roster display name (the name shown on their
+  // FHS-506: prefer the caller's roster display name (the name shown on their
   // member card) over the auth email. Magic-link signups often carry no
   // full_name, so the email used to leak into the account menu.
   const parentName =

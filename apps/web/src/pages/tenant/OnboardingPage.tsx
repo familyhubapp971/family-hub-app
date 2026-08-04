@@ -18,7 +18,7 @@ import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 
-// FHS-36 / FHS-37 — OnboardingWizard at /t/:slug/onboarding.
+// FHS-36 / FHS-37: OnboardingWizard at /t/:slug/onboarding.
 //
 // Multi-step wizard the founding admin walks through once per family
 // right after signup. Local state until the very end; one POST to
@@ -26,15 +26,15 @@ import { API_BASE } from '../../lib/api';
 // `tenant.onboarding_completed === true` are bounced to /dashboard
 // before the wizard ever paints.
 //
-// FHS-432 — timezone + currency are now auto-detected from the browser
+// FHS-432: timezone + currency are now auto-detected from the browser
 // and shown in a confirmation step (step 3). The user only touches the
 // pickers if the detected value is wrong or detection fails.
 //
 // Steps:
 //   1. Welcome
 //   2. Add 1–8 members (name + role + emoji)
-//   3. Location — auto-detected timezone + currency with optional Change affordance
-//   4. Done — POSTs everything, redirects to /dashboard
+//   3. Location: auto-detected timezone + currency with optional Change affordance
+//   4. Done: POSTs everything, redirects to /dashboard
 
 const STEPS = ['Welcome', 'Members', 'Location', 'Done'] as const;
 
@@ -51,11 +51,11 @@ interface WizardMember {
   displayName: string;
   role: 'adult' | 'teen' | 'child' | 'guest';
   avatarEmoji?: string;
-  // FHS-275 — optional invite email (adults only): they get a sign-in
+  // FHS-275: optional invite email (adults only): they get a sign-in
   // link and become this member on first login.
   email?: string;
-  // FHS-487 — optional age in years, child rows only. Captured for
-  // later use — nothing reads it yet. Adults/teens/guests never set this.
+  // FHS-487: optional age in years, child rows only. Captured for
+  // later use: nothing reads it yet. Adults/teens/guests never set this.
   age?: number;
 }
 
@@ -65,7 +65,7 @@ function makeUiId(): string {
 
 type Status =
   | { kind: 'loading' }
-  | { kind: 'gated' } // user has completed onboarding — redirecting
+  | { kind: 'gated' } // user has completed onboarding: redirecting
   | { kind: 'ready' }
   | { kind: 'submitting' }
   | { kind: 'error'; message: string };
@@ -90,13 +90,13 @@ export function OnboardingPage() {
   const { session } = useAuth();
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [step, setStep] = useState(1);
-  // FHS-274 — the founder is shown as a pinned "You — Admin" row and
+  // FHS-274: the founder is shown as a pinned "You: Admin" row and
   // submitted as `yourName` (renames their admin row server-side).
   // The list below holds only the OTHER family members.
   const [yourName, setYourName] = useState('');
   const [members, setMembers] = useState<WizardMember[]>([]);
 
-  // FHS-432 — detect on mount; detection result drives fallback logic.
+  // FHS-432: detect on mount; detection result drives fallback logic.
   const detectedTimezone = useMemo(() => detectBrowserTimezone(), []);
   const detectedCurrency = useMemo(() => detectBrowserCurrency(), []);
 
@@ -146,7 +146,7 @@ export function OnboardingPage() {
           }
         }
       } catch {
-        // Network blip — let the user see the wizard; the final
+        // Network blip: let the user see the wizard; the final
         // submit will surface any real backend issue.
         if (!cancelled) setStatus({ kind: 'ready' });
       }
@@ -166,7 +166,7 @@ export function OnboardingPage() {
         members.every((m) => m.displayName.trim().length >= 1)
       );
     }
-    // Location step — both values must be valid (user may have edited them).
+    // Location step: both values must be valid (user may have edited them).
     if (step === 3) return isValidTimezone(timezone) && isValidCurrency(currency);
     return true;
   }, [step, yourName, members, timezone, currency]);
@@ -177,7 +177,7 @@ export function OnboardingPage() {
   }
 
   function removeMember(uiId: string) {
-    // Others can drop to zero — the founder ("You") is always present.
+    // Others can drop to zero: the founder ("You") is always present.
     setMembers((prev) => prev.filter((m) => m.uiId !== uiId));
   }
 
@@ -185,7 +185,7 @@ export function OnboardingPage() {
     setMembers((prev) => prev.map((m) => (m.uiId === uiId ? { ...m, ...patch } : m)));
   }
 
-  // FHS-487 — separate setter (not patchMember) because clearing the age
+  // FHS-487: separate setter (not patchMember) because clearing the age
   // field must OMIT the key rather than set it to undefined
   // (exactOptionalPropertyTypes forbids `age: undefined` on an `age?:
   // number` field). Same rebuild-without-the-key approach as the emoji
@@ -372,7 +372,7 @@ export function OnboardingPage() {
                         </button>
                       </div>
                     </div>
-                    {/* Emoji picker — full width below the inline row */}
+                    {/* Emoji picker: full width below the inline row */}
                     <div className="mt-2">
                       <Label>Emoji (optional)</Label>
                       <AvatarEmojiPicker
@@ -385,7 +385,7 @@ export function OnboardingPage() {
                               if (row.uiId !== m.uiId) return row;
                               if (next) return { ...row, avatarEmoji: next };
                               // Clearing the emoji must keep the row's other
-                              // optional fields (email, age) — rebuild without
+                              // optional fields (email, age): rebuild without
                               // just avatarEmoji.
                               const cleared: WizardMember = {
                                 uiId: row.uiId,
@@ -416,7 +416,7 @@ export function OnboardingPage() {
                         />
                       </div>
                     )}
-                    {/* FHS-487 — optional age for kids (child or teen). Shows on
+                    {/* FHS-487: optional age for kids (child or teen). Shows on
                         their Manage Members card (e.g. "Child (6)"). */}
                     {(m.role === 'child' || m.role === 'teen') && (
                       <div className="mt-3">
@@ -451,7 +451,7 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* FHS-432 — Location step: auto-detected values confirmed,
+          {/* FHS-432: Location step: auto-detected values confirmed,
               pickers hidden unless detection failed or the user taps "Change". */}
           {step === 3 && (
             <div data-testid="onboarding-step-location">

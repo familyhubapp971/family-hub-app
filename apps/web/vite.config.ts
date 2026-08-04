@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   // Source-map upload only fires when the full Sentry CI bundle is
   // present. Locally we still emit source maps (build.sourcemap: true)
-  // for in-browser debugging — just don't upload them anywhere.
+  // for in-browser debugging: just don't upload them anywhere.
   const sentryAuth: string | undefined = env.SENTRY_AUTH_TOKEN;
   const sentryOrg: string | undefined = env.SENTRY_ORG;
   const sentryProject: string | undefined = env.SENTRY_PROJECT_WEB;

@@ -6,7 +6,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-270 — ChildWorld Journal tab (Magic Patterns design, new per-day API).
+// FHS-270: ChildWorld Journal tab (Magic Patterns design, new per-day API).
 //
 // Sub-tabs: "My Journal" (per-day form) + "Past Entries" (read list).
 // Date navigator drives which day is being viewed/edited.
@@ -86,7 +86,7 @@ type NavAbortRef = { current: AbortController | null };
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-// FHS-270 / FHS-366 — used by both the parent ChildWorld (pass `memberId`, uses
+// FHS-270 / FHS-366: used by both the parent ChildWorld (pass `memberId`, uses
 // the Supabase session) and the kid dashboard (pass `kidToken`, uses the
 // token-scoped /api/kid/journal endpoints). Exactly one of memberId/kidToken is
 // given; the request builders below branch on which.
@@ -116,7 +116,7 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
   const moods = JOURNAL_MOODS;
 
   // ── sub-tab ───────────────────────────────────────────────────────────────
-  // FHS-376 — kids get a read-only Journal: Past Entries only, no "My Journal"
+  // FHS-376: kids get a read-only Journal: Past Entries only, no "My Journal"
   // write form. Parents author entries from the parent portal.
   const [subTab, setSubTab] = useState<SubTab>(kid ? 'past' : 'write');
 
@@ -198,7 +198,7 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
         const data = (await res.json()) as { earliestDate: string | null };
         setEarliestDate(data.earliestDate);
       } catch {
-        // non-fatal — back-nav will just be unrestricted
+        // non-fatal: back-nav will just be unrestricted
       }
     },
     [headers, kid, memberId],
@@ -233,7 +233,7 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
     void fetchEarliest(ac.signal);
     return () => {
       ac.abort();
-      // Also cancel any pending nav fetch (FIX 1 — unmount cleanup).
+      // Also cancel any pending nav fetch (FIX 1: unmount cleanup).
       navAbortRef.current?.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -301,7 +301,7 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
             msg = String(errBody.message ?? errBody.error);
           }
         } catch {
-          /* swallow — body unreadable */
+          /* swallow: body unreadable */
         }
         setSaveState('idle');
         setSaveError(msg);
@@ -369,7 +369,7 @@ export function JournalTab({ memberId, kidToken }: { memberId?: string; kidToken
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Sub-tab switcher — hidden for kids (read-only, Past Entries only). */}
+      {/* Sub-tab switcher: hidden for kids (read-only, Past Entries only). */}
       {!kid && (
         <div className="flex gap-1 rounded-xl border-2 border-black bg-white p-1.5 shadow-neo-sm">
           <button

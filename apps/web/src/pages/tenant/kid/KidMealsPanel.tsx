@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Coffee, Cookie, Moon, Sun, Utensils } from 'lucide-react';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-365 — kid Meals tab (read-only). Reads GET /api/kid/meals, which the
+// FHS-365: kid Meals tab (read-only). Reads GET /api/kid/meals, which the
 // server already scopes to this kid + family-wide entries (no client filter).
 
 interface Meal {

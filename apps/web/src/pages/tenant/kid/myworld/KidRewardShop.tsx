@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ShoppingBag, Star } from 'lucide-react';
 import type { KidReward } from './types';
 
-// FHS-376 — the kid's "Reward Goals" shop. A kid never spends directly; they ASK
+// FHS-376: the kid's "Reward Goals" shop. A kid never spends directly; they ASK
 // a grown-up, who approves. Each row is a little state machine:
 //   none + affordable      → "Ask for this 🎁"  → confirm → POST → pending
 //   none + not affordable  → disabled "Keep saving" + a progress bar to the goal
@@ -176,7 +176,7 @@ export function KidRewardShop({
           ))
         )}
 
-        {/* Decorative locked mystery box — purely cosmetic, no action. */}
+        {/* Decorative locked mystery box: purely cosmetic, no action. */}
         <div className="flex items-center justify-between gap-3 rounded-xl border-2 border-black bg-purple-50 p-4 opacity-80">
           <div>
             <h3 className="font-heading text-base text-black">🔒 Mystery Box ✨</h3>

@@ -1,10 +1,10 @@
-// FHS-394 — Maths Certificates / Achievements view.
+// FHS-394: Maths Certificates / Achievements view.
 // GET /api/kid/maths/certificates → renders per-operation certificate grid
 // (12 tables) + milestone speed challenges (Bronze/Silver/Gold/Grand Master).
 //
 // Speed challenge best scores are kept in localStorage only.
 // Key pattern: maths_speedBest_${operation}_${milestoneName}
-// (no memberId — keyed on operation+milestone since kid auth uses kidToken).
+// (no memberId: keyed on operation+milestone since kid auth uses kidToken).
 //
 // Empty state: renders gracefully when no certificates have been earned yet.
 
@@ -428,7 +428,7 @@ export function MathsCertificates({ kidToken, operation }: MathsCertificatesProp
         setCertificates(data.certificates ?? []);
       })
       .catch(() => {
-        /* network error — keep empty state */
+        /* network error: keep empty state */
       })
       .finally(() => setLoading(false));
 
@@ -562,7 +562,7 @@ export function MathsCertificates({ kidToken, operation }: MathsCertificatesProp
         })}
       </div>
 
-      {/* Milestone Speed Tests — only unlocked ones */}
+      {/* Milestone Speed Tests: only unlocked ones */}
       <div className="space-y-3">
         {MILESTONE_DEFS.map((milestone) => {
           const isUnlocked = isMilestoneComplete(milestone.tables);

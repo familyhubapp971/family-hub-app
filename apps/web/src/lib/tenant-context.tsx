@@ -1,7 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 
-// FHS-249 — tenant context for SPA routes.
+// FHS-249: tenant context for SPA routes.
 //
 // The tenant slug lives in the URL (`/t/:slug/...`) per ADR 0012. This
 // context exposes that slug to any descendant component without each
@@ -22,7 +22,7 @@ export function useTenantSlug(): string {
   const slug = useContext(TenantContext);
   if (!slug) {
     throw new Error(
-      'useTenantSlug() called outside <TenantProvider> — wrap the route in /t/:slug/* before rendering this component.',
+      'useTenantSlug() called outside <TenantProvider>: wrap the route in /t/:slug/* before rendering this component.',
     );
   }
   return slug;

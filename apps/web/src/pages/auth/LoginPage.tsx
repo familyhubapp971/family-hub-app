@@ -7,7 +7,7 @@ import { friendlyAuthErrorMessage } from '../../lib/auth-errors';
 import { AuthLayout } from './AuthLayout';
 import { KidSignIn } from './KidSignIn';
 
-// LoginPage — the Magic Patterns "Welcome Back!" card (FHS-237 / FHS-360).
+// LoginPage: the Magic Patterns "Welcome Back!" card (FHS-237 / FHS-360).
 //
 // One card with a Parent/Kid toggle. Parent = passwordless magic-link or
 // Google OAuth. Kid = the avatar-tiles + PIN flow (shared KidSignIn): on a
@@ -196,7 +196,7 @@ export function LoginPage() {
         </div>
       )}
 
-      {/* MP "Create a new family" footer — single CTA for both views. */}
+      {/* MP "Create a new family" footer: single CTA for both views. */}
       <p className="mt-6 text-center font-body text-sm text-gray-700">
         <Link
           to="/signup"
@@ -210,7 +210,7 @@ export function LoginPage() {
   );
 }
 
-// MP segmented control — two mutually-exclusive buttons toggling which login
+// MP segmented control: two mutually-exclusive buttons toggling which login
 // view is mounted. Plain group + per-button aria-pressed (not an ARIA tablist,
 // so no arrow-key nav requirement).
 function RoleToggle({ role, onChange }: { role: Role; onChange: (next: Role) => void }) {
@@ -268,14 +268,14 @@ function RoleButton({
           : 'border-transparent text-gray-400 hover:text-gray-600',
       ].join(' ')}
     >
-      {/* Emoji is decorative — hidden from screen readers so the button's
+      {/* Emoji is decorative: hidden from screen readers so the button's
           accessible name is just "I'm a Parent" / "I'm a Kid". */}
       <span aria-hidden="true">{emoji}</span> {label}
     </button>
   );
 }
 
-// FHS-353 / FHS-360 — self-serve kid login. On a device that remembers the
+// FHS-353 / FHS-360: self-serve kid login. On a device that remembers the
 // family (KidLoginPage stores it on its last successful load), the avatar tiles
 // show straight away; otherwise the kid types their family code first. The
 // tiles + PIN live in the shared KidSignIn component so this matches the
@@ -297,12 +297,12 @@ function readLastFamily(): { slug: string; name: string } | null {
       return { slug: v.slug, name: v.name };
     }
   } catch {
-    /* corrupt / unavailable storage — fall back to the code entry */
+    /* corrupt / unavailable storage: fall back to the code entry */
   }
   return null;
 }
 
-// FHS-437 — where the currently-attempted slug came from. A "remembered"
+// FHS-437: where the currently-attempted slug came from. A "remembered"
 // slug that 404s means the device's saved family is stale (deleted /
 // recreated tenant); a "typed" slug that 404s just means the kid mistyped
 // their code. The two need different recoveries (see onFamilyNotFound
@@ -323,14 +323,14 @@ function KidLoginPanel() {
   // A remembered family that no longer resolves gets forgotten and the kid
   // is dropped straight back to the code-entry prompt with a plain note. A
   // mistyped code just shows an inline error and keeps what they typed so
-  // they can fix it — and, importantly, does NOT touch localStorage, so a
+  // they can fix it, and, importantly, does NOT touch localStorage, so a
   // good remembered family is never wiped out by an unrelated typo.
   const onFamilyNotFound = useCallback(() => {
     if (slugSource === 'remembered') {
       try {
         localStorage.removeItem(KID_LAST_FAMILY_KEY);
       } catch {
-        /* private mode / storage unavailable — nothing to clear */
+        /* private mode / storage unavailable: nothing to clear */
       }
       setNotice("That family link didn't work. Enter your family code.");
       setError(null);
@@ -366,7 +366,7 @@ function KidLoginPanel() {
   // "change family" link sits below in all states (incl. not-found), so it's
   // NOT also passed as KidSignIn's notFoundFooter (that would double it up).
   // onFamilyNotFound intercepts a 404 before that message ever needs to be
-  // seen — it drops the kid back to the code-entry form instead.
+  // seen: it drops the kid back to the code-entry form instead.
   if (slug) {
     return (
       <section data-testid="login-kid-panel">
@@ -377,7 +377,7 @@ function KidLoginPanel() {
   }
 
   // No family yet → ask for the family code. This is the primary, friendly
-  // path for a kid whose device doesn't remember a family yet — never an
+  // path for a kid whose device doesn't remember a family yet, never an
   // error state.
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

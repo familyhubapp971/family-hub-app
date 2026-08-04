@@ -1,5 +1,5 @@
 /**
- * RewardSettingsPage — "Pocket money" (FHS-512, FHS-514).
+ * RewardSettingsPage: "Pocket money" (FHS-512, FHS-514).
  *
  * /t/:slug/reward-settings. Lets an admin set:
  *   1. the family's default sticker rate,
@@ -8,7 +8,7 @@
  *      selected child's habits.
  *
  * MONEY RULE: every rate/penalty is handled as an INTEGER MINOR CURRENCY
- * UNIT (e.g. 50 = 0.50) end-to-end — the AmountPicker never emits a float,
+ * UNIT (e.g. 50 = 0.50) end-to-end: the AmountPicker never emits a float,
  * and the PUT payloads to /api/reward-config and /api/habits/:id send
  * integers only. Decimal strings only ever exist for display.
  */
@@ -33,7 +33,7 @@ import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
 
 const BOOST_PRESETS = [2, 3, 5] as const;
-// FIX 3 (BLOCKER) — matches the API's cap on rateMinor / skipPenaltyMinor
+// FIX 3 (BLOCKER): matches the API's cap on rateMinor / skipPenaltyMinor
 // (apps/api/src/routes/reward-config.ts, apps/api/src/routes/habits.ts) so
 // the UI can't even try to submit a value the server will 400 on.
 const RATE_MINOR_MAX = 100_000; // 1000.00 in the tenant's currency
@@ -116,7 +116,7 @@ export function RewardSettingsPage() {
     Record<string, { enabled: boolean; rateMinor: number }>
   >({});
 
-  // ── Step 3 — per-habit boost + skip penalty ──────────────────────────────
+  // ── Step 3: per-habit boost + skip penalty ──────────────────────────────
   const [allKids, setAllKids] = useState<MemberItem[]>([]);
   const [selectedKidId, setSelectedKidId] = useState<string | null>(null);
   const [habits, setHabits] = useState<HabitItem[]>([]);
@@ -327,9 +327,9 @@ export function RewardSettingsPage() {
         {status === 'ready' && (
           <>
             <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
-              {/* ── Left column — steps 1 + 2 ── */}
+              {/* ── Left column: steps 1 + 2 ── */}
               <div className="space-y-5">
-                {/* ── Step 1 — family default rate ── */}
+                {/* ── Step 1: family default rate ── */}
                 <Card testId="reward-settings-step-1">
                   <StepHeading number={1} title="How much is one sticker worth?" />
                   <AmountPicker
@@ -342,7 +342,7 @@ export function RewardSettingsPage() {
                   />
                 </Card>
 
-                {/* ── Step 2 — per-child overrides ── */}
+                {/* ── Step 2: per-child overrides ── */}
                 <Card testId="reward-settings-step-2">
                   <StepHeading number={2} title="Does one child earn a different amount?" />
                   {kids.length === 0 && (
@@ -407,7 +407,7 @@ export function RewardSettingsPage() {
                 </Card>
               </div>
 
-              {/* ── Right column — step 3: boost a habit or set a skip penalty ── */}
+              {/* ── Right column: step 3: boost a habit or set a skip penalty ── */}
               <Card testId="reward-settings-step-3">
                 <StepHeading number={3} title="Should big habits pay more?" />
 

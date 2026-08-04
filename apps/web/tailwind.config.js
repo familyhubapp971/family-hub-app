@@ -2,7 +2,7 @@
 // Family Hub design tokens (fonts, neo shadows, kingdom colour, shake
 // animation, xs breakpoint) live in the shared preset at
 // @familyhub/ui/tailwind.preset.js so apps/web and any future surface
-// stay in lockstep. Never copy tokens here — extend the preset.
+// stay in lockstep. Never copy tokens here: extend the preset.
 import preset from '@familyhub/ui/tailwind.preset.js';
 
 export default {

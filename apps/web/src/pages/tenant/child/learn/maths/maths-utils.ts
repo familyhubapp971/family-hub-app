@@ -1,6 +1,6 @@
 // ─── Shared Maths Utilities ──────────────────────────────────────────────────
 // Ported verbatim from the legacy frontend/lib/maths-utils.ts.
-// Pure logic only — no network, no React.
+// Pure logic only: no network, no React.
 
 export type Operation = 'addition' | 'subtraction' | 'multiplication' | 'division';
 export type Difficulty = 'easy' | 'medium' | 'hard';

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-// FHS-309 — lightweight signal so a task (and, later, assignment/notice)
+// FHS-309: lightweight signal so a task (and, later, assignment/notice)
 // mutation in one dashboard tab refreshes the Today snapshot + header
 // counts without a manual page reload. A plain window event keeps the
 // tabs fully decoupled: a mutating tab fires `notifyDashboardStale()`,

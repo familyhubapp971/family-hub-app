@@ -1,10 +1,10 @@
 import { H3, LegalLayout, List, Note, P, Placeholder, type LegalSection } from './LegalLayout';
 
-// CookiesPage — /legal/cookies (FHS-509). Forensic port of the Magic
+// CookiesPage: /legal/cookies (FHS-509). Forensic port of the Magic
 // Patterns design (7f19f840-c796-4eaa-90fc-934fb4ef587d,
 // pages/legal/Cookies.tsx). Every heading, plain-English summary,
 // bullet list and [placeholder] below is the founder's placeholder
-// copy pending legal review — verbatim, not paraphrased.
+// copy pending legal review: verbatim, not paraphrased.
 
 const sections: LegalSection[] = [
   {

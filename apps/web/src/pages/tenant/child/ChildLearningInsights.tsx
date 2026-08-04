@@ -1,4 +1,4 @@
-// FHS-401 — Learning Insights for a single child, embedded as the 5th tab
+// FHS-401: Learning Insights for a single child, embedded as the 5th tab
 // in ChildWorldPage. Parent/admin-only view (not visible to kids themselves).
 //
 // Differences from the parent-dashboard LearningInsightsTabPanel (FHS-385):
@@ -110,7 +110,7 @@ function AccuracyRing({
   label: string;
 }) {
   if (pct === null) {
-    // No data yet — render a grey dashed ring placeholder.
+    // No data yet: render a grey dashed ring placeholder.
     const r = (size - stroke) / 2;
     const cx = size / 2;
     return (
@@ -141,7 +141,7 @@ function AccuracyRing({
           fill="#9ca3af"
           aria-hidden="true"
         >
-          —
+          -
         </text>
       </svg>
     );
@@ -236,7 +236,7 @@ function SubjectCard({ sub }: { sub: SubjectProgress }) {
           >
             ACCURACY{' '}
             <span className="text-purple-700">
-              {sub.accuracyPct !== null ? `${sub.accuracyPct}%` : '—'}
+              {sub.accuracyPct !== null ? `${sub.accuracyPct}%` : '-'}
             </span>
           </p>
           <p data-testid={`last-active-${slug}`} className="mt-0.5 text-xs font-bold text-gray-500">

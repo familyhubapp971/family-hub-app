@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { Trophy } from 'lucide-react';
 
-// FHS-298 — My World analytics (faithful port of the legacy AnalyticsView).
+// FHS-298: My World analytics (faithful port of the legacy AnalyticsView).
 // Read-only summary + weekly-trend chart + habit leaderboard for one child.
 
 interface ApiWeekStat {
@@ -44,7 +44,7 @@ interface HabitStat {
   habitId: string;
   name: string;
   total: number;
-  // FHS-482 — the possible days across every tracked week, so the leaderboard
+  // FHS-482: the possible days across every tracked week, so the leaderboard
   // can show "done of total" instead of a bare completed-days count.
   totalPossible: number;
   avgWeek: number;
@@ -61,7 +61,7 @@ function getRateStyle(rate: number): { bar: string; badge: string; label: string
   return { bar: 'bg-rose-400', badge: 'bg-rose-100 text-rose-600', label: 'Keep going' };
 }
 
-// FHS-374 — the caller supplies the analytics URL + headers, so this view works
+// FHS-374: the caller supplies the analytics URL + headers, so this view works
 // for both the parent (/api/mw/analytics?memberId=) and the kid (/api/kid/analytics).
 export function AnalyticsView({
   analyticsUrl,

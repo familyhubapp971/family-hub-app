@@ -1,4 +1,4 @@
-// FHS-395 — Logic Subject orchestrator.
+// FHS-395: Logic Subject orchestrator.
 // 5 game-type pills + Trophy toggle. Selecting a game renders LogicLesson
 // for that type; Trophy shows LogicCertificates.
 // Auth: Bearer kidToken on all /api/kid/logic/* calls.

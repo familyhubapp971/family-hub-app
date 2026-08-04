@@ -13,25 +13,25 @@ import { TasksTabPanel } from './dashboard/TasksTabPanel';
 import { AppHeader } from './AppHeader';
 import { TABS, DEFAULT_TAB } from './dashboard-tabs';
 
-// FHS-227 + FHS-261 — Parent Dashboard shell. Six tabs gated by the
+// FHS-227 + FHS-261: Parent Dashboard shell. Six tabs gated by the
 // `?tab=<id>` URL query so deep-links + browser back-button work.
 // Default tab = `home` (TodayTabPanel / FHS-228).
 //
-// FHS-401 — Learning Insights tab removed from dashboard; relocated to
+// FHS-401: Learning Insights tab removed from dashboard; relocated to
 // each child's ChildWorldPage as the 5th tab.
 //
 // FHS-261 replaced the original header with FamilyHero + ProfilePill
 // + per-tab badges. That header now lives in AppHeader (shared with
 // AdminPanelPage and any future authenticated page).
 //
-// FHS-309 — badge refresh on dashboard-stale signal lives in AppHeader.
-// FHS-318 — MealsTabPanel renders unwrapped (no white Card).
+// FHS-309: badge refresh on dashboard-stale signal lives in AppHeader.
+// FHS-318: MealsTabPanel renders unwrapped (no white Card).
 
 function isKnownTab(id: string | null): id is string {
   return id !== null && TABS.some((t) => t.id === id);
 }
 
-// FHS-257 — the dashboard route is shared by parents (Supabase session)
+// FHS-257: the dashboard route is shared by parents (Supabase session)
 // and kids (kid JWT). A kid token takes precedence so a child who just
 // logged in gets the kid shell, never the parent surface.
 export function DashboardPage() {
@@ -78,20 +78,20 @@ function ParentDashboard() {
         >
           {/* MP renders tab content straight on the kingdom-purple
               background (each tab brings its own cards). Rebuilt tabs
-              (home, calendar) render that way — wrapping them in a white
+              (home, calendar) render that way: wrapping them in a white
               card would hide their white headings. Tabs not yet
               redesigned keep the white card until their own MP rebuild
               lands. */}
           {active.id === 'home' ? (
             <>
-              {/* FHS-511 — first-run setup guide above the Today content. */}
+              {/* FHS-511: first-run setup guide above the Today content. */}
               <GetStarted />
               <TodayTabPanel />
             </>
           ) : active.id === 'calendar' ? (
             <CalendarTabPanel />
           ) : active.id === 'meals' ? (
-            // FHS-318 — Meals was redesigned (FHS-304) to render on the purple
+            // FHS-318: Meals was redesigned (FHS-304) to render on the purple
             // page with its own white cards + white header text; the leftover
             // white Card wrapper made the header invisible (white-on-white).
             <MealsTabPanel />

@@ -6,11 +6,11 @@ import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 import { notifyDashboardStale } from '../../../lib/dashboard-refresh';
 
-// FHS-233 / FHS-267 — TasksTabPanel (Magic Patterns layout).
+// FHS-233 / FHS-267: TasksTabPanel (Magic Patterns layout).
 //
 // A shared family task board (ADR 0013): one column per member, each
 // with a "done / total" badge. You SEE every column but can only edit
-// your OWN — the caller's column has the circle toggle, delete and an
+// your OWN: the caller's column has the circle toggle, delete and an
 // inline "+ Add" form; other members' columns are read-only.
 
 interface Task {
@@ -45,7 +45,7 @@ const COLUMN_COLORS: Array<{ disc: string; badge: string }> = [
 ];
 
 // Synthetic column key collecting tasks whose assigned member was
-// removed — keeps them in one "Family" column rather than scattering.
+// removed: keeps them in one "Family" column rather than scattering.
 const ORPHAN_KEY = '__family__';
 
 function initials(name: string): string {
@@ -192,7 +192,7 @@ export function TasksTabPanel() {
         setStatusAnnouncement(editingId ? `"${trimmed}" updated` : `Added task "${trimmed}"`);
         setErrorAnnouncement('');
         await load();
-        // Do NOT call notifyDashboardStale for edits — title/due changes don't affect counts.
+        // Do NOT call notifyDashboardStale for edits: title/due changes don't affect counts.
         if (!editingId) notifyDashboardStale();
         requestAnimationFrame(() => addButtonRef.current?.focus());
       } catch (err) {

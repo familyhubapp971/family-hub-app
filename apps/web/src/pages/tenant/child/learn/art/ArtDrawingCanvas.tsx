@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// FHS-371 — Art drawing activity for the kid Learn tab.
+// FHS-371: Art drawing activity for the kid Learn tab.
 // Freehand canvas with pointer events (mouse + touch + stylus), colour swatches,
 // Clear, and Save-as-PNG download.
 
@@ -93,7 +93,7 @@ export function ArtDrawingCanvas() {
     if (!canvas) return;
     // toDataURL throws if the canvas is ever tainted (a cross-origin image
     // drawn onto it). We only ever draw local strokes, so this can't happen
-    // today — but guard so a future change can't crash the kid's screen.
+    // today: but guard so a future change can't crash the kid's screen.
     try {
       const dataUrl = canvas.toDataURL('image/png');
       const a = document.createElement('a');
@@ -101,7 +101,7 @@ export function ArtDrawingCanvas() {
       a.download = 'my-art.png';
       a.click();
     } catch {
-      // Saving failed — leave the drawing on screen so nothing is lost.
+      // Saving failed: leave the drawing on screen so nothing is lost.
     }
   }, []);
 

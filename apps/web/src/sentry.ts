@@ -13,10 +13,10 @@ import * as Sentry from '@sentry/react';
 export function initSentry(): void {
   const dsn = import.meta.env.VITE_SENTRY_DSN_WEB;
   if (!dsn) {
-    // Quiet log — only matters for the dev who wired the build. Use
+    // Quiet log: only matters for the dev who wired the build. Use
     // warn so the eslint no-console rule (which allows warn/error) is
     // happy without an inline disable.
-    if (import.meta.env.DEV) console.warn('[sentry] VITE_SENTRY_DSN_WEB not set — Sentry disabled');
+    if (import.meta.env.DEV) console.warn('[sentry] VITE_SENTRY_DSN_WEB not set: Sentry disabled');
     return;
   }
 
@@ -29,7 +29,7 @@ export function initSentry(): void {
     sendDefaultPii: false,
     initialScope: {
       tags: {
-        tenant_id: 'null', // placeholder — Sprint 1 sets per-render
+        tenant_id: 'null', // placeholder: Sprint 1 sets per-render
         service: '@familyhub/web',
       },
     },

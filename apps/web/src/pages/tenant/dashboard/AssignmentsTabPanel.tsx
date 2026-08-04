@@ -5,7 +5,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-231 / FHS-266 — AssignmentsTabPanel (Magic Patterns layout).
+// FHS-231 / FHS-266: AssignmentsTabPanel (Magic Patterns layout).
 //
 // Family homework / chores. Member filter pills narrow the list; each
 // row carries a coloured avatar dot + name badge for who it's for, a
@@ -82,7 +82,7 @@ export function AssignmentsTabPanel() {
   const togglingRef = useRef<Set<string>>(new Set());
   const addButtonRef = useRef<HTMLButtonElement>(null);
   // Mirror the rendered rows so an optimistic toggle can capture the prior
-  // row synchronously — capturing it inside the setStatus updater races the
+  // row synchronously: capturing it inside the setStatus updater races the
   // network when the PATCH resolves before React commits the update.
   const assignmentsRef = useRef<Assignment[]>([]);
 

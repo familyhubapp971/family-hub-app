@@ -5,7 +5,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-304 / FHS-229 / FHS-264 — MealsTabPanel (Magic Patterns WeeklyMeals restyle).
+// FHS-304 / FHS-229 / FHS-264: MealsTabPanel (Magic Patterns WeeklyMeals restyle).
 //
 // Visual-only restyle: neo-brutalist day cards with today/weekend variants,
 // meal-type accent colours (🌅/☀️/🌙/🍪), week navigator header, member
@@ -147,10 +147,10 @@ function labelFor(memberId: string | null, members: MemberLite[]): string {
   return members.find((m) => m.id === memberId)?.displayName ?? 'Family member';
 }
 
-// FHS-477 — shared by the day-grid filter and the just-saved-meal check
+// FHS-477: shared by the day-grid filter and the just-saved-meal check
 // below, so both agree on what "matches the active filter" means.
 function matchesFilter(memberId: string | null, filter: string): boolean {
-  // FHS-525 — "all" means everyone (assigned + family-wide); the separate
+  // FHS-525: "all" means everyone (assigned + family-wide); the separate
   // "Family" chip is gone, so any other value is a specific member id.
   if (filter === 'all') return true;
   return memberId === filter;
@@ -173,7 +173,7 @@ function mondayOfWeek(offsetWeeks: number, now: Date = new Date()): Date {
   return mon;
 }
 
-// "Feb 23 — Mar 1, 2026" style range for the given Monday.
+// "Feb 23 - Mar 1, 2026" style range for the given Monday.
 function weekRangeFromMonday(mon: Date): string {
   const sun = new Date(mon);
   sun.setDate(mon.getDate() + 6);
@@ -200,7 +200,7 @@ function todayDayKey(now: Date = new Date()): Day | null {
   return map[now.getDay()] ?? null;
 }
 
-// FHS-442 — the Add Meal default should match the time of day it's added,
+// FHS-442: the Add Meal default should match the time of day it's added,
 // not always "dinner". Breakfast before ~11:00, lunch until ~15:00, dinner
 // until ~21:00, snack after that. The user can still pick any slot.
 function defaultMealSlot(now: Date = new Date()): Slot {
@@ -312,14 +312,14 @@ export function MealsTabPanel() {
           return;
         }
         setEditor(null);
-        // FHS-477 — a save whose owner doesn't match the active filter
+        // FHS-477: a save whose owner doesn't match the active filter
         // used to just vanish with no explanation (it saved fine, but the
         // filtered view never showed it). Widen to "All" so a just-saved
         // meal is never silently hidden; skip this for a delete (empty
         // name) since there's nothing new to surface.
         if (trimmedName !== '' && !matchesFilter(ed.memberId, filter)) {
           setFilter('all');
-          setAnnouncement(`${trimmedName} saved — showing All meals so you can see it`);
+          setAnnouncement(`${trimmedName} saved: showing All meals so you can see it`);
         } else if (trimmedName !== '') {
           setAnnouncement(`${trimmedName} saved`);
         }
@@ -386,7 +386,7 @@ export function MealsTabPanel() {
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
 
-          {/* FHS-444 — the number alone reads like a mystery code; the title
+          {/* FHS-444: the number alone reads like a mystery code; the title
               tooltip spells out the real date range on hover/focus, and the
               range is also shown as the page subtitle above (meals-week-range). */}
           <span
@@ -529,7 +529,7 @@ export function MealsTabPanel() {
                 })}
               </div>
 
-              {/* Snack slot — full-width row below the main 3 */}
+              {/* Snack slot: full-width row below the main 3 */}
               <div
                 className="border-t-2 border-gray-100 bg-white"
                 data-testid={`meals-cell-${day}-snack`}
@@ -561,7 +561,7 @@ export function MealsTabPanel() {
                           }}
                         />
                       ))}
-                    {/* Dedicated snack add — pre-sets slot='snack' so a snack
+                    {/* Dedicated snack add: pre-sets slot='snack' so a snack
                         saved from here lands in the snack row, not dinner (FHS-317). */}
                     <button
                       type="button"

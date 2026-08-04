@@ -4,7 +4,7 @@ import { Button, Card, ConfirmDialog } from '@familyhub/ui';
 import { API_BASE } from '../../../lib/api';
 
 /**
- * RewardsTab — FHS-483
+ * RewardsTab: FHS-483
  *
  * Lets a parent (admin) add, edit, and remove the family's reward-shop
  * catalogue from the Admin Panel. Server-side every mutation is admin-only
@@ -13,14 +13,14 @@ import { API_BASE } from '../../../lib/api';
  * non-admin caller away from the whole panel before this renders.
  *
  * Listing reuses the existing GET /api/rewards?memberId=<id> endpoint (built
- * for the kid Rewards Shop) instead of adding a 4th endpoint — that route
+ * for the kid Rewards Shop) instead of adding a 4th endpoint: that route
  * already returns every non-archived reward for the tenant; memberId there
  * is only used to check the caller is a family member and to compute a
  * sticker balance this tab doesn't need, so any member id in the tenant
  * works. `/api/members` always has at least one row (the admin themself),
  * so this works even before any child has been added.
  *
- * Delete is a soft-delete server-side (archived_at) — past redemptions keep
+ * Delete is a soft-delete server-side (archived_at): past redemptions keep
  * their record. The UI just calls DELETE; the "gone forever" framing in the
  * confirm dialog talks about the shop, not the data.
  */

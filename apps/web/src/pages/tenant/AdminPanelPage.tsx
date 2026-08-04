@@ -1,5 +1,5 @@
 /**
- * AdminPanelPage — FHS-308
+ * AdminPanelPage: FHS-308
  *
  * Per-child admin panel reached from /t/:slug/admin.
  * Faithfully ports the legacy AdminPanel look (orange→pink gradient header,
@@ -8,7 +8,7 @@
  * the top controls which member's data is shown in Balance / Savings /
  * History. App Info is family-level and not child-scoped.
  *
- * Member management lives entirely on the Manage Members page — FHS-535
+ * Member management lives entirely on the Manage Members page: FHS-535
  * removed the redundant read-only Users tab that used to duplicate it here.
  */
 
@@ -41,7 +41,7 @@ import { RewardsTab } from './admin/RewardsTab';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-// FHS-483 — 'rewards' is family-level (not child-scoped), like 'settings':
+// FHS-483: 'rewards' is family-level (not child-scoped), like 'settings':
 // the reward shop's catalogue is shared across every kid.
 type Tab = 'balance' | 'savings' | 'history' | 'rewards' | 'settings';
 
@@ -53,9 +53,9 @@ interface MemberItem {
   isChild: boolean;
 }
 
-// FHS-512 — field names match the real GET /mw/weeks/:id/stats response
+// FHS-512: field names match the real GET /mw/weeks/:id/stats response
 // (previously `availableStickers`/`availableCash`, which don't exist on
-// that response — the sticker count silently read as 0). `cashValue` is
+// that response: the sticker count silently read as 0). `cashValue` is
 // computed server-side at the child's configured rate, never a hardcoded 0.5.
 interface WeekStats {
   weekId: string;
@@ -76,10 +76,10 @@ interface SavingsData {
   savedStickers: number;
   savedCash: number;
   cashEquivalent: number;
-  // FHS-441 — GET /api/mw/financial/savings already returns the family's
+  // FHS-441: GET /api/mw/financial/savings already returns the family's
   // currency; the Savings tab previously ignored it and hardcoded "AED".
   currency?: string;
-  // FHS-512 — this child's effective (configurable) sticker rate; never
+  // FHS-512: this child's effective (configurable) sticker rate; never
   // hardcode 0.5 to convert saved stickers into a cash figure.
   stickerRate?: number;
 }
@@ -88,7 +88,7 @@ interface WeekRow {
   id: string;
   weekNumber: number;
   year: number;
-  // Monday of this week, e.g. "2026-07-06" — the API already returns it;
+  // Monday of this week, e.g. "2026-07-06": the API already returns it;
   // FHS-444 uses it to show a real date range next to "Week 27" so the
   // number reads as a real week, not a mystery code.
   startDate?: string;
@@ -109,12 +109,12 @@ interface WeekAction {
 }
 
 interface AppSettings {
-  // FHS-441 — the family's currency (AED, GBP, …). Lives on tenants.currency
+  // FHS-441: the family's currency (AED, GBP, …). Lives on tenants.currency
   // server-side but is surfaced through this same settings map.
   //
-  // FHS-455 — appName/appSubtitle were dropped from this UI: the header
+  // FHS-455: appName/appSubtitle were dropped from this UI: the header
   // always uses the family name, so those fields were never rendered
-  // anywhere. The backend app_settings keys are left alone (harmless) —
+  // anywhere. The backend app_settings keys are left alone (harmless):
   // only the UI was removed.
   currency: string;
 }
@@ -124,8 +124,8 @@ type QuickAction = 'claim' | 'cashout' | 'save' | 'invest' | 'withdraw' | null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// FHS-485 — same label fix as MembersPage: 'adult' reads "Adult", not
-// "Parent" (a real parent/partner is `admin`) — see ADR 0019.
+// FHS-485: same label fix as MembersPage: 'adult' reads "Adult", not
+// "Parent" (a real parent/partner is `admin`): see ADR 0019.
 const ROLE_STYLE: Record<string, { disc: string; badge: string; label: string }> = {
   admin: { disc: 'bg-pink-300', badge: 'bg-pink-200', label: 'Admin' },
   adult: { disc: 'bg-cyan-300', badge: 'bg-cyan-200', label: 'Adult' },
@@ -138,7 +138,7 @@ function roleStyle(role: string) {
   return ROLE_STYLE[role] ?? ROLE_STYLE['guest']!;
 }
 
-// FHS-444 — "Week 27" alone reads like a mystery code. Show the real
+// FHS-444: "Week 27" alone reads like a mystery code. Show the real
 // Mon–Sun date range underneath it so it's unmistakable, e.g. "6 Jul – 12 Jul".
 // UTC-anchored so the range never shifts a day for users in other timezones
 // (matches the pattern already used on the Calendar tab).
@@ -522,7 +522,7 @@ function InvestQuickAction({
         body: JSON.stringify({ memberId, habitId: selectedHabitId, stickerCount: num }),
       });
       if (!res.ok) {
-        // FHS-416 — show WHY, not the raw status. The API returns an errorCode
+        // FHS-416: show WHY, not the raw status. The API returns an errorCode
         // (and how many stickers are actually available) on a 409.
         const body = (await res.json().catch(() => ({}))) as {
           errorCode?: string;
@@ -828,7 +828,7 @@ function BalanceTab({
     );
 
   const stickers = stats?.unallocatedStickers ?? 0;
-  // FHS-512 — cashValue comes straight from the API (rate applied server-side
+  // FHS-512: cashValue comes straight from the API (rate applied server-side
   // for this child), never recomputed client-side with a hardcoded 0.5.
   const cashValue = (stats?.cashValue ?? 0).toFixed(2);
 
@@ -1057,10 +1057,10 @@ function SavingsTab({
 
   const savedCash = data?.savedCash ?? 0;
   const savedStickers = data?.savedStickers ?? 0;
-  // FHS-512 — this child's effective rate, never a hardcoded 0.5.
+  // FHS-512: this child's effective rate, never a hardcoded 0.5.
   const stickerRate = data?.stickerRate ?? 0.5;
   const cashEquiv = (savedStickers * stickerRate + savedCash).toFixed(2);
-  // FHS-441 — GET /api/mw/financial/savings already returns the family's
+  // FHS-441: GET /api/mw/financial/savings already returns the family's
   // currency; use it instead of a hardcoded "AED" so a family that changed
   // currency in App Info sees it reflected here too.
   const currency = data?.currency ?? 'AED';
@@ -1686,11 +1686,11 @@ function SettingsTab({ headers, slug }: { headers: Record<string, string> | null
   const [tempCurrency, setTempCurrency] = useState('USD');
   const [saving, setSaving] = useState(false);
 
-  // FHS-435 — Download my data.
+  // FHS-435: Download my data.
   const [exportBusy, setExportBusy] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  // FHS-435 — Delete my account (irreversible).
+  // FHS-435: Delete my account (irreversible).
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -1706,7 +1706,7 @@ function SettingsTab({ headers, slug }: { headers: Record<string, string> | null
       .finally(() => setLoading(false));
   }, [headers]);
 
-  // Family display name — needed for the "type the family name to confirm"
+  // Family display name: needed for the "type the family name to confirm"
   // delete gate. /api/me already lists every tenant the caller belongs to.
   useEffect(() => {
     if (!headers) return;
@@ -1786,7 +1786,7 @@ function SettingsTab({ headers, slug }: { headers: Record<string, string> | null
         const body = (await res.json().catch(() => ({}))) as { detail?: string };
         throw new Error(body.detail ?? `Delete failed: ${res.status}`);
       }
-      // Account is gone — clear the local session (+ any kid PIN token on
+      // Account is gone: clear the local session (+ any kid PIN token on
       // this device) and leave the app.
       await signOutAll();
       navigate('/', { replace: true });
@@ -1885,7 +1885,7 @@ function SettingsTab({ headers, slug }: { headers: Record<string, string> | null
         </Card>
       )}
 
-      {/* FHS-435 — GDPR: Your data */}
+      {/* FHS-435: GDPR: Your data */}
       <Card className="p-5 space-y-4">
         <div>
           <h4 className="text-base font-black text-gray-900">Your data</h4>
@@ -2008,14 +2008,14 @@ export function AdminPanelPage() {
   // null = still loading; string = loaded (may be 'admin', 'adult', 'child', 'teen', etc.)
   const [callerRole, setCallerRole] = useState<string | null>(null);
 
-  // Key the headers memo on the access_token string — refocus-safe.
+  // Key the headers memo on the access_token string: refocus-safe.
   const token = session?.access_token ?? '';
   const headers = useMemo<Record<string, string> | null>(
     () => (token ? { Authorization: `Bearer ${token}`, 'x-tenant-slug': slug } : null),
     [token, slug],
   );
 
-  // Fetch family members — filter to kids only for the child selector.
+  // Fetch family members: filter to kids only for the child selector.
   // Also captures callerRole for the route guard below.
   useEffect(() => {
     if (!headers) return;
@@ -2042,7 +2042,7 @@ export function AdminPanelPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [headers]);
 
-  // FHS-343 — the Admin Panel is admin-only; redirect any non-admin (incl. a
+  // FHS-343: the Admin Panel is admin-only; redirect any non-admin (incl. a
   // normal-user adult) to the dashboard once the role is known.
   useEffect(() => {
     if (callerRole === null) return;
@@ -2084,7 +2084,7 @@ export function AdminPanelPage() {
     [navigate, slug],
   );
 
-  // Still waiting for role from the API — show a minimal loading state.
+  // Still waiting for role from the API: show a minimal loading state.
   if (callerRole === null) {
     return (
       <div
@@ -2101,7 +2101,7 @@ export function AdminPanelPage() {
       data-testid="admin-panel"
       className="flex min-h-screen flex-col bg-kingdom-bg font-body text-gray-900"
     >
-      {/* Global app header — same as dashboard; no tab is active on this page */}
+      {/* Global app header: same as dashboard; no tab is active on this page */}
       <AppHeader activeTab={null} onTabChange={onHeaderTabChange} />
 
       <div className="p-4 sm:p-6">
@@ -2117,7 +2117,7 @@ export function AdminPanelPage() {
             </button>
           </div>
 
-          {/* Header — orange→pink gradient */}
+          {/* Header: orange→pink gradient */}
           <div className="bg-gradient-to-r from-orange-500 to-pink-500 rounded-2xl p-4 sm:p-5 text-white shadow-lg">
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="bg-white/20 p-2 sm:p-3 rounded-xl backdrop-blur-sm">
@@ -2132,7 +2132,7 @@ export function AdminPanelPage() {
             </div>
           </div>
 
-          {/* Child selector — visible on Balance / Savings / History tabs */}
+          {/* Child selector: visible on Balance / Savings / History tabs */}
           {childScopedTab && (
             <ChildSelector
               kids={children}
@@ -2141,7 +2141,7 @@ export function AdminPanelPage() {
             />
           )}
 
-          {/* Tab bar — scrollable on mobile */}
+          {/* Tab bar: scrollable on mobile */}
           <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 shadow-inner overflow-x-auto">
             {TABS.map((t) => (
               <button

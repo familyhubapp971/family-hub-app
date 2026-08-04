@@ -1,4 +1,4 @@
-// FHS-394 — Maths Practice stage.
+// FHS-394: Maths Practice stage.
 // Ported from legacy MathsTablePractice.tsx with neo-brutalist Tailwind tokens.
 //
 // 10 questions for the given operation + tableNumber. 4-option multiple choice
@@ -7,7 +7,7 @@
 //
 // Completion: when the 10th question resolves, onComplete(totalCorrect) fires
 // exactly once via a useEffect on `done` guarded by hasCompletedRef. The parent
-// owns the celebration screen (MathsStageComplete) — this component never
+// owns the celebration screen (MathsStageComplete): this component never
 // renders its own done UI, so the PUT always fires even if the kid dismisses.
 //
 // Double-tap guard: answeredRef resets each time a new question is generated

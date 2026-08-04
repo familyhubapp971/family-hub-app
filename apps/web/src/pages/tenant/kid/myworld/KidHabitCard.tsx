@@ -3,11 +3,11 @@ import { habitIcon } from './icons';
 import type { KidHabitView } from './types';
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-// Full names for screen readers — the visible M/T/W/T/F/S/S are ambiguous
+// Full names for screen readers: the visible M/T/W/T/F/S/S are ambiguous
 // (two T's, two S's), so AT announces the full day instead.
 const FULL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-// FHS-376 — a single read-only kid habit card. Left = identity (coloured icon
+// FHS-376: a single read-only kid habit card. Left = identity (coloured icon
 // disc, name, thin progress bar, "PROGRESS THIS WEEK x/7"). Right = 7 day cells
 // (done = pink heart; the live week's first not-yet-done day is an open white
 // cell; earlier missed days show a small lock; future weeks just look empty).

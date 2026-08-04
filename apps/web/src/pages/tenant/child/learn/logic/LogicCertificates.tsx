@@ -1,4 +1,4 @@
-// FHS-395 — Logic trophy wall.
+// FHS-395: Logic trophy wall.
 // GET /api/kid/logic/certificates → 15-slot grid (5 games × 3 difficulties).
 // Earned: date + difficulty stars. Locked: padlock + "10 correct to unlock".
 // Auth: Bearer kidToken.
@@ -68,7 +68,7 @@ export function LogicCertificates({ kidToken }: LogicCertificatesProps) {
         setCertificates(data.certificates ?? []);
       })
       .catch(() => {
-        /* network error — graceful empty state */
+        /* network error: graceful empty state */
       })
       .finally(() => setLoading(false));
 
@@ -142,7 +142,7 @@ export function LogicCertificates({ kidToken }: LogicCertificatesProps) {
         )}
       </div>
 
-      {/* Certificate grid — grouped by game type */}
+      {/* Certificate grid: grouped by game type */}
       {GAME_TYPES.map((gt) => {
         const meta = GAME_TYPE_META[gt];
         const colors = GAME_TYPE_COLORS[gt];

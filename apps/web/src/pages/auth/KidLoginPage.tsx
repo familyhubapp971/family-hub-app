@@ -3,8 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { AuthLayout } from './AuthLayout';
 import { KidSignIn } from './KidSignIn';
 
-// FHS-238 / FHS-360 — kid-side login at /t/:slug/kid-login. The slug is in the
-// URL (no auth context — the kid hasn't logged in yet). The avatar-tiles + PIN
+// FHS-238 / FHS-360: kid-side login at /t/:slug/kid-login. The slug is in the
+// URL (no auth context, the kid hasn't logged in yet). The avatar-tiles + PIN
 // flow lives in the shared KidSignIn component so this route and the unified
 // /login "I'm a Kid" view render identically (Magic Patterns "Welcome Back" card).
 export function KidLoginPage() {

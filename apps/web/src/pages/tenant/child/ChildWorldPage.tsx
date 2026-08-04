@@ -12,11 +12,11 @@ import { CalendarTab } from './CalendarTab';
 import { JournalTab } from './JournalTab';
 import { ChildLearningInsights } from './ChildLearningInsights';
 
-// FHS-268 — ChildWorld shell.
+// FHS-268: ChildWorld shell.
 //
 // A friendly per-child surface at /t/:slug/child/:memberId, reached from
 // the parent dashboard's "View World" links. Five tabs: My World (this
-// ticket — habit tracker + rewards shop), then Meals + Calendar
+// ticket: habit tracker + rewards shop), then Meals + Calendar
 // (FHS-269) and Journal + Learn (FHS-270) as placeholders for now.
 
 interface ChildTab {
@@ -30,7 +30,7 @@ const CHILD_TABS: ChildTab[] = [
   { id: 'meals', label: 'Meals', icon: <Utensils size={16} aria-hidden="true" /> },
   { id: 'calendar', label: 'Calendar', icon: <CalendarDays size={16} aria-hidden="true" /> },
   { id: 'journal', label: 'Journal', icon: <PenLine size={16} aria-hidden="true" /> },
-  // FHS-401 — Learning Insights moved from parent dashboard into each child's world view.
+  // FHS-401: Learning Insights moved from parent dashboard into each child's world view.
   {
     id: 'insights',
     label: 'Learning Insights',
@@ -54,10 +54,10 @@ export function ChildWorldPage() {
   const { user, session } = useAuth();
   const [activeTab, setActiveTab] = useState<string>(DEFAULT_TAB);
   const [members, setMembers] = useState<MemberLite[]>([]);
-  // FHS-336 — the caller's role in this family (from /api/members), so My World
+  // FHS-336: the caller's role in this family (from /api/members), so My World
   // hides admin-only controls from a normal user. Null until loaded.
   const [callerRole, setCallerRole] = useState<string | null>(null);
-  // FHS-523 — the caller's own member id, so the account pill shows their roster
+  // FHS-523: the caller's own member id, so the account pill shows their roster
   // name rather than leaking their login email.
   const [callerMemberId, setCallerMemberId] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -80,7 +80,7 @@ export function ChildWorldPage() {
         setCallerMemberId(typeof body.callerMemberId === 'string' ? body.callerMemberId : null);
       })
       .catch(() => {
-        /* leave members empty — header falls back to a generic greeting */
+        /* leave members empty: header falls back to a generic greeting */
       });
     return () => {
       cancelled = true;
@@ -88,7 +88,7 @@ export function ChildWorldPage() {
   }, [headers]);
 
   const member = useMemo(() => members.find((m) => m.id === memberId) ?? null, [members, memberId]);
-  // FHS-523 — the family's children power the account pill's "View World" links
+  // FHS-523: the family's children power the account pill's "View World" links
   // (the switcher), and the caller's own row supplies the pill's name.
   const childMembers = useMemo(() => members.filter((m) => m.isChild), [members]);
   const callerMember = useMemo(
@@ -96,7 +96,7 @@ export function ChildWorldPage() {
     [members, callerMemberId],
   );
 
-  // FHS-506/FHS-523 — prefer a real name over the login email: the auth
+  // FHS-506/FHS-523: prefer a real name over the login email: the auth
   // full_name, else the caller's roster display name, else email as last resort.
   const parentName =
     (user?.user_metadata?.full_name as string | undefined) ??
@@ -122,9 +122,9 @@ export function ChildWorldPage() {
     navigate('/login', { replace: true });
   }, [navigate]);
 
-  // FHS-401 — Learning Insights is parent/admin-only. A kid viewing their own
+  // FHS-401: Learning Insights is parent/admin-only. A kid viewing their own
   // world sees the page but must not see (or be able to navigate to) the
-  // Insights tab — the API returns 403 for child/teen tokens anyway, but we
+  // Insights tab: the API returns 403 for child/teen tokens anyway, but we
   // should not surface the tab at all. Only admin and adult callers see it.
   const isParentCaller = callerRole === 'admin' || callerRole === 'adult';
   const visibleTabs = CHILD_TABS.filter((t) => t.id !== 'insights' || isParentCaller);
@@ -146,7 +146,7 @@ export function ChildWorldPage() {
       <TopNav
         brand={
           <div className="flex min-w-0 flex-col gap-2" data-testid="child-world-brand">
-            {/* FHS-529 — Row 1: breadcrumb "← Family Hub / {Child}'s World".
+            {/* FHS-529: Row 1: breadcrumb "← Family Hub / {Child}'s World".
                 "Family Hub" returns to the family dashboard. */}
             <nav
               aria-label="Breadcrumb"
@@ -168,7 +168,7 @@ export function ChildWorldPage() {
                 {childName === 'My' ? 'My World' : `${childName}'s World`}
               </span>
             </nav>
-            {/* FHS-529 — Row 2: hero — avatar disc + "{Child}'s Magical World ✨"
+            {/* FHS-529: Row 2: hero: avatar disc + "{Child}'s Magical World ✨"
                 + a "Magic Active" indicator. */}
             <div className="flex items-center gap-3">
               <span
@@ -199,7 +199,7 @@ export function ChildWorldPage() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         rightSlot={
-          // FHS-523 — the same account pill as the parent dashboard. Its
+          // FHS-523: the same account pill as the parent dashboard. Its
           // "View World" links switch between children (replacing the old
           // switcher) and its menu holds Manage family / Reward settings / Log
           // out (replacing the old Back + Logout buttons).
@@ -232,7 +232,7 @@ export function ChildWorldPage() {
           ) : active.id === 'calendar' ? (
             <CalendarTab memberId={memberId} />
           ) : active.id === 'insights' ? (
-            // FHS-401 — parent/admin view of this child's learning progress.
+            // FHS-401: parent/admin view of this child's learning progress.
             <ChildLearningInsights memberId={memberId} />
           ) : (
             <JournalTab memberId={memberId} />

@@ -3,7 +3,7 @@ import { Calendar, CheckSquare, Utensils, Star, ArrowRight } from 'lucide-react'
 import { Button, FeatureCard } from '@familyhub/ui';
 import { SiteHeader, SiteFooter } from '../../components/SiteChrome';
 
-// AboutPage — public /about route (FHS-436). A beta reviewer said it
+// AboutPage: public /about route (FHS-436). A beta reviewer said it
 // wasn't clear WHAT Family Hub is, WHO it's for, and its value. This
 // page spells that out in plain language: what it is, who it's built
 // for, the main things a family can do, and how the kid experience
@@ -54,7 +54,7 @@ export function AboutPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-white">
-      {/* FHS-546 — shared chrome so About matches the homepage + /legal
+      {/* FHS-546: shared chrome so About matches the homepage + /legal
           (Legal link in the nav, full legal footer). */}
       <SiteHeader current="about" />
 
@@ -62,7 +62,7 @@ export function AboutPage() {
         className="mx-auto w-full max-w-4xl flex-1 px-4 pb-16 pt-4 md:px-6 md:pt-8"
         data-testid="about-page"
       >
-        {/* Hero — the plain "what is this" answer, up top. */}
+        {/* Hero: the plain "what is this" answer, up top. */}
         <section className="text-center">
           <h1 className="mb-3 font-heading text-3xl leading-tight text-yellow-300 md:text-5xl">
             One home for your family&rsquo;s week
@@ -73,7 +73,7 @@ export function AboutPage() {
           </p>
         </section>
 
-        {/* Main things you can do — 4 pillars. */}
+        {/* Main things you can do: 4 pillars. */}
         <section
           className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2"
           aria-label="What you can do"
@@ -92,7 +92,7 @@ export function AboutPage() {
           ))}
         </section>
 
-        {/* Who it's for + kid safety — prose sections, matching PrivacyPage's card style. */}
+        {/* Who it's for + kid safety: prose sections, matching PrivacyPage's card style. */}
         <section className="mt-10 rounded-xl border-2 border-black bg-white p-6 text-gray-900 shadow-neo-lg md:p-10">
           <div className="space-y-8">
             <div>

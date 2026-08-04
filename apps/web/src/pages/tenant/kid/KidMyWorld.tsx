@@ -10,15 +10,15 @@ import { KidWeeklyAccount } from './myworld/KidWeeklyAccount';
 import { KidStats } from './myworld/KidStats';
 import { KidFinishedWeekRecap } from './myworld/KidFinishedWeekRecap';
 
-// FHS-376 — the dedicated kid "My World". A DISTINCT design from the parent's
+// FHS-376: the dedicated kid "My World". A DISTINCT design from the parent's
 // MyWorldTab (which this no longer reuses): a Weekly Habits / Analytics toggle,
 // the kid's own week banner + read-only habit cards, a Money Skills explainer,
-// and a Reward Goals + My Account sidebar — all pixel-matched to the Magic
+// and a Reward Goals + My Account sidebar: all pixel-matched to the Magic
 // Patterns kid mock and fed by the self-scoped /api/kid/* endpoints.
 
 type View = 'habits' | 'analytics';
 
-// FIX 2 (BLOCKER) — a rate <= 0 must never be divided by (Infinity/NaN
+// FIX 2 (BLOCKER): a rate <= 0 must never be divided by (Infinity/NaN
 // stickers). Mirrors the api's cashAsStickers guard (apps/api/src/lib/myworld.ts).
 function stickersFromCash(cash: number, rate: number): number {
   return rate <= 0 ? 0 : cash / rate;
@@ -40,7 +40,7 @@ export function KidMyWorld({
   const analyticsTabRef = useRef<HTMLButtonElement>(null);
   const data = useKidMyWorld(kidToken);
 
-  // FHS-399 — stable auth headers for the KidFinishedWeekRecap fetch.
+  // FHS-399: stable auth headers for the KidFinishedWeekRecap fetch.
   // Declared here (before any early return) so hook order is always stable.
   const recapHeaders = useMemo(
     () => (kidToken ? { Authorization: `Bearer ${kidToken}` } : {}),
@@ -110,9 +110,9 @@ export function KidMyWorld({
   const savedStickers = data.savings?.savedStickers ?? 0;
   const savedCash = data.savings?.savedCash ?? 0;
   const currency = data.savings?.currency ?? data.currency;
-  // FHS-387 — use the API-supplied rate; fall back to 0.5 if the server is old.
+  // FHS-387: use the API-supplied rate; fall back to 0.5 if the server is old.
   const stickerRate = data.savings?.stickerRate ?? 0.5;
-  // FHS-376 — a reward request is paid from SAVINGS on approval, so Reward Goals
+  // FHS-376: a reward request is paid from SAVINGS on approval, so Reward Goals
   // affordability + "more to go" are measured against savings (banked stars +
   // banked cash at stickerRate/star), not the spendable week balance.
   const savingsStars = savedStickers + Math.floor(stickersFromCash(savedCash, stickerRate));
@@ -133,7 +133,7 @@ export function KidMyWorld({
   animatedOnce.current = true;
   const panelLabelId = view === 'habits' ? 'kid-myworld-tab-habits' : 'kid-myworld-tab-analytics';
 
-  // FHS-399 — on a finalized week the page is single-column: navigator + banner
+  // FHS-399: on a finalized week the page is single-column: navigator + banner
   // + habit rows + "What I Did That Week" recap. The live (current) week keeps
   // the existing two-column layout (habits + right sidebar).
   const isFinalized = !data.isCurrentWeek;
@@ -199,7 +199,7 @@ export function KidMyWorld({
           id="kid-myworld-panel"
           aria-labelledby={panelLabelId}
           // No tabIndex: the panel has focusable children (week nav, retry), so
-          // per the APG tabs pattern it isn't itself a tab stop — Tab moves from
+          // per the APG tabs pattern it isn't itself a tab stop: Tab moves from
           // the active tab straight into the panel's controls.
           className="flex flex-col gap-4"
         >
@@ -272,7 +272,7 @@ export function KidMyWorld({
                 <span className="h-0.5 flex-1 rounded-full bg-pink-200" aria-hidden="true" />
               </div>
 
-              {/* Progress banner — locked for a future week, live for current
+              {/* Progress banner: locked for a future week, live for current
                   week, recap for finalized (FHS-484). */}
               {week && data.isFutureWeek ? (
                 <div
@@ -377,10 +377,10 @@ export function KidMyWorld({
                 </div>
               )}
 
-              {/* Habit cards — spinner while a navigated week loads, retry on
+              {/* Habit cards: spinner while a navigated week loads, retry on
                 failure, then the real empty/cards state (FHS-377). A future
                 week (not yet started) blurs the cards under a lock overlay
-                instead — nothing to log or view yet (FHS-484). */}
+                instead: nothing to log or view yet (FHS-484). */}
               <div className="relative">
                 {data.isFutureWeek && data.habits.length > 0 && (
                   <div
@@ -457,7 +457,7 @@ export function KidMyWorld({
                 </div>
               </div>
 
-              {/* FHS-399 — finalized week: show the recap card.
+              {/* FHS-399: finalized week: show the recap card.
                   Live week: show Money Skills. */}
               {isFinalized ? (
                 week && (
@@ -498,7 +498,7 @@ export function KidMyWorld({
         </div>
       </div>
 
-      {/* RIGHT column — live weeks only. Hidden on finalized weeks (single-column). */}
+      {/* RIGHT column: live weeks only. Hidden on finalized weeks (single-column). */}
       {!isFinalized && (
         <div className="flex flex-col gap-6 lg:col-span-4">
           <KidRewardShop

@@ -30,15 +30,15 @@ import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
 
-// FHS-513 — Manage Family rebuild to the finalised Magic Patterns
+// FHS-513: Manage Family rebuild to the finalised Magic Patterns
 // design: a family-name header with a "{N} members · {M} waiting to
 // join" summary and two CTAs ("Invite an adult" / "Add a child"),
-// members split into two collapsible groups ("Grown-ups" — sign in
-// with email; "Kids" — sign in with a PIN), a collapsible "How your
+// members split into two collapsible groups ("Grown-ups": sign in
+// with email; "Kids": sign in with a PIN), a collapsible "How your
 // kids sign in" helper card, and a separate "Waiting to join" section
 // for unclaimed grown-up seats.
 //
-// This is a VISUAL/STRUCTURAL rebuild only — every existing API call,
+// This is a VISUAL/STRUCTURAL rebuild only: every existing API call,
 // admin-only mutation gate, and last-admin protection carries over
 // unchanged from the pre-FHS-513 page (FHS-108 / FHS-252 / FHS-276 /
 // FHS-471/472/473 / FHS-486). See each handler below for its history.
@@ -59,7 +59,7 @@ interface MemberItem {
   age: number | null;
   inviteEmail: string | null;
   inviteId: string | null;
-  // FHS-510 — the grown-up's current sign-in email (null for kids and
+  // FHS-510: the grown-up's current sign-in email (null for kids and
   // unclaimed seats), and any new email awaiting confirmation.
   email: string | null;
   pendingEmail: string | null;
@@ -87,7 +87,7 @@ const KID_ROLES = new Set(['child', 'teen']);
 const ADMIN_OR_ADULT = new Set(['admin', 'adult']);
 const PIN_ELIGIBLE_ROLES = new Set(['child', 'teen']);
 
-// FHS-521 — show the family name as "The {Name} Family" to match the design
+// FHS-521: show the family name as "The {Name} Family" to match the design
 // (tenant name "Khan" → "The Khan Family"). If the stored name already reads
 // like a family name (contains "family"), show it verbatim; empty → neutral.
 function familyTitle(name: string | null): string {
@@ -106,7 +106,7 @@ export function MembersPage() {
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [familyName, setFamilyName] = useState<string | null>(null);
 
-  // FHS-322 — render the shared app header; nav tabs route to the dashboard.
+  // FHS-322: render the shared app header; nav tabs route to the dashboard.
   const onHeaderTabChange = useCallback(
     (tabId: string) => {
       navigate(`/t/${slug}/dashboard${tabId === DEFAULT_TAB ? '' : `?tab=${tabId}`}`);
@@ -115,14 +115,14 @@ export function MembersPage() {
   );
 
   // Which header form is open. ?add=member still opens the "Add a child"
-  // form for any entry point that deep-links here with it (FHS-471/501) —
+  // form for any entry point that deep-links here with it (FHS-471/501):
   // the Family Overview button (FHS-520) now just links to this page plain.
   const [activeForm, setActiveForm] = useState<'none' | 'invite' | 'child'>(
     params.get('add') === 'member' ? 'child' : 'none',
   );
   const [openPinFor, setOpenPinFor] = useState<string | null>(null);
   const [editingFor, setEditingFor] = useState<string | null>(null);
-  // FHS-510 — which grown-up's "New email for …" inline form is open.
+  // FHS-510: which grown-up's "New email for …" inline form is open.
   const [emailChangeFor, setEmailChangeFor] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -162,7 +162,7 @@ export function MembersPage() {
     void fetchMembers();
   }, [fetchMembers]);
 
-  // Family name for the header — same /api/me lookup AppHeader already
+  // Family name for the header: same /api/me lookup AppHeader already
   // does. Best-effort: on failure the heading falls back to "Your family".
   useEffect(() => {
     if (!session) return;
@@ -209,14 +209,14 @@ export function MembersPage() {
 
   const ready = status.kind === 'ready';
   const callerIsAdmin = ready && status.callerRole === 'admin';
-  // FHS-510 — the caller's own member id, so a grown-up can change THEIR OWN
+  // FHS-510: the caller's own member id, so a grown-up can change THEIR OWN
   // sign-in email (self-serve) from their own card, admin or not.
   const callerMemberId = ready ? status.callerMemberId : null;
   const allMembers = ready ? status.members : [];
   const adminCount = allMembers.filter((m) => m.role === 'admin').length;
 
   // Grown-ups actually signed in vs still waiting on their invite; kids
-  // are never "waiting" (PIN login, no signup step) — see FHS-276.
+  // are never "waiting" (PIN login, no signup step): see FHS-276.
   const grownUps = allMembers.filter((m) => GROWN_UP_ROLES.has(m.role) && m.status === 'active');
   const waiting = allMembers.filter((m) => GROWN_UP_ROLES.has(m.role) && m.status !== 'active');
   const kids = allMembers.filter((m) => KID_ROLES.has(m.role));
@@ -328,7 +328,7 @@ export function MembersPage() {
           </p>
         )}
 
-        {/* FHS-521 — "How your kids sign in" sits above the member groups,
+        {/* FHS-521: "How your kids sign in" sits above the member groups,
             matching the design's order (header/forms → kid-login → groups). */}
         {ready && (
           <div className="mb-6">
@@ -374,7 +374,7 @@ export function MembersPage() {
                 </ul>
               </CollapsibleSection>
             ) : (
-              // FHS-519 — a family can (briefly) have kids/waiting seats but
+              // FHS-519: a family can (briefly) have kids/waiting seats but
               // no active grown-up yet; show a placeholder instead of just
               // silently dropping the "Grown-ups" group from the page.
               <EmptyGroupPlaceholder
@@ -466,7 +466,7 @@ export function MembersPage() {
   );
 }
 
-// FHS-519 — stand-in for a member group ("Grown-ups" / "Kids") when it has
+// FHS-519: stand-in for a member group ("Grown-ups" / "Kids") when it has
 // no rows but the OTHER group (or the "Waiting to join" section) does, so
 // the group isn't just silently missing from the page. Styled to sit next
 // to the dark `CollapsibleSection variant="group"` cards it replaces.
@@ -536,7 +536,7 @@ function GrownUpCard({
   const testId = `members-grownup-${idx}`;
 
   const isAdminRole = m.role === 'admin';
-  // FHS-510 — self-serve: only the caller's OWN card gets the change-email control.
+  // FHS-510: self-serve: only the caller's OWN card gets the change-email control.
   const isOwnCard = callerMemberId !== null && m.id === callerMemberId;
 
   return (
@@ -561,7 +561,7 @@ function GrownUpCard({
                   <Edit2 size={14} aria-hidden="true" /> Edit name
                 </button>
               )}
-              {/* FHS-510 — self-serve: only your OWN card shows "Change email". */}
+              {/* FHS-510: self-serve: only your OWN card shows "Change email". */}
               {isOwnCard && (
                 <button
                   type="button"
@@ -569,7 +569,7 @@ function GrownUpCard({
                   disabled={!m.email || Boolean(m.pendingEmail)}
                   title={
                     m.pendingEmail
-                      ? 'A change is already pending — see below'
+                      ? 'A change is already pending: see below'
                       : !m.email
                         ? 'You have no sign-in email yet'
                         : undefined
@@ -662,7 +662,7 @@ function GrownUpCard({
           }}
         />
       )}
-      {/* FHS-510 — self-serve: the pending-change card + the change-email form
+      {/* FHS-510: self-serve: the pending-change card + the change-email form
           only ever render on the caller's OWN card. The API also nulls
           email/pendingEmail on every other row, so this can't leak. */}
       {isOwnCard &&
@@ -688,7 +688,7 @@ function GrownUpCard({
   );
 }
 
-// FHS-510 — step-1 inline form: an admin types the new address and it
+// FHS-510: step-1 inline form: an admin types the new address and it
 // emails a one-time confirm link. Stays open on failure (the page-level
 // actionError banner surfaces the reason), same pattern as EditNameForm.
 function EmailChangeForm({
@@ -751,7 +751,7 @@ function EmailChangeForm({
   );
 }
 
-// FHS-510 — the yellow "a change is in flight" card: shows while the old
+// FHS-510: the yellow "a change is in flight" card: shows while the old
 // email still works and nobody's clicked the emailed link yet.
 function PendingEmailChangeCard({
   member,
@@ -928,9 +928,9 @@ function KidCard({
 }
 
 // ── Waiting-to-join row (unclaimed grown-up seats) ──────────────────────────
-// FHS-520 (design-fidelity) — a compact horizontal row (avatar, name,
+// FHS-520 (design-fidelity): a compact horizontal row (avatar, name,
 // email, role badge, resend/remove) inside the "Waiting to join" white
-// card, matching the Magic Patterns mock — no longer a full MemberCard.
+// card, matching the Magic Patterns mock: no longer a full MemberCard.
 
 interface WaitingCardProps {
   member: MemberItem;
@@ -941,10 +941,10 @@ interface WaitingCardProps {
 
 function WaitingRow({ member: m, idx, callerIsAdmin, mutate }: WaitingCardProps) {
   const testId = `members-waiting-${idx}`;
-  // FHS-278 / FHS-519 — a seat that hasn't signed up yet can't be made
-  // admin (the API rejects the promote — see `target.userId === null` in
+  // FHS-278 / FHS-519: a seat that hasn't signed up yet can't be made
+  // admin (the API rejects the promote: see `target.userId === null` in
   // members.ts). Mirrors GrownUpCard's `isParentRow`: only admin/adult
-  // candidates ever show the affordance — a guest is never admin-eligible.
+  // candidates ever show the affordance: a guest is never admin-eligible.
   const isParentRow = m.role === 'admin' || m.role === 'adult';
   return (
     <div
@@ -978,7 +978,7 @@ function WaitingRow({ member: m, idx, callerIsAdmin, mutate }: WaitingCardProps)
             type="button"
             role="switch"
             aria-checked={false}
-            aria-label="Make admin — available once they sign up"
+            aria-label="Make admin: available once they sign up"
             data-testid={`${testId}-admin-toggle`}
             disabled
             className="relative inline-flex h-[34px] w-[60px] shrink-0 cursor-not-allowed items-center rounded-full border-2 border-black bg-gray-200 opacity-40"
@@ -1020,10 +1020,10 @@ function WaitingRow({ member: m, idx, callerIsAdmin, mutate }: WaitingCardProps)
   );
 }
 
-// FHS-437 — parent-side counterpart to the self-serve kid login: without
+// FHS-437: parent-side counterpart to the self-serve kid login: without
 // this, a parent had no way to find or share the link/code their kid needs
 // to sign in, so a brand-new family's kid had no working path in at all.
-// FHS-513 — now a collapsible "How your kids sign in" card with the same
+// FHS-513: now a collapsible "How your kids sign in" card with the same
 // link/code + copy button, plus the 3-step walkthrough from the design.
 function KidLoginHelp({ slug, kidsCount }: { slug: string; kidsCount: number }) {
   const [copied, setCopied] = useState(false);
@@ -1035,7 +1035,7 @@ function KidLoginHelp({ slug, kidsCount }: { slug: string; kidsCount: number }) 
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard permission blocked / unavailable — the link and code are
+      // Clipboard permission blocked / unavailable: the link and code are
       // still visible on-screen to copy by hand.
     }
   }, [kidLoginUrl]);
@@ -1049,13 +1049,13 @@ function KidLoginHelp({ slug, kidsCount }: { slug: string; kidsCount: number }) 
       tileClassName="bg-purple-300"
       testId="members-kid-login-share"
     >
-      {/* FHS-530 — two clear steps, not a misleading 1/2/3 sequence: step 1 is
-          how to REACH the login (a link OR the family code — either opens it),
+      {/* FHS-530: two clear steps, not a misleading 1/2/3 sequence: step 1 is
+          how to REACH the login (a link OR the family code: either opens it),
           step 2 is what the kid does once there. */}
       <ol className="space-y-3">
         <KidLoginStep number="1" title="Open their login page">
           <p className="mt-1 text-sm font-bold text-gray-500">
-            Send them this link, or have them type your family code on the kid-login page — either
+            Send them this link, or have them type your family code on the kid-login page: either
             one opens it.
           </p>
           <div className="mt-2 flex flex-col gap-2 sm:flex-row">
@@ -1100,7 +1100,7 @@ function KidLoginHelp({ slug, kidsCount }: { slug: string; kidsCount: number }) 
   );
 }
 
-// FHS-521 — one numbered step in the "How your kids sign in" card, matching
+// FHS-521: one numbered step in the "How your kids sign in" card, matching
 // the design (a yellow round number badge + title + content).
 function KidLoginStep({
   number,
@@ -1124,18 +1124,18 @@ function KidLoginStep({
   );
 }
 
-// FHS-486 / ADR 0019 — the role a caller can invite from Manage Members.
+// FHS-486 / ADR 0019: the role a caller can invite from Manage Members.
 // `child` is excluded: kids use PIN login, never the magic-link invite
-// (ADR 0009 / FHS-234). FHS-513 — `teen` is also dropped from THIS form
+// (ADR 0009 / FHS-234). FHS-513: `teen` is also dropped from THIS form
 // (the design routes teens through "Add a child" instead); the server
 // still accepts a teen invite for backward compatibility, this UI just
 // no longer offers it.
-// FHS-519 — this form only ever renders for an admin caller
+// FHS-519: this form only ever renders for an admin caller
 // (`activeForm === 'invite' && callerIsAdmin` at the call site), so all
 // three options are always safe to show; a per-option `adminOnly` filter
 // here was dead code (always true). The server independently enforces
 // the admin-grant safeguard (only an admin may hand out 'admin' via the
-// API) — this UI doesn't need to re-filter it.
+// API): this UI doesn't need to re-filter it.
 type InviteRole = 'admin' | 'adult' | 'guest';
 
 const INVITE_ROLE_OPTIONS: Array<{ value: InviteRole; label: string }> = [
@@ -1145,12 +1145,12 @@ const INVITE_ROLE_OPTIONS: Array<{ value: InviteRole; label: string }> = [
 ];
 
 const INVITE_ROLE_HELP: Record<InviteRole, string> = {
-  admin: 'Full access — everyday tasks, past-date edits, the economy, and family settings.',
-  adult: 'Day-to-day help — grandma, a cousin, a sitter. No past-date edits or admin tools.',
+  admin: 'Full access: everyday tasks, past-date edits, the economy, and family settings.',
+  adult: 'Day-to-day help: grandma, a cousin, a sitter. No past-date edits or admin tools.',
   guest: 'Can log in and see everything, but can’t change anything.',
 };
 
-// FHS-521 — one selectable card in the "What can they do?" role picker,
+// FHS-521: one selectable card in the "What can they do?" role picker,
 // matching the Magic Patterns design: a radio circle (Check when active),
 // the role label, and its one-line note, all in one clickable card.
 function RoleOptionCard({
@@ -1204,7 +1204,7 @@ function InviteAdultForm({
 }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  // FHS-524 — default to "Parent / partner" (admin) so inviting a co-parent is
+  // FHS-524: default to "Parent / partner" (admin) so inviting a co-parent is
   // one tap. Non-admins can't pick (or see) admin, so they fall back to "adult".
   const [role, setRole] = useState<InviteRole>(callerIsAdmin ? 'admin' : 'adult');
   const [submitting, setSubmitting] = useState(false);
@@ -1296,7 +1296,7 @@ function InviteAdultForm({
   );
 }
 
-// FHS-513 — "Add a child" is now Child/Teen only (no-login, PIN-based
+// FHS-513: "Add a child" is now Child/Teen only (no-login, PIN-based
 // seats), matching the finalised design's two-CTA header. The previous
 // "Add member → Adult (no login)" path is removed from this form; the
 // POST /api/members endpoint still accepts role: 'adult' unchanged, an
@@ -1313,9 +1313,9 @@ const ADD_CHILD_ROLE_OPTIONS: Array<{
   { value: 'teen', emoji: '🧑🏽', label: 'Teen', note: 'Older kid. Same world, more grown-up.' },
 ];
 
-// FHS-521 — one selectable card in the "How old are they?" picker,
+// FHS-521: one selectable card in the "How old are they?" picker,
 // matching the Magic Patterns design: an emoji, the type label, and its
-// one-line note, all in one clickable card (no radio circle — the
+// one-line note, all in one clickable card (no radio circle: the
 // active fill is the only selected-state indicator here, per the mock).
 function ChildTypeCard({
   value,
@@ -1539,8 +1539,8 @@ function RemoveButton({
   );
 }
 
-// FHS-252 — inline form for setting / resetting a kid PIN. Unchanged
-// behaviour from the pre-FHS-513 page — just re-keyed off the new
+// FHS-252: inline form for setting / resetting a kid PIN. Unchanged
+// behaviour from the pre-FHS-513 page: just re-keyed off the new
 // per-card `testId` prefix instead of a row index.
 
 interface KidPinFormProps {

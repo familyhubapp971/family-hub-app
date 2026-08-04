@@ -1,7 +1,7 @@
-// FHS-389 — AI-generated Maths lesson for the kid Learn tab.
+// FHS-389: AI-generated Maths lesson for the kid Learn tab.
 // Ported from the legacy frontend/components/MathsAILesson.tsx.
 //
-// When the endpoint reports { enabled: false } the component renders nothing —
+// When the endpoint reports { enabled: false } the component renders nothing:
 // the caller (LessonView / Maths flow) keeps the static question bank as the
 // full experience. This is the flag-off path: no broken button, no AI UI.
 //
@@ -389,7 +389,7 @@ function PracticeQuestion({
  * Pass `operation` + `tableNumber` from a progressive tables flow to auto-start.
  * Without those props the component renders a selection screen first.
  *
- * When the server reports { enabled: false } this component renders nothing —
+ * When the server reports { enabled: false } this component renders nothing:
  * the caller should keep the static Maths bank visible.
  */
 export function MathsAILesson({
@@ -412,7 +412,7 @@ export function MathsAILesson({
 
   const inFlight = useRef(false);
   const generateLesson = useCallback(async () => {
-    // Guard against double-clicks / concurrent calls — each is a paid AI call.
+    // Guard against double-clicks / concurrent calls: each is a paid AI call.
     if (inFlight.current) return;
     inFlight.current = true;
     setLoading(true);
@@ -481,7 +481,7 @@ export function MathsAILesson({
     }
   }, [tableNumber]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Feature flag is off — render nothing; the caller keeps the static bank.
+  // Feature flag is off: render nothing; the caller keeps the static bank.
   if (disabled) return null;
 
   const step = STEP_ORDER[currentStep]!;
