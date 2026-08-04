@@ -24,7 +24,7 @@ For pitch contexts where one line isn't enough, the elevator version:
 > Most family apps are built for a 2-parent, 1.5-kid Western household
 > with predictable schedules. Family Hub is built for the rest, large
 > families, twins/triplets, blended households, multi-generational
-> homes, and culturally rooted families (Muslim, multi-faith,
+> homes, and culturally diverse families (any tradition, multicultural,
 > homeschool) who currently stitch together five tools because no
 > single one fits.
 
@@ -49,7 +49,7 @@ own the family's mental load.
   remembered late. Each child needs their own thing tracked.
 - **Trigger:** new baby + a returning-from-leave parent who can't keep
   the previous improvised system going. Or: school year start. Or:
-  Ramadan / Lent / school-holiday programmes that need coordinated
+  seasonal and school-holiday programmes that need coordinated
   scheduling.
 - **Buying motion:** signs up via Google Play Store, App Store, or a
   Google search like "family scheduling app for big families." Trial
@@ -60,8 +60,7 @@ own the family's mental load.
 
 ### Persona 2: "The community administrator"
 
-The person managing a mosque's youth programme, a homeschool co-op, a
-church family ministry, an NGO running family services.
+The person managing a community youth programme, a homeschool co-op, a family club, an NGO running family services.
 
 - **Household shape (their org):** 20–500 families, often with
   cultural / religious context that mainstream tools ignore.
@@ -118,12 +117,12 @@ These are people we shouldn't try to win, even if they show up.
 
 Mirrors `saas-transformation.md`, with sales-context detail.
 
-| #   | Region                                | Why first                                                                                                                                            | What they buy first                                                                          |
-| --- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| 1   | **UAE / Saudi Arabia / Gulf states**  | High household income, large families (3–6 kids common), expat tech adoption, mosque integration appetite, English-friendly. We're physically close. | Family + Family Pro consumer tiers; mosque / Islamic school enterprise tiers in second wave. |
-| 2   | **US / Canada / UK**                  | Largest addressable market; high willingness to pay; homeschool growth; underserved blended-family segment.                                          | Consumer tiers via App Store / Play Store.                                                   |
-| 3   | **Indonesia / Pakistan / Bangladesh** | Large Muslim populations, strong family culture, mobile-first. Lower per-user revenue but volume + word-of-mouth.                                    | Consumer tiers, low-priced. Free tier is critical here.                                      |
-| 4   | **Türkiye / North Africa**            | Cultural fit + growing tech adoption. Localisation cost is real but doable.                                                                          | Consumer + community-org tiers.                                                              |
+| #   | Region                                | Why first                                                                                                                                            | What they buy first                                                                         |
+| --- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1   | **UAE / Saudi Arabia / Gulf states**  | High household income, large families (3–6 kids common), expat tech adoption, strong community structures, English-friendly. We're physically close. | Family + Family Pro consumer tiers; school / community-org enterprise tiers in second wave. |
+| 2   | **US / Canada / UK**                  | Largest addressable market; high willingness to pay; homeschool growth; underserved blended-family segment.                                          | Consumer tiers via App Store / Play Store.                                                  |
+| 3   | **Indonesia / Pakistan / Bangladesh** | Large family-centric populations, strong family culture, mobile-first. Lower per-user revenue but volume + word-of-mouth.                            | Consumer tiers, low-priced. Free tier is critical here.                                     |
+| 4   | **Türkiye / North Africa**            | Cultural fit + growing tech adoption. Localisation cost is real but doable.                                                                          | Consumer + community-org tiers.                                                             |
 
 Latin America, Sub-Saharan Africa, India proper, and East Asia are
 "phase 3", we want them, but the product has to localise further
@@ -151,14 +150,14 @@ FamCal / Picniic on a multi-child family.
 ### 2. We respect culture as a first-class feature
 
 > "Most family apps assume you're in a Western nuclear family with a
-> Christmas calendar baked in. We ship Ramadan journaling, prayer
-> scheduling, mosque event integration, and Hijri date support
-> alongside the Gregorian calendar, and we do it without being a
-> "Muslim app." It's just one of the cultural lenses we support."
+> Christmas calendar baked in. We ship optional cultural lenses
+> (seasonal journals, observance scheduling, community events, and
+> alternative calendars alongside the Gregorian one) that any family
+> can switch on. No tradition is the default and none is required;
+> the app is religion-agnostic at its core."
 
 This is the strongest hook in our launch geographies (UAE, Saudi,
-Indonesia, Pakistan). Pairs with the white-label offering for
-mosques and Islamic schools.
+Indonesia, Pakistan). Pairs with the white-label offering for schools and community organisations.
 
 ### 3. We grow with the family: not just the parent
 
@@ -181,7 +180,7 @@ position ourselves _next to_ them.
 | Competitor                               | What they do well                             | Where we win                                                                                 |
 | ---------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **Cozi**                                 | Free, ubiquitous, simple shared calendar.     | Hits a wall at 3+ kids, no cultural context, no real twin handling, no white-label.          |
-| **FamCal / Picniic / Hearth**            | Polished UI, premium consumer feel.           | Western-default. Won't show a Hijri date. Won't model a step-grandparent.                    |
+| **FamCal / Picniic / Hearth**            | Polished UI, premium consumer feel.           | Western-default. No alternative calendars. Won't model a step-grandparent.                   |
 | **OurFamilyWizard**                      | Court-grade co-parenting + legal audit trail. | Different problem. We don't attack their use case; we serve the same families' _day-to-day_. |
 | **Notion / Trello / Google Sheets**      | Infinite flexibility.                         | Ask any parent who's tried it: setup cost is permanent, nothing's tuned for kids.            |
 | **WhatsApp + Google Calendar duct-tape** | Free, already adopted.                        | Family Hub replaces the duct tape. Trial proves it.                                          |
@@ -203,8 +202,7 @@ to a prospect varies by tier.
   small organisation, multiple schools, multiple sports teams, custom
   subdomain like `kingdom.familyhub.app` for the cousins, Pro is the
   fit."
-- **Enterprise / white-label ($299–$3,499/year).** "Your mosque /
-  school / co-op gets its own branded surface, admins, member
+- **Enterprise / white-label ($299–$3,499/year).** "Your school / co-op / community group gets its own branded surface, admins, member
   management, and reporting. Pricing is per-org-size, not per-seat,
   no nasty surprises when you onboard 50 new families."
 
@@ -241,11 +239,7 @@ disclosure: this is an active and funded project; runway is X (insert
 current number when needed).
 
 **"Do you support \[my niche cultural / religious context\]?"**
-Today: strong support for Muslim households (Ramadan, prayer times,
-Hijri dates, mosque integration). Roadmap support for Christian (church
-events, Lent), Jewish (Shabbat, holidays), Hindu (festivals), Sikh,
-multi-faith. If yours isn't on the list, we'd love a conversation,
-the architecture is built to accept new cultural lenses without rewrites.
+The core app is religion-agnostic; every cultural lens is optional and off by default. Today we ship lenses covering several traditions (seasonal journals, observance times, alternative calendars, community events), with more on the roadmap. If yours isn't covered, we'd love a conversation; the architecture accepts new cultural lenses without rewrites.
 
 ---
 
@@ -279,7 +273,7 @@ These are sometimes asked for. Saying no is the positioning.
 - **Pitching to a prospective Family Hub customer:** start from the
   pain (Persona 1's "five apps, three calendars" line). Don't talk
   architecture unless they ask.
-- **Pitching to a community / mosque / school:** lead with the
+- **Pitching to a community group / school / club:** lead with the
   white-label tier + reference customers (when we have them). The
   story is: _your_ community on _your_ subdomain in 5 minutes.
 - **Pitching to media / a podcast:** the angle is "the first family
