@@ -23,24 +23,25 @@ const foot = (title) => `
   </div>`;
 
 const DOCS = [
-  { src: 'family-hub-qa-brief-overview.html', out: 'family-hub-qa-brief-overview.pdf' },
-  { src: 'family-hub-qa-brief-feature-tour.html', out: 'family-hub-qa-brief-feature-tour.pdf' },
+  { src: 'fh-beta-tester-brief.html', out: 'fh-beta-tester-brief.pdf' },
+  { src: 'fh-qa-brief-overview.html', out: 'fh-qa-brief-overview.pdf' },
+  { src: 'fh-qa-brief-feature-tour.html', out: 'fh-qa-brief-feature-tour.pdf' },
   {
-    src: 'theory-of-change.html',
-    out: 'theory-of-change.pdf',
+    src: 'fh-theory-of-change.html',
+    out: 'fh-theory-of-change.pdf',
     margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
     footerTitle: 'Theory of Change',
   },
   {
-    src: 'impact-measurement-framework.html',
-    out: 'impact-measurement-framework.pdf',
+    src: 'fh-impact-measurement-framework.html',
+    out: 'fh-impact-measurement-framework.pdf',
     margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
     footerTitle: 'Impact Measurement Framework',
   },
-  { src: 'business-model-canvas.html', out: 'business-model-canvas.pdf', landscape: true },
+  { src: 'fh-business-model-canvas.html', out: 'fh-business-model-canvas.pdf', landscape: true },
   {
-    src: 'family-hub-pitch-deck.html',
-    out: 'family-hub-pitch-deck.pdf',
+    src: 'fh-pitch-deck.html',
+    out: 'fh-pitch-deck.pdf',
     pageSize: { width: '338.66mm', height: '190.5mm' },
   },
 ];

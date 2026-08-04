@@ -1,0 +1,727 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Family Hub · Beta tester brief</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --cream: #f6f1fa;
+        --ink: #191919;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow: #ffd21e;
+        --micro: #8a94a6;
+      }
+      body {
+        font-family: 'Nunito', sans-serif;
+        color: var(--ink);
+        font-size: 10pt;
+        line-height: 1.5;
+        background: var(--cream);
+      }
+      .page {
+        width: 210mm;
+        min-height: 291mm;
+        padding: 9mm 15mm 5mm;
+        page-break-after: always;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+      .page:last-child {
+        page-break-after: auto;
+      }
+      .eyebrow {
+        display: inline-block;
+        align-self: flex-start;
+        background: var(--pink);
+        border: 2.5px solid #000;
+        border-radius: 999px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 1.2mm 5mm;
+        font-weight: 900;
+        font-size: 8.5pt;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        font-family: 'Fredoka One', cursive;
+        font-size: 19pt;
+        line-height: 1.12;
+        margin: 5.5mm 0 3.5mm;
+      }
+      .lede {
+        font-weight: 700;
+        color: #3a3a3a;
+        font-size: 9.5pt;
+        max-width: 152mm;
+      }
+      .appbtn {
+        display: inline-block;
+        align-self: flex-start;
+        background: var(--yellow);
+        border: 3px solid #000;
+        border-radius: 999px;
+        box-shadow: 4px 4px 0 #000;
+        padding: 2.2mm 6mm;
+        font-family: 'Fredoka One', cursive;
+        font-size: 12.5pt;
+        color: #000;
+        text-decoration: none;
+        margin: 5mm 0 0;
+      }
+      .appbtn span {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+      }
+      .applegend {
+        font-size: 8.5pt;
+        font-weight: 800;
+        color: var(--micro);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-top: 2.2mm;
+      }
+      .strip {
+        display: flex;
+        gap: 3mm;
+        margin: 3.5mm 0 0;
+        flex-wrap: wrap;
+      }
+      .step {
+        border: 2px solid #000;
+        border-radius: 999px;
+        background: #fff;
+        box-shadow: 2px 2px 0 #000;
+        padding: 0.8mm 4mm;
+        font-weight: 900;
+        font-size: 8.5pt;
+      }
+      .star {
+        position: absolute;
+        top: 10mm;
+        right: 14mm;
+        font-size: 24pt;
+        color: var(--yellow);
+        -webkit-text-stroke: 1.5px #000;
+      }
+      .row {
+        display: flex;
+        gap: 6mm;
+        align-items: flex-start;
+        margin-top: 5.5mm;
+      }
+      .pill {
+        flex: 0 0 32mm;
+        background: var(--yellow);
+        border: 3px solid #000;
+        border-radius: 6mm;
+        box-shadow: 3.5px 3.5px 0 #000;
+        padding: 2.6mm 2mm;
+        text-align: center;
+        font-family: 'Fredoka One', cursive;
+        font-size: 11pt;
+      }
+      .pill.pink {
+        background: var(--pink);
+      }
+      .pill.green {
+        background: var(--green);
+      }
+      .pill.cyan {
+        background: var(--cyan);
+      }
+      .pill.coral {
+        background: var(--coral);
+      }
+      .pill.yellow {
+        background: var(--yellow);
+      }
+      .pill small {
+        display: block;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 7.5pt;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-top: 0.6mm;
+      }
+      .row .body {
+        flex: 1;
+      }
+      .micro {
+        font-size: 8pt;
+        font-weight: 900;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: #4a5568;
+        margin-bottom: 1.6mm;
+        border-bottom: 1.5px solid #d9ccec;
+        padding-bottom: 0.8mm;
+        display: inline-block;
+      }
+      .body ul {
+        margin: 0 0 1.4mm 4.5mm;
+      }
+      .body li {
+        font-size: 9.5pt;
+        margin-bottom: 1mm;
+      }
+      .body .explore {
+        font-size: 9pt;
+        font-weight: 800;
+        margin-top: 1.2mm;
+      }
+      .sectionbar {
+        margin-top: 10mm;
+        display: flex;
+        align-items: center;
+        gap: 4mm;
+      }
+      .sectionbar .tag {
+        background: var(--green);
+        border: 3px solid #000;
+        border-radius: 999px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 1.4mm 6mm;
+        font-family: 'Fredoka One', cursive;
+        font-size: 11.5pt;
+      }
+      .sectionbar .tag.red {
+        background: var(--coral);
+      }
+      .sectionbar .sub {
+        font-size: 8.5pt;
+        font-weight: 800;
+        color: var(--micro);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 6mm;
+        border: 2.5px solid #000;
+        border-radius: 4mm;
+        overflow: hidden;
+        box-shadow: 3px 3px 0 #000;
+        background: #fff;
+      }
+      th {
+        background: #ede5f5;
+        color: #191919;
+        font-size: 8pt;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 2.6mm 3.5mm;
+        text-align: left;
+      }
+      td {
+        font-size: 9.5pt;
+        padding: 2.4mm 3.5mm;
+        border-top: 1.5px solid #e5ddcf;
+        vertical-align: top;
+      }
+      td.k {
+        font-weight: 900;
+        white-space: nowrap;
+      }
+      td.k .dot {
+        display: inline-block;
+        width: 2.6mm;
+        height: 2.6mm;
+        border-radius: 50%;
+        border: 1.5px solid #000;
+        margin-right: 1.6mm;
+      }
+      .foot {
+        margin-top: auto;
+        padding-top: 4mm;
+        display: flex;
+        justify-content: space-between;
+        font-size: 7pt;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #555;
+      }
+      /* print safety: never split a card/row/section across pages (founder rule) */
+      .row,
+      .sectionbar,
+      table,
+      .strip,
+      .threecol,
+      .callout {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      h1,
+      h2,
+      .micro,
+      .eyebrow {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+      .threecol {
+        display: flex;
+        gap: 7mm;
+        margin-top: 4.5mm;
+      }
+      .threecol > div {
+        flex: 1;
+      }
+      .threecol p {
+        font-size: 9.5pt;
+        line-height: 1.55;
+      }
+      .hero-panel {
+        background: #3d1065;
+        border: 3px solid #000;
+        border-radius: 14px;
+        box-shadow: 5px 5px 0 #000;
+        padding: 7mm 8mm 6mm;
+        margin-top: 3.5mm;
+        break-inside: avoid;
+      }
+      .hero-panel h1 {
+        color: #fff;
+        margin: 0 0 2mm;
+      }
+      .hero-panel .lede {
+        color: #e9dff5;
+      }
+      .callout {
+        margin-top: 6mm;
+        background: #fff;
+        border: 2.5px solid #000;
+        border-radius: 4mm;
+        box-shadow: 3px 3px 0 #000;
+        padding: 4mm 5mm;
+      }
+      .callout .micro {
+        margin-bottom: 1.2mm;
+      }
+      .callout p {
+        font-size: 9.5pt;
+        font-weight: 700;
+      }
+      .promises {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2.5mm;
+        margin-top: 4mm;
+      }
+      .promises span {
+        background: var(--green);
+        border: 2.5px solid #000;
+        border-radius: 999px;
+        box-shadow: 2.5px 2.5px 0 #000;
+        padding: 1mm 4.5mm;
+        font-weight: 900;
+        font-size: 8.5pt;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ─────────────────────────── PAGE 1 ─────────────────────────── -->
+    <div class="page">
+      <span class="star">★</span>
+      <span class="eyebrow">Beta tester brief</span>
+      <div class="hero-panel">
+        <h1>You're in. Now use it like it's yours.</h1>
+        <p class="lede" style="margin-top: 1mm">
+          Family Hub is a private online space for one family: calendar, meals, tasks and a reward
+          system that quietly teaches kids about money. You are one of the first families to live in
+          it.
+        </p>
+      </div>
+      <div>
+        <a class="appbtn" href="https://fhapp.up.railway.app"
+          >Open the app <span>→</span> fhapp.up.railway.app</a
+        >
+        <div class="applegend">Free during the beta · no card · nothing will ask you to pay</div>
+      </div>
+
+      <div class="threecol">
+        <div>
+          <span class="micro">What we're asking</span>
+          <p>
+            Use it for real, for about two weeks, on your own phone. Real names, real chores, real
+            week.
+          </p>
+        </div>
+        <div>
+          <span class="micro">What it costs</span>
+          <p>Nothing. No card, no trial timer, no upsell while the beta is running.</p>
+        </div>
+        <div>
+          <span class="micro">What you get back</span>
+          <p>
+            A direct line into what gets built next, and the free plan stays free for your family.
+          </p>
+        </div>
+      </div>
+
+      <div style="margin-top: 6mm">
+        <div class="micro">Works on</div>
+        <div class="strip" style="margin-top: 1mm">
+          <span class="step">Phone</span><span class="step">Tablet</span
+          ><span class="step">Laptop</span><span class="step">No app to install</span>
+        </div>
+      </div>
+
+      <div class="sectionbar">
+        <span class="tag">Your first 15 minutes</span
+        ><span class="sub">do this bit on the phone you actually use</span>
+      </div>
+
+      <div class="row">
+        <div class="pill pink">1<small>2 min</small></div>
+        <div class="body">
+          <span class="micro">Start your family</span>
+          <ul>
+            <li>Tap "Start free", then sign in with your email or Google. There is no password.</li>
+            <li>
+              Pick your family web address, something like <b>/t/khan-family</b>. It is yours and
+              nobody else can see it.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill cyan">2<small>5 min</small></div>
+        <div class="body">
+          <span class="micro">Add your people</span>
+          <ul>
+            <li>Add each child with a name, an avatar and a 4-digit PIN. Kids need no email.</li>
+            <li>Invite the other grown-up by email. Grandparents can be added too.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill green">3<small>3 min</small></div>
+        <div class="body">
+          <span class="micro">Decide what a sticker is worth</span>
+          <ul>
+            <li>
+              Kids earn stickers for good habits. You set what one sticker is worth in real money,
+              for the whole family or per child.
+            </li>
+            <li>This is the bit that turns chores into pocket money and money lessons.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill yellow">4<small>5 min</small></div>
+        <div class="body">
+          <span class="micro">Pick two or three habits per child, then hand the phone over</span>
+          <ul>
+            <li>Start small. Teeth, homework, tidy room. You can always add more later.</li>
+            <li>
+              Let each child tap their own avatar and type their PIN. Watch what they do without
+              helping them. That first minute tells us a lot.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot"><span>Family Hub · Beta tester brief</span><span>1 / 4</span></div>
+    </div>
+
+    <!-- ─────────────────────────── PAGE 2 ─────────────────────────── -->
+    <div class="page">
+      <div class="sectionbar" style="margin-top: 0">
+        <span class="tag" style="background: var(--cyan)">Week one</span
+        ><span class="sub">just live in it</span>
+      </div>
+      <p class="lede" style="margin-top: 4mm">
+        Do not go hunting for things to test. Run your normal week and notice where the app helps
+        and where it gets in the way.
+      </p>
+
+      <div class="row">
+        <div class="pill pink">You<small>the admin</small></div>
+        <div class="body">
+          <span class="micro">The daily driver</span>
+          <ul>
+            <li>Plan the week's meals and put the real school and club dates in the calendar.</li>
+            <li>Put two or three real jobs on the Tasks list and give them to someone.</li>
+            <li>Post one thing on the Noticeboard that the whole house needs to know.</li>
+          </ul>
+          <p class="explore">Notice: anything that takes too many taps between school runs.</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill cyan">Your partner<small>invited adult</small></div>
+        <div class="body">
+          <span class="micro">The second grown-up</span>
+          <ul>
+            <li>Accept the invite on their own phone and use it for a few days.</li>
+            <li>Both of you open the same list at the same time and see if it stays in step.</li>
+          </ul>
+          <p class="explore">Notice: anything they can reach that only you should control.</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill yellow">Your kids<small>PIN sign-in</small></div>
+        <div class="body">
+          <span class="micro">Their own world</span>
+          <ul>
+            <li>Let them tick their own habits each day and watch their stickers build up.</li>
+            <li>Send them into Learn: maths, logic, world flags, drawing and a reading log.</li>
+            <li>Let them ask for something from the reward shop and approve it yourself.</li>
+          </ul>
+          <p class="explore">Notice: anything a child finds confusing, boring or babyish.</p>
+        </div>
+      </div>
+
+      <div class="sectionbar">
+        <span class="tag">Week two</span><span class="sub">the money week</span>
+      </div>
+      <div class="row">
+        <div class="pill green">The money<small>close a week</small></div>
+        <div class="body">
+          <span class="micro">Where the real value lives</span>
+          <ul>
+            <li>
+              Close a week with each child: claim, cash out, save or invest their stickers. Check
+              the maths matches what you would have handed over in coins.
+            </li>
+            <li>Invest some stickers into a habit that grows them, and talk about why.</li>
+            <li>Add the family calendar to your phone's own calendar with the private link.</li>
+          </ul>
+          <p class="explore">The big question: did any of this change a conversation at home?</p>
+        </div>
+      </div>
+
+      <div class="sectionbar">
+        <span class="tag red">Not built yet</span><span class="sub">no need to report these</span>
+      </div>
+      <table>
+        <tr>
+          <th style="width: 36mm">Area</th>
+          <th>What to expect</th>
+        </tr>
+        <tr>
+          <td class="k">Paying for it</td>
+          <td>
+            There is no billing yet. Nothing in the app should ever ask you for a card. If something
+            does, that is a bug worth telling us about.
+          </td>
+        </tr>
+        <tr>
+          <td class="k">Schools and clubs</td>
+          <td>
+            Shared spaces for schools, clubs and community groups come later. This beta is one
+            private family at a time.
+          </td>
+        </tr>
+        <tr>
+          <td class="k">Rough edges</td>
+          <td>
+            Some screens still flash plain grey loading text while they think. We know. A proper
+            loading screen is being designed.
+          </td>
+        </tr>
+      </table>
+
+      <div class="foot"><span>Family Hub · Beta tester brief</span><span>2 / 4</span></div>
+    </div>
+
+    <!-- ─────────────────────────── PAGE 3 ─────────────────────────── -->
+    <div class="page">
+      <div class="sectionbar" style="margin-top: 0">
+        <span class="tag" style="background: var(--pink)">Telling us how it went</span
+        ><span class="sub">one tap, about one minute</span>
+      </div>
+
+      <div class="row">
+        <div class="pill pink">In the app<small>bottom right</small></div>
+        <div class="body">
+          <span class="micro">The pink "Give feedback" button</span>
+          <ul>
+            <li>
+              It sits in the bottom right corner of every page, and it is the fastest way to reach
+              us. Nothing to install, no account needed.
+            </li>
+            <li>
+              Two quick questions to start: how you would feel if Family Hub went away, and whether
+              you would recommend it. Everything else is optional and hidden behind "A few more".
+            </li>
+            <li>Answer one question or all of them. Both count.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout">
+        <div class="micro">When something goes wrong</div>
+        <p>
+          Four things make a report easy to act on: what you were doing, what you expected, what
+          actually happened, and a screenshot. Even three words and a picture beats saying nothing.
+        </p>
+      </div>
+
+      <div class="sectionbar">
+        <span class="tag">When to send it</span><span class="sub">twice is plenty</span>
+      </div>
+      <table>
+        <tr>
+          <th style="width: 36mm">Moment</th>
+          <th>What is most useful to us</th>
+        </tr>
+        <tr>
+          <td class="k">
+            <span class="dot" style="background: var(--pink)"></span>End of week one
+          </td>
+          <td>
+            First impressions while they are still fresh. What confused you, what you could not
+            find, what your kids said.
+          </td>
+        </tr>
+        <tr>
+          <td class="k">
+            <span class="dot" style="background: var(--cyan)"></span>End of week two
+          </td>
+          <td>
+            The honest verdict. Would you keep using it, and would you pay for it? A blunt no is
+            worth more to us than a polite yes.
+          </td>
+        </tr>
+        <tr>
+          <td class="k">
+            <span class="dot" style="background: var(--coral)"></span>The moment it breaks
+          </td>
+          <td>
+            Anything broken, wrong or unfair. Especially wrong money maths, or a child reaching
+            something they should not.
+          </td>
+        </tr>
+      </table>
+
+      <div class="sectionbar">
+        <span class="tag" style="background: var(--yellow)">Three questions</span
+        ><span class="sub">the answers we care most about</span>
+      </div>
+      <table>
+        <tr>
+          <th style="width: 68mm">The question</th>
+          <th>Why we're asking</th>
+        </tr>
+        <tr>
+          <td class="k" style="white-space: normal">Would you still be using it in a month?</td>
+          <td>Tells us whether it fits a real week, or was just a fun first evening.</td>
+        </tr>
+        <tr>
+          <td class="k" style="white-space: normal">Would you pay for it, and how much?</td>
+          <td>Name a number, or say no. Both answers are worth the same to us.</td>
+        </tr>
+        <tr>
+          <td class="k" style="white-space: normal">What did your kids say, unprompted?</td>
+          <td>
+            The bit we can never see from here, and usually the most useful thing you can send.
+          </td>
+        </tr>
+      </table>
+
+      <div class="foot"><span>Family Hub · Beta tester brief</span><span>3 / 4</span></div>
+    </div>
+
+    <!-- ─────────────────────────── PAGE 4 ─────────────────────────── -->
+    <div class="page">
+      <div class="sectionbar" style="margin-top: 0">
+        <span class="tag" style="background: var(--cyan)">Your family's data</span
+        ><span class="sub">plain promises</span>
+      </div>
+      <div class="promises">
+        <span>No adverts</span><span>No tracking</span><span>No selling your data</span
+        ><span>No public profiles</span><span>No strangers near your kids</span>
+      </div>
+
+      <div class="row">
+        <div class="pill green">Yours<small>in and out</small></div>
+        <div class="body">
+          <span class="micro">You stay in control</span>
+          <ul>
+            <li>
+              Children never give an email address. Only you can add a child, set a PIN, or remove
+              them.
+            </li>
+            <li>
+              You can export everything your family has put in, or delete the whole account, from
+              the admin area.
+            </li>
+            <li>
+              Real family details are fine here. It is a genuinely private space, one family per
+              hub.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill coral">Still beta<small>worth knowing</small></div>
+        <div class="body">
+          <span class="micro">Two honest warnings</span>
+          <ul>
+            <li>
+              Things will change under you. A screen you learn this week may look different next
+              week, because of something you told us.
+            </li>
+            <li>
+              Keep anything you truly cannot lose somewhere else as well. We back up, but this is
+              not the week to trust us with your only copy.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="pill cyan">Stuck?<small>quick fixes</small></div>
+        <div class="body">
+          <span class="micro">The three things that trip people up</span>
+          <ul>
+            <li>
+              No sign-in email? Check your spam folder. It comes from <b>noreply@fhapp.co</b>, and
+              the link only works for a short while, so ask for a fresh one if it has been sitting.
+            </li>
+            <li>Forgot a child's PIN? You can reset it yourself on the family members screen.</li>
+            <li>Screen looking odd? Refresh the page first, then sign out and back in.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout">
+        <div class="micro">After the beta</div>
+        <p>
+          The Household plan stays free. Family is $7.99 a month and Family Pro is $12.99 once
+          billing arrives, and you will hear about it before anyone else. Nothing will ever charge
+          you without you choosing it first.
+        </p>
+      </div>
+
+      <div class="hero-panel" style="margin-top: 8mm">
+        <h1 style="font-size: 16pt">Thank you for lending us a real family week.</h1>
+        <p class="lede" style="margin-top: 1mm">
+          Everything you tell us, good or blunt, decides what gets built next. That is the whole
+          point of you being here.
+        </p>
+      </div>
+
+      <div class="foot"><span>Family Hub · Beta tester brief</span><span>4 / 4</span></div>
+    </div>
+  </body>
+</html>
