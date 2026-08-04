@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Toggle, BoostButton, ChoiceRow, ResultBanner } from '../../../../packages/ui/src';
 
-// FHS-512 — the small reusable pieces the "Pocket money" settings screen is
+// FHS-512: the small reusable pieces the "Pocket money" settings screen is
 // built from (grouped in one file since each is a tiny primitive).
 
 describe('Toggle', () => {
@@ -26,7 +26,7 @@ describe('Toggle', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  // FIX 4 (BLOCKER) — the track used to be h-8 (32px), under the 44x44px
+  // FIX 4 (BLOCKER): the track used to be h-8 (32px), under the 44x44px
   // minimum finger-sized tap target the responsive-design rule requires.
   it('meets the 44px minimum tap target', () => {
     render(<Toggle checked={false} onChange={() => {}} testId="tg" />);

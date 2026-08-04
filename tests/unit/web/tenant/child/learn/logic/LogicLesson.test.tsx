@@ -1,4 +1,4 @@
-// FHS-395 — LogicLesson unit tests.
+// FHS-395: LogicLesson unit tests.
 // Covers: renders correct UI per type, submits answer, shows feedback +
 // explanation, double-tap guard, certificate overlay on certificateEarned.
 
@@ -92,7 +92,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 // ─── True/False renderer ──────────────────────────────────────────────────────
 
-describe('LogicLesson — TrueFalse', () => {
+describe('LogicLesson: TrueFalse', () => {
   it('renders statement and True/False buttons', async () => {
     installFetch(makeTrueFalseQ());
     render(<LogicLesson kidToken={KID_TOKEN} gameType="truefalse" />);
@@ -204,7 +204,7 @@ describe('LogicLesson — TrueFalse', () => {
 
 // ─── Patterns renderer ────────────────────────────────────────────────────────
 
-describe('LogicLesson — Patterns', () => {
+describe('LogicLesson: Patterns', () => {
   it('renders sequence boxes and choice buttons', async () => {
     installFetch(makePatternQ());
     render(<LogicLesson kidToken={KID_TOKEN} gameType="patterns" />);
@@ -247,7 +247,7 @@ describe('LogicLesson — Patterns', () => {
 
 // ─── Odd One Out renderer ─────────────────────────────────────────────────────
 
-describe('LogicLesson — OddOneOut', () => {
+describe('LogicLesson: OddOneOut', () => {
   it('renders items as tappable buttons', async () => {
     installFetch(makeOddOneOutQ());
     render(<LogicLesson kidToken={KID_TOKEN} gameType="oddoneout" />);
@@ -275,7 +275,7 @@ describe('LogicLesson — OddOneOut', () => {
 
 // ─── If…Then renderer ─────────────────────────────────────────────────────────
 
-describe('LogicLesson — IfThen', () => {
+describe('LogicLesson: IfThen', () => {
   it('renders premise and choice buttons', async () => {
     installFetch(makeIfThenQ());
     render(<LogicLesson kidToken={KID_TOKEN} gameType="ifthen" />);
@@ -330,7 +330,7 @@ describe('LogicLesson — IfThen', () => {
 
 // ─── Sorting renderer ─────────────────────────────────────────────────────────
 
-describe('LogicLesson — Sorting', () => {
+describe('LogicLesson: Sorting', () => {
   it('renders item card and group buttons', async () => {
     installFetch(makeSortingQ());
     render(<LogicLesson kidToken={KID_TOKEN} gameType="sorting" />);
@@ -356,7 +356,7 @@ describe('LogicLesson — Sorting', () => {
 
 // ─── Difficulty selector ──────────────────────────────────────────────────────
 
-describe('LogicLesson — difficulty selector', () => {
+describe('LogicLesson: difficulty selector', () => {
   it('renders easy/medium/hard buttons', async () => {
     installFetch(makeTrueFalseQ());
     render(<LogicLesson kidToken={KID_TOKEN} gameType="truefalse" />);
@@ -393,7 +393,7 @@ describe('LogicLesson — difficulty selector', () => {
 
 // ─── Score bar ────────────────────────────────────────────────────────────────
 
-describe('LogicLesson — score bar', () => {
+describe('LogicLesson: score bar', () => {
   it('renders streak / best streak / score', async () => {
     installFetch(makeTrueFalseQ());
     render(<LogicLesson kidToken={KID_TOKEN} gameType="truefalse" />);
@@ -430,7 +430,7 @@ describe('LogicLesson — score bar', () => {
 
 // ─── Certificate progress bar ─────────────────────────────────────────────────
 
-describe('LogicLesson — certificate progress', () => {
+describe('LogicLesson: certificate progress', () => {
   it('renders cert progress bar', async () => {
     installFetch(makeTrueFalseQ());
     render(<LogicLesson kidToken={KID_TOKEN} gameType="truefalse" />);
@@ -440,7 +440,7 @@ describe('LogicLesson — certificate progress', () => {
 
 // ─── Escape closes hint lightbox (Fix #1) ────────────────────────────────────
 
-describe('LogicLesson — hint lightbox Escape key', () => {
+describe('LogicLesson: hint lightbox Escape key', () => {
   it('pressing Escape on the close button closes the hint dialog', async () => {
     installFetch(makeIfThenQ());
     render(<LogicLesson kidToken={KID_TOKEN} gameType="ifthen" />);
@@ -460,7 +460,7 @@ describe('LogicLesson — hint lightbox Escape key', () => {
 
 // ─── Fetch error → retry card (Fix #3) ───────────────────────────────────────
 
-describe('LogicLesson — fetch error state', () => {
+describe('LogicLesson: fetch error state', () => {
   it('shows retry card when GET /questions returns non-ok', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
     render(<LogicLesson kidToken={KID_TOKEN} gameType="truefalse" />);
@@ -471,7 +471,7 @@ describe('LogicLesson — fetch error state', () => {
 
 // ─── Sorting: only tapped wrong button goes red (Fix #4) ─────────────────────
 
-describe('LogicLesson — SortingGame wrong selection highlight', () => {
+describe('LogicLesson: SortingGame wrong selection highlight', () => {
   it('tapping wrong group only highlights that button red, not others', async () => {
     // groups: ['Bird','Mammal','Reptile','Fish']; correctAnswer is 'Bird' (index 0)
     installFetch(
@@ -481,7 +481,7 @@ describe('LogicLesson — SortingGame wrong selection highlight', () => {
     render(<LogicLesson kidToken={KID_TOKEN} gameType="sorting" />);
     await waitFor(() => expect(screen.getByTestId('logic-choice-0')).toBeInTheDocument());
     await act(async () => {
-      // Click 'Mammal' (index 1) — wrong answer
+      // Click 'Mammal' (index 1): wrong answer
       fireEvent.click(screen.getByTestId('logic-choice-1'));
     });
     await waitFor(() => expect(screen.getByTestId('logic-next-btn')).toBeInTheDocument());
@@ -493,7 +493,7 @@ describe('LogicLesson — SortingGame wrong selection highlight', () => {
 
 // ─── Certificate dismiss fires once, timer does not double-fire (Fix #5) ─────
 
-describe('LogicLesson — CertificateOverlay one-shot dismiss', () => {
+describe('LogicLesson: CertificateOverlay one-shot dismiss', () => {
   it('clicking dismiss fires onDismiss exactly once even if clicked twice', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     installFetch(makeTrueFalseQ(), makeAnswerRes({ certificateEarned: true, comboCorrect: 10 }));
@@ -516,7 +516,7 @@ describe('LogicLesson — CertificateOverlay one-shot dismiss', () => {
     await act(async () => {
       vi.advanceTimersByTime(7000);
     });
-    // Still absent — no second fire
+    // Still absent: no second fire
     expect(screen.queryByTestId('logic-certificate-overlay')).not.toBeInTheDocument();
     vi.useRealTimers();
   });
@@ -524,7 +524,7 @@ describe('LogicLesson — CertificateOverlay one-shot dismiss', () => {
 
 // ─── POST sends Authorization header (Fix #7) ────────────────────────────────
 
-describe('LogicLesson — POST auth header', () => {
+describe('LogicLesson: POST auth header', () => {
   it('POST /api/kid/logic/answer sends Authorization: Bearer <kidToken>', async () => {
     installFetch(makeTrueFalseQ());
     render(<LogicLesson kidToken={KID_TOKEN} gameType="truefalse" />);

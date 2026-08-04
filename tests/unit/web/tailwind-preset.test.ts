@@ -6,7 +6,7 @@ import preset from '../../../packages/ui/tailwind.preset.js';
 
 // Sanity tests for the design-system preset. These fail loudly if the
 // canonical brand purple, the heading-font alias, or the kingdom scale
-// gets accidentally renamed or dropped — every consuming app would
+// gets accidentally renamed or dropped: every consuming app would
 // silently lose its design language otherwise.
 describe('@familyhub/ui tailwind preset', () => {
   const colors = preset.theme.extend.colors;

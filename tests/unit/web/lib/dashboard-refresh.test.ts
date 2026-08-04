@@ -5,7 +5,7 @@ import {
   useDashboardStaleSignal,
 } from '../../../../apps/web/src/lib/dashboard-refresh';
 
-// FHS-309 — the dashboard-stale signal that lets a task/notice mutation in
+// FHS-309: the dashboard-stale signal that lets a task/notice mutation in
 // one tab refresh the dashboard snapshot + header counts.
 
 describe('dashboard-refresh signal', () => {

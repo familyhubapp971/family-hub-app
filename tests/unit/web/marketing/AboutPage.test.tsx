@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AboutPage } from '../../../../apps/web/src/pages/marketing/AboutPage';
 
-// FHS-436 — a beta reviewer said it wasn't clear WHAT Family Hub is, WHO
+// FHS-436: a beta reviewer said it wasn't clear WHAT Family Hub is, WHO
 // it's for, or its value. This page spells that out; these tests lock
 // the headline, the "what you can do" + "who it's for" + kid-safety
 // sections, and the Start free / Privacy Policy links a visitor needs.
@@ -54,7 +54,7 @@ describe('<AboutPage />', () => {
     privacyLinks.forEach((link) => expect(link).toHaveAttribute('href', '/privacy'));
   });
 
-  // FHS-546 — About now uses the shared SiteHeader + SiteFooter (like the
+  // FHS-546: About now uses the shared SiteHeader + SiteFooter (like the
   // homepage + legal pages): Legal in the header nav, the full legal footer,
   // and the FamilyHub logo linking home.
   it('uses the shared site chrome (home link, Legal in the header, full legal footer)', () => {

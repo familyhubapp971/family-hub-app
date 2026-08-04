@@ -243,7 +243,7 @@ describe('StepperHeader', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
-  // FHS-255 — bar must anchor to the circle's vertical centre
+  // FHS-255: bar must anchor to the circle's vertical centre
   // (top-5 = 20px = h-10 / 2) regardless of whether labels are
   // rendered. Using top-1/2 makes the bar drift down when labels
   // grow the parent flex row's height.
@@ -413,7 +413,7 @@ describe('ConfirmDialog', () => {
     expect(screen.getByTestId('cd-cancel')).toBeDisabled();
   });
 
-  // FHS-435 — "type the name to confirm" gate for the delete-account dialog.
+  // FHS-435: "type the name to confirm" gate for the delete-account dialog.
   it('confirmDisabled disables only the confirm button, not cancel', () => {
     render(
       <ConfirmDialog

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CollapsibleSection } from '@familyhub/ui';
 
-// FHS-513 — the collapsible group card used for Manage Members'
+// FHS-513: the collapsible group card used for Manage Members'
 // Grown-ups / Kids groups and the "How your kids sign in" card.
 
 describe('<CollapsibleSection />', () => {

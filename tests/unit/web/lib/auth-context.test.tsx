@@ -150,7 +150,7 @@ describe('AuthProvider + useAuth', () => {
     expect(mocks.unsubscribeMock).toHaveBeenCalledTimes(1);
   });
 
-  // FHS-253 (qa-expert blocker #8) — when a parent signs in on a
+  // FHS-253 (qa-expert blocker #8): when a parent signs in on a
   // device the kid was using, the kid's stale token must come off.
   it('clears fh.kid.token when SIGNED_IN fires (stale kid identity on parent log-in)', async () => {
     mocks.getSessionMock.mockResolvedValue({ data: { session: null } });
@@ -172,7 +172,7 @@ describe('AuthProvider + useAuth', () => {
     expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
   });
 
-  // FHS-253 (qa-expert blocker #3) — multi-tab: Tab A clears the
+  // FHS-253 (qa-expert blocker #3): multi-tab: Tab A clears the
   // kid token, Tab B receives a storage event and stays consistent.
   it('listens for cross-tab storage events on fh.kid.token (forward-defensive for FHS-205)', async () => {
     mocks.getSessionMock.mockResolvedValue({ data: { session: null } });
@@ -200,18 +200,18 @@ describe('AuthProvider + useAuth', () => {
       );
     });
 
-    // Idempotent — clearKidToken ensures the local copy is gone too.
+    // Idempotent: clearKidToken ensures the local copy is gone too.
     expect(localStorage.getItem(KID_TOKEN_STORAGE_KEY)).toBeNull();
 
     unmount();
   });
 });
 
-// FHS-253 — kid JWT helpers. The kid token lives in localStorage under
+// FHS-253: kid JWT helpers. The kid token lives in localStorage under
 // fh.kid.token. Parent sign-out used to leave it behind; expired
 // tokens used to sit forever. Both fixed in auth-context.tsx.
 
-// Build a JWT-shaped string with a forged exp claim — we never
+// Build a JWT-shaped string with a forged exp claim: we never
 // verify the signature on the client, so any base64url payload works.
 function fakeKidJwt(expSeconds: number): string {
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-264 — MealsTabPanel redesign. Day cards, filter pills, avatar
+// FHS-264: MealsTabPanel redesign. Day cards, filter pills, avatar
 // dots, repeat icon, and the who-for + recurring editor. A small
 // in-memory fake stands in for the API so add / edit / delete + refetch
 // behave like the real backend.
@@ -158,14 +158,14 @@ describe('<MealsTabPanel />', () => {
     expect(screen.getByTestId('meals-legend')).toBeInTheDocument();
     expect(screen.getByTestId('meals-week-range')).toBeInTheDocument();
     expect(screen.getByTestId('meals-filter-all')).toBeInTheDocument();
-    // FHS-525 — the "Family" chip is gone; "All" now means everyone.
+    // FHS-525: the "Family" chip is gone; "All" now means everyone.
     expect(screen.queryByTestId('meals-filter-family')).not.toBeInTheDocument();
     expect(screen.getByTestId(`meals-filter-${ALI}`)).toBeInTheDocument();
     // Empty day still shows its Add Meal button.
     expect(screen.getByTestId('meals-add-mon')).toBeInTheDocument();
   });
 
-  // FHS-444 — "Week N" alone reads like a mystery code; a hover/focus
+  // FHS-444: "Week N" alone reads like a mystery code; a hover/focus
   // tooltip spells out the same real date range shown as the page subtitle.
   it('the Week N pill carries a title tooltip with the real date range', async () => {
     installApi({ members: MEMBERS });
@@ -300,7 +300,7 @@ describe('<MealsTabPanel />', () => {
     });
   });
 
-  // FHS-477 — a beta tester filtered to one child, added a meal, and it
+  // FHS-477: a beta tester filtered to one child, added a meal, and it
   // "disappeared" until they switched back to All. The default Add Meal
   // pre-fill already targets the active filter's child, so it should show
   // immediately without the user touching the filter at all.
@@ -322,12 +322,12 @@ describe('<MealsTabPanel />', () => {
       fireEvent.click(screen.getByTestId('meals-editor-save'));
     });
 
-    // Still on Ali's filter — the meal is visible without any manual switch.
+    // Still on Ali's filter: the meal is visible without any manual switch.
     expect(screen.getByTestId(`meals-filter-${ALI}`)).toHaveAttribute('aria-pressed', 'true');
     await waitFor(() => expect(screen.getByText('Soup')).toBeInTheDocument());
   });
 
-  // FHS-477 — if the saved meal's owner does NOT match the active filter
+  // FHS-477: if the saved meal's owner does NOT match the active filter
   // (e.g. assigned to "Everyone" while viewing one child's plan), it used
   // to save fine but vanish from view with no explanation. The view now
   // widens to "All" so a just-saved meal is never silently hidden.
@@ -342,7 +342,7 @@ describe('<MealsTabPanel />', () => {
     act(() => {
       fireEvent.click(screen.getByTestId('meals-add-mon'));
     });
-    // Deliberately re-target to "Everyone (family)" — no longer matches
+    // Deliberately re-target to "Everyone (family)": no longer matches
     // the active Ali filter.
     act(() => {
       fireEvent.click(within(screen.getByTestId('meals-editor-member')).getByRole('button'));
@@ -433,7 +433,7 @@ describe('<MealsTabPanel />', () => {
     act(() => {
       fireEvent.click(screen.getByTestId('meals-add-snack-tue'));
     });
-    // Editor opens already targeting snack — no dropdown change needed.
+    // Editor opens already targeting snack: no dropdown change needed.
     expect(screen.getByTestId('meals-editor')).toBeInTheDocument();
     expect(
       within(screen.getByTestId('meals-editor-slot')).getByRole('button').textContent,

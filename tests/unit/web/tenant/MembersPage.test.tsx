@@ -4,17 +4,17 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MembersPage } from '../../../../apps/web/src/pages/tenant/MembersPage';
 import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
 
-// FHS-513 — Manage Family rebuild to the finalised Magic Patterns design:
+// FHS-513: Manage Family rebuild to the finalised Magic Patterns design:
 // header CTAs ("Invite an adult" / "Add a child"), members split into
 // collapsible "Grown-ups" (email login) / "Kids" (PIN login) groups, a
 // "How your kids sign in" helper card, and a separate "Waiting to join"
 // section for unclaimed grown-up seats. Everything under here that was
 // covered before FHS-513 (FHS-108 / FHS-252 / FHS-276 / FHS-471/472/473 /
-// FHS-486) is re-covered against the new structure — no behaviour dropped,
+// FHS-486) is re-covered against the new structure: no behaviour dropped,
 // only the "Add a plain adult with no login" path (removed from the UI;
 // see the ticket's decision notes).
 //
-// FHS-322 — AppHeader added to MembersPage. Fetch mock is now URL-aware
+// FHS-322: AppHeader added to MembersPage. Fetch mock is now URL-aware
 // so AppHeader's + MembersPage's own self-fetches (/api/me,
 // /api/dashboard/today) don't consume or pollute the /api/members call
 // ordering.
@@ -63,7 +63,7 @@ function installApi() {
       });
     }
 
-    // /api/members GET — return whatever the test has set.
+    // /api/members GET: return whatever the test has set.
     if (u.includes('/api/members') && (!init?.method || init.method === 'GET')) {
       return Promise.resolve(
         membersResponse ?? { ok: true, status: 200, json: async () => ({ members: [] }) },
@@ -94,7 +94,7 @@ function renderAt(initial: string) {
   );
 }
 
-// FHS-522 — the Grown-ups / Kids / "How your kids sign in" sections now
+// FHS-522: the Grown-ups / Kids / "How your kids sign in" sections now
 // start collapsed, so their body content (member cards, kid-login steps)
 // isn't in the DOM until the header is clicked. Waits for the header to
 // render, then clicks its toggle to reveal the body.
@@ -127,7 +127,7 @@ function adminOnlyList() {
     ok: true,
     json: async () => ({
       callerRole: 'admin',
-      // FHS-510 — self-serve: the change-email control only renders on the
+      // FHS-510: self-serve: the change-email control only renders on the
       // caller's OWN card, so fixtures must echo callerMemberId matching the
       // row that should be treated as "me" (here, admin-1 / Sarah Khan).
       callerMemberId: 'admin-1',
@@ -152,7 +152,7 @@ function adminOnlyList() {
   };
 }
 
-// FHS-510 — same single-admin roster, but with a pending email change in
+// FHS-510: same single-admin roster, but with a pending email change in
 // flight for the caller (the "Confirm the new email" yellow card state).
 function adminWithPendingEmailList() {
   return {
@@ -181,7 +181,7 @@ function adminWithPendingEmailList() {
   };
 }
 
-// FHS-510 blocker #6 — a defensive edge case: an "active" grown-up whose
+// FHS-510 blocker #6: a defensive edge case: an "active" grown-up whose
 // `email` field is null (the API is expected to always populate it for a
 // linked login, but the UI must not assume that and should disable the
 // trigger rather than open a broken form).
@@ -325,7 +325,7 @@ function listWithKid(opts: { callerRole: string; kidHasPin: boolean }) {
   };
 }
 
-// FHS-519 — two active admins, caller is admin-1. Used to cover (a)
+// FHS-519: two active admins, caller is admin-1. Used to cover (a)
 // demoting the OTHER admin, and (b) the server-enforced rule that an
 // admin can't demote THEMSELF.
 function twoAdminFamily(opts: { secondRole?: 'admin' | 'adult' } = {}) {
@@ -370,7 +370,7 @@ function twoAdminFamily(opts: { secondRole?: 'admin' | 'adult' } = {}) {
   };
 }
 
-// FHS-519 — a guest-role grown-up viewing their own card. `guest` is a
+// FHS-519: a guest-role grown-up viewing their own card. `guest` is a
 // GROWN_UP_ROLES member (sign-in with email) but never admin-eligible.
 function guestSelfList() {
   return {
@@ -414,7 +414,7 @@ function guestSelfList() {
   };
 }
 
-// FHS-519 — grown-ups only, no kids at all.
+// FHS-519: grown-ups only, no kids at all.
 function grownUpsOnlyList() {
   return {
     ok: true,
@@ -442,7 +442,7 @@ function grownUpsOnlyList() {
   };
 }
 
-// FHS-519 — kids only, no active grown-up (caller here is a non-admin
+// FHS-519: kids only, no active grown-up (caller here is a non-admin
 // role purely so the fixture is self-consistent; the placeholder itself
 // doesn't depend on who's viewing).
 function kidsOnlyList() {
@@ -515,7 +515,7 @@ describe('<MembersPage />', () => {
     renderAt('/t/khans/members');
     // 3 members (admin + adult + kid) count as "members"; the unclaimed
     // adult ("Jumi") counts as "waiting to join", not as a member. Wait for
-    // the loaded text — the summary renders "0 members · 0 waiting to join"
+    // the loaded text: the summary renders "0 members · 0 waiting to join"
     // before the fetch resolves, so asserting on presence alone races.
     await waitFor(() =>
       expect(screen.getByTestId('members-summary').textContent).toBe(
@@ -560,7 +560,7 @@ describe('<MembersPage />', () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
       await waitFor(() => expect(screen.getByTestId('members-group-grownups')).toBeInTheDocument());
-      // Starts collapsed (FHS-522) — the body isn't in the DOM yet.
+      // Starts collapsed (FHS-522): the body isn't in the DOM yet.
       expect(screen.queryByTestId('members-grownup-0-name')).not.toBeInTheDocument();
       fireEvent.click(screen.getByTestId('members-group-grownups-toggle'));
       expect(screen.getByTestId('members-grownup-0-name')).toBeInTheDocument();
@@ -604,7 +604,7 @@ describe('<MembersPage />', () => {
     });
   });
 
-  // FHS-519 — a `guest` grown-up (read-only, GROWN_UP_ROLES includes it):
+  // FHS-519: a `guest` grown-up (read-only, GROWN_UP_ROLES includes it):
   // no admin toggle ever, but the self-serve change-email control still
   // shows on their OWN card, same as any other grown-up role.
   describe('Guest role member (FHS-519)', () => {
@@ -619,19 +619,19 @@ describe('<MembersPage />', () => {
       // No admin panel/toggle at all for a guest row, regardless of caller.
       expect(screen.queryByTestId('members-grownup-1-admin-panel')).not.toBeInTheDocument();
       expect(screen.queryByTestId('members-grownup-1-admin-toggle')).not.toBeInTheDocument();
-      // The guest is viewing their OWN card — the change-email trigger
+      // The guest is viewing their OWN card: the change-email trigger
       // shows even though they aren't an admin.
       const changeEmailBtn = screen.getByTestId(
         'members-grownup-1-change-email',
       ) as HTMLButtonElement;
       expect(changeEmailBtn.disabled).toBe(false);
-      // Not an admin — no "Edit name" or "Admin Panel" buttons.
+      // Not an admin: no "Edit name" or "Admin Panel" buttons.
       expect(screen.queryByTestId('members-grownup-1-edit-name')).not.toBeInTheDocument();
       expect(screen.queryByTestId('members-admin-panel-btn')).not.toBeInTheDocument();
     });
   });
 
-  // FHS-519 — a group with zero members shows a placeholder instead of
+  // FHS-519: a group with zero members shows a placeholder instead of
   // just vanishing from the page.
   describe('Empty group placeholders (FHS-519)', () => {
     it('shows the Kids-group empty placeholder for a grown-ups-only family', async () => {
@@ -664,7 +664,7 @@ describe('<MembersPage />', () => {
       expect(screen.getByTestId('members-waiting-0-status').textContent).toBe('jumi@example.com');
       expect(screen.getByTestId('members-waiting-0-pending').textContent).toContain('signed up');
       expect(screen.getByTestId('members-waiting-0-resend')).toBeInTheDocument();
-      // FHS-278 / FHS-519 — an unclaimed adult/admin-candidate seat shows the
+      // FHS-278 / FHS-519: an unclaimed adult/admin-candidate seat shows the
       // admin toggle so the affordance isn't just missing, but it's DISABLED
       // (you can't promote someone who hasn't signed up yet) with a hint.
       const waitingToggle = screen.getByTestId(
@@ -731,7 +731,7 @@ describe('<MembersPage />', () => {
       await waitFor(() =>
         expect(screen.getByTestId('members-kid-login-share')).toBeInTheDocument(),
       );
-      // Starts collapsed (FHS-522) — the body isn't in the DOM yet.
+      // Starts collapsed (FHS-522): the body isn't in the DOM yet.
       expect(screen.queryByTestId('members-kid-login-url')).not.toBeInTheDocument();
       fireEvent.click(screen.getByTestId('members-kid-login-share-toggle'));
       expect(screen.getByTestId('members-kid-login-url')).toBeInTheDocument();
@@ -765,7 +765,7 @@ describe('<MembersPage />', () => {
       await waitFor(() => expect(screen.getByTestId('members-invite-adult')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('members-invite-adult'));
       expect(screen.getByTestId('members-invite-form')).toBeInTheDocument();
-      // FHS-524 — default selection is the Parent / partner (admin) card, so
+      // FHS-524: default selection is the Parent / partner (admin) card, so
       // inviting a co-parent is one tap. The form only opens for admins.
       expect(screen.getByTestId('members-invite-role-admin')).toHaveAttribute(
         'aria-checked',
@@ -775,7 +775,7 @@ describe('<MembersPage />', () => {
         'aria-checked',
         'false',
       );
-      // Exactly 3 role cards, in design order — no Teen card on this form.
+      // Exactly 3 role cards, in design order: no Teen card on this form.
       const cards = screen.getAllByTestId(/^members-invite-role-/);
       expect(cards.map((c) => c.getAttribute('data-testid'))).toEqual([
         'members-invite-role-admin',
@@ -827,7 +827,7 @@ describe('<MembersPage />', () => {
       expect(screen.queryByTestId('members-invite-adult')).not.toBeInTheDocument();
     });
 
-    it('sends the chosen role (admin) on submit — not hardcoded "adult"', async () => {
+    it('sends the chosen role (admin) on submit: not hardcoded "adult"', async () => {
       membersResponse = adminOnlyList();
       renderAt('/t/khans/members');
       await waitFor(() => expect(screen.getByTestId('members-invite-adult')).toBeInTheDocument());
@@ -911,7 +911,7 @@ describe('<MembersPage />', () => {
         'false',
       );
       expect(screen.getByTestId('members-add-child-name')).toBeInTheDocument();
-      // No "Adult" card any more — the plain no-login adult path moved
+      // No "Adult" card any more: the plain no-login adult path moved
       // to Invite. Exactly the Child + Teen cards render.
       const cards = screen.getAllByTestId(/^members-add-child-role-/);
       expect(cards.map((c) => c.getAttribute('data-testid'))).toEqual([
@@ -940,7 +940,7 @@ describe('<MembersPage />', () => {
       const postCall = fetchMock.mock.calls.find(
         (c) => typeof c[0] === 'string' && c[0].endsWith('/api/members') && c[1]?.method === 'POST',
       );
-      // FHS-521 — the design's Add-a-child sends just name + role (avatar/age dropped).
+      // FHS-521: the design's Add-a-child sends just name + role (avatar/age dropped).
       expect(JSON.parse(postCall![1].body as string)).toEqual({
         displayName: 'Zayd',
         role: 'teen',
@@ -958,7 +958,7 @@ describe('<MembersPage />', () => {
     });
   });
 
-  // FHS-252 — admin/adult-only PIN management, kept covered on the new
+  // FHS-252: admin/adult-only PIN management, kept covered on the new
   // per-card testId scheme.
   describe('Kid PIN management (FHS-252)', () => {
     it('admin sees a "Set PIN" toggle on a kid card + can submit a fresh PIN', async () => {
@@ -1099,7 +1099,7 @@ describe('<MembersPage />', () => {
     });
   });
 
-  describe('Edit name, admin toggle, Admin Panel, Remove — grown-up card actions', () => {
+  describe('Edit name, admin toggle, Admin Panel, Remove: grown-up card actions', () => {
     it('edits a grown-up name via the inline edit form', async () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
@@ -1123,7 +1123,7 @@ describe('<MembersPage />', () => {
       expect(JSON.parse(patchCall![1].body as string)).toEqual({ displayName: 'Yusuf Khan' });
     });
 
-    // FHS-510 — admin changes a grown-up's sign-in email, confirmed by a
+    // FHS-510: admin changes a grown-up's sign-in email, confirmed by a
     // one-time emailed link.
     describe('Change email (FHS-510)', () => {
       it('opens the "New email for …" form and sends the request on submit', async () => {
@@ -1177,7 +1177,7 @@ describe('<MembersPage />', () => {
         const btn = screen.getByTestId('members-grownup-0-change-email') as HTMLButtonElement;
         expect(btn.disabled).toBe(true);
         expect(btn.title).toMatch(/no sign-in email yet/i);
-        // Clicking a disabled button is a no-op — the form never opens.
+        // Clicking a disabled button is a no-op: the form never opens.
         fireEvent.click(btn);
         expect(screen.queryByTestId('members-grownup-0-email-change-form')).not.toBeInTheDocument();
       });
@@ -1237,9 +1237,9 @@ describe('<MembersPage />', () => {
         );
       });
 
-      // FHS-510 blocker #7 — defense-in-depth: even if the API ever returned
+      // FHS-510 blocker #7: defense-in-depth: even if the API ever returned
       // pendingEmail data for a card that isn't the caller's own (it
-      // shouldn't — self-serve gates purely on identity, not role, per the
+      // shouldn't: self-serve gates purely on identity, not role, per the
       // backend's `target.userId !== userRow.id` check), the UI must still
       // hide the pending card AND the change-email trigger for that row.
       // Deliberately uses an ADMIN caller here to prove the gate is about
@@ -1310,9 +1310,9 @@ describe('<MembersPage />', () => {
       expect(screen.queryByTestId('members-kid-0-admin-toggle')).not.toBeInTheDocument();
     });
 
-    // FHS-519 — a two-admin family: demoting the OTHER admin works and
+    // FHS-519: a two-admin family: demoting the OTHER admin works and
     // leaves the family with its remaining admin; demoting yourself is
-    // blocked by the server (not the client — the toggle isn't disabled
+    // blocked by the server (not the client: the toggle isn't disabled
     // for your own row when a second admin exists), and the rejection
     // surfaces via the shared action-error banner.
     describe('Two-admin family (FHS-519)', () => {
@@ -1323,7 +1323,7 @@ describe('<MembersPage />', () => {
         await waitFor(() =>
           expect(screen.getByTestId('members-grownup-1-admin-toggle')).toBeInTheDocument(),
         );
-        // Neither toggle is last-admin-locked — two admins exist.
+        // Neither toggle is last-admin-locked: two admins exist.
         expect(
           (screen.getByTestId('members-grownup-0-admin-toggle') as HTMLButtonElement).disabled,
         ).toBe(false);
@@ -1347,13 +1347,13 @@ describe('<MembersPage />', () => {
         );
         expect(patchCall).toBeDefined();
         expect(JSON.parse(patchCall![1].body as string)).toEqual({ role: 'adult' });
-        // The caller (admin-1) keeps their admin role — the family always
+        // The caller (admin-1) keeps their admin role: the family always
         // has one.
         expect(screen.getByTestId('members-grownup-0-role').textContent).toBe('Admin');
         expect(screen.queryByTestId('members-action-error')).not.toBeInTheDocument();
       });
 
-      it("an admin cannot demote their OWN row — the server's rejection surfaces via the action-error banner", async () => {
+      it("an admin cannot demote their OWN row: the server's rejection surfaces via the action-error banner", async () => {
         membersResponse = twoAdminFamily();
         renderAt('/t/khans/members');
         await expandGrownups();
@@ -1361,7 +1361,7 @@ describe('<MembersPage />', () => {
           expect(screen.getByTestId('members-grownup-0-admin-toggle')).toBeInTheDocument(),
         );
         const ownToggle = screen.getByTestId('members-grownup-0-admin-toggle') as HTMLButtonElement;
-        // Not client-side disabled — a second admin exists, so the
+        // Not client-side disabled: a second admin exists, so the
         // last-admin lock doesn't apply. The server is what blocks this.
         expect(ownToggle.disabled).toBe(false);
 
@@ -1380,7 +1380,7 @@ describe('<MembersPage />', () => {
             /ask another admin/i,
           ),
         );
-        // The failed PATCH never refreshed the list — the caller is still
+        // The failed PATCH never refreshed the list: the caller is still
         // shown as admin.
         expect(screen.getByTestId('members-grownup-0-role').textContent).toBe('Admin');
       });

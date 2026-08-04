@@ -1,4 +1,4 @@
-// FHS-394 — MathsJourney unit tests.
+// FHS-394: MathsJourney unit tests.
 // Covers: loading state, stage derivation from progress, lock/unlock by
 // certificate, milestone markers, Continue button, and stage card clicks.
 
@@ -74,7 +74,7 @@ function renderJourney(operation: 'multiplication' | 'addition' = 'multiplicatio
 
 // ─── Loading state ────────────────────────────────────────────────────────────
 
-describe('MathsJourney — loading state', () => {
+describe('MathsJourney: loading state', () => {
   it('shows loading indicator while fetching', () => {
     fetchMock.mockImplementation(() => new Promise(() => {}));
     renderJourney();
@@ -85,7 +85,7 @@ describe('MathsJourney — loading state', () => {
 
 // ─── Stage derivation from progress ──────────────────────────────────────────
 
-describe('MathsJourney — stage derivation', () => {
+describe('MathsJourney: stage derivation', () => {
   it('shows the "Learn" stage as active when learnCompleted is false', async () => {
     installFetch([makeProgress({ tableNumber: 1, learnCompleted: false })]);
     renderJourney();
@@ -117,7 +117,7 @@ describe('MathsJourney — stage derivation', () => {
 
 // ─── Lock / unlock by certificate ────────────────────────────────────────────
 
-describe('MathsJourney — lock/unlock by certificate', () => {
+describe('MathsJourney: lock/unlock by certificate', () => {
   it('table 1 circle is always rendered (never locked)', async () => {
     installFetch([]);
     renderJourney();
@@ -156,7 +156,7 @@ describe('MathsJourney — lock/unlock by certificate', () => {
 
 // ─── Milestone markers ────────────────────────────────────────────────────────
 
-describe('MathsJourney — milestone markers', () => {
+describe('MathsJourney: milestone markers', () => {
   it('renders all 12 table circles', async () => {
     installFetch([]);
     renderJourney();
@@ -169,7 +169,7 @@ describe('MathsJourney — milestone markers', () => {
 
 // ─── Continue button callbacks ────────────────────────────────────────────────
 
-describe('MathsJourney — Continue button', () => {
+describe('MathsJourney: Continue button', () => {
   it('clicking Continue when active stage is "learn" calls onStartLearn', async () => {
     installFetch([makeProgress({ tableNumber: 1, learnCompleted: false })]);
     renderJourney();
@@ -230,7 +230,7 @@ describe('MathsJourney — Continue button', () => {
 
 // ─── Fetch resilience ─────────────────────────────────────────────────────────
 
-describe('MathsJourney — fetch resilience', () => {
+describe('MathsJourney: fetch resilience', () => {
   it('renders without crashing when both fetch calls fail', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
     renderJourney();

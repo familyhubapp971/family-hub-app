@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-231 / FHS-266 — AssignmentsTabPanel (Magic Patterns layout).
+// FHS-231 / FHS-266: AssignmentsTabPanel (Magic Patterns layout).
 // Member filter pills, avatar dot + name badge per row, a single list
 // with done rows dimmed, and an inline add form with a member <select>.
 

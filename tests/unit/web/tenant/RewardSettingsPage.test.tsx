@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-512 — "Pocket money" reward-config settings screen. MONEY-CRITICAL:
+// FHS-512: "Pocket money" reward-config settings screen. MONEY-CRITICAL:
 // every assertion here works in INTEGER MINOR UNITS end to end.
 
 const fetchMock = vi.fn();
@@ -311,7 +311,7 @@ describe('<RewardSettingsPage />', () => {
     fireEvent.change(screen.getByTestId('reward-settings-habit-select'), {
       target: { value: HABIT_ID_2 },
     });
-    // Switches to the second habit's own saved boost (2x) — not a shared value.
+    // Switches to the second habit's own saved boost (2x): not a shared value.
     await waitFor(() =>
       expect(screen.getByTestId('reward-settings-boost-2')).toHaveAttribute('aria-pressed', 'true'),
     );

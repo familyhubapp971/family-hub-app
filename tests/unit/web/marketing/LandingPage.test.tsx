@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LandingPage } from '../../../../apps/web/src/pages/marketing/LandingPage';
 
-// Stub supabase + AuthProvider — the landing page only needs
+// Stub supabase + AuthProvider: the landing page only needs
 // `session` to decide which CTA buttons to render. Mocking the module
 // avoids pulling the real Supabase client (and its localStorage
 // hydration race) into the unit test.

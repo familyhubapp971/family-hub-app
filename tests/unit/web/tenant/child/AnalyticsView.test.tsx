@@ -1,4 +1,4 @@
-// FHS-481/482 — Unit tests for AnalyticsView's summary tile label and
+// FHS-481/482: Unit tests for AnalyticsView's summary tile label and
 // leaderboard completion display.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

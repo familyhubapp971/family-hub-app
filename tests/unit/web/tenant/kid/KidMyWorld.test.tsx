@@ -460,7 +460,7 @@ describe('<KidMyWorld />', () => {
 
   // FHS-484 - a week can exist before its Monday (closing this week early
   // creates next week right away); it must read as locked, not "current".
-  it('locks a future week — blurred habit cards + a "Not Started" badge (FHS-484)', async () => {
+  it('locks a future week: blurred habit cards + a "Not Started" badge (FHS-484)', async () => {
     // Default WEEK fixture starts Mon 2026-06-15; freeze "now" a week earlier
     // so it reads as not-yet-started.
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -477,7 +477,7 @@ describe('<KidMyWorld />', () => {
 
   it('does not lock the live (current) week (FHS-484)', async () => {
     // Default mockBoot's WEEK fixture is not finalized and startDate is today
-    // by construction of this test — real clock, no future date involved.
+    // by construction of this test: real clock, no future date involved.
     render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
     await waitFor(() => expect(screen.getByTestId('kid-myworld')).toBeInTheDocument());
     expect(screen.queryByText('🔒 Not Started')).not.toBeInTheDocument();

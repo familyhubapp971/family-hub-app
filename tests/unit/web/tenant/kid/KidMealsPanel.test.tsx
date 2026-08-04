@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 
-// FHS-365 — kid Meals tab reads GET /api/kid/meals (server-scoped to the kid +
+// FHS-365: kid Meals tab reads GET /api/kid/meals (server-scoped to the kid +
 // family). Renders the day grid; shows an empty state when there are none.
 
 import { KidMealsPanel } from '../../../../../apps/web/src/pages/tenant/kid/KidMealsPanel';

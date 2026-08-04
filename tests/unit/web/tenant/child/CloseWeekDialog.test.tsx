@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 
-// FHS-512 — CloseWeekDialog money-critical regression coverage. Prior to
+// FHS-512: CloseWeekDialog money-critical regression coverage. Prior to
 // this ticket every sub-dialog hardcoded the sticker→cash rate at 0.5; these
 // tests use a NON-default rate (0.75) so a regression back to 0.5 fails
 // loudly instead of coincidentally matching.
@@ -86,11 +86,11 @@ function renderDialog(
   );
 }
 
-describe('<CloseWeekDialog /> — configurable sticker rate (FHS-512)', () => {
+describe('<CloseWeekDialog />: configurable sticker rate (FHS-512)', () => {
   // CashOutDialog seeds its "amount" field once, from props, at first mount
   // (`useState(totalStickers)`). Open the MAIN dialog first and let the
-  // savings fetch resolve — mirrors the real flow (a user always sees the
-  // closed-book screen before tapping into Cash Out) — THEN navigate into
+  // savings fetch resolve: mirrors the real flow (a user always sees the
+  // closed-book screen before tapping into Cash Out): THEN navigate into
   // the sub-dialog so it mounts with the real (non-zero, rate-aware) values.
   async function renderMainThenOpen(action: 'cashout' | 'save' | 'invest') {
     render(
@@ -186,14 +186,14 @@ describe('<CloseWeekDialog /> — configurable sticker rate (FHS-512)', () => {
         target: { value: '10' },
       });
     });
-    // Invest button label reads "Invest AED {cashVal}" — 10 * 0.75 = 7.50.
+    // Invest button label reads "Invest AED {cashVal}": 10 * 0.75 = 7.50.
     await waitFor(() => {
       expect(screen.getByTestId('close-week-invest-submit-btn').textContent).toContain('7.50');
     });
   });
 });
 
-describe('<CloseWeekDialog /> — InvestDialog growth-rate coefficient (FHS-534)', () => {
+describe('<CloseWeekDialog />: InvestDialog growth-rate coefficient (FHS-534)', () => {
   it('renders the 1x/2x/3x/5x growth-rate picker, defaulting to 5x', async () => {
     installFetch({ savedStickers: 0, savedCash: 0 });
     renderDialog('invest', { weeklyStickers: 20 });
@@ -248,7 +248,7 @@ describe('<CloseWeekDialog /> — InvestDialog growth-rate coefficient (FHS-534)
     });
   });
 
-  // FHS-534 — the growth banner + value projection must track the picked
+  // FHS-534: the growth banner + value projection must track the picked
   // coefficient, not the old hardcoded +5/day (a 1x pick projected 5x too high).
   it('projects growth at the chosen coefficient, not a hardcoded +5/day', async () => {
     installFetch({ savedStickers: 0, savedCash: 0, habits: [{ id: 'h1', name: 'Read a book' }] });

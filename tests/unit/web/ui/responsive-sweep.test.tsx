@@ -5,7 +5,7 @@ import { AvatarGrid } from '../../../../packages/ui/src/AvatarGrid';
 import { AvatarEmojiPicker } from '../../../../packages/ui/src/AvatarEmojiPicker';
 import { SearchableSelect } from '../../../../packages/ui/src/SearchableSelect';
 
-// FHS-548 — responsive sweep regression tests.
+// FHS-548: responsive sweep regression tests.
 //
 // Locks the design-system fixes from the FHS-547 audit: hover-lift
 // transforms must be gated behind motion-safe:, and tap targets must

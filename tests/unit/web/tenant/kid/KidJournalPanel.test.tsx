@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 
-// FHS-366 — kid Journal reuses JournalTab in kid mode: it talks to the
+// FHS-366: kid Journal reuses JournalTab in kid mode: it talks to the
 // token-scoped /api/kid/journal endpoints (no memberId param) using the kid
 // token, not the parent Supabase session.
 vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
@@ -68,9 +68,9 @@ describe('<KidJournalPanel />', () => {
     expect(String(dayCall![0])).not.toContain('memberId');
   });
 
-  // FHS-376 — the kid Journal is read-only: Past Entries only, no "My Journal"
+  // FHS-376: the kid Journal is read-only: Past Entries only, no "My Journal"
   // write form and no write/sub-tab toggle. Parents author entries.
-  it('shows past entries only — no write form or sub-tab toggle', async () => {
+  it('shows past entries only: no write form or sub-tab toggle', async () => {
     render(<KidJournalPanel kidToken="kid.jwt" />);
     await waitFor(() => expect(screen.getByTestId('journal-tab')).toBeInTheDocument());
     expect(screen.queryByTestId('journal-subtab-write')).not.toBeInTheDocument();

@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LoadingScreen } from '../../../../apps/web/src/components/LoadingScreen';
 
-// FHS-419 — branded loading screen.
+// FHS-419: branded loading screen.
 
 function renderScreen(props: Parameters<typeof LoadingScreen>[0] = {}) {
   return render(

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LegalIndexPage } from '../../../../apps/web/src/pages/legal/LegalIndexPage';
 
-// FHS-509 — /legal index. Four cards link to the Privacy, Children &
+// FHS-509: /legal index. Four cards link to the Privacy, Children &
 // Parents, Terms and Cookies pages; this locks the titles and hrefs so
 // a future copy edit can't silently break the link target.
 

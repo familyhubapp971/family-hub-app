@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-269 — ChildWorld Meals tab (read-only, child-filtered).
+// FHS-269: ChildWorld Meals tab (read-only, child-filtered).
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {

@@ -1,4 +1,4 @@
-// FHS-395 — LogicCertificates unit tests.
+// FHS-395: LogicCertificates unit tests.
 // Covers: earned vs locked cards, empty state, progress bar, API call.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -30,11 +30,11 @@ afterEach(() => vi.unstubAllGlobals());
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
-describe('LogicCertificates — empty state', () => {
+describe('LogicCertificates: empty state', () => {
   it('renders 15 locked cards when no certificates are earned', async () => {
     installFetch([]);
     render(<LogicCertificates kidToken={KID_TOKEN} />);
-    // Wait for the loaded state — both loading and loaded share data-testid="logic-certificates";
+    // Wait for the loaded state: both loading and loaded share data-testid="logic-certificates";
     // wait for a specific card instead so we know loading has finished.
     await waitFor(() =>
       expect(screen.getByTestId('logic-cert-truefalse-easy')).toBeInTheDocument(),
@@ -70,7 +70,7 @@ describe('LogicCertificates — empty state', () => {
 
 // ─── Earned certificates ──────────────────────────────────────────────────────
 
-describe('LogicCertificates — earned certificates', () => {
+describe('LogicCertificates: earned certificates', () => {
   const earnedCert = {
     gameType: 'truefalse',
     difficulty: 'easy',
@@ -122,7 +122,7 @@ describe('LogicCertificates — earned certificates', () => {
 
 // ─── API call ─────────────────────────────────────────────────────────────────
 
-describe('LogicCertificates — API', () => {
+describe('LogicCertificates: API', () => {
   it('calls GET /api/kid/logic/certificates with kidToken', async () => {
     installFetch([]);
     render(<LogicCertificates kidToken={KID_TOKEN} />);
@@ -138,7 +138,7 @@ describe('LogicCertificates — API', () => {
 
 // ─── All earned ───────────────────────────────────────────────────────────────
 
-describe('LogicCertificates — all earned', () => {
+describe('LogicCertificates: all earned', () => {
   it('shows "Logic Master" message when all 15 earned', async () => {
     const gameTypes = ['truefalse', 'patterns', 'oddoneout', 'ifthen', 'sorting'];
     const diffs = ['easy', 'medium', 'hard'];

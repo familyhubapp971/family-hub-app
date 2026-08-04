@@ -8,7 +8,7 @@ import {
   SKIN_TONES,
 } from '../../../../packages/ui/src/emojiTone';
 
-// FHS-433 — AvatarEmojiPicker + emojiTone utility tests.
+// FHS-433: AvatarEmojiPicker + emojiTone utility tests.
 //
 // Coverage:
 //   - applyTone: person emoji → toned; non-person → unchanged; strip old tone first
@@ -119,7 +119,7 @@ describe('<AvatarEmojiPicker />', () => {
     // Select light skin tone (tone-1 = U+1F3FB)
     fireEvent.click(screen.getByTestId('picker-tone-1'));
     onSelect.mockClear();
-    // Click 👩 (emoji-0) — should fire with toned value
+    // Click 👩 (emoji-0): should fire with toned value
     fireEvent.click(screen.getByTestId('picker-emoji-0'));
     expect(onSelect).toHaveBeenCalledWith('👩\u{1F3FB}');
   });
@@ -135,7 +135,7 @@ describe('<AvatarEmojiPicker />', () => {
     expect(onSelect).toHaveBeenCalledWith('🐱');
   });
 
-  it('emoji-8 is 🐶 — also not toned', () => {
+  it('emoji-8 is 🐶: also not toned', () => {
     const onSelect = vi.fn();
     render(<AvatarEmojiPicker onSelect={onSelect} testId="picker" />);
     fireEvent.click(screen.getByTestId('picker-tone-3')); // medium
@@ -144,7 +144,7 @@ describe('<AvatarEmojiPicker />', () => {
     expect(onSelect).toHaveBeenCalledWith('🐶');
   });
 
-  it('emoji-9 is ⭐ — also not toned', () => {
+  it('emoji-9 is ⭐: also not toned', () => {
     const onSelect = vi.fn();
     render(<AvatarEmojiPicker onSelect={onSelect} testId="picker" />);
     fireEvent.click(screen.getByTestId('picker-tone-2')); // medium-light
@@ -171,7 +171,7 @@ describe('<AvatarEmojiPicker />', () => {
       <AvatarEmojiPicker value={tonedWoman} onSelect={() => {}} testId="picker" />,
     );
     const btn = getByTestId('picker-emoji-0');
-    // The base person emoji (👩) should be selected — aria-pressed must be 'true'.
+    // The base person emoji (👩) should be selected: aria-pressed must be 'true'.
     expect(btn.getAttribute('aria-pressed')).toBe('true');
   });
 

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { RoleBadge, AvatarDisc, roleStyle } from '@familyhub/ui';
 
-// FHS-513 — RoleBadge / AvatarDisc / roleStyle, extracted out of
+// FHS-513: RoleBadge / AvatarDisc / roleStyle, extracted out of
 // MembersPage + TodayTabPanel's duplicate literal ROLE_STYLE maps.
 
 describe('roleStyle', () => {

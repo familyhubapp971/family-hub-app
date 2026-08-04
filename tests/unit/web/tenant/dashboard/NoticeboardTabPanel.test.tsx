@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-232 / FHS-266 — NoticeboardTabPanel (Magic Patterns post-it grid).
+// FHS-232 / FHS-266: NoticeboardTabPanel (Magic Patterns post-it grid).
 // Each note is a coloured card with an emoji icon, optional pin, body, and
 // a "From <author>" footer. Posting opens an inline form with an emoji
 // picker; the POST body carries body + pinned + icon.

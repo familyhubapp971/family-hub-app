@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { LessonView } from '../../../../../apps/web/src/pages/tenant/child/LessonView';
 
-// FHS-283 — the interactive lesson UI: renders questions, grades a pick via the
+// FHS-283: the interactive lesson UI: renders questions, grades a pick via the
 // API, shows feedback + a Next button, and reveals a certificate at 100%.
 //
-// FHS-397 — design parity + reviewer fixes:
+// FHS-397: design parity + reviewer fixes:
 //   • cert modal fires only on not-certified → certified transition (not on mount if already certified)
 //   • streak overlay fires only on in-session crossings (not on mount for pre-existing streak)
 //   • cert timer fires once (stable [] deps, not [onDismiss])
@@ -168,7 +168,7 @@ describe('<LessonView />', () => {
     expect(screen.getByTestId('lesson-stat-score').textContent).toContain('1');
   });
 
-  it('recovers when the answer POST fails — re-enables choices + shows an error', async () => {
+  it('recovers when the answer POST fails: re-enables choices + shows an error', async () => {
     fetchMock.mockImplementation((url: string, init?: { method?: string }) => {
       if (init?.method === 'POST') {
         return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
@@ -197,7 +197,7 @@ describe('<LessonView />', () => {
 
 // ─── FHS-397: wrong-answer reveal ────────────────────────────────────────────
 
-describe('FHS-397 — wrong-answer reveal', () => {
+describe('FHS-397: wrong-answer reveal', () => {
   it('shows encouragement text + reveals the correct answer', async () => {
     // answerIndex: 2 = '5' is correct. Kid picks 0 ('3').
     installApi({ correct: false, answerIndex: 2, stats: makeStats() });
@@ -239,7 +239,7 @@ describe('FHS-397 — wrong-answer reveal', () => {
 
 // ─── FHS-397: certificate modal ──────────────────────────────────────────────
 
-describe('FHS-397 — certificate modal', () => {
+describe('FHS-397: certificate modal', () => {
   it('shows the inline certificate banner when stats.certificate is true', async () => {
     installApi({
       correct: true,
@@ -279,7 +279,7 @@ describe('FHS-397 — certificate modal', () => {
     await waitFor(() => expect(screen.getByTestId('lesson-certificate-modal')).toBeInTheDocument());
   });
 
-  // BLOCKING fix #1 — pre-existing cert must NOT pop the modal on mount.
+  // BLOCKING fix #1: pre-existing cert must NOT pop the modal on mount.
   it('does NOT show cert modal when initial GET already returns certificate: true', async () => {
     installWithInitialStats(makeStats({ progress: 100, certificate: true }), {
       correct: true,
@@ -316,7 +316,7 @@ describe('FHS-397 — certificate modal', () => {
     expect(screen.queryByTestId('lesson-certificate-modal')).not.toBeInTheDocument();
   });
 
-  // BLOCKING fix #3 — timer fires exactly once (stable [] deps on CertificateModal).
+  // BLOCKING fix #3: timer fires exactly once (stable [] deps on CertificateModal).
   it('cert modal auto-dismisses after 6 s (timer not reset by parent re-renders)', async () => {
     installWithInitialStats(makeStats({ progress: 90 }), {
       correct: true,
@@ -368,7 +368,7 @@ describe('FHS-397 — certificate modal', () => {
     render(<LessonView subject="Science" memberId={MEMBER} headers={HEADERS} />);
     await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
 
-    // First answer — modal appears.
+    // First answer: modal appears.
     await act(async () => {
       fireEvent.click(screen.getByTestId('lesson-choice-1'));
     });
@@ -385,7 +385,7 @@ describe('FHS-397 — certificate modal', () => {
     });
     await waitFor(() => expect(screen.getByTestId('lesson-question')).toBeInTheDocument());
 
-    // Second answer — modal must NOT reappear.
+    // Second answer: modal must NOT reappear.
     await act(async () => {
       fireEvent.click(screen.getByTestId('lesson-choice-1'));
     });
@@ -396,7 +396,7 @@ describe('FHS-397 — certificate modal', () => {
 
 // ─── FHS-397: streak overlay ─────────────────────────────────────────────────
 
-describe('FHS-397 — streak overlay', () => {
+describe('FHS-397: streak overlay', () => {
   it('streak overlay appears at the streak-3 milestone (in-session crossing)', async () => {
     // Initial streak 0, answer bumps to 3.
     installWithInitialStats(makeStats({ streak: 0 }), {
@@ -415,7 +415,7 @@ describe('FHS-397 — streak overlay', () => {
     expect(screen.getByTestId('lesson-streak-overlay').textContent).toContain('On fire');
   });
 
-  // BLOCKING fix #2 — pre-existing streak must NOT fire the overlay on mount.
+  // BLOCKING fix #2: pre-existing streak must NOT fire the overlay on mount.
   it('does NOT show streak overlay when initial GET already returns streak >= milestone', async () => {
     installWithInitialStats(makeStats({ streak: 5 }), {
       correct: true,
@@ -452,7 +452,7 @@ describe('FHS-397 — streak overlay', () => {
     expect(screen.queryByTestId('lesson-streak-overlay')).not.toBeInTheDocument();
   });
 
-  // BLOCKING fix #4 — subject-neutral streak messages.
+  // BLOCKING fix #4: subject-neutral streak messages.
   it('streak-10 message does not contain "Maths" (subject-neutral for Science)', async () => {
     // Seed initial streak at 9 so milestones 3+5 are already celebrated;
     // only the 10 crossing is new this session.

@@ -39,7 +39,7 @@ beforeEach(() => {
   mocks.getSessionMock.mockResolvedValue({ data: { session: { access_token: 'tok-abc' } } });
 });
 
-describe('FHS-195 — <MePage />', () => {
+describe('FHS-195: <MePage />', () => {
   it('renders Hello, {email} after the fetch resolves', async () => {
     mocks.fetchMock.mockResolvedValue(jsonResponse(ME_FIXTURE));
 

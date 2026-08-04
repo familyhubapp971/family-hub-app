@@ -1,4 +1,4 @@
-// FHS-394 — MathsTablePractice unit tests.
+// FHS-394: MathsTablePractice unit tests.
 // Covers: renders 10 questions, correct/incorrect feedback, double-tap guard,
 // and onComplete called with the accumulated score.
 
@@ -7,7 +7,7 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { MathsTablePractice } from '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/MathsTablePractice';
 
 // Stable seeded problem so tests don't flake on random choices.
-// generateTableProblem is pure — we replace it with a deterministic version.
+// generateTableProblem is pure: we replace it with a deterministic version.
 vi.mock(
   '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils',
   async (importOriginal) => {
@@ -55,7 +55,7 @@ function renderPractice() {
 
 // ─── Initial render ───────────────────────────────────────────────────────────
 
-describe('MathsTablePractice — initial render', () => {
+describe('MathsTablePractice: initial render', () => {
   it('renders the practice component with question 1 of 10', () => {
     renderPractice();
     expect(screen.getByTestId('maths-table-practice')).toBeInTheDocument();
@@ -88,7 +88,7 @@ describe('MathsTablePractice — initial render', () => {
 
 // ─── Correct answer feedback ──────────────────────────────────────────────────
 
-describe('MathsTablePractice — correct answer', () => {
+describe('MathsTablePractice: correct answer', () => {
   it('shows a correct feedback message after the right answer', async () => {
     renderPractice();
     const correctBtn = screen.getByRole('button', { name: 'Answer 12' });
@@ -115,7 +115,7 @@ describe('MathsTablePractice — correct answer', () => {
 
 // ─── Incorrect answer feedback ────────────────────────────────────────────────
 
-describe('MathsTablePractice — incorrect answer', () => {
+describe('MathsTablePractice: incorrect answer', () => {
   it('shows an incorrect feedback message after a wrong answer', async () => {
     renderPractice();
     const wrongBtn = screen.getByRole('button', { name: 'Answer 10' });
@@ -142,7 +142,7 @@ describe('MathsTablePractice — incorrect answer', () => {
 
 // ─── Double-tap guard ─────────────────────────────────────────────────────────
 
-describe('MathsTablePractice — double-tap guard', () => {
+describe('MathsTablePractice: double-tap guard', () => {
   it('records exactly one answer per question even on rapid double-tap', async () => {
     renderPractice();
     // Two synchronous taps on different buttons before React flushes state.
@@ -185,10 +185,10 @@ async function answerAll(choiceLabel: string) {
   }
 }
 
-describe('MathsTablePractice — 10-question completion', () => {
+describe('MathsTablePractice: 10-question completion', () => {
   it('calls onComplete automatically (no button tap) with score 10 when all correct', async () => {
     renderPractice();
-    await answerAll('Answer 12'); // all correct — answer=12
+    await answerAll('Answer 12'); // all correct: answer=12
     await waitFor(() => {
       expect(onComplete).toHaveBeenCalledOnce();
       expect(onComplete).toHaveBeenCalledWith(10);
@@ -197,18 +197,18 @@ describe('MathsTablePractice — 10-question completion', () => {
 
   it('calls onComplete automatically with score 0 when all wrong', async () => {
     renderPractice();
-    await answerAll('Answer 10'); // all wrong — correct answer is 12
+    await answerAll('Answer 10'); // all wrong: correct answer is 12
     await waitFor(() => {
       expect(onComplete).toHaveBeenCalledOnce();
       expect(onComplete).toHaveBeenCalledWith(0);
     });
   });
 
-  it('does NOT render an internal done-screen — parent owns celebration', async () => {
+  it('does NOT render an internal done-screen: parent owns celebration', async () => {
     renderPractice();
     await answerAll('Answer 12');
     await waitFor(() => expect(onComplete).toHaveBeenCalled());
-    // No internal continue button should exist — MathsStageComplete is in the parent
+    // No internal continue button should exist: MathsStageComplete is in the parent
     expect(screen.queryByTestId('practice-complete-continue')).not.toBeInTheDocument();
   });
 

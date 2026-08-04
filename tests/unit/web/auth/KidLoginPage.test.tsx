@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { KidLoginPage } from '../../../../apps/web/src/pages/auth/KidLoginPage';
 
-// FHS-238 — kid log-in page at /t/:slug/kid-login. Loads the family +
+// FHS-238: kid log-in page at /t/:slug/kid-login. Loads the family +
 // avatar grid from GET /api/public/kid-members/:slug, lets the kid
 // pick a face, then POSTs the 4-digit PIN to /api/auth/kid-pin
 // (FHS-236). On success the kid JWT is stashed in localStorage and
@@ -229,7 +229,7 @@ describe('<KidLoginPage />', () => {
       jsonResponse({ family: { slug: 'khan', name: 'Khan Family' }, kids: KIDS }),
     );
     // Hold the kid-pin POST open so the avatar swap happens before it
-    // resolves. Then resolve as 200 — the token + navigate must be
+    // resolves. Then resolve as 200: the token + navigate must be
     // discarded because the active selection changed.
     let resolvePinFetch: (r: Response) => void = () => {};
     const pendingPin = new Promise<Response>((resolve) => {
@@ -255,7 +255,7 @@ describe('<KidLoginPage />', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    // The original submit is stale — neither Aisha's token nor a
+    // The original submit is stale: neither Aisha's token nor a
     // navigation away from /kid-login should land.
     expect(localStorage.getItem('fh.kid.token')).toBeNull();
     expect(screen.getByTestId('location-pathname').textContent).toBe('/t/khan/kid-login');

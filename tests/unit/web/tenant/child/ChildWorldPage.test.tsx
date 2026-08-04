@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 
-// FHS-268 — ChildWorld shell: five tabs (My World active, the rest
+// FHS-268: ChildWorld shell: five tabs (My World active, the rest
 // placeholders) + a "Back to family" button.
 
 const fetchMock = vi.fn();
@@ -10,7 +10,7 @@ const authState: {
   user: { email?: string; id?: string; user_metadata?: Record<string, unknown> } | null;
   session: { access_token?: string } | null;
 } = {
-  // No full_name in the JWT — parentName must fall back to the roster display
+  // No full_name in the JWT: parentName must fall back to the roster display
   // name, never the login email (FHS-506/FHS-523).
   user: { email: 'parent@example.com', id: 'u-1', user_metadata: {} },
   session: { access_token: 'tok-abc' },
@@ -221,7 +221,7 @@ describe('<ChildWorldPage />', () => {
     await waitFor(() => expect(screen.getByTestId('journal-tab')).toBeInTheDocument());
   });
 
-  // FHS-523 — header: the shared account pill (parent name, child switcher via
+  // FHS-523: header: the shared account pill (parent name, child switcher via
   // "View World" links, log out) + a "Family Hub" breadcrumb to the dashboard.
   it("shows the parent's account pill with their name, not their login email", async () => {
     renderAt();
@@ -246,7 +246,7 @@ describe('<ChildWorldPage />', () => {
     await act(async () => {
       fireEvent.click(pill);
     });
-    // The sibling appears as a "View World" link — this replaces the old switcher.
+    // The sibling appears as a "View World" link: this replaces the old switcher.
     expect(await screen.findByTestId(`dashboard-profile-child-${SIBLING}`)).toBeInTheDocument();
     // Log out from the menu → /login.
     await act(async () => {
@@ -262,7 +262,7 @@ describe('<ChildWorldPage />', () => {
     await act(async () => {
       fireEvent.click(pill);
     });
-    // FHS-523 — "View World" must switch child via SPA nav (react-router), not a
+    // FHS-523: "View World" must switch child via SPA nav (react-router), not a
     // full page reload, so the URL changes without leaving the app.
     await act(async () => {
       fireEvent.click(await screen.findByTestId(`dashboard-profile-child-${SIBLING}`));
@@ -272,7 +272,7 @@ describe('<ChildWorldPage />', () => {
     );
   });
 
-  // FHS-401 — Learning Insights tab visibility gated by callerRole.
+  // FHS-401: Learning Insights tab visibility gated by callerRole.
 
   it('Learning Insights tab is visible when callerRole = admin', async () => {
     // Default installApi already returns callerRole: 'admin'.

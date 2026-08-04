@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import type { DashboardMember, DashboardTodayResponse } from '@familyhub/shared';
 
-// FHS-263 exact-match — TodayTabPanel. Family Overview 4-up cards (kid
+// FHS-263 exact-match: TodayTabPanel. Family Overview 4-up cards (kid
 // bar + streak + View World link; adult tasks + status box), Today's
 // Snapshot ratio tiles, the purple Family Goals card with Kids' Star
 // Balances, and the Recent Activity feed.
@@ -117,7 +117,7 @@ describe('<TodayTabPanel />', () => {
     const add = screen.getByTestId('today-add-member');
     expect(add.textContent).toMatch(/Manage family/i);
     expect(add.getAttribute('href')).toBe('/t/khans/members');
-    // Manage members moved to the account dropdown — no longer in the header.
+    // Manage members moved to the account dropdown: no longer in the header.
     expect(screen.queryByTestId('today-manage-members')).toBeNull();
   });
 

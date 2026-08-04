@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FormCard } from '@familyhub/ui';
 
-// FHS-513 — the expanding inline-form shell shared by "Invite an adult"
+// FHS-513: the expanding inline-form shell shared by "Invite an adult"
 // and "Add a child" on Manage Members.
 
 describe('<FormCard />', () => {

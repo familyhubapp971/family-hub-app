@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-257 / FHS-362 — kid dashboard shell. Renders for a child signed in
+// FHS-257 / FHS-362: kid dashboard shell. Renders for a child signed in
 // with a kid JWT: the MP header (avatar + name + banked stars/cash), the
-// six-tab kid world (My World, Meals, Calendar, Journal, Learn, Tasks — no parent
+// six-tab kid world (My World, Meals, Calendar, Journal, Learn, Tasks: no parent
 // profile pill / admin links), and a Switch user button that drops the token
 // + returns to kid-login. My World carries the kid's habits + tasks.
 
@@ -173,7 +173,7 @@ describe('<KidDashboardShell />', () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-title')).toHaveTextContent(/Amina/));
-    // FHS-376 — the header is now a single Stars pill (the mock dropped the
+    // FHS-376: the header is now a single Stars pill (the mock dropped the
     // separate cash chip); a "Magic Active" status pill sits under the name.
     expect(screen.getByTestId('kid-stars')).toHaveTextContent('12 Stars');
     expect(screen.queryByTestId('kid-cash')).not.toBeInTheDocument();
@@ -256,7 +256,7 @@ describe('<KidDashboardShell />', () => {
     expect(screen.getByText('Pasta')).toBeInTheDocument();
   });
 
-  // FHS-386 — Notices was removed from the kid view; the tab must not render.
+  // FHS-386: Notices was removed from the kid view; the tab must not render.
   it('has no Notices tab (removed in FHS-386)', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();
@@ -264,7 +264,7 @@ describe('<KidDashboardShell />', () => {
     expect(screen.queryByRole('tab', { name: /Notices/ })).not.toBeInTheDocument();
   });
 
-  // FHS-386 — a stale ?tab=notices link must not strand the kid; tabs are
+  // FHS-386: a stale ?tab=notices link must not strand the kid; tabs are
   // in-memory and default to My World, so it falls back gracefully.
   it('ignores a stale ?tab=notices deep link and lands on My World (FHS-386)', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
@@ -274,7 +274,7 @@ describe('<KidDashboardShell />', () => {
     expect(screen.getByRole('tab', { name: /My World/ })).toHaveAttribute('aria-selected', 'true');
   });
 
-  // FHS-370 — Tasks is its own kid tab now (off My World); ticking PATCHes.
+  // FHS-370: Tasks is its own kid tab now (off My World); ticking PATCHes.
   it('Tasks tab lists the kid tasks and ticking one PATCHes /api/kid/tasks/:id', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     const patchCalls: string[] = [];
@@ -326,7 +326,7 @@ describe('<KidDashboardShell />', () => {
     expect(patchCalls[0]).toContain('/api/kid/tasks/t1');
   });
 
-  // FHS-374 — My World reuses the real (parent) My World screen in read-only
+  // FHS-374: My World reuses the real (parent) My World screen in read-only
   // kid mode, fed by the self-scoped /api/kid/* endpoints.
   it('My World renders the real My World screen with the kid habits (read-only)', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
@@ -355,7 +355,7 @@ describe('<KidDashboardShell />', () => {
               name: 'Read a book',
               description: null,
               color: 'bg-yellow-400',
-              // 'heart' is an icon NAME — it must render a symbol, never the
+              // 'heart' is an icon NAME: it must render a symbol, never the
               // literal text "heart" (the FHS-374 bug the reuse fixes).
               icon: 'heart',
               isBonus: false,
@@ -386,12 +386,12 @@ describe('<KidDashboardShell />', () => {
     expect(screen.queryByTestId('reward-buy-r1')).not.toBeInTheDocument();
   });
 
-  // FHS-376 — kid Reward Goals ("Ask for this") + My Account, and a kid can ask.
+  // FHS-376: kid Reward Goals ("Ask for this") + My Account, and a kid can ask.
   it('kid My World shows Reward Goals (Ask for this) + My Account and can ask', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     const postCalls: string[] = [];
     mockKidBoot((u) => {
-      // (over() can't see method, so the request POST falls through to default — fine)
+      // (over() can't see method, so the request POST falls through to default: fine)
       if (u.endsWith('/api/kid/weeks'))
         return {
           weeks: [
@@ -467,7 +467,7 @@ describe('<KidDashboardShell />', () => {
 
     renderShell();
     await waitFor(() => expect(screen.getByTestId('kid-my-account')).toBeInTheDocument());
-    // FHS-376 — My Account "earned this week" = sum of this week's habit
+    // FHS-376: My Account "earned this week" = sum of this week's habit
     // progress (1 sticker), worth 1 × 0.5 = AED 0.50.
     expect(screen.getByTestId('kid-account-cash')).toHaveTextContent('AED 0.50');
     // Reward goal shows "Ask for this"; clicking it confirms, then asks + flips
@@ -483,7 +483,7 @@ describe('<KidDashboardShell />', () => {
     await waitFor(() => expect(screen.getByTestId('reward-pending-rw1')).toBeInTheDocument());
   });
 
-  // FHS-376 — kid Journal is read-only: Past Entries only, no "My Journal".
+  // FHS-376: kid Journal is read-only: Past Entries only, no "My Journal".
   it('kid Journal shows past entries only (no write tab)', async () => {
     localStorage.setItem(KID_TOKEN_STORAGE_KEY, fakeKidJwt());
     renderShell();

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-227 — bridge from un-prefixed `/dashboard` to the tenant-scoped
+// FHS-227: bridge from un-prefixed `/dashboard` to the tenant-scoped
 // `/t/<slug>/dashboard`. Covers happy path (first tenant wins), the
 // no-tenant inline "Create your family" panel, and the fall-through
 // to `/` when there is no session at all.
@@ -66,7 +66,7 @@ describe('<LegacyDashboardRedirect />', () => {
     });
     renderRoute();
     await waitFor(() => expect(screen.getByTestId('no-tenant-create-form')).toBeInTheDocument());
-    // Does NOT bounce to the homepage — the user can now recover in place.
+    // Does NOT bounce to the homepage: the user can now recover in place.
     expect(screen.queryByTestId('welcome')).toBeNull();
   });
 
@@ -82,7 +82,7 @@ describe('<LegacyDashboardRedirect />', () => {
     await waitFor(() => expect(screen.getByTestId('no-tenant-create-form')).toBeInTheDocument());
   });
 
-  it('FHS-275 — claims a pending invite and redirects to that family', async () => {
+  it('FHS-275: claims a pending invite and redirects to that family', async () => {
     // /api/me → no tenants; /api/invitations/claim → claimed khans.
     mocks.fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ tenants: [] }) });
     mocks.fetchMock.mockResolvedValueOnce({
@@ -124,7 +124,7 @@ describe('<LegacyDashboardRedirect />', () => {
       fireEvent.submit(screen.getByTestId('no-tenant-create-form'));
       await waitFor(() => expect(screen.getByTestId('tenant-onboarding')).toBeInTheDocument());
       // The /api/public/tenant POST carried the existing session token
-      // and the founder's typed name (FHS-274 — no metadata guessing).
+      // and the founder's typed name (FHS-274, no metadata guessing).
       expect(mocks.fetchMock).toHaveBeenLastCalledWith(
         expect.stringContaining('/api/public/tenant'),
         expect.objectContaining({
@@ -150,7 +150,7 @@ describe('<LegacyDashboardRedirect />', () => {
       await waitFor(() =>
         expect(screen.getByTestId('no-tenant-error').textContent).toMatch(/taken/i),
       );
-      // No redirect — user stays on the form to pick another slug.
+      // No redirect: user stays on the form to pick another slug.
       expect(screen.queryByTestId('tenant-onboarding')).toBeNull();
     });
   });
