@@ -1,5 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@familyhub/ui';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
+import { Button, useBodyScrollLock } from '@familyhub/ui';
 
 // SiteChrome: shared header + footer for the public marketing/legal
 // pages (FHS-509), so the new /legal/* section never feels like a
@@ -26,54 +28,203 @@ const NAV_LINKS: {
   to: string;
   label: string;
   section: SiteChromeSection;
-  mobile: boolean;
 }[] = [
-  { to: '/', label: 'Features', section: 'features', mobile: false },
-  { to: '/about', label: 'About', section: 'about', mobile: false },
-  { to: '/pricing', label: 'Pricing', section: 'pricing', mobile: true },
-  { to: '/legal', label: 'Legal', section: 'legal', mobile: true },
+  { to: '/', label: 'Features', section: 'features' },
+  { to: '/about', label: 'About', section: 'about' },
+  { to: '/pricing', label: 'Pricing', section: 'pricing' },
+  { to: '/legal', label: 'Legal', section: 'legal' },
 ];
 
-export function SiteHeader({ current }: { current?: SiteChromeSection } = {}) {
+// FHS-555: below lg the four nav links + "Log in" could not all fit next to
+// the logo and the Start free button. The old fix (hiding Features + About
+// under md) left phone and small-tablet visitors with no route to those
+// pages at all, and the surviving links had ~24px wide tap targets. So
+// everything except the logo and Start free now lives behind a burger.
+export function SiteHeader({
+  current,
+  actions,
+}: {
+  current?: SiteChromeSection;
+  /**
+   * Replaces the logged-out "Log in" + "Start free" pair. The logged-in
+   * homepage passes its profile pill + logout here (FHS-555) instead of
+   * keeping a second, near-identical header that drifted out of sync.
+   */
+  actions?: ReactNode;
+} = {}) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const panelId = useId();
+
+  const [open, setOpen] = useState(false);
+  const burgerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Only restore focus to the burger on a *close*, never on first paint,
+  // otherwise the header steals focus from the page on every mount.
+  const wasOpen = useRef(false);
+
+  useBodyScrollLock(open);
+
+  const close = useCallback(() => setOpen(false), []);
+
+  // Route change closes the menu: tapping a link inside the panel navigates,
+  // and the panel must not survive into the next page.
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  // While the menu is open: Escape closes it, and Tab cycles within the
+  // panel rather than escaping to the page behind the scrim. Bound at the
+  // document so the panel itself stays a plain container.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const items = panelRef.current?.querySelectorAll<HTMLElement>('a, button');
+      if (!items || items.length === 0) return;
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  // Move focus into the panel on open, and back to the burger on close.
+  useEffect(() => {
+    if (open) {
+      panelRef.current?.querySelector<HTMLElement>('a, button')?.focus();
+    } else if (wasOpen.current) {
+      burgerRef.current?.focus();
+    }
+    wasOpen.current = open;
+  }, [open]);
+
+  const linkColor = (section: SiteChromeSection) =>
+    current === section ? 'text-yellow-300' : 'text-white';
 
   return (
-    <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between gap-1 px-3 py-4 xs:px-4 md:gap-2 md:px-6">
+    <header className="relative z-50 mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-4 md:px-6">
       <Link
         to="/"
-        className="shrink-0 font-heading text-xl text-white transition-opacity hover:opacity-90 md:text-2xl"
+        className="relative z-50 shrink-0 rounded-lg font-heading text-xl text-white transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 md:text-2xl"
       >
         FamilyHub
       </Link>
 
-      {/* Mobile nav: Features + About stay desktop-only (same call
-          WelcomePage already made (FHS-277) so the row doesn't wrap
-          at 375px); Pricing and Legal always show. */}
-      <nav className="flex items-center gap-1 font-bold md:gap-8">
+      {/* Desktop (lg+): the full inline row, unchanged. */}
+      <nav aria-label="Main" className="hidden items-center gap-8 font-bold lg:flex">
         {NAV_LINKS.map((link) => (
           <Link
             key={link.to}
             to={link.to}
-            className={`px-1 py-2.5 transition-colors hover:text-yellow-300 xs:px-1.5 md:px-2 ${
-              link.mobile ? '' : 'hidden md:inline'
-            } ${current === link.section ? 'text-yellow-300' : ''}`}
+            className={`rounded-lg px-2 py-2.5 transition-colors hover:text-yellow-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 ${linkColor(link.section)}`}
           >
             {link.label}
           </Link>
         ))}
       </nav>
 
-      <div className="flex items-center gap-1 md:gap-4">
-        <Link
-          to="/login"
-          className="px-1 py-2.5 font-bold transition-colors hover:text-yellow-300 xs:px-1.5 md:px-2"
+      {/* z-50 keeps the bar's own controls above the open menu's scrim
+          (they are siblings of it inside this header). */}
+      <div className="relative z-50 flex items-center gap-2 md:gap-4">
+        {actions ?? (
+          <>
+            <Link
+              to="/login"
+              className="hidden rounded-lg px-2 py-2.5 font-bold text-white transition-colors hover:text-yellow-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 lg:inline"
+            >
+              Log in
+            </Link>
+            <Button onClick={() => navigate('/signup')} variant="primary">
+              Start free
+            </Button>
+          </>
+        )}
+
+        {/* Phone + tablet: everything else lives behind this. */}
+        <button
+          ref={burgerRef}
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          aria-expanded={open}
+          aria-controls={panelId}
+          data-testid="site-nav-burger"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-white text-black shadow-neo transition-all duration-150 active:translate-y-1 active:shadow-none focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-neo-md lg:hidden"
         >
-          Log in
-        </Link>
-        <Button onClick={() => navigate('/signup')} variant="primary">
-          Start free
-        </Button>
+          {open ? (
+            <X className="h-6 w-6" aria-hidden="true" />
+          ) : (
+            <Menu className="h-6 w-6" aria-hidden="true" />
+          )}
+        </button>
       </div>
+
+      {open && (
+        <>
+          {/* Scrim: tapping anywhere off the panel closes it. Sits under the
+              header (z-50) so the burger stays tappable to toggle back. */}
+          <button
+            type="button"
+            onClick={close}
+            // Pointer affordance only: keyboard users close with Escape or
+            // the burger itself, so it stays out of the tab order.
+            tabIndex={-1}
+            aria-label="Close menu"
+            data-testid="site-nav-scrim"
+            className="fixed inset-0 z-40 cursor-default bg-black/50 lg:hidden"
+          />
+          {/* Modal in behaviour (scrim + scroll lock + focus trap), so it
+              carries the matching role rather than being a bare div. */}
+          <div
+            ref={panelRef}
+            id={panelId}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Main menu"
+            data-testid="site-nav-panel"
+            className="absolute left-4 right-4 top-full z-50 overflow-hidden rounded-2xl border-3 border-black bg-kingdom-700 shadow-neo-lg motion-safe:animate-menu-drop lg:hidden"
+          >
+            <nav className="flex flex-col p-2">
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={close}
+                  className={`flex min-h-[56px] items-center rounded-xl px-4 text-lg font-black transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 ${linkColor(link.section)}`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              {/* Log in only belongs in the panel when the visitor is
+                  logged out; the logged-in header passes its own actions. */}
+              {!actions && (
+                <>
+                  <span className="my-2 h-0.5 bg-white/20" aria-hidden="true" />
+                  <Link
+                    to="/login"
+                    onClick={close}
+                    className="flex min-h-[56px] items-center rounded-xl px-4 text-lg font-black text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300"
+                  >
+                    Log in
+                  </Link>
+                </>
+              )}
+            </nav>
+          </div>
+        </>
+      )}
     </header>
   );
 }

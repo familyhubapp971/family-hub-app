@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Calendar,
@@ -297,66 +297,51 @@ export function WelcomePage() {
 
       {/* Header: kept slim so the hero + feature cards both fit
           above the fold on a 1080p viewport. */}
-      {loggedIn ? (
-        <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-4 md:px-6">
-          <Link
-            to="/"
-            className="shrink-0 font-heading text-xl text-white transition-opacity hover:opacity-90 md:text-2xl"
-          >
-            FamilyHub
-          </Link>
-          <nav className="flex items-center gap-1 font-bold md:gap-8">
-            <Link to="/" className="hidden px-2 py-2.5 text-yellow-300 md:inline">
-              Features
-            </Link>
-            <Link
-              to="/about"
-              className="hidden px-2 py-2.5 transition-colors hover:text-yellow-300 md:inline"
-            >
-              About
-            </Link>
-            <Link to="/pricing" className="px-2 py-2.5 transition-colors hover:text-yellow-300">
-              Pricing
-            </Link>
-            <Link to="/legal" className="px-2 py-2.5 transition-colors hover:text-yellow-300">
-              Legal
-            </Link>
-          </nav>
-          <div className="flex items-center gap-2 md:gap-3" data-testid="welcome-loggedin-actions">
-            <button
-              type="button"
-              onClick={() => navigate(homeDashboardPath)}
-              aria-label={`Go to ${homeLabel} dashboard`}
-              data-testid="welcome-profile-pill"
-              className="flex min-h-[44px] items-center gap-2 rounded-full border-2 border-black bg-[#4a1578] py-1.5 pl-1.5 pr-3 shadow-neo-xs transition-transform hover:bg-[#5a1d8a] motion-safe:hover:-translate-y-0.5"
-            >
-              <span
-                aria-hidden="true"
-                className="grid h-8 w-8 place-items-center rounded-full border-2 border-black bg-pink-300 font-heading text-black"
-              >
-                {homeInitial}
-              </span>
-              <span className="hidden text-sm font-bold uppercase tracking-wide sm:inline">
-                {homeLabel}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => void onLogout()}
-              aria-label="Log out"
-              data-testid="welcome-logout"
-              className="flex min-h-[44px] min-w-[44px] items-center gap-2 rounded-md border-2 border-black bg-red-500 px-3 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-red-600 motion-safe:hover:-translate-y-0.5"
-            >
-              <LogOut size={16} strokeWidth={3} aria-hidden="true" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
-        </header>
-      ) : (
-        /* FHS-544: the logged-out homepage uses the shared SiteHeader so the
-           header matches the legal + marketing pages exactly (no drift). */
-        <SiteHeader current="features" />
-      )}
+      {/* FHS-544: the homepage uses the shared SiteHeader so it matches the
+          legal + marketing pages exactly (no drift). FHS-555: the logged-in
+          variant now passes its profile pill + logout as `actions` rather
+          than keeping a second header, so both get the burger menu. */}
+      <SiteHeader
+        current="features"
+        {...(loggedIn
+          ? {
+              actions: (
+                <div
+                  className="flex items-center gap-2 md:gap-3"
+                  data-testid="welcome-loggedin-actions"
+                >
+                  <button
+                    type="button"
+                    onClick={() => navigate(homeDashboardPath)}
+                    aria-label={`Go to ${homeLabel} dashboard`}
+                    data-testid="welcome-profile-pill"
+                    className="flex min-h-[44px] items-center gap-2 rounded-full border-2 border-black bg-[#4a1578] py-1.5 pl-1.5 pr-3 shadow-neo-xs transition-transform hover:bg-[#5a1d8a] motion-safe:hover:-translate-y-0.5"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="grid h-8 w-8 place-items-center rounded-full border-2 border-black bg-pink-300 font-heading text-black"
+                    >
+                      {homeInitial}
+                    </span>
+                    <span className="hidden text-sm font-bold uppercase tracking-wide sm:inline">
+                      {homeLabel}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void onLogout()}
+                    aria-label="Log out"
+                    data-testid="welcome-logout"
+                    className="flex min-h-[44px] min-w-[44px] items-center gap-2 rounded-md border-2 border-black bg-red-500 px-3 py-2 font-bold text-white shadow-neo-sm transition-transform hover:bg-red-600 motion-safe:hover:-translate-y-0.5"
+                  >
+                    <LogOut size={16} strokeWidth={3} aria-hidden="true" />
+                    <span className="hidden sm:inline">Logout</span>
+                  </button>
+                </div>
+              ),
+            }
+          : {})}
+      />
 
       {/* FHS-358: logged-in landing replaces the ad hero. */}
       {loggedIn && (

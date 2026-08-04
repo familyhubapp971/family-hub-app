@@ -1,0 +1,200 @@
+// FHS-555: the public header used to hide Features + About below md and
+// squeeze the rest into one row, so a phone visitor could not reach those
+// pages at all. Everything except the logo and Start free now sits behind a
+// burger button. These tests lock the behaviour that fix depends on.
+import { describe, it, expect } from 'vitest';
+import { render, screen, within, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { SiteHeader } from '../../../../apps/web/src/components/SiteChrome';
+
+function renderHeader(props: Parameters<typeof SiteHeader>[0] = {}) {
+  return render(
+    <MemoryRouter>
+      <SiteHeader {...props} />
+    </MemoryRouter>,
+  );
+}
+
+const burger = () => screen.getByTestId('site-nav-burger');
+const panel = () => screen.queryByTestId('site-nav-panel');
+const openMenu = () => fireEvent.click(burger());
+
+describe('SiteHeader burger menu', () => {
+  it('renders the burger button closed by default', () => {
+    renderHeader();
+    expect(burger()).toHaveAttribute('aria-expanded', 'false');
+    expect(panel()).not.toBeInTheDocument();
+  });
+
+  it('labels the burger for screen readers and flips the label when open', () => {
+    renderHeader();
+    expect(burger()).toHaveAccessibleName('Open menu');
+
+    openMenu();
+    expect(burger()).toHaveAccessibleName('Close menu');
+    expect(burger()).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('points aria-controls at the panel it opens', () => {
+    renderHeader();
+    const controls = burger().getAttribute('aria-controls');
+
+    openMenu();
+    expect(panel()).toHaveAttribute('id', controls);
+  });
+
+  it('opens a panel holding every nav link plus Log in', () => {
+    renderHeader();
+    openMenu();
+
+    const open = within(panel()!);
+    for (const label of ['Features', 'About', 'Pricing', 'Legal', 'Log in']) {
+      expect(open.getByRole('link', { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it('marks the current section inside the panel', () => {
+    renderHeader({ current: 'pricing' });
+    openMenu();
+
+    expect(within(panel()!).getByRole('link', { name: 'Pricing' }).className).toContain(
+      'text-yellow-300',
+    );
+  });
+
+  it('closes when the burger is tapped again', () => {
+    renderHeader();
+
+    openMenu();
+    expect(panel()).toBeInTheDocument();
+
+    fireEvent.click(burger());
+    expect(panel()).not.toBeInTheDocument();
+  });
+
+  it('closes when a link inside the panel is tapped', () => {
+    renderHeader();
+    openMenu();
+
+    fireEvent.click(within(panel()!).getByRole('link', { name: 'Legal' }));
+    expect(panel()).not.toBeInTheDocument();
+  });
+
+  it('closes when the scrim behind the panel is tapped', () => {
+    renderHeader();
+    openMenu();
+
+    fireEvent.click(screen.getByTestId('site-nav-scrim'));
+    expect(panel()).not.toBeInTheDocument();
+  });
+
+  it('closes on Escape and returns focus to the burger', () => {
+    renderHeader();
+    openMenu();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(panel()).not.toBeInTheDocument();
+    expect(burger()).toHaveFocus();
+  });
+
+  it('moves focus into the panel when it opens', () => {
+    renderHeader();
+    openMenu();
+
+    expect(within(panel()!).getByRole('link', { name: 'Features' })).toHaveFocus();
+  });
+
+  it('does not steal focus on first render', () => {
+    renderHeader();
+    expect(burger()).not.toHaveFocus();
+  });
+
+  it('traps Tab inside the panel: Tab off the last item wraps to the first', () => {
+    renderHeader();
+    openMenu();
+
+    const open = within(panel()!);
+    const login = open.getByRole('link', { name: 'Log in' });
+    login.focus();
+    fireEvent.keyDown(panel()!, { key: 'Tab' });
+
+    expect(open.getByRole('link', { name: 'Features' })).toHaveFocus();
+  });
+
+  it('traps Shift+Tab off the first item back to the last', () => {
+    renderHeader();
+    openMenu();
+
+    const open = within(panel()!);
+    open.getByRole('link', { name: 'Features' }).focus();
+    fireEvent.keyDown(panel()!, { key: 'Tab', shiftKey: true });
+
+    expect(open.getByRole('link', { name: 'Log in' })).toHaveFocus();
+  });
+
+  it('locks page scroll while the panel is open and restores it after', () => {
+    renderHeader();
+
+    openMenu();
+    expect(document.body.style.overflow).toBe('hidden');
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(document.body.style.overflow).not.toBe('hidden');
+  });
+
+  it('keeps Start free in the bar rather than inside the menu', () => {
+    renderHeader();
+    expect(screen.getByRole('button', { name: 'Start free' })).toBeInTheDocument();
+
+    openMenu();
+    expect(within(panel()!).queryByRole('button', { name: 'Start free' })).not.toBeInTheDocument();
+  });
+
+  it('gives the burger a 44px minimum tap target', () => {
+    renderHeader();
+    // h-11 w-11 is Tailwind's 44px square: the repo's tap-target floor.
+    expect(burger().className).toContain('h-11');
+    expect(burger().className).toContain('w-11');
+  });
+
+  it('gives every panel row a 56px minimum height', () => {
+    renderHeader();
+    openMenu();
+
+    for (const link of within(panel()!).getAllByRole('link')) {
+      expect(link.className).toContain('min-h-[56px]');
+    }
+  });
+
+  it('swaps Log in and Start free for caller-supplied actions', () => {
+    renderHeader({ actions: <button type="button">Log out</button> });
+
+    expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start free' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument();
+  });
+
+  it('leaves Log in out of the panel when actions are supplied', () => {
+    renderHeader({ actions: <button type="button">Log out</button> });
+    openMenu();
+
+    const open = within(panel()!);
+    expect(open.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument();
+    for (const label of ['Features', 'About', 'Pricing', 'Legal']) {
+      expect(open.getByRole('link', { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it('hides the burger and shows the inline row from lg up', () => {
+    renderHeader();
+    // Both navs live in the DOM; CSS decides which one a viewport shows.
+    expect(burger().className).toContain('lg:hidden');
+
+    const desktopNav = screen.getByRole('navigation', { name: 'Main' });
+    expect(desktopNav.className).toContain('lg:flex');
+    for (const label of ['Features', 'About', 'Pricing', 'Legal']) {
+      expect(within(desktopNav).getByRole('link', { name: label })).toBeInTheDocument();
+    }
+  });
+});

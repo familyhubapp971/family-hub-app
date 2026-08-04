@@ -29,7 +29,7 @@ When('I click the Start free button in the header', async ({ page }) => {
 });
 
 When('I click the Pricing nav link', async ({ page }) => {
-  await new WelcomePagePO(page).pricingNavLink().click();
+  await new WelcomePagePO(page).clickHeaderNavLink('Pricing');
 });
 
 Then('the URL contains {string}', async ({ page }, fragment: string) => {

@@ -72,6 +72,9 @@ export default {
       },
       animation: {
         shake: 'shake 0.3s ease-in-out',
+        // Mobile nav panel drop-in (FHS-555). Always paired with
+        // motion-safe: so reduced-motion users get the panel instantly.
+        'menu-drop': 'menu-drop 0.2s ease-out',
         // Slow drifting starfield used by .space-bg to give the kingdom
         // background subtle motion without being distracting.
         'space-bg': 'space-move 60s linear infinite',
@@ -87,6 +90,10 @@ export default {
         'space-move': {
           from: { backgroundPosition: '0 0, 40px 60px, 130px 270px' },
           to: { backgroundPosition: '550px 550px, 390px 410px, 380px 520px' },
+        },
+        'menu-drop': {
+          from: { opacity: '0', transform: 'translateY(-8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
         },
       },
     },
