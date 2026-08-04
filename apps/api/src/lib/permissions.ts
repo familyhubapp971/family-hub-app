@@ -7,11 +7,11 @@ import { members } from '../db/schema.js';
 // duplication so the admin/normal boundary lives in a single place.
 //
 // Two tiers of access (see ADR 0015):
-//   • canManage : everyday access: the caller IS the member, or a parent
-//                  (admin/adult). Used for reads + current-day writes.
-//   • isAdmin   : sensitive / historical / irreversible actions only
-//                  (edit a past day, close/reopen a week, change the economy,
-//                   manage members/habits). FHS-335 / FHS-342.
+//   • canManage: everyday access. The caller IS the member, or a parent
+//     (admin/adult). Used for reads + current-day writes.
+//   • isAdmin: sensitive / historical / irreversible actions only
+//     (edit a past day, close/reopen a week, change the economy,
+//     manage members/habits). FHS-335 / FHS-342.
 
 type Db = ReturnType<typeof getDb>;
 

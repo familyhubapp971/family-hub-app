@@ -30,7 +30,7 @@ shipped-but-not-yet-UI.
 ## Conventions
 
 - Source is self-contained HTML, no build step (Google Fonts only).
-- Kingdom design language: `#3d1065` bg, `#fde047` accent, Fredoka One
-  and Nunito fonts, black borders, hard offset shadows (matches
-  `packages/ui/tailwind.preset.js` tokens).
+- Deck design language: lavender paper `#F6F1FA` bg, `#FFD21E` accent,
+  candy pill palette, Fredoka One and Nunito fonts, black borders, hard
+  offset shadows (matches the pitch deck and the QA briefs).
 - Cross-reference Jira tickets (`FHS-XXX`) on every capability card.
