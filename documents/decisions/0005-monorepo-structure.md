@@ -1,4 +1,4 @@
-# 0005 — Monorepo structure
+# 0005: Monorepo structure
 
 **Status:** accepted
 **Date:** 2026-04-24
@@ -52,7 +52,7 @@ deploy/        # Railway configs, Dockerfiles, infra scripts
 
 The cardinal rule: **direction of dependency is `apps → packages`,
 never the reverse.** A `packages/*` library that needs to know about
-an app is a smell — extract the abstraction into the package, or move
+an app is a smell, extract the abstraction into the package, or move
 the code out of the package.
 
 Enforced by:
@@ -63,7 +63,7 @@ Enforced by:
 - A lint rule (`eslint-plugin-import` `no-restricted-paths`) that
   fails the build if a `packages/*` file imports from `apps/*`.
 - `tsconfig.base.json` path aliases that resolve `@familyhub/<pkg>`
-  to `packages/<pkg>/src` — apps reference packages by the alias,
+  to `packages/<pkg>/src`: apps reference packages by the alias,
   never via relative `../../`.
 
 ## Consequences
@@ -74,24 +74,24 @@ single dependency graph and one `pnpm install`; one CI workflow
 matrix; reusable libraries are first-class, not afterthoughts.
 
 **Harder:** package boundaries must be respected (the lint rule
-matters); a poorly-scoped `packages/shared` becomes a junk drawer —
+matters); a poorly-scoped `packages/shared` becomes a junk drawer,
 review additions before merging; pnpm workspace edge cases (peer
 deps, hoisting) need occasional troubleshooting.
 
 ## Alternatives considered
 
-- **Polyrepo (api / web / shared as separate GitHub repos)** — rejected:
+- **Polyrepo (api / web / shared as separate GitHub repos)**, rejected:
   cross-repo type sharing requires publishing, versioning, and
   coordinating PRs across repos. For a small team, the overhead is
   large with no offsetting benefit.
-- **Single `src/` with no workspace boundaries** — rejected: nothing
+- **Single `src/` with no workspace boundaries**, rejected: nothing
   prevents `web/` from importing `api/`'s server code, which leaks
   server secrets / dependencies into the client bundle.
-- **Nx / Turbo on top of pnpm** — deferred. Plain pnpm workspaces are
+- **Nx / Turbo on top of pnpm**: deferred. Plain pnpm workspaces are
   enough for our scale; revisit if build-graph caching becomes a
   bottleneck.
 
 ## References
 
-- [ADR 0006 — Branching strategy](0006-branching-strategy.md)
+- [ADR 0006: Branching strategy](0006-branching-strategy.md)
 - [`/CLAUDE.md` Project context layout](../../CLAUDE.md#project-context)

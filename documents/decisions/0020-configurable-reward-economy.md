@@ -1,4 +1,4 @@
-# 0020 — Configurable reward economy (rate, boost, skip penalty)
+# 0020: Configurable reward economy (rate, boost, skip penalty)
 
 **Status:** accepted
 **Date:** 2026-07-31
@@ -22,8 +22,8 @@ and needs a decision on units, storage, and where the deduction lands.
    `members.sticker_rate_minor` (nullable per-child override),
    `habits.boost` (integer, default `1`, replaces the old
    `isBonus ? 5 : 1`), `habits.skip_penalty_minor` (default `0`).
-2. **A single resolver** — `effectiveRateMinor(child, family)` in
-   `apps/api/src/lib/reward-config.ts` — decides which rate applies: the
+2. **A single resolver**: `effectiveRateMinor(child, family)` in
+   `apps/api/src/lib/reward-config.ts`: decides which rate applies: the
    child's own `stickerRateMinor` if set, else the family default. Every
    site that used to read the `STICKER_TO_CASH` constant now resolves this
    per-child rate instead (`lib/myworld.ts`, `routes/mw-financial.ts`,
@@ -37,8 +37,8 @@ and needs a decision on units, storage, and where the deduction lands.
    decrement of `mw_savings.saved_cash` (floored at 0, same `GREATEST(...,
 0)` pattern the codebase already uses for investment/auto-save
    reversals). Folding the deduction directly into the existing
-   `saved_cash` ledger — instead of requiring every reader to separately
-   sum `money_adjustments` — means every existing balance display (kid
+   `saved_cash` ledger, instead of requiring every reader to separately
+   sum `money_adjustments`: means every existing balance display (kid
    view, admin Savings tab, dashboard, cash-out, redemption checks)
    reflects the penalty automatically, with no second code path to keep
    in sync. `money_adjustments` exists purely as the audit trail and as
@@ -47,15 +47,15 @@ and needs a decision on units, storage, and where the deduction lands.
    `week_id` column).
 5. **"Due day" = every day of the week (0–6).** Habit `cadence`
    (`daily`/`weekly`/`custom`) has never been enforced anywhere in the
-   sticker economy — a child can place a sticker on any day regardless of
-   cadence — so the skip-penalty accrual treats every day as due. A
+   sticker economy, a child can place a sticker on any day regardless of
+   cadence, so the skip-penalty accrual treats every day as due. A
    cadence-aware "due day" (e.g. a Mon–Fri-only habit) is a follow-up if
    FHS-489 wants it.
 6. **Legacy decimal money columns are untouched.** `saved_cash`,
    `invested_amount`, `current_value`, `cash_amount`, etc. stay
    `numeric(12,2)` decimal, now fed by `rate = rateMinor / 100` instead of
    the fixed `0.5`. Converting the whole economy to minor-unit integer
-   columns is a bigger, separate migration — out of scope here (see
+   columns is a bigger, separate migration, out of scope here (see
    Alternatives).
 
 ## Consequences
@@ -67,7 +67,7 @@ and needs a decision on units, storage, and where the deduction lands.
 - **Easier:** `GET /api/mw/financial/savings` (and the kid mirror) now
   returns `stickerRateMinor` alongside the existing decimal `stickerRate`,
   so a money-safe caller never has to reconstruct the integer from a float.
-- **Harder:** two money representations coexist — new fields are
+- **Harder:** two money representations coexist, new fields are
   minor-unit integers, legacy fields are decimal. A future contributor
   adding a new money field must pick the right one; this ADR is the
   pointer to follow (new = minor units, old = decimal until migrated).
@@ -82,14 +82,14 @@ and needs a decision on units, storage, and where the deduction lands.
 ## Alternatives considered
 
 - **Store the skip penalty ONLY in `money_adjustments`, sum it on every
-  read** — more "pure" (single source of truth) but means every balance
+  read**, more "pure" (single source of truth) but means every balance
   reader (kid view, admin Savings tab, redemption affordability, dashboard)
   needs a new join/sum step; rejected as a much larger, riskier change for
   this ticket given the existing ledger-folding pattern already works for
   auto-save and investment maturity.
-- **Migrate all money columns to integer minor units in this ticket** —
+- **Migrate all money columns to integer minor units in this ticket**:
   correct long-term, but touches every numeric money column in the schema
   (`saved_cash`, `invested_amount`, `current_value`, `final_return`,
   `cash_amount`, `carried_over_cash`, `retrieved_cash`, `target_amount`,
   savings/investments family-finance stubs); rejected as out of scope for
-  a "reward config + settings screen" ticket — tracked as a follow-up.
+  a "reward config + settings screen" ticket, tracked as a follow-up.

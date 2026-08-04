@@ -1,0 +1,1008 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>FamilyHub · Impact Measurement Framework</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;500;600;700;800;900&display=swap"
+    />
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      :root {
+        --cream: #f6f1fa;
+        --cream-2: #ede5f5;
+        --ink: #191919;
+        --ink-soft: #4a4a4a;
+        --label: #4a5568;
+        --rule: #d9ccec;
+        --rule-soft: #ece4d4;
+        --yellow: #ffd21e;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow-tint: #fff3c9;
+        --cyan-tint: #e3f9fd;
+        --green-tint: #e1fbf3;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          'Nunito',
+          -apple-system,
+          sans-serif;
+        font-weight: 500;
+        font-size: 11px;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--cream);
+      }
+      h1,
+      h2,
+      h3,
+      .heading {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        letter-spacing: 0.005em;
+        color: var(--ink);
+      }
+
+      /* Cream page, flat, no glow, no gradients (pitch-deck print design) */
+      .page {
+        background: var(--cream);
+        min-height: 100vh;
+        padding: 12mm 16mm 18mm;
+        position: relative;
+      }
+
+      /* ----- Masthead ----- */
+      .mast {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin: 0 0 8mm 0;
+        padding-bottom: 6mm;
+        border-bottom: 1.5px solid var(--ink);
+      }
+      .mast .brand {
+        font-family: 'Fredoka One', cursive;
+        font-size: 22px;
+        color: var(--ink);
+        line-height: 1;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .mast .brand .star {
+        color: var(--yellow);
+        font-size: 22px;
+        -webkit-text-stroke: 1px #000;
+      }
+      .mast .meta {
+        font-size: 10px;
+        color: var(--ink-soft);
+        line-height: 1.5;
+        text-align: right;
+        font-weight: 700;
+      }
+      .mast .meta strong {
+        color: var(--ink);
+      }
+
+      /* ----- Title block ----- */
+      .title-row {
+        margin: 0 0 20px 0;
+      }
+      .badge {
+        display: inline-block;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 9.5px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #000;
+        padding: 6px 16px;
+        border: 2px solid #000;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 0 #000;
+        margin: 0 0 12px 0;
+      }
+      .badge-pink {
+        background: var(--pink);
+      }
+      h1 {
+        font-size: 32px;
+        line-height: 1.08;
+        margin: 0 0 12px 0;
+        letter-spacing: -0.01em;
+        break-after: avoid;
+      }
+      .lede {
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+        margin: 0;
+        max-width: 62ch;
+      }
+
+      /* ----- Callout cards ----- */
+      .callout {
+        border: 2px solid #000;
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin: 14px 0;
+        font-size: 11.5px;
+        line-height: 1.6;
+        box-shadow: 3px 3px 0 0 #000;
+        break-inside: avoid;
+      }
+      .callout-yellow {
+        background: var(--yellow-tint);
+      }
+      .callout-cyan {
+        background: var(--cyan-tint);
+      }
+      .callout .callout-label {
+        display: block;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--label);
+        margin-bottom: 6px;
+      }
+
+      /* ----- Small uppercase section labels ----- */
+      .section-label {
+        padding-top: 4mm;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 10px;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: var(--label);
+        margin: 26px 0 6px 0;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--rule);
+        break-after: avoid;
+      }
+      h2 {
+        font-size: 19px;
+        margin: 0 0 4px 0;
+        letter-spacing: -0.005em;
+        break-after: avoid;
+      }
+      .section-lede {
+        font-size: 11px;
+        color: var(--ink-soft);
+        margin: 4px 0 14px 0;
+        max-width: 62ch;
+      }
+
+      /* ----- Pills (layer / cadence chips) ----- */
+      .pill {
+        display: inline-block;
+        font-family: 'Fredoka One', cursive;
+        font-size: 12px;
+        color: #000;
+        padding: 4px 14px;
+        border: 2px solid #000;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 0 #000;
+        white-space: nowrap;
+      }
+      .pill-yellow {
+        background: var(--yellow);
+      }
+      .pill-pink {
+        background: var(--pink);
+      }
+      .pill-green {
+        background: var(--green);
+      }
+      .pill-cyan {
+        background: var(--cyan);
+      }
+      .pill-coral {
+        background: var(--coral);
+      }
+
+      /* ----- Tables ----- */
+      .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: #fff;
+        border: 2.5px solid #000;
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 12px 0 26px 0;
+        break-inside: avoid;
+      }
+      .data-table th {
+        background: var(--cream-2);
+        color: var(--ink);
+        text-align: left;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 10px 14px;
+        border-bottom: 2px solid #000;
+      }
+      .data-table td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--rule-soft);
+        vertical-align: top;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .data-table tr:last-child td {
+        border-bottom: none;
+      }
+      .data-table th.num,
+      .data-table td.num {
+        text-align: right;
+      }
+
+      .metric-name {
+        font-weight: 800;
+        color: var(--ink);
+        font-size: 11px;
+      }
+      .metric-source {
+        font-size: 9.5px;
+        color: var(--ink-soft);
+        font-weight: 600;
+      }
+      .metric-toc {
+        display: block;
+        margin-top: 4px;
+        font-size: 9.5px;
+        color: var(--ink-soft);
+        font-style: italic;
+      }
+
+      .data-table .v {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 16px;
+        color: var(--ink);
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+      .data-table .when {
+        font-size: 8.5px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        margin-top: 3px;
+      }
+
+      /* ----- Clean lists (sources / equity / open questions) ----- */
+      ul.clean {
+        list-style: none;
+        margin: 8px 0 0 0;
+        padding: 0;
+      }
+      ul.clean li {
+        padding: 8px 0 8px 20px;
+        position: relative;
+        font-size: 11px;
+        line-height: 1.55;
+        border-bottom: 1px solid var(--rule-soft);
+      }
+      ul.clean li:last-child {
+        border-bottom: none;
+      }
+      ul.clean li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 1.05em;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 1.5px solid #000;
+        background: var(--dot, var(--coral));
+      }
+      ul.clean li:nth-child(5n + 1) {
+        --dot: var(--yellow);
+      }
+      ul.clean li:nth-child(5n + 2) {
+        --dot: var(--pink);
+      }
+      ul.clean li:nth-child(5n + 3) {
+        --dot: var(--green);
+      }
+      ul.clean li:nth-child(5n + 4) {
+        --dot: var(--cyan);
+      }
+      ul.clean li:nth-child(5n + 5) {
+        --dot: var(--coral);
+      }
+
+      strong {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      /* Recurring financial-literacy thread, subtle, repeated, never dominant */
+      .fl-anchor {
+        font-weight: 900;
+        color: #12805f;
+      }
+      .fl-thread {
+        display: inline-block;
+        font-weight: 800;
+        color: var(--ink);
+        background: var(--green-tint);
+        border: 1.5px solid #000;
+        border-radius: 6px;
+        padding: 1px 8px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      footer {
+        margin-top: 30px;
+        padding-top: 10px;
+        border-top: 1.5px solid #000;
+        font-size: 9.5px;
+        color: var(--ink-soft);
+        text-align: center;
+      }
+      footer strong {
+        color: var(--ink);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+      }
+
+      section {
+        break-inside: avoid-page;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="mast">
+        <div class="brand"><span class="star">★</span><span class="word">FamilyHub</span></div>
+        <div class="meta">
+          <strong>Babatunde Oduniyi</strong><br /><strong>Sandra Mottoh</strong><br /><strong
+            >Jumi Shonubi</strong
+          ><br />co-founders
+        </div>
+      </header>
+
+      <header class="title-row">
+        <span class="badge badge-pink">Impact Measurement Framework</span>
+        <h1>Evidencing the Theory of Change.</h1>
+        <p class="lede">
+          Every claimed outcome corresponds to a measurable indicator. Funders, the board, and the
+          operating team review a shared dashboard to prevent narrative drift.
+        </p>
+      </header>
+
+      <div class="callout callout-yellow">
+        <span class="callout-label">Framework summary</span>
+        Metrics are organised across four layers. <strong>Outputs</strong> quantify delivery.
+        <strong>Reach</strong> quantifies adoption. <strong>Outcomes</strong> evidence behavioural
+        change, including children's progression in
+        <strong class="fl-anchor"
+          >financial literacy from early childhood, embedded in everyday family life rather than in
+          a separate kids-debit-card app</strong
+        >
+        (the sticker economy:
+        <span class="fl-thread">earn &middot; save &middot; invest &middot; spend</span>).
+        <strong>Impact</strong> evidences population-scale change across family wellbeing, digital
+        wellbeing, parental time recovery, and household coordination.
+      </div>
+
+      <div class="callout callout-cyan">
+        <span class="callout-label">Regional alignment</span>
+        FamilyHub is positioned as regionally relevant, policy aligned, and institutionally
+        scalable. Active and intended ecosystem partners in the UAE include
+        <strong>Early Childhood Authority</strong>,
+        <strong>ADEK (Abu Dhabi Department of Education and Knowledge)</strong>,
+        <strong>Department of Community Development (Abu Dhabi)</strong>, and
+        <strong>Family Development Foundation</strong>.
+      </div>
+
+      <table class="data-table layers-table">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Question</th>
+            <th>Reviewed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill pill-yellow">Outputs</span></td>
+            <td>What did we ship + sell?</td>
+            <td>Weekly</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-cyan">Reach</span></td>
+            <td>Who is using it?</td>
+            <td>Weekly</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-green">Outcomes</span></td>
+            <td>Is anyone's life better?</td>
+            <td>Monthly</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-coral">Impact</span></td>
+            <td>Is the world we want bending?</td>
+            <td>Quarterly</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <section>
+        <div class="section-label">01, Outputs</div>
+        <h2>Delivery metrics</h2>
+        <p class="section-lede">Reviewed weekly. Baseline is zero (pre-revenue).</p>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Source</th>
+              <th class="num">Year 1</th>
+              <th class="num">Year 2</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="metric-name">Paid consumer families</div></td>
+              <td class="metric-source">Source: billing system</td>
+              <td class="num">
+                <div class="v">1,000</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">5,000+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="metric-name">Partner organisations (branded deployments)</div></td>
+              <td class="metric-source">Source: billing system</td>
+              <td class="num">
+                <div class="v">15</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">30+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="metric-name">Annual recurring revenue</div></td>
+              <td class="metric-source">Source: billing system</td>
+              <td class="num">
+                <div class="v">$130k</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">$720k+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="metric-name">Learning modules launched</div></td>
+              <td class="metric-source">Source: product roadmap</td>
+              <td class="num">
+                <div class="v">3</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">5+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="metric-name">Markets live</div></td>
+              <td class="metric-source">Source: marketing</td>
+              <td class="num">
+                <div class="v">2</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">4+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <div class="section-label">02, Reach</div>
+        <h2>Adoption metrics</h2>
+        <p class="section-lede">Reviewed weekly. Cohorts segmented in PostHog product analytics.</p>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Source</th>
+              <th class="num">Year 1</th>
+              <th class="num">Year 2</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="metric-name">Children with 1+ active learning module</div></td>
+              <td class="metric-source">Source: product analytics</td>
+              <td class="num">
+                <div class="v">1,500</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">8,000+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="metric-name">Families using 3 of 4 pillars / week</div></td>
+              <td class="metric-source">Source: product analytics (cohort)</td>
+              <td class="num">
+                <div class="v">60%</div>
+                <div class="when">of paid &middot; Y1</div>
+              </td>
+              <td class="num">
+                <div class="v">70%</div>
+                <div class="when">of paid &middot; Y2</div>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="metric-name">Paid families in MENA + ID + PK</div></td>
+              <td class="metric-source">Source: billing country</td>
+              <td class="num">
+                <div class="v">40%</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">50%+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="metric-name">Paid families using cultural-flex features</div></td>
+              <td class="metric-source">Source: product analytics (feature usage)</td>
+              <td class="num">
+                <div class="v">25%</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">35%</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="metric-name">Free to paid conversion at day 30</div></td>
+              <td class="metric-source">Source: product analytics and billing</td>
+              <td class="num">
+                <div class="v">8%</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">12%</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <div class="section-label">03, Outcomes</div>
+        <h2>Behavioural change</h2>
+        <p class="section-lede">
+          Reviewed monthly. Each outcome maps to a corresponding section of the Theory of Change.
+          Together, these outcomes evidence that FamilyHub functions as infrastructure for family
+          wellbeing, financial resilience, digital wellbeing, parental time recovery, and stronger
+          household coordination, not as another single-purpose app.
+        </p>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Source / linked outcome</th>
+              <th class="num">Year 1</th>
+              <th class="num">Year 2</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="metric-name">Per-child Maths mastery delta after 90 days</div></td>
+              <td>
+                <div class="metric-source">
+                  vs synthetic generic-placement control &middot; Source: in-app activity data
+                </div>
+                <div class="metric-toc">Outcome: kids learn what they specifically need</div>
+              </td>
+              <td class="num">
+                <div class="v">+18 pp</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">+25 pp</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="metric-name">Weekly active days per child on a learning module</div>
+              </td>
+              <td>
+                <div class="metric-source">Source: product analytics</div>
+                <div class="metric-toc">Outcome: kids learn what they specifically need</div>
+              </td>
+              <td class="num">
+                <div class="v">3.5</div>
+                <div class="when">days &middot; Y1</div>
+              </td>
+              <td class="num">
+                <div class="v">4.5</div>
+                <div class="when">days &middot; Y2</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="metric-name">
+                  <span class="fl-anchor">Children meeting a self-set savings goal in 30 days</span>
+                </div>
+              </td>
+              <td>
+                <div class="metric-source">
+                  Source: in-app activity data (sticker economy,
+                  <span class="fl-thread">earn &middot; save &middot; invest &middot; spend</span>)
+                </div>
+                <div class="metric-toc">
+                  Outcome: kids learn money + responsibility, financial literacy from early
+                  childhood
+                </div>
+              </td>
+              <td class="num">
+                <div class="v">35%</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">55%</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="metric-name">
+                  <strong class="fl-anchor"
+                    >Self-reported minutes / week parents stopped juggling five apps</strong
+                  >
+                </div>
+              </td>
+              <td>
+                <div class="metric-source">Source: in-product quarterly survey</div>
+                <div class="metric-toc">
+                  Outcome: parents reclaim time + mental-load, the one-dashboard-replaces-five-apps
+                  infrastructure for family wellbeing, digital wellbeing, and household
+                  coordination.
+                </div>
+              </td>
+              <td class="num">
+                <div class="v">60 min</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">120 min</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="metric-name">Shared events + meals + assignments / family / week</div>
+              </td>
+              <td>
+                <div class="metric-source">Source: in-app activity data</div>
+                <div class="metric-toc">Outcome: families coordinate without nagging</div>
+              </td>
+              <td class="num">
+                <div class="v">12</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">18</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="metric-name">
+                  Monthly-active families using 1+ cultural-adaptability feature
+                </div>
+              </td>
+              <td>
+                <div class="metric-source">
+                  Source: product analytics (feature usage, e.g. Ramadan journal, multi-faith
+                  calendar, extended-family roles)
+                </div>
+                <div class="metric-toc">
+                  Outcome: historically-underserved households fit by design, cultural adaptability
+                  built in, not bolted on.
+                </div>
+              </td>
+              <td class="num">
+                <div class="v">30%</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">45%</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="metric-name">Partner organisations with 5+ active member-families</div>
+              </td>
+              <td>
+                <div class="metric-source">Source: billing and product analytics</div>
+                <div class="metric-toc">Outcome: community orgs get a digital home</div>
+              </td>
+              <td class="num">
+                <div class="v">10</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">25</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <div class="section-label">04, Impact</div>
+        <h2>Population-scale change</h2>
+        <p class="section-lede">
+          Reviewed quarterly. Compounds with cohort age. Anchors the long-term thesis: child
+          learning hours that count,
+          <strong class="fl-anchor">financial literacy from early childhood</strong>, and
+          family-resilience infrastructure reaching markets historically underserved by mainstream
+          family-tech.
+        </p>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Source</th>
+              <th class="num">Year 1</th>
+              <th class="num">Year 2</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="metric-name">Cumulative AI-personalised lesson completions</div></td>
+              <td class="metric-source">
+                Across all children &middot; Source: in-app activity data
+              </td>
+              <td class="num">
+                <div class="v">250k</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">2M+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="metric-name">Aggregate minutes saved across paid families / year</div>
+              </td>
+              <td class="metric-source">Source: Quarterly survey &times; paid base</td>
+              <td class="num">
+                <div class="v">17k hrs</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">170k+ hrs</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="metric-name">% of paid base in MENA + Indonesia + Pakistan</div></td>
+              <td class="metric-source">Source: billing system</td>
+              <td class="num">
+                <div class="v">40%</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">50%+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="metric-name">
+                  Member-families served via branded partner deployments
+                </div>
+              </td>
+              <td class="metric-source">Source: billing and product analytics</td>
+              <td class="num">
+                <div class="v">1,200</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">8,000+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="metric-name">
+                  <span class="fl-anchor">Children who completed a save-then-spend cycle</span>
+                </div>
+              </td>
+              <td class="metric-source">
+                Source: in-app activity data (sticker economy,
+                <span class="fl-thread">earn &middot; save &middot; invest &middot; spend</span>),
+                the core financial-literacy behaviour
+              </td>
+              <td class="num">
+                <div class="v">1,000</div>
+                <div class="when">Year 1</div>
+              </td>
+              <td class="num">
+                <div class="v">6,000+</div>
+                <div class="when">Year 2</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <div class="section-label">05, Data sources</div>
+        <h2>Measurement infrastructure</h2>
+        <ul class="clean">
+          <li>
+            <strong>Billing system.</strong> Revenue, conversion, churn, country of billing. Primary
+            source of truth.
+          </li>
+          <li>
+            <strong>Product analytics.</strong> Feature usage, cohorts, conversion funnels.
+            Operational from launch.
+          </li>
+          <li>
+            <strong>In-app activity data.</strong> Per-child learning events, sticker transactions,
+            family activity. Owned and recorded directly, not approximated.
+          </li>
+          <li>
+            <strong>In-product surveys.</strong> Self-reported parent feedback (e.g. minutes saved,
+            satisfaction scores). Cross-referenced against behavioural data.
+          </li>
+          <li>
+            <strong>Reliability monitoring.</strong> Uptime and error rates. Feeds the &ldquo;does
+            the product actually work for them&rdquo; layer.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <div class="section-label">06, Cadence + governance</div>
+        <h2>Review and reporting cycles</h2>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Frequency</th>
+              <th>Who + focus</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="pill pill-yellow">Weekly</span></td>
+              <td><strong>Founder.</strong> Output + reach metrics. One-line written update.</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-green">Monthly</span></td>
+              <td>
+                <strong>Founder + first hire</strong> (once on team). Outcome metrics. Compare
+                against ToC assumptions, flag drift.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-coral">Quarterly</span></td>
+              <td>
+                <strong>Founder + board / funders.</strong> Impact metrics. Full ToC review,
+                re-route if assumptions broke.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-pink">Annually</span></td>
+              <td>
+                <strong>Founder + board + funders.</strong> External-facing impact report. Numbers,
+                narrative, what changed in the ToC.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <div class="section-label">07, Equity + privacy guardrails</div>
+        <h2>Operating principles</h2>
+        <ul class="clean">
+          <li>
+            <strong>Children under 13.</strong> No personal information in analytics, aggregates
+            only. Compliant with US children's-privacy law (COPPA) by design: automated
+            personal-data redaction, anonymised analytics identifiers.
+          </li>
+          <li>
+            <strong>Cultural metrics are opt-in.</strong> A family choosing the Ramadan journal is a
+            feature preference, not a profiled attribute we sell or surface outside the family.
+          </li>
+          <li>
+            <strong>No engagement-for-engagement's-sake.</strong> Learning outcomes and
+            parent-time-saved are measured rather than session length. Sticker streaks have caps to
+            prevent compulsion-loop dynamics.
+          </li>
+          <li>
+            <strong>No dark patterns.</strong> Pricing and cancellation flows comply with UAE
+            Consumer Protection Law, UK Consumer Rights Act, and US Federal Trade Commission rules.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <div class="section-label">08, Open questions for v2</div>
+        <h2>Areas for v2 refinement</h2>
+        <ul class="clean">
+          <li>
+            <strong>Counterfactual control.</strong> Personalisation vs generic placement is
+            currently a synthetic control. Fund a randomised cohort study by year 2.
+          </li>
+          <li>
+            <strong>External validation.</strong> Partner with an education-research body (EEF in
+            UK, IIE Cairo) for an independent mastery-delta study once enrolment crosses 3,000
+            children.
+          </li>
+          <li>
+            <strong>Long-tail outcomes.</strong> Family bonding + child confidence can't be measured
+            cleanly with click data. Annual qualitative interviews with 20 to 30 families to
+            triangulate.
+          </li>
+        </ul>
+      </section>
+
+      <footer>
+        <strong>★ FamilyHub</strong> &nbsp;·&nbsp; Companion documents: Theory of Change (logic
+        model), Business Model Canvas (operating model).
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>FamilyHub · Theory of Change</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;500;600;700;800;900&display=swap"
+    />
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      :root {
+        --bg: #f6f1fa;
+        --ink: #191919;
+        --ink-soft: #4a4a4a;
+        --label: #4a5568;
+        --label-rule: #d9ccec;
+        --rule: #d9ccec;
+        --rule-soft: #ece3d5;
+        --yellow: #ffd21e;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow-tint: #fff6d9;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+        font-family:
+          'Nunito',
+          -apple-system,
+          sans-serif;
+        font-weight: 500;
+        font-size: 11px;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      h1,
+      h2,
+      h3,
+      .heading {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        letter-spacing: 0.005em;
+        color: var(--ink);
+      }
+      h1,
+      h2,
+      h3 {
+        break-after: avoid;
+      }
+
+      .page {
+        padding: 16mm 15mm 18mm;
+      }
+
+      /* Masthead */
+      .mast {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin: 0 0 10mm 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #000;
+      }
+      .mast .brand {
+        font-family: 'Fredoka One', cursive;
+        font-size: 24px;
+        color: var(--ink);
+        line-height: 1;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .mast .brand .star {
+        color: var(--yellow);
+        font-size: 24px;
+      }
+      .mast .meta {
+        font-size: 10px;
+        color: var(--ink-soft);
+        line-height: 1.5;
+        text-align: right;
+        font-weight: 700;
+      }
+      .mast .meta strong {
+        color: var(--ink);
+      }
+
+      /* Small uppercase section labels: eyebrow above H1, and the numbered
+         tag above each H2 ("01 · Inputs" etc.) share this same treatment. */
+      .kicker,
+      h2 .num {
+        display: block;
+        width: fit-content;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 10px;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: var(--label);
+        border-bottom: 1px solid var(--label-rule);
+        padding-bottom: 6px;
+      }
+      .kicker {
+        margin: 0 0 10px 0;
+      }
+      h2 .num {
+        margin: 0 0 8px 0;
+        font-size: 9.5px;
+      }
+
+      .title-row {
+        margin: 0 0 26px 0;
+      }
+      h1 {
+        font-size: 34px;
+        line-height: 1.08;
+        margin: 0 0 14px 0;
+        letter-spacing: -0.01em;
+      }
+      .lede {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        margin: 0;
+        max-width: 62ch;
+      }
+
+      /* Thesis callout: an accent card with a hard offset shadow */
+      .pullout {
+        background: var(--yellow-tint);
+        border: 2px solid #000;
+        border-radius: 14px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 16px 20px;
+        margin: 24px 0 10px;
+        font-size: 12px;
+        line-height: 1.6;
+        break-inside: avoid;
+      }
+      .pullout .pin-label {
+        display: inline-block;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink);
+        background: var(--yellow);
+        border: 2px solid #000;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 #000;
+        padding: 3px 12px;
+        margin: 0 0 10px 0;
+      }
+
+      /* Logic model chain */
+      .chain {
+        margin: 30px 0 34px;
+        padding: 0;
+        counter-reset: chain;
+        list-style: none;
+        break-inside: avoid;
+      }
+      .chain li {
+        counter-increment: chain;
+        display: grid;
+        grid-template-columns: 32px 118px 1fr;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 4px;
+        border-bottom: 1px solid var(--rule);
+        break-inside: avoid;
+      }
+      .chain li:first-child {
+        border-top: 2px solid #000;
+      }
+      .chain li:last-child {
+        border-bottom: 2px solid #000;
+      }
+      .chain li::before {
+        content: counter(chain, decimal-leading-zero);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 10px;
+        color: #000;
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 2px solid #000;
+        box-shadow: 2px 2px 0 #000;
+      }
+      .chain li:nth-child(1)::before {
+        background: var(--yellow);
+      }
+      .chain li:nth-child(2)::before {
+        background: var(--pink);
+      }
+      .chain li:nth-child(3)::before {
+        background: var(--green);
+      }
+      .chain li:nth-child(4)::before {
+        background: var(--cyan);
+      }
+      .chain li:nth-child(5)::before {
+        background: var(--coral);
+      }
+      .chain .stage {
+        font-family: 'Fredoka One', cursive;
+        font-size: 13px;
+        color: var(--ink);
+        letter-spacing: 0.01em;
+      }
+      .chain .body {
+        font-size: 11.5px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+      }
+      .chain .body strong {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      h2 {
+        font-size: 20px;
+        margin: 34px 0 8px 0;
+        letter-spacing: -0.005em;
+      }
+      h3 {
+        font-size: 13px;
+        margin: 18px 0 4px 0;
+      }
+      p {
+        margin: 8px 0;
+      }
+      strong {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      ul.clean {
+        list-style: none;
+        margin: 8px 0 0 0;
+        padding: 0;
+      }
+      ul.clean li {
+        padding: 6px 0 6px 18px;
+        position: relative;
+        font-size: 11.5px;
+        line-height: 1.6;
+        border-bottom: 1px solid var(--rule-soft);
+      }
+      ul.clean li:last-child {
+        border-bottom: none;
+      }
+      ul.clean li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 1.05em;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #000;
+        opacity: 0.7;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0 4px;
+        font-size: 11px;
+        font-weight: 500;
+        break-inside: avoid;
+      }
+      th,
+      td {
+        padding: 7px 8px 7px 0;
+        text-align: left;
+        line-height: 1.5;
+        border-bottom: 1px solid var(--rule-soft);
+        vertical-align: top;
+      }
+      th {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        color: var(--label);
+        text-transform: uppercase;
+        border-bottom: 2px solid #000;
+      }
+      td.num,
+      th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
+      }
+
+      /* Recurring financial-literacy thread: subtle, repeated, never dominant */
+      .fl-thread {
+        font-weight: 800;
+        color: var(--ink);
+        background: var(--green);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+      .fl-anchor {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      footer {
+        margin-top: 32px;
+        font-size: 10px;
+        color: var(--ink-soft);
+        border-top: 2px solid #000;
+        padding-top: 12px;
+        text-align: center;
+        break-inside: avoid;
+      }
+      footer strong {
+        color: var(--ink);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+      }
+
+      section {
+        break-inside: avoid;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="mast">
+        <div class="brand"><span class="star">★</span><span class="word">FamilyHub</span></div>
+        <div class="meta">
+          <strong>Babatunde Oduniyi</strong><br /><strong>Sandra Mottoh</strong><br /><strong
+            >Jumi Shonubi</strong
+          ><br />co-founders
+        </div>
+      </div>
+
+      <header class="title-row">
+        <p class="kicker">Theory of Change</p>
+        <h1>Building an inclusive family platform that serves modern households at scale.</h1>
+        <p class="lede">
+          FamilyHub is an all-in-one family platform helping modern households build stronger
+          routines, healthier digital habits, and long-term financial resilience, culturally
+          adaptive and inclusive by design, with built-in support for households historically
+          underserved by mainstream family-tech.
+        </p>
+      </header>
+
+      <div class="pullout">
+        <span class="pin-label">Thesis</span>
+        An all-in-one family platform, culturally adaptive and inclusive by design, enables
+        households to coordinate more effectively, evidences measurable learning gains for children,
+        and embeds
+        <strong class="fl-anchor"
+          >financial literacy from early childhood in everyday family life rather than in a separate
+          kids-debit-card app</strong
+        >. The result is infrastructure for family wellbeing, digital wellbeing, parental time
+        recovery, stronger household coordination, and long-term financial resilience, delivered at
+        population scale, rather than in a small number of well-resourced homes.
+      </div>
+
+      <h2>Logic model summary</h2>
+      <ol class="chain">
+        <li>
+          <span class="stage">Inputs</span>
+          <span class="body"
+            >Capital, founder time, AI personalisation budget, secure cloud platform, community
+            partnerships.</span
+          >
+        </li>
+        <li>
+          <span class="stage">Activities</span>
+          <span class="body"
+            >Build the platform across 7 release cycles, operate the per-child personalisation
+            engine, recruit families directly and via faith-based schools, places of worship,
+            homeschool co-ops, and regional government-aligned ecosystem partners.</span
+          >
+        </li>
+        <li>
+          <span class="stage">Outputs</span>
+          <span class="body"
+            >Paying families, children active in learning modules, partner organisations live,
+            sticker-economy transactions completed.</span
+          >
+        </li>
+        <li>
+          <span class="stage">Outcomes</span>
+          <span class="body"
+            >Children learn what they specifically need; parents reclaim time; families coordinate
+            without nagging; underserved households finally fit.</span
+          >
+        </li>
+        <li>
+          <span class="stage">Impact</span>
+          <span class="body"
+            >More child learning hours that count. Less parental burnout. Equitable
+            family-technology access. Community digital infrastructure where none existed.</span
+          >
+        </li>
+      </ol>
+
+      <section>
+        <h2><span class="num">01: Inputs</span>Resources and capabilities</h2>
+        <ul class="clean">
+          <li>
+            <strong>Capital.</strong> 12-month operating runway from grants, founder capital, then
+            subscription revenue.
+          </li>
+          <li><strong>Founder team.</strong> AI-augmented engineering, lean by design.</li>
+          <li><strong>AI personalisation budget</strong> for the per-child learning engine.</li>
+          <li>
+            <strong>Secure cloud platform.</strong> Approximately 70% built today; architectural
+            decisions documented in internal records.
+          </li>
+          <li>
+            <strong>UAE government-aligned ecosystem partners.</strong> Early Childhood Authority,
+            ADEK, Department of Community Development (Abu Dhabi), Family Development Foundation:
+            positioning FamilyHub as regionally relevant, policy aligned, and institutionally
+            scalable.
+          </li>
+          <li>
+            <strong>Community partnerships.</strong> Faith-based schools, places of worship,
+            homeschool co-ops, NGOs across UAE, Saudi Arabia, UK, Pakistan, Indonesia.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2><span class="num">02: Activities</span>Operational programme</h2>
+        <ul class="clean">
+          <li>Build the platform across 7 release cycles.</li>
+          <li>
+            Personalise Maths, Logic, and World Flags lessons for each child using their individual
+            progress data.
+          </li>
+          <li>
+            Recruit families directly (search, paid social, Product Hunt) and via community
+            partners.
+          </li>
+          <li>
+            Operate subscription billing: $7.99-$12.99 monthly for consumers; $299-$3,499 yearly for
+            partner organisations.
+          </li>
+          <li>
+            Operate a sticker economy that lets children
+            <span class="fl-thread">earn &middot; save &middot; invest &middot; spend</span>:
+            <strong class="fl-anchor">financial literacy from early childhood</strong>, with real
+            stakes inside the household.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2><span class="num">03: Outputs</span>Quantified deliverables</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Output</th>
+              <th class="num">Year 1</th>
+              <th class="num">Year 2</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Paid families (consumer)</td>
+              <td class="num">1,000</td>
+              <td class="num">5,000+</td>
+            </tr>
+            <tr>
+              <td>Partner organisations</td>
+              <td class="num">15</td>
+              <td class="num">30+</td>
+            </tr>
+            <tr>
+              <td>Children active in 1+ learning module</td>
+              <td class="num">1,500</td>
+              <td class="num">8,000+</td>
+            </tr>
+            <tr>
+              <td>Modules shipped</td>
+              <td class="num">3</td>
+              <td class="num">5+</td>
+            </tr>
+            <tr>
+              <td>Geographies live</td>
+              <td class="num">2</td>
+              <td class="num">4+</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="num">04: Outcomes</span>Medium-term change</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Outcome</th>
+              <th>For whom</th>
+              <th>How it happens</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Kids learn what they specifically need</strong></td>
+              <td>Kids 6 to 14</td>
+              <td>Per-child placement model targets the next problem the child needs.</td>
+            </tr>
+            <tr>
+              <td><strong>Parents reclaim time and mental-load</strong></td>
+              <td>Mothers, especially</td>
+              <td>
+                One dashboard replaces five apps; single source of truth. The platform becomes
+                infrastructure for family wellbeing, digital wellbeing, parental time recovery, and
+                stronger household coordination.
+              </td>
+            </tr>
+            <tr>
+              <td><strong class="fl-anchor">Kids learn money and responsibility</strong></td>
+              <td>Children 3+</td>
+              <td>
+                Sticker economy:
+                <span class="fl-thread">earn &middot; save &middot; invest &middot; spend</span>.
+                <strong class="fl-anchor">Financial literacy from early childhood</strong>, embedded
+                in everyday family life rather than a separate kids-debit-card app.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Families coordinate without nagging</strong></td>
+              <td>Whole household</td>
+              <td>
+                Shared calendars, assignments, notices, meals, with the right role-based access.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Underserved households finally fit</strong></td>
+              <td>Multi-faith, multi-generational, blended, large households</td>
+              <td>
+                Ramadan journal, multi-faith calendar support, place-of-worship integration,
+                extended-family roles: all examples of cultural adaptability built into the
+                platform.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Community organisations get a digital home</strong></td>
+              <td>Faith-based schools, community centres, co-ops</td>
+              <td>
+                Their own branded family-portal in minutes. Community digital infrastructure where
+                none existed.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2><span class="num">05: Impact</span>Long-term impact</h2>
+        <ul class="clean">
+          <li>
+            <strong class="fl-anchor">A path to financial literacy from early childhood</strong>:
+            <span class="fl-thread">earn &middot; save &middot; invest &middot; spend</span>,
+            embedded in everyday family life rather than a separate kids-debit-card app. Financial
+            inclusion that reaches MENA, Indonesia, and Pakistan as a first market, not an
+            afterthought.
+          </li>
+          <li>
+            <strong>Infrastructure for family wellbeing.</strong> One platform supporting financial
+            resilience, digital wellbeing, parental time recovery, and stronger household
+            coordination, replacing five fragmented apps.
+          </li>
+          <li>
+            <strong>More child learning hours that count.</strong> Personalised over generic
+            worksheets, reward-coupled over chore-coded.
+          </li>
+          <li>
+            <strong>Less parental burnout</strong>, especially on those carrying household admin by
+            default.
+          </li>
+          <li>
+            <strong>Equitable family-tech access.</strong> Multi-faith, multi-generational, and
+            large-family households served with the same depth as the Western nuclear-family
+            default.
+          </li>
+          <li>
+            <strong>Community-tech infrastructure</strong> that faith-based schools, community
+            organisations, and homeschool co-ops can run on without bespoke development.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Critical assumptions</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Assumption</th>
+              <th>Falsification signal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Families in UAE / Saudi pay $7.99 to $12.99 monthly for a culturally-adaptive family
+                platform.
+              </td>
+              <td>Below 1% trial-to-paid conversion at six months.</td>
+            </tr>
+            <tr>
+              <td>
+                Per-child AI personalisation measurably improves learning outcomes versus generic
+                placement.
+              </td>
+              <td>Learning curves match a control group after 90 days.</td>
+            </tr>
+            <tr>
+              <td>
+                Faith-based schools and community organisations adopt the branded-deployment tier.
+              </td>
+              <td>Below 5 paid partner organisations by month 12.</td>
+            </tr>
+            <tr>
+              <td>Children remain engaged with the sticker economy after the novelty wears off.</td>
+              <td>Below 30% of children weekly-active in the economy at week 8.</td>
+            </tr>
+            <tr>
+              <td>Per-family economics improve as the platform grows.</td>
+              <td>The cost of adding a family flatlines or grows.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size: 10.5px; color: var(--ink-soft); margin-top: 12px">
+          A theory of change is a falsifiable hypothesis. If a critical assumption fails to hold,
+          the strategy is revised.
+        </p>
+      </section>
+
+      <section>
+        <h2>Risks and mitigations</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Risk</th>
+              <th>Mitigation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Regulatory (children's data: EU GDPR, US COPPA, UK Children's Code)</td>
+              <td>
+                Compliance built in from day one: automated personal-data redaction, no personal
+                information in logs, parental-consent flows planned.
+              </td>
+            </tr>
+            <tr>
+              <td>AI cost overruns</td>
+              <td>
+                Per-child usage caps; batching and caching; target under $0.50 per child per month.
+              </td>
+            </tr>
+            <tr>
+              <td>Founder key-person risk</td>
+              <td>
+                Architecture fully documented; engineering AI-augmented and easily resumed; first
+                hire focused on customer success or content.
+              </td>
+            </tr>
+            <tr>
+              <td>Conversion in cold markets (UK / US) underperforms</td>
+              <td>Phased launch: UAE / Saudi first, then expansion to the West.</td>
+            </tr>
+            <tr>
+              <td>Competitor copies the four-pillar offering</td>
+              <td>Per-child learning data accumulates 6+ months of compound switching cost.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <footer>
+        <strong>★ FamilyHub</strong> &nbsp;·&nbsp; Companion documents: Business Model Canvas
+        (operating model), Impact Measurement Framework (measurement model).
+      </footer>
+    </div>
+  </body>
+</html>

@@ -3,17 +3,17 @@
 **Jira:** [FHS-512](https://qualicion2.atlassian.net/browse/FHS-512) (build), [FHS-488](https://qualicion2.atlassian.net/browse/FHS-488) (rate placement), [FHS-489](https://qualicion2.atlassian.net/browse/FHS-489) (boosts + skip penalty), [FHS-534](https://qualicion2.atlassian.net/browse/FHS-534) (investment coefficient → pay + growth)
 **Status:** shipped
 **Owner:** product-manager
-**ADR:** [0020 — configurable reward economy (rate, boost, skip penalty)](../decisions/0020-configurable-reward-economy.md)
+**ADR:** [0020: configurable reward economy (rate, boost, skip penalty)](../decisions/0020-configurable-reward-economy.md)
 
 One-line: families set their own "1 sticker = how much money" rate (family-wide,
 or a different rate per child), and can make specific habits pay more or dock
-savings when skipped — replacing the old hardcoded 1 sticker = half a dirham
+savings when skipped, replacing the old hardcoded 1 sticker = half a dirham
 rule.
 
 All of this lives on a single admin-only **"Reward settings"** screen
 (`/t/:slug/reward-settings`, reachable from the profile menu). Every amount is
 stored as a whole number of the family's onboarding currency's smallest unit
-(e.g. `50` = `0.50`) — never a decimal — so money math never drifts from a
+(e.g. `50` = `0.50`), never a decimal, so money math never drifts from a
 rounding error (see ADR 0020).
 
 ## User stories
@@ -100,7 +100,7 @@ child a different rate
 
 - **Given** a habit has never had a skip penalty configured
 - **When** a day for that habit is missed
-- **Then** nothing is deducted — the child simply earns no sticker that day
+- **Then** nothing is deducted, the child simply earns no sticker that day
 
 **Scenario: A penalty never pushes a balance negative**
 
@@ -108,7 +108,7 @@ child a different rate
 - **When** the week closes and the penalty is applied
 - **Then** their balance is floored at zero, never negative
 - **And** closing then reopening that week restores exactly what was deducted
-  (no money is created — see ADR 0020's floor-compensation rule)
+  (no money is created, see ADR 0020's floor-compensation rule)
 
 ### Story 4: Invest in a habit to boost its pay and grow faster (FHS-534)
 
@@ -119,7 +119,7 @@ child a different rate
 Background: a My World "investment" is the child putting earned stickers into a
 habit; the invested value grew by a fixed +5 per completed day. FHS-534 makes
 that daily growth a **parent-chosen coefficient** that _also_ sets the habit's
-pay boost — unifying the two "multiplier" numbers that previously looked alike
+pay boost, unifying the two "multiplier" numbers that previously looked alike
 but were unrelated.
 
 #### Acceptance criteria
@@ -159,19 +159,19 @@ but were unrelated.
 
 - **Cadence-aware "due days."** Every day currently counts as due for the
   skip penalty (a weekdays-only habit still accrues a penalty on the
-  weekend) — a deliberate simplification per ADR 0020, since habit cadence
+  weekend), a deliberate simplification per ADR 0020, since habit cadence
   has never been enforced anywhere in the economy. Follow-up if wanted.
 - **Migrating legacy decimal money columns** (`saved_cash`,
-  `invested_amount`, etc.) to the new integer-minor-unit representation —
+  `invested_amount`, etc.) to the new integer-minor-unit representation,
   ADR 0020 keeps the two representations side by side for now.
-- **Zero/3-decimal currencies** (JPY, KWD) — the money math still assumes
+- **Zero/3-decimal currencies** (JPY, KWD), the money math still assumes
   2 decimals everywhere. [FHS-515](https://qualicion2.atlassian.net/browse/FHS-515)
   handled this by **constraining the onboarding currency picker to 2-decimal
   currencies** (via `currencyDecimals()`), so no family can land on a currency
   the sticker economy would render wrong. Full multi-decimal support (native
   minor units + currency-aware display everywhere) is a follow-up if a
   0/3-decimal market is needed.
-- **The rewards shop / redemption flow itself** — a separate feature; this
+- **The rewards shop / redemption flow itself**: a separate feature; this
   doc only covers what a sticker is _worth_, not spending it.
 
 ## Open questions
@@ -193,7 +193,7 @@ but were unrelated.
 
 - **Money resolver:** `effectiveRateMinor(child, family)` in
   `apps/api/src/lib/reward-config.ts` picks the child's own
-  `stickerRateMinor` if set, else the family default — every money read
+  `stickerRateMinor` if set, else the family default, every money read
   site in the API goes through this resolver instead of a hardcoded constant.
 - **Per-child data flow:** each kid's board reads _their own_ effective rate
   (via `/api/kid/financial/savings` → `stickerRateMinor`) and each habit's

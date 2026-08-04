@@ -1,4 +1,4 @@
-# 0004 — Billing provider: Stripe
+# 0004: Billing provider: Stripe
 
 **Status:** accepted
 **Date:** 2026-04-24
@@ -24,12 +24,12 @@ Specifics:
 - Each tenant has a `stripe_customer_id` on the `tenants` table.
 - Subscription state is mirrored to a `tenant_subscriptions` table
   via Stripe webhooks (idempotent on `event.id`).
-- Entitlement decisions read from the local mirror, not Stripe — keeps
+- Entitlement decisions read from the local mirror, not Stripe, keeps
   hot-path requests off the network and tolerates Stripe outages.
 - Metered usage is reported via `subscription_item.usage_records` at
   the end of each tenant's billing period (batched job).
 - Dunning, invoicing, tax (Stripe Tax), and proration handled by
-  Stripe natively — we do not build any of it.
+  Stripe natively, we do not build any of it.
 
 ### Required Stripe products
 
@@ -55,16 +55,16 @@ across self-serve and enterprise.
 **Harder:** webhook handling is critical-path and must be idempotent
 (FHS-78); Stripe lock-in (migration would re-import customers,
 recreate schedules, reconcile periods); metered usage job must not
-fail silently — needs alerting; test vs live API keys never to be
+fail silently, needs alerting; test vs live API keys never to be
 crossed (separate Railway env vars per environment).
 
 ## Alternatives considered
 
-- **Paddle** — Merchant-of-Record handling is appealing, but metered
+- **Paddle**: Merchant-of-Record handling is appealing, but metered
   primitives are less mature and DX trails Stripe. Re-evaluate if MOR
   obligations bite.
-- **Lemon Squeezy** — too lean for metered + enterprise.
-- **Bank rails (Plaid + Stripe Connect)** — adds complexity Stripe
+- **Lemon Squeezy**: too lean for metered + enterprise.
+- **Bank rails (Plaid + Stripe Connect)**: adds complexity Stripe
   Subscriptions already solves.
 
 ## Re-evaluate when
@@ -77,6 +77,6 @@ crossed (separate Railway env vars per environment).
 
 ## References
 
-- [FHS-68 — Stripe Schema and Products Setup epic](https://qualicion2.atlassian.net/browse/FHS-68)
-- [FHS-73 — Checkout, Trial, and Billing Portal epic](https://qualicion2.atlassian.net/browse/FHS-73)
-- [FHS-78 — Webhooks, Entitlements, and Usage Metering epic](https://qualicion2.atlassian.net/browse/FHS-78)
+- [FHS-68: Stripe Schema and Products Setup epic](https://qualicion2.atlassian.net/browse/FHS-68)
+- [FHS-73: Checkout, Trial, and Billing Portal epic](https://qualicion2.atlassian.net/browse/FHS-73)
+- [FHS-78: Webhooks, Entitlements, and Usage Metering epic](https://qualicion2.atlassian.net/browse/FHS-78)

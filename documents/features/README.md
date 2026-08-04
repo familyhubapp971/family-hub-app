@@ -11,7 +11,7 @@ new acceptance criteria are agreed.
 
 ## Naming
 
-`<feature-slug>.md` — kebab-case, no prefixes, no dates. Examples:
+`<feature-slug>.md`: kebab-case, no prefixes, no dates. Examples:
 
 - `tenants.md`
 - `billing.md`
@@ -26,7 +26,7 @@ top-level list.
 
 Every feature doc uses **user stories** with **Gherkin (Given/When/Then)**
 acceptance criteria. Full template lives in
-[`/CLAUDE.md`](../../CLAUDE.md#user-story-format-required) — copy from there.
+[`/CLAUDE.md`](../../CLAUDE.md#user-story-format-required): copy from there.
 
 Minimum sections:
 
@@ -46,14 +46,14 @@ names so traceability between this folder and the test suite is automatic.
 
 Drafted / scoped:
 
-- [family-members.md](family-members.md) — member model + the Manage Family page (FHS-513/485/486/514/520/521)
-- [change-email.md](change-email.md) — self-serve sign-in email change + one-time confirm link (FHS-510)
-- [legal-pages.md](legal-pages.md) — Legal section (Privacy/Children & Parents/Terms/Cookies) + `/privacy` redirect (FHS-509)
-- [role-permissions.md](role-permissions.md) — role matrix + invite roles/admin-grant + invite default (FHS-485/486/524; ADR 0019)
-- [reward-economy.md](reward-economy.md) — sticker rate, habit boosts, skip penalty (FHS-512/488/489; ADR 0020)
-- [child-world.md](child-world.md) — per-child screen + its header/nav (FHS-268/401/523)
-- [getting-started.md](getting-started.md) — first-run setup guide card on the dashboard (FHS-511)
-- [onboarding-wizard.md](onboarding-wizard.md) — the 4-step signup wizard, incl. optional child age capture (FHS-36/37/38/39/274/275/432/487)
+- [family-members.md](family-members.md): member model + the Manage Family page (FHS-513/485/486/514/520/521)
+- [change-email.md](change-email.md): self-serve sign-in email change + one-time confirm link (FHS-510)
+- [legal-pages.md](legal-pages.md): Legal section (Privacy/Children & Parents/Terms/Cookies) + `/privacy` redirect (FHS-509)
+- [role-permissions.md](role-permissions.md): role matrix + invite roles/admin-grant + invite default (FHS-485/486/524; ADR 0019)
+- [reward-economy.md](reward-economy.md): sticker rate, habit boosts, skip penalty (FHS-512/488/489; ADR 0020)
+- [child-world.md](child-world.md): per-child screen + its header/nav (FHS-268/401/523)
+- [getting-started.md](getting-started.md): first-run setup guide card on the dashboard (FHS-511)
+- [onboarding-wizard.md](onboarding-wizard.md): the 4-step signup wizard, incl. optional child age capture (FHS-36/37/38/39/274/275/432/487)
 
 Placeholder docs (to be filled as the corresponding features are scoped):
 

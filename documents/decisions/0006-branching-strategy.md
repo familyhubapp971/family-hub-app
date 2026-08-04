@@ -1,4 +1,4 @@
-# 0006 — Branching strategy
+# 0006: Branching strategy
 
 **Status:** accepted
 **Date:** 2026-04-24
@@ -27,7 +27,7 @@ where `<type>` is a Conventional Commits prefix (`feat`, `fix`,
 `docs`, `chore`, `test`, `refactor`, `perf`).
 
 PRs target `staging`. `staging` periodically promotes to `main` via a
-PR. **Direct pushes to `main` and `staging` are forbidden** — branch
+PR. **Direct pushes to `main` and `staging` are forbidden**: branch
 protection enforces it.
 
 ### Merge policy (conditional)
@@ -70,21 +70,21 @@ a configuration change, not a migration.
 
 **Harder:** PR-based workflow has more friction than push-to-main for
 trivial fixes (acceptable cost); branch protection occasionally
-blocks legitimate emergency hotfix patterns — admins may bypass
+blocks legitimate emergency hotfix patterns, admins may bypass
 sparingly, with a follow-up audit comment.
 
 ## Alternatives considered
 
-- **Trunk-based development (push directly to `main`)** — rejected:
+- **Trunk-based development (push directly to `main`)**, rejected:
   loses the staging integration buffer and the Jira link relies on
   PR / branch metadata.
-- **Git Flow (`develop` + `release/*` + `hotfix/*`)** — rejected:
+- **Git Flow (`develop` + `release/*` + `hotfix/*`)**, rejected:
   more branches than the team needs at this stage, and the long-lived
   `develop` branch duplicates `staging`.
-- **Always merge-commits, never squash** — rejected for solo phase
+- **Always merge-commits, never squash**, rejected for solo phase
   per discussion above; revisit at trigger.
 
 ## References
 
-- [ADR 0005 — Monorepo structure](0005-monorepo-structure.md)
+- [ADR 0005: Monorepo structure](0005-monorepo-structure.md)
 - [`/CLAUDE.md` Pull requests / Branch & PR naming / Commits](../../CLAUDE.md#pull-requests)

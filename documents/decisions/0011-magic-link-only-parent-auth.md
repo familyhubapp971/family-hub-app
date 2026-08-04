@@ -1,4 +1,4 @@
-# 0011 — Parent auth is magic-link + Google OAuth (no passwords)
+# 0011: Parent auth is magic-link + Google OAuth (no passwords)
 
 **Status:** accepted
 **Date:** 2026-05-02
@@ -15,27 +15,27 @@ solely to handle forgotten passwords. The Magic Patterns design
 field for parents at all.
 
 Kid auth is a separate question answered by ADR `0009-family-membership-model`
-plus the kid PIN epic FHS-234 — kids do not use Supabase auth at all.
+plus the kid PIN epic FHS-234, kids do not use Supabase auth at all.
 
 ## Decision
 
 Parent authentication is **passwordless** with two co-equal entry points:
 
-1. **Supabase magic link** (`signInWithOtp`) — primary path. Email-only form;
+1. **Supabase magic link** (`signInWithOtp`), primary path. Email-only form;
    clicking the emailed link both verifies the address and creates the
    session.
-2. **Google OAuth** (`signInWithOAuth({ provider: 'google' })`) — one-click
+2. **Google OAuth** (`signInWithOAuth({ provider: 'google' })`), one-click
    path for users with a Google account. Same Supabase user record under the
    hood; provider linking handled by Supabase.
 
 Both paths exist on **both** the signup form (FHS-26) and the login form
 (FHS-237 redesign). On signup, choosing Google skips the magic-link round-trip
-entirely — the user lands authenticated and is sent straight into onboarding.
+entirely, the user lands authenticated and is sent straight into onboarding.
 On login, both buttons are visible side-by-side; the user picks whichever they
 remember last.
 
 `ResetPasswordRequestPage` is repurposed as `ResendMagicLinkPage` (or retired
-and merged into the Login page with a "didn't get it? send again" button —
+and merged into the Login page with a "didn't get it? send again" button,
 implementation detail). The Supabase password column is left in place at the
 schema level (Supabase manages it; we do not query it) so the escape hatch in
 §Consequences is available without a migration.
@@ -74,22 +74,22 @@ Supabase exposes `signInWithOtp`, `signInWithOAuth`, and
 later demands a password fallback, we can re-enable the password code path as
 an opt-in toggle without a schema migration or auth-library swap. Additional
 OAuth providers (Apple, Microsoft, Facebook) can be added the same way Google
-was — Supabase provider config plus one button on the auth pages.
+was, Supabase provider config plus one button on the auth pages.
 
 ## Alternatives considered
 
-- **Magic-link only** — rejected: a meaningful share of target families live
+- **Magic-link only**, rejected: a meaningful share of target families live
   inside Gmail and prefer one-click Google sign-in over the open-email-then-
   click-link round-trip. Magic-link stays as a parallel path for users on
   non-Google email and as the recovery route when Google is unavailable.
-- **Google OAuth only** — rejected: forces every user to have a Google
+- **Google OAuth only**, rejected: forces every user to have a Google
   account; many target families do not. Magic-link works against any email
   provider.
-- **Email + password with magic-link as opt-in** — rejected: keeps the support
+- **Email + password with magic-link as opt-in**, rejected: keeps the support
   burden of password resets and contradicts the Sarah persona spec; defeats
   the simplicity goal.
-- **WebAuthn / passkeys** — rejected for v1: passkey UX still varies wildly
+- **WebAuthn / passkeys**, rejected for v1: passkey UX still varies wildly
   across browsers and OSes; recovery story is worse than email magic-link for
   non-technical parents. Revisit post-launch.
-- **Apple Sign-in alongside Google** — deferred: Apple requires its own
+- **Apple Sign-in alongside Google**: deferred: Apple requires its own
   developer-account paperwork. Add when iOS native shell ships (post-launch).

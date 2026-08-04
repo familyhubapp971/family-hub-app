@@ -15,7 +15,7 @@ hid the guide never sees it again.
 
 Two guardrails: the guide **only shows to an admin** (every step lands on an
 admin-only setup screen, so a non-admin adult never sees it), and the steps are
-**sequential** — only the next step has an active button; later steps sit as a
+**sequential**: only the next step has an active button; later steps sit as a
 quiet "Up next" so you can't skip ahead and "finish" an empty family.
 
 ## User stories
@@ -70,7 +70,7 @@ quiet "Up next" so you can't skip ahead and "finish" an empty family.
   "Add your kids" just because kids already exist). Matches the design; a
   data-aware version is a possible follow-up.
 - **Cross-device memory.** "Done/hidden" is remembered in the browser
-  (localStorage, keyed per family, not per user) — there's no backend flag yet.
+  (localStorage, keyed per family, not per user), there's no backend flag yet.
   So a different device/browser shows the guide again until dismissed, and two
   family members on the **same** browser share one checklist. Fine for a one-off
   setup task; a per-family server flag is a follow-up if it becomes a problem.

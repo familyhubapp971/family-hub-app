@@ -1,9 +1,9 @@
-# 0012 — Path-prefix tenant routing as interim
+# 0012: Path-prefix tenant routing as interim
 
 **Status:** accepted
 **Date:** 2026-05-03
 **Jira:** [FHS-249](https://qualicion2.atlassian.net/browse/FHS-249) (also covers [FHS-13](https://qualicion2.atlassian.net/browse/FHS-13))
-**Amends:** [ADR 0002 — Subdomain tenant routing](0002-subdomain-tenant-routing.md)
+**Amends:** [ADR 0002: Subdomain tenant routing](0002-subdomain-tenant-routing.md)
 
 ## Context
 
@@ -12,7 +12,7 @@ on **subdomains**: `khans.familyhub.app` → `tenants.slug = 'khans'` →
 `tenant_id`. That ADR explicitly rejected path-prefix routing on the
 grounds that messy URLs and unscoped cookies/CORS hurt the long-term UX.
 
-We agree with that _long-term_ — but we don't own a real domain yet.
+We agree with that _long-term_, but we don't own a real domain yet.
 Today the staging app is at `frontend-staging-409d.up.railway.app` and
 the production app is parked. Without a domain, subdomain routing has
 no slug to consume; users would have nowhere to go.
@@ -25,14 +25,14 @@ the Railway-issued URLs we already have.
 
 **Resolve tenant from one of three sources, in precedence order:**
 
-1. **JWT custom claim** — `payload.app_metadata.tenant_slug`. Fastest
+1. **JWT custom claim**: `payload.app_metadata.tenant_slug`. Fastest
    path: no DB lookup needed beyond the slug → id resolution. Set by
    a Supabase auth hook in a future ticket; today this source is a
    no-op for most users.
-2. **Subdomain** — `Host: <slug>.<BASE_DOMAIN>`. Matches the original
+2. **Subdomain**: `Host: <slug>.<BASE_DOMAIN>`. Matches the original
    ADR 0002 mechanism. **Skipped when `BASE_DOMAIN` is `localhost`**
    (local dev never has subdomains).
-3. **Path prefix** — request path begins with `/t/<slug>/`. The
+3. **Path prefix**: request path begins with `/t/<slug>/`. The
    interim source. Once `BASE_DOMAIN` flips from a Railway domain to
    `familyhub.app` (or whatever we end up owning), source 2 starts
    firing for real traffic and source 3 quietly becomes the fallback.
@@ -64,7 +64,7 @@ subtree and exposes it to descendants via `useTenantSlug()`.
   helper picks the active form based on whether `BASE_DOMAIN` is set
   to a real domain.
 - Cookies cannot be subdomain-scoped while we're on a single-domain
-  Railway URL — anything we set ends up shared across the whole app.
+  Railway URL, anything we set ends up shared across the whole app.
   Mitigation: don't put per-tenant secrets in cookies during the
   interim window; rely on JWT claims and per-request RLS.
 - Reserved-subdomain checks (`www`, `api`, …) only matter once
@@ -73,13 +73,13 @@ subtree and exposes it to descendants via `useTenantSlug()`.
 
 ## Alternatives considered
 
-- **Wait for a real domain** — rejected: blocks the entire vertical
+- **Wait for a real domain**, rejected: blocks the entire vertical
   slice (FHS-179) on a procurement step that has no committed date.
-- **Custom header (`X-Tenant-Slug`)** — rejected for SPA routes for
+- **Custom header (`X-Tenant-Slug`)**, rejected for SPA routes for
   the same reason ADR 0002 rejected it: browsers don't send custom
   headers on direct navigation, so deep links break. Acceptable for
   pure machine-to-machine API calls; not how we'll route the SPA.
-- **Path-prefix only, no subdomain support** — rejected: makes the
+- **Path-prefix only, no subdomain support**, rejected: makes the
   eventual cutover to a real domain a code change rather than a
   config change. Building both sources now is a few extra lines.
 
@@ -95,13 +95,13 @@ When we own the production domain:
 5. Optional later: 301 path-prefixed URLs to subdomain equivalents
    for SEO and bookmark migration.
 
-No code path needs to be removed — sources are additive and
+No code path needs to be removed, sources are additive and
 order-independent in their effect (first hit wins).
 
 ## References
 
-- [ADR 0001 — Multi-tenancy strategy](0001-multi-tenancy.md)
-- [ADR 0002 — Subdomain tenant routing](0002-subdomain-tenant-routing.md) (amended by this ADR)
-- [FHS-157 — Configure wildcard DNS](https://qualicion2.atlassian.net/browse/FHS-157)
-- [FHS-13 — resolveTenant middleware](https://qualicion2.atlassian.net/browse/FHS-13)
-- [FHS-249 — Path-based tenant routing (interim)](https://qualicion2.atlassian.net/browse/FHS-249)
+- [ADR 0001: Multi-tenancy strategy](0001-multi-tenancy.md)
+- [ADR 0002: Subdomain tenant routing](0002-subdomain-tenant-routing.md) (amended by this ADR)
+- [FHS-157: Configure wildcard DNS](https://qualicion2.atlassian.net/browse/FHS-157)
+- [FHS-13: resolveTenant middleware](https://qualicion2.atlassian.net/browse/FHS-13)
+- [FHS-249: Path-based tenant routing (interim)](https://qualicion2.atlassian.net/browse/FHS-249)

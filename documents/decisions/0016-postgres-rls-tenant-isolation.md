@@ -1,21 +1,21 @@
-# 0016 — Postgres RLS for tenant isolation
+# 0016: Postgres RLS for tenant isolation
 
 **Status:** proposed
 **Date:** 2026-06-18
 **Jira:** [FHS-344](https://qualicion2.atlassian.net/browse/FHS-344)
-**Builds on:** [0001 — multi-tenancy](0001-multi-tenancy.md) (RLS deferred),
-[0008 — supabase-environments](0008-supabase-environments.md)
+**Builds on:** [0001: multi-tenancy](0001-multi-tenancy.md) (RLS deferred),
+[0008: supabase-environments](0008-supabase-environments.md)
 
 ## Plain-English summary
 
 Today each family's data is kept apart by our own code: every query says
 "only rows where `tenant_id` = this family." That works until one query
-forgets the filter — then one family could see another's data. This ADR adds
+forgets the filter, then one family could see another's data. This ADR adds
 a **second, deeper lock inside the database itself** (Row-Level Security,
 RLS). Even if our code forgets a filter, Postgres refuses to return another
 family's rows. We tell Postgres, once per web request, "this request belongs
 to family X," and it enforces that on every table automatically. If we ever
-fail to say which family, the database returns **zero rows** — it fails
+fail to say which family, the database returns **zero rows**: it fails
 locked, not open.
 
 ## Context
@@ -35,7 +35,7 @@ weak because:
   ignored even if they existed.
 - **Our isolation test only proves the app filters work**
   (`tests/integration/steps/tenant-isolation.steps.ts`), not that the
-  database would block an _unfiltered_ query — the exact failure we fear.
+  database would block an _unfiltered_ query, the exact failure we fear.
 
 ### The hard part
 
@@ -43,7 +43,7 @@ The DB layer is a single shared `pg.Pool` behind a `getDb()` singleton, and
 **most queries run outside transactions** (only a few flows use
 `db.transaction`). RLS policies read a per-connection setting
 (`current_setting('app.current_tenant')`). A session-level `SET` on a
-pooled connection would **leak to the next request** that reuses it — a
+pooled connection would **leak to the next request** that reuses it, a
 silent cross-tenant bug. The mechanism must pin the tenant for exactly one
 request's DB work, on whatever connection it uses, with a guaranteed reset,
 **without rewriting all 69 call sites**.
@@ -57,13 +57,13 @@ Four coordinated changes:
 The running app connects as `app_runtime`: no `BYPASSRLS`, not a table
 owner (so RLS applies), with only CRUD on the tenant tables + `users` and
 sequence `USAGE`. **Migrations keep running as the owner role** (a separate
-migrate connection) — owners bypass RLS, which is correct for DDL/backfill.
+migrate connection), owners bypass RLS, which is correct for DDL/backfill.
 
-### 2. GUC delivery — per-request dedicated client via AsyncLocalStorage (Option B)
+### 2. GUC delivery: per-request dedicated client via AsyncLocalStorage (Option B)
 
 - A DB middleware (after `resolveTenant`) checks out one pooled client,
   runs `select set_config('app.current_tenant', $tenantId, false)`
-  (session-local to that connection — covers non-transactional queries),
+  (session-local to that connection, covers non-transactional queries),
   builds a request-scoped `drizzle(client)`, and runs the request inside an
   **AsyncLocalStorage** store holding it.
 - `getDb()` becomes ALS-aware: inside a request it returns the request's
@@ -74,7 +74,7 @@ migrate connection) — owners bypass RLS, which is correct for DDL/backfill.
 - Public/tenant-less routes set the empty sentinel (no-match), never a
   stale value.
 
-### 3. Policies — deny-by-default, equality on the GUC
+### 3. Policies: deny-by-default, equality on the GUC
 
 For every `TENANT_SCOPED_TABLES` entry:
 
@@ -136,17 +136,17 @@ migrate role uses the direct port.
 
 ## Alternatives considered
 
-- **(A) Wrap every request in a transaction with `SET LOCAL`.** Rejected —
+- **(A) Wrap every request in a transaction with `SET LOCAL`.** Rejected,
   forces all reads into transactions and still needs ALS/threading; the
   dedicated-client reset gives the same safety without the cost.
 - **(B) Per-request dedicated client + `set_config(…,false)` + reset, via
-  AsyncLocalStorage.** **Chosen** — no call-site rewrites, covers
+  AsyncLocalStorage.** **Chosen**: no call-site rewrites, covers
   non-transactional queries, no leak (connection never shared while pinned).
-- **(C) Supabase JWT-claim RLS (`auth.jwt()`).** Rejected for the API path —
+- **(C) Supabase JWT-claim RLS (`auth.jwt()`).** Rejected for the API path,
   built for clients hitting PostgREST directly; our traffic goes through our
   Hono server over a shared pool with one role. We reuse its spirit (limited
   role + per-request setting) but deliver the setting ourselves.
-- **(D) Session `SET` on the shared pool / transaction-pooler.** Rejected —
+- **(D) Session `SET` on the shared pool / transaction-pooler.** Rejected,
   leaks across reused connections; transaction poolers discard session GUCs.
 
 ## Rollout
@@ -159,14 +159,14 @@ role has `BYPASSRLS`, and a test that runs **as `app_runtime`** with no app
 filter and asserts only the current tenant's rows return (and zero rows when
 no GUC).
 
-## Implementation notes (as built — FHS-344 epic)
+## Implementation notes (as built: FHS-344 epic)
 
 Two refinements emerged during build that the original draft above doesn't
 capture:
 
 - **Migration delivery.** Staging/prod boot with `drizzle-kit push --force`
   (schema-diff), which knows nothing about roles/RLS/policies/grants and would
-  silently skip them — and can drop a table's grants when it recreates it. So
+  silently skip them, and can drop a table's grants when it recreates it. So
   RLS is delivered as **hand-written idempotent SQL migrations** (`0027` role +
   grants, `0028` tenant policies, `0029` users policy), NOT via schema.ts
   `pgPolicy`. They reach the test/CI DBs via `drizzle-kit migrate`; they reach
@@ -175,7 +175,7 @@ capture:
   `MIGRATE_DATABASE_URL`; the app serves traffic as `app_runtime` via
   `DATABASE_URL`.
 - **Fail-closed GUC readers.** Policies key on `app_current_tenant()` /
-  `app_current_user()` — `STABLE` SQL functions that **regex-gate** the GUC
+  `app_current_user()`: `STABLE` SQL functions that **regex-gate** the GUC
   before the `::uuid` cast, so unset, the empty sentinel, OR a malformed value
   all map to `NULL` (zero rows / rejected writes) and the cast can never raise a 500. `set_config(..., false)` (session) for the request middleware;
   `set_config(..., true)` (transaction-local) for pre-tenant writes (the
@@ -183,7 +183,7 @@ capture:
 - **Pre-tenant write paths.** Writes that run before a tenant is resolved must
   pin the target tenant transaction-locally first, or RLS rejects them.
   Onboarding (founding member) is fixed (FHS-351); the invite-claim flow reads
-  invites cross-tenant by email and needs a `SECURITY DEFINER` lookup —
+  invites cross-tenant by email and needs a `SECURITY DEFINER` lookup,
   tracked as a pre-flip blocker (FHS-354).
 
 ## Flip runbook (FHS-351)
@@ -192,21 +192,21 @@ The code is flip-ready and merged; flipping is a deploy-only operation:
 
 1. **Provision the role password + CONNECT** on the staging DB (as the owner):
    `ALTER ROLE app_runtime WITH LOGIN PASSWORD '<secret>';` then verify
-   `SELECT has_database_privilege('app_runtime', current_database(), 'CONNECT');`
-   — if false (Supabase revokes CONNECT from PUBLIC), run
+   `SELECT has_database_privilege('app_runtime', current_database(), 'CONNECT');`,
+   if false (Supabase revokes CONNECT from PUBLIC), run
    `GRANT CONNECT ON DATABASE <dbname> TO app_runtime;`. Store the secret; never
    commit it.
 2. **Set Railway staging env** (api service): `MIGRATE_DATABASE_URL=<owner URL>`
    (the current `DATABASE_URL`), then `DATABASE_URL=<app_runtime URL>`,
    `APPLY_RLS=true`, `RLS_ENFORCED=true`. **The `app_runtime` URL MUST use the
-   session-mode port** (Supabase **5432**, not the transaction pooler 6543) —
-   `postgresql://app_runtime:<pw>@<host>:5432/<dbname>` — or session GUCs leak
+   session-mode port** (Supabase **5432**, not the transaction pooler 6543),
+   `postgresql://app_runtime:<pw>@<host>:5432/<dbname>`: or session GUCs leak
    between requests (the boot guard would still pass, so this is silent: verify
    the port by hand).
 3. **Deploy.** `start.sh` runs `push` + `apply-rls` as the owner, then the app
    boots as `app_runtime`; the boot guard verifies it cannot bypass RLS.
 4. **Validate** staging E2E + perf smoke.
 5. **Rollback** (if needed): revert `DATABASE_URL` to the owner + unset
-   `RLS_ENFORCED` — one env change, instant.
+   `RLS_ENFORCED`: one env change, instant.
 
 > Pre-flip blocker: FHS-354 (invite-claim RLS-readiness) must land first.

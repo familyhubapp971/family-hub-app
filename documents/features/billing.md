@@ -6,7 +6,7 @@
 
 ## User stories
 
-_To be filled when the feature is scoped (Sprint 4 — Stripe Billing)._
+_To be filled when the feature is scoped (Sprint 4, Stripe Billing)._
 
 ## Acceptance criteria
 

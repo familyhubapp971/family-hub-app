@@ -2,7 +2,7 @@
 
 Long-form strategy docs that set product direction and inform the
 [`../features/`](../features/) backlog. Lower cadence than features /
-technical docs — these change quarterly or per major pivot, not per
+technical docs, these change quarterly or per major pivot, not per
 ticket.
 
 ## When to add a doc
@@ -18,7 +18,7 @@ If a doc would be obsolete in three months, it probably belongs in
 
 ## Naming
 
-`<topic-slug>.md` — kebab-case, no dates in the filename. Use the
+`<topic-slug>.md`: kebab-case, no dates in the filename. Use the
 front-matter `Updated:` line for cadence. Examples:
 
 - `saas-transformation.md`
@@ -28,7 +28,7 @@ front-matter `Updated:` line for cadence. Examples:
 
 ## Format
 
-Free-form; no required template — strategy docs vary in shape (narrative,
+Free-form; no required template, strategy docs vary in shape (narrative,
 SWOT, OKRs, etc.). Include at minimum:
 
 - **Status / Updated:** date last reviewed
@@ -37,6 +37,6 @@ SWOT, OKRs, etc.). Include at minimum:
 
 ## Index
 
-_Seeded by FHS-175 — populate as docs land:_
+_Seeded by FHS-175, populate as docs land:_
 
-- [`saas-transformation.md`](saas-transformation.md) — published (FHS-175)
+- [`saas-transformation.md`](saas-transformation.md): published (FHS-175)

@@ -8,8 +8,8 @@ One-line: a proper Legal section (Privacy, Children & Parents, Terms, Cookies) w
 its own index page, replacing the old single draft `/privacy` page.
 
 The old `/privacy` route (FHS-435) was a single hand-transcribed draft policy. This
-ticket replaces it with a four-page Legal section — Privacy Policy, Children &
-Parents, Terms of Service, and Cookies & Storage — each sharing a common layout
+ticket replaces it with a four-page Legal section, Privacy Policy, Children &
+Parents, Terms of Service, and Cookies & Storage, each sharing a common layout
 (a pill nav between the four pages, a sticky "On this page" table of contents, and
 a highlighted plain-English summary above the legal detail of every section), plus
 an index page at `/legal` linking to all four.
@@ -18,7 +18,7 @@ an index page at `/legal` linking to all four.
 Magic Patterns design (artifact `7f19f840-c796-4eaa-90fc-934fb4ef587d`). Every
 `[Legal entity name]`, `[Contact email]`, `[Privacy contact]`, `[Effective date]`,
 `[Governing law / country]` and `[Liability cap]` marker is a deliberate
-placeholder, not a mistake — it must stay visible until the founder and a
+placeholder, not a mistake, it must stay visible until the founder and a
 solicitor fill it in.
 
 ## User stories
@@ -74,7 +74,7 @@ live.
 
 | Route             | Page                        | Component                                          |
 | ----------------- | --------------------------- | -------------------------------------------------- |
-| `/legal`          | Index — 4 cards             | `apps/web/src/pages/legal/LegalIndexPage.tsx`      |
+| `/legal`          | Index: 4 cards              | `apps/web/src/pages/legal/LegalIndexPage.tsx`      |
 | `/legal/privacy`  | Privacy Policy              | `apps/web/src/pages/legal/PrivacyPolicyPage.tsx`   |
 | `/legal/children` | Children & Parents          | `apps/web/src/pages/legal/ChildrenPrivacyPage.tsx` |
 | `/legal/terms`    | Terms of Service            | `apps/web/src/pages/legal/TermsOfServicePage.tsx`  |
@@ -91,27 +91,27 @@ table of contents, numbered sections) plus `apps/web/src/components/SiteChrome.t
 - The homepage (`WelcomePage`) header nav has a **Legal** link → `/legal`; the
   footer links **Legal** (`/legal`) + **Privacy Policy** (`/legal/privacy`).
   **About** stays in the header (not the footer). The old "What is Family Hub?"
-  value-prop card was removed — that content lives on the About page.
+  value-prop card was removed, that content lives on the About page.
 - `AboutPage`, `PricingPage`, `SignupPage`, and the Admin Panel link to
   `/privacy`, which redirects to `/legal/privacy`.
 
 ## Out of scope
 
 - **Real legal copy.** The wording is a placeholder draft pending a solicitor's
-  review — filling in `[Legal entity name]` etc. and legal sign-off is separate,
+  review, filling in `[Legal entity name]` etc. and legal sign-off is separate,
   future work.
 - **Cookie consent banner.** The Cookies page states Family Hub only uses
   strictly-necessary storage, so no consent banner is needed (matches the old
-  `/privacy` page's stance) — revisit if analytics/marketing cookies are ever
+  `/privacy` page's stance), revisit if analytics/marketing cookies are ever
   added.
 - **Retrofitting the remaining marketing pages to `SiteChrome`.** FHS-544 moved
   the homepage (`WelcomePage`, logged-out) onto the shared `SiteHeader` +
   `SiteFooter`; `PricingPage`/`AboutPage` still keep their own inline
-  header/footer for now — a follow-up if full-site consistency is wanted.
+  header/footer for now, a follow-up if full-site consistency is wanted.
 
 ## Open questions
 
-- Who signs off the final legal wording, and by when — before or after public
+- Who signs off the final legal wording, and by when, before or after public
   launch?
 - Should the `/privacy` redirect be removed once every inbound link is updated
   to `/legal/privacy` directly, or kept indefinitely for old bookmarks/emails?
@@ -129,7 +129,7 @@ table of contents, numbered sections) plus `apps/web/src/components/SiteChrome.t
 - Content is a forensic, character-for-character port of the Magic Patterns
   design (artifact `7f19f840-c796-4eaa-90fc-934fb4ef587d`,
   `pages/legal/{LegalIndex,Privacy,ChildrenPrivacy,Terms,Cookies}.tsx` +
-  `components/{LegalLayout,SiteChrome}.tsx`) — headings, "In short" summaries,
+  `components/{LegalLayout,SiteChrome}.tsx`), headings, "In short" summaries,
   bullet lists and placeholders are unedited.
 - Design tokens: `bg-[#3d1065]` → `bg-kingdom-bg` (existing preset token, same
   colour); `font-heading`/`shadow-neo-*` used as-is since the preset already

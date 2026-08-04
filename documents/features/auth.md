@@ -1,6 +1,6 @@
 # Feature: Auth
 
-**Jira:** [FHS-178](https://qualicion2.atlassian.net/browse/FHS-178) (epic) — child tickets FHS-187..FHS-194
+**Jira:** [FHS-178](https://qualicion2.atlassian.net/browse/FHS-178) (epic), child tickets FHS-187..FHS-194
 **Status:** in-progress
 **Owner:** product-manager
 
@@ -154,11 +154,11 @@ verification on the api (FHS-191) and the user-mirror sync
 
 ## Out of scope
 
-- JWT verification on the api side — FHS-191.
-- Postgres `users` mirror upsert on first authenticated request — FHS-192.
-- Magic-link / OTP flows — backlog.
-- Multi-factor auth — backlog.
-- Tenant-context propagation from session to api — Sprint 1 (FHS-12).
+- JWT verification on the api side, FHS-191.
+- Postgres `users` mirror upsert on first authenticated request, FHS-192.
+- Magic-link / OTP flows, backlog.
+- Multi-factor auth, backlog.
+- Tenant-context propagation from session to api, Sprint 1 (FHS-12).
 
 ## Open questions
 

@@ -1,4 +1,4 @@
-# 0007 — Reuse the family-hub stack
+# 0007: Reuse the family-hub stack
 
 **Status:** accepted
 **Date:** 2026-04-24
@@ -29,27 +29,27 @@ greenfield library selection in Sprint 0.
 | E2E testing        | **Playwright + playwright-bdd** | Gherkin traceability to `documents/features/` per the [E2E rules in CLAUDE.md](../../CLAUDE.md)                    |
 | Performance        | **k6**                          | SLO-driven load / stress / soak; per-tenant VU groups                                                              |
 | Hosting            | **Railway**                     | Zero-config Postgres + service deploys                                                                             |
-| Auth               | **Supabase Auth**               | Per [ADR 0003](0003-auth-library.md) — chose this over better-auth                                                 |
+| Auth               | **Supabase Auth**               | Per [ADR 0003](0003-auth-library.md): chose this over better-auth                                                  |
 | Billing            | **Stripe**                      | Per [ADR 0004](0004-stripe-billing.md)                                                                             |
 | Package manager    | **pnpm 10**                     | Workspace primitives; strict mode enforces package boundaries                                                      |
 
 The two surfaces that **diverge** from family-hub are written down in
 their own ADRs:
 
-- Multi-tenancy: shared schema + `tenant_id` + RLS — [ADR 0001](0001-multi-tenancy.md)
-- Subdomain routing: `<slug>.familyhub.app` via middleware — [ADR 0002](0002-subdomain-tenant-routing.md)
+- Multi-tenancy: shared schema + `tenant_id` + RLS, [ADR 0001](0001-multi-tenancy.md)
+- Subdomain routing: `<slug>.familyhub.app` via middleware, [ADR 0002](0002-subdomain-tenant-routing.md)
 
 ## Consequences
 
 **Easier:** Sprint 0 stays focused on multi-tenancy + scaffold, not
 library shopping. The team's muscle memory transfers. Existing
 patterns (request logging shape, Drizzle query style, Tailwind theme
-extensions) port verbatim — see [ADR 0005](0005-monorepo-structure.md)
+extensions) port verbatim, see [ADR 0005](0005-monorepo-structure.md)
 for layout.
 
 **Harder:** any item on the list that turns out to be a poor fit at
 scale costs more to swap because we've assumed it. Mitigation: this
-ADR is **revisitable** — write a superseding ADR when a specific
+ADR is **revisitable**: write a superseding ADR when a specific
 library becomes a real bottleneck (cite the metric). Don't re-litigate
 the whole stack at once.
 
@@ -68,11 +68,11 @@ the whole stack at once.
 
 A specific library hits a measurable failure mode:
 
-- Hono — request throughput we can't tune past Railway's quota.
-- Drizzle — query patterns the codegen can't express cleanly.
-- pino — structured-log cardinality blowing past our log budget.
-- Vite / Vitest — cold-start times >5s per test file at scale.
-- Tailwind — design-system needs CSS-in-JS primitives only available elsewhere.
+- Hono, request throughput we can't tune past Railway's quota.
+- Drizzle, query patterns the codegen can't express cleanly.
+- pino, structured-log cardinality blowing past our log budget.
+- Vite / Vitest, cold-start times >5s per test file at scale.
+- Tailwind, design-system needs CSS-in-JS primitives only available elsewhere.
 
-Each is its own ADR when triggered. Don't supersede this whole document —
+Each is its own ADR when triggered. Don't supersede this whole document,
 swap the row, link the new ADR.

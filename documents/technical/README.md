@@ -8,7 +8,7 @@ the system is built; the _what_ and _why_ live in
 
 - Architecture overviews when a major system component is introduced.
 - API contracts when a new public surface stabilises (the OpenAPI spec
-  itself lives in `apps/api/openapi.yaml` — link from here, don't duplicate).
+  itself lives in `apps/api/openapi.yaml`: link from here, don't duplicate).
 - Data model docs (ERDs, schema rationale) when tables are added or
   reshaped beyond a routine migration.
 - Sequence diagrams or runbooks when a flow spans multiple services or
@@ -20,7 +20,7 @@ adequately.
 
 ## Naming
 
-`<topic-slug>.md` — kebab-case, no prefixes. Examples:
+`<topic-slug>.md`: kebab-case, no prefixes. Examples:
 
 - `architecture.md`
 - `api/conventions.md`
@@ -39,10 +39,10 @@ should be linked in a "References" section at the bottom.
 
 ## Index
 
-_Initial seed — populate as docs are added:_
+_Initial seed, populate as docs are added:_
 
-- `architecture.md` — TBD (high-level system overview)
-- [`deployment.md`](deployment.md) — Railway topology, env-var matrix, deploy flow, trial-plan constraints
-- `slos.md` — TBD (SLI/SLO definitions per service)
-- `api/` — TBD (conventions, error envelope, pagination, auth)
-- `data-model/` — TBD (per-domain ERDs and schema rationale)
+- `architecture.md`: TBD (high-level system overview)
+- [`deployment.md`](deployment.md): Railway topology, env-var matrix, deploy flow, trial-plan constraints
+- `slos.md`: TBD (SLI/SLO definitions per service)
+- `api/`: TBD (conventions, error envelope, pagination, auth)
+- `data-model/`: TBD (per-domain ERDs and schema rationale)

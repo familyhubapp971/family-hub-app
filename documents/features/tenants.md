@@ -6,7 +6,7 @@
 
 ## User stories
 
-_To be filled when the feature is scoped (Sprint 1 — Tenant Foundation)._
+_To be filled when the feature is scoped (Sprint 1, Tenant Foundation)._
 
 ## Acceptance criteria
 

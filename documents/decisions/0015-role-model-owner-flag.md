@@ -1,12 +1,12 @@
-# 0015 — Role model: admin vs normal user (multi-tenant)
+# 0015: Role model: admin vs normal user (multi-tenant)
 
 **Status:** accepted
 **Date:** 2026-06-16
 **Jira:** [FHS-333](https://qualicion2.atlassian.net/browse/FHS-333)
 
 > **Note:** an earlier draft of this ADR proposed a separate `is_owner`
-> "super user" flag layered on top of roles. It was simplified — before any
-> implementation — to the two-tier admin/normal model below, which mirrors
+> "super user" flag layered on top of roles. It was simplified, before any
+> implementation, to the two-tier admin/normal model below, which mirrors
 > the legacy app. The file name keeps the original slug for link stability.
 
 ## Context
@@ -21,13 +21,13 @@ canManage = caller is the member themselves OR role === 'admin' OR role === 'adu
 ```
 
 In the **legacy single-user app** there were two kinds of grown-up: the one
-**admin** (the account holder, full rights — including editing a habit sticker
+**admin** (the account holder, full rights, including editing a habit sticker
 on a **previous day**) and everyone else, a **normal user**. Multi-tenancy
 broke that cleanly-drawn line two ways:
 
 - The blunt rule grants the elevated rights to **any** `admin` _or_ `adult`,
   so a non-admin adult can now do admin-only things (most visibly, backdate a
-  past-day sticker — the named gap).
+  past-day sticker, the named gap).
 - There was no concept of "the person who set up this family" or a way for
   them to decide who else is an admin.
 
@@ -36,21 +36,21 @@ inventing extra tiers.
 
 ## Decision
 
-Two grown-up permission tiers, mapped onto the existing role enum — **no new
+Two grown-up permission tiers, mapped onto the existing role enum, **no new
 column, no new role value**:
 
-- **Admin** (`role = 'admin'`) — full legacy-admin rights. Multiple admins
+- **Admin** (`role = 'admin'`), full legacy-admin rights. Multiple admins
   allowed. The family **registrant is an admin** (already set at tenant
   creation). Admin-only actions: edit a **past-day** sticker, close/re-open a
   week, change economy settings + sticker→cash/reward conversion rates,
   manually adjust a balance, manage members (invite, PIN, edit profile,
   change role), **make another member an admin or a normal user**, remove a
   member, wipe/delete the family, and billing.
-- **Normal user** (`role = 'adult'`, i.e. an adult who isn't an admin) —
+- **Normal user** (`role = 'adult'`, i.e. an adult who isn't an admin),
   legacy normal-user rights: everyday **current-day** actions (log/edit this
   week's stickers), shared content (meals, calendar, assignments,
   noticeboard, tasks), and their own data. **Not** the admin-only set above.
-- **Kids** (`role = 'teen' | 'child'`) — unchanged; scoped to their own data.
+- **Kids** (`role = 'teen' | 'child'`), unchanged; scoped to their own data.
   A child can **never** be made an admin.
 
 Mechanics:
@@ -69,7 +69,7 @@ The full Admin / Normal user / Teen / Child rights matrix lives in
 
 Easier:
 
-- No schema migration and no new flag — it's a permission-check change plus a
+- No schema migration and no new flag, it's a permission-check change plus a
   member-management action. The registrant is already an admin.
 - Matches the legacy mental model exactly; one fewer concept than an owner
   tier.
@@ -86,11 +86,11 @@ Harder / follow-ups (epic FHS-333):
 
 ## Alternatives considered
 
-- **Separate `is_owner` "super user" tier** (the earlier draft) — rejected as
+- **Separate `is_owner` "super user" tier** (the earlier draft), rejected as
   over-complicated: it added a third grown-up tier the legacy app never had,
   with last-owner-protection edge cases, for no clear product need.
-- **New `owner`/`normal` role enum values** — rejected: `adult` already
+- **New `owner`/`normal` role enum values**, rejected: `adult` already
   serves as "non-admin grown-up"; adding values churns every role check for
   no behaviour gain.
-- **Keep the single blunt `admin OR adult` rule** — rejected: it is exactly
+- **Keep the single blunt `admin OR adult` rule**, rejected: it is exactly
   what leaked the backdating privilege to non-admin adults.

@@ -1,4 +1,4 @@
-# Family Hub — Commercial Positioning
+# Family Hub: Commercial Positioning
 
 **Status:** living document
 **Updated:** 2026-04-30
@@ -15,14 +15,14 @@ hooks, competitive differentiation, and what we deliberately won't do.
 
 ## One-line positioning
 
-> **Family Hub is the operating system for modern family life — built
+> **Family Hub is the operating system for modern family life, built
 > for households the rest of the family-app market quietly assumed
 > didn't exist.**
 
 For pitch contexts where one line isn't enough, the elevator version:
 
 > Most family apps are built for a 2-parent, 1.5-kid Western household
-> with predictable schedules. Family Hub is built for the rest — large
+> with predictable schedules. Family Hub is built for the rest, large
 > families, twins/triplets, blended households, multi-generational
 > homes, and culturally rooted families (Muslim, multi-faith,
 > homeschool) who currently stitch together five tools because no
@@ -35,7 +35,7 @@ For pitch contexts where one line isn't enough, the elevator version:
 This expands the "Early adopters" list in `saas-transformation.md`
 with the buyer personas you'll meet in real sales conversations.
 
-### Persona 1 — "The coordinating parent"
+### Persona 1: "The coordinating parent"
 
 The everyday paying user. Almost always a parent (most often the
 mother, but increasingly the father in dual-income households). They
@@ -58,7 +58,7 @@ own the family's mental load.
   ($7.99–$12.99/mo). Annual upgrade rate matters more than MRR
   per user.
 
-### Persona 2 — "The community administrator"
+### Persona 2: "The community administrator"
 
 The person managing a mosque's youth programme, a homeschool co-op, a
 church family ministry, an NGO running family services.
@@ -79,7 +79,7 @@ church family ministry, an NGO running family services.
   ($299–$3,499/year). LTV is high; churn is rare once integrated; one
   reference customer drives 2–3 follow-ons in their network.
 
-### Persona 3 — "The early-adopter dad"
+### Persona 3: "The early-adopter dad"
 
 A secondary-but-strategic persona. Tech-fluent father (often working
 in tech or finance), curious about new family software, willing to
@@ -95,7 +95,7 @@ champion a tool with his partner if he believes the product roadmap.
 - **Buying motion:** seconds. Trials free for ~2 weeks, upgrades to
   Family Pro because he wants the "good stuff."
 - **What they pay for:** Family Pro ($12.99/mo). Outsized influence
-  per dollar — he writes posts, makes recommendations, brings users.
+  per dollar, he writes posts, makes recommendations, brings users.
 
 ### Anti-personas (deliberately not for us)
 
@@ -126,12 +126,12 @@ Mirrors `saas-transformation.md`, with sales-context detail.
 | 4   | **Türkiye / North Africa**            | Cultural fit + growing tech adoption. Localisation cost is real but doable.                                                                          | Consumer + community-org tiers.                                                              |
 
 Latin America, Sub-Saharan Africa, India proper, and East Asia are
-"phase 3" — we want them, but the product has to localise further
+"phase 3", we want them, but the product has to localise further
 before they're efficient acquisition targets.
 
 ---
 
-## Differentiation — what we say in sales
+## Differentiation: what we say in sales
 
 Three angles. Pick the one that fits the conversation.
 
@@ -153,19 +153,19 @@ FamCal / Picniic on a multi-child family.
 > "Most family apps assume you're in a Western nuclear family with a
 > Christmas calendar baked in. We ship Ramadan journaling, prayer
 > scheduling, mosque event integration, and Hijri date support
-> alongside the Gregorian calendar — and we do it without being a
+> alongside the Gregorian calendar, and we do it without being a
 > "Muslim app." It's just one of the cultural lenses we support."
 
 This is the strongest hook in our launch geographies (UAE, Saudi,
 Indonesia, Pakistan). Pairs with the white-label offering for
 mosques and Islamic schools.
 
-### 3. We grow with the family — not just the parent
+### 3. We grow with the family: not just the parent
 
 > "Most family apps treat children as line items in a parent's
 > calendar. We treat them as people who eventually grow up,
 > get their own logins, and inherit the history we recorded for
-> them — the milestones, the photos, the chores, the assignments."
+> them, the milestones, the photos, the chores, the assignments."
 
 Backed by the membership model: a child's row persists from infancy
 to adulthood; when they get their own login, every reference stays
@@ -175,7 +175,7 @@ attached. This is not currently true of any major competitor.
 
 ## Competitor framing (one-liners)
 
-When the prospect names a competitor, we don't trash them — we
+When the prospect names a competitor, we don't trash them, we
 position ourselves _next to_ them.
 
 | Competitor                               | What they do well                             | Where we win                                                                                 |
@@ -200,12 +200,12 @@ to a prospect varies by tier.
 - **Family ($7.99/mo).** "Sub-$10/month for everything an average
   household needs. Less than one Starbucks per week."
 - **Family Pro ($12.99/mo).** "If your household runs more like a
-  small organisation — multiple schools, multiple sports teams, custom
-  subdomain like `kingdom.familyhub.app` for the cousins — Pro is the
+  small organisation, multiple schools, multiple sports teams, custom
+  subdomain like `kingdom.familyhub.app` for the cousins, Pro is the
   fit."
 - **Enterprise / white-label ($299–$3,499/year).** "Your mosque /
   school / co-op gets its own branded surface, admins, member
-  management, and reporting. Pricing is per-org-size, not per-seat —
+  management, and reporting. Pricing is per-org-size, not per-seat,
   no nasty surprises when you onboard 50 new families."
 
 Annual discount narrative: "two months free" framing, not "%-off",
@@ -216,7 +216,7 @@ because parents respond better to time than percentages.
 ## Sales objections + answers
 
 **"Can my data leave the platform?"**
-Yes — we provide CSV export of all family data, and the white-label
+Yes, we provide CSV export of all family data, and the white-label
 tiers include a Postgres-level read-replica option. We never lock
 data in.
 
@@ -234,7 +234,7 @@ Google solves the calendar; it doesn't solve "everyone in this family
 needs their own to-do list, milestone log, learning track, and
 reward economy." Family Hub is the layer above the calendar.
 
-**"You're new — what if you go away?"**
+**"You're new, what if you go away?"**
 Fair concern. CSV export, open data model, and (post-launch) a
 contractual escape clause for enterprise tiers. Single-founder
 disclosure: this is an active and funded project; runway is X (insert
@@ -244,7 +244,7 @@ current number when needed).
 Today: strong support for Muslim households (Ramadan, prayer times,
 Hijri dates, mosque integration). Roadmap support for Christian (church
 events, Lent), Jewish (Shabbat, holidays), Hindu (festivals), Sikh,
-multi-faith. If yours isn't on the list, we'd love a conversation —
+multi-faith. If yours isn't on the list, we'd love a conversation,
 the architecture is built to accept new cultural lenses without rewrites.
 
 ---
@@ -289,8 +289,8 @@ These are sometimes asked for. Saying no is the positioning.
 
 ## References
 
-- [`saas-transformation.md`](saas-transformation.md) — strategy + roadmap
-- [`documents/features/family-members.md`](../features/family-members.md) — the data model that backs the "we model real families" claim
-- [`documents/decisions/0009-family-membership-model.md`](../decisions/0009-family-membership-model.md) — engineering contract
-- [`documents/decisions/0001-multi-tenancy.md`](../decisions/0001-multi-tenancy.md) — per-family isolation
-- [`documents/decisions/0004-stripe-billing.md`](../decisions/0004-stripe-billing.md) — billing model
+- [`saas-transformation.md`](saas-transformation.md): strategy + roadmap
+- [`documents/features/family-members.md`](../features/family-members.md): the data model that backs the "we model real families" claim
+- [`documents/decisions/0009-family-membership-model.md`](../decisions/0009-family-membership-model.md): engineering contract
+- [`documents/decisions/0001-multi-tenancy.md`](../decisions/0001-multi-tenancy.md): per-family isolation
+- [`documents/decisions/0004-stripe-billing.md`](../decisions/0004-stripe-billing.md): billing model

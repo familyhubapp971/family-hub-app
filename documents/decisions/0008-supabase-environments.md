@@ -1,4 +1,4 @@
-# 0008 — Supabase environment strategy: separate projects now, branches on Pro
+# 0008: Supabase environment strategy: separate projects now, branches on Pro
 
 **Status:** accepted
 **Date:** 2026-04-29
@@ -13,9 +13,9 @@ pre-release validation, lives behind the staging Railway env) and
 
 Supabase exposes two ways to model this:
 
-1. **Separate projects** — one Supabase project per environment. Each
+1. **Separate projects**: one Supabase project per environment. Each
    has its own ref, URL, keys, auth config. Available on every plan.
-2. **Branching** — one parent project, with `staging` (and per-PR
+2. **Branching**: one parent project, with `staging` (and per-PR
    preview) branches that share auth provider config and promote
    schema migrations branch → main. **Branching requires the Pro plan
    (~$25/mo per org)**; not available on Free.
@@ -39,12 +39,12 @@ Both projects mirror Railway envs 1:1 (staging Supabase ↔ Railway
 staging service; production Supabase ↔ Railway production service).
 Free tier supports up to 2 active projects per org, which fits.
 
-## Migration plan — separate projects → branches (when org upgrades to Pro)
+## Migration plan: separate projects → branches (when org upgrades to Pro)
 
 Triggered by **any** of:
 
 - Production launch (Sprint 6 / Fix Version `1.0-white-label-launch`)
-  needs daily backups, custom domain, or custom SMTP — all Pro-only.
+  needs daily backups, custom domain, or custom SMTP, all Pro-only.
 - Auth provider config drift between staging + prod becomes painful.
 - Per-PR preview environments become a real need.
 
@@ -57,7 +57,7 @@ Pre-migration checks:
    (Google OAuth client IDs differ but provider is enabled on both).
 3. Inventory any **active OAuth callback URLs / Stripe webhooks /
    third-party integrations** registered against the staging project's
-   URL — these must be re-pointed to the new branch URL.
+   URL, these must be re-pointed to the new branch URL.
 
 Steps:
 
@@ -83,16 +83,16 @@ Steps:
 6. **Decommission** `maolytpqazmykjzdybtj` (standalone staging
    project):
    - Export any data worth keeping (probably none if migration
-     happens before public beta — ideally **migrate before any real
+     happens before public beta, ideally **migrate before any real
      test users land in staging**).
    - `DELETE /v1/projects/maolytpqazmykjzdybtj` via management API,
      OR pause first (24h grace) then delete.
 7. **Update**:
-   - `.env.local`, `.env.example` — collapse `_STAGING` and `_PRODUCTION`
+   - `.env.local`, `.env.example`: collapse `_STAGING` and `_PRODUCTION`
      pairs back to a single set if we reorganise; otherwise rewrite
      `_STAGING` values to point at the branch.
-   - `documents/technical/deployment.md` — record the branch model.
-   - This ADR — flip `Status:` to `superseded by NNNN` and write the
+   - `documents/technical/deployment.md`: record the branch model.
+   - This ADR, flip `Status:` to `superseded by NNNN` and write the
      superseding ADR documenting the branch-based topology.
    - Memory + Confluence "Architecture & multi-tenancy" page.
 
@@ -121,7 +121,7 @@ Risk register:
   dashboard; schema promotion is a primitive (`migration_version` on
   branch, promote to main).
 - **Harder:** branch resource exhaustion can affect main if quotas tight;
-  branch deletion is the only "reset" — tied to the parent's lifecycle.
+  branch deletion is the only "reset", tied to the parent's lifecycle.
 
 ## Alternatives considered
 
@@ -138,7 +138,7 @@ Risk register:
 
 ## Open dependencies
 
-- **FHS-194 — schema-drift CI check.** Referenced twice in the migration
+- **FHS-194, schema-drift CI check.** Referenced twice in the migration
   plan (pre-check #1 and the schema-drift risk row). Without it, Drizzle
   migration files can diverge silently between the staging and production
   projects, which surfaces as confusing branch-creation errors at
