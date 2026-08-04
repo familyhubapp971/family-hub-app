@@ -10,20 +10,19 @@
         margin: 0;
       }
       :root {
-        /* Page + ink, matching the FamilyHub pitch-deck print system */
-        --cream: #f6f1fa;
+        --lavender: #f6f1fa;
         --ink: #191919;
         --ink-soft: #4a4a4a;
         --micro: #4a5568;
         --paper: #ffffff;
-        --rule: #e5ddcf;
-        --rule-soft: #efe8d8;
-        /* Accent palette */
+        --purple: #3d1065;
         --pink: #f06ba8;
         --green: #2dd4a0;
         --cyan: #35cdee;
         --coral: #fb6b6b;
         --yellow: #ffd21e;
+        --cream-table: #ede5f5;
+        --rule-soft: #e2d6ee;
       }
       * {
         box-sizing: border-box;
@@ -38,224 +37,298 @@
           sans-serif;
         font-weight: 500;
         color: var(--ink);
-        background: var(--cream);
+        background: var(--lavender);
         font-size: 10.3px;
         line-height: 1.4;
       }
-      .heading,
       h1,
       h2,
-      .label,
-      .num-tab {
+      .pill,
+      .pagehead h2,
+      .about-h,
+      .topbar .brand {
         font-family: 'Fredoka One', cursive;
         font-weight: 400;
         letter-spacing: 0.005em;
         color: var(--ink);
       }
 
+      /* ----- Page container: one per printed sheet ----- */
       .page {
-        width: 100%;
-        min-height: 210mm;
-        padding: 7mm 9mm 5mm;
+        width: 296mm;
+        height: 208mm;
+        box-sizing: border-box;
+        padding: 6mm 9mm;
+        background: var(--lavender);
         display: flex;
         flex-direction: column;
-        background: var(--cream);
         position: relative;
+        overflow: hidden;
+      }
+      .page1,
+      .page2 {
+        page-break-after: always;
+      }
+      .page3 {
+        padding: 3mm 9mm 2mm;
+      }
+      .page3 .pagefoot {
+        padding-top: 1mm;
+        line-height: 1.1;
       }
 
-      /* ----- Masthead: single baseline, no slab ----- */
-      header {
+      /* ----- Top bar (page 1): brand + founders/target meta + star accent ----- */
+      .topbar {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
-        gap: 18px;
-        padding: 3.9px 3.9px 7.8px;
-        margin-bottom: 6px;
-        border-bottom: 1.5px solid var(--rule);
+        gap: 6mm;
+        margin-bottom: 3mm;
       }
-      header .brand {
-        font-family: 'Fredoka One', cursive;
-        font-size: 16px;
-        color: var(--ink);
-        line-height: 1;
-        white-space: nowrap;
-        flex-shrink: 0;
-        text-decoration: none;
+      .topbar .brand {
+        font-size: 15px;
         display: inline-flex;
         align-items: baseline;
-        gap: 5px;
+        gap: 1.5mm;
+        white-space: nowrap;
       }
-      header .brand .star {
+      .topbar .brand .mark {
         color: var(--yellow);
-        font-size: 16px;
-        line-height: 1;
         -webkit-text-stroke: 1px #000;
       }
-      header .brand .word {
+      .topbar .meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.6mm;
+        font-size: 9.5px;
+        font-weight: 700;
+        color: var(--ink-soft);
+        text-align: right;
+        line-height: 1.3;
+      }
+      .topbar .meta strong {
         color: var(--ink);
       }
-      header .title {
-        text-align: center;
+      .topbar .star-deco {
+        font-size: 24px;
+        color: var(--yellow);
+        -webkit-text-stroke: 1.4px #000;
         line-height: 1;
-        flex: 1;
+        margin-left: 3mm;
       }
-      header h1 {
-        font-family: 'Fredoka One', cursive;
-        font-weight: 400;
-        font-size: 16px;
-        margin: 0;
-        color: var(--ink);
-        letter-spacing: -0.005em;
-        line-height: 1;
+
+      /* ----- Hero panel ----- */
+      .hero {
+        background: var(--purple);
+        color: #fff;
+        border: 3px solid #000;
+        border-radius: 14px;
+        box-shadow: 5px 5px 0 #000;
+        padding: 4mm 6mm;
+        margin-bottom: 4mm;
+        break-inside: avoid;
       }
-      header .tagline {
-        margin: 3px 0 0 0;
-        font-size: 8.9px;
-        color: var(--coral);
+      .hero h1 {
+        font-size: 22px;
+        margin: 0 0 1.6mm;
+        color: #fff;
+        line-height: 1.05;
+      }
+      .hero .tagline {
+        font-size: 10.5px;
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
+        color: var(--pink);
+        margin: 0 0 2.4mm;
+      }
+      .hero .intro {
+        font-size: 11px;
+        line-height: 1.4;
+        font-weight: 600;
+        color: #fff;
+        margin: 0;
+        max-width: 220mm;
+      }
+
+      /* ----- Page 1: 2x2 grid ----- */
+      .grid2x2 {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: 10mm;
+        min-height: 0;
+      }
+
+      /* ----- Page 2 / 3 small header ----- */
+      .pagehead {
+        margin-bottom: 4mm;
+      }
+      .pagehead h2 {
+        font-size: 17px;
+        margin: 0 0 1mm;
+        color: var(--ink);
+      }
+      .pagehead .micro {
+        font-size: 9.5px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--micro);
+        margin: 0;
+      }
+      .pagehead.inline {
+        display: flex;
+        align-items: baseline;
+        gap: 3.5mm;
+        margin-bottom: 3mm;
+      }
+      .pagehead.inline {
+        margin-bottom: 1.5mm;
+      }
+      .pagehead.inline h2 {
+        margin: 0;
+        font-size: 14.5px;
+      }
+      .pagehead.inline .micro {
+        margin: 0;
+      }
+
+      /* ----- Page 2: 3 columns ----- */
+      .grid3col {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10mm;
+        min-height: 0;
+      }
+
+      /* ----- Page 3: stacked money cards ----- */
+      .moneystack {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10mm;
+        min-height: 0;
+      }
+      .moneystack .cell {
+        flex: 0 0 auto;
+        padding: 1.2mm 4.5mm;
+      }
+      .moneystack .pill {
+        padding: 0.8mm 3.4mm;
+        margin-bottom: 0.9mm;
+        font-size: 10.5px;
+      }
+      .moneystack .tbl {
+        margin-top: 0.7mm;
+      }
+      .moneystack .tbl + .tbl {
+        margin-top: 1.2mm;
+      }
+      .moneystack .tbl td,
+      .moneystack .tbl th {
         line-height: 1;
       }
-      header .meta {
-        text-align: right;
-        font-size: 8.9px;
-        color: var(--ink-soft);
-        line-height: 1.5;
-        flex-shrink: 0;
-        font-weight: 700;
-      }
-      header .meta strong {
-        color: var(--ink);
+      .moneystack .cell .note {
+        line-height: 1.15;
+        margin-top: 0.7mm;
       }
 
-      /* ----- Pitch (sits on the cream page) ----- */
-      .pitch {
-        margin: 0 0 7px 0;
-        font-size: 10.5px;
-        line-height: 1.5;
-        max-width: 92ch;
-        color: var(--ink);
-        font-weight: 600;
-      }
-      .pitch strong {
-        color: var(--ink);
-        font-weight: 800;
-      }
-      .pitch .pin {
-        font-family: 'Fredoka One', cursive;
-        color: var(--coral);
-        margin-right: 3px;
-      }
-      /* Financial-literacy thread, recurs through the pitch and Value cell */
-      .pitch .fl-thread {
-        color: var(--coral);
-        font-weight: 800;
-        font-variant-numeric: tabular-nums;
-      }
-      .pitch .fl-thread strong {
-        color: var(--coral);
-      }
-
-      /* ----- 9-cell grid ----- */
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1.25fr 1fr 1fr;
-        grid-template-rows: auto auto auto;
-        grid-template-areas:
-          'partners activities value reln segments'
-          'partners resources value channels segments'
-          'costs    costs      costs revenue revenue';
-        gap: 4px;
-      }
+      /* ----- Cards ----- */
       .cell {
         background: var(--paper);
         border: 2.5px solid #000;
-        border-radius: 8px;
+        border-radius: 12px;
         box-shadow: 4px 4px 0 #000;
-        padding: 6.5px 9.1px 7.8px;
+        padding: 3mm 4.5mm;
         display: flex;
         flex-direction: column;
+        overflow: hidden;
+        min-height: 0;
+        font-size: 10.3px;
+        line-height: 1.32;
         break-inside: avoid;
         page-break-inside: avoid;
       }
-      .fl-thread {
-        font-weight: 700;
-        color: var(--coral);
+      .cell.value,
+      .cell.channels {
+        font-size: 9.5px;
+        line-height: 1.26;
       }
-      .fl-anchor {
-        font-weight: 800;
-        color: var(--coral);
+      .cell.segments,
+      .cell.reln {
+        font-size: 10.6px;
+        line-height: 1.42;
       }
-      .cell h2 {
-        margin: 0 0 4px 0;
-        font-size: 12.2px;
-        color: var(--ink);
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        letter-spacing: 0.02em;
+      .cell.segments li,
+      .cell.reln li {
+        margin-bottom: 2mm;
       }
-      /* Small colored pill labelling each canvas section (accent palette) */
-      .cell h2 .n {
-        font-size: 8.1px;
-        color: #000;
-        font-family: 'Fredoka One', cursive;
-        line-height: 1.6;
+      .page2 .cell {
+        font-size: 11.5px;
+        line-height: 1.62;
+      }
+      .page2 .cell li {
+        margin-bottom: 2.8mm;
+      }
+      .page2 .cell .partners-group {
+        font-size: 10px;
+        margin: 3.6mm 0 1.8mm;
+      }
+
+      .cell .pill {
         display: inline-flex;
         align-items: center;
-        padding: 0.7px 6.5px;
-        border: 1.5px solid #000;
-        border-radius: 999px;
-        box-shadow: 1.2px 1.2px 0 #000;
+        gap: 1.5mm;
+        align-self: flex-start;
         background: var(--yellow);
+        border: 2px solid #000;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 #000;
+        padding: 1.4mm 4mm;
+        font-size: 11px;
+        color: #000;
+        line-height: 1;
+        white-space: nowrap;
+        margin-bottom: 2.6mm;
       }
-      .cell.tag-pink h2 .n {
+      .cell.tag-pink .pill {
         background: var(--pink);
       }
-      .cell.tag-green h2 .n {
+      .cell.tag-green .pill {
         background: var(--green);
       }
-      .cell.tag-cyan h2 .n {
+      .cell.tag-cyan .pill {
         background: var(--cyan);
       }
-      .cell.tag-coral h2 .n {
-        background: var(--coral);
+      .cell.tag-yellow .pill {
+        background: var(--yellow);
       }
+
       .cell ul {
         list-style: none;
         margin: 0;
         padding: 0;
       }
-      /* Sub-header inside the Key Partners cell splitting active vs potential
-         relationships. Tiny, all-caps, ink-grey; sits between groups. */
-      .cell .partners-group {
-        font-family: 'Nunito', sans-serif;
-        font-weight: 900;
-        font-size: 8.1px;
-        letter-spacing: 0.11em;
-        text-transform: uppercase;
-        color: var(--micro);
-        margin: 4px 0 2px 0;
-      }
-      .cell .partners-group:first-of-type {
-        margin-top: 0;
-      }
       .cell li {
-        font-size: 10px;
-        line-height: 1.35;
-        margin-bottom: 2px;
-        padding-left: 8px;
+        margin-bottom: 1.6mm;
+        padding-left: 2.6mm;
         position: relative;
         font-weight: 500;
+      }
+      .cell li:last-child {
+        margin-bottom: 0;
       }
       .cell li::before {
         content: '';
         position: absolute;
         left: 0;
-        top: 0.5em;
-        width: 3.5px;
-        height: 3.5px;
+        top: 0.55em;
+        width: 1.1mm;
+        height: 1.1mm;
         border-radius: 50%;
         background: var(--yellow);
       }
@@ -268,104 +341,133 @@
       .cell.tag-cyan li::before {
         background: var(--cyan);
       }
-      .cell.tag-coral li::before {
-        background: var(--coral);
+      .cell.tag-yellow li::before {
+        background: var(--yellow);
       }
       .cell li strong {
         font-weight: 800;
         color: var(--ink);
       }
+
+      .cell .partners-group {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--micro);
+        margin: 2.2mm 0 1.2mm;
+      }
+      .cell .partners-group:first-of-type {
+        margin-top: 0;
+      }
+
       .cell .note {
-        font-size: 10px;
-        margin: 3px 0 0 0;
+        margin: 2mm 0 0;
         color: var(--ink-soft);
+        font-size: 9.5px;
+        line-height: 1.3;
+      }
+      .cell .note:first-child {
+        margin-top: 0;
       }
       .cell .note strong {
         color: var(--ink);
         font-weight: 800;
       }
 
-      /* ----- Compact comparison + price tables ----- */
-      table {
+      .fl-thread {
+        font-weight: 700;
+        color: var(--coral);
+      }
+      .fl-anchor {
+        font-weight: 800;
+        color: var(--coral);
+      }
+
+      /* ----- Tables (shared clean style) ----- */
+      .tbl {
         border-collapse: collapse;
         width: 100%;
-        font-size: 8.9px;
-        font-weight: 500;
-        margin-top: 3px;
+        border: 2px solid #000;
+        font-size: 9.5px;
+        margin-top: 2mm;
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
-      th,
-      td {
-        padding: 1.8px 3.9px;
-        text-align: left;
-        border-bottom: 1px solid var(--rule-soft);
-        line-height: 1.3;
+      .tbl + .tbl {
+        margin-top: 3mm;
       }
-      th {
-        color: var(--micro);
+      .tbl thead tr {
+        background: var(--cream-table);
+      }
+      .tbl th {
         font-family: 'Nunito', sans-serif;
         font-weight: 900;
-        font-size: 8.4px;
-        letter-spacing: 0.06em;
+        font-size: 9.5px;
+        letter-spacing: 0.04em;
         text-transform: uppercase;
-        border-bottom: 1.2px solid var(--ink);
+        color: var(--micro);
+        border-bottom: 1.5px solid #000;
+        padding: 2mm 2.6mm;
+        line-height: 1.05;
+        text-align: left;
       }
-      td.num,
-      th.num {
+      .tbl td {
+        padding: 2mm 2.6mm;
+        line-height: 1.05;
+        border-bottom: 1px solid var(--rule-soft);
+        text-align: left;
+        font-weight: 500;
+      }
+      .tbl td.num,
+      .tbl th.num {
         text-align: right;
         font-variant-numeric: tabular-nums;
         font-feature-settings: 'tnum';
       }
-      tr.summary td {
+      .tbl tr.summary td {
         font-weight: 800;
         color: var(--ink);
         border-bottom: none;
-        border-top: 1.2px solid var(--ink);
+        border-top: 1.5px solid #000;
         background: #fff6d8;
       }
-
-      /* ----- Areas ----- */
-      .partners {
-        grid-area: partners;
-      }
-      .activities {
-        grid-area: activities;
-      }
-      .resources {
-        grid-area: resources;
-      }
-      .value {
-        grid-area: value;
-      }
-      .reln {
-        grid-area: reln;
-      }
-      .channels {
-        grid-area: channels;
-      }
-      .segments {
-        grid-area: segments;
-      }
-      .costs {
-        grid-area: costs;
-      }
-      .revenue {
-        grid-area: revenue;
+      .tbl-roomy td,
+      .tbl-roomy th {
+        padding: 2.4mm 3mm;
       }
 
-      footer {
-        margin-top: 5px;
-        font-size: 8.6px;
+      /* ----- About-this-canvas block (page 3 footer content) ----- */
+      .about {
+        margin-top: 0.6mm;
+        padding-top: 0.6mm;
+        border-top: 1px solid #d9cbe8;
+        font-size: 9.5px;
+        line-height: 1.3;
         color: var(--ink-soft);
+        break-inside: avoid;
+      }
+      .about strong {
+        color: var(--ink);
+      }
+      .about p {
+        margin: 0;
+      }
+
+      /* ----- Footer (every page) ----- */
+      .pagefoot {
+        margin-top: auto;
+        padding-top: 2mm;
+        border-top: 1.2px solid #d9cbe8;
         display: flex;
         justify-content: space-between;
         align-items: baseline;
-        border-top: 1.5px solid var(--rule);
-        padding-top: 3px;
-      }
-      footer strong {
-        color: var(--ink);
-        font-family: 'Fredoka One', cursive;
-        font-weight: 400;
+        font-size: 9.5px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--micro);
       }
 
       @media print {
@@ -375,120 +477,35 @@
           print-color-adjust: exact;
         }
       }
-
-      .page2 {
-        page-break-before: always;
-        padding-top: 10mm;
-        grid-template-columns: 1fr !important;
-        grid-template-rows: none !important;
-        grid-template-areas: none !important;
-        gap: 24px !important;
-      }
-      .page2 .cell {
-        grid-area: auto !important;
-        font-size: 115%;
-      }
-
-      /* h1-purple-panel: deck-style deep purple hero */
-      h1 {
-        background: #3d1065;
-        color: #fff !important;
-        padding: 5mm 7mm;
-        border: 3px solid #000;
-        border-radius: 12px;
-        box-shadow: 4px 4px 0 #000;
-        break-inside: avoid;
-      }
-      h1 * {
-        color: #fff !important;
-      }
     </style>
   </head>
   <body>
-    <div class="page">
-      <header>
-        <div class="brand"><span class="star">★</span>FamilyHub</div>
-        <div class="title">
-          <h1>Business Model Canvas</h1>
-          <div class="tagline">An all-in-one platform for modern family life</div>
-        </div>
+    <!-- PAGE 1 · Hero + demand side -->
+    <div class="page page1">
+      <div class="topbar">
+        <div class="brand"><span class="mark">★</span>FamilyHub</div>
         <div class="meta">
-          <strong>Babatunde Oduniyi</strong><br />
-          <strong>Sandra Mottoh</strong><br />
-          <strong>Jumi Shonubi</strong><br />
-          co-founders<br />
-          24-month target: $720k+ annual revenue
+          <span
+            ><strong>Babatunde Oduniyi</strong>, Sandra Mottoh, Jumi Shonubi &middot;
+            co-founders</span
+          >
+          <span>24-month target: $720k+ annual revenue</span>
         </div>
-      </header>
+        <span class="star-deco" aria-hidden="true">★</span>
+      </div>
 
-      <p class="pitch">
-        <span class="pin">★</span>
-        FamilyHub is an all-in-one family platform helping modern households build stronger
-        routines, healthier digital habits, and long-term financial resilience. The platform
-        combines family coordination, beneficial screen time, and
-        <span class="fl-thread"
-          >embedded financial literacy through a gamified reward economy where children learn to
-          <strong>earn &middot; save &middot; invest &middot; spend</strong> through everyday family
-          life</span
-        >. Designed to be inclusive, built around the needs of households historically underserved
-        by family-tech, with internationally-relevant experiences such as the Ramadan journal.
-      </p>
+      <div class="hero">
+        <h1>Business Model Canvas</h1>
+        <p class="tagline">An all-in-one platform for modern family life</p>
+        <p class="intro">
+          FamilyHub is an all-in-one family platform helping modern households build stronger
+          routines, healthier digital habits, and long-term financial resilience.
+        </p>
+      </div>
 
-      <div class="grid">
-        <div class="cell partners tag-yellow">
-          <h2>Key Partners <span class="n">08</span></h2>
-          <p class="partners-group">Active</p>
-          <ul>
-            <li><strong>Identity and secure database</strong> (Supabase)</li>
-            <li><strong>Payments and subscription billing</strong> (Stripe)</li>
-            <li><strong>Cloud hosting</strong> (Railway)</li>
-            <li><strong>AI personalisation engines</strong> (OpenAI, Anthropic)</li>
-            <li><strong>Reliability and product analytics</strong> (Sentry, PostHog)</li>
-          </ul>
-          <p class="partners-group">Potential</p>
-          <ul>
-            <li>
-              <strong>UAE government partners</strong>: Early Childhood Authority, ADEK, Department
-              of Community Development (Abu Dhabi), Family Development Foundation
-            </li>
-            <li>
-              <strong>Standard Chartered Foundation</strong>: non-dilutive capital and ecosystem
-            </li>
-            <li>
-              <strong>Faith-based schools, places of worship, homeschool co-ops</strong>: community
-              distribution partners
-            </li>
-            <li><strong>Apple and Google app stores</strong>: native mobile distribution</li>
-          </ul>
-        </div>
-
-        <div class="cell activities tag-pink">
-          <h2>Key Activities <span class="n">07</span></h2>
-          <ul>
-            <li>Product development on a 2-week release cadence</li>
-            <li>Educational content and curriculum (Maths, Logic, World Flags)</li>
-            <li>Family acquisition through search, paid social, and community partners</li>
-            <li>Customer support and family success programmes</li>
-            <li>Operating the per-child personalisation engine</li>
-            <li>Partnership development (faith-based schools, places of worship, co-ops)</li>
-            <li>Finance, tax, and accounting operations</li>
-          </ul>
-        </div>
-
-        <div class="cell resources tag-green">
-          <h2>Key Resources <span class="n">06</span></h2>
-          <ul>
-            <li><strong>Secure cloud platform</strong>, built and operating today</li>
-            <li><strong>Per-child learning data</strong>, our competitive moat</li>
-            <li>Proprietary curriculum content</li>
-            <li>Brand and design system</li>
-            <li>Founder team, AI-augmented</li>
-            <li>12-month operating runway</li>
-          </ul>
-        </div>
-
+      <div class="grid2x2">
         <div class="cell value tag-cyan">
-          <h2>Value Propositions <span class="n">02</span></h2>
+          <span class="pill">02 &middot; Value Propositions</span>
           <ul>
             <li>
               <strong>Family admin</strong>: calendars, meals, announcements, assignments, journal.
@@ -497,7 +514,7 @@
               <strong>Beneficial screen time</strong>: Maths, World Flags, Logic. Kids earn by
               learning.
             </li>
-            <li class="fl-bullet">
+            <li>
               <strong>Sticker economy</strong>:
               <span class="fl-thread">earn &middot; save &middot; invest &middot; spend</span>.
               <strong class="fl-anchor">Financial literacy from early childhood</strong>, baked into
@@ -508,7 +525,7 @@
               support, place-of-worship integration, extended-family roles.
             </li>
           </ul>
-          <table>
+          <table class="tbl">
             <thead>
               <tr>
                 <th>Competitor</th>
@@ -562,37 +579,14 @@
           </p>
         </div>
 
-        <div class="cell reln tag-coral">
-          <h2>Customer Relationships <span class="n">04</span></h2>
-          <ul>
-            <li><strong>Self-serve onboarding</strong>: under 5 minutes</li>
-            <li>
-              <strong>Lifecycle email programme</strong>: welcome, day-3 prompt, day-14 progress
-              recap, monthly streak report
-            </li>
-            <li>
-              <strong>Retention loops</strong>: sticker streaks, weekly meal prompts, child learning
-              progress
-            </li>
-            <li>
-              <strong>Enterprise customer success</strong>: hands-on until our first five paid
-              organisations
-            </li>
-            <li>
-              <strong>Product-led growth</strong>: in-app behavioural cues convert free families to
-              paid
-            </li>
-          </ul>
-        </div>
-
         <div class="cell channels tag-yellow">
-          <h2>Channels <span class="n">03</span></h2>
+          <span class="pill">03 &middot; Channels</span>
           <ul>
             <li>
               <strong>Search and content</strong> (e.g. &ldquo;family planner app&rdquo;,
-              &ldquo;homeschool app&rdquo;, &ldquo;multi-faith family planner&rdquo;)
+              &ldquo;homeschool app&rdquo;, &ldquo;multi-faith family planner&rdquo;);
+              <strong>Product Hunt</strong> launch
             </li>
-            <li><strong>Product Hunt</strong> launch</li>
             <li>
               <strong>Paid social campaigns</strong> on Meta and TikTok, focused on UAE / Saudi / UK
             </li>
@@ -601,9 +595,9 @@
               co-ops)
             </li>
             <li>
-              <strong>Mobile distribution</strong>: web app today, native iOS and Android upcoming
+              <strong>Mobile distribution</strong>: web app today, native iOS and Android upcoming;
+              <strong>direct enterprise sales</strong> beyond 100 paid families
             </li>
-            <li><strong>Direct enterprise sales</strong> beyond 100 paid families</li>
             <li>
               <strong>In-app referrals</strong>: invite-a-family, both households receive a free
               month
@@ -613,7 +607,7 @@
         </div>
 
         <div class="cell segments tag-pink">
-          <h2>Customer Segments <span class="n">01</span></h2>
+          <span class="pill">01 &middot; Customer Segments</span>
           <ul>
             <li>
               <strong>Core consumer</strong>: tech-comfortable parents with 2+ children, currently
@@ -634,11 +628,115 @@
             Indonesia / Pakistan.
           </p>
         </div>
+
+        <div class="cell reln tag-green">
+          <span class="pill">04 &middot; Customer Relationships</span>
+          <ul>
+            <li><strong>Self-serve onboarding</strong>: under 5 minutes</li>
+            <li>
+              <strong>Lifecycle email programme</strong>: welcome, day-3 prompt, day-14 progress
+              recap, monthly streak report
+            </li>
+            <li>
+              <strong>Retention loops</strong>: sticker streaks, weekly meal prompts, child learning
+              progress
+            </li>
+            <li>
+              <strong>Enterprise customer success</strong>: hands-on until our first five paid
+              organisations
+            </li>
+            <li>
+              <strong>Product-led growth</strong>: in-app behavioural cues convert free families to
+              paid
+            </li>
+          </ul>
+        </div>
       </div>
-      <div class="grid page2">
+
+      <footer class="pagefoot">
+        <span>Family Hub &middot; Business Model Canvas</span>
+        <span>1 / 3</span>
+      </footer>
+    </div>
+
+    <!-- PAGE 2 · Supply side -->
+    <div class="page page2">
+      <div class="pagehead">
+        <h2>How we build it</h2>
+        <p class="micro">Supply side: partners, activities, and resources behind the product</p>
+      </div>
+
+      <div class="grid3col">
+        <div class="cell partners tag-cyan">
+          <span class="pill">08 &middot; Key Partners</span>
+          <p class="partners-group">Active</p>
+          <ul>
+            <li><strong>Identity and secure database</strong> (Supabase)</li>
+            <li><strong>Payments and subscription billing</strong> (Stripe)</li>
+            <li><strong>Cloud hosting</strong> (Railway)</li>
+            <li><strong>AI personalisation engines</strong> (OpenAI, Anthropic)</li>
+            <li><strong>Reliability and product analytics</strong> (Sentry, PostHog)</li>
+          </ul>
+          <p class="partners-group">Potential</p>
+          <ul>
+            <li>
+              <strong>UAE government partners</strong>: Early Childhood Authority, ADEK, Department
+              of Community Development (Abu Dhabi), Family Development Foundation
+            </li>
+            <li>
+              <strong>Standard Chartered Foundation</strong>: non-dilutive capital and ecosystem
+            </li>
+            <li>
+              <strong>Faith-based schools, places of worship, homeschool co-ops</strong>: community
+              distribution partners
+            </li>
+            <li><strong>Apple and Google app stores</strong>: native mobile distribution</li>
+          </ul>
+        </div>
+
+        <div class="cell activities tag-pink">
+          <span class="pill">07 &middot; Key Activities</span>
+          <ul>
+            <li>Product development on a 2-week release cadence</li>
+            <li>Educational content and curriculum (Maths, Logic, World Flags)</li>
+            <li>Family acquisition through search, paid social, and community partners</li>
+            <li>Customer support and family success programmes</li>
+            <li>Operating the per-child personalisation engine</li>
+            <li>Partnership development (faith-based schools, places of worship, co-ops)</li>
+            <li>Finance, tax, and accounting operations</li>
+          </ul>
+        </div>
+
+        <div class="cell resources tag-green">
+          <span class="pill">06 &middot; Key Resources</span>
+          <ul>
+            <li><strong>Secure cloud platform</strong>, built and operating today</li>
+            <li><strong>Per-child learning data</strong>, our competitive moat</li>
+            <li>Proprietary curriculum content</li>
+            <li>Brand and design system</li>
+            <li>Founder team, AI-augmented</li>
+            <li>12-month operating runway</li>
+          </ul>
+        </div>
+      </div>
+
+      <footer class="pagefoot">
+        <span>Family Hub &middot; Business Model Canvas</span>
+        <span>2 / 3</span>
+      </footer>
+    </div>
+
+    <!-- PAGE 3 · Money -->
+    <div class="page page3">
+      <div class="pagehead inline">
+        <h2>How the money works</h2>
+        <p class="micro">Cost structure and revenue streams at a glance</p>
+      </div>
+
+      <div class="moneystack">
         <div class="cell costs tag-green">
-          <h2>Cost Structure <span class="n">09</span></h2>
-          <table>
+          <span class="pill">09 &middot; Cost Structure</span>
+          <table class="tbl tbl-roomy">
             <thead>
               <tr>
                 <th>Line</th>
@@ -660,7 +758,7 @@
               <tr>
                 <td>Payment processing fees</td>
                 <td>Variable</td>
-                <td>2.9% + 30¢, built into pricing</td>
+                <td>2.9% + 30&cent;, built into pricing</td>
               </tr>
               <tr>
                 <td>AI personalisation</td>
@@ -675,7 +773,7 @@
               <tr>
                 <td>Marketing</td>
                 <td>Variable</td>
-                <td>Cost to acquire a family stays under 6× monthly subscription revenue</td>
+                <td>Cost to acquire a family stays under 6&times; monthly subscription revenue</td>
               </tr>
               <tr>
                 <td>Compliance and legal</td>
@@ -696,8 +794,8 @@
         </div>
 
         <div class="cell revenue tag-cyan">
-          <h2>Revenue Streams <span class="n">05</span></h2>
-          <table>
+          <span class="pill">05 &middot; Revenue Streams</span>
+          <table class="tbl tbl-roomy">
             <thead>
               <tr>
                 <th>Consumer</th>
@@ -723,7 +821,7 @@
               </tr>
             </tbody>
           </table>
-          <table>
+          <table class="tbl tbl-roomy">
             <thead>
               <tr>
                 <th>Enterprise</th>
@@ -755,16 +853,28 @@
             </tbody>
           </table>
           <p class="note">
-            <strong>24-month target.</strong>
-            5,000+ paid families, 30+ partner organisations, $720k+ annual recurring revenue. An
-            8-12× revenue multiple implies a $5.7M-$8.6M acquisition value range.
+            <strong>24-month target.</strong> 5,000+ paid families, 30+ partner organisations,
+            $720k+ annual recurring revenue. An 8-12&times; revenue multiple implies a $5.7M-$8.6M
+            acquisition value range.
           </p>
         </div>
       </div>
 
-      <footer>
-        <span><strong>★ FamilyHub</strong></span>
-        <span>Supporting documents available on request.</span>
+      <div class="about">
+        <p>
+          <strong>About this canvas.</strong> The platform combines family coordination, beneficial
+          screen time, and embedded financial literacy through a gamified reward economy where
+          children learn to
+          <strong>earn &middot; save &middot; invest &middot; spend</strong> through everyday family
+          life. Designed to be inclusive, built around the needs of households historically
+          underserved by family-tech, with internationally-relevant experiences such as the Ramadan
+          journal.
+        </p>
+      </div>
+
+      <footer class="pagefoot">
+        <span>Family Hub &middot; Business Model Canvas</span>
+        <span>3 / 3</span>
       </footer>
     </div>
   </body>
