@@ -38,6 +38,11 @@ const DOCS = [
     footerTitle: 'Impact Measurement Framework',
   },
   { src: 'business-model-canvas.html', out: 'business-model-canvas.pdf', landscape: true },
+  {
+    src: 'family-hub-pitch-deck.html',
+    out: 'family-hub-pitch-deck.pdf',
+    pageSize: { width: '338.66mm', height: '190.5mm' },
+  },
 ];
 
 const browser = await chromium.launch();
@@ -62,7 +67,7 @@ for (const d of DOCS) {
   }
   await page.pdf({
     path: path.join(root, 'documents/business', d.out),
-    format: 'A4',
+    ...(d.pageSize ? d.pageSize : { format: 'A4' }),
     landscape: d.landscape ?? false,
     printBackground: true,
     margin: d.margin ?? { top: 0, bottom: 0, left: 0, right: 0 },

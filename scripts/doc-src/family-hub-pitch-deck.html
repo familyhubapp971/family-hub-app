@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Family Hub &middot; Pitch Deck</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
+
+      @page {
+        size: 338.6mm 190.5mm;
+        margin: 0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #dcdcdc;
+      }
+      body {
+        font-family:
+          'Nunito',
+          -apple-system,
+          sans-serif;
+      }
+
+      :root {
+        --cream: #faf5ea;
+        --purple: #3d1065;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow: #ffd21e;
+        --lavender: #b9a1ee;
+        --blue: #4f8ff5;
+        --orange: #ffab4d;
+        --rose: #fb7b86;
+        --ink: #14101c;
+        --label-gray: #6c6c78;
+      }
+
+      /* ----- Slide shell: one per printed page, fixed 16:9 (338.6mm x 190.5mm) ----- */
+      .slide {
+        width: 338.6mm;
+        height: 190.5mm;
+        box-sizing: border-box;
+        position: relative;
+        overflow: hidden;
+        padding: 10mm 14mm;
+        display: flex;
+        flex-direction: column;
+        page-break-after: always;
+        break-inside: avoid;
+        color: var(--ink);
+      }
+      .slide:last-of-type {
+        page-break-after: auto;
+      }
+      .slide-cream {
+        background: var(--cream);
+      }
+      .slide-purple {
+        background: var(--purple);
+        color: var(--cream);
+      }
+
+      /* ----- Corner badge pill (top-left or top-right label chip) ----- */
+      .pill {
+        position: absolute;
+        top: 10mm;
+        left: 14mm;
+        display: inline-flex;
+        align-items: center;
+        padding: 9px 22px;
+        border: 3px solid #000;
+        border-radius: 999px;
+        box-shadow: 5px 5px 0 #000;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 12.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink);
+        background: var(--pink);
+        break-inside: avoid;
+      }
+      .pill.right {
+        left: auto;
+        right: 14mm;
+      }
+      .pill-green {
+        background: var(--green);
+      }
+      .pill-purple {
+        background: var(--purple);
+        color: var(--cream);
+      }
+      .pill-coral {
+        background: var(--coral);
+      }
+
+      /* ----- Hand-drawn star accent (unicode glyph + stroke, matches sibling docs) ----- */
+      .star {
+        position: absolute;
+        font-size: 58px;
+        line-height: 1;
+        color: var(--yellow);
+        -webkit-text-stroke: 3px #000;
+        transform: rotate(-6deg);
+      }
+      .star.tr {
+        top: 8mm;
+        right: 14mm;
+      }
+      .star.tl {
+        top: 8mm;
+        left: 14mm;
+      }
+      .star.purple {
+        color: var(--purple);
+        -webkit-text-stroke: 2.5px #000;
+      }
+
+      /* ----- Dot trio / quintet ornament ----- */
+      .dots {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+      }
+      .dot {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        border: 2.5px solid #000;
+      }
+
+      /* ----- Typography ----- */
+      .headline {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        text-align: center;
+        line-height: 1.1;
+        margin: 0;
+      }
+      .sub {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        text-align: center;
+        margin: 0;
+        font-size: 15px;
+      }
+      .strong-line {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        text-align: center;
+        margin: 0;
+        font-size: 19px;
+      }
+
+      /* ----- Vertically-centered hero body (slides 1, 2, 7) ----- */
+      .center-body {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 40px;
+      }
+
+      /* ----- Top-aligned content header (slides 3, 4, 5, 6) ----- */
+      .content-header {
+        margin-top: 62px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .content-header .headline {
+        font-size: 27px;
+      }
+
+      /* ----- Footer ----- */
+      .footer {
+        position: absolute;
+        bottom: 9mm;
+        left: 14mm;
+        right: 14mm;
+        display: flex;
+        justify-content: space-between;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 10px;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+
+      /* ============ Slide 3: five problem / solution / value rows ============ */
+      .rows {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        margin-top: 20px;
+        margin-bottom: 40px;
+      }
+      .row {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        break-inside: avoid;
+      }
+      .cat-badge {
+        flex: 0 0 150px;
+        min-height: 58px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        border: 3px solid #000;
+        border-radius: 18px;
+        box-shadow: 5px 5px 0 #000;
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 22px;
+        color: var(--ink);
+      }
+      .cols {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px;
+      }
+      .cols .lbl {
+        margin: 0 0 3px;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 9.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--label-gray);
+      }
+      .cols .txt {
+        margin: 0;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 600;
+        font-size: 11.5px;
+        line-height: 1.32;
+        color: var(--ink);
+      }
+
+      /* ============ Slide 4: 3x3 feature grid ============ */
+      .grid3x3 {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        gap: 14px;
+        margin-top: 20px;
+        margin-bottom: 40px;
+      }
+      .feature-card {
+        border: 3px solid #000;
+        border-radius: 16px;
+        box-shadow: 6px 6px 0 #000;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 6px;
+        color: var(--ink);
+        break-inside: avoid;
+      }
+      .feature-card h3 {
+        margin: 0;
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 19px;
+      }
+      .feature-card p {
+        margin: 0;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 700;
+        font-size: 11.5px;
+        line-height: 1.32;
+      }
+
+      /* ============ Slide 5: three numbered value cards ============ */
+      .trio {
+        display: flex;
+        gap: 20px;
+        margin-top: 32px;
+      }
+      .value-card {
+        flex: 1;
+        position: relative;
+        border: 3px solid #000;
+        border-radius: 20px;
+        box-shadow: 6px 6px 0 #000;
+        padding: 22px 20px 20px;
+        color: var(--ink);
+        break-inside: avoid;
+      }
+      .value-card .num {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #000;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 15px;
+      }
+      .value-card h3 {
+        margin: 48px 0 10px;
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 21px;
+      }
+      .value-card p {
+        margin: 0;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 700;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      /* ============ Slide 6: three impact-dimension cards ============ */
+      .impact-trio {
+        display: flex;
+        gap: 20px;
+        margin-top: 28px;
+      }
+      .impact-card {
+        flex: 1;
+        border: 3px solid #000;
+        border-radius: 20px;
+        box-shadow: 6px 6px 0 #000;
+        padding: 22px 22px 20px;
+        color: var(--ink);
+        break-inside: avoid;
+      }
+      .impact-card h3 {
+        margin: 0 0 16px;
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 21px;
+      }
+      .impact-card ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+      }
+      .impact-card li {
+        position: relative;
+        padding-left: 16px;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 700;
+        font-size: 11.5px;
+        line-height: 1.34;
+      }
+      .impact-card li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 5px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--ink);
+      }
+
+      /* ============ Slide 7: closing CTA button ============ */
+      .cta-btn {
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px 46px;
+        border: 3px solid #000;
+        border-radius: 999px;
+        box-shadow: 6px 6px 0 #000;
+        background: var(--cyan);
+        color: var(--ink);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 21px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============ Slide 1 / 7 : A Love Letter ============ -->
+    <section class="slide slide-cream">
+      <span class="pill">A love letter</span>
+      <span class="star tr">&#9733;</span>
+      <div class="center-body">
+        <h1 class="headline" style="font-size: 44px; max-width: 900px">
+          I knew the world's news.<br />
+          I didn't know Iman's.
+        </h1>
+        <p class="sub">Even when I made the event, I couldn't always fully show up.</p>
+        <p class="strong-line">So I built Family Hub.</p>
+        <div class="dots">
+          <span class="dot" style="background: var(--cyan)"></span>
+          <span class="dot" style="background: var(--green)"></span>
+          <span class="dot" style="background: var(--pink)"></span>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Family Hub</span>
+        <span>1 / 7</span>
+      </div>
+    </section>
+
+    <!-- ============ Slide 2 / 7 : The Big Idea ============ -->
+    <section class="slide slide-purple">
+      <span class="star tl">&#9733;</span>
+      <span class="pill right pill-green">The big idea</span>
+      <div class="center-body">
+        <h1 class="headline" style="font-size: 40px; color: var(--cream)">
+          What if your family<br />
+          ran on rituals,<br />
+          not reminders?
+        </h1>
+        <p class="sub" style="color: var(--cream)">
+          Family Hub turns everyday parenting into shared rituals.
+        </p>
+        <div class="dots">
+          <span class="dot" style="background: var(--pink)"></span>
+          <span class="dot" style="background: var(--cyan)"></span>
+          <span class="dot" style="background: var(--green)"></span>
+          <span class="dot" style="background: var(--coral)"></span>
+          <span class="dot" style="background: var(--yellow)"></span>
+        </div>
+      </div>
+      <div class="footer" style="color: var(--cream)">
+        <span>Family Hub</span>
+        <span>2 / 7</span>
+      </div>
+    </section>
+
+    <!-- ============ Slide 3 / 7 : Five problems, five fixes ============ -->
+    <section class="slide slide-cream">
+      <div class="content-header" style="margin-top: 0">
+        <h2 class="headline" style="font-size: 26px">
+          Five everyday struggles. Five gentle fixes.
+        </h2>
+        <p class="sub" style="font-size: 12.5px">
+          Every feature solves a real problem most parents already live with.
+        </p>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <div class="cat-badge" style="background: var(--pink)">Habits</div>
+          <div class="cols">
+            <div>
+              <p class="lbl">The problem</p>
+              <p class="txt">Kids need structure. Parents are tired of nagging.</p>
+            </div>
+            <div>
+              <p class="lbl">The solution</p>
+              <p class="txt">Stickers, streaks and charts that turn routines into a daily game.</p>
+            </div>
+            <div>
+              <p class="lbl">The value</p>
+              <p class="txt">Kids build routines they're proud of. You stop being the bad cop.</p>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="cat-badge" style="background: var(--green)">Money</div>
+          <div class="cols">
+            <div>
+              <p class="lbl">The problem</p>
+              <p class="txt">Kids reach 18 without a basic grasp of money or how to manage it.</p>
+            </div>
+            <div>
+              <p class="lbl">The solution</p>
+              <p class="txt">Pocket money kids earn: then save, spend, or invest.</p>
+            </div>
+            <div>
+              <p class="lbl">The value</p>
+              <p class="txt">Iman knows what it means to invest at five. So can your child.</p>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="cat-badge" style="background: var(--cyan)">Learning</div>
+          <div class="cols">
+            <div>
+              <p class="lbl">The problem</p>
+              <p class="txt">School emails, group chats, notes in bags: things slip.</p>
+            </div>
+            <div>
+              <p class="lbl">The solution</p>
+              <p class="txt">Shared calendar, noticeboard, and Learn for daily practice.</p>
+            </div>
+            <div>
+              <p class="lbl">The value</p>
+              <p class="txt">You never miss sports day or parents' evening. Learning feels fun.</p>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="cat-badge" style="background: var(--coral)">Heart</div>
+          <div class="cols">
+            <div>
+              <p class="lbl">The problem</p>
+              <p class="txt">
+                Most days end with &ldquo;How was school?&rdquo; &ldquo;Fine.&rdquo; Nothing more.
+              </p>
+            </div>
+            <div>
+              <p class="lbl">The solution</p>
+              <p class="txt">A daily journal and gratitude prompt the whole family fills in.</p>
+            </div>
+            <div>
+              <p class="lbl">The value</p>
+              <p class="txt">Conversations open up. Kids feel seen. So do parents.</p>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="cat-badge" style="background: var(--yellow)">Together</div>
+          <div class="cols">
+            <div>
+              <p class="lbl">The problem</p>
+              <p class="txt">Meals, calendars, plans: all in different heads and apps.</p>
+            </div>
+            <div>
+              <p class="lbl">The solution</p>
+              <p class="txt">One shared home view: meals, calendars, announcements, more.</p>
+            </div>
+            <div>
+              <p class="lbl">The value</p>
+              <p class="txt">Mental load actually gets shared. Less chaos. More us.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Family Hub</span>
+        <span>3 / 7</span>
+      </div>
+    </section>
+
+    <!-- ============ Slide 4 / 7 : Feature focus grid ============ -->
+    <section class="slide slide-cream">
+      <span class="pill pill-purple">Feature focus</span>
+      <div class="content-header">
+        <h2 class="headline">Everything family. In one place.</h2>
+        <p class="sub">Nine tools that fit how your week actually runs.</p>
+      </div>
+      <div class="grid3x3">
+        <div class="feature-card" style="background: var(--pink)">
+          <h3>Habits</h3>
+          <p>Stickers, streaks, charts: routines kids own.</p>
+        </div>
+        <div class="feature-card" style="background: var(--green)">
+          <h3>Money</h3>
+          <p>Pocket money kids earn, save, and invest.</p>
+        </div>
+        <div class="feature-card" style="background: var(--cyan)">
+          <h3>Calendar</h3>
+          <p>School and home in one shared view.</p>
+        </div>
+        <div class="feature-card" style="background: var(--coral)">
+          <h3>Noticeboard</h3>
+          <p>Every school assignment and notice in one place.</p>
+        </div>
+        <div class="feature-card" style="background: var(--yellow)">
+          <h3>My Tasks</h3>
+          <p>Each parent's own to-do list: only what's on them.</p>
+        </div>
+        <div class="feature-card" style="background: var(--lavender)">
+          <h3>Journal</h3>
+          <p>Daily gratitude the whole family fills.</p>
+        </div>
+        <div class="feature-card" style="background: var(--blue); color: var(--cream)">
+          <h3>Learn</h3>
+          <p>Daily practice: maths, English, more.</p>
+        </div>
+        <div class="feature-card" style="background: var(--orange)">
+          <h3>Meals</h3>
+          <p>Plan the week. Stop asking what's for dinner.</p>
+        </div>
+        <div class="feature-card" style="background: var(--rose)">
+          <h3>Rewards</h3>
+          <p>Real prizes kids unlock with stickers.</p>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Family Hub</span>
+        <span>4 / 7</span>
+      </div>
+    </section>
+
+    <!-- ============ Slide 5 / 7 : Why it matters ============ -->
+    <section class="slide slide-cream">
+      <span class="pill pill-green">Why it matters</span>
+      <div class="content-header">
+        <h2 class="headline" style="font-size: 33px; max-width: 900px">
+          At five, Iman is learning things<br />
+          that take most adults a lifetime.
+        </h2>
+      </div>
+      <div class="trio">
+        <div class="value-card" style="background: var(--pink)">
+          <span class="num">1</span>
+          <h3>Confidence</h3>
+          <p>
+            She chooses to build good habits.<br />
+            She earns.<br />
+            She sees her own progress<br />
+            on a chart she made.
+          </p>
+        </div>
+        <div class="value-card" style="background: var(--cyan)">
+          <span class="num">2</span>
+          <h3>Connection</h3>
+          <p>
+            We talk every night about<br />
+            the highlights of her day<br />
+            and what she is grateful for.
+          </p>
+        </div>
+        <div class="value-card" style="background: var(--yellow)">
+          <span class="num">3</span>
+          <h3>Conversation</h3>
+          <p>
+            Money, school, feelings: things that used to be a<br />
+            struggle, are now play.
+          </p>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Family Hub</span>
+        <span>5 / 7</span>
+      </div>
+    </section>
+
+    <!-- ============ Slide 6 / 7 : Impact across three dimensions ============ -->
+    <section class="slide slide-cream">
+      <span class="pill pill-purple">Impact</span>
+      <div class="content-header">
+        <h2 class="headline" style="font-size: 27px">It's bigger than one family.</h2>
+        <p class="sub" style="font-size: 12.5px">
+          Family Hub creates measurable impact across three dimensions.
+        </p>
+      </div>
+      <div class="impact-trio">
+        <div class="impact-card" style="background: var(--pink)">
+          <h3>Social</h3>
+          <ul>
+            <li>Kids feel seen through daily gratitude.</li>
+            <li>Parents share the mental load.</li>
+            <li>Money becomes a first language at home. A skill that opens every door.</li>
+            <li>Family bonds in a fragmented world.</li>
+          </ul>
+        </div>
+        <div class="impact-card" style="background: var(--green)">
+          <h3>Economic</h3>
+          <ul>
+            <li>Replaces 5+ apps families pay for.</li>
+            <li>Saves hours of coordination every week.</li>
+            <li>Kids who save become adults who invest.</li>
+            <li>Stronger financial foundations for life.</li>
+          </ul>
+        </div>
+        <div class="impact-card" style="background: var(--cyan)">
+          <h3>Environmental</h3>
+          <ul>
+            <li>Cuts paper waste from charts and notes.</li>
+            <li>Habit framework scales to sustainability.</li>
+            <li>Tidier homes. Less waste. Less stuff.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Family Hub</span>
+        <span>6 / 7</span>
+      </div>
+    </section>
+
+    <!-- ============ Slide 7 / 7 : Where we're going ============ -->
+    <section class="slide slide-cream">
+      <span class="pill pill-coral">Where we're going</span>
+      <span class="star tr purple">&#9733;</span>
+      <div class="center-body">
+        <h1 class="headline" style="font-size: 38px; max-width: 900px">
+          I want every family to be in<br />
+          each other's worlds.
+        </h1>
+        <p class="sub" style="max-width: 640px">
+          Family Hub started as a tool for me and Iman.<br />
+          It is becoming a tool for every family who feels the pull<br />
+          between being there and getting it all done.
+        </p>
+        <span class="cta-btn">Let's build it together.</span>
+      </div>
+      <div class="footer">
+        <span>Family Hub</span>
+        <span>7 / 7</span>
+      </div>
+    </section>
+  </body>
+</html>
