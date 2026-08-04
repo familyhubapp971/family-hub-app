@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 
 // Page object for the public Welcome page (`/`). Step files MUST go
-// through these methods — no raw page.locator() calls per CLAUDE.md.
+// through these methods, no raw page.locator() calls per CLAUDE.md.
 export class WelcomePagePO {
   constructor(private readonly page: Page) {}
 

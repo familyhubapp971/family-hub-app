@@ -1,6 +1,6 @@
 # Scenario names here MUST match scenarios in docs/features/auth.md
 # character-for-character. This is the Jira AC ↔ test traceability
-# contract. See /CLAUDE.md "E2E — Playwright + playwright-bdd".
+# contract. See /CLAUDE.md "E2E: Playwright + playwright-bdd".
 
 Feature: Auth
 
@@ -15,7 +15,7 @@ Feature: Auth
   # synthetic e2e account; it stays out of @critical because hitting
   # staging Supabase from GH Actions runners is flaky.
 
-  # FHS-196 — Vertical-slice check. Signs in with the dedicated
+  # FHS-196: Vertical-slice check. Signs in with the dedicated
   # synthetic e2e@familyhub.test account, then visits /me and asserts
   # the api-rendered greeting matches the signed-in email.
   Scenario: Signed-in user sees their email greeting on /me

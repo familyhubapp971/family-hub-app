@@ -5,14 +5,14 @@ import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '../../../../apps/api/src/db/schema.js';
 
-// FHS-516 — direct DB access for the authed e2e fixture's seed/cleanup.
+// FHS-516: direct DB access for the authed e2e fixture's seed/cleanup.
 // Reuses the SAME Drizzle schema module the api and the integration tier
 // use (apps/api/src/db/schema.ts) so column names/types can never drift
 // out from under this fixture.
 //
 // Connection string: resolved EXACTLY like playwright.config.ts resolves
 // the api webServer's DATABASE_URL (`process.env.DATABASE_URL` with the
-// same local-dev fallback) — captured at module load, before anything else
+// same local-dev fallback), captured at module load, before anything else
 // in this package touches process.env, so it can never accidentally pick
 // up a value meant for something else (see env.ts's comment on why
 // SUPABASE_URL resolution is kept separate from this).
@@ -40,7 +40,7 @@ export function getE2eDb() {
   return drizzle(getPool(), { schema });
 }
 
-// FHS-516 — the e2e api webServer boots with `drizzle-kit push` (schema only),
+// FHS-516: the e2e api webServer boots with `drizzle-kit push` (schema only),
 // exactly like staging/prod. That never creates the SECURITY DEFINER reader
 // functions (app_user_memberships etc.), which GET /api/me calls to list a
 // user's families across tenants. Without them /api/me returns no tenants and

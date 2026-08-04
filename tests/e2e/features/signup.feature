@@ -1,7 +1,7 @@
 # Signup is auth-first since the duplicate-family-name fix: /signup
 # collects email only (or kicks off Google OAuth). Family name + slug
 # are captured post-auth on the CreateFamilyPanel rendered by
-# LegacyDashboardRedirect — those scenarios live in dashboard.feature
+# LegacyDashboardRedirect, those scenarios live in dashboard.feature
 # under the no-tenant cohort.
 
 Feature: Signup page

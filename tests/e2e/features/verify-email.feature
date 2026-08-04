@@ -1,4 +1,4 @@
-# FHS-223 — /verify-email page (post-signup magic-link confirmation).
+# FHS-223: /verify-email page (post-signup magic-link confirmation).
 
 Feature: Verify-email page
 

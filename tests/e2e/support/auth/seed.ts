@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { ensureReaderFunctions, getE2eDb, schema } from './db.js';
 
-// FHS-516 — seed one small, fully-isolated family per test. Every test that
+// FHS-516: seed one small, fully-isolated family per test. Every test that
 // uses the `authedFamily` fixture gets its own tenant + admin user + child
 // member + habit with randomised slug/email, so parallel workers never
 // collide on the unique `tenants.slug` / `users.email` constraints. The
@@ -13,7 +13,7 @@ export interface SeededFamily {
   tenantId: string;
   slug: string;
   tenantName: string;
-  /** Matches the JWT `sub` the fixture mints — see support/fixtures.ts. */
+  /** Matches the JWT `sub` the fixture mints, see support/fixtures.ts. */
   userId: string;
   email: string;
   adminMemberId: string;
@@ -27,7 +27,7 @@ function shortId(): string {
 
 export async function seedFamily(): Promise<SeededFamily> {
   // The api pushes schema on boot but never creates the SECURITY DEFINER
-  // reader functions GET /api/me needs — apply them once before seeding so
+  // reader functions GET /api/me needs, apply them once before seeding so
   // authed pages resolve the family name (not the "Your family" fallback).
   await ensureReaderFunctions();
   const db = getE2eDb();
@@ -44,7 +44,7 @@ export async function seedFamily(): Promise<SeededFamily> {
   if (!tenant) throw new Error('seedFamily: tenant insert returned no row');
 
   // Mirrors what authMiddleware's getOrCreateUser would do on first
-  // request — pre-inserting it here lets `members.user_id` FK to it
+  // request, pre-inserting it here lets `members.user_id` FK to it
   // immediately. The middleware's own upsert on the first authenticated
   // request is a no-op refresh against this same row (idempotent).
   await db.insert(schema.users).values({ id: userId, email });
@@ -99,7 +99,7 @@ export async function seedFamily(): Promise<SeededFamily> {
  * Deletes the tenant row (cascades to every tenant-scoped child row: members,
  * habits, ...) and the users-mirror row. The mirror has no tenant_id (a user
  * can belong to several tenants), so it doesn't cascade off the tenant
- * delete — remove it explicitly so repeated local runs don't accumulate
+ * delete: remove it explicitly so repeated local runs don't accumulate
  * `e2e-*@example.invalid` fixture rows.
  */
 export async function cleanupFamily(

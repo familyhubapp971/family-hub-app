@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { SignupPage } from '../support/pages/SignupPage';
 
-// Signup is email-only — family name + slug moved post-auth to the
+// Signup is email-only: family name + slug moved post-auth to the
 // CreateFamilyPanel (`tests/e2e/steps/dashboard.ts` covers those).
 
 const { Given, Then } = createBdd();

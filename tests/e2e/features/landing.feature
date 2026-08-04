@@ -1,6 +1,6 @@
 # Scenario names here MUST match scenarios in docs/features/<slug>.md
 # character-for-character. This is the Jira AC ↔ test traceability
-# contract. See /CLAUDE.md "E2E — Playwright + playwright-bdd".
+# contract. See /CLAUDE.md "E2E: Playwright + playwright-bdd".
 
 Feature: Landing page
 
