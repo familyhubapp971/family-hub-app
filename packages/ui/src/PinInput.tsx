@@ -11,9 +11,9 @@ interface PinInputProps {
   autoFocus?: boolean;
   /** Use type="password" so digits render as dots (kid privacy). Default true. */
   mask?: boolean;
-  /** Disabled state — locks all cells and dims the styling. */
+  /** Disabled state: locks all cells and dims the styling. */
   disabled?: boolean;
-  /** Error state — red border + ring. Used after a failed PIN attempt. */
+  /** Error state: red border + ring. Used after a failed PIN attempt. */
   error?: boolean;
   /** Accessible label for the whole group. */
   label?: string;
@@ -75,7 +75,7 @@ export function PinInput({
 
   const handleChange = (idx: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-    // Pasting multiple digits at once — distribute left-to-right from idx.
+    // Pasting multiple digits at once: distribute left-to-right from idx.
     if (raw.length > 1) {
       const digits = raw.replace(/\D/g, '').slice(0, length - idx);
       if (!digits) return;

@@ -7,7 +7,7 @@ export interface BoostButtonProps {
 }
 
 /**
- * One boost-preset pill (e.g. "2x", "3x", "5x") — the "Pocket money" screen
+ * One boost-preset pill (e.g. "2x", "3x", "5x"): the "Pocket money" screen
  * (FHS-512) renders three of these per habit so a big/important habit can
  * pay out more stickers per completion.
  */

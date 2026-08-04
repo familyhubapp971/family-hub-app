@@ -3,7 +3,7 @@ import type { KeyboardEvent } from 'react';
 import { Check, ChevronDown, Search } from 'lucide-react';
 
 // Lightweight searchable dropdown shared by TimezonePicker (FHS-38) and
-// CurrencyPicker (FHS-39). Pure React + Tailwind — no headlessui dep.
+// CurrencyPicker (FHS-39). Pure React + Tailwind, no headlessui dep.
 //
 // Keyboard model:
 //   - Enter / Space / Click on the trigger toggles open
@@ -34,14 +34,14 @@ export interface SearchableSelectProps {
   searchPlaceholder?: string;
   /** Override the search predicate. Default: case-insensitive match on label + value + secondary. */
   filter?: (option: SearchableOption, query: string) => boolean;
-  /** Tailwind class added to the trigger button — caller controls width. */
+  /** Tailwind class added to the trigger button, caller controls width. */
   className?: string;
   testId?: string;
   disabled?: boolean;
   /** Optional aria-label when there's no visible <label> nearby. */
   ariaLabel?: string;
   /**
-   * `id` for the trigger button — pair with a sibling `<label htmlFor>`
+   * `id` for the trigger button, pair with a sibling `<label htmlFor>`
    * for proper screen-reader association. Without this, only `ariaLabel`
    * conveys the field name.
    */
@@ -132,14 +132,14 @@ export function SearchableSelect({
       return;
     }
     if (e.key === 'Tab') {
-      // Don't preventDefault — let the browser move focus naturally.
+      // Don't preventDefault, let the browser move focus naturally.
       // Just dismiss the popover so a stray Enter on the next focused
       // element can't re-trigger the highlight commit on tab-back.
       setOpen(false);
     }
   }
 
-  // Stable id for the highlighted option — paired with the search
+  // Stable id for the highlighted option, paired with the search
   // input's aria-activedescendant so screen readers announce moves
   // through the list while focus stays in the input.
   const activeDescendantId =
@@ -204,7 +204,7 @@ export function SearchableSelect({
                 /* eslint-disable-next-line jsx-a11y/click-events-have-key-events --
                    Keyboard interaction happens on the search input via
                    aria-activedescendant (↑/↓/Enter), not on the option
-                   itself — focus never leaves the input. The click
+                   itself, focus never leaves the input. The click
                    handler exists for mouse + touch only. */
                 <li
                   key={opt.value}

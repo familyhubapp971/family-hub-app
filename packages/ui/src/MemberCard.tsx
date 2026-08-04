@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from './Card';
 import { AvatarDisc } from './RoleBadge';
 
-// FHS-513 — the family-member card shell shared by the Manage Members
+// FHS-513: the family-member card shell shared by the Manage Members
 // "Grown-ups", "Kids", and "Waiting to join" groups: avatar disc + name
 // + a status line (email / PIN state) + role badge up top, arbitrary
 // body content (inline forms, info panels) in the middle, and an
@@ -12,11 +12,11 @@ export interface MemberCardProps {
   role: string;
   name: string;
   avatarEmoji?: string | null;
-  /** Role badge element — pass a `<RoleBadge role={...} />`. */
+  /** Role badge element: pass a `<RoleBadge role={...} />`. */
   badge: React.ReactNode;
-  /** Short line under the name — an email, "PIN set", "Pending", etc. */
+  /** Short line under the name: an email, "PIN set", "Pending", etc. */
   statusLine?: React.ReactNode;
-  /** Extra body content — pending box, inline edit/PIN forms, info panels. */
+  /** Extra body content: pending box, inline edit/PIN forms, info panels. */
   children?: React.ReactNode;
   /** Actions row rendered at the bottom of the card. */
   footer?: React.ReactNode;

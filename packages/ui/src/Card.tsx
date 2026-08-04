@@ -9,7 +9,7 @@ interface CardProps {
   /**
    * Border radius. Default `'xl'` matches the Magic Patterns design
    * (FHS-220 marketing pages and onwards). The legacy `'2xl'` value is
-   * preserved as an opt-in for surfaces that want the softer corner —
+   * preserved as an opt-in for surfaces that want the softer corner,
    * see the pre-MP mockups (removed in FHS-552, in git history) that pre-date the MP
    * refresh.
    */
@@ -39,7 +39,7 @@ export function Card({
     '2xl': 'rounded-2xl',
   };
 
-  // Keyboard a11y: when onClick is set, the card becomes interactive —
+  // Keyboard a11y: when onClick is set, the card becomes interactive:
   // add role="button", make it focusable, and handle Enter/Space.
   const interactive = Boolean(onClick);
   const onKeyDown = interactive

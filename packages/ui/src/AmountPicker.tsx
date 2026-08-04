@@ -7,21 +7,21 @@ export interface AmountPickerProps {
   currency: string;
   /** How much each ± tap changes the value by, in minor units. Default 25 (a quarter unit). */
   stepMinor?: number;
-  /** Floor for the value, in minor units. Default 0 — money never goes negative here. */
+  /** Floor for the value, in minor units. Default 0: money never goes negative here. */
   minMinor?: number;
   /** Optional ceiling, in minor units. */
   maxMinor?: number;
-  /** Called with the new value in INTEGER minor units — never a float. */
+  /** Called with the new value in INTEGER minor units, never a float. */
   onChange: (minor: number) => void;
   label?: string;
   testId?: string;
 }
 
 /**
- * FHS-512 — the ± stepper + editable number used by the "Pocket money"
+ * FHS-512: the ± stepper + editable number used by the "Pocket money"
  * settings screen (family rate, per-child overrides). Internally everything
  * is an integer minor-unit amount; the decimal string is ONLY for display
- * and for parsing what the family typed — `onChange` always receives a
+ * and for parsing what the family typed, `onChange` always receives a
  * money-safe integer.
  */
 export function AmountPicker({

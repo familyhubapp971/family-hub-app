@@ -20,7 +20,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
   },
   ref,
 ) {
-  // focus-visible ring keeps keyboard users oriented (WCAG 2.4.7) — must
+  // focus-visible ring keeps keyboard users oriented (WCAG 2.4.7): must
   // not drop the ring when removing the default outline.
   // Hover: lift -2px (pointer devices only) + grow shadow → 5px. Press:
   // sink back down + drop shadow. The motion-safe variant gates the

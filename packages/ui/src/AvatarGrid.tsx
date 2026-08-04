@@ -4,10 +4,10 @@ export interface AvatarTile {
   id: string;
   /** Display name shown under the avatar. */
   name: string;
-  /** Optional role tag — e.g. "Mum", "Teen (14)", "Child (6)". */
+  /** Optional role tag, e.g. "Mum", "Teen (14)", "Child (6)". */
   role?: string;
   /**
-   * Tailwind background class for the round avatar disc — e.g.
+   * Tailwind background class for the round avatar disc, e.g.
    * "bg-pink-200", "bg-cyan-300". Picks up the persona colour wheel.
    */
   color: string;
@@ -25,7 +25,7 @@ interface AvatarGridProps {
   /** When set, the matching tile renders with a yellow ring + neo-shadow. */
   selectedId?: string;
   /**
-   * Tailwind grid-cols class — defaults to a responsive 2/3/4 layout
+   * Tailwind grid-cols class: defaults to a responsive 2/3/4 layout
    * that handles 4-6 avatars cleanly. Override for non-standard counts
    * (e.g. 3-cols-only when there are exactly 3 avatars).
    */
@@ -35,8 +35,8 @@ interface AvatarGridProps {
 
 /**
  * Grid of avatar tiles. Used in two places:
- *   - Login kid-picker (Login.tsx — kid taps their face to start PIN entry)
- *   - Dashboard family-member row (Dashboard.tsx — admin sees the family
+ *   - Login kid-picker (Login.tsx: kid taps their face to start PIN entry)
+ *   - Dashboard family-member row (Dashboard.tsx: admin sees the family
  *     at a glance)
  *
  * Each tile is a real <button> so keyboard users can Tab through and

@@ -8,19 +8,19 @@ interface FeatureCardProps {
   /** Body copy rendered below the title. */
   body: string;
   /**
-   * Tailwind background class for the colored header band — e.g.
+   * Tailwind background class for the colored header band, e.g.
    * "bg-yellow-200", "bg-lime-200", "bg-cyan-200".
    */
   headerBg: string;
   /**
-   * Tailwind background class for the card body — e.g. "bg-yellow-50".
+   * Tailwind background class for the card body, e.g. "bg-yellow-50".
    * Pairs with headerBg for cohesive colour blocking.
    */
   cardBg: string;
-  /** Tailwind text-color class for the icon — e.g. "text-pink-500". */
+  /** Tailwind text-color class for the icon, e.g. "text-pink-500". */
   iconColor: string;
   /**
-   * Tailwind border-l-* class for the accent stripe on the left edge —
+   * Tailwind border-l-* class for the accent stripe on the left edge,
    * e.g. "border-l-pink-400". Renders as a 6px coloured bar.
    */
   accentBar: string;
@@ -30,7 +30,7 @@ interface FeatureCardProps {
 }
 
 /**
- * Marketing feature card used on the Welcome page (FHS-221) — colored
+ * Marketing feature card used on the Welcome page (FHS-221): colored
  * header band over a white card body with an icon, heading, and body
  * copy. Six-pixel accent stripe on the left edge ties it to a category
  * (calendar / tasks / learn / journal).

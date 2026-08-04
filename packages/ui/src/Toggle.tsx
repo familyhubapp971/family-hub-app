@@ -7,7 +7,7 @@ export interface ToggleProps {
 }
 
 /**
- * A simple on/off switch — used by the "Pocket money" settings screen's
+ * A simple on/off switch, used by the "Pocket money" settings screen's
  * "Different amount for {name}" per-child toggle (FHS-512), and reusable
  * anywhere else a binary on/off control is needed.
  */
@@ -21,7 +21,7 @@ export function Toggle({ checked, onChange, label, disabled = false, testId }: T
       disabled={disabled}
       data-testid={testId}
       onClick={() => onChange(!checked)}
-      // FIX 4 (BLOCKER, merge gate) — the track was h-8 (32px), under the
+      // FIX 4 (BLOCKER, merge gate): the track was h-8 (32px), under the
       // 44x44px minimum tap target. min-h-[44px] + a flex-centred track
       // keeps the visual pill the same size while making the whole button
       // (the actual tap target) at least 44px tall.

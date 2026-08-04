@@ -8,7 +8,7 @@ export interface ResultBannerProps {
 }
 
 /**
- * A small "here's what this means" banner — e.g. the "Pocket money" screen's
+ * A small "here's what this means" banner, e.g. the "Pocket money" screen's
  * (FHS-512) "This habit pays {amount} each time." live result under the
  * boost picker. `tone="warning"` for the skip-penalty preview. The leading
  * icon is decorative (aria-hidden) and doesn't add to `.textContent`.

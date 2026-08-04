@@ -8,9 +8,9 @@ export interface PricingFeature {
 }
 
 interface PricingCardProps {
-  /** Tier name — Household, Family, Family Pro etc. */
+  /** Tier name: Household, Family, Family Pro etc. */
   name: string;
-  /** Display price — "Free", "$7.99", "£12.99". */
+  /** Display price: "Free", "$7.99", "£12.99". */
   price: string;
   /** Optional suffix like "/mo" or "/yr" rendered next to the price. */
   priceSuffix?: string;
@@ -24,7 +24,7 @@ interface PricingCardProps {
   features: PricingFeature[];
   /**
    * When true, the card highlights with a 4px yellow border + the
-   * "Most popular" floating badge. Use sparingly — exactly one tier
+   * "Most popular" floating badge. Use sparingly, exactly one tier
    * should be featured per page.
    */
   featured?: boolean;

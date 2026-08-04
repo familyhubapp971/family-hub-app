@@ -1,5 +1,5 @@
 /* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE,
-   ABOVE THE TAILWIND IMPORTS — DO NOT DELETE THIS COMMENT */
+   ABOVE THE TAILWIND IMPORTS: DO NOT DELETE THIS COMMENT */
 @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
 
 /* CRITICAL: TAILWIND IMPORTS MUST NEVER BE DELETED OR REORDERED */
@@ -33,7 +33,7 @@
    animates them as one. Pages opt in via `<div class="space-bg">`.
    Ported from family-hub/frontend/index.css (legacy reference). */
 .space-bg {
-  /* kingdom.900 — kept literal so this rule resolves without depending on
+  /* kingdom.900: kept literal so this rule resolves without depending on
      the Tailwind preset being active in the build pipeline. */
   background-color: #3d1065;
   background-image: radial-gradient(
@@ -60,7 +60,7 @@
   }
 }
 
-/* Custom scrollbar — neo-brutalist visual language. */
+/* Custom scrollbar: neo-brutalist visual language. */
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;

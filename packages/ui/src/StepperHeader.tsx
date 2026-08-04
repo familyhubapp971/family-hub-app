@@ -11,7 +11,7 @@ interface StepperHeaderProps {
 }
 
 /**
- * Numbered step indicator used by the Onboarding wizard (FHS-36) — and
+ * Numbered step indicator used by the Onboarding wizard (FHS-36), and
  * any other multi-step flow we add later (e.g. invite acceptance,
  * tenant transfer).
  *
@@ -22,7 +22,7 @@ interface StepperHeaderProps {
  *
  * The connecting line behind the circles fills proportionally to
  * `current / steps`, animated via a CSS width transition (no JS
- * animation library needed — keeps the primitive bundle-cheap).
+ * animation library needed, keeps the primitive bundle-cheap).
  *
  * Respects prefers-reduced-motion: the width transition is skipped
  * when reduce-motion is on (CSS-level via the global utility).
@@ -40,7 +40,7 @@ export function StepperHeader({
   return (
     <div data-testid={testId} className="w-full" aria-label={`Step ${safeCurrent} of ${steps}`}>
       <div className="relative flex items-center justify-between">
-        {/* Background bar — anchored to the circle's vertical centre
+        {/* Background bar, anchored to the circle's vertical centre
             (top-5 = 20px = h-10 / 2) so it doesn't drift when labels
             grow the parent flex row's height. Using top-1/2 here
             would centre the bar on the row-with-labels, which sits

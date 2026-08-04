@@ -1,5 +1,5 @@
 /**
- * AvatarEmojiPicker — FHS-433
+ * AvatarEmojiPicker: FHS-433
  *
  * A family-avatar emoji picker with skin-tone support. Shows the canonical
  * palette (person emojis + non-person emojis) plus a row of 6 skin-tone
@@ -8,9 +8,9 @@
  * Tapping an emoji calls onSelect with the fully-toned string baked in.
  *
  * Props:
- *   value     — currently selected emoji (toned or plain). Highlights that cell.
- *   onSelect  — called with the chosen emoji string (modifier included).
- *   testId    — optional data-testid root for the wrapper.
+ *   value     : currently selected emoji (toned or plain). Highlights that cell.
+ *   onSelect  : called with the chosen emoji string (modifier included).
+ *   testId    : optional data-testid root for the wrapper.
  *
  * Accessibility:
  *   - Tone swatches are <button> elements with explicit aria-labels.
@@ -24,10 +24,10 @@ import { applyTone, isToneable, SKIN_TONES, stripTone, type SkinToneModifier } f
 
 // ── Canonical palette ─────────────────────────────────────────────────────────
 
-/** Person emojis — accept Fitzpatrick skin-tone modifiers. */
+/** Person emojis: accept Fitzpatrick skin-tone modifiers. */
 const PERSON_EMOJIS = ['👩', '👨', '👧', '👦', '🧒', '👵', '👴'] as const;
 
-/** Non-person emojis — rendered as-is regardless of the active tone. */
+/** Non-person emojis: rendered as-is regardless of the active tone. */
 const NON_PERSON_EMOJIS = ['🐱', '🐶', '⭐'] as const;
 
 // ── Component ─────────────────────────────────────────────────────────────────

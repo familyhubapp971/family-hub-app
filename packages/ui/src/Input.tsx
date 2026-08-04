@@ -4,10 +4,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
   /**
    * Visual variant.
-   *  - `'default'` (gray-50 background, gray border, pink focus) — for
+   *  - `'default'` (gray-50 background, gray border, pink focus): for
    *    forms on a white app surface.
    *  - `'dark'` (white background, hard 2px black border, purple focus
-   *    ring) — for the MP-design forms on white cards over kingdom-purple
+   *    ring): for the MP-design forms on white cards over kingdom-purple
    *    surfaces (Register, Onboarding).
    */
   variant?: 'default' | 'dark';
