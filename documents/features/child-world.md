@@ -5,8 +5,8 @@
 **Owner:** product-manager
 
 One-line: a friendly, per-child screen at `/t/:slug/child/:memberId` where a
-grown-up opens one child's world — their habits/rewards (My World), Meals,
-Calendar, Journal, and (for grown-ups) Learning Insights — reached from the
+grown-up opens one child's world, their habits/rewards (My World), Meals,
+Calendar, Journal, and (for grown-ups) Learning Insights, reached from the
 account menu's "View World" links.
 
 > This doc covers the **child-world screen a grown-up views**. The screen a
@@ -55,9 +55,9 @@ account menu's "View World" links.
 
 ## Out of scope
 
-- The child's own PIN-login dashboard header (`KidDashboardShell`) — unchanged
+- The child's own PIN-login dashboard header (`KidDashboardShell`), unchanged
   by FHS-523; it keeps its kid-only stars chip + Sign out.
-- The child's balance in the header — it now lives inside the My World tab, not
+- The child's balance in the header, it now lives inside the My World tab, not
   the top bar (removed from the header to match the design).
 
 ## Open questions
@@ -73,7 +73,7 @@ account menu's "View World" links.
 ## Implementation notes
 
 - The header reuses the exported `ProfilePill` from
-  `apps/web/src/pages/tenant/AppHeader.tsx` — same account menu (children +
+  `apps/web/src/pages/tenant/AppHeader.tsx`: same account menu (children +
   Manage family + Reward settings + Log out) as the dashboard, so the two
   never drift.
 - The pill's name comes from the caller's roster row: `GET /api/members` now

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { PricingCard, type PricingFeature } from '@familyhub/ui';
 import { SiteHeader, SiteFooter } from '../../components/SiteChrome';
 
-// Pricing page — port of Magic Patterns design
+// Pricing page: port of Magic Patterns design
 // kudjspxd3xxroueg5jw11o pages/Pricing.tsx. Tier copy is the source of
 // truth for marketing until Stripe wiring lands in Sprint 5
 // (FHS-68/70/71). Layout sized to fit a 1080p viewport without scroll.
@@ -71,7 +71,7 @@ export function PricingPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-white">
-      {/* FHS-546 — shared chrome so Pricing matches the homepage + /legal
+      {/* FHS-546: shared chrome so Pricing matches the homepage + /legal
           (Legal link in the nav, full legal footer). */}
       <SiteHeader current="pricing" />
 

@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // Singleton browser client. Initialised once per page load. Picks up env
-// from Vite's import.meta.env — only the publishable / anon key is shipped
+// from Vite's import.meta.env: only the publishable / anon key is shipped
 // to the bundle (NEVER service_role; see ADR 0008 + .env.example notes).
 //
 // Database type generation lands with FHS-192 (the user-mirror sync); for
@@ -22,7 +22,7 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY set as GH Actions secrets.
 if (!url || !anonKey) {
   console.warn(
-    '[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY missing — ' +
+    '[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY missing: ' +
       'auth calls will fail. Set both at build time (Vite reads VITE_* env at build).',
   );
 }

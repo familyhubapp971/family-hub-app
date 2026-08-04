@@ -1,17 +1,17 @@
-// FHS-516 — fixed ES256 keypair used ONLY to mint test JWTs for the E2E
+// FHS-516: fixed ES256 keypair used ONLY to mint test JWTs for the E2E
 // authed-page fixture. This is not a production secret: the api only
 // trusts it when the operator explicitly sets E2E_TEST_JWKS (see
 // apps/api/src/middleware/auth.ts + config.ts), which never happens outside
-// a local or CI e2e run — config.ts refuses to boot a production process
+// a local or CI e2e run: config.ts refuses to boot a production process
 // with that var set at all.
 //
 // The key is a fixed, committed constant (not generated fresh per run) so
 // two SEPARATE Node processes agree on it without any cross-process
 // coordination:
 //   1. playwright.config.ts / playwright.critical.config.ts (the process
-//      that starts the api's webServer) — reads the PUBLIC half to build
+//      that starts the api's webServer): reads the PUBLIC half to build
 //      the E2E_TEST_JWKS env var the api verifies against.
-//   2. The Playwright worker process running a spec's fixture (jwt.ts) —
+//   2. The Playwright worker process running a spec's fixture (jwt.ts):
 //      reads the PRIVATE half to sign tokens.
 // If this were generated randomly at import time, the two processes could
 // end up with different keys and every authed request would 401.
@@ -44,11 +44,11 @@ export const E2E_TEST_PRIVATE_JWK = {
 } as const;
 
 /**
- * The JWKS handed to the running api via E2E_TEST_JWKS — the PUBLIC half
+ * The JWKS handed to the running api via E2E_TEST_JWKS: the PUBLIC half
  * only (no `d`). Same shape a real `/.well-known/jwks.json` response has.
  */
 export function e2eTestJwksJson(): string {
-  // Public half only — explicitly pick every field EXCEPT the private `d`
+  // Public half only: explicitly pick every field EXCEPT the private `d`
   // scalar, so the JWKS handed to the api can never carry the signing key.
   const { kty, crv, alg, use, kid, x, y } = E2E_TEST_PRIVATE_JWK;
   return JSON.stringify({ keys: [{ kty, crv, alg, use, kid, x, y }] });

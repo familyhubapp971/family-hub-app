@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
-// FHS-358 — the homepage reflects logged-in state. WelcomePage reads useAuth()
+// FHS-358: the homepage reflects logged-in state. WelcomePage reads useAuth()
 // (adult session) + fh.kid.token (kid) to switch between the public ad hero and
 // a "Welcome back" landing. Mock the auth module + fetch.
 
@@ -65,7 +65,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe('<WelcomePage /> — logged-in state (FHS-358)', () => {
+describe('<WelcomePage />: logged-in state (FHS-358)', () => {
   it('logged out: shows the public CTAs, not the welcome-back landing', () => {
     renderPage();
     expect(screen.getByText('Start free')).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('<WelcomePage /> — logged-in state (FHS-358)', () => {
     expect(screen.queryByTestId('welcome-loggedin')).not.toBeInTheDocument();
   });
 
-  // FHS-541 — the "What is Family Hub" value-prop card was removed (its content
+  // FHS-541: the "What is Family Hub" value-prop card was removed (its content
   // lives on the About page, reachable from the header). The homepage now
   // surfaces the /legal hub in the header nav and the footer.
   it('logged out: no value-prop card; About stays in the header, Legal is surfaced', () => {
@@ -81,7 +81,7 @@ describe('<WelcomePage /> — logged-in state (FHS-358)', () => {
     expect(screen.queryByTestId('welcome-value-prop')).not.toBeInTheDocument();
     // About still reachable from the header nav.
     expect(screen.getByRole('link', { name: /^about$/i })).toHaveAttribute('href', '/about');
-    // FHS-544 — the logged-out homepage now uses the shared SiteHeader +
+    // FHS-544: the logged-out homepage now uses the shared SiteHeader +
     // SiteFooter, so the chrome matches the legal/marketing pages exactly.
     // Header Legal link → /legal.
     expect(screen.getByRole('link', { name: /^legal$/i })).toHaveAttribute('href', '/legal');

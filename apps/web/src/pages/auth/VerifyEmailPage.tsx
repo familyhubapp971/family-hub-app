@@ -17,9 +17,9 @@ const emailSchema = z.string().email();
 // by navigating away and back.
 const RESEND_DEADLINE_KEY = 'fh.signup.resendDeadline';
 
-// FHS-223 — Post-signup confirmation page. Replaces the inline success
+// FHS-223: Post-signup confirmation page. Replaces the inline success
 // state SignupPage used to render. Visual ports MP design at
-// kudjspxd3xxroueg5jw11o pages/VerifyEmail.tsx — yellow icon disc +
+// kudjspxd3xxroueg5jw11o pages/VerifyEmail.tsx: yellow icon disc +
 // neo-brutalist white card on kingdom-purple background.
 //
 // Pending email comes from one of two sources, in priority order:
@@ -46,7 +46,7 @@ export function VerifyEmailPage() {
       setEmail(null);
       return;
     }
-    // Reject anything that doesn't parse as a valid email — render
+    // Reject anything that doesn't parse as a valid email: render
     // generic copy and disable Resend rather than displaying garbage
     // or triggering an OTP send to a malformed address.
     setEmail(emailSchema.safeParse(candidate).success ? candidate : null);
@@ -86,7 +86,7 @@ export function VerifyEmailPage() {
     setResend({ kind: 'sending' });
     // Magic-link "resend" = re-issue a fresh OTP via signInWithOtp.
     // Supabase has a `auth.resend()` helper but it's wired for the
-    // password-confirmation flow — for our magic-link-only setup
+    // password-confirmation flow: for our magic-link-only setup
     // (ADR 0011) signInWithOtp is the correct path.
     const { error } = await supabase.auth.signInWithOtp({
       email,

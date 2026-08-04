@@ -1,4 +1,4 @@
-# 0001 — Multi-tenancy strategy
+# 0001: Multi-tenancy strategy
 
 **Status:** accepted
 **Date:** 2026-04-24
@@ -48,7 +48,7 @@ Specifics:
   ```
 
 - The application uses a non-superuser, non-`BYPASSRLS` Postgres role
-  in production. RLS bypass is not available — even buggy code cannot
+  in production. RLS bypass is not available, even buggy code cannot
   cross tenants.
 - Tenant context is propagated through the request via
   Node's `AsyncLocalStorage` (`apps/api/src/context/tenant.ts`):
@@ -71,7 +71,7 @@ Specifics:
   predicate still cannot leak data, because RLS filters at the
   storage layer.
 - Onboarding a new tenant is a single `INSERT` into `tenants` plus
-  whatever feature-specific seed rows are needed — no provisioning,
+  whatever feature-specific seed rows are needed, no provisioning,
   no DDL, no DNS work for the tenant itself.
 
 **Becomes harder:**
@@ -94,9 +94,9 @@ Specifics:
 
 - Add a CI check that fails if a new table is added without
   `tenant_id` and an RLS policy (or is explicitly listed as a
-  global table — e.g., `tenants`, `feature_flags`).
+  global table, e.g., `tenants`, `feature_flags`).
 - ADR for cross-tenant admin operations (separate role + audit log
-  schema) — defer until first admin tool ships.
+  schema), defer until first admin tool ships.
 
 ## Alternatives considered
 
@@ -108,7 +108,7 @@ schema via `search_path` per connection.
 - **Rejected because:** every migration runs N times (one per
   tenant), creating long deploy windows once N grows past a few
   hundred. Tooling (Drizzle, drizzle-kit) doesn't support this
-  natively — we'd build glue. Connection pooling becomes per-schema,
+  natively, we'd build glue. Connection pooling becomes per-schema,
   multiplying open connections. Onboarding a tenant requires DDL,
   which is slow and error-prone on a live system.
 - **Re-evaluate if:** a single large enterprise tenant needs schema
@@ -133,10 +133,10 @@ enforcement.
 
 - **Rejected because:** a single missing predicate leaks all tenants'
   data with no audible failure. Code review and tests cannot
-  reliably catch this — it's a structural bug class. RLS reduces it
+  reliably catch this, it's a structural bug class. RLS reduces it
   from "always possible" to "requires intentional `BYPASSRLS`."
 
-## Exit criteria — when to revisit
+## Exit criteria: when to revisit
 
 Move off shared-schema + RLS toward schema-per-tenant or
 database-per-tenant if **any** of:
@@ -162,5 +162,5 @@ don't wait for two.
 - [`/CLAUDE.md` Multi-tenancy section](../../CLAUDE.md#multi-tenancy)
 - [PostgreSQL Row Security Policies](https://www.postgresql.org/documents/current/ddl-rowsecurity.html)
 - Source codebase: [family-hub](https://github.com/familyhubapp971/family-hub-app)
-  (single-tenant precursor — schema has no `tenant_id` today; the
+  (single-tenant precursor, schema has no `tenant_id` today; the
   SaaS port adds it everywhere)

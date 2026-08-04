@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { VerifyEmailPage } from '../../../../apps/web/src/pages/auth/VerifyEmailPage';
 
-// FHS-223 — confirmation page after signup. Tests cover the four AC
+// FHS-223: confirmation page after signup. Tests cover the four AC
 // dimensions: email source priority, Open Gmail link, resend cooldown,
 // back-link target.
 
@@ -67,7 +67,7 @@ describe('<VerifyEmailPage />', () => {
     expect(link.getAttribute('href')).toBe('https://mail.google.com/');
     expect(link.textContent).toContain('Open Gmail');
     expect(link.getAttribute('target')).toBe('_blank');
-    // Security — `target=_blank` without rel=noopener can be exploited.
+    // Security: `target=_blank` without rel=noopener can be exploited.
     expect(link.getAttribute('rel')).toContain('noopener');
   });
 
@@ -110,7 +110,7 @@ describe('<VerifyEmailPage />', () => {
       email: 'sarah@example.com',
       options: { emailRedirectTo: expect.stringContaining('/auth/callback') },
     });
-    // Button now in cooldown — disabled and shows "Resend in 60s".
+    // Button now in cooldown: disabled and shows "Resend in 60s".
     expect(button.disabled).toBe(true);
     expect(button.textContent).toMatch(/resend in 60s/i);
   });

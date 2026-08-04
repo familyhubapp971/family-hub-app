@@ -1,12 +1,12 @@
 /**
- * CloseWeekDialog — port of legacy CloseWeekDialog to the new multi-tenant per-child API.
+ * CloseWeekDialog: port of legacy CloseWeekDialog to the new multi-tenant per-child API.
  * FHS-297
  *
  * Divergences from legacy:
  * - IDs are UUID strings (not numbers).
  * - Currency is passed in (not hardcoded "AED").
  * - ClaimDialog uses real family rewards from GET /api/rewards (not hardcoded categories).
- * - No api.weeks.recordAction call — mw endpoints write week_actions server-side.
+ * - No api.weeks.recordAction call: mw endpoints write week_actions server-side.
  * - Uses fetch + headers instead of a generated API client.
  */
 import { useEffect, useState } from 'react';
@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { API_BASE } from '../../../lib/api';
 
-// FIX 2 (BLOCKER) — a rate <= 0 must never be divided by (Infinity/NaN
+// FIX 2 (BLOCKER): a rate <= 0 must never be divided by (Infinity/NaN
 // stickers would make "how many stickers is this cash worth" undefined).
 // Mirrors the api's cashAsStickers guard (apps/api/src/lib/myworld.ts).
 function stickersFromCash(cash: number, rate: number): number {
@@ -80,14 +80,14 @@ interface Investment {
   currentValueStickers: number;
   daysCompleted: number;
   daysMissed: number;
-  // FHS-534 — how many stickers this investment grows per completed day
+  // FHS-534: how many stickers this investment grows per completed day
   // (and, on invest, the pay boost applied to the underlying habit).
   // Optional so a legacy investment record without the field still falls
   // back to the historical default of 5.
   coefficient?: number;
 }
 
-// FHS-534 — investment growth-rate presets. Same 1/2/3/5 set as the habit
+// FHS-534: investment growth-rate presets. Same 1/2/3/5 set as the habit
 // "Boost" picker on the Pocket Money screen (RewardSettingsPage) since the
 // coefficient IS that habit's pay boost while the investment is active.
 const COEFFICIENT_PRESETS = [1, 2, 3, 5] as const;
@@ -677,10 +677,10 @@ function InvestDialog({
   const [submitting, setSubmitting] = useState(false);
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
-  // FHS-378 — Deductible (default): missed days subtract value. Non-deductible:
+  // FHS-378: Deductible (default): missed days subtract value. Non-deductible:
   // missed days never reduce the value.
   const [deductible, setDeductible] = useState(true);
-  // FHS-534 — Growth rate: how many stickers the investment grows per
+  // FHS-534: Growth rate: how many stickers the investment grows per
   // completed day, and (matching) how many stickers the habit pays per
   // completed day while the investment is active. Defaults to 5x, same as
   // the API's default.
@@ -967,7 +967,7 @@ function InvestDialog({
             )}
           </div>
 
-          {/* FHS-378 — Missed-days mode for the new investment. */}
+          {/* FHS-378: Missed-days mode for the new investment. */}
           {!notEnoughToInvest && !selectedIsInvested && (
             <div className="mb-2" data-testid="close-week-invest-deductible">
               <p
@@ -1009,7 +1009,7 @@ function InvestDialog({
             </div>
           )}
 
-          {/* FHS-534 — Growth rate (coefficient) for the new investment. */}
+          {/* FHS-534: Growth rate (coefficient) for the new investment. */}
           {!notEnoughToInvest && !selectedIsInvested && (
             <div className="mb-2" data-testid="close-week-invest-coefficient">
               <p
@@ -1448,7 +1448,7 @@ export function CloseWeekDialog({
   const [activeInvestments, setActiveInvestments] = useState<Investment[]>([]);
   const [availableStickers, setAvailableStickers] = useState(weeklyStickers);
   const [savingsBalance, setSavingsBalance] = useState({ savedStickers: 0, savedCash: 0 });
-  // FHS-512 — this child's effective sticker rate. 0.5 is only the fallback
+  // FHS-512: this child's effective sticker rate. 0.5 is only the fallback
   // before the first savings fetch resolves (matches the old fixed default).
   const [stickerRate, setStickerRate] = useState(0.5);
   const [initialized, setInitialized] = useState(false);

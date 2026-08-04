@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 
-// FHS-367 / FHS-373 — kid Learn reuses LearnTab in kid mode: lesson subjects +
+// FHS-367 / FHS-373: kid Learn reuses LearnTab in kid mode: lesson subjects +
 // World Flags + reading log via the token-scoped kid endpoints (no memberId).
 vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => ({ session: null }),
@@ -105,7 +105,7 @@ describe('<KidLearnPanel />', () => {
     });
   });
 
-  // FHS-373 — World Flags card present + hits /api/kid/world-flags in kid mode.
+  // FHS-373: World Flags card present + hits /api/kid/world-flags in kid mode.
   it('shows the World Flags subject card in kid mode', async () => {
     render(<KidLearnPanel kidToken="kid.jwt" />);
     await waitFor(() => expect(screen.getByTestId('learn-tab')).toBeInTheDocument());
@@ -118,7 +118,7 @@ describe('<KidLearnPanel />', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('learn-subject-world-flags'));
     });
-    // Default tab is Learn — click Explore to trigger the explore fetch.
+    // Default tab is Learn: click Explore to trigger the explore fetch.
     await waitFor(() => expect(screen.getByTestId('world-subtab-explore')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByTestId('world-subtab-explore'));

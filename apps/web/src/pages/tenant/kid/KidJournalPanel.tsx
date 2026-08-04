@@ -1,6 +1,6 @@
 import { JournalTab } from '../child/JournalTab';
 
-// FHS-366 — kid Journal tab. Reuses the full JournalTab (mood, gratitude,
+// FHS-366: kid Journal tab. Reuses the full JournalTab (mood, gratitude,
 // what-happened, creativity prompts, past entries) in KID mode: it talks to the
 // token-scoped /api/kid/journal endpoints instead of the parent session.
 export function KidJournalPanel({ kidToken }: { kidToken: string | null }) {

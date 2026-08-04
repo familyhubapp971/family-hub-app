@@ -9,15 +9,15 @@
 The World Flags game lets kids explore and learn about country flags.
 There are two phases:
 
-- **Phase 2a — Explore:** The kid taps a flashcard to reveal a flag.
+- **Phase 2a, Explore:** The kid taps a flashcard to reveal a flag.
   The server records which country codes they have seen.
-- **Phase 2b — Learn path:** Flags are grouped into sets of 5 per continent.
+- **Phase 2b, Learn path:** Flags are grouped into sets of 5 per continent.
   When a kid scores 100% on a set's quiz, the app marks that set complete.
   The next set in the continent unlocks.
 
 World Flags is kid-only (the parent `/api/world-flags` routes were removed in
-FHS-382 — see [ADR 0017](../decisions/0017-learn-is-kid-only.md)). The kid routes
-(`/api/kid/world-flags`) use the kid session token — the kid can only ever access
+FHS-382, see [ADR 0017](../decisions/0017-learn-is-kid-only.md)). The kid routes
+(`/api/kid/world-flags`) use the kid session token, the kid can only ever access
 their own data.
 
 ---
@@ -50,7 +50,7 @@ their own data.
 
 - **Given** kid "Amira" has explored `"JP"`
 - **When** sibling "Zayd" GETs `/api/kid/world-flags`
-- **Then** Zayd's explored list is empty — he cannot see Amira's flags
+- **Then** Zayd's explored list is empty, he cannot see Amira's flags
 
 ---
 
@@ -73,7 +73,7 @@ their own data.
 
 - **Given** a kid has already completed set `1` of `"Europe"`
 - **When** they POST the same body again
-- **Then** `Europe` still has exactly `[1]` — no duplicate
+- **Then** `Europe` still has exactly `[1]`: no duplicate
 
 **Scenario: a kid only sees their own learn progress**
 
@@ -86,13 +86,13 @@ their own data.
 ## API endpoints (kid-scoped)
 
 All endpoints require a valid kid session token (`Authorization: Bearer <kid-token>`).
-The kid's identity (tenant + member) comes from the token — no `memberId` param.
+The kid's identity (tenant + member) comes from the token, no `memberId` param.
 
 | Method | Path                                  | Body                                                  | Response                                    |
 | ------ | ------------------------------------- | ----------------------------------------------------- | ------------------------------------------- |
-| GET    | `/api/kid/world-flags`                | —                                                     | `{ explored: string[] }`                    |
+| GET    | `/api/kid/world-flags`                | n/a                                                   | `{ explored: string[] }`                    |
 | POST   | `/api/kid/world-flags/explore`        | `{ countryCode: string(2-3) }`                        | `{ explored: true }`                        |
-| GET    | `/api/kid/world-flags/learn`          | —                                                     | `{ progress: Record<continent, number[]> }` |
+| GET    | `/api/kid/world-flags/learn`          | n/a                                                   | `{ progress: Record<continent, number[]> }` |
 | POST   | `/api/kid/world-flags/learn-complete` | `{ continent: ContinentEnum, chunkIndex: int(0-60) }` | `{ completed: true }`                       |
 
 Valid continent values: `Africa`, `Asia`, `Europe`, `North America`, `South America`, `Oceania`.

@@ -4,7 +4,7 @@ import { VerifyEmailPage } from '../support/pages/VerifyEmailPage';
 
 const { Then, When } = createBdd();
 
-// `Given I open the page "..."` is shared with tests/e2e/steps/tenant-routing.ts —
+// `Given I open the page "..."` is shared with tests/e2e/steps/tenant-routing.ts,
 // don't redefine it here.
 
 Then('I see the verify-email heading', async ({ page }) => {

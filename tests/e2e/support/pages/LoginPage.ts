@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-// Page object for /login. Mirrors SignupPage — testid selectors match
+// Page object for /login. Mirrors SignupPage: testid selectors match
 // the data-testid attributes wired in apps/web/src/pages/auth/LoginPage.tsx.
 // FHS-224 stripped the password field from the UI (passwordless parent
 // auth per ADR 0011); the e2e back-door for the synthetic FHS-196
@@ -39,7 +39,7 @@ export class LoginPage {
    * UI: hit Supabase's password-grant endpoint, then seed localStorage
    * with the returned session so the supabase-js client on the next
    * page load picks it up. The Supabase password column still exists
-   * (ADR 0011 §Consequences) — we just don't expose it to humans.
+   * (ADR 0011 §Consequences), we just don't expose it to humans.
    *
    * Resolves the storage key from SUPABASE_URL (`sb-<projectRef>-auth-token`).
    */
@@ -69,7 +69,7 @@ export class LoginPage {
     };
     // Supabase-js v2 keys session validity off `expires_at` (epoch
     // seconds). The /token endpoint only returns expires_in, so we
-    // compute expires_at locally and merge — without this the session
+    // compute expires_at locally and merge, without this the session
     // is treated as expired on first getSession() and dropped.
     const session = {
       ...raw,
@@ -85,7 +85,7 @@ export class LoginPage {
       JSON.stringify(session),
     ] as const);
     // Land on /dashboard (a protected route) and wait for AuthProvider
-    // to resolve — the URL stays as-is when the session is recognised.
+    // to resolve: the URL stays as-is when the session is recognised.
     await this.page.goto('/dashboard');
     await this.page.waitForURL((url) => !url.pathname.startsWith('/login'), {
       timeout: 15_000,

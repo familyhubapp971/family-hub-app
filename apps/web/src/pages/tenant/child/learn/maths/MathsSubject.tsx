@@ -1,4 +1,4 @@
-// FHS-394 — Maths subject orchestrator.
+// FHS-394: Maths subject orchestrator.
 // Replaces the legacy MathsSubject.tsx for the kid Learn tab.
 //
 // Auth: all /api/kid/maths/* calls use Bearer kidToken (no memberId).
@@ -57,17 +57,17 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
   const [activeTableNumber, setActiveTableNumber] = useState<TableNumber>(1);
   const [journeyKey, setJourneyKey] = useState(0);
 
-  // Practice stage result — passed from MathsTablePractice → MathsStageComplete
+  // Practice stage result: passed from MathsTablePractice → MathsStageComplete
   const [lastPracticeCorrect, setLastPracticeCorrect] = useState(0);
   const [showPracticeComplete, setShowPracticeComplete] = useState(false);
 
-  // Prove stage result — passed from MathsProveChallenge → MathsStageComplete
+  // Prove stage result: passed from MathsProveChallenge → MathsStageComplete
   const [lastProveScore, setLastProveScore] = useState(0);
   const [lastProveAvgTime, setLastProveAvgTime] = useState(0);
   const [lastProvePassed, setLastProvePassed] = useState(false);
   const [showProveComplete, setShowProveComplete] = useState(false);
 
-  // Whether this operation has any progress at all — controls placement vs journey.
+  // Whether this operation has any progress at all: controls placement vs journey.
   const [hasProgress, setHasProgress] = useState<boolean | null>(null); // null = loading
 
   // Fetch progress on mount and whenever the operation changes.
@@ -316,7 +316,7 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
         />
       )}
 
-      {/* Learn stage — uses MathsAILesson (FHS-389) */}
+      {/* Learn stage: uses MathsAILesson (FHS-389) */}
       {activeView === 'learn' && (
         <MathsAILesson
           kidToken={kidToken}
@@ -327,7 +327,7 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
         />
       )}
 
-      {/* Practice stage — MathsTablePractice (PR3) */}
+      {/* Practice stage: MathsTablePractice (PR3) */}
       {activeView === 'practice' && !showPracticeComplete && (
         <MathsTablePractice
           operation={operation}
@@ -337,7 +337,7 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
         />
       )}
 
-      {/* Practice stage complete — celebrate then offer Prove */}
+      {/* Practice stage complete: celebrate then offer Prove */}
       {activeView === 'practice' && showPracticeComplete && (
         <MathsStageComplete
           operation={operation}
@@ -360,7 +360,7 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
         />
       )}
 
-      {/* Prove stage — MathsProveChallenge (PR4) */}
+      {/* Prove stage: MathsProveChallenge (PR4) */}
       {activeView === 'prove' && !showProveComplete && (
         <MathsProveChallenge
           operation={operation}
@@ -400,7 +400,7 @@ export function MathsSubject({ kidToken }: MathsSubjectProps) {
         />
       )}
 
-      {/* Achievements — MathsCertificates (PR4) */}
+      {/* Achievements: MathsCertificates (PR4) */}
       {activeView === 'achievements' && (
         <div data-testid="maths-achievements">
           <MathsCertificates kidToken={kidToken} operation={operation} />

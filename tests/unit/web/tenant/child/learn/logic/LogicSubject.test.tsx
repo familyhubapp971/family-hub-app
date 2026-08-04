@@ -1,4 +1,4 @@
-// FHS-395 — LogicSubject unit tests.
+// FHS-395: LogicSubject unit tests.
 // Covers: game-type switching, trophy toggle, difficulty selector wiring.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -52,7 +52,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 // ─── Game type switching ──────────────────────────────────────────────────────
 
-describe('LogicSubject — game type switching', () => {
+describe('LogicSubject: game type switching', () => {
   it('renders all five game type buttons', async () => {
     installFetch();
     render(<LogicSubject kidToken={KID_TOKEN} />);
@@ -94,7 +94,7 @@ describe('LogicSubject — game type switching', () => {
     });
     expect(screen.getByTestId('logic-certificates')).toBeInTheDocument();
 
-    // Switch game type — should close certificates
+    // Switch game type: should close certificates
     await act(async () => {
       fireEvent.click(screen.getByTestId('logic-game-patterns'));
     });
@@ -111,7 +111,7 @@ describe('LogicSubject — game type switching', () => {
 
 // ─── Trophy toggle ────────────────────────────────────────────────────────────
 
-describe('LogicSubject — trophy toggle', () => {
+describe('LogicSubject: trophy toggle', () => {
   it('clicking trophy shows LogicCertificates', async () => {
     installFetch();
     render(<LogicSubject kidToken={KID_TOKEN} />);
@@ -165,7 +165,7 @@ describe('LogicSubject — trophy toggle', () => {
 
 // ─── Certificates GET ─────────────────────────────────────────────────────────
 
-describe('LogicSubject — certificates API call', () => {
+describe('LogicSubject: certificates API call', () => {
   it('GET /api/kid/logic/certificates is called with kidToken when trophy is clicked', async () => {
     installFetch({ certificates: { certificates: [] } });
     render(<LogicSubject kidToken={KID_TOKEN} />);

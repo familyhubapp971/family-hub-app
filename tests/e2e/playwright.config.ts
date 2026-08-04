@@ -10,7 +10,7 @@ import { defineBddConfig } from 'playwright-bdd';
 // the local-dev convention only when it isn't.
 const apiDatabaseUrl = process.env.DATABASE_URL ?? 'postgres://localhost:5432/familyhub_test';
 
-// FHS-545 — this full matrix does NOT set E2E_TEST_JWKS on the api. Its one
+// FHS-545: this full matrix does NOT set E2E_TEST_JWKS on the api. Its one
 // authed spec (auth.feature, FHS-196) does a REAL Supabase login and must be
 // verified against the REAL Supabase JWKS, so the api boots exactly as it did
 // pre-FHS-516 (SUPABASE_URL from the CI job env / repo .env.local, no test
@@ -27,13 +27,13 @@ const testDir = defineBddConfig({
   features: 'features/**/*.feature',
   steps: 'steps/**/*.ts',
   outputDir: '.features-gen',
-  // FHS-516 — steps/authed-smoke.ts uses `test` extended with the
+  // FHS-516: steps/authed-smoke.ts uses `test` extended with the
   // `authedFamily` fixture (support/fixtures.ts), not the bare
   // playwright-bdd test. bddgen can't infer that from the steps glob alone
   // (support/ isn't in it), so it needs pointing at the fixtures file
   // explicitly to generate specs that import the right `test` instance.
   importTestFrom: 'support/fixtures.ts',
-  // FHS-516 — @authed-local specs need the local api booted with the
+  // FHS-516: @authed-local specs need the local api booted with the
   // E2E_TEST_JWKS override; this full matrix points web at the real staging
   // api (for the legacy real-login auth.feature spec), so it CANNOT also serve
   // the test-JWKS harness. Those specs run in playwright.critical.config.ts
@@ -77,11 +77,11 @@ export default defineConfig({
   //
   webServer: [
     {
-      // FHS-545 — no E2E_TEST_JWKS here: the api validates against the REAL
+      // FHS-545: no E2E_TEST_JWKS here: the api validates against the REAL
       // Supabase JWKS (via SUPABASE_URL from the CI job env / .env.local) so
       // auth.feature's real login works. In CI, VITE_API_URL is unset (its
       // .env.development.local is gitignored), so the web app calls this local
-      // api — which is exactly why it must trust real Supabase tokens.
+      // api, which is exactly why it must trust real Supabase tokens.
       command: `NODE_ENV=test PORT=3001 LOG_LEVEL=error DATABASE_URL=${apiDatabaseUrl} pnpm --filter @familyhub/api dev`,
       url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
@@ -92,7 +92,7 @@ export default defineConfig({
       url: 'http://localhost:5273',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      // FHS-516 — the full matrix deliberately does NOT override VITE_API_URL:
+      // FHS-516: the full matrix deliberately does NOT override VITE_API_URL:
       // its one authed spec (auth.feature, FHS-196) does a REAL Supabase login
       // and needs the real staging api that trusts real Supabase tokens (which
       // apps/web/.env.development.local already points VITE_API_URL at). The

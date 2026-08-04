@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { Dropdown } from '@familyhub/ui';
 
-// FHS-359 — the in-app dropdown (no native OS <select> menu). Tested via the
+// FHS-359: the in-app dropdown (no native OS <select> menu). Tested via the
 // web suite where @familyhub/ui + jsdom + jest-dom are already configured.
 
 const OPTIONS = [

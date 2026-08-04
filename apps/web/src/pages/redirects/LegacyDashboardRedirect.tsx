@@ -5,7 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE } from '../../lib/api';
 
-// FHS-227 — bridge for the un-prefixed `/dashboard` route. Fetches
+// FHS-227: bridge for the un-prefixed `/dashboard` route. Fetches
 // /api/me, picks the user's first tenant, and forwards to the
 // tenant-scoped dashboard. When the user is authenticated but has no
 // tenant yet (most often because a previous signup tenant-create call
@@ -53,7 +53,7 @@ export function LegacyDashboardRedirect() {
         }
         const body = (await res.json()) as MeResponse;
         const slug = body.tenants?.[0]?.slug;
-        // FHS-275 — ALWAYS try to claim pending invites first, even when
+        // FHS-275: ALWAYS try to claim pending invites first, even when
         // the user already has a family of their own: a newly-claimed
         // invite should land them on the inviting family, and skipping
         // the claim would leave their seat pending forever.
@@ -75,7 +75,7 @@ export function LegacyDashboardRedirect() {
             }
           }
         } catch {
-          // Claim is best-effort — fall through.
+          // Claim is best-effort: fall through.
         }
         if (!cancelled) {
           setState(slug ? { kind: 'redirect', to: `/t/${slug}/dashboard` } : { kind: 'no-tenant' });
@@ -140,7 +140,7 @@ function CreateFamilyPanel({ session }: CreateFamilyPanelProps) {
     }
     setSubmitting(true);
     setError(null);
-    // FHS-274 — the founder types their own name; no more guessing from
+    // FHS-274: the founder types their own name; no more guessing from
     // auth metadata / email prefixes (which produced names like "FAMILY").
     const displayName = yourName.trim();
     if (displayName.length < 2) {

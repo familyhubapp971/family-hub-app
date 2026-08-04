@@ -1,4 +1,4 @@
-// FHS-394 — Maths Journey map.
+// FHS-394: Maths Journey map.
 // Ported from legacy MathsJourney.tsx; adapted for kid token auth.
 //
 // Derives each table's active stage from the progress fetched via
@@ -119,7 +119,7 @@ export function MathsJourney({
         setActiveTable(firstUnmastered);
       })
       .catch(() => {
-        // Silently fail — show default state
+        // Silently fail: show default state
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,7 +212,7 @@ export function MathsJourney({
         <p className="text-xs font-black text-white/70">{totalMastered}/12 mastered</p>
       </div>
 
-      {/* Horizontal journey map — scrollable on mobile */}
+      {/* Horizontal journey map: scrollable on mobile */}
       <div
         ref={scrollRef}
         className="overflow-x-auto pb-2 -mx-1 px-1"

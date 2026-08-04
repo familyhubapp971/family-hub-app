@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { PrivacyPolicyPage } from '../../../../apps/web/src/pages/legal/PrivacyPolicyPage';
 
-// FHS-509 — the old FHS-435 draft-policy route (/privacy) now redirects
+// FHS-509: the old FHS-435 draft-policy route (/privacy) now redirects
 // to /legal/privacy, so the 5 existing <Link to="/privacy"> sites
 // (AdminPanelPage, SignupPage, AboutPage x2, PricingPage, WelcomePage)
 // keep working unchanged. Mirrors the /privacy + /legal/privacy subset

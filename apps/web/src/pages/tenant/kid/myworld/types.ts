@@ -1,4 +1,4 @@
-// FHS-376 — kid My World data shapes (subset of /api/kid/* we consume) +
+// FHS-376: kid My World data shapes (subset of /api/kid/* we consume) +
 // the derived view-model the dedicated kid components render. The kid UI is a
 // DISTINCT design from the parent's MyWorldTab; it never reuses that screen.
 
@@ -48,7 +48,7 @@ export interface KidSavings {
   savedStickers: number;
   savedCash: number;
   currency: string;
-  // FHS-387 — the fixed star-to-cash rate from the API; default 0.5 if absent.
+  // FHS-387: the fixed star-to-cash rate from the API; default 0.5 if absent.
   stickerRate?: number;
 }
 

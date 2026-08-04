@@ -2,11 +2,11 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@familyhub/ui';
 
-// Shared shell for all auth screens — centred, single column, brand
+// Shared shell for all auth screens: centred, single column, brand
 // background, neo-brutalist card. Keeps the per-page components focused
 // on the form + copy.
 //
-// FHS-360 — pass `centered` + `subtitle` for the Magic Patterns "Welcome
+// FHS-360: pass `centered` + `subtitle` for the Magic Patterns "Welcome
 // Back!" card: an F gradient avatar above a centred title + subtitle. Other
 // auth pages omit these and keep the plain left-aligned title.
 export function AuthLayout({
@@ -22,7 +22,7 @@ export function AuthLayout({
 }) {
   return (
     <div className="relative min-h-full">
-      {/* Brand link top-left — clicks back to the homepage. */}
+      {/* Brand link top-left: clicks back to the homepage. */}
       <Link
         to="/"
         className="absolute left-6 top-6 font-heading text-2xl text-white transition-opacity hover:opacity-90 sm:left-10 sm:top-8"

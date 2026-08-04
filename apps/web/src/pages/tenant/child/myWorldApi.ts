@@ -1,11 +1,11 @@
 import { API_BASE } from '../../../lib/api';
 
-// FHS-374 — My World data source. The same My World screen serves two callers:
+// FHS-374: My World data source. The same My World screen serves two callers:
 //   • parent/admin viewing a child  → /api/* endpoints, ?memberId=, Supabase auth
 //   • the logged-in kid (read-only) → /api/kid/* endpoints, kid-token auth
 // This adapter is the ONLY place that knows the difference: it builds the right
 // URL + headers per mode so the component code stays mode-agnostic. The kid mode
-// is read-only — the component hides every write control when `readOnly` is true.
+// is read-only: the component hides every write control when `readOnly` is true.
 
 export interface MyWorldDataApi {
   readonly readOnly: boolean;
@@ -18,7 +18,7 @@ export interface MyWorldDataApi {
   investments(): string;
   rewards(): string;
   analytics(): string;
-  // FHS-376 — kid only: POST a "please can I have this reward" request. Parent
+  // FHS-376: kid only: POST a "please can I have this reward" request. Parent
   // mode omits it (parents redeem directly; kids ask).
   rewardRequest?(rewardId: string): string;
 }

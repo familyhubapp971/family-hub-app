@@ -1,6 +1,6 @@
 import { API_BASE } from '../../../../../lib/api';
 
-// FHS-373 — World Flags data-source adapter.
+// FHS-373: World Flags data-source adapter.
 // One of `kidToken` or `memberId` is always supplied; never both.
 // Kid mode:    hits /api/kid/world-flags*, sends only Bearer token, omits memberId from POSTs.
 // Parent mode: hits /api/world-flags*,     sends Bearer + x-tenant-slug, includes memberId.
@@ -26,8 +26,8 @@ export interface WorldFlagsApi {
   learnCompleteBody(continent: string, chunkIndex: number): Record<string, unknown>;
   /**
    * Stable per-user key for client-side state (e.g. localStorage best-score
-   * key). The member id in both modes — derived from the kid token's `sub`
-   * claim in kid mode, the memberId prop in parent mode — so it survives a
+   * key). The member id in both modes: derived from the kid token's `sub`
+   * claim in kid mode, the memberId prop in parent mode: so it survives a
    * kid-token rotation (re-login / expiry).
    */
   readonly userKey: string;

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Button } from '@familyhub/ui';
 
-// FHS-419 — branded full-screen loader. Replaces the bare grey "Loading…" /
+// FHS-419: branded full-screen loader. Replaces the bare grey "Loading…" /
 // "Signing you in…" states (which looked broken on the dark bg) with the
 // kingdom starfield, a pulsing FamilyHub mark, and rotating reassurance copy.
 // Reused for the magic-link callback, the protected-route session load, and
@@ -92,7 +92,7 @@ export function LoadingScreen({
       </Link>
 
       <div className="flex flex-col items-center gap-4 text-center">
-        {/* Brand mark — heartbeat pulse (static under reduced motion). */}
+        {/* Brand mark: heartbeat pulse (static under reduced motion). */}
         <motion.div
           aria-label="FamilyHub logo"
           className="grid h-20 w-20 place-items-center rounded-full border-2 border-white bg-gradient-to-br from-pink-400 to-purple-500 shadow-neo-lg"
@@ -108,7 +108,7 @@ export function LoadingScreen({
           </span>
         </motion.div>
 
-        {/* App name + rule — fade in once. */}
+        {/* App name + rule: fade in once. */}
         <motion.div
           className="flex flex-col items-center gap-1"
           initial={reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}

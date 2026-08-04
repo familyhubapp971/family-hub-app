@@ -3,7 +3,7 @@ import { createBdd } from 'playwright-bdd';
 
 const { Given, Then } = createBdd();
 
-// FHS-249 — verify the SPA understands /t/:slug/* paths and that
+// FHS-249: verify the SPA understands /t/:slug/* paths and that
 // auth-protected children behave the same as the legacy unprefixed
 // routes (anonymous bounce to /login).
 

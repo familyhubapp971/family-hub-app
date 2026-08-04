@@ -28,10 +28,10 @@ import { CloseWeekDialog } from './CloseWeekDialog';
 import { AnalyticsView } from './AnalyticsView';
 import { type MyWorldDataApi, kidDataApi, parentDataApi } from './myWorldApi';
 
-// FHS-292 — My World habit grid (legacy HabitTracker UI port).
+// FHS-292: My World habit grid (legacy HabitTracker UI port).
 // Pixel / behaviour parity with the legacy HabitTracker component.
 
-// FIX 2 (BLOCKER) — a rate <= 0 must never be divided by (Infinity/NaN
+// FIX 2 (BLOCKER): a rate <= 0 must never be divided by (Infinity/NaN
 // stickers). Mirrors the api's cashAsStickers guard (apps/api/src/lib/myworld.ts).
 function stickersFromCash(cash: number, rate: number): number {
   return rate <= 0 ? 0 : cash / rate;
@@ -55,7 +55,7 @@ interface ApiHabit {
   color: string;
   icon: string;
   isBonus: boolean;
-  // FHS-399 — bonus habits may have a target < 7. Defaults to 7 when absent.
+  // FHS-399: bonus habits may have a target < 7. Defaults to 7 when absent.
   target?: number;
 }
 interface ApiSticker {
@@ -97,7 +97,7 @@ interface Reward {
   description: string | null;
   stickerCost: number;
   icon: string | null;
-  // FHS-376 — kid mode only: the kid's latest request state for this reward.
+  // FHS-376: kid mode only: the kid's latest request state for this reward.
   requestStatus?: 'none' | 'pending' | 'approved' | 'declined';
 }
 
@@ -114,9 +114,9 @@ interface Investment {
   currentValueStickers: number;
   daysCompleted: number;
   daysMissed: number;
-  // FHS-378 — when false, missed days don't subtract value (no-penalty mode).
+  // FHS-378: when false, missed days don't subtract value (no-penalty mode).
   deductible: boolean;
-  // FHS-534 — how many stickers this investment grows per completed day
+  // FHS-534: how many stickers this investment grows per completed day
   // (and, on invest, the pay boost applied to the underlying habit).
   // Optional so a legacy investment record without the field still falls
   // back to the historical default of 5.
@@ -267,13 +267,13 @@ export function MyWorldTab(
   props:
     | {
         memberId: string;
-        // FHS-336 — only an admin may edit past days, close a week, or touch the
+        // FHS-336: only an admin may edit past days, close a week, or touch the
         // economy. A normal user (adult) can still tick today + the rest of this
         // week. Defaults to false so controls stay hidden until the caller's role
         // is known. The server (FHS-335) is the real boundary; this hides the UI.
         isAdmin?: boolean;
       }
-    // FHS-374 — kid mode: the logged-in kid reuses this exact screen READ-ONLY.
+    // FHS-374: kid mode: the logged-in kid reuses this exact screen READ-ONLY.
     // Data comes from /api/kid/* (self-scoped by the kid token); every write
     // control is hidden (`readOnly`). The parent does all ticking/editing.
     | { kidToken: string; isAdmin?: boolean },
@@ -316,7 +316,7 @@ export function MyWorldTab(
   const [balance, setBalance] = useState(0);
   // Family currency (chosen at registration) for all cash labels.
   const [currency, setCurrency] = useState('USD');
-  // FHS-512 — this child's effective (configurable) sticker rate. 0.5 is
+  // FHS-512: this child's effective (configurable) sticker rate. 0.5 is
   // only the fallback shown before the first savings fetch resolves.
   const [stickerRate, setStickerRate] = useState(0.5);
 
@@ -521,7 +521,7 @@ export function MyWorldTab(
     }
   }, [api]);
 
-  // FHS-378 — flip an active investment's deductible flag (admin only). The
+  // FHS-378: flip an active investment's deductible flag (admin only). The
   // server recalculates the value; we refresh to show it.
   const setInvestmentDeductible = useCallback(
     async (inv: Investment, deductible: boolean) => {
@@ -538,7 +538,7 @@ export function MyWorldTab(
         if (!res.ok) return;
         void fetchInvestments();
       } catch {
-        // Non-fatal — the toggle can be retried
+        // Non-fatal: the toggle can be retried
       }
     },
     [readOnly, headers, memberId, fetchInvestments],
@@ -624,13 +624,13 @@ export function MyWorldTab(
   // ── Derived week values ───────────────────────────────────────────────────
   const week = weeks[weekIndex];
   const isCurrentWeek = week ? !week.isFinalized : false;
-  // FHS-484 — a week can exist before its Monday arrives (closing this week
+  // FHS-484: a week can exist before its Monday arrives (closing this week
   // early immediately creates next week). "Not finalized" alone doesn't mean
   // "has started", so this is checked separately from isCurrentWeek. UTC
   // matches how the rest of My World anchors weeks (see stickerDayRelation).
   const todayIso = new Date().toISOString().slice(0, 10);
   const isFutureWeek = week ? week.startDate > todayIso : false;
-  // FHS-374 — a kid views read-only: never editable, regardless of week.
+  // FHS-374: a kid views read-only: never editable, regardless of week.
   const canEdit = readOnly
     ? false
     : isFutureWeek
@@ -641,14 +641,14 @@ export function MyWorldTab(
           : false
         : isCurrentWeek;
 
-  // FHS-319 — the Close Week banner only appears once the week is actually
+  // FHS-319: the Close Week banner only appears once the week is actually
   // over: from its last day (Sunday) onward, and stays until the week is
   // closed (so a week left open past Sunday keeps prompting). A fresh week
   // shows nothing until its own Sunday.
   const fmtLocalDate = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const showCloseWeekBanner = (() => {
-    if (!isAdmin) return false; // FHS-336 — closing a week is admin-only
+    if (!isAdmin) return false; // FHS-336: closing a week is admin-only
     if (!week || week.isFinalized) return false;
     const lastDay = new Date(`${week.startDate}T00:00:00`);
     lastDay.setDate(lastDay.getDate() + 6); // Mon start → Sunday is the 7th day
@@ -658,9 +658,9 @@ export function MyWorldTab(
   const canEditDay = (dayIndex: number) => {
     if (!canEdit) return false;
     if (isAdmin) return true;
-    // FHS-336 — a normal user may tick today or later, never a PAST day. Compare
+    // FHS-336: a normal user may tick today or later, never a PAST day. Compare
     // the cell's real calendar date to today (mirrors the server rule in
-    // FHS-335), not the day-of-week index — so a stale/old open week is handled.
+    // FHS-335), not the day-of-week index: so a stale/old open week is handled.
     if (!week) return false;
     const cellDate = new Date(`${week.startDate}T00:00:00`);
     cellDate.setDate(cellDate.getDate() + dayIndex);
@@ -676,7 +676,7 @@ export function MyWorldTab(
     () => new Set(investments.map((inv) => inv.habitId)),
     [investments],
   );
-  // FHS-534 — per-habit growth rate, so the "Invested · Nx" badge shows the
+  // FHS-534: per-habit growth rate, so the "Invested · Nx" badge shows the
   // real coefficient instead of a hardcoded 5x.
   const investedCoefficientByHabitId = useMemo(
     () => new Map(investments.map((inv) => [inv.habitId, inv.coefficient])),
@@ -685,7 +685,7 @@ export function MyWorldTab(
 
   // ── Savings derived values ────────────────────────────────────────────────
   const weeklyValue = (unallocatedStickers * stickerRate).toFixed(2);
-  // FHS-376 — a kid's reward request is paid from SAVINGS on approval, so the
+  // FHS-376: a kid's reward request is paid from SAVINGS on approval, so the
   // "Ask for this" affordability must match savings (banked stars + banked
   // cash converted at this child's rate), not the spendable balance.
   const savingsStars = savedStickers + Math.floor(stickersFromCash(savedCash, stickerRate));
@@ -926,7 +926,7 @@ export function MyWorldTab(
   // ── Reward redemption ─────────────────────────────────────────────────────
   const onRedeem = useCallback(
     async (reward: Reward) => {
-      // FHS-374 — kids can't redeem directly; a parent approves a request
+      // FHS-374: kids can't redeem directly; a parent approves a request
       // (FHS-376). Read-only mode never reaches the redeem control anyway.
       if (readOnly) return;
       if (!headers || redeemingRef.current.has(reward.id)) return;
@@ -950,7 +950,7 @@ export function MyWorldTab(
     [headers, balance, memberId, readOnly],
   );
 
-  // ── Reward request (kid asks; a parent approves — FHS-376) ────────────────
+  // ── Reward request (kid asks; a parent approves: FHS-376) ────────────────
   const onRequestReward = useCallback(
     async (reward: Reward) => {
       if (!api?.rewardRequest || redeemingRef.current.has(reward.id)) return;
@@ -968,7 +968,7 @@ export function MyWorldTab(
           prev.map((r) => (r.id === reward.id ? { ...r, requestStatus: 'pending' } : r)),
         );
       } catch {
-        // non-fatal — the kid can tap again
+        // non-fatal: the kid can tap again
       } finally {
         redeemingRef.current.delete(reward.id);
       }
@@ -988,13 +988,13 @@ export function MyWorldTab(
     editEnabled: boolean,
     editDayFn: (i: number) => boolean,
     isInvested: boolean,
-    // FHS-342 — adding/editing/deleting a habit is admin-only. Sticker
+    // FHS-342: adding/editing/deleting a habit is admin-only. Sticker
     // affordances stay on `editEnabled` so a normal user can still tick.
     canManageHabits: boolean,
-    // FHS-399 — when true, replace the live "Progress this week" label with
+    // FHS-399: when true, replace the live "Progress this week" label with
     // the finalized "PROGRESS THAT WEEK X/7" pill used in the kid view.
     weekIsFinalized = false,
-    // FHS-534 — the invested habit's real growth rate (stickers/day). Falls
+    // FHS-534: the invested habit's real growth rate (stickers/day). Falls
     // back to the legacy default of 5 when the investment record predates
     // the coefficient field.
     investedCoefficient?: number,
@@ -1105,7 +1105,7 @@ export function MyWorldTab(
           </div>
         </div>
 
-        {/* RIGHT: 7-day grid. FHS-406 — the "Invested · 5x" tag sits in-flow
+        {/* RIGHT: 7-day grid. FHS-406: the "Invested · 5x" tag sits in-flow
             above the grid (was an absolute badge that overlapped the day cells). */}
         <div className="flex-1">
           {isInvested && (
@@ -1176,7 +1176,7 @@ export function MyWorldTab(
         </div>
       </div>
 
-      {/* Delete X — top-right (admin-only, FHS-342) */}
+      {/* Delete X: top-right (admin-only, FHS-342) */}
       {canManageHabits && (
         <button
           data-testid={`habit-card-delete-btn-${habit.id}`}
@@ -1241,7 +1241,7 @@ export function MyWorldTab(
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12" data-testid="my-world">
       {/* ════════════════════════════════════════════════════════════════════
-          HABIT TRACKER — left column (lg:col-span-8). 8/4 split: the habit
+          HABIT TRACKER: left column (lg:col-span-8). 8/4 split: the habit
           tracker (Weekly Habits / Analytics) gets the room; the right widget
           column is narrower (FHS-327). On a finalised week the right column
           is hidden so the left goes full-width (FHS-316).
@@ -1281,16 +1281,16 @@ export function MyWorldTab(
                 </button>
               </div>
               <div className="p-6">
-                {/* FHS-479 — the 4 looks are a cosmetic choice only, so
+                {/* FHS-479: the 4 looks are a cosmetic choice only, so
                     spell that out right where the pick happens. */}
                 <p
                   data-testid="habit-day-sticker-hint"
                   className="mb-2 flex items-start gap-1.5 rounded-lg border-2 border-purple-200 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700"
                 >
                   <Sparkles className="h-3.5 w-3.5 shrink-0 translate-y-0.5" aria-hidden="true" />
-                  <span>Just pick your favourite look — it&apos;s worth the same either way.</span>
+                  <span>Just pick your favourite look: it&apos;s worth the same either way.</span>
                 </p>
-                {/* FHS-480 — the sticker→cash rate isn't shown anywhere the
+                {/* FHS-480: the sticker→cash rate isn't shown anywhere the
                     sticker is actually picked; surface it here too. */}
                 <p
                   data-testid="habit-day-sticker-value"
@@ -1792,9 +1792,9 @@ export function MyWorldTab(
             )}
 
             {/* ── Invested habits (no investedHabitIds prop here; section renders when empty array) ── */}
-            {/* investedHabitIds is Dashboard-level state; hardcode [] for now — section stays hidden */}
+            {/* investedHabitIds is Dashboard-level state; hardcode [] for now: section stays hidden */}
 
-            {/* ── Regular Habit Cards — a future week (not yet started) blurs
+            {/* ── Regular Habit Cards: a future week (not yet started) blurs
                 the cards under a lock overlay: nothing to mark done yet
                 (FHS-484). ── */}
             <div className="relative">
@@ -2003,10 +2003,10 @@ export function MyWorldTab(
         )}
 
         {/* ════════════════════════════════════════════════════════════════════
-            SAVINGS / BANKING CARDS — below habit tracker
+            SAVINGS / BANKING CARDS: below habit tracker
             ════════════════════════════════════════════════════════════════════ */}
 
-        {/* ── Your Savings + Active Investments (side by side) — FHS-300 legacy
+        {/* ── Your Savings + Active Investments (side by side): FHS-300 legacy
             port. Current week only: a closed week shows just its records (FHS-316). ── */}
         {isCurrentWeek && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -2083,8 +2083,8 @@ export function MyWorldTab(
                         <p className="text-sm font-bold text-slate-200 leading-snug mb-2">
                           {inv.habitName ?? `Investment #${inv.id}`}
                         </p>
-                        {/* FHS-378 — penalty mode tag + admin toggle.
-                            FHS-407 — wrap so the tag + toggle don't collide on narrow cards. */}
+                        {/* FHS-378: penalty mode tag + admin toggle.
+                            FHS-407: wrap so the tag + toggle don't collide on narrow cards. */}
                         <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span
                             data-testid={`investment-mode-${inv.id}`}
@@ -2105,7 +2105,7 @@ export function MyWorldTab(
                             </button>
                           )}
                         </div>
-                        {/* FHS-413 — one shared 2-col grid (label | value) so the
+                        {/* FHS-413: one shared 2-col grid (label | value) so the
                             Originally/Invested/Now rows always line up: labels in
                             col 1, values right-aligned in col 2, no ragged wrapping. */}
                         <div className="mb-2 grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-1.5 text-xs font-mono tabular-nums">
@@ -2147,7 +2147,7 @@ export function MyWorldTab(
                             )}
                           </span>
                         </div>
-                        {/* FHS-413 follow-up — day detail sits with the bar (not
+                        {/* FHS-413 follow-up: day detail sits with the bar (not
                             crammed into the "Now" label) so the rows read cleanly. */}
                         <div className="mb-1 flex items-center justify-between text-[10px] font-mono text-slate-400">
                           <span>{inv.daysCompleted}/7 days done</span>
@@ -2177,14 +2177,14 @@ export function MyWorldTab(
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
-          RIGHT COLUMN (lg:col-span-4) — Reward Requests + Rewards Shop + Bankable.
+          RIGHT COLUMN (lg:col-span-4): Reward Requests + Rewards Shop + Bankable.
           Narrower 4/12 so the habit tracker gets more room (FHS-327). Live,
           current-week-only controls; a finalised week hides the whole column
           (FHS-316). (FHS-537/539 removed the Big-Rewards + My-Stickers cards.)
           ════════════════════════════════════════════════════════════════════ */}
       {isCurrentWeek && (
         <div className="space-y-4 lg:col-span-4">
-          {/* FHS-392 — Reward Requests in-context sidebar (parent/admin only).
+          {/* FHS-392: Reward Requests in-context sidebar (parent/admin only).
               The panel handles its own admin gate; showing the list to any
               non-kid viewer matches the Magic Patterns mock. */}
           {!readOnly && memberId && (
@@ -2308,7 +2308,7 @@ export function MyWorldTab(
             )}
           </section>
 
-          {/* FHS-376 — kid "My Account": what's banked + what they earned this week. */}
+          {/* FHS-376: kid "My Account": what's banked + what they earned this week. */}
           {readOnly && (
             <section
               data-testid="kid-my-account"
@@ -2357,7 +2357,7 @@ export function MyWorldTab(
             </section>
           )}
 
-          {/* Bankable + Saving Stickers — parent economy widgets; hidden for kids (FHS-376) */}
+          {/* Bankable + Saving Stickers: parent economy widgets; hidden for kids (FHS-376) */}
           {!readOnly && (
             <>
               <div data-testid="bankable-week" className="relative">
@@ -2402,7 +2402,7 @@ export function MyWorldTab(
         </div>
       )}
 
-      {/* ── Close Week Banner — full width (only from the week's last day) ── */}
+      {/* ── Close Week Banner: full width (only from the week's last day) ── */}
       {showCloseWeekBanner && (
         <div className="lg:col-span-12">
           <div data-testid="my-world-close-week-banner" className="mt-2">

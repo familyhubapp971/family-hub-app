@@ -1,10 +1,10 @@
 import { Wallet } from 'lucide-react';
 
-// FHS-376 — "Money Skills" explainer card for the kid. Pure presentation: tells
+// FHS-376: "Money Skills" explainer card for the kid. Pure presentation: tells
 // the kid what their stars are worth and the three things they can do with them
 // (spend / save / grow). The savings + invested numbers come from the parent.
-// FHS-399 — accepts `isFinalized` to switch to past-tense framing on closed weeks.
-// FHS-480 — accepts `stickerRate` so the "worth" line states the real figure
+// FHS-399: accepts `isFinalized` to switch to past-tense framing on closed weeks.
+// FHS-480: accepts `stickerRate` so the "worth" line states the real figure
 // instead of the vague "a little bit of real money".
 export function KidMoneySkills({
   stickerBalance,

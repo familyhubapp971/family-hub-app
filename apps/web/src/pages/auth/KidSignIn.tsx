@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AvatarGrid, Button, PinInput, type AvatarTile } from '@familyhub/ui';
 import { API_BASE } from '../../lib/api';
 
-// FHS-360 — the kid sign-in flow (avatar tiles → PIN → kid token), shared by
+// FHS-360: the kid sign-in flow (avatar tiles → PIN → kid token), shared by
 // the per-family KidLoginPage and the unified LoginPage "I'm a Kid" view so the
 // Magic Patterns login card and the /t/:slug/kid-login route stay identical.
 //
@@ -56,9 +56,9 @@ export function KidSignIn({
   /** Rendered under the not-found / load-failed message (e.g. "try another code"). */
   notFoundFooter?: React.ReactNode;
   /**
-   * FHS-437 — called once when the slug 404s (no such family). Lets the
+   * FHS-437: called once when the slug 404s (no such family). Lets the
    * caller react instead of stranding the kid on the "couldn't find a
-   * family" message — e.g. the unified /login kid view uses this to forget
+   * family" message, e.g. the unified /login kid view uses this to forget
    * a stale remembered family and drop back to the code-entry prompt.
    * Leave unset to keep the built-in not-found message + notFoundFooter
    * (used by the /t/:slug/kid-login deep-link route).
@@ -103,7 +103,7 @@ export function KidSignIn({
             JSON.stringify({ slug: body.family.slug, name: body.family.name }),
           );
         } catch {
-          /* private mode / storage full — non-fatal */
+          /* private mode / storage full: non-fatal */
         }
         setLoad({ kind: 'loaded', family: body.family, kids: body.kids });
         onFamilyLoaded?.(body.family.name);
@@ -234,7 +234,7 @@ export function KidSignIn({
         testId="kid-login-avatars"
       />
 
-      {/* FHS-402 — reserve the PIN-slot height so the card doesn't jump when the
+      {/* FHS-402: reserve the PIN-slot height so the card doesn't jump when the
           PIN box appears/disappears. Breakdown at each breakpoint:
             greeting text (~24px) + PinInput (h-14=56px mobile / h-16=64px sm+)
             + status line (~40px) + "Pick a different face" button (~40px) + gaps

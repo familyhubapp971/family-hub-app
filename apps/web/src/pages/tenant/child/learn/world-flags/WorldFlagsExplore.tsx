@@ -20,7 +20,7 @@ import { LandmarkImage } from './LandmarkImage';
 import { CONTINENT_SOLID, CONTINENT_GRADIENT, CONTINENT_EMOJI, continentId } from './shared';
 import { worldFlagsApi } from './worldFlagsApi';
 
-// World Flags — Explore sub-tab.
+// World Flags: Explore sub-tab.
 //
 // Tap a flashcard to cycle: flag image → name reveal → facts panel (capital
 // map + landmark photo + currency + fun fact). Reaching the name-reveal state
@@ -52,7 +52,7 @@ function CertOverlay({
   }, [onDismiss]);
 
   return (
-    // Backdrop — click outside the card to dismiss (div, not button — dialog card contains the real interactive elements).
+    // Backdrop: click outside the card to dismiss (div, not button: dialog card contains the real interactive elements).
     <div
       role="presentation"
       data-testid="world-cert-backdrop"
@@ -77,7 +77,7 @@ function CertOverlay({
         ))}
       </div>
 
-      {/* Cert card — stop propagation so clicking it doesn&apos;t dismiss */}
+      {/* Cert card: stop propagation so clicking it doesn&apos;t dismiss */}
       <motion.div
         data-testid="world-cert-earned"
         role="dialog"
@@ -261,7 +261,7 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
           headers: { ...api.headers, 'Content-Type': 'application/json' },
           body: JSON.stringify(api.explorePostBody(code)),
         }).catch(() => {
-          /* ignore — progress saved on next interaction */
+          /* ignore: progress saved on next interaction */
         });
       }
       const continentCountries = COUNTRIES.filter((c) => c.continent === continent);
@@ -432,7 +432,7 @@ export function WorldFlagsExplore({ memberId, kidToken }: WorldFlagsExploreProps
               : ''
           }`}
         >
-          {/* Flag section — continent gradient background (legacy parity) */}
+          {/* Flag section: continent gradient background (legacy parity) */}
           <div
             className={`flex flex-col items-center gap-3 border-b-2 border-black bg-gradient-to-br p-8 ${CONTINENT_GRADIENT[selectedContinent] ?? CONTINENT_GRADIENT['All']}`}
           >

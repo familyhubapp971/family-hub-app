@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { SearchableSelect } from './SearchableSelect';
 
-// FHS-39 — Currency picker. 30 curated currencies (ISO 4217 code +
+// FHS-39: Currency picker. 30 curated currencies (ISO 4217 code +
 // symbol + name). Default inferred from navigator.language via the
 // Intl.NumberFormat parts API.
 
@@ -10,7 +10,7 @@ export interface CurrencyPickerProps {
   onChange: (value: string) => void;
   className?: string;
   testId?: string;
-  /** `id` for the trigger button — pair with a sibling `<label htmlFor>`. */
+  /** `id` for the trigger button, pair with a sibling `<label htmlFor>`. */
   id?: string;
 }
 
@@ -21,7 +21,7 @@ interface CurrencyEntry {
 }
 
 /**
- * FHS-515 — decimal places for an ISO-4217 currency (JPY→0, USD→2, KWD→3);
+ * FHS-515: decimal places for an ISO-4217 currency (JPY→0, USD→2, KWD→3);
  * 2 on any bad/unknown code. Node + browsers ship full ICU, so this is
  * reliable in tests too.
  */
@@ -36,7 +36,7 @@ export function currencyDecimals(code: string): number {
   }
 }
 
-// Curated list — covers the ticket's named examples (GBP, USD, EUR, NGN,
+// Curated list: covers the ticket's named examples (GBP, USD, EUR, NGN,
 // AED) plus the rest of the top-30 by global GDP. Order keeps frequent
 // pickers near the top before alphabetical fall-through.
 const ALL_CURRENCIES: readonly CurrencyEntry[] = [
@@ -72,10 +72,10 @@ const ALL_CURRENCIES: readonly CurrencyEntry[] = [
   { code: 'THB', symbol: '฿', name: 'Thai Baht' },
 ];
 
-// FHS-515 — the sticker economy hardcodes 2-decimal money math (centi-unit
+// FHS-515: the sticker economy hardcodes 2-decimal money math (centi-unit
 // storage, ÷100 display, quarter-unit stepper). A 0-decimal (JPY, KRW) or
 // 3-decimal (KWD) currency would show wrong figures and a wrong stepper, so
-// until full multi-decimal support lands we only OFFER 2-decimal currencies —
+// until full multi-decimal support lands we only OFFER 2-decimal currencies:
 // no family can end up on a currency the money math can't render correctly.
 const CURRENCIES: readonly CurrencyEntry[] = ALL_CURRENCIES.filter(
   (c) => currencyDecimals(c.code) === 2,
@@ -104,7 +104,7 @@ export function detectBrowserCurrency(): string {
 }
 
 // Region→default-currency map for the curated set. Keep aligned with
-// CURRENCIES — anything not here defaults to USD.
+// CURRENCIES, anything not here defaults to USD.
 const REGION_TO_CURRENCY: Record<string, string> = {
   US: 'USD',
   GB: 'GBP',

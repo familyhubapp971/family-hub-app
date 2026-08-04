@@ -1,8 +1,8 @@
-# 0010 — Adopt framer-motion for frontend animations
+# 0010: Adopt framer-motion for frontend animations
 
 **Status:** accepted
 **Date:** 2026-05-02
-**Jira:** FHS-220 (Marketing pages — Welcome + Pricing)
+**Jira:** FHS-220 (Marketing pages, Welcome + Pricing)
 
 ## Context
 
@@ -27,7 +27,7 @@ the same patterns without duplicating import paths.
   page-transition orchestration via `AnimatePresence`; pre-baked easing curves
   match designer intent.
 - **Harder:** bundle size increases by ~50 KB gzipped (one-time cost). All
-  animated components need to be marked client components — already true since
+  animated components need to be marked client components, already true since
   Vite builds the whole app client-side.
 - **Follow-ups:**
   - File a Tech Debt sub-task to enforce `prefers-reduced-motion` across all
@@ -40,11 +40,11 @@ the same patterns without duplicating import paths.
 
 ## Alternatives considered
 
-- **CSS transitions + Tailwind `animate-*` keyframes only** — rejected:
+- **CSS transitions + Tailwind `animate-*` keyframes only**, rejected:
   cross-fades between slide content and step transitions are awkward without
   presence tracking; would re-implement a worse `AnimatePresence`.
-- **`react-spring`** — rejected: more powerful for physics-based motion but
+- **`react-spring`**, rejected: more powerful for physics-based motion but
   the MP design uses tween-style transitions everywhere; framer-motion's
   declarative API matches better.
-- **`@react-spring/parallax` + custom hooks** — rejected: high learning curve
+- **`@react-spring/parallax` + custom hooks**, rejected: high learning curve
   for the team and most MP animations are simple presence/layout shifts.

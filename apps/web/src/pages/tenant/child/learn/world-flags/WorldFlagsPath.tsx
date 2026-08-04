@@ -25,7 +25,7 @@ import {
 } from './shared';
 import { worldFlagsApi } from './worldFlagsApi';
 
-// World Flags — Learn path sub-tab.
+// World Flags: Learn path sub-tab.
 //
 // Pick a continent → numbered sets of 5 countries. Study each set (flag +
 // capital + currency + fun fact), then take its quiz. 100% correct marks the
@@ -168,7 +168,7 @@ export function WorldFlagsPath({ memberId, kidToken }: WorldFlagsPathProps) {
                   headers: { ...api.headers, 'Content-Type': 'application/json' },
                   body: JSON.stringify(api.learnCompleteBody(selectedContinent, currentChunkIndex)),
                 }).catch(() => {
-                  /* ignore — progress reconciles on next load */
+                  /* ignore: progress reconciles on next load */
                 });
               }
               setAllProgress((prev) => {

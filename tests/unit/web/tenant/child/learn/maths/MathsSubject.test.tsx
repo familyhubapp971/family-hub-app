@@ -1,4 +1,4 @@
-// FHS-394 — MathsSubject unit tests.
+// FHS-394: MathsSubject unit tests.
 // Covers: placement vs journey branching, operation switch, trophy toggle,
 // learn-stage wiring (MathsAILesson), practice stage wiring, prove stage
 // wiring (MathsProveChallenge), and achievements (MathsCertificates).
@@ -10,7 +10,7 @@ import { MathsSubject } from '../../../../../../../apps/web/src/pages/tenant/chi
 const fetchMock = vi.fn();
 const KID_TOKEN = 'kid-subject-tok';
 
-// URL-keyed mock — maps URL substring to response.
+// URL-keyed mock: maps URL substring to response.
 function installFetch(overrides: Record<string, unknown> = {}) {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url);
@@ -60,7 +60,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 // ─── First-time entry → placement test ───────────────────────────────────────
 
-describe('MathsSubject — placement vs journey branching', () => {
+describe('MathsSubject: placement vs journey branching', () => {
   it('shows the placement test when there is no progress for the operation', async () => {
     // progress endpoint returns empty array → no progress → placement.
     installFetch({ progress: { progress: [] } });
@@ -93,7 +93,7 @@ describe('MathsSubject — placement vs journey branching', () => {
 
 // ─── Operation switch ─────────────────────────────────────────────────────────
 
-describe('MathsSubject — operation switch', () => {
+describe('MathsSubject: operation switch', () => {
   it('renders four operation buttons', async () => {
     installFetch();
     render(<MathsSubject kidToken={KID_TOKEN} />);
@@ -116,7 +116,7 @@ describe('MathsSubject — operation switch', () => {
         callCount++;
         const progress =
           callCount === 1
-            ? // First call for addition — has progress
+            ? // First call for addition: has progress
               [
                 {
                   operation: 'addition',
@@ -127,7 +127,7 @@ describe('MathsSubject — operation switch', () => {
                   proveAvgTime: 0,
                 },
               ]
-            : // Second call for multiplication — no progress
+            : // Second call for multiplication: no progress
               [];
         return Promise.resolve({ ok: true, status: 200, json: async () => ({ progress }) });
       }
@@ -153,7 +153,7 @@ describe('MathsSubject — operation switch', () => {
 
 // ─── Trophy toggle ────────────────────────────────────────────────────────────
 
-describe('MathsSubject — trophy toggle', () => {
+describe('MathsSubject: trophy toggle', () => {
   it('clicking trophy shows the achievements panel', async () => {
     installFetch({ progress: { progress: [] } });
     render(<MathsSubject kidToken={KID_TOKEN} />);
@@ -196,7 +196,7 @@ describe('MathsSubject — trophy toggle', () => {
 
 // ─── Learn stage wiring ───────────────────────────────────────────────────────
 
-describe('MathsSubject — learn stage wiring', () => {
+describe('MathsSubject: learn stage wiring', () => {
   it('when journey starts the learn stage, MathsAILesson is rendered (or its null/disabled state)', async () => {
     // Set up: multiplication table 1 with learn not yet completed
     fetchMock.mockImplementation((url: string) => {
@@ -264,7 +264,7 @@ vi.mock(
   },
 );
 
-describe('MathsSubject — practice stage wiring', () => {
+describe('MathsSubject: practice stage wiring', () => {
   // Install progress so the journey renders with practice as the active stage.
   function installPracticeReady() {
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
@@ -335,7 +335,7 @@ describe('MathsSubject — practice stage wiring', () => {
     });
     await waitFor(() => expect(screen.getByTestId('maths-table-practice')).toBeInTheDocument());
 
-    // Answer all 10 — onComplete fires automatically (no internal done-screen to tap)
+    // Answer all 10: onComplete fires automatically (no internal done-screen to tap)
     await answerAll10();
 
     // PUT /api/kid/maths/progress should have been called with practiceCorrect
@@ -354,7 +354,7 @@ describe('MathsSubject — practice stage wiring', () => {
 
     // MathsStageComplete for practice is the ONLY celebration screen
     await waitFor(() => expect(screen.getByTestId('stage-complete')).toBeInTheDocument());
-    // No internal "practice-complete-continue" button — parent owns it
+    // No internal "practice-complete-continue" button: parent owns it
     expect(screen.queryByTestId('practice-complete-continue')).not.toBeInTheDocument();
     vi.useRealTimers();
   });
@@ -402,14 +402,14 @@ describe('MathsSubject — practice stage wiring', () => {
       fireEvent.click(screen.getByTestId('journey-continue-btn'));
     });
 
-    // Must show fresh questions — NOT the stale stage-complete
+    // Must show fresh questions: NOT the stale stage-complete
     await waitFor(() => expect(screen.getByTestId('maths-table-practice')).toBeInTheDocument());
     expect(screen.queryByTestId('stage-complete')).not.toBeInTheDocument();
     expect(screen.getByTestId('practice-progress')).toHaveTextContent('Question 1 of 10');
     vi.useRealTimers();
   });
 
-  it('Continue from stage-complete navigates to MathsProveChallenge (PR4 — real component)', async () => {
+  it('Continue from stage-complete navigates to MathsProveChallenge (PR4, real component)', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     installPracticeReady();
     render(<MathsSubject kidToken={KID_TOKEN} />);
@@ -427,7 +427,7 @@ describe('MathsSubject — practice stage wiring', () => {
       fireEvent.click(screen.getByTestId('stage-complete-continue'));
     });
 
-    // MathsProveChallenge renders its setup screen (PR4 — real component, not a stub).
+    // MathsProveChallenge renders its setup screen (PR4, real component, not a stub).
     await waitFor(() => expect(screen.getByTestId('prove-challenge-setup')).toBeInTheDocument());
     // ComingSoonCard must be gone.
     expect(screen.queryByTestId('maths-coming-soon-prove-it')).not.toBeInTheDocument();
@@ -437,7 +437,7 @@ describe('MathsSubject — practice stage wiring', () => {
 
 // ─── Prove stage wiring ────────────────────────────────────────────────────────
 
-describe('MathsSubject — prove stage wiring', () => {
+describe('MathsSubject: prove stage wiring', () => {
   // Install progress so the journey renders with prove as the active stage
   // (learnCompleted=true, practiceCorrect=10, proveScore=0 means prove is next).
   function installProveReady() {
@@ -616,7 +616,7 @@ describe('MathsSubject — prove stage wiring', () => {
       fireEvent.click(screen.getByTestId('stage-complete-retry'));
     });
 
-    // Should show the prove setup again — not the stale stage-complete.
+    // Should show the prove setup again: not the stale stage-complete.
     await waitFor(() => expect(screen.getByTestId('prove-challenge-setup')).toBeInTheDocument());
     expect(screen.queryByTestId('stage-complete')).not.toBeInTheDocument();
 
@@ -669,7 +669,7 @@ describe('MathsSubject — prove stage wiring', () => {
 
 // ─── Achievements view ────────────────────────────────────────────────────────
 
-describe('MathsSubject — achievements view (MathsCertificates)', () => {
+describe('MathsSubject: achievements view (MathsCertificates)', () => {
   it('trophy shows MathsCertificates (data-testid maths-certificates) instead of placeholder', async () => {
     installFetch({ progress: { progress: [] }, certificates: { certificates: [] } });
     render(<MathsSubject kidToken={KID_TOKEN} />);
@@ -684,7 +684,7 @@ describe('MathsSubject — achievements view (MathsCertificates)', () => {
     // The certificates component itself (not the old placeholder text).
     await waitFor(() => expect(screen.getByTestId('maths-certificates')).toBeInTheDocument());
     // Old placeholder copy must be gone.
-    expect(screen.queryByText(/full certificates view — coming soon/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/full certificates view: coming soon/i)).not.toBeInTheDocument();
   });
 
   it('certificates GET is called with the kid token when achievements opens', async () => {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useBodyScrollLock } from '@familyhub/ui';
 
-// FHS-412 — body scroll-lock hook.
+// FHS-412: body scroll-lock hook.
 // Tests:
 //   1. Sets overflow hidden when active.
 //   2. Restores the original overflow on unmount.
@@ -19,7 +19,7 @@ describe('useBodyScrollLock', () => {
   it('sets body AND html overflow to hidden when active=true', () => {
     renderHook(() => useBodyScrollLock(true));
     expect(document.body.style.overflow).toBe('hidden');
-    // FHS-412 follow-up — <html> is the real scroll container; lock it too.
+    // FHS-412 follow-up: <html> is the real scroll container; lock it too.
     expect(document.documentElement.style.overflow).toBe('hidden');
   });
 
@@ -72,13 +72,13 @@ describe('useBodyScrollLock', () => {
     const hook2 = renderHook(() => useBodyScrollLock(true));
     expect(document.body.style.overflow).toBe('hidden');
 
-    // Release lock 1 — still locked because lock 2 is active
+    // Release lock 1: still locked because lock 2 is active
     act(() => {
       hook1.unmount();
     });
     expect(document.body.style.overflow).toBe('hidden');
 
-    // Release lock 2 — now unlocked
+    // Release lock 2: now unlocked
     act(() => {
       hook2.unmount();
     });

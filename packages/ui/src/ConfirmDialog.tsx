@@ -9,14 +9,14 @@ interface ConfirmDialogProps {
   message?: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
-  /** `danger` paints the confirm button red — use for destructive actions. */
+  /** `danger` paints the confirm button red: use for destructive actions. */
   variant?: 'danger' | 'primary';
   /** Disables the buttons + shows the busy label while an async action runs. */
   busy?: boolean;
   /** Extra disable condition for the confirm button only (e.g. a "type the
    *  name to confirm" gate on a destructive action). Cancel stays enabled. */
   confirmDisabled?: boolean;
-  /** Extra content rendered below the message — e.g. a confirmation input. */
+  /** Extra content rendered below the message, e.g. a confirmation input. */
   children?: React.ReactNode;
   onConfirm: () => void;
   onCancel: () => void;

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 
-// FHS-483 — RewardsTab (Admin Panel): parents add/edit/remove the reward
+// FHS-483: RewardsTab (Admin Panel): parents add/edit/remove the reward
 // shop's catalogue. Listing reuses GET /api/rewards?memberId=<any tenant
 // member> (see the component doc comment); mutations hit the new
 // POST/PATCH/DELETE /api/rewards[/:id] endpoints.
@@ -93,7 +93,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('FHS-483 — RewardsTab', () => {
+describe('FHS-483: RewardsTab', () => {
   it('shows a loading state, then the reward list', async () => {
     installApi({ rewards: [reward({})] });
     render(<RewardsTab headers={HEADERS} />);
@@ -144,7 +144,7 @@ describe('FHS-483 — RewardsTab', () => {
     );
   });
 
-  it('blocks the add when the name is blank — no network call', async () => {
+  it('blocks the add when the name is blank: no network call', async () => {
     installApi({ rewards: [] });
     render(<RewardsTab headers={HEADERS} />);
     await waitFor(() => expect(screen.getByTestId('admin-rewards-ready')).toBeInTheDocument());

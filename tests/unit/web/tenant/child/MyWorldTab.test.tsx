@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-293 — My World habit tracker (faithful legacy port): week navigator,
+// FHS-293: My World habit tracker (faithful legacy port): week navigator,
 // Weekly Habits / Analytics tabs, habit cards with the day → sticker
 // dialog, add/edit/delete habit, and the rewards shop.
 
@@ -117,7 +117,7 @@ function installApi(over: Partial<St> = {}) {
         json: async () => ({ stickerBalance: state.balance, redemptionId: 'r1' }),
       });
     }
-    // FHS-392 — RewardRequestsPanel in the sidebar calls this endpoint.
+    // FHS-392: RewardRequestsPanel in the sidebar calls this endpoint.
     if (u.includes('/api/mw/redemption-requests')) {
       return Promise.resolve({
         ok: true,
@@ -336,14 +336,14 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     expect(screen.getByTestId('bankable-week')).toBeInTheDocument();
   });
 
-  // FHS-512 — the total-value conversion must use THIS child's configured
+  // FHS-512: the total-value conversion must use THIS child's configured
   // rate (from GET /mw/financial/savings), never a hardcoded 0.5. A rate of
   // 0.5 would show 10.00; the configured 1.25 rate must show 17.50.
   it('Your Savings total value uses the configured sticker rate, not a hardcoded 0.5', async () => {
     installApi({ savedStickers: 10, savedCash: 5, unallocated: 4, stickerRate: 1.25 });
     renderTab();
     await waitFor(() => expect(screen.getByTestId('your-savings')).toBeInTheDocument());
-    // Total value = 5 cash + 10*1.25 = 17.50 — NOT 10.00 (the old fixed-0.5 result).
+    // Total value = 5 cash + 10*1.25 = 17.50: NOT 10.00 (the old fixed-0.5 result).
     expect(screen.getByTestId('your-savings').textContent).toContain('17.50');
     expect(screen.getByTestId('your-savings').textContent).not.toContain('10.00');
   });
@@ -447,9 +447,9 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     renderTab(true);
     await waitFor(() => expect(screen.getByTestId('investment-card-inv1')).toBeInTheDocument());
     expect(screen.getByTestId('investment-mode-inv1')).toHaveTextContent('No-penalty');
-    // FHS-406 — the invested habit shows its "Invested · 5x" tag (now in-flow
+    // FHS-406: the invested habit shows its "Invested · 5x" tag (now in-flow
     // above the day grid instead of an absolute badge that overlapped the cells).
-    // FHS-534 — this investment has no `coefficient` field (legacy record),
+    // FHS-534: this investment has no `coefficient` field (legacy record),
     // so the badge falls back to the historical default of 5x.
     expect(screen.getByTestId(`habit-card-invested-badge-${HABIT}`)).toHaveTextContent('5x');
     await act(async () => {
@@ -520,14 +520,14 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
 
   it('hides the Close Week banner from a normal user even on the last day (FHS-336)', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-03-01T10:00:00')); // Sunday — admin would see the banner
+    vi.setSystemTime(new Date('2026-03-01T10:00:00')); // Sunday: admin would see the banner
     installApi();
     renderTab(false); // normal user (not admin)
     await waitFor(() => expect(screen.getByTestId('habit-tracker-week-label')).toBeInTheDocument());
     expect(screen.queryByTestId('my-world-close-week-banner')).not.toBeInTheDocument();
   });
 
-  it('locks a week that has not started yet — blurred cards, disabled day cells, no edits (FHS-484)', async () => {
+  it('locks a week that has not started yet: blurred cards, disabled day cells, no edits (FHS-484)', async () => {
     // Default week fixture starts Mon 2026-02-23; freeze "now" a week earlier
     // so that week reads as a future week (e.g. this week was finalized early).
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -544,7 +544,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     fireEvent.click(screen.getByTestId(`habit-day-cell-${HABIT}-0`));
     expect(screen.queryByTestId('habit-day-sticker-dialog')).not.toBeInTheDocument();
 
-    // Admin-only "Add habit" affordance is hidden too — nothing is editable.
+    // Admin-only "Add habit" affordance is hidden too: nothing is editable.
     expect(screen.queryByTestId('habit-tracker-add-habit-btn')).not.toBeInTheDocument();
   });
 
@@ -601,7 +601,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     ).toBe(false);
   });
 
-  // FHS-392 — Reward Requests sidebar in parent/admin mode
+  // FHS-392: Reward Requests sidebar in parent/admin mode
   it('renders the reward-requests sidebar for an admin parent (FHS-392)', async () => {
     installApi();
     renderTab(true /* isAdmin */);
@@ -614,7 +614,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
 
   it('does NOT render the reward-requests sidebar in kid (readOnly) mode (FHS-392)', async () => {
     installApi();
-    // Kid mode uses kidToken prop — readOnly=true suppresses the sidebar.
+    // Kid mode uses kidToken prop: readOnly=true suppresses the sidebar.
     // Kid API uses /api/kid/* paths so the data may not load, but the
     // sidebar guard fires before data (readOnly branch).
     render(
@@ -671,7 +671,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     );
   });
 
-  // ── FHS-399 — Finalized week kid view ────────────────────────────────────
+  // ── FHS-399: Finalized week kid view ────────────────────────────────────
 
   // Two-week setup: week 9 is the live current week (habits load at mount);
   // week 8 is finalized and lazy-loads when the user navigates back.
@@ -725,7 +725,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
   ];
 
   function installFinalizedWeekApi(actions: TestAction[] = DEFAULT_FINALIZED_ACTIONS) {
-    // Base install: two weeks — week 8 finalized, week 9 current
+    // Base install: two weeks: week 8 finalized, week 9 current
     installApi({
       weeks: [
         {
@@ -765,7 +765,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
           json: async () => ({ actions }),
         });
       }
-      // Habits for the finalized week — 5 stickers across days 0-4
+      // Habits for the finalized week: 5 stickers across days 0-4
       if (u.includes('/api/habits') && u.includes(FINALIZED_WEEK) && !init?.method) {
         return Promise.resolve({
           ok: true,
@@ -809,7 +809,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     renderTab();
     await navigateToFinalizedWeek();
     await waitFor(() => expect(screen.getByTestId('finalized-week-banner')).toBeInTheDocument());
-    // Friendly copy — no "viewing past records"
+    // Friendly copy: no "viewing past records"
     expect(screen.getByTestId('finalized-week-banner').textContent).toContain(
       'looking at a finished week',
     );
@@ -823,7 +823,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     renderTab();
     await navigateToFinalizedWeek();
     await waitFor(() => expect(screen.getByTestId('finalized-week-summary')).toBeInTheDocument());
-    // Stars earned section — 5 stickers * 0.5 = 2.50
+    // Stars earned section: 5 stickers * 0.5 = 2.50
     const earned = screen.getByTestId('finalized-stars-earned');
     expect(earned.textContent).toContain('5');
     expect(earned.textContent).toContain('2.50');
@@ -1022,7 +1022,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     ).toBe(false);
   });
 
-  it('FHS-399 #5: admin on a finalized week — clicking a cell fires no POST and opens no dialog', async () => {
+  it('FHS-399 #5: admin on a finalized week: clicking a cell fires no POST and opens no dialog', async () => {
     // Admins are also read-only on finalized weeks (canEdit=false when week.isFinalized)
     installFinalizedWeekApi();
     renderTab(true /* isAdmin */);
@@ -1041,7 +1041,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     ).toBe(false);
   });
 
-  it('FHS-399 #6: carriedOver-only path — actions=[] + carriedOverStickers=5 → Saved shown, Planted absent', async () => {
+  it('FHS-399 #6: carriedOver-only path: actions=[] + carriedOverStickers=5 → Saved shown, Planted absent', async () => {
     installApi({
       weeks: [
         {

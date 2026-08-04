@@ -13,7 +13,7 @@ export interface TopNavTab {
 }
 
 interface TopNavProps {
-  /** Brand area on the top-left — logo + product name. */
+  /** Brand area on the top-left: logo + product name. */
   brand?: React.ReactNode;
   /** Ordered tab list. Renders as the second row, under the brand. */
   tabs: TopNavTab[];
@@ -31,7 +31,7 @@ interface TopNavProps {
 /**
  * Top navigation for authenticated surfaces (Parent Dashboard,
  * ChildWorld), matching the Magic Patterns design: a darker-purple
- * banner with TWO rows — branding + right slot on top, the tab strip
+ * banner with TWO rows: branding + right slot on top, the tab strip
  * underneath. Active tab is a pink pill with black text; inactive tabs
  * are borderless grey text that lighten on hover. Badges are small red
  * pills.
@@ -58,7 +58,7 @@ export function TopNav({
       role="navigation"
     >
       <div className="mx-auto w-full max-w-[1400px] px-4 md:px-6">
-        {/* Row 1 — branding left, profile/logout right. */}
+        {/* Row 1: branding left, profile/logout right. */}
         <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           {brand && <div className="shrink-0">{brand}</div>}
           {rightSlot && (
@@ -68,7 +68,7 @@ export function TopNav({
           )}
         </div>
 
-        {/* Row 2 — tab strip. Scrollbar hidden visually; on small screens (where the
+        {/* Row 2: tab strip. Scrollbar hidden visually; on small screens (where the
             tabs overflow) a right-edge fade signals more tabs. No fade at lg+ where
             the tabs fit, so the last tab isn't dimmed on desktop. */}
         <div

@@ -27,10 +27,10 @@ import { OnboardingPage } from './pages/tenant/OnboardingPage';
 import { RewardSettingsPage } from './pages/tenant/RewardSettingsPage';
 
 // Top-level routing. AuthProvider wraps every route so useAuth() is
-// available everywhere — including the OAuth callback page that needs
+// available everywhere, including the OAuth callback page that needs
 // to react to the session flip mid-render.
 //
-// FHS-249 — tenant-scoped pages live under `/t/:slug/*` (per ADR 0012).
+// FHS-249: tenant-scoped pages live under `/t/:slug/*` (per ADR 0012).
 // Marketing + auth routes stay at the root. Legacy `/dashboard` and
 // `/me` redirect into the tenant-scoped tree once the user's tenant is
 // known (the AuthCallbackPage figures it out post-login).
@@ -39,13 +39,13 @@ export function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Marketing + auth — no tenant context. */}
+          {/* Marketing + auth: no tenant context. */}
           <Route path="/" element={<WelcomePage />} />
           <Route path="/pricing" element={<PricingPage />} />
-          {/* FHS-436 — public "what is Family Hub" page for beta reviewers
+          {/* FHS-436: public "what is Family Hub" page for beta reviewers
               and first-time visitors. */}
           <Route path="/about" element={<AboutPage />} />
-          {/* FHS-509 — Legal pages (Privacy, Children & Parents, Terms,
+          {/* FHS-509: Legal pages (Privacy, Children & Parents, Terms,
               Cookies) + an index. */}
           <Route path="/legal" element={<LegalIndexPage />} />
           <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
@@ -62,19 +62,19 @@ export function App() {
           <Route path="/_health" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          {/* FHS-224 / ADR 0011 — passwords retired. The old reset-password
+          {/* FHS-224 / ADR 0011: passwords retired. The old reset-password
               entry point now redirects into the magic-link flow so any
               bookmarked link still works. */}
           <Route path="/auth/reset-request" element={<Navigate to="/login" replace />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
-          {/* FHS-510 — admin-initiated email-change confirm link. Root-level
+          {/* FHS-510: admin-initiated email-change confirm link. Root-level
               and outside ProtectedRoute: the recipient may not be signed in
-              at all — the one-time token in the query string is the
+              at all, the one-time token in the query string is the
               credential, verified server-side. */}
           <Route path="/confirm-email/:memberId" element={<ConfirmEmailPage />} />
 
-          {/* FHS-238 — kid login. Tenant-scoped (slug in URL) but NOT
+          {/* FHS-238: kid login. Tenant-scoped (slug in URL) but NOT
               behind ProtectedRoute: the kid hasn't authenticated yet,
               that's the whole point. The page reads :slug via useParams
               directly so it can resolve the family + show the avatar
@@ -124,7 +124,7 @@ export function App() {
               </ProtectedRoute>
             }
           />
-          {/* FHS-308 — Admin Panel */}
+          {/* FHS-308: Admin Panel */}
           <Route
             path="/t/:slug/admin"
             element={
@@ -135,7 +135,7 @@ export function App() {
               </ProtectedRoute>
             }
           />
-          {/* FHS-512 — "Pocket money" reward-config settings screen. */}
+          {/* FHS-512: "Pocket money" reward-config settings screen. */}
           <Route
             path="/t/:slug/reward-settings"
             element={
@@ -146,7 +146,7 @@ export function App() {
               </ProtectedRoute>
             }
           />
-          {/* FHS-268 — ChildWorld: a parent views a child's world. */}
+          {/* FHS-268: ChildWorld: a parent views a child's world. */}
           <Route
             path="/t/:slug/child/:memberId"
             element={
@@ -158,7 +158,7 @@ export function App() {
             }
           />
 
-          {/* Legacy un-prefixed routes — kept as-is for now so existing
+          {/* Legacy un-prefixed routes: kept as-is for now so existing
               deep links don't 404. Cleanup tracked under FHS-205.
               `/dashboard` resolves the user's first tenant via /api/me
               and forwards to /t/<slug>/dashboard so the new tenant-

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 
-// FHS-227 + FHS-261 — Parent Dashboard shell. Tab framework invariants
+// FHS-227 + FHS-261: Parent Dashboard shell. Tab framework invariants
 // (6 tabs render, default = home, ?tab= drives the active panel) plus
 // the FHS-261 header refactor: family-name hero replaces the plain
 // "Family Hub" wordmark; profile pill dropdown replaces the email +
@@ -28,7 +28,7 @@ const authState: {
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
   signOutAll: mocks.signOutAll,
-  // FHS-257 — DashboardPage now branches to the kid shell when a kid
+  // FHS-257: DashboardPage now branches to the kid shell when a kid
   // token is present. These parent tests have no kid token.
   getKidToken: () => null,
   clearKidToken: vi.fn(),
@@ -190,7 +190,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('<DashboardPage /> — tab framework', () => {
+describe('<DashboardPage />: tab framework', () => {
   it('renders six tabs in the nav (FHS-401: Learning Insights moved to child world view)', () => {
     renderAt('/t/khans/dashboard');
     for (const label of ['Dashboard', 'Meals', 'Calendar', 'Assignments', 'Noticeboard', 'Tasks']) {
@@ -204,7 +204,7 @@ describe('<DashboardPage /> — tab framework', () => {
 
   it('?tab=learning-insights falls back to the default home panel (tab no longer exists)', () => {
     renderAt('/t/khans/dashboard?tab=learning-insights');
-    // Tab removed — falls back to home
+    // Tab removed: falls back to home
     expect(screen.getByTestId('dashboard-panel-home')).toBeInTheDocument();
     expect(screen.queryByTestId('dashboard-panel-learning-insights')).not.toBeInTheDocument();
   });
@@ -221,7 +221,7 @@ describe('<DashboardPage /> — tab framework', () => {
     expect(screen.getByTestId('meals-loading')).toBeInTheDocument();
   });
 
-  it('renders the Meals tab unwrapped — not inside the white card (FHS-318)', () => {
+  it('renders the Meals tab unwrapped: not inside the white card (FHS-318)', () => {
     renderAt('/t/khans/dashboard?tab=meals');
     // The Meals header uses white text for the purple page; if it were still
     // wrapped in the white card the heading would be invisible. Assert it has
@@ -261,7 +261,7 @@ describe('<DashboardPage /> — tab framework', () => {
     expect(screen.getByRole('tab', { name: /Meals/ }).getAttribute('aria-selected')).toBe('false');
   });
 
-  // FHS-392 — reward-requests tab removed; panel moved to ChildWorldPage sidebar.
+  // FHS-392: reward-requests tab removed; panel moved to ChildWorldPage sidebar.
   it('?tab=reward-requests falls back to the default home panel (tab no longer exists)', () => {
     renderAt('/t/khans/dashboard?tab=reward-requests');
     // Unknown tab → fallback to home
@@ -277,7 +277,7 @@ describe('<DashboardPage /> — tab framework', () => {
   });
 });
 
-describe('<DashboardPage /> — FHS-261 header', () => {
+describe('<DashboardPage />: FHS-261 header', () => {
   it('fetches /api/me + /api/dashboard/today and renders "<name> Family Hub"', async () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() =>
@@ -333,7 +333,7 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     expect(screen.queryByTestId('dashboard-profile-child-m-2')).toBeNull();
   });
 
-  // FHS-500 — add-member now lives on the Family Overview (FHS-498), so the
+  // FHS-500: add-member now lives on the Family Overview (FHS-498), so the
   // profile dropdown no longer carries a "+" or an "Add member" button.
   it('the profile dropdown has no add-member controls (FHS-500)', async () => {
     renderAt('/t/khans/dashboard');
@@ -352,7 +352,7 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     expect(screen.getByTestId('location-search').textContent).toBe('');
   });
 
-  // FHS-512 / FHS-514 — "Reward settings" opens the Pocket money screen.
+  // FHS-512 / FHS-514: "Reward settings" opens the Pocket money screen.
   it('the profile dropdown has a Reward settings item that navigates to /t/:slug/reward-settings', async () => {
     renderAt('/t/khans/dashboard');
     fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
@@ -361,7 +361,7 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     await waitFor(() => expect(screen.getByTestId('reward-settings-route')).toBeInTheDocument());
   });
 
-  // FHS-514 — with no kids, the account menu shows an actionable "add your first child" row.
+  // FHS-514: with no kids, the account menu shows an actionable "add your first child" row.
   it('shows an "add your first child" row in the account menu when there are no kids', async () => {
     mocks.fetchMock.mockImplementation(async (url: string) => {
       if (url.includes('/api/me')) {
@@ -422,7 +422,7 @@ describe('<DashboardPage /> — FHS-261 header', () => {
 
   it('Log out lives at the bottom of the profile menu and calls signOutAll()', async () => {
     renderAt('/t/khans/dashboard');
-    // FHS-520 (design-fidelity) — Log out is no longer a standalone nav
+    // FHS-520 (design-fidelity): Log out is no longer a standalone nav
     // button; it's the last item inside the account dropdown (MP).
     expect(screen.queryByTestId('dashboard-profile-menu')).toBeNull();
     fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
@@ -478,7 +478,7 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     await waitFor(() => expect(screen.queryByTestId('tab-tasks-badge')).not.toBeInTheDocument());
   });
 
-  // FHS-506 — the account menu shows the person's roster name, not their email,
+  // FHS-506: the account menu shows the person's roster name, not their email,
   // when the login carries no name (common for magic-link signups).
   it('uses the roster display name (not the email) when the login has no name', async () => {
     authState.user = { email: 'sarah@example.com', id: 'u-1', user_metadata: {} };
@@ -546,7 +546,7 @@ describe('<DashboardPage /> — FHS-261 header', () => {
     expect(screen.getByTestId('dashboard-profile-parent-name').textContent).toBe('Sarah Khan');
   });
 
-  // FHS-485 / ADR 0019 — the profile menu's role line reflects the caller's
+  // FHS-485 / ADR 0019: the profile menu's role line reflects the caller's
   // real role, not a hardcoded "Parent · Admin" for everyone.
   it('shows the caller role in the profile menu (admin => Parent · Admin)', async () => {
     renderAt('/t/khans/dashboard');

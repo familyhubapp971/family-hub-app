@@ -3,22 +3,22 @@
 **Jira:** [FHS-333](https://qualicion2.atlassian.net/browse/FHS-333) (epic)
 **Status:** draft
 **Owner:** product-manager
-**ADR:** [0015 — role model: admin vs normal user](../decisions/0015-role-model-owner-flag.md)
+**ADR:** [0015: role model: admin vs normal user](../decisions/0015-role-model-owner-flag.md)
 
-Family Hub is multi-tenant — each family is a tenant, and members share one
+Family Hub is multi-tenant, each family is a tenant, and members share one
 roster with a `role` (admin / adult / teen / child / guest). Today permission
 is a single blunt rule: the member themselves, OR any admin, OR any **adult**
 can manage almost anything. In the legacy app there were two kinds of
 grown-up: the one **admin** (full rights, including editing a habit sticker on
 a previous day) and everyone else, a **normal user**. Multi-tenancy blurred
-that line — a non-admin adult now gets admin-only powers, most visibly the
+that line, a non-admin adult now gets admin-only powers, most visibly the
 ability to rewrite a past day's stickers.
 
 This feature restores the legacy two-tier model in the tenancy world:
 **admin** (full rights) and **normal user** (everyday rights only). The family
 registrant is an admin. An admin can make any **non-child** member an admin or
 a normal user. Kids (teen/child) are scoped to their own data and can never be
-admins. No new role or flag — just a tighter permission boundary plus a
+admins. No new role or flag, just a tighter permission boundary plus a
 member-management action.
 
 ## Rights matrix
@@ -28,9 +28,9 @@ Key: ✓ = allowed · ✗ = blocked · **self** = only on their own record/data.
 
 | Action                                                    | Admin | Normal user | Teen | Child        |
 | --------------------------------------------------------- | ----- | ----------- | ---- | ------------ |
-| **My World — economy & history**                          |       |             |      |              |
+| **My World: economy & history**                           |       |             |      |              |
 | Log / edit a sticker for today or later this week         | ✓     | ✓           | self | self         |
-| Edit a PAST-day sticker (backdate) — _the named gap_      | ✓     | ✗           | ✗    | ✗            |
+| Edit a PAST-day sticker (backdate): _the named gap_       | ✓     | ✗           | ✗    | ✗            |
 | Close / finalize a week                                   | ✓     | ✗           | ✗    | ✗            |
 | Re-open / un-finalize a closed week                       | ✓     | ✗           | ✗    | ✗            |
 | Run the rewards shop (redeem current balance)             | ✓     | ✓           | ✗    | self-request |
@@ -65,16 +65,16 @@ non-admin adult as "Parent."
 | **admin** | Parent / partner (registrant is one)       | Full: everyday + past-date edits, week close, economy settings, member management, billing |
 | **adult** | Invited grown-up (grandma, cousin, sitter) | Everyday + current/future-day writes. Not past-date edits, not admin actions               |
 | **teen**  | Own PIN login                              | View-only on shared family content; writes only their own kid-scoped data                  |
-| **child** | Own PIN login                              | Same as teen — view-only on shared content, writes only their own data                     |
+| **child** | Own PIN login                              | Same as teen: view-only on shared content, writes only their own data                      |
 | **guest** | Login, no write rights                     | Read-only everywhere                                                                       |
 
-`POST /api/invitations` accepts `admin | adult | guest` (never `child` — kids
+`POST /api/invitations` accepts `admin | adult | guest` (never `child`: kids
 use PIN login, never a magic-link invite). Teens are added via "Add a child",
 not invited.
 
 The invite form pre-selects **Parent / partner** (admin) for an admin sender so
 inviting a co-parent is one tap ([FHS-524](https://qualicion2.atlassian.net/browse/FHS-524)).
-A non-admin never sees that option, so for them the default stays **Adult** —
+A non-admin never sees that option, so for them the default stays **Adult**:
 the admin-grant safeguard is what gates the default, not just the option list.
 
 ### Story 4: Invite a second admin, safely
@@ -82,7 +82,7 @@ the admin-grant safeguard is what gates the default, not just the option list.
 **As an** admin
 **I want** to invite another grown-up directly as an admin (a co-parent or
 co-guardian) **so that** two parents can both hold full rights from day one,
-without a separate promotion step — but only an admin can hand out that power.
+without a separate promotion step, but only an admin can hand out that power.
 
 #### Acceptance criteria
 
@@ -203,16 +203,16 @@ was simplified.)
 ## Out of scope
 
 - A separate "owner / super user" tier (the earlier, abandoned design).
-- Custom / per-family permission editing — fixed two-tier model only.
+- Custom / per-family permission editing, fixed two-tier model only.
 - Per-surface granular delegation (e.g. "meals admin" vs "calendar admin").
-- A browsable audit-log viewer — sensitive edits record who/when, but the
+- A browsable audit-log viewer, sensitive edits record who/when, but the
   history screen is a later ticket.
 
 ## Open questions
 
 - Should an admin be able to remove **guests** specifically, or are guests
   out of scope for now?
-- Member removal — soft-delete (keep history) or hard-delete?
+- Member removal, soft-delete (keep history) or hard-delete?
 - Is there ever a case for a normal user (adult) closing a week, or is that
   firmly admin-only? (Currently admin-only.)
 

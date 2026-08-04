@@ -36,7 +36,7 @@ const ICONS: Record<ToastType, typeof CheckCircle> = {
   info: Info,
 };
 
-// nextId is per-provider via useRef below — module-level state would
+// nextId is per-provider via useRef below: module-level state would
 // collide under HMR, multiple providers, or test isolation.
 
 function ToastMessage({ item, onDismiss }: { item: ToastItem; onDismiss: (id: number) => void }) {

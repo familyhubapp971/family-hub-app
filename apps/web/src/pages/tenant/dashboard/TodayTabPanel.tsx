@@ -22,16 +22,16 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-263 (exact Magic Patterns match) — Today / Family Dashboard tab.
+// FHS-263 (exact Magic Patterns match): Today / Family Dashboard tab.
 //
 // One GET /api/dashboard/today feeds: a full-width Family Overview grid
-// (4-up member cards — kids show a habit bar + streak + "View World"
+// (4-up member cards: kids show a habit bar + streak + "View World"
 // link, adults show pending tasks + a status box), then a two-column
 // row of Today's Snapshot (three round-icon stat tiles) and the purple
 // Family Goals card (top goal bar + Kids' Star Balances) above the
 // Recent Activity feed.
 //
-// FHS-513 — role → colour/label map now lives in @familyhub/ui
+// FHS-513: role → colour/label map now lives in @familyhub/ui
 // (`roleStyle`) so it isn't duplicated between here and MembersPage.
 
 type Status =
@@ -137,7 +137,7 @@ export function TodayTabPanel() {
     <div className="space-y-8" data-testid="today-ready">
       {/* Family Overview */}
       <section>
-        {/* FHS-520 (design-fidelity) — the Family Overview header button
+        {/* FHS-520 (design-fidelity): the Family Overview header button
             links to the full Manage Family screen (Grown-ups/Kids groups,
             invite + add-child forms live there); it no longer deep-links
             straight into the add-child form via ?add=member (that query
@@ -179,7 +179,7 @@ export function TodayTabPanel() {
               testId="today-snapshot-habits"
               icon={<CheckSquare size={18} className="text-pink-600" />}
               ring="bg-pink-100"
-              value={kids.length === 0 ? '—' : `${kidsHabitsDone}/${kidsHabitsTotal}`}
+              value={kids.length === 0 ? '-' : `${kidsHabitsDone}/${kidsHabitsTotal}`}
               label="Kids Habits"
             />
             <SnapshotTile
@@ -210,7 +210,7 @@ export function TodayTabPanel() {
                 <div className="mb-2 flex items-end justify-between">
                   <span className="text-sm font-bold">{topGoal.label}</span>
                   <span className="font-heading text-yellow-300">
-                    {goalPercent(topGoal) === null ? '—' : `${goalPercent(topGoal)}%`}
+                    {goalPercent(topGoal) === null ? '-' : `${goalPercent(topGoal)}%`}
                   </span>
                 </div>
                 <div className="h-3 w-full overflow-hidden rounded-full border-2 border-black bg-purple-900">

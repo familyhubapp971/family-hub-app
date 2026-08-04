@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-270 — JournalTab (Magic Patterns redesign, new per-day journal API).
+// FHS-270: JournalTab (Magic Patterns redesign, new per-day journal API).
 //
 // Covers: initial load renders today's date + quote; selecting a mood /
 // typing gratitude / body / creativity then clicking Save issues the right
@@ -75,7 +75,7 @@ function installApi(over: Partial<ApiState> = {}) {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url);
 
-    // PUT /api/journal — upsert
+    // PUT /api/journal: upsert
     if (init?.method === 'PUT' && /\/api\/journal$/.test(u)) {
       const b = JSON.parse(init.body as string) as Record<string, unknown>;
       const saved = makeEntry({

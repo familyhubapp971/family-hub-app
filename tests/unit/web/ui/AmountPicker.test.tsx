@@ -2,9 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AmountPicker } from '../../../../packages/ui/src';
 
-// FHS-512 — AmountPicker is the money-critical ± stepper on the "Pocket
+// FHS-512: AmountPicker is the money-critical ± stepper on the "Pocket
 // money" settings screen. Every assertion works in INTEGER MINOR UNITS
-// (e.g. 50 = 0.50) — onChange must never receive a float.
+// (e.g. 50 = 0.50): onChange must never receive a float.
 
 describe('AmountPicker', () => {
   it('displays the value as a decimal, formatted from minor units', () => {
@@ -47,7 +47,7 @@ describe('AmountPicker', () => {
     expect(onChange).toHaveBeenCalledWith(60);
   });
 
-  it('never decrements below the minimum (default 0) — money never goes negative', () => {
+  it('never decrements below the minimum (default 0): money never goes negative', () => {
     const onChange = vi.fn();
     render(
       <AmountPicker
@@ -96,9 +96,9 @@ describe('AmountPicker', () => {
     expect(onChange).toHaveBeenCalledWith(0);
   });
 
-  // FIX 3 (BLOCKER) — an oversized rate/penalty must never reach the API
+  // FIX 3 (BLOCKER): an oversized rate/penalty must never reach the API
   // (numeric(12,2) overflow → 500); the UI clamps it before onChange fires.
-  it('typing an amount above an explicit maximum clamps to the maximum — an over-cap value is rejected', () => {
+  it('typing an amount above an explicit maximum clamps to the maximum: an over-cap value is rejected', () => {
     const onChange = vi.fn();
     render(
       <AmountPicker

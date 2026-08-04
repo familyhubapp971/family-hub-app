@@ -5,7 +5,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-232 / FHS-266 — NoticeboardTabPanel (Magic Patterns layout).
+// FHS-232 / FHS-266: NoticeboardTabPanel (Magic Patterns layout).
 //
 // Family bulletin board as a wrapping grid of post-it cards inside a
 // lime panel. Each note: an emoji icon, a pin marker, the text, and a

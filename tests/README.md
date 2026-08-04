@@ -17,7 +17,7 @@ and [FHS-182](https://qualicion2.atlassian.net/browse/FHS-182).
 and [FHS-183](https://qualicion2.atlassian.net/browse/FHS-183).
 
 Per [ADR 0005](../documents/decisions/0005-monorepo-structure.md), `tests/`
-is **not** a pnpm workspace — each tier brings its own runner config
+is **not** a pnpm workspace: each tier brings its own runner config
 and dependencies are installed at the root.
 
 Per the project Testing section in [`/CLAUDE.md`](../CLAUDE.md#testing):

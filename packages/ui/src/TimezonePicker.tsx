@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { SearchableSelect } from './SearchableSelect';
 
-// FHS-38 — IANA timezone picker. Wraps SearchableSelect with the IANA
+// FHS-38: IANA timezone picker. Wraps SearchableSelect with the IANA
 // list from `Intl.supportedValuesOf('timeZone')` (Node 18+/all evergreen
 // browsers) and a small fallback for older runtimes that lack the API.
 
@@ -12,11 +12,11 @@ export interface TimezonePickerProps {
   zones?: readonly string[];
   className?: string;
   testId?: string;
-  /** `id` for the trigger button — pair with a sibling `<label htmlFor>`. */
+  /** `id` for the trigger button, pair with a sibling `<label htmlFor>`. */
   id?: string;
 }
 
-// Browser-detected timezone — used as the wizard's default before the
+// Browser-detected timezone: used as the wizard's default before the
 // user has picked one. Falls back to UTC for runtimes without Intl.
 export function detectBrowserTimezone(): string {
   try {
@@ -79,8 +79,8 @@ export function TimezonePicker({
     const list = zones ?? loadZones();
     const opts = list.map((zone) => ({ value: zone, label: zone }));
     // Defensive: if the current `value` (typically a browser-detected
-    // IANA zone) isn't in the list — happens on older runtimes that
-    // fall through to the static list — prepend it so the trigger
+    // IANA zone) isn't in the list, happens on older runtimes that
+    // fall through to the static list, prepend it so the trigger
     // shows the right label and the user can re-select if they edit.
     if (value && !opts.some((o) => o.value === value)) {
       opts.unshift({ value, label: value });

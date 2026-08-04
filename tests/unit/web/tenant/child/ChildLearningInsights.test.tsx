@@ -1,4 +1,4 @@
-// FHS-401 — Unit tests for ChildLearningInsights
+// FHS-401: Unit tests for ChildLearningInsights
 //
 // Tests cover: loading state, error state + retry, empty state (no activity),
 // ready state (summary tiles, subject cards, needs-help chips, accuracy labels,
@@ -108,7 +108,7 @@ afterEach(() => {
 
 // ─── Loading state ────────────────────────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — loading', () => {
+describe('<ChildLearningInsights />: loading', () => {
   it('shows the loading message while fetch is pending', () => {
     fetchMock.mockReturnValue(new Promise(() => {}));
     renderComponent();
@@ -132,7 +132,7 @@ describe('<ChildLearningInsights /> — loading', () => {
 
 // ─── Error state ──────────────────────────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — error state', () => {
+describe('<ChildLearningInsights />: error state', () => {
   it('shows error panel when fetch fails', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
     renderComponent();
@@ -174,7 +174,7 @@ describe('<ChildLearningInsights /> — error state', () => {
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — empty state (no activity)', () => {
+describe('<ChildLearningInsights />: empty state (no activity)', () => {
   beforeEach(() => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => EMPTY_INSIGHTS });
   });
@@ -199,7 +199,7 @@ describe('<ChildLearningInsights /> — empty state (no activity)', () => {
 
 // ─── Ready state: no child switcher ──────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — no child switcher', () => {
+describe('<ChildLearningInsights />: no child switcher', () => {
   it('does not render a child switcher (memberId is fixed by prop)', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => activeInsights() });
     renderComponent();
@@ -210,7 +210,7 @@ describe('<ChildLearningInsights /> — no child switcher', () => {
 
 // ─── Ready state: header ──────────────────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — header', () => {
+describe('<ChildLearningInsights />: header', () => {
   it('shows the "📖 LEARNING INSIGHTS" heading', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => activeInsights() });
     renderComponent();
@@ -222,7 +222,7 @@ describe('<ChildLearningInsights /> — header', () => {
 
 // ─── Ready state: summary card ────────────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — summary card', () => {
+describe('<ChildLearningInsights />: summary card', () => {
   beforeEach(() => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => activeInsights() });
   });
@@ -264,7 +264,7 @@ describe('<ChildLearningInsights /> — summary card', () => {
 
 // ─── Ready state: subject cards ──────────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — subject cards', () => {
+describe('<ChildLearningInsights />: subject cards', () => {
   beforeEach(() => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => activeInsights() });
   });
@@ -293,12 +293,12 @@ describe('<ChildLearningInsights /> — subject cards', () => {
     expect(screen.getAllByTestId('accuracy-ring')).toHaveLength(4);
   });
 
-  it('accuracy label shows "—" when accuracyPct is null', async () => {
+  it('accuracy label shows "-" when accuracyPct is null', async () => {
     renderComponent();
     await waitFor(() =>
       expect(screen.getByTestId('accuracy-label-world-flags')).toBeInTheDocument(),
     );
-    expect(screen.getByTestId('accuracy-label-world-flags').textContent).toContain('—');
+    expect(screen.getByTestId('accuracy-label-world-flags').textContent).toContain('-');
   });
 
   it('accuracy label shows the percentage when accuracyPct is set', async () => {
@@ -323,7 +323,7 @@ describe('<ChildLearningInsights /> — subject cards', () => {
 
 // ─── Ready state: stuck panel ────────────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — "Where they\'re stuck" panel', () => {
+describe('<ChildLearningInsights />: "Where they\'re stuck" panel', () => {
   it('renders the stuck panel when weakest is non-null', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
@@ -370,7 +370,7 @@ describe('<ChildLearningInsights /> — "Where they\'re stuck" panel', () => {
 
 // ─── Ready state: World Flags panel ─────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — World Flags panel', () => {
+describe('<ChildLearningInsights />: World Flags panel', () => {
   it('renders the WF continent panel when continentsTotal > 0', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => activeInsights() });
     renderComponent();
@@ -426,7 +426,7 @@ describe('<ChildLearningInsights /> — World Flags panel', () => {
 
 // ─── World Flags panel edge cases ────────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — World Flags edge cases', () => {
+describe('<ChildLearningInsights />: World Flags edge cases', () => {
   it('renders "0/6" and no continent pills when continentsExplored=0 (not started)', async () => {
     const data = activeInsights();
     const wf = data.subjects.find((s) => s.subject === 'World Flags')!;
@@ -442,7 +442,7 @@ describe('<ChildLearningInsights /> — World Flags edge cases', () => {
 
 // ─── AccuracyRing boundary values ────────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — AccuracyRing boundary values', () => {
+describe('<ChildLearningInsights />: AccuracyRing boundary values', () => {
   it('renders without crash when accuracyPct = 0', async () => {
     const data = activeInsights();
     // Set all subjects to 0% accuracy.
@@ -468,7 +468,7 @@ describe('<ChildLearningInsights /> — AccuracyRing boundary values', () => {
 
 // ─── API call verification ────────────────────────────────────────────────────
 
-describe('<ChildLearningInsights /> — API call', () => {
+describe('<ChildLearningInsights />: API call', () => {
   it('fetches /api/learn/insights with the correct memberId, bearer token, and tenant slug', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => EMPTY_INSIGHTS });
     renderComponent();

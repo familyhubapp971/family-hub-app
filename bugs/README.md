@@ -1,4 +1,4 @@
-# Bugs — backlog
+# Bugs: backlog
 
 Lightweight backlog of known bugs that aren't yet ticketed in Jira.
 Each file is one bug. Promote to a Jira FHS ticket (and delete the

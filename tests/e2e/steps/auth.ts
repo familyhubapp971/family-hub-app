@@ -37,7 +37,7 @@ Given('I am signed in with the e2e test account', async ({ page }) => {
   await login.loginAndWaitForRedirect(email, password);
 });
 
-// Slash escaped — Cucumber Expressions treat `/` as alternation.
+// Slash escaped: Cucumber Expressions treat `/` as alternation.
 When('I navigate to \\/me', async ({ page }) => {
   const me = new MePage(page);
   await me.open();
@@ -58,8 +58,8 @@ Then('my user id and account-creation timestamp are visible', async ({ page }) =
   const me = new MePage(page);
   // Don't pin the exact id (it's the Supabase auth user id, stable
   // across runs but env-specific) or the timestamp (created when the
-  // user was first provisioned). Just assert the elements are non-empty
-  // — proves the mirror row was returned, not a placeholder.
+  // user was first provisioned). Just assert the elements are non-empty:
+  // proves the mirror row was returned, not a placeholder.
   await expect(me.userId()).toBeVisible();
   await expect(me.userId()).not.toBeEmpty();
   await expect(me.createdAt()).toBeVisible();

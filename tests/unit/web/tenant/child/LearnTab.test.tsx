@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// Learn Phase 1 — LearnTab: subject cards + Reading Log panel.
-// Learn Phase 2a — World Flags subject routing + Explore detail.
+// Learn Phase 1: LearnTab: subject cards + Reading Log panel.
+// Learn Phase 2a: World Flags subject routing + Explore detail.
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
@@ -14,7 +14,7 @@ vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
 }));
 
 // World Flags Explore renders an interactive Leaflet capital map in the facts
-// panel. Leaflet needs a real browser layout, so stub it in jsdom — the map is
+// panel. Leaflet needs a real browser layout, so stub it in jsdom: the map is
 // not what these tests exercise.
 vi.mock('react-leaflet', () => ({
   MapContainer: ({ children }: { children?: unknown }) => children ?? null,
@@ -277,7 +277,7 @@ describe('World Flags subject routing', () => {
       fireEvent.click(screen.getByTestId('learn-subject-world-flags'));
     });
     await waitFor(() => expect(screen.getByTestId('learn-back')).toBeInTheDocument());
-    // Default is now Learn path — continent picker is visible.
+    // Default is now Learn path: continent picker is visible.
     await waitFor(() => expect(screen.getByTestId('wfpath')).toBeInTheDocument());
   });
 
@@ -315,7 +315,7 @@ describe('World Flags subject routing', () => {
 
 // ─── FHS-397: hub subject-card progress bar fill ────────────────────────────
 
-describe('FHS-397 — subject card progress bar fill (LearnTab hub)', () => {
+describe('FHS-397: subject card progress bar fill (LearnTab hub)', () => {
   it('progress bar fill div uses bg-gray-800 (readable on coloured cards)', async () => {
     installDefault([{ subject: 'Maths', progress: 50 }], []);
     renderTab();
@@ -366,7 +366,7 @@ describe('Art subject card (FHS-371)', () => {
     expect(screen.getByTestId('learn-subject-art')).toBeInTheDocument();
   });
 
-  // FHS-414 — Art is being redesigned: the card is disabled (Coming soon),
+  // FHS-414: Art is being redesigned: the card is disabled (Coming soon),
   // no longer free-play, and tapping it does nothing.
   it('Art card is disabled (Coming soon, no progress bar, not free-play)', async () => {
     installDefault([], []);
@@ -402,7 +402,7 @@ describe('WorldFlagsLearn Explore', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('learn-subject-world-flags'));
     });
-    // Default tab is now Learn — click Explore to show the flashcard.
+    // Default tab is now Learn: click Explore to show the flashcard.
     await waitFor(() => expect(screen.getByTestId('world-subtab-explore')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByTestId('world-subtab-explore'));
@@ -564,7 +564,7 @@ describe('kid mode (kidToken)', () => {
     );
     renderKidTab();
     await waitFor(() => expect(screen.getByTestId('learn-subject-maths')).toBeInTheDocument());
-    // Confirm every fetch call went to /api/kid/* — never the parent path.
+    // Confirm every fetch call went to /api/kid/*: never the parent path.
     const calls = fetchMock.mock.calls as [string][];
     const parentHits = calls.filter(([url]) => /\/api\/learn(?!\/)/.test(url as string));
     expect(parentHits).toHaveLength(0);
@@ -597,7 +597,7 @@ describe('kid mode (kidToken)', () => {
     expect(parentHits).toHaveLength(0);
   });
 
-  // FHS-387 — the World Flags overview fetch can fail (slow/offline); the card
+  // FHS-387: the World Flags overview fetch can fail (slow/offline); the card
   // must still render at 0% with no crash.
   it('renders the World Flags card at 0% (no crash) when the world-flags fetch fails', async () => {
     fetchMock.mockImplementation((url: string) => {
@@ -623,7 +623,7 @@ describe('kid mode (kidToken)', () => {
 
   it('adding a book POSTs to /api/kid/reading-log with no memberId in the body', async () => {
     const newBook = makeBook({ title: 'Narnia' });
-    // FHS-387 — kid mode also fetches /api/kid/world-flags on mount, so use a
+    // FHS-387: kid mode also fetches /api/kid/world-flags on mount, so use a
     // URL-keyed mock (positional .once chains break on the extra call).
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const u = String(url);
@@ -660,7 +660,7 @@ describe('kid mode (kidToken)', () => {
       expect(postCall).toBeTruthy();
       const [, init] = postCall!;
       const sentBody = JSON.parse((init as RequestInit).body as string) as Record<string, unknown>;
-      // Kid mode must NOT send memberId — the API scopes from the token.
+      // Kid mode must NOT send memberId: the API scopes from the token.
       expect(sentBody).not.toHaveProperty('memberId');
       expect(sentBody.title).toBe('Narnia');
     });
@@ -670,7 +670,7 @@ describe('kid mode (kidToken)', () => {
     const book = makeBook();
     const toggled = makeBook({ finished: true });
 
-    // FHS-387 — kid mode now also fetches /api/kid/world-flags on mount.
+    // FHS-387: kid mode now also fetches /api/kid/world-flags on mount.
     // Use mockImplementation so all calls resolve regardless of order.
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const u = String(url);
@@ -710,7 +710,7 @@ describe('kid mode (kidToken)', () => {
     });
   });
 
-  // FHS-387 — World Flags card shows real explored progress (MOCK-3).
+  // FHS-387: World Flags card shows real explored progress (MOCK-3).
   it('in kid mode, World Flags card shows non-zero progress when explored > 0', async () => {
     // The kid has explored 2 countries. COUNTRIES.length > 0, so progress > 0.
     fetchMock.mockImplementation((url: string) => {
@@ -739,8 +739,8 @@ describe('kid mode (kidToken)', () => {
     expect(pct).toBeGreaterThan(0);
   });
 
-  // FHS-387 — Art card has no progress bar (MOCK-4).
-  // FHS-414 — Art is disabled (Coming soon) in kid mode too: no progress bar,
+  // FHS-387: Art card has no progress bar (MOCK-4).
+  // FHS-414: Art is disabled (Coming soon) in kid mode too: no progress bar,
   // no free-play badge, and not clickable.
   it('in kid mode, Art card is disabled (Coming soon, no progress, not free-play)', async () => {
     installKidDefault([], []);
@@ -755,7 +755,7 @@ describe('kid mode (kidToken)', () => {
   it('deleting a book sends DELETE to /api/kid/reading-log/:id', async () => {
     const book = makeBook();
 
-    // FHS-387 — kid mode now fetches /api/kid/world-flags on mount; use
+    // FHS-387: kid mode now fetches /api/kid/world-flags on mount; use
     // mockImplementation so all calls resolve regardless of order.
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const u = String(url);
@@ -804,7 +804,7 @@ describe('kid mode (kidToken)', () => {
 // journey flow), NOT the old LessonView. Science and Logic keep using
 // LessonView unchanged.
 
-describe('FHS-394 — kid Maths routes to MathsSubject', () => {
+describe('FHS-394: kid Maths routes to MathsSubject', () => {
   function installKidMathsFetch() {
     fetchMock.mockImplementation((url: string) => {
       const u = String(url);
@@ -879,7 +879,7 @@ describe('FHS-394 — kid Maths routes to MathsSubject', () => {
     expect(screen.queryByTestId('maths-subject')).not.toBeInTheDocument();
   });
 
-  it('FHS-403 — Science card is disabled (visible, Coming soon, not clickable)', async () => {
+  it('FHS-403: Science card is disabled (visible, Coming soon, not clickable)', async () => {
     fetchMock.mockImplementation((url: string) => {
       const u = String(url);
       if (u.includes('/api/kid/world-flags'))
@@ -901,7 +901,7 @@ describe('FHS-394 — kid Maths routes to MathsSubject', () => {
     expect(card).toBeDisabled();
     expect(screen.getAllByTestId('learn-coming-soon').length).toBeGreaterThan(0);
 
-    // Clicking does nothing — no lesson view, no Maths/Logic subject.
+    // Clicking does nothing: no lesson view, no Maths/Logic subject.
     await act(async () => {
       fireEvent.click(card);
     });
@@ -915,7 +915,7 @@ describe('FHS-394 — kid Maths routes to MathsSubject', () => {
 // In kid mode, clicking the Logic card must show LogicSubject (game-type +
 // trophy-wall flow), NOT LessonView. Science keeps using LessonView.
 
-describe('FHS-395 — kid Logic routes to LogicSubject', () => {
+describe('FHS-395: kid Logic routes to LogicSubject', () => {
   function installKidLogicFetch() {
     fetchMock.mockImplementation((url: string) => {
       const u = String(url);
@@ -990,7 +990,7 @@ describe('FHS-395 — kid Logic routes to LogicSubject', () => {
     expect(screen.queryByTestId('logic-subject')).not.toBeInTheDocument();
   });
 
-  it('FHS-403 — Science card stays disabled even when Logic is available', async () => {
+  it('FHS-403: Science card stays disabled even when Logic is available', async () => {
     fetchMock.mockImplementation((url: string) => {
       const u = String(url);
       if (u.includes('/api/kid/world-flags'))

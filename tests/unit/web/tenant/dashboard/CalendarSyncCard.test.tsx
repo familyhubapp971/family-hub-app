@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 
-// FHS-445 — "Sync to your calendar" card. Collapsed by default; on first open it
+// FHS-445: "Sync to your calendar" card. Collapsed by default; on first open it
 // loads the family subscribe URL and (for admins) exposes "Regenerate link".
 
 const fetchMock = vi.fn();
@@ -118,7 +118,7 @@ describe('CalendarSyncCard', () => {
     fireEvent.click(screen.getByTestId('calendar-sync-rotate'));
     fireEvent.click(await screen.findByTestId('confirm-dialog-confirm'));
     await waitFor(() => expect(screen.getByTestId('calendar-sync-rotate-error')).toBeTruthy());
-    // Old URL is unchanged — the compromised link is (correctly) still shown as live.
+    // Old URL is unchanged: the compromised link is (correctly) still shown as live.
     expect(screen.getByTestId('calendar-sync-url').textContent).toBe(FEED_URL);
   });
 });

@@ -5,7 +5,7 @@ info:
   description: |
     Internal API for the Family Hub web app. Hand-maintained until
     `@hono/zod-openapi` auto-generation lands; the route handlers'
-    Zod schemas are the source of truth — keep this file in sync
+    Zod schemas are the source of truth: keep this file in sync
     when those change.
 
 servers:
@@ -104,7 +104,7 @@ paths:
       description: |
         Returns the mirror row from `public.users` for the authenticated
         caller. The mirror row is upserted from the verified JWT claims
-        on first authenticated request — see FHS-192/194 and
+        on first authenticated request: see FHS-192/194 and
         [`apps/api/src/lib/user-mirror.ts`](../../apps/api/src/lib/user-mirror.ts).
       security:
         - bearerAuth: []
@@ -120,7 +120,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
         '500':
-          description: Mirror upsert failed — DB unavailable.
+          description: Mirror upsert failed: DB unavailable.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }

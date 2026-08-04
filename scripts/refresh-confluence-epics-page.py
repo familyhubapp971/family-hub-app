@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh the Confluence "FHS — Epics & Tickets" page from live Jira state.
+"""Refresh the Confluence "FHS: Epics & Tickets" page from live Jira state.
 
 Runs after every ticket close (CLAUDE.md "Closing tickets (post-merge)" rule).
 Pulls every FHS epic + its children and renders a PM-friendly "delivery
@@ -10,7 +10,7 @@ expands to its stories so done-vs-left is visible at every level. PUTs version+1
 to page id 3079340034.
 
 The phase grouping is CURATED here (EPIC_PHASE), not read from the Jira Fix
-Version field — those tags drifted (e.g. the kid 5-tab epic was tagged
+Version field: those tags drifted (e.g. the kid 5-tab epic was tagged
 white-label). When a new epic is created, add it to EPIC_PHASE; until then it
 shows under "Unscoped" at the bottom as a reminder.
 
@@ -249,7 +249,7 @@ def render_body(epics: list[dict], epic_children: dict[str, list[dict]]) -> str:
         ed, et, sd, st = counts(epic_list)
         parts.append(f"<h2>{idx}. {esc(title)}</h2>")
         parts.append(
-            f"<p>{bar(sd, st)} &nbsp;— <strong>{ed}/{et} epics</strong> done "
+            f"<p>{bar(sd, st)} &nbsp;, <strong>{ed}/{et} epics</strong> done "
             f"&middot; {sd}/{st} stories</p>"
         )
         parts.append("<table>" + colgroup + "<tbody>")
@@ -296,7 +296,7 @@ def put_with_retry(title: str, body: str, reason: str) -> dict:
             return put_page(new_version, title, body, f"{reason} (v{new_version})")
         except HttpError as e:
             if e.status == 409 and attempt == 1:
-                print("  page was edited externally — refetching and retrying...")
+                print("  page was edited externally: refetching and retrying...")
                 continue
             raise
 
@@ -310,7 +310,7 @@ def main() -> None:
     epics = jql("project = FHS AND issuetype = Epic ORDER BY Rank ASC", fields="summary,status")
     print(f"  {len(epics)} epics")
     if not epics:
-        sys.exit("error: Jira returned 0 epics — refusing to overwrite the page with an empty body")
+        sys.exit("error: Jira returned 0 epics: refusing to overwrite the page with an empty body")
 
     print("Fetching children per epic...")
     epic_children: dict[str, list[dict]] = {}
@@ -324,7 +324,7 @@ def main() -> None:
         result = put_with_retry(title, body, args.reason)
     except HttpError as e:
         sys.exit(str(e))
-    print(f"OK — refreshed to v{result['version']['number']}: {args.reason}")
+    print(f"OK: refreshed to v{result['version']['number']}: {args.reason}")
 
 
 if __name__ == "__main__":

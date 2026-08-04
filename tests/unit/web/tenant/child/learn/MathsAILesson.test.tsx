@@ -1,8 +1,8 @@
-// FHS-389 — MathsAILesson component unit tests.
+// FHS-389: MathsAILesson component unit tests.
 //
 // Covers: selection screen, loading state, step flow, practice questions,
 // feedback copy, completion screen, error state, and flag-disabled (null render).
-// All fetch calls are mocked — no real Anthropic or API calls are made.
+// All fetch calls are mocked: no real Anthropic or API calls are made.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
@@ -24,7 +24,7 @@ const MOCK_LESSON = {
     equation: '3 + 2 = 5',
   },
   stickyPhrase: 'When you add, the number gets bigger!',
-  gapCheck: 'Adding does not mean taking away — you are making more, not less.',
+  gapCheck: 'Adding does not mean taking away: you are making more, not less.',
   practice: [
     {
       emoji: '🍎',
@@ -89,7 +89,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 // ── Selection screen ──────────────────────────────────────────────────────────
 
-describe('<MathsAILesson /> — selection screen', () => {
+describe('<MathsAILesson />: selection screen', () => {
   it('renders the selection screen when no tableNumber is given', () => {
     mockEnabled();
     render(<MathsAILesson kidToken={KID_TOKEN} />);
@@ -119,7 +119,7 @@ describe('<MathsAILesson /> — selection screen', () => {
 
 // ── Loading state ────────────────────────────────────────────────────────────
 
-describe('<MathsAILesson /> — loading state', () => {
+describe('<MathsAILesson />: loading state', () => {
   it('shows loading spinner text after Start Lesson is clicked', async () => {
     fetchMock.mockImplementation(
       () =>
@@ -168,7 +168,7 @@ describe('<MathsAILesson /> — loading state', () => {
 
 // ── Step-by-step lesson flow ──────────────────────────────────────────────────
 
-describe('<MathsAILesson /> — lesson steps', () => {
+describe('<MathsAILesson />: lesson steps', () => {
   async function startLesson() {
     mockEnabled();
     render(<MathsAILesson kidToken={KID_TOKEN} />);
@@ -229,7 +229,7 @@ describe('<MathsAILesson /> — lesson steps', () => {
 
 // ── Practice questions + feedback ─────────────────────────────────────────────
 
-describe('<MathsAILesson /> — practice questions', () => {
+describe('<MathsAILesson />: practice questions', () => {
   async function reachPractice() {
     mockEnabled();
     render(<MathsAILesson kidToken={KID_TOKEN} />);
@@ -283,7 +283,7 @@ describe('<MathsAILesson /> — practice questions', () => {
 
 // ── Completion screen ─────────────────────────────────────────────────────────
 
-describe('<MathsAILesson /> — completion', () => {
+describe('<MathsAILesson />: completion', () => {
   it('shows the completed screen after all 3 practice questions are answered', async () => {
     mockEnabled();
     render(<MathsAILesson kidToken={KID_TOKEN} />);
@@ -316,7 +316,7 @@ describe('<MathsAILesson /> — completion', () => {
 
 // ── Error state ───────────────────────────────────────────────────────────────
 
-describe('<MathsAILesson /> — error state', () => {
+describe('<MathsAILesson />: error state', () => {
   it('shows the error message when the server returns an error', async () => {
     mockError('Could not generate lesson. Please try again.');
     render(<MathsAILesson kidToken={KID_TOKEN} />);
@@ -339,9 +339,9 @@ describe('<MathsAILesson /> — error state', () => {
   });
 });
 
-// ── Flag disabled — renders nothing ──────────────────────────────────────────
+// ── Flag disabled: renders nothing ──────────────────────────────────────────
 
-describe('<MathsAILesson /> — flag disabled', () => {
+describe('<MathsAILesson />: flag disabled', () => {
   it('renders nothing when server returns { enabled: false }', async () => {
     mockDisabled();
     // tableNumber forces auto-start (progressive mode).

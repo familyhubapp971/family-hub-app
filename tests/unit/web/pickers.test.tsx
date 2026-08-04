@@ -9,7 +9,7 @@ import {
   currencyDecimals,
 } from '@familyhub/ui';
 
-// FHS-38 / FHS-39 — searchable picker primitive + the two domain-
+// FHS-38 / FHS-39: searchable picker primitive + the two domain-
 // specific wrappers used by the OnboardingWizard. The wrappers are
 // thin so most coverage lives on SearchableSelect; the wrapper specs
 // exercise the wiring (default-from-browser hook, option shape).
@@ -139,7 +139,7 @@ describe('<CurrencyPicker />', () => {
     expect(screen.getByTestId('cur-option-AED')).toBeInTheDocument();
   });
 
-  // FHS-515 — the money math assumes 2 decimals, so non-2-decimal currencies
+  // FHS-515: the money math assumes 2 decimals, so non-2-decimal currencies
   // (JPY, KRW = 0 decimals) must NOT be offered.
   it('does not offer 0-decimal currencies (JPY, KRW)', () => {
     render(<CurrencyPicker value="USD" onChange={vi.fn()} testId="cur" />);
@@ -170,7 +170,7 @@ describe('detectBrowserCurrency()', () => {
     const c = detectBrowserCurrency();
     expect(c).toMatch(/^[A-Z]{3}$/);
   });
-  // FHS-515 — detection must never resolve to a currency the money math can't
+  // FHS-515: detection must never resolve to a currency the money math can't
   // render (only 2-decimal currencies are in the offered set).
   it('only ever returns a 2-decimal currency', () => {
     expect(currencyDecimals(detectBrowserCurrency())).toBe(2);

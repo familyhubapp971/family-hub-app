@@ -4,14 +4,14 @@ import { WorldFlagsExplore } from './WorldFlagsExplore';
 import { WorldFlagsPath } from './WorldFlagsPath';
 import { WorldFlagsCertificates } from './WorldFlagsCertificates';
 
-// World Flags subject — three sub-tabs:
-//  • Explore      — free-browse flashcards (flag image → name → facts + map).
-//  • Learn        — structured path: study 5-country sets, then a quiz.
-//  • Certificates — per-continent certs + 60-second timed quizzes.
+// World Flags subject: three sub-tabs:
+//  • Explore: free-browse flashcards (flag image → name → facts + map).
+//  • Learn: structured path: study 5-country sets, then a quiz.
+//  • Certificates: per-continent certs + 60-second timed quizzes.
 
 type SubTab = 'explore' | 'learn' | 'certificates';
 
-// FHS-397 — legacy parity: a compact right-aligned pill row, per-tab gradient
+// FHS-397: legacy parity: a compact right-aligned pill row, per-tab gradient
 // active state, icon-only trophy. Order matches the legacy (Learn, Explore, Awards).
 const SUB_TABS: {
   id: SubTab;
@@ -55,7 +55,7 @@ export function WorldFlags({ memberId, kidToken }: WorldFlagsProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Sub-tab switcher — compact right-aligned pill row (legacy parity, FHS-397) */}
+      {/* Sub-tab switcher: compact right-aligned pill row (legacy parity, FHS-397) */}
       <div
         role="tablist"
         aria-label="World Flags modes"

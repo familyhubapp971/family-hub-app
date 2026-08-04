@@ -1,4 +1,4 @@
-// FHS-394 — MathsProveChallenge unit tests.
+// FHS-394: MathsProveChallenge unit tests.
 // Covers: timer countdown, onComplete fires once with score+avgTime when time
 // runs out, double-tap guard on answers, pass vs fail thresholds.
 //
@@ -56,7 +56,7 @@ afterEach(() => {
 
 // ─── Setup screen ─────────────────────────────────────────────────────────────
 
-describe('MathsProveChallenge — setup screen', () => {
+describe('MathsProveChallenge: setup screen', () => {
   it('renders the setup screen before starting', () => {
     renderProve();
     expect(screen.getByTestId('prove-challenge-setup')).toBeInTheDocument();
@@ -88,7 +88,7 @@ describe('MathsProveChallenge — setup screen', () => {
 
 // ─── Timer countdown ──────────────────────────────────────────────────────────
 
-describe('MathsProveChallenge — timer countdown', () => {
+describe('MathsProveChallenge: timer countdown', () => {
   it('shows 60s on the timer when the challenge first starts', async () => {
     renderProve();
     await act(async () => {
@@ -146,7 +146,7 @@ describe('MathsProveChallenge — timer countdown', () => {
 
 // ─── onComplete fires exactly once ───────────────────────────────────────────
 
-describe('MathsProveChallenge — onComplete guard', () => {
+describe('MathsProveChallenge: onComplete guard', () => {
   it('calls onComplete exactly once even after multiple timer ticks settle', async () => {
     renderProve();
     await act(async () => {
@@ -155,14 +155,14 @@ describe('MathsProveChallenge — onComplete guard', () => {
     await act(async () => {
       vi.advanceTimersByTime(60_000);
     });
-    // Extra ticks — guard must prevent a second call.
+    // Extra ticks: guard must prevent a second call.
     await act(async () => {
       vi.advanceTimersByTime(5_000);
     });
     await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
   });
 
-  it('does NOT render its own results screen — parent owns MathsStageComplete', async () => {
+  it('does NOT render its own results screen: parent owns MathsStageComplete', async () => {
     renderProve();
     await act(async () => {
       fireEvent.click(screen.getByTestId('prove-start'));
@@ -178,7 +178,7 @@ describe('MathsProveChallenge — onComplete guard', () => {
 
 // ─── Pass vs fail thresholds ─────────────────────────────────────────────────
 
-describe('MathsProveChallenge — pass/fail values passed to onComplete', () => {
+describe('MathsProveChallenge: pass/fail values passed to onComplete', () => {
   it('passes score=0 and avgTime=999 when no questions were answered', async () => {
     renderProve();
     await act(async () => {
@@ -223,7 +223,7 @@ describe('MathsProveChallenge — pass/fail values passed to onComplete', () => 
 
 // ─── Double-tap guard ─────────────────────────────────────────────────────────
 
-describe('MathsProveChallenge — double-tap guard', () => {
+describe('MathsProveChallenge: double-tap guard', () => {
   it('ignores a second tap on a different answer button in the same question', async () => {
     renderProve();
     await act(async () => {
@@ -234,7 +234,7 @@ describe('MathsProveChallenge — double-tap guard', () => {
       expect(screen.getAllByRole('button', { name: /Answer \d+/ }).length).toBeGreaterThan(0),
     );
 
-    // Two rapid taps on different choices — only the first should count.
+    // Two rapid taps on different choices: only the first should count.
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Answer 12' })); // correct
       fireEvent.click(screen.getByRole('button', { name: 'Answer 10' })); // wrong
@@ -265,7 +265,7 @@ describe('MathsProveChallenge — double-tap guard', () => {
 
 // ─── Accessibility ────────────────────────────────────────────────────────────
 
-describe('MathsProveChallenge — accessibility', () => {
+describe('MathsProveChallenge: accessibility', () => {
   it('shows the live timer label during the challenge', async () => {
     renderProve();
     await act(async () => {

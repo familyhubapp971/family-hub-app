@@ -1,5 +1,5 @@
 /**
- * emojiTone — utilities for applying Fitzpatrick skin-tone modifiers to
+ * emojiTone: utilities for applying Fitzpatrick skin-tone modifiers to
  * person emojis in the avatar palette.
  *
  * How it works: person emojis (e.g. 👩 U+1F469) are a single Unicode scalar.

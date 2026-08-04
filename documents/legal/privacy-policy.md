@@ -1,4 +1,4 @@
-# Family Hub — Privacy Policy (DRAFT)
+# Family Hub: Privacy Policy (DRAFT)
 
 > **Status: DRAFT for founder review.** Fill every `«placeholder»` and have a
 > solicitor review before publishing. Family Hub is a service used by children,
@@ -22,7 +22,7 @@ give their contact here.»
 
 ## 2. Who this is for
 
-Family Hub is a tool for **parents/guardians to run their family** — meals,
+Family Hub is a tool for **parents/guardians to run their family**: meals,
 activities, tasks, habits and a kids' rewards ("sticker") system. **Adults
 create the account.** Children use the app through a profile that a parent sets
 up and controls (a name, an avatar, and a PIN). Family Hub is **not** aimed at
@@ -34,7 +34,7 @@ children signing up on their own.
 
 - Account: email address, display name, the family's name.
 - Settings: timezone, currency, app name/subtitle.
-- Billing (only if you subscribe): handled by **Stripe** — we do not store your
+- Billing (only if you subscribe): handled by **Stripe**: we do not store your
   card number. «Confirm Stripe.»
 
 **About children in the family (entered/controlled by the parent)**
@@ -43,7 +43,7 @@ children signing up on their own.
   short numeric **PIN** (stored hashed, never in plain text).
 - Activity in the app: habits ticked, tasks, meals, calendar activities,
   learning progress (Maths/Logic/World Flags), and the in-app rewards
-  ("stickers"/savings/investments) — all of which are used only to run the
+  ("stickers"/savings/investments), all of which are used only to run the
   features you use.
 
 We deliberately keep children's data **minimal**. We do **not** ask children
@@ -59,23 +59,23 @@ collect special-category data (health, ethnicity, etc.).
 
 ## 4. How we use your data and our legal basis
 
-- **To provide the service you signed up for** — legal basis: _performance of a
+- **To provide the service you signed up for**, legal basis: _performance of a
   contract_.
-- **To keep it secure and working** (rate-limiting, error monitoring, backups)
-  — legal basis: _legitimate interests_.
-- **Optional feedback** you send us (the beta feedback form) — legal basis:
+- **To keep it secure and working** (rate-limiting, error monitoring, backups),
+  legal basis: _legitimate interests_.
+- **Optional feedback** you send us (the beta feedback form), legal basis:
   _consent_; you choose whether to leave your name/email.
-- **Billing**, if you subscribe — _contract_ / _legal obligation_.
+- **Billing**, if you subscribe, _contract_ / _legal obligation_.
 
 We do **not** sell your data or your children's data, and we do not use it to
 build advertising profiles.
 
-## 5. Children's data — how we protect it
+## 5. Children's data: how we protect it
 
 - A child's profile is **created and controlled by a parent**. Parents can view,
   edit, and delete their children's data at any time from the app.
 - Children's data is used **only** to run the features (rewards, habits,
-  learning, calendar) — never for marketing.
+  learning, calendar), never for marketing.
 - We follow a **data-minimisation** approach and design with the Children's Code
   in mind (privacy-by-default, no nudge techniques, no behavioural ads).
 - «If you later add any feature that changes what children's data is used for,
@@ -86,11 +86,11 @@ build advertising profiles.
 We share data only with service providers who help us run Family Hub, under
 contract, and only as needed:
 
-- **Supabase** — authentication + database hosting. «Confirm region.»
-- **Railway** — application hosting.
-- **Stripe** — payments (if you subscribe).
-- **«Resend / email provider»** — sending account emails (magic-link sign-in).
-- **Sentry** — error monitoring.
+- **Supabase**: authentication + database hosting. «Confirm region.»
+- **Railway**: application hosting.
+- **Stripe**: payments (if you subscribe).
+- **«Resend / email provider»**: sending account emails (magic-link sign-in).
+- **Sentry**: error monitoring.
 
 «Confirm each processor, its location, and that a Data Processing Agreement is in
 place.» We do not share your data with anyone else except where required by law.
@@ -145,7 +145,7 @@ tell you in the app or by email.
 
 ## 13. Contact
 
-**«legal entity name»**, «address» — **«privacy@yourdomain»**.
+**«legal entity name»**, «address», **«privacy@yourdomain»**.
 
 ---
 
@@ -156,6 +156,6 @@ tell you in the app or by email.
       email, Sentry, any analytics).
 - [ ] Set retention periods.
 - [ ] Decide on a DPO (needed if you process children's data at scale).
-- [ ] **Have a solicitor review** — especially the children's-data + Children's
+- [ ] **Have a solicitor review**: especially the children's-data + Children's
       Code sections.
 - [ ] Add a matching **Terms of Service**.

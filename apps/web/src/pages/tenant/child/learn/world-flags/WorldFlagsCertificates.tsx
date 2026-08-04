@@ -21,7 +21,7 @@ import {
 } from './shared';
 import { worldFlagsApi } from './worldFlagsApi';
 
-// World Flags — Certificates + timed-quiz sub-tab.
+// World Flags: Certificates + timed-quiz sub-tab.
 //
 // Shows a per-continent explorer certificate (earned when all that
 // continent's flags are explored) and a 60-second timed flag quiz per earned

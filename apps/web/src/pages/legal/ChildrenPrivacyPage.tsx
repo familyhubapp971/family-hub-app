@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { H3, LegalLayout, List, Note, P, Placeholder, type LegalSection } from './LegalLayout';
 
-// ChildrenPrivacyPage — /legal/children (FHS-509). Forensic port of the
+// ChildrenPrivacyPage: /legal/children (FHS-509). Forensic port of the
 // Magic Patterns design (7f19f840-c796-4eaa-90fc-934fb4ef587d,
 // pages/legal/ChildrenPrivacy.tsx). Every heading, plain-English
 // summary, bullet list and [placeholder] below is the founder's
-// placeholder copy pending legal review — verbatim, not paraphrased.
+// placeholder copy pending legal review: verbatim, not paraphrased.
 
 const sections: LegalSection[] = [
   {

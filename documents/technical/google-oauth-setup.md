@@ -13,7 +13,7 @@ checklist.
 > **Plain-English summary**
 > Google won't let our app sign anyone in until we register it in their
 > dashboard. We do that once per environment, paste the resulting Client
-> ID + Secret into Supabase, and tick "enable Google" — that's it. After
+> ID + Secret into Supabase, and tick "enable Google", that's it. After
 > that the existing "Continue with Google" buttons on `/signup` and
 > `/login` Just Work.
 
@@ -25,10 +25,10 @@ checklist.
   client, multiple authorized redirect URIs whitelisted).
 - Client ID lives in `.env.local` as `GOOGLE_OAUTH_CLIENT_ID`; secret as
   `GOOGLE_OAUTH_CLIENT_SECRET`.
-- Staging Supabase project (`maolytpqazmykjzdybtj`) is configured —
+- Staging Supabase project (`maolytpqazmykjzdybtj`) is configured,
   `external_google_enabled: true`, client_id + secret pasted in.
 - Smoke-test confirms staging redirects to `accounts.google.com` with a
-  valid client_id — see [scripts/smoke-google-oauth.py](../../scripts/smoke-google-oauth.py).
+  valid client_id, see [scripts/smoke-google-oauth.py](../../scripts/smoke-google-oauth.py).
 
 To re-apply or audit drift on staging:
 
@@ -39,7 +39,7 @@ python3 scripts/configure-google-oauth.py           # apply
 python3 scripts/smoke-google-oauth.py               # verify
 ```
 
-The configure script is idempotent — re-running with the same env vars
+The configure script is idempotent, re-running with the same env vars
 is a no-op. To rotate the secret after changing it in Google Cloud:
 
 ```bash
@@ -77,7 +77,7 @@ python3 scripts/smoke-google-oauth.py --project production
 ```
 
 The script reuses the same `GOOGLE_OAUTH_CLIENT_ID` /
-`GOOGLE_OAUTH_CLIENT_SECRET` env vars — same Google client, two
+`GOOGLE_OAUTH_CLIENT_SECRET` env vars, same Google client, two
 Supabase projects.
 
 ### 3 · End-to-end verification
@@ -92,7 +92,7 @@ URI whitelist):
    `/auth/callback` with a session, not on a Google error page.
 
 If you get _"Error 400: redirect_uri_mismatch"_, step 1 above wasn't
-saved or hasn't propagated yet — wait and retry.
+saved or hasn't propagated yet, wait and retry.
 
 ---
 
@@ -135,32 +135,32 @@ Google Cloud Console:
 
 ## Troubleshooting
 
-| Symptom                                                    | Likely cause                                                                                        | Fix                                                                                                          |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `error: env var SUPABASE_ACCESS_TOKEN is required`         | You haven't sourced `.env.local`, or the var isn't there.                                           | `set -a; source .env.local; set +a`. To mint a new token: <https://supabase.com/dashboard/account/tokens>.   |
-| Configure script returns 401 / 403 from `api.supabase.com` | `SUPABASE_ACCESS_TOKEN` is expired, revoked, or doesn't own the target project.                     | Mint a fresh personal access token under the account that created the project.                               |
-| Smoke test fails with HTTP 401                             | Anon key in `.env.local` doesn't match the project, or the project is paused.                       | Re-pull the anon key from the Supabase dashboard → API; un-pause the project if it's been idle on Free tier. |
-| Browser flow fails with `Error 400: redirect_uri_mismatch` | The Supabase project's callback URL isn't whitelisted in the Google Cloud OAuth client.             | Re-do step 1 of the production cutover above; allow ~5 min for Google to propagate.                          |
-| Smoke test passes but real signin still fails              | The Google client _secret_ is wrong (smoke can't verify secrets — only that the provider responds). | Re-paste the secret in `.env.local`, then run the configure script with `--rotate-secret`.                   |
+| Symptom                                                    | Likely cause                                                                                       | Fix                                                                                                          |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `error: env var SUPABASE_ACCESS_TOKEN is required`         | You haven't sourced `.env.local`, or the var isn't there.                                          | `set -a; source .env.local; set +a`. To mint a new token: <https://supabase.com/dashboard/account/tokens>.   |
+| Configure script returns 401 / 403 from `api.supabase.com` | `SUPABASE_ACCESS_TOKEN` is expired, revoked, or doesn't own the target project.                    | Mint a fresh personal access token under the account that created the project.                               |
+| Smoke test fails with HTTP 401                             | Anon key in `.env.local` doesn't match the project, or the project is paused.                      | Re-pull the anon key from the Supabase dashboard → API; un-pause the project if it's been idle on Free tier. |
+| Browser flow fails with `Error 400: redirect_uri_mismatch` | The Supabase project's callback URL isn't whitelisted in the Google Cloud OAuth client.            | Re-do step 1 of the production cutover above; allow ~5 min for Google to propagate.                          |
+| Smoke test passes but real signin still fails              | The Google client _secret_ is wrong (smoke can't verify secrets: only that the provider responds). | Re-paste the secret in `.env.local`, then run the configure script with `--rotate-secret`.                   |
 
 ## Ownership
 
 The Family Hub Google OAuth client is owned by the Google account that
 created it (currently `oduniyio@gmail.com`'s GCP project). Grant
 `Owner` role to a second identity before that account ever leaves the
-project — otherwise rotating the secret or adding redirect URIs becomes
+project, otherwise rotating the secret or adding redirect URIs becomes
 a recovery exercise.
 
 ## Files
 
-- [`scripts/configure-google-oauth.py`](../../scripts/configure-google-oauth.py) — idempotent
+- [`scripts/configure-google-oauth.py`](../../scripts/configure-google-oauth.py): idempotent
   PATCH against `api.supabase.com/v1/projects/{ref}/config/auth`
-- [`scripts/smoke-google-oauth.py`](../../scripts/smoke-google-oauth.py) — verifies the provider
+- [`scripts/smoke-google-oauth.py`](../../scripts/smoke-google-oauth.py): verifies the provider
   redirects to Google with a valid client_id
-- `.env.local` — holds `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`,
+- `.env.local`: holds `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`,
   and `SUPABASE_ACCESS_TOKEN`
 
 ## Related ADRs
 
-- [0008 — Supabase environments](../decisions/0008-supabase-environments.md)
-- [0011 — Magic-link + Google OAuth parent auth](../decisions/0011-magic-link-only-parent-auth.md)
+- [0008: Supabase environments](../decisions/0008-supabase-environments.md)
+- [0011: Magic-link + Google OAuth parent auth](../decisions/0011-magic-link-only-parent-auth.md)

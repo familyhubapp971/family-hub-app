@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-233 / FHS-267 — TasksTabPanel (shared family board).
+// FHS-233 / FHS-267: TasksTabPanel (shared family board).
 // One column per member with a done/total badge; only the caller's
 // column is interactive (toggle + delete + add). See ADR 0013.
 
@@ -351,7 +351,7 @@ describe('<TasksTabPanel />', () => {
     });
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('task-toggle-t1')).toBeInTheDocument());
-    // Toggle both in the same tick — t1 false→true, t2 true→false.
+    // Toggle both in the same tick: t1 false→true, t2 true→false.
     await act(async () => {
       fireEvent.click(screen.getByTestId('task-toggle-t1'));
       fireEvent.click(screen.getByTestId('task-toggle-t2'));

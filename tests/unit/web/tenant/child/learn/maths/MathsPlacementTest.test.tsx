@@ -1,4 +1,4 @@
-// FHS-394 — MathsPlacementTest unit tests.
+// FHS-394: MathsPlacementTest unit tests.
 // Covers: intro screen, phase flow (intro → testing → results),
 // correct/incorrect answer feedback, POST /api/kid/maths/placement,
 // results grid colour coding, and onComplete callback.
@@ -39,7 +39,7 @@ afterEach(() => {
 
 // ─── Intro screen ─────────────────────────────────────────────────────────────
 
-describe('MathsPlacementTest — intro screen', () => {
+describe('MathsPlacementTest: intro screen', () => {
   it('renders the intro phase by default', () => {
     mockPlacementPost();
     render(
@@ -90,7 +90,7 @@ describe('MathsPlacementTest — intro screen', () => {
 
 // ─── Testing phase ────────────────────────────────────────────────────────────
 
-describe('MathsPlacementTest — testing phase', () => {
+describe('MathsPlacementTest: testing phase', () => {
   async function enterTestingPhase() {
     mockPlacementPost();
     render(
@@ -158,7 +158,7 @@ async function answerAll12() {
   }
 }
 
-describe('MathsPlacementTest — results phase', () => {
+describe('MathsPlacementTest: results phase', () => {
   it('POSTs to /api/kid/maths/placement after all 12 questions', async () => {
     mockPlacementPost([1, 2]);
     render(
@@ -245,7 +245,7 @@ describe('MathsPlacementTest — results phase', () => {
     expect(onComplete).toHaveBeenCalledOnce();
   });
 
-  it('ignores a rapid double-tap — records exactly one answer per question (FHS-394)', async () => {
+  it('ignores a rapid double-tap: records exactly one answer per question (FHS-394)', async () => {
     // Capture the placement POST body so we can assert no duplicate result rows.
     let postedResults: unknown[] = [];
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {

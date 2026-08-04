@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 
-// FHS-379 — parent Reward Requests approval screen (restyled). Lists
+// FHS-379: parent Reward Requests approval screen (restyled). Lists
 // pending kid requests in a neo-brutalist card. Admins can approve
 // (one click) or decline (two-step confirm). Non-admins see a muted
 // "Only an admin can approve" note. Empty state shows "All caught up!".
-// FHS-392 — optional memberId prop filters to one child's requests only.
+// FHS-392: optional memberId prop filters to one child's requests only.
 
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => ({ session: { access_token: 'parent.tok' } }),
@@ -167,7 +167,7 @@ describe('<RewardRequestsPanel />', () => {
     expect(screen.queryByTestId('reward-request-decline-req1')).not.toBeInTheDocument();
   });
 
-  // FHS-408 — the "Approving will deduct…" hint is about approving, so it must
+  // FHS-408: the "Approving will deduct…" hint is about approving, so it must
   // not show to a non-admin (who only sees "Only an admin can approve").
   it('non-admin + memberId: does NOT show the "Approving will deduct" hint', async () => {
     routeMock({ admin: false });
@@ -220,7 +220,7 @@ describe('<RewardRequestsPanel />', () => {
     expect(screen.getByTestId('reward-requests-count').textContent).toContain('1');
   });
 
-  // FHS-392 — memberId prop filters to one child's requests only
+  // FHS-392: memberId prop filters to one child's requests only
   it("with memberId: shows only that child's request, hides the other child's", async () => {
     routeMock({ admin: true, requests: TWO_REQUESTS });
     render(<RewardRequestsPanel memberId="m1" />);
@@ -244,7 +244,7 @@ describe('<RewardRequestsPanel />', () => {
     expect(screen.getByText(/Ice Cream/)).toBeInTheDocument();
   });
 
-  // FHS-408 — single-child sidebar is narrow, so it must stack (no 12-col grid
+  // FHS-408: single-child sidebar is narrow, so it must stack (no 12-col grid
   // header) and show inline labels, preventing the cost/time/buttons overlap.
   it('with memberId: stacks (no desktop column header) and shows inline labels', async () => {
     routeMock({ admin: true });

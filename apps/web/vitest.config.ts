@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 // Tests live at <repo>/tests/unit/web/, but their bare-specifier imports
 // (e.g. `react-router-dom`, `@testing-library/react`) need to resolve
-// against apps/web/node_modules — pnpm doesn't hoist app deps to the
+// against apps/web/node_modules: pnpm doesn't hoist app deps to the
 // repo root. Pinning resolve.modules makes Vite walk app-local
 // node_modules first regardless of where the test file lives.
 const webRoot = fileURLToPath(new URL('.', import.meta.url));
@@ -21,10 +21,10 @@ export default defineConfig({
         find: /^@supabase\/supabase-js$/,
         replacement: `${webRoot}node_modules/@supabase/supabase-js`,
       },
-      // Workspace package — alias at the source so vite's resolver
+      // Workspace package: alias at the source so vite's resolver
       // doesn't fall back to the dep optimizer's stale snapshot.
       // NOTE: any new workspace package consumed by tests needs a
-      // sibling alias here too — otherwise the same "Failed to
+      // sibling alias here too: otherwise the same "Failed to
       // resolve import" error reappears the first time the package
       // grows a new export.
       {
@@ -35,7 +35,7 @@ export default defineConfig({
   },
   // @familyhub/ui is a source-only workspace package (main: ./src/index.ts).
   // Vite's dep optimizer caches a pre-bundle keyed on the file list at
-  // first run — adding new exports later returns "module not found" until
+  // first run: adding new exports later returns "module not found" until
   // the cache is wiped. Excluding it from the optimizer makes vite resolve
   // the package via its package.json `main` on every transform, which
   // always reflects the current source.

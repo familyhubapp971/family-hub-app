@@ -11,7 +11,7 @@ import type {
   KidSavings,
 } from './types';
 
-// FHS-376 — the data layer behind the dedicated kid My World. It owns every
+// FHS-376: the data layer behind the dedicated kid My World. It owns every
 // /api/kid/* fetch the kid screen needs, sorts + selects the current week,
 // derives per-habit "done" days, and exposes the reward-request action.
 //
@@ -36,7 +36,7 @@ export interface KidMyWorldData {
   goPrevWeek: () => void;
   goNextWeek: () => void;
   isCurrentWeek: boolean; // viewing the latest (live) week → next is disabled
-  // FHS-484 — a fresh week can exist before its Monday arrives (e.g. a parent
+  // FHS-484: a fresh week can exist before its Monday arrives (e.g. a parent
   // finalizes this week early, which immediately creates next week). "Not
   // finalized" alone doesn't mean "has started", so callers that need to
   // lock a not-yet-started week check this instead of isCurrentWeek.
@@ -269,11 +269,11 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
     [weeks.length],
   );
 
-  // ── Reward request (kid asks; a parent approves — optimistic to pending) ──
+  // ── Reward request (kid asks; a parent approves: optimistic to pending) ──
   const requestReward = useCallback(
     (rewardId: string) => {
       if (!headers || requestingRef.current.has(rewardId)) return;
-      // Only a fresh ('none') reward can be requested — never re-ask a reward
+      // Only a fresh ('none') reward can be requested: never re-ask a reward
       // that's already pending/approved/declined (guards a remount race too).
       if (rewards.find((r) => r.id === rewardId)?.requestStatus !== 'none') return;
       requestingRef.current.add(rewardId);
@@ -316,7 +316,7 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
         ? 'error'
         : 'loading';
 
-  // FHS-484 — startDate is a Monday-anchored 'YYYY-MM-DD' UTC string, so a
+  // FHS-484: startDate is a Monday-anchored 'YYYY-MM-DD' UTC string, so a
   // plain lexicographic compare against today's UTC date tells us the week
   // hasn't started yet (mirrors the same check in routes/dashboard.ts).
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -331,7 +331,7 @@ export function useKidMyWorld(kidToken: string | null): KidMyWorldData {
     weekIndex,
     goPrevWeek,
     goNextWeek,
-    // A week is "live" only if it isn't finalized — not merely the newest index
+    // A week is "live" only if it isn't finalized: not merely the newest index
     // (when every week is closed, the last one is still a finalized past week).
     isCurrentWeek: weeks[weekIndex]?.isFinalized === false,
     isFutureWeek,

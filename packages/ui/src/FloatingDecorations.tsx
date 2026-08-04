@@ -22,11 +22,11 @@ interface FloatingDecorationsProps {
   /** List of decorative elements with positions + delays. */
   elements: FloatingDecoration[];
   /**
-   * Hide on small screens. Default true — decorations are noise on
+   * Hide on small screens. Default true: decorations are noise on
    * narrow viewports.
    */
   hideOnMobile?: boolean;
-  /** Tailwind size for the emoji text — default "text-4xl". */
+  /** Tailwind size for the emoji text, default "text-4xl". */
   size?: string;
   /** Opacity 0–100. Default 50 so decorations sit behind content. */
   opacityClass?: string;
@@ -42,7 +42,7 @@ interface FloatingDecorationsProps {
  * but the framer-motion animation is suppressed entirely (vestibular
  * a11y).
  *
- * Pointer-events disabled — these never block clicks on content
+ * Pointer-events disabled: these never block clicks on content
  * underneath.
  */
 export function FloatingDecorations({
@@ -66,7 +66,7 @@ export function FloatingDecorations({
           .filter(Boolean)
           .join(' ');
 
-        // Inline style object — keys conditionally added (vs left:undefined)
+        // Inline style object, keys conditionally added (vs left:undefined)
         // because framer-motion's MotionStyle rejects optional-undefined under
         // exactOptionalPropertyTypes.
         const style: Record<string, string> = { top: el.top };
@@ -74,7 +74,7 @@ export function FloatingDecorations({
         if (el.right) style.right = el.right;
 
         if (reduceMotion) {
-          // Static — no transform, no infinite loop.
+          // Static, no transform, no infinite loop.
           return (
             <div key={idx} className={baseClass} style={style}>
               {el.icon}

@@ -4,7 +4,7 @@ import { useAuth } from '../../lib/auth-context';
 import { LoadingScreen } from '../../components/LoadingScreen';
 import { supabase } from '../../lib/supabase';
 
-// FHS-331 — Supabase appends auth failures (expired/used magic link, denied
+// FHS-331: Supabase appends auth failures (expired/used magic link, denied
 // OAuth) to the redirect URL: usually the hash
 // (`#error=access_denied&error_code=otp_expired&error_description=…`), sometimes
 // the query. Pull the error out so an EXPIRED link can never look like a
@@ -28,7 +28,7 @@ function isExpiredLink(err: { code: string; description: string }): boolean {
 //   1. If the URL carries a `?code=...` (PKCE), exchange it for a
 //      session synchronously here. Supabase's `detectSessionInUrl` does
 //      start the exchange on import, but it resolves on a different
-//      microtask than AuthProvider's initial getSession() — without
+//      microtask than AuthProvider's initial getSession(), without
 //      the explicit claim the latter can return null first, flip
 //      loading=false, and bounce the user to /login before the session
 //      lands via onAuthStateChange.
@@ -51,8 +51,8 @@ export function AuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
 
-  // Capture any auth error from the redirect URL on the first render — before
-  // the navigate effect can run — so an expired/invalid link never falls
+  // Capture any auth error from the redirect URL on the first render (before
+  // the navigate effect can run) so an expired/invalid link never falls
   // through to a stale-session "signed in".
   const authErrorRef = useRef(extractAuthError(location.hash, searchParams));
   const authError = authErrorRef.current;
@@ -76,11 +76,11 @@ export function AuthCallbackPage() {
   );
 
   // An expired/invalid link must not leave the user signed in via a previously
-  // persisted session — sign out so they truly start over with a fresh link.
+  // persisted session: sign out so they truly start over with a fresh link.
   useEffect(() => {
     if (!authError) return;
     void supabase.auth.signOut().catch(() => {
-      /* best-effort — the error message + no-navigate already protect the user */
+      /* best-effort: the error message + no-navigate already protect the user */
     });
     if (typeof window !== 'undefined' && window.history?.replaceState) {
       try {
@@ -88,7 +88,7 @@ export function AuthCallbackPage() {
         url.hash = '';
         window.history.replaceState({}, '', url.toString());
       } catch {
-        /* History API unavailable — non-fatal */
+        /* History API unavailable: non-fatal */
       }
     }
   }, [authError]);
@@ -120,7 +120,7 @@ export function AuthCallbackPage() {
           url.searchParams.delete('state');
           window.history.replaceState({}, '', url.toString());
         } catch {
-          // History API unavailable — non-fatal.
+          // History API unavailable: non-fatal.
         }
       }
       setExchangeState('done');

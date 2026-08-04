@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@familyhub/ui';
 
-// SiteChrome — shared header + footer for the public marketing/legal
+// SiteChrome: shared header + footer for the public marketing/legal
 // pages (FHS-509), so the new /legal/* section never feels like a
 // different website. Forensic port of the Magic Patterns design
 // (7f19f840-c796-4eaa-90fc-934fb4ef587d, components/SiteChrome.tsx),
@@ -9,8 +9,8 @@ import { Button } from '@familyhub/ui';
 //  1. Uses the repo's own Button (@familyhub/ui) instead of MP's local
 //     mock, and the `kingdom` design token instead of a literal hex.
 //  2. Drops MP's `localStorage.getItem('fh_loggedIn')` logged-in check
-//     — that key is never set anywhere in this codebase (it's an MP
-//     demo artefact), so porting it verbatim would ship a dead code
+//     (that key is never set anywhere in this codebase, it's an MP
+//     demo artefact) so porting it verbatim would ship a dead code
 //     path. The real marketing pages that aren't the homepage
 //     (About/Pricing) don't show a logged-in state either, so this
 //     matches that established, working pattern instead.
@@ -18,7 +18,7 @@ import { Button } from '@familyhub/ui';
 //     predating FHS-436) so the Legal section doesn't regress
 //     cross-page navigation the rest of the site already has.
 // The footer's tagline + copyright/reward-disclaimer line is kept
-// verbatim from MP — it's legal-adjacent copy, not styling.
+// verbatim from MP: it's legal-adjacent copy, not styling.
 
 export type SiteChromeSection = 'features' | 'about' | 'pricing' | 'legal';
 
@@ -47,7 +47,7 @@ export function SiteHeader({ current }: { current?: SiteChromeSection } = {}) {
       </Link>
 
       {/* Mobile nav: Features + About stay desktop-only (same call
-          WelcomePage already made — FHS-277 — so the row doesn't wrap
+          WelcomePage already made (FHS-277) so the row doesn't wrap
           at 375px); Pricing and Legal always show. */}
       <nav className="flex items-center gap-1 font-bold md:gap-8">
         {NAV_LINKS.map((link) => (

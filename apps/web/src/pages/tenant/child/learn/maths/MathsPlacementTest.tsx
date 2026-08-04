@@ -1,4 +1,4 @@
-// FHS-394 — Maths Placement Test.
+// FHS-394: Maths Placement Test.
 // Ported from the legacy MathsPlacementTest.tsx; adapted for the kid token
 // auth pattern (Bearer header, /api/kid/maths/placement endpoint).
 //
@@ -22,7 +22,7 @@ interface MathsPlacementTestProps {
   kidToken: string;
   operation: Operation;
   // The parent re-fetches progress on completion, so the unlocked list isn't
-  // passed up — the placement POST has already persisted the mastered tables.
+  // passed up: the placement POST has already persisted the mastered tables.
   onComplete: () => void;
   onBack: () => void;
 }

@@ -9,7 +9,7 @@ import { AuthCallbackPage } from '../../../../apps/web/src/pages/auth/AuthCallba
 //      so the AuthProvider sees the session before falling to /login.
 //   2. Once the session is established, navigate to /dashboard. The
 //      tenant-create + "first-time setup" flow has moved to the
-//      CreateFamilyPanel under LegacyDashboardRedirect — see
+//      CreateFamilyPanel under LegacyDashboardRedirect: see
 //      `LegacyDashboardRedirect.test.tsx` for that contract.
 
 type SessionLike = {
@@ -68,7 +68,7 @@ describe('<AuthCallbackPage />', () => {
     await waitFor(() => expect(screen.getByTestId('route-marker').textContent).toBe('dashboard'));
   });
 
-  // FHS-331 — an expired magic link must not look "signed in" via a stale
+  // FHS-331: an expired magic link must not look "signed in" via a stale
   // persisted session. The callback shows the expired message, does not
   // navigate into the app, and signs out.
   it('rejects an expired link even with a stale session, and signs out', async () => {
@@ -146,7 +146,7 @@ describe('<AuthCallbackPage />', () => {
       });
       renderAt('/auth/callback?code=stale&state=xyz');
       await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/expired|used/i));
-      // We do NOT bounce to /login on an exchange error — the user
+      // We do NOT bounce to /login on an exchange error: the user
       // needs to see the message and request a fresh link.
       expect(screen.queryByTestId('route-marker')).toBeNull();
     });

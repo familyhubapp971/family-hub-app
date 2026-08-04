@@ -26,19 +26,19 @@ import { SiteHeader, SiteFooter } from '../../components/SiteChrome';
 
 // Hero copy rotates between four ad pitches every 5 seconds, each
 // targeting a different persona:
-//   - Slide 1 — pitch to the COORDINATING parent (Sarah persona):
+//   - Slide 1: pitch to the COORDINATING parent (Sarah persona):
 //     someone evaluating Family Hub to fix the mental load of running
 //     a household.
-//   - Slide 2 — pitch to the INVITED parent (Yusuf persona): someone
+//   - Slide 2: pitch to the INVITED parent (Yusuf persona): someone
 //     receiving the link from their partner. The inviter's name cycles
 //     every 1.5s through a culturally diverse set so this slide reads
 //     as "your partner just sent you a link" regardless of who's
-//     looking — Sarah / Aisha / Sandra / Priya / etc.
-//   - Slide 3 — pitch to the parent of a KID (Sarah-as-mum view): a
+//     looking: Sarah / Aisha / Sandra / Priya / etc.
+//   - Slide 3: pitch to the parent of a KID (Sarah-as-mum view): a
 //     kid name cycles, framing the app as the place where the kid
 //     racks up streaks for chores + lessons + rewards.
-//   - Slide 4 — pitch to DADS as active participants (Yusuf-but-leading):
-//     the dad name cycles. Aspirational, not duty-coded — implies
+//   - Slide 4: pitch to DADS as active participants (Yusuf-but-leading):
+//     the dad name cycles. Aspirational, not duty-coded: implies
 //     dads want IN on the wins (school run, bedtime, weekend plans),
 //     not just ticking admin boxes.
 // Source design: Magic Patterns kudjspxd3xxroueg5jw11o pages/Welcome.tsx.
@@ -58,11 +58,11 @@ const inviterNames = [
   'Mei',
 ] as const;
 
-// Kid names — culturally diverse to mirror the inviter set. Used by
+// Kid names: culturally diverse to mirror the inviter set. Used by
 // the third slide to cycle through "<Kid> just earned their streak".
 const kidNames = ['Iman', 'Faith', 'Noah', 'Ibrahim'] as const;
 
-// Dad names — culturally diverse, used by the fourth slide. Pitched
+// Dad names: culturally diverse, used by the fourth slide. Pitched
 // as the dad LEADING moments (school run, bedtime, weekend wins),
 // not just receiving an invite from his partner.
 const dadNames = ['Yusuf', 'Marcus', 'Olu', 'Raj', 'James', 'Mohammed'] as const;
@@ -81,7 +81,7 @@ const slides = [
     // 'invited-parent' = the secondary-parent ad slide (Yusuf-style
     // persona). Internal id; never shown to the user. Headline is
     // built dynamically from inviterNames so the partner name flashes
-    // through several options while this slide is up — depicting a
+    // through several options while this slide is up, depicting a
     // wife inviting her husband to share the family's mental load.
     id: 'invited-parent',
     headline: null,
@@ -103,7 +103,7 @@ const slides = [
   },
   {
     // 'dad' = pitch dads as active participants. Aspirational, not
-    // duty-coded — the headline frames the dad LANDING a moment
+    // duty-coded: the headline frames the dad LANDING a moment
     // (school run / bedtime story / weekend plan) so the read is
     // "be the dad who's in the wins", not "here's another chore app".
     id: 'dad',
@@ -178,7 +178,7 @@ export function WelcomePage() {
   const [dadIdx, setDadIdx] = useState(0);
   const reduceMotion = useReducedMotion();
 
-  // FHS-358 — the homepage reflects logged-in state. An adult is logged in via
+  // FHS-358: the homepage reflects logged-in state. An adult is logged in via
   // the Supabase session; a kid via the fh.kid.token (no Supabase session).
   const { session, loading: authLoading } = useAuth();
   // getKidToken validates the JWT's expiry (and drops it if stale), so an
@@ -235,7 +235,7 @@ export function WelcomePage() {
     return () => clearInterval(id);
   }, [currentSlide, reduceMotion]);
 
-  // Same cycling pattern for the kid slide — name flashes through
+  // Same cycling pattern for the kid slide: name flashes through
   // Iman / Faith / Noah / Ibrahim while the slide is up.
   useEffect(() => {
     if (slides[currentSlide]?.id !== 'kid') return;
@@ -247,7 +247,7 @@ export function WelcomePage() {
     return () => clearInterval(id);
   }, [currentSlide, reduceMotion]);
 
-  // Same cycling pattern for the dad slide — name flashes through
+  // Same cycling pattern for the dad slide: name flashes through
   // Yusuf / Marcus / Olu / Raj / James / Mohammed while the slide is up.
   useEffect(() => {
     if (slides[currentSlide]?.id !== 'dad') return;
@@ -271,7 +271,7 @@ export function WelcomePage() {
   const homeInitial = homeLabel.charAt(0).toUpperCase();
 
   // While the Supabase session is still restoring, don't render the logged-out
-  // hero — it would flash (and on a slow token refresh, stick) for a returning
+  // hero: it would flash (and on a slow token refresh, stick) for a returning
   // user, which is exactly the "homepage shows logged-out" bug. A kid is known
   // synchronously (kidToken), so we don't make them wait.
   if (authLoading && !kidToken) {
@@ -287,15 +287,15 @@ export function WelcomePage() {
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-kingdom-bg font-body text-white">
-      {/* Public feedback widget — visible to logged-out AND logged-in visitors on this page */}
+      {/* Public feedback widget: visible to logged-out AND logged-in visitors on this page */}
       <BetaFeedbackWidget variant="public" />
       {/* Subtle radial purple glow at the top of the hero. */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.4),rgba(61,16,101,0)_60%)]" />
 
-      {/* Floating decorative emojis — hidden on mobile, motion-safe. */}
+      {/* Floating decorative emojis: hidden on mobile, motion-safe. */}
       <FloatingDecorations elements={floatingElements} />
 
-      {/* Header — kept slim so the hero + feature cards both fit
+      {/* Header: kept slim so the hero + feature cards both fit
           above the fold on a 1080p viewport. */}
       {loggedIn ? (
         <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-4 md:px-6">
@@ -353,12 +353,12 @@ export function WelcomePage() {
           </div>
         </header>
       ) : (
-        /* FHS-544 — the logged-out homepage uses the shared SiteHeader so the
+        /* FHS-544: the logged-out homepage uses the shared SiteHeader so the
            header matches the legal + marketing pages exactly (no drift). */
         <SiteHeader current="features" />
       )}
 
-      {/* FHS-358 — logged-in landing replaces the ad hero. */}
+      {/* FHS-358: logged-in landing replaces the ad hero. */}
       {loggedIn && (
         <LoggedInLanding
           navigate={navigate}
@@ -371,9 +371,9 @@ export function WelcomePage() {
         />
       )}
 
-      {/* Hero — flex-1 absorbs leftover viewport height; gap controls
+      {/* Hero: flex-1 absorbs leftover viewport height; gap controls
           vertical rhythm without pushing the feature row off-screen.
-          Logged-out only — logged-in users get LoggedInLanding above. */}
+          Logged-out only, logged-in users get LoggedInLanding above. */}
       {!loggedIn && (
         <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 px-6 pb-6 text-center">
           {/* Cross-fading slide area */}
@@ -478,7 +478,7 @@ export function WelcomePage() {
             Trusted by 2,400+ families in UAE, UK &amp; US
           </p>
 
-          {/* Feature cards — 4 pillars: Calendar, Tasks, Learn, Journal.
+          {/* Feature cards: 4 pillars: Calendar, Tasks, Learn, Journal.
             Cultural angle woven into the Learn card description. */}
           <div className="grid w-full grid-cols-1 gap-4 text-left sm:grid-cols-2 lg:grid-cols-4">
             {featureCards.map(
@@ -508,7 +508,7 @@ export function WelcomePage() {
         </main>
       )}
 
-      {/* FHS-544 — shared site footer (same legal links + branding as the
+      {/* FHS-544: shared site footer (same legal links + branding as the
           legal/marketing pages) so the homepage never drifts from the rest. */}
       <SiteFooter />
     </div>

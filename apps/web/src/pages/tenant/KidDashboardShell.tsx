@@ -19,12 +19,12 @@ import { KidCalendarPanel } from './kid/KidCalendarPanel';
 import { KidJournalPanel } from './kid/KidJournalPanel';
 import { KidLearnPanel } from './kid/KidLearnPanel';
 
-// FHS-257 / FHS-362 — kid dashboard shell.
+// FHS-257 / FHS-362: kid dashboard shell.
 //
 // A child who finishes kid-login lands here (the dashboard route admits a
 // kid token via ProtectedRoute allowKid). It deliberately shows NONE of the
 // parent surface: no profile pill, no Manage Members / Add member / admin
-// links — just the kid's own avatar + name + banked stars/cash, the five-tab
+// links: just the kid's own avatar + name + banked stars/cash, the five-tab
 // kid world (My World, Meals, Calendar, Journal, Learn) matching the Magic
 // Patterns design, and a "Switch user" button that drops the kid token and
 // returns to the avatar picker.
@@ -52,7 +52,7 @@ const KID_TABS: KidTab[] = [
 
 const DEFAULT_TAB = 'world';
 
-// FHS-362 — the kid's header profile (name + avatar + banked stars/cash).
+// FHS-362: the kid's header profile (name + avatar + banked stars/cash).
 interface KidProfile {
   displayName: string;
   avatarEmoji: string | null;
@@ -61,7 +61,7 @@ interface KidProfile {
   currency: string;
 }
 
-// FHS-370 — kid Tasks tab. The kid's own tasks (GET /api/kid/tasks), tickable
+// FHS-370: kid Tasks tab. The kid's own tasks (GET /api/kid/tasks), tickable
 // via PATCH /api/kid/tasks/:id. Optimistic toggle with revert on failure.
 interface KidTask {
   id: string;
@@ -182,13 +182,13 @@ function KidTasksPanel({ kidToken }: { kidToken: string | null }) {
   );
 }
 
-// FHS-376 — My World tab. A DEDICATED kid My World (its own components), pixel-
-// matched to the Magic Patterns kid mock — NOT the parent's MyWorldTab reused.
+// FHS-376: My World tab. A DEDICATED kid My World (its own components), pixel-
+// matched to the Magic Patterns kid mock: NOT the parent's MyWorldTab reused.
 // It carries the Weekly Habits / Analytics toggle, the kid's week banner + habit
 // cards, Money Skills, and the Reward Goals + My Account sidebar. The kid's tasks
 // live in their own tab (FHS-370).
 function MyWorldPanel({ kidToken, displayName }: { kidToken: string | null; displayName: string }) {
-  // FHS-370 — My World is the kid habit/economy screen only (matches the mock).
+  // FHS-370: My World is the kid habit/economy screen only (matches the mock).
   // Tasks live in their own tab; Notices were removed from the kid view (FHS-386).
   return <KidMyWorld kidToken={kidToken} displayName={displayName} />;
 }
@@ -235,7 +235,7 @@ export function KidDashboardShell() {
         setConfirmed(true);
       })
       .catch(() => {
-        // Network blip — keep the shell up (tabs are placeholders), but
+        // Network blip: keep the shell up (tabs are placeholders), but
         // don't announce "session active" since we couldn't confirm.
         if (!cancelled) setConfirmed(null);
       });
@@ -244,9 +244,9 @@ export function KidDashboardShell() {
     };
   }, [kidToken, slug, navigate]);
 
-  // FHS-362 — load the kid's profile for the header (name + avatar + banked
+  // FHS-362: load the kid's profile for the header (name + avatar + banked
   // stars/cash). Non-fatal: a blip just leaves the generic brand showing.
-  // FHS-364 — exposed as a callback so a reward claim can refresh the chip.
+  // FHS-364: exposed as a callback so a reward claim can refresh the chip.
   const loadProfile = useCallback(
     async (signal?: AbortSignal) => {
       if (!kidToken) return;

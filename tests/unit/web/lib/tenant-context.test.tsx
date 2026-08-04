@@ -7,7 +7,7 @@ import {
   useOptionalTenantSlug,
 } from '../../../../apps/web/src/lib/tenant-context';
 
-// FHS-249 — TenantProvider reads :slug from the URL and exposes it via
+// FHS-249: TenantProvider reads :slug from the URL and exposes it via
 // useTenantSlug() to descendants. Throws when consumed outside the
 // provider so the "I forgot to wrap my route" mistake is loud.
 
@@ -20,7 +20,7 @@ function ShowOptional() {
   return <div data-testid="opt-slug">{slug ?? '<none>'}</div>;
 }
 
-describe('FHS-249 — tenant context', () => {
+describe('FHS-249: tenant context', () => {
   it('useTenantSlug returns the :slug param from /t/:slug/* routes', () => {
     render(
       <MemoryRouter initialEntries={['/t/khans/dashboard']}>

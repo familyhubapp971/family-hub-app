@@ -1,5 +1,5 @@
-// FHS-513 — shared role → colour/label map, extracted out of MembersPage
-// and TodayTabPanel (both had an identical literal `ROLE_STYLE` object —
+// FHS-513: shared role → colour/label map, extracted out of MembersPage
+// and TodayTabPanel (both had an identical literal `ROLE_STYLE` object,
 // the design-system rule calls that drift out for consolidation). Any
 // page that shows a member's role badge or avatar disc should use this
 // module instead of a local copy.
@@ -33,12 +33,12 @@ export interface RoleBadgeProps {
   testId?: string;
 }
 
-// FHS-520 (design-fidelity) — the Magic Patterns mock uses the same
+// FHS-520 (design-fidelity): the Magic Patterns mock uses the same
 // -300 shade for the RoleBadge pill as the avatar disc (not the softer
 // -200 badge tone `roleStyle().badge` carries for other surfaces like
-// the Today tab's role pill) — reuse `style.disc` here so the two design
+// the Today tab's role pill), reuse `style.disc` here so the two design
 // tokens don't have to be duplicated.
-/** Small pill badge — role label, coloured per `ROLE_STYLE`. */
+/** Small pill badge: role label, coloured per `ROLE_STYLE`. */
 export function RoleBadge({ role, age = null, className = '', testId }: RoleBadgeProps) {
   const style = roleStyle(role);
   const showAge = (role === 'child' || role === 'teen') && age !== null;
@@ -69,7 +69,7 @@ const DISC_SIZES: Record<NonNullable<AvatarDiscProps['size']>, string> = {
   lg: 'h-16 w-16 text-3xl',
 };
 
-/** Round avatar disc — emoji or initial, coloured per the member's role. */
+/** Round avatar disc: emoji or initial, coloured per the member's role. */
 export function AvatarDisc({
   role,
   name,

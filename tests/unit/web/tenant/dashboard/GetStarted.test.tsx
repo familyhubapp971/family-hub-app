@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-511 — first-run "Getting started" guide card.
+// FHS-511: first-run "Getting started" guide card.
 
 const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {

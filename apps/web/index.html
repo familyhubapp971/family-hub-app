@@ -13,7 +13,7 @@
       Content Security Policy (FHS-170). Meta tag is the Sprint-0 path
       because vite preview doesn't emit response headers. Production
       should ALSO set this as a real Content-Security-Policy response
-      header at the edge (Caddy/nginx/Railway Edge) — meta covers
+      header at the edge (Caddy/nginx/Railway Edge): meta covers
       script-src/style-src/img-src/connect-src/etc but cannot set
       frame-ancestors (header-only). FHS-202 / Railway prod provisioning
       owns the response-header path. style-src includes 'unsafe-inline'

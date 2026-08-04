@@ -1,11 +1,11 @@
-// FHS-394 — Maths Prove Challenge.
+// FHS-394: Maths Prove Challenge.
 // 60-second timed sprint: unlimited questions via generateTableProblem,
 // 4-option MC, tracks score + per-answer time.
 //
 // Pass = score >= 10 && avgTime <= 5 seconds.
 // onComplete(score, avgTime) fires EXACTLY ONCE when the timer hits 0
 // (useEffect + hasCompletedRef guard). The parent (MathsSubject) owns
-// the celebration screen (MathsStageComplete) — this component never
+// the celebration screen (MathsStageComplete): this component never
 // renders its own post-challenge UI.
 //
 // Double-tap guard on answers: `selected !== null` and `finished` checks.

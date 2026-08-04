@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 
-// FHS-359 — a small in-app dropdown for short option lists (e.g. switch-child),
+// FHS-359: a small in-app dropdown for short option lists (e.g. switch-child),
 // so the app never falls back to the grey OS <select> menu. For long, filterable
 // lists use SearchableSelect instead.
 //
@@ -18,7 +18,7 @@ export interface DropdownProps {
   options: DropdownOption[];
   value: string;
   onChange: (value: string) => void;
-  /** Tailwind classes for the trigger button — caller controls width/colour. */
+  /** Tailwind classes for the trigger button, caller controls width/colour. */
   className?: string;
   /** Classes for the popup list (e.g. min width / alignment). */
   menuClassName?: string;

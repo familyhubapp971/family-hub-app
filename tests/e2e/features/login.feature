@@ -1,4 +1,4 @@
-# FHS-224 — passwordless login (magic-link + Google).
+# FHS-224: passwordless login (magic-link + Google).
 # The /login UI was rewritten to drop the password field per ADR 0011.
 
 Feature: Login page

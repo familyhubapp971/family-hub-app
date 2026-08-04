@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 
-// FHS-365 — kid Calendar tab reads GET /api/kid/events (server-scoped to the
+// FHS-365: kid Calendar tab reads GET /api/kid/events (server-scoped to the
 // kid + family for the week). Renders the schedule; empty state when none.
 
 import { KidCalendarPanel } from '../../../../../apps/web/src/pages/tenant/kid/KidCalendarPanel';

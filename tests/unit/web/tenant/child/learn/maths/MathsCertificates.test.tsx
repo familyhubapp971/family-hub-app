@@ -1,4 +1,4 @@
-// FHS-394 — MathsCertificates unit tests.
+// FHS-394: MathsCertificates unit tests.
 // Covers: earned certs render, empty state, speed-challenge milestone gating,
 // localStorage best scores.
 
@@ -63,7 +63,7 @@ async function waitLoaded() {
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
-describe('MathsCertificates — empty state', () => {
+describe('MathsCertificates: empty state', () => {
   it('renders the certificates panel with 0% progress when no certs exist', async () => {
     mockCerts([]);
     render(<MathsCertificates kidToken={KID_TOKEN} operation="multiplication" />);
@@ -96,7 +96,7 @@ describe('MathsCertificates — empty state', () => {
 
 // ─── Earned certificates ──────────────────────────────────────────────────────
 
-describe('MathsCertificates — earned certificates', () => {
+describe('MathsCertificates: earned certificates', () => {
   it('renders earned certificates with star decoration', async () => {
     mockCerts([
       { operation: 'multiplication', difficulty: '1', earnedAt: '2025-01-15T10:00:00Z' },
@@ -106,7 +106,7 @@ describe('MathsCertificates — earned certificates', () => {
 
     await waitFor(() => expect(screen.getByTestId('maths-cert-1')).toBeInTheDocument());
 
-    // Cert 1 and 3 are earned — they should have the medal decoration (🏅).
+    // Cert 1 and 3 are earned: they should have the medal decoration (🏅).
     const cert1 = screen.getByTestId('maths-cert-1');
     const cert3 = screen.getByTestId('maths-cert-3');
     expect(cert1).toHaveTextContent('🏅');
@@ -139,14 +139,14 @@ describe('MathsCertificates — earned certificates', () => {
     render(<MathsCertificates kidToken={KID_TOKEN} operation="addition" />);
 
     await waitLoaded();
-    // Only 1 cert for addition — count should be 1 of 12.
+    // Only 1 cert for addition: count should be 1 of 12.
     expect(screen.getByText('1 of 12 tables mastered')).toBeInTheDocument();
   });
 });
 
 // ─── Speed milestone gating ───────────────────────────────────────────────────
 
-describe('MathsCertificates — speed milestone gating', () => {
+describe('MathsCertificates: speed milestone gating', () => {
   it('shows Bronze speed test button when tables 1-4 are all mastered', async () => {
     const certs = [1, 2, 3, 4].map((n) => ({
       operation: 'multiplication',
@@ -201,7 +201,7 @@ describe('MathsCertificates — speed milestone gating', () => {
 
 // ─── Speed challenge flow ─────────────────────────────────────────────────────
 
-describe('MathsCertificates — speed challenge flow', () => {
+describe('MathsCertificates: speed challenge flow', () => {
   function allTwelveCerts() {
     return Array.from({ length: 12 }, (_, i) => ({
       operation: 'multiplication',
@@ -276,7 +276,7 @@ describe('MathsCertificates — speed challenge flow', () => {
 
 // ─── localStorage best scores ─────────────────────────────────────────────────
 
-describe('MathsCertificates — localStorage best scores', () => {
+describe('MathsCertificates: localStorage best scores', () => {
   function allTwelveCerts() {
     return Array.from({ length: 12 }, (_, i) => ({
       operation: 'multiplication',

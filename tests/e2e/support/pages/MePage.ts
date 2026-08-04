@@ -1,12 +1,12 @@
 import type { Page } from '@playwright/test';
 
-// Page object for /me — mirrors apps/web/src/pages/MePage.tsx.
+// Page object for /me: mirrors apps/web/src/pages/MePage.tsx.
 // Testid selectors:
-//   me-loading       — initial spinner
-//   me-greeting      — "Hello, {email}" h1
-//   me-id            — mirror row id
-//   me-created-at    — mirror row createdAt
-//   me-error         — non-2xx / malformed-body fallback
+//   me-loading       : initial spinner
+//   me-greeting      : "Hello, {email}" h1
+//   me-id            : mirror row id
+//   me-created-at    : mirror row createdAt
+//   me-error         : non-2xx / malformed-body fallback
 export class MePage {
   constructor(private readonly page: Page) {}
 

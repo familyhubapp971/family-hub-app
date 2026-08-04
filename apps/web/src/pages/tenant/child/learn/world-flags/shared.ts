@@ -1,4 +1,4 @@
-// World Flags — shared constants, helpers, and types for the Explore /
+// World Flags: shared constants, helpers, and types for the Explore /
 // Learn-path / Certificates sub-tabs. Ported from the legacy family-hub
 // World Flags components, adapted to the new design system.
 
@@ -70,7 +70,7 @@ function pickRandom<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]!;
 }
 
-// ─── Learn path — chunks of 5 + per-set quiz ─────────────────────────────────
+// ─── Learn path: chunks of 5 + per-set quiz ─────────────────────────────────
 
 export const CHUNK_SIZE = 5;
 
@@ -201,7 +201,7 @@ export function getNextQuizTier(score: number): QuizTier | null {
 }
 
 /**
- * Best-score localStorage key. Per-device only — World Flags timed-quiz
+ * Best-score localStorage key. Per-device only: World Flags timed-quiz
  * scores are not yet server-persisted (tracked as a follow-up).
  */
 export function bestScoreKey(memberId: string, continent: string): string {
@@ -224,6 +224,6 @@ export function writeBestScore(key: string, score: number): void {
   try {
     localStorage.setItem(key, String(score));
   } catch {
-    /* ignore — best score is best-effort */
+    /* ignore: best score is best-effort */
   }
 }

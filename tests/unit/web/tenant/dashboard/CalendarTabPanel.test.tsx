@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-265 — CalendarTabPanel (MP layout). School/Home sub-tabs, legend +
+// FHS-265: CalendarTabPanel (MP layout). School/Home sub-tabs, legend +
 // per-child filter pills, day cards with when/where/wear rows, and the
 // per-day Add Activity form. An in-memory fake backs /api/events +
 // /api/members so add + refetch behave like the real API.
@@ -48,7 +48,7 @@ const MEMBERS: Member[] = [
   { id: IBRAHIM, displayName: 'Ibrahim', role: 'child' },
 ];
 
-// This week's Monday in local time — events seeded on it always render
+// This week's Monday in local time: events seeded on it always render
 // in the default-loaded week.
 function mondayIso(): string {
   const now = new Date();
@@ -60,7 +60,7 @@ function mondayIso(): string {
   return `${y}-${m}-${d}`;
 }
 
-// FHS-438 — "today" (not Monday) is the one day in the default-loaded week
+// FHS-438: "today" (not Monday) is the one day in the default-loaded week
 // that's guaranteed never to be in the past, whatever weekday the suite
 // runs on. Add-activity tests use this instead of mondayIso().
 function todayIso(): string {
@@ -71,7 +71,7 @@ function todayIso(): string {
   return `${y}-${m}-${d}`;
 }
 
-// FHS-476 — 0 = Sunday .. 6 = Saturday, matching the "Repeat weekly" day
+// FHS-476: 0 = Sunday .. 6 = Saturday, matching the "Repeat weekly" day
 // checkboxes and the API's recurrenceDays.
 function weekdayOfIso(iso: string): number {
   const [y, m, d] = iso.split('-').map((s) => Number.parseInt(s, 10));
@@ -207,13 +207,13 @@ describe('<CalendarTabPanel />', () => {
     expect(screen.getByTestId('calendar-legend')).toBeInTheDocument();
     expect(screen.getByTestId('calendar-filter-all')).toBeInTheDocument();
     expect(screen.getByTestId(`calendar-filter-${AMINA}`)).toBeInTheDocument();
-    // Only kids get filter pills — the admin doesn't.
+    // Only kids get filter pills: the admin doesn't.
     expect(screen.queryByTestId('calendar-filter-p1')).not.toBeInTheDocument();
     expect(screen.getByTestId('calendar-today-pill')).toBeInTheDocument();
     expect(screen.getByTestId('calendar-week-label')).toBeInTheDocument();
   });
 
-  // FHS-474 — "Family" duplicated "All": both showed the exact same set of
+  // FHS-474: "Family" duplicated "All": both showed the exact same set of
   // events, so it was a confusing, redundant pill. Only All + per-child
   // filter pills remain.
   it('does not render a Family filter pill (FHS-474)', async () => {
@@ -286,16 +286,16 @@ describe('<CalendarTabPanel />', () => {
       fireEvent.click(screen.getByTestId(`calendar-filter-${AMINA}`));
     });
     expect(screen.getByTestId(`calendar-event-am-${mondayIso()}`)).toBeInTheDocument();
-    // FHS-475 — a family-wide event shows under every child's filter, not
+    // FHS-475: a family-wide event shows under every child's filter, not
     // just "All".
     expect(screen.getByTestId(`calendar-event-fam-${mondayIso()}`)).toBeInTheDocument();
     // Ibrahim's own event still must NOT show under Amina's filter.
     expect(screen.queryByTestId(`calendar-event-ib-${mondayIso()}`)).not.toBeInTheDocument();
   });
 
-  // FHS-475 — a beta tester assigned "tennis" to both kids (checking 2+
+  // FHS-475: a beta tester assigned "tennis" to both kids (checking 2+
   // children writes memberId=null, the model's only way to express
-  // "more than one member" — see the ActivityForm note). Filtering to
+  // "more than one member": see the ActivityForm note). Filtering to
   // Amina alone must still show it, not just events with memberId=AMINA.
   it('a both-kids activity (family-wide memberId) appears under a single child filter (FHS-475)', async () => {
     installApi({
@@ -331,7 +331,7 @@ describe('<CalendarTabPanel />', () => {
     renderAt('/t/khans/dashboard');
     await waitFor(() => expect(screen.getByTestId('calendar-ready')).toBeInTheDocument());
 
-    // FHS-438 — the day card must be today or later, since past days no
+    // FHS-438: the day card must be today or later, since past days no
     // longer show an Add Activity button.
     const today = todayIso();
     act(() => {
@@ -513,7 +513,7 @@ describe('<CalendarTabPanel />', () => {
     expect(screen.getByTestId(`calendar-add-${today}`)).toBeInTheDocument();
   });
 
-  // FHS-443 — a beta reviewer saw a Saturday marked "Today" on a weekly
+  // FHS-443: a beta reviewer saw a Saturday marked "Today" on a weekly
   // planner and wasn't sure the days were date-driven. This locks down that
   // the Today badge always lands on the real calendar date (whatever day of
   // the week it falls on) and that days already passed in the same week
@@ -538,12 +538,12 @@ describe('<CalendarTabPanel />', () => {
     expect(within(monCard).queryByTestId('calendar-today-pill')).not.toBeInTheDocument();
     expect(within(monCard).getByText(/Monday/)).toBeInTheDocument();
 
-    // Monday through Friday have already passed this week — muted "Past" tag.
+    // Monday through Friday have already passed this week: muted "Past" tag.
     expect(within(monCard).getByTestId(`calendar-past-pill-${monday}`)).toBeInTheDocument();
     // Today itself is never also flagged as Past.
     expect(within(satCard).queryByTestId(`calendar-past-pill-${saturday}`)).not.toBeInTheDocument();
 
-    // Sunday hasn't happened yet — neither Today nor Past.
+    // Sunday hasn't happened yet: neither Today nor Past.
     const sunCard = screen.getByTestId(`calendar-day-${sunday}`);
     expect(within(sunCard).queryByTestId('calendar-today-pill')).not.toBeInTheDocument();
     expect(within(sunCard).queryByTestId(`calendar-past-pill-${sunday}`)).not.toBeInTheDocument();
@@ -561,7 +561,7 @@ describe('<CalendarTabPanel />', () => {
     });
   });
 
-  // FHS-476 — recurring activities: the "Repeat weekly" toggle, day picker,
+  // FHS-476: recurring activities: the "Repeat weekly" toggle, day picker,
   // end date, the "Repeats" indicator on a recurring occurrence, and the
   // edit-changes-the-series confirm.
   describe('recurring activities (FHS-476)', () => {
@@ -689,7 +689,7 @@ describe('<CalendarTabPanel />', () => {
       act(() => {
         fireEvent.click(screen.getByTestId(`calendar-edit-${key}`));
       });
-      // No edit form yet — the confirm gates it.
+      // No edit form yet: the confirm gates it.
       expect(screen.queryByTestId('calendar-add-form')).not.toBeInTheDocument();
       await waitFor(() =>
         expect(screen.getByTestId('calendar-edit-recurring-confirm')).toBeInTheDocument(),
@@ -791,7 +791,7 @@ describe('<CalendarTabPanel />', () => {
         recurrenceDays: number[] | null;
       };
       expect(body.recurrenceDays).toBeNull();
-      // The day the parent was looking at — NOT the 2026-01-05 series anchor.
+      // The day the parent was looking at: NOT the 2026-01-05 series anchor.
       expect(body.date).toBe(mondayIso());
     });
 

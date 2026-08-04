@@ -1,4 +1,4 @@
-# 0002 — Subdomain tenant routing
+# 0002: Subdomain tenant routing
 
 **Status:** accepted (amended by [ADR 0012](0012-path-prefix-tenant-routing-interim.md))
 **Date:** 2026-04-24
@@ -55,7 +55,7 @@ export async function tenantFromSubdomain(c, next) {
 subdomains. The runtime `runWithTenant` opens the `AsyncLocalStorage`
 scope and sets `app.tenant_id` on the Postgres connection (ADR 0001).
 
-Frontend uses the same subdomain for its API calls — the browser's
+Frontend uses the same subdomain for its API calls, the browser's
 `window.location.host` is the source of truth; no auth-token parsing
 needed to pick the tenant.
 
@@ -67,7 +67,7 @@ needed to pick the tenant.
   request.
 - Tenant-scoped caching, CDN rules, and logging all key off the host
   header without extra plumbing.
-- CORS stays tight — each tenant is a distinct origin.
+- CORS stays tight, each tenant is a distinct origin.
 
 **Becomes harder:**
 
@@ -84,17 +84,17 @@ needed to pick the tenant.
 
 ## Alternatives considered
 
-- **Path prefix (`familyhub.app/t/acme/...`)** — rejected: messy URLs,
+- **Path prefix (`familyhub.app/t/acme/...`)**, rejected: messy URLs,
   no brand dedication, frontend has to thread slug through every
   link, subdomain-scoped cookies / CORS impossible.
-- **Custom header (`X-Tenant: acme`)** — rejected: browsers won't
+- **Custom header (`X-Tenant: acme`)**, rejected: browsers won't
   send it on direct navigation, so deep links and shared URLs break.
   Fine for machine-to-machine but not for a user-facing app.
-- **Tenant from JWT claim only** — rejected: requires auth even for
+- **Tenant from JWT claim only**, rejected: requires auth even for
   anonymous marketing pages, and puts the tenant-lookup cost on every
   request's token verification.
 
 ## References
 
-- [ADR 0001 — Multi-tenancy strategy](0001-multi-tenancy.md)
-- [FHS-157 — Configure wildcard DNS](https://qualicion2.atlassian.net/browse/FHS-157)
+- [ADR 0001: Multi-tenancy strategy](0001-multi-tenancy.md)
+- [FHS-157: Configure wildcard DNS](https://qualicion2.atlassian.net/browse/FHS-157)

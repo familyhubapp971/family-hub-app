@@ -2,16 +2,16 @@ import { importJWK, SignJWT } from 'jose';
 import { E2E_TEST_KEY_ID, E2E_TEST_PRIVATE_JWK } from './test-key.js';
 import { resolveSupabaseUrl } from './env.js';
 
-// FHS-516 — mint an ES256 JWT the RUNNING e2e api will accept, using the
+// FHS-516: mint an ES256 JWT the RUNNING e2e api will accept, using the
 // same pattern as the integration tier's mintToken() helper
 // (tests/integration/steps/auth.steps.ts): SignJWT from `jose`, ES256,
 // signed with the fixed test private key. The api verifies it against
-// E2E_TEST_JWKS (the PUBLIC half of the same key — see test-key.ts).
+// E2E_TEST_JWKS (the PUBLIC half of the same key, see test-key.ts).
 
 export interface MintOptions {
   sub: string;
   email: string;
-  /** Seconds from now until expiry. Long default (1h) — well past the
+  /** Seconds from now until expiry. Long default (1h), well past the
    * 90s "expiring soon" margin supabase-js uses before it would try to
    * refresh (which would hit the real network and fail). */
   expSecondsFromNow?: number;
@@ -24,7 +24,7 @@ export async function mintE2eAccessToken(opts: MintOptions): Promise<string> {
   const exp = now + (opts.expSecondsFromNow ?? 3600);
   return new SignJWT({
     email: opts.email,
-    // Supabase convention — not checked by the middleware, but present on
+    // Supabase convention, not checked by the middleware, but present on
     // every real session JWT so the token shape matches production.
     role: 'authenticated',
     aud: 'authenticated',

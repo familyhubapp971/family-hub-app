@@ -4,11 +4,11 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-269 — ChildWorld Meals tab (read-only).
+// FHS-269: ChildWorld Meals tab (read-only).
 //
 // Reuses GET /api/meals and shows just this child's plan: meals tagged
 // for them plus whole-family meals (memberId === null). No create / edit
-// / delete affordances — a kid only ever reads here.
+// / delete affordances: a kid only ever reads here.
 
 interface Meal {
   id: string;
@@ -71,7 +71,7 @@ export function MealsTab({ memberId }: { memberId: string }) {
         }
         const body = (await res.json()) as { meals: Meal[] };
         // Just this child's meals + whole-family meals, and only real
-        // (named) entries — the planner stores empty cells too.
+        // (named) entries: the planner stores empty cells too.
         const mine = (body.meals ?? []).filter(
           (m) => (m.name ?? '').trim() !== '' && (m.memberId === null || m.memberId === memberId),
         );

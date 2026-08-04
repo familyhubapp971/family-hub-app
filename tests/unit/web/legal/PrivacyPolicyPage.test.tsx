@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PrivacyPolicyPage } from '../../../../apps/web/src/pages/legal/PrivacyPolicyPage';
 
-// FHS-509 — /legal/privacy. Every legal page shares the same
+// FHS-509: /legal/privacy. Every legal page shares the same
 // LegalLayout shell: a pill nav between the four legal pages, a sticky
 // "On this page" table of contents, and a highlighted plain-English
 // summary above the legal detail of each section. This locks that
@@ -56,7 +56,7 @@ describe('<PrivacyPolicyPage />', () => {
     );
   });
 
-  it('keeps the [placeholder] markers visible — this is draft copy pending legal review', () => {
+  it('keeps the [placeholder] markers visible: this is draft copy pending legal review', () => {
     renderPage();
     expect(screen.getAllByText('[Legal entity name]').length).toBeGreaterThan(0);
     expect(screen.getAllByText('[Privacy contact]').length).toBeGreaterThan(0);

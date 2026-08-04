@@ -3,14 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { SiteFooter, SiteHeader } from '../../components/SiteChrome';
 
-// LegalLayout — shared shell for every /legal/* page (FHS-509). Ported
+// LegalLayout: shared shell for every /legal/* page (FHS-509). Ported
 // forensically from the Magic Patterns design
 // (7f19f840-c796-4eaa-90fc-934fb4ef587d, components/LegalLayout.tsx):
 // same title card, pill nav between the four legal pages, sticky
 // "On this page" table of contents, and numbered sections with a
 // highlighted plain-English summary above the legal detail. The
 // "[Legal entity name]", "[Effective date]" etc. placeholders are the
-// founder's placeholder copy pending legal review — kept verbatim.
+// founder's placeholder copy pending legal review: kept verbatim.
 
 export type LegalSection = {
   id: string;

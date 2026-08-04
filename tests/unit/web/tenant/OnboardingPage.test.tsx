@@ -4,7 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { OnboardingPage } from '../../../../apps/web/src/pages/tenant/OnboardingPage';
 import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
 
-// FHS-36 / FHS-432 — OnboardingWizard tests.
+// FHS-36 / FHS-432: OnboardingWizard tests.
 //
 // FHS-432 changes: timezone + currency are auto-detected and applied
 // silently in step 3 (Location). No manual selection required on the
@@ -120,7 +120,7 @@ describe('<OnboardingPage />', () => {
     fireEvent.click(screen.getByTestId('onboarding-next'));
     expect(screen.getByTestId('onboarding-step-members')).toBeInTheDocument();
 
-    // FHS-274 — fill the pinned "You" row, then add one other member.
+    // FHS-274: fill the pinned "You" row, then add one other member.
     fireEvent.change(screen.getByTestId('onboarding-your-name'), {
       target: { value: 'Sarah' },
     });
@@ -129,11 +129,11 @@ describe('<OnboardingPage />', () => {
       target: { value: 'Iman' },
     });
 
-    // Step 2 → 3 (Location — no manual entry needed).
+    // Step 2 → 3 (Location, no manual entry needed).
     fireEvent.click(screen.getByTestId('onboarding-next'));
     expect(screen.getByTestId('onboarding-step-location')).toBeInTheDocument();
 
-    // Back to step 2 — both names should still be there.
+    // Back to step 2: both names should still be there.
     fireEvent.click(screen.getByTestId('onboarding-back'));
     expect((screen.getByTestId('onboarding-your-name') as HTMLInputElement).value).toBe('Sarah');
     expect((screen.getByTestId('onboarding-member-name-0') as HTMLInputElement).value).toBe('Iman');
@@ -212,7 +212,7 @@ describe('<OnboardingPage />', () => {
     expect(screen.getByTestId('onboarding-currency')).toBeInTheDocument();
   });
 
-  it('FHS-432: fallback — shows timezone picker immediately when detection returns empty', async () => {
+  it('FHS-432: fallback: shows timezone picker immediately when detection returns empty', async () => {
     detectionMocks.timezone = ''; // detection failure
     detectionMocks.currency = 'USD';
     mockNotOnboarded();
@@ -231,7 +231,7 @@ describe('<OnboardingPage />', () => {
     expect((screen.getByTestId('onboarding-next') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('FHS-432: fallback — shows currency picker immediately when detection returns invalid code', async () => {
+  it('FHS-432: fallback: shows currency picker immediately when detection returns invalid code', async () => {
     detectionMocks.timezone = 'America/Chicago';
     detectionMocks.currency = 'XX'; // not a valid 3-letter code
     mockNotOnboarded();
@@ -266,10 +266,10 @@ describe('<OnboardingPage />', () => {
       target: { value: 'Iman' },
     });
 
-    // Default role is 'adult' — no age field shown.
+    // Default role is 'adult': no age field shown.
     expect(screen.queryByTestId('onboarding-member-age-0')).not.toBeInTheDocument();
 
-    // Switch role to 'child' — age field appears; email field (adult-only) disappears.
+    // Switch role to 'child': age field appears; email field (adult-only) disappears.
     fireEvent.change(screen.getByTestId('onboarding-member-role-0'), {
       target: { value: 'child' },
     });
@@ -314,7 +314,7 @@ describe('<OnboardingPage />', () => {
     await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
 
     // Welcome → Members → fill → Location (auto) → Done → Finish.
-    // FHS-432: no manual timezone/currency steps — Location auto-applies.
+    // FHS-432: no manual timezone/currency steps: Location auto-applies.
     fireEvent.click(screen.getByTestId('onboarding-next'));
     fireEvent.change(screen.getByTestId('onboarding-your-name'), {
       target: { value: 'Sarah' },
@@ -323,7 +323,7 @@ describe('<OnboardingPage />', () => {
     fireEvent.change(screen.getByTestId('onboarding-member-name-0'), {
       target: { value: 'Iman' },
     });
-    // FHS-275 — default role is adult, so the email field shows.
+    // FHS-275: default role is adult, so the email field shows.
     fireEvent.change(screen.getByTestId('onboarding-member-email-0'), {
       target: { value: 'iman@example.com' },
     });
@@ -334,7 +334,7 @@ describe('<OnboardingPage />', () => {
     await waitFor(() =>
       expect(screen.getByTestId('route-marker').textContent).toBe('tenant-dashboard'),
     );
-    // Inspect the POST payload — timezone + currency still sent.
+    // Inspect the POST payload: timezone + currency still sent.
     const submitCall = fetchMock.mock.calls.find(
       ([url]) => url === 'http://localhost:3001/api/onboarding/complete',
     );

@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation, useParams } from 'react-router-dom';
 import { LoginPage } from '../../../../apps/web/src/pages/auth/LoginPage';
 
-// FHS-224 — passwordless login. Tests cover the rewritten UX:
+// FHS-224: passwordless login. Tests cover the rewritten UX:
 // magic-link via signInWithOtp, Google via signInWithOAuth, no
 // password field, redirect to /verify-email after magic-link send.
 
@@ -23,7 +23,7 @@ function LocationProbe() {
   return <span data-testid="location-search">{loc.search}</span>;
 }
 
-// FHS-353 — marks the kid picker route so we can assert the kid panel
+// FHS-353: marks the kid picker route so we can assert the kid panel
 // navigates to /t/<slug>/kid-login with the typed family code.
 function KidLoginMarker() {
   const { slug } = useParams<{ slug: string }>();
@@ -51,7 +51,7 @@ function renderPage(initial = '/login') {
   );
 }
 
-// FHS-360 — the kid view now renders KidSignIn, which fetches
+// FHS-360: the kid view now renders KidSignIn, which fetches
 // /api/public/kid-members/:slug. Stub it to return one kid so the tiles render.
 function stubKidMembersFetch() {
   vi.stubGlobal(
@@ -85,7 +85,7 @@ describe('<LoginPage />', () => {
     expect(screen.queryByTestId('login-password')).toBeNull();
   });
 
-  // FHS-258 — error from a failed submit must clear the moment the
+  // FHS-258: error from a failed submit must clear the moment the
   // user starts typing again.
   it('clears the inline error when the user types into email after a failed submit', () => {
     renderPage();
@@ -120,7 +120,7 @@ describe('<LoginPage />', () => {
       email: 'sarah@example.com',
       options: {
         emailRedirectTo: expect.stringContaining('/auth/callback'),
-        // /login must NOT silently create accounts — keeps signup/login
+        // /login must NOT silently create accounts: keeps signup/login
         // semantically distinct (AC1).
         shouldCreateUser: false,
       },
@@ -160,14 +160,14 @@ describe('<LoginPage />', () => {
     expect(screen.getByTestId('route-marker').textContent).toBe('signup');
   });
 
-  // FHS-237 — parent / kid toggle.
+  // FHS-237: parent / kid toggle.
   it('defaults to the parent panel + role-toggle has aria-pressed=true on parent', () => {
     renderPage();
     expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('login-kid-panel')).toBeNull();
     expect(screen.getByTestId('login-role-parent').getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByTestId('login-role-kid').getAttribute('aria-pressed')).toBe('false');
-    // Default URL has no ?role= param — kid is the only state we encode
+    // Default URL has no ?role= param: kid is the only state we encode
     // so a returning parent doesn't see ugly query strings on /login.
     expect(screen.getByTestId('location-search').textContent).toBe('');
   });
@@ -183,11 +183,11 @@ describe('<LoginPage />', () => {
     renderPage('/login?role=kid');
     expect(screen.getByTestId('login-kid-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('login-parent-panel')).toBeNull();
-    // FHS-353 — the kid panel now offers a self-serve family-code entry.
+    // FHS-353: the kid panel now offers a self-serve family-code entry.
     expect(screen.getByTestId('login-kid-code')).toBeInTheDocument();
   });
 
-  // FHS-360 — entering a family code shows that family's kid tiles in-card.
+  // FHS-360: entering a family code shows that family's kid tiles in-card.
   it('entering a family code shows that family kid tiles', async () => {
     stubKidMembersFetch();
     renderPage('/login?role=kid');
@@ -204,7 +204,7 @@ describe('<LoginPage />', () => {
     expect(screen.queryByTestId('route-kid-login')).toBeNull();
   });
 
-  // FHS-437 — a device with no remembered family must land on the friendly
+  // FHS-437: a device with no remembered family must land on the friendly
   // code-entry prompt, never an error/dead-end screen.
   it('no remembered family shows the code-entry prompt, not an error', () => {
     renderPage('/login?role=kid');
@@ -214,7 +214,7 @@ describe('<LoginPage />', () => {
     expect(screen.queryByTestId('login-kid-notice')).toBeNull();
   });
 
-  // FHS-437 — a stale remembered family (deleted / recreated tenant) must
+  // FHS-437: a stale remembered family (deleted / recreated tenant) must
   // never strand the kid on "we couldn't find a family". It gets forgotten
   // and the kid is dropped back to the code-entry prompt with a plain note.
   it('a stale remembered family that 404s is forgotten and drops back to code entry', async () => {
@@ -234,7 +234,7 @@ describe('<LoginPage />', () => {
     expect(localStorage.getItem('fh.kid.lastFamily')).toBeNull();
   });
 
-  // FHS-437 — a mistyped code (valid format, no such family) must not wipe
+  // FHS-437: a mistyped code (valid format, no such family) must not wipe
   // out a different, perfectly good remembered family, and shows an inline
   // error the kid can fix in place instead of a dead-end screen.
   it('a mistyped code that 404s shows an inline error and leaves a good remembered family alone', async () => {
@@ -285,7 +285,7 @@ describe('<LoginPage />', () => {
     );
     stubKidMembersFetch();
     renderPage('/login?role=kid');
-    // No family-code step — the remembered family loads its tiles directly.
+    // No family-code step: the remembered family loads its tiles directly.
     await waitFor(() => expect(screen.getByTestId('kid-login-avatars')).toBeInTheDocument());
     expect(screen.queryByTestId('login-kid-code')).toBeNull();
   });
@@ -313,7 +313,7 @@ describe('<LoginPage />', () => {
   });
 
   // I4 (qa-expert): a stale "enter a valid email" error from the parent
-  // form mustn't reappear after the user toggles to kid and back —
+  // form mustn't reappear after the user toggles to kid and back:
   // they cleared their input by switching tabs, the warning would read
   // as a glitch.
   it('clears any inline parent-form error when the user toggles role', () => {

@@ -21,5 +21,5 @@ Wired across multiple Sprint 0 tickets:
 - Supabase template export: [FHS-188](https://qualicion2.atlassian.net/browse/FHS-188).
 
 Per [ADR 0005](../documents/decisions/0005-monorepo-structure.md), `deploy/`
-is **not** a pnpm workspace — scripts and configs live as plain files,
+is **not** a pnpm workspace: scripts and configs live as plain files,
 referenced from CI workflows and the root `package.json`.

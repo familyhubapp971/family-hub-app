@@ -6,7 +6,7 @@ import { Button, Input } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
 import { friendlyAuthErrorMessage } from '../../lib/auth-errors';
 
-// SignupPage — auth-first onboarding. The signup form collects only
+// SignupPage: auth-first onboarding. The signup form collects only
 // the email address (or kicks off Google OAuth); family name + slug
 // are captured post-auth on the `CreateFamilyPanel` rendered by
 // `LegacyDashboardRedirect` when a freshly-authenticated user has no
@@ -84,7 +84,7 @@ export function SignupPage() {
     if (error) {
       setStatus({ kind: 'error', message: friendlyAuthErrorMessage(error.message) });
     }
-    // signInWithOAuth navigates the browser away on success — no
+    // signInWithOAuth navigates the browser away on success: no
     // post-call handling needed.
   }
 
@@ -92,7 +92,7 @@ export function SignupPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body md:flex-row md:bg-white">
-      {/* Left panel — social proof. Hidden on mobile to save vertical space. */}
+      {/* Left panel: social proof. Hidden on mobile to save vertical space. */}
       <aside className="relative hidden flex-col justify-center bg-kingdom-bg p-12 text-white md:flex md:w-1/2 lg:p-16">
         <Link
           to="/"
@@ -120,7 +120,7 @@ export function SignupPage() {
         </ul>
       </aside>
 
-      {/* Right panel — form. Full-width on mobile, half on md+. */}
+      {/* Right panel: form. Full-width on mobile, half on md+. */}
       <main className="flex w-full flex-col justify-center bg-white p-6 text-black md:w-1/2 md:p-12 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           <Link
@@ -153,7 +153,7 @@ export function SignupPage() {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  // FHS-258 lineage — clear inline error as the user keeps typing.
+                  // FHS-258 lineage: clear inline error as the user keeps typing.
                   setStatus((s) => (s.kind === 'error' ? { kind: 'idle' } : s));
                 }}
                 placeholder="sarah@example.com"

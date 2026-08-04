@@ -6,7 +6,7 @@ import { supabase } from './supabase';
 //   staging/prod: api-...up.railway.app).
 // - Pulls the access_token from the live Supabase session and stamps
 //   `Authorization: Bearer <token>`. Anonymous calls (logged-out / no
-//   session) just omit the header — the api decides whether to 401.
+//   session) just omit the header: the api decides whether to 401.
 // - Throws ApiError on non-2xx so callers can `.catch(err)` instead of
 //   branching on res.ok.
 
@@ -58,7 +58,7 @@ export async function apiFetch<T>(path: string, opts: ApiFetchOptions = {}): Pro
     throw new ApiError(res.status, path, body);
   }
 
-  // 204 No Content — return undefined cast to T so callers expecting
+  // 204 No Content: return undefined cast to T so callers expecting
   // void don't have to special-case it.
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;

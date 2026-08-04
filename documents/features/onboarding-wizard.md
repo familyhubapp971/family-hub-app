@@ -11,16 +11,16 @@ the wizard renders.
 
 ## Steps
 
-1. **Welcome** — orientation text only.
-2. **Members** — the founder's own name (pinned "You · Admin" row),
+1. **Welcome**: orientation text only.
+2. **Members**: the founder's own name (pinned "You · Admin" row),
    plus 0–7 other family members. Each row has a name, a role
    (Adult / Teen / Child / Guest), an optional emoji, and:
-   - **Adults only** — an optional email that sends a sign-in invite.
-   - **Kids only (Child or Teen)** — an optional age in years, 1–25 (FHS-487).
-3. **Location** — timezone + currency are auto-detected from the
+   - **Adults only**: an optional email that sends a sign-in invite.
+   - **Kids only (Child or Teen)**: an optional age in years, 1–25 (FHS-487).
+3. **Location**: timezone + currency are auto-detected from the
    browser and shown read-only; a "Change" link reveals a manual
    picker only if detection failed or the value is wrong.
-4. **Done** — a summary, then one POST to `/api/onboarding/complete`
+4. **Done**: a summary, then one POST to `/api/onboarding/complete`
    that creates every member row, renames the founder's own row, saves
    timezone/currency, seeds starter habits/rewards, emails any adult
    invites, and marks the tenant onboarded.
@@ -85,7 +85,7 @@ the wizard renders.
 
 - **Age for grown-up roles.** Adults and guests never get an age field in the
   wizard; the API forces their `age` to null even if one is somehow submitted.
-- **Age-based behaviour.** Nothing gates content on age yet — it's captured and
+- **Age-based behaviour.** Nothing gates content on age yet, it's captured and
   displayed (on the Manage Members card) for later features to build on.
 - **Editing age after onboarding.** The Manage Family "Add a child"
   form already has its own age field (FHS-276); this doc only covers
@@ -94,11 +94,11 @@ the wizard renders.
 ## Open questions
 
 - **Staleness.** Like the FHS-276 Manage Family age field, this is a
-  point-in-time number, not a birthday — it goes stale as the child
+  point-in-time number, not a birthday, it goes stale as the child
   grows. Acceptable for now; revisit if a future feature needs an
   accurate current age.
 
 ## Success metrics
 
-- Not tracked yet — the field exists purely to avoid re-asking later;
+- Not tracked yet, the field exists purely to avoid re-asking later;
   no usage metric until a feature consumes it.

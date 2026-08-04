@@ -36,7 +36,7 @@
 
 > **Superseded by [ADR 0017](../decisions/0017-learn-is-kid-only.md) (FHS-382):**
 > Learn is now kid-only. The parent no longer takes lessons or fetches Logic
-> questions — parents will see progress via the read-only Learning Insights tab
+> questions, parents will see progress via the read-only Learning Insights tab
 > (epic FHS-388). The former "Story 2: A parent views Logic questions" and the
 > parent `GET /api/learn/Logic/questions` endpoint have been removed.
 
@@ -44,7 +44,7 @@
 
 | Slug          | Label       | Description                                       |
 | ------------- | ----------- | ------------------------------------------------- |
-| `patterns`    | Patterns    | Number/shape sequences — "what comes next?"       |
+| `patterns`    | Patterns    | Number/shape sequences: "what comes next?"        |
 | `odd-one-out` | Odd One Out | Which item doesn't belong in the group?           |
 | `if-then`     | If…Then     | Simple conditional reasoning                      |
 | `sorting`     | Sorting     | Ordering/grouping (smallest→largest, which group) |
@@ -54,7 +54,7 @@ Every (subtopic × difficulty) pair has at least 2 questions. Total Logic bank: 
 ## API contract
 
 The kid endpoint accepts an optional `?subtopic=` query param (the parent
-endpoint was removed in FHS-382 — see [ADR 0017](../decisions/0017-learn-is-kid-only.md)):
+endpoint was removed in FHS-382, see [ADR 0017](../decisions/0017-learn-is-kid-only.md)):
 
 ```text
 GET /api/kid/learn/Logic/questions?difficulty=easy&subtopic=patterns
@@ -83,4 +83,4 @@ Response questions carry the `subtopic` field when present:
 
 ## Open questions
 
-- None — slug list confirmed by frontend team.
+- None, slug list confirmed by frontend team.

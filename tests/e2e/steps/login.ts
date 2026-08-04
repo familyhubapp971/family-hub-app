@@ -4,7 +4,7 @@ import { LoginPage } from '../support/pages/LoginPage';
 
 const { Given, Then } = createBdd();
 
-// FHS-224 — passwordless login UI assertions. The
+// FHS-224: passwordless login UI assertions. The
 // `Given I open the page "..."` and `Then I am redirected to the login page`
 // steps are shared with tests/e2e/steps/tenant-routing.ts (don't redefine).
 

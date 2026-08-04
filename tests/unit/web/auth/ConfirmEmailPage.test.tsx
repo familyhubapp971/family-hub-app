@@ -4,12 +4,12 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ConfirmEmailPage } from '../../../../apps/web/src/pages/auth/ConfirmEmailPage';
 import { ApiError } from '../../../../apps/web/src/lib/api';
 
-// FHS-510 — the landing page for an admin-initiated sign-in email change.
+// FHS-510: the landing page for an admin-initiated sign-in email change.
 // Five states: ready (click-to-confirm gate) → checking (spinner) → done
 // (new email + back button) / expired (link genuinely dead) / error
-// (transient failure — retryable, distinct from expired).
+// (transient failure, retryable, distinct from expired).
 //
-// SECURITY — the confirm POST must NEVER fire until the user taps the
+// SECURITY: the confirm POST must NEVER fire until the user taps the
 // button (guards against email link-scanners burning the single-use
 // token before the real recipient opens the link). Every "done"/"expired"
 // test below drives through the button click rather than relying on an
@@ -48,7 +48,7 @@ describe('<ConfirmEmailPage />', () => {
     renderAt('/confirm-email/member-1?token=abc123');
     expect(screen.getByText('Confirm your new email')).toBeInTheDocument();
     expect(screen.getByTestId('confirm-email-confirm')).toBeInTheDocument();
-    // Give any stray effect a tick to fire — it must not.
+    // Give any stray effect a tick to fire: it must not.
     await new Promise((r) => setTimeout(r, 0));
     expect(apiFetch).not.toHaveBeenCalled();
   });
@@ -131,7 +131,7 @@ describe('<ConfirmEmailPage />', () => {
     await waitFor(() => expect(screen.getByTestId('home-route')).toBeInTheDocument());
   });
 
-  // FHS-510 blocker #3 — a transient failure (network drop, 502 Supabase
+  // FHS-510 blocker #3: a transient failure (network drop, 502 Supabase
   // hiccup, 500 post-apply drift) is NOT "expired": the token may still be
   // good, so the page must offer a retry, not tell the user to ask for a
   // new link.
@@ -199,7 +199,7 @@ describe('<ConfirmEmailPage />', () => {
     });
   });
 
-  // FHS-510 blocker #9 — screen readers must announce the state transitions.
+  // FHS-510 blocker #9: screen readers must announce the state transitions.
   it('the status region is announced via role="status" aria-live="polite"', () => {
     apiFetch.mockImplementation(() => new Promise(() => {}));
     renderAt('/confirm-email/member-1?token=abc123');

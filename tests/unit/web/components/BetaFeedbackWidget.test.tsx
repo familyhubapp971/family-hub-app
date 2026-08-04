@@ -1,6 +1,6 @@
 /**
- * Unit tests for BetaFeedbackWidget — FHS-418 (in-app) / FHS-429 (public) /
- * FHS-449 (streamlined layout — PMF + recommend up front, everything else
+ * Unit tests for BetaFeedbackWidget: FHS-418 (in-app) / FHS-429 (public) /
+ * FHS-449 (streamlined layout: PMF + recommend up front, everything else
  * behind an "A few more (optional)" expander).
  *
  * Covers:
@@ -69,7 +69,7 @@ function openDialog() {
   fireEvent.click(screen.getByTestId('beta-feedback-button'));
 }
 
-// FHS-449 — solves/ease/keep + the three free-text boxes live behind the
+// FHS-449: solves/ease/keep + the three free-text boxes live behind the
 // "A few more (optional)" expander; open it before interacting with them.
 function openMore() {
   fireEvent.click(screen.getByTestId('beta-feedback-more-toggle'));
@@ -122,7 +122,7 @@ describe('<BetaFeedbackWidget />', () => {
     expect(screen.getByTestId('beta-feedback-submit')).not.toBeDisabled();
   });
 
-  // FHS-449 — the short-form goal: only PMF + recommend show on open.
+  // FHS-449: the short-form goal: only PMF + recommend show on open.
   it('opens with only the PMF and recommend questions visible, and the "A few more" expander collapsed', () => {
     renderWidget();
     openDialog();
@@ -189,7 +189,7 @@ describe('<BetaFeedbackWidget />', () => {
     expect(body).not.toHaveProperty('painPoint');
   });
 
-  // Blocker 1 — falsy-value guard: 0 is a valid recommendScore
+  // Blocker 1: falsy-value guard: 0 is a valid recommendScore
   it('recommendScore = 0 enables submit and is included in the POST body', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -200,7 +200,7 @@ describe('<BetaFeedbackWidget />', () => {
     renderWidget();
     openDialog();
 
-    // Score 0 is falsy — must use !== undefined check, not truthiness
+    // Score 0 is falsy: must use !== undefined check, not truthiness
     fireEvent.click(screen.getByTestId('beta-feedback-recommend-0'));
     expect(screen.getByTestId('beta-feedback-submit')).not.toBeDisabled();
 
@@ -249,7 +249,7 @@ describe('<BetaFeedbackWidget />', () => {
     expect(headers['x-tenant-slug']).toBe('test-family');
   });
 
-  // New test — re-opening after success shows a blank form, not thank-you
+  // New test: re-opening after success shows a blank form, not thank-you
   it('re-opening the widget after a successful submit shows a blank form', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -346,7 +346,7 @@ describe('<BetaFeedbackWidget />', () => {
 
 describe('<BetaFeedbackWidget variant="public" />', () => {
   it('renders the floating button without a session or tenant slug', () => {
-    // Default mock has session + slug — override both to null/empty to prove
+    // Default mock has session + slug: override both to null/empty to prove
     // the public variant ignores the guard.
     vi.doMock('../../../../apps/web/src/lib/auth-context', () => ({
       useAuth: () => ({ session: null }),
@@ -485,7 +485,7 @@ describe('<BetaFeedbackWidget variant="public" />', () => {
     fireEvent.click(screen.getByTestId('beta-feedback-pmf-very'));
     fireEvent.click(screen.getByTestId('beta-feedback-submit'));
 
-    // fetch should NOT have been called — submit blocked by email validation
+    // fetch should NOT have been called: submit blocked by email validation
     expect(fetchMock).not.toHaveBeenCalled();
     expect(screen.getByTestId('beta-feedback-email-error')).toBeInTheDocument();
   });
@@ -493,7 +493,7 @@ describe('<BetaFeedbackWidget variant="public" />', () => {
 
 // ── Guard tests (no session / no slug) ───────────────────────────────────────
 
-describe('<BetaFeedbackWidget /> — no session', () => {
+describe('<BetaFeedbackWidget />: no session', () => {
   beforeEach(() => {
     vi.resetModules();
   });
@@ -510,7 +510,7 @@ describe('<BetaFeedbackWidget /> — no session', () => {
   });
 });
 
-describe('<BetaFeedbackWidget /> — session present, no tenant slug', () => {
+describe('<BetaFeedbackWidget />: session present, no tenant slug', () => {
   beforeEach(() => {
     vi.resetModules();
   });

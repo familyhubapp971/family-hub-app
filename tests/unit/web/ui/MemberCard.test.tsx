@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemberCard, RoleBadge } from '@familyhub/ui';
 
-// FHS-513 — the family-member card shell shared by every Manage
+// FHS-513: the family-member card shell shared by every Manage
 // Members group.
 
 describe('<MemberCard />', () => {

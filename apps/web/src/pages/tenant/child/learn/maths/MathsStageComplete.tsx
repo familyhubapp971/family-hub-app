@@ -1,4 +1,4 @@
-// FHS-394 — Between-stage celebration / transition screen.
+// FHS-394: Between-stage celebration / transition screen.
 // Ported from legacy MathsStageComplete.tsx.
 
 import { type Operation, type TableNumber, getTableLabel } from './maths-utils';

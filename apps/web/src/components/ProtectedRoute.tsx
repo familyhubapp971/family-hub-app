@@ -7,7 +7,7 @@ import { LoadingScreen } from './LoadingScreen';
 // while the AuthProvider rehydrates the session from localStorage so
 // signed-in users don't see a redirect-to-login flash on hard reload.
 //
-// FHS-257 — `allowKid` lets the dashboard route admit a child who is
+// FHS-257: `allowKid` lets the dashboard route admit a child who is
 // signed in with a kid JWT (no Supabase parent session). Without it a
 // kid would be bounced to /login the moment they finish kid-login.
 export function ProtectedRoute({
@@ -28,7 +28,7 @@ export function ProtectedRoute({
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  // FHS-434 — the feedback widget lives on the public homepage only; it was
+  // FHS-434: the feedback widget lives on the public homepage only; it was
   // obscuring content on every in-app screen, so it's no longer mounted here.
   return children;
 }

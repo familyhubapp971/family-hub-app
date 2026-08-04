@@ -1,4 +1,4 @@
-// FHS-395 — Logic Lesson: fetches questions from /api/kid/logic/questions,
+// FHS-395: Logic Lesson: fetches questions from /api/kid/logic/questions,
 // renders the appropriate game UI per question type, submits answers to
 // /api/kid/logic/answer, tracks combo progress, and shows a certificate
 // overlay when certificateEarned is true.
@@ -6,7 +6,7 @@
 // Auth: Bearer kidToken on all calls.
 // Double-tap guard: useRef answerFiredRef, reset per question.
 // Unmount guard: isMountedRef gates every setState after async POST.
-// Logic subject is kid-only — ChildWorldPage (parent mode) has no Learn tab.
+// Logic subject is kid-only: ChildWorldPage (parent mode) has no Learn tab.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE } from '../../../../../lib/api';
@@ -182,7 +182,7 @@ function CertificateOverlay({
       aria-modal="true"
       aria-label="Certificate earned"
     >
-      {/* Backdrop button — click outside to dismiss */}
+      {/* Backdrop button: click outside to dismiss */}
       <button
         type="button"
         aria-label="Close certificate"
@@ -534,7 +534,7 @@ function IfThenGame({
 
   return (
     <div className="space-y-4">
-      {/* Hint lightbox — Fix #1: Escape on role="dialog" div + autoFocus close btn */}
+      {/* Hint lightbox: Fix #1: Escape on role="dialog" div + autoFocus close btn */}
       {showHint && (
         <div
           data-testid="logic-clue-lightbox"
@@ -544,7 +544,7 @@ function IfThenGame({
           aria-modal="true"
           aria-label="Hint"
         >
-          {/* Backdrop — click outside to dismiss */}
+          {/* Backdrop: click outside to dismiss */}
           <button
             type="button"
             aria-label="Close hint"
@@ -739,11 +739,11 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
   const [totalAttempted, setTotalAttempted] = useState(0);
   const [celebrationMsg, setCelebrationMsg] = useState<string | null>(null);
 
-  // Double-tap guard — reset each time a new question is shown
+  // Double-tap guard: reset each time a new question is shown
   const answerFiredRef = useRef(false);
   // Fire-once: certificate overlay shown once per award
   const certShownRef = useRef<Set<string>>(new Set());
-  // Fix #2: unmount guard — gates every setState after async POST
+  // Fix #2: unmount guard: gates every setState after async POST
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -848,7 +848,7 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
 
         if (data.correct) {
           setTotalCorrect((n) => n + 1);
-          // Fix #6: functional updates — no stale closure on streak/bestStreak
+          // Fix #6: functional updates: no stale closure on streak/bestStreak
           setStreak((s) => {
             const next = s + 1;
             setBestStreak((b) => Math.max(b, next));
@@ -871,7 +871,7 @@ export function LogicLesson({ kidToken, gameType }: LogicLessonProps) {
         if (isMountedRef.current) setAnswered(true);
       }
     },
-    // Fix #6: streak and bestStreak removed from deps — functional updates only
+    // Fix #6: streak and bestStreak removed from deps: functional updates only
     [answered, questions, questionIndex, gameType, difficulty, kidToken],
   );
 

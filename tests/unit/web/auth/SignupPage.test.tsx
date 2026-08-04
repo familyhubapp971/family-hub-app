@@ -5,7 +5,7 @@ import { SignupPage } from '../../../../apps/web/src/pages/auth/SignupPage';
 
 // /signup is now email-only (option A in the duplication thread).
 // Family name + slug are collected post-auth on the
-// CreateFamilyPanel rendered by LegacyDashboardRedirect — see
+// CreateFamilyPanel rendered by LegacyDashboardRedirect: see
 // `LegacyDashboardRedirect.test.tsx`. The signup screen's only jobs
 // are: send a magic link OR kick off Google OAuth.
 
@@ -35,7 +35,7 @@ describe('<SignupPage />', () => {
     );
   }
 
-  it('renders both panels — left social proof + right email form', () => {
+  it('renders both panels: left social proof + right email form', () => {
     renderPage();
     expect(screen.getByText(/2,400\+ families/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /get started/i })).toBeInTheDocument();

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Calendar, Clock, MapPin, Shirt } from 'lucide-react';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-365 — kid Calendar tab (read-only). Reads GET /api/kid/events, which the
+// FHS-365: kid Calendar tab (read-only). Reads GET /api/kid/events, which the
 // server scopes to this kid + family-wide events for the current week.
 
 interface CalEvent {
@@ -21,7 +21,7 @@ interface CalEvent {
 type Status = 'loading' | 'ready' | 'error';
 
 // Current week's Monday (YYYY-MM-DD), computed in UTC to match the server's
-// week anchoring — a local-time version would pick the wrong week near midnight
+// week anchoring: a local-time version would pick the wrong week near midnight
 // in a +hours timezone and show an empty/next week.
 function mondayOf(d: Date): string {
   const offset = (d.getUTCDay() + 6) % 7; // 0 = Monday

@@ -2,7 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { Card } from './Card';
 
-// FHS-513 — the inline expanding-form shell shared by "Invite an adult"
+// FHS-513: the inline expanding-form shell shared by "Invite an adult"
 // and "Add a child" on Manage Members: a white card with a close (X)
 // button top-right, a heading, an optional one-line description, then
 // whatever form fields the caller renders as children.

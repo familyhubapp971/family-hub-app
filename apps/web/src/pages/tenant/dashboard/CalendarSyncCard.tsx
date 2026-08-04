@@ -3,7 +3,7 @@ import { CalendarPlus, ChevronDown, Copy, RefreshCw } from 'lucide-react';
 import { Button, Card, ConfirmDialog } from '@familyhub/ui';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-445 — "Sync to your calendar" card on the family Calendar tab.
+// FHS-445: "Sync to your calendar" card on the family Calendar tab.
 //
 // Gives the family a subscribe link (an ICS feed URL) they paste into Google,
 // Apple, or Outlook so their FamilyHub activities show up in their own phone
@@ -63,7 +63,7 @@ export function CalendarSyncCard({ headers }: { headers: Record<string, string> 
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard blocked — the link is still on-screen to copy by hand.
+      // Clipboard blocked: the link is still on-screen to copy by hand.
     }
   }, [url]);
 
@@ -78,7 +78,7 @@ export function CalendarSyncCard({ headers }: { headers: Record<string, string> 
         setUrl(body.url ?? url);
         setConfirmRotate(false);
       } else {
-        // The old link is still live — the user MUST see it didn't work.
+        // The old link is still live: the user MUST see it didn't work.
         setRotateFailed(true);
         setConfirmRotate(false);
       }

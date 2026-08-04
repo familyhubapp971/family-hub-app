@@ -14,13 +14,13 @@ import { LogicSubject } from './learn/logic/LogicSubject';
 // LESSON_SUBJECTS. World Flags + Reading have their own experiences.
 const LESSON_SUBJECTS = ['Maths', 'Science', 'Logic'];
 
-// Learn Phase 1 — ChildWorld Learn tab.
+// Learn Phase 1: ChildWorld Learn tab.
 //
 // Left: a 2-col grid of subject cards with progress bars (GET /api/learn).
-// Right: a Reading Log panel — add books, mark finished, delete
+// Right: a Reading Log panel: add books, mark finished, delete
 //        (GET/POST/PATCH/DELETE /api/reading-log).
 //
-// Learn Phase 2a — World Flags Explore (subject routing):
+// Learn Phase 2a: World Flags Explore (subject routing):
 // Clicking a subject card drills into its detail view. World Flags shows the
 // Explore experience (WorldFlagsLearn). Other subjects show "Coming soon."
 
@@ -29,7 +29,7 @@ const LESSON_SUBJECTS = ['Maths', 'Science', 'Logic'];
 interface Subject {
   subject: string;
   progress: number;
-  // FHS-387 — false for subjects with no server-side tracking (Art).
+  // FHS-387: false for subjects with no server-side tracking (Art).
   hasProgress?: boolean;
 }
 
@@ -56,7 +56,7 @@ const SUBJECT_STYLE: Record<string, { emoji: string; bg: string }> = {
 const FALLBACK_STYLE = { emoji: '⭐', bg: 'bg-gray-300' };
 
 // Art is a free-play canvas with no server-side progress tracking.
-// FHS-387 — hasProgress=false suppresses the progress bar for Art.
+// FHS-387: hasProgress=false suppresses the progress bar for Art.
 const ART_SUBJECT = { subject: 'Art', progress: 0, hasProgress: false };
 // World Flags is injected for kid mode with a real explored progress (FHS-387).
 // In parent mode it also comes from the API subjects list as normal.
@@ -67,7 +67,7 @@ const TOTAL_COUNTRIES = COUNTRIES.length;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-// FHS-270 / FHS-367 — used by the parent ChildWorld (pass `memberId`, Supabase
+// FHS-270 / FHS-367: used by the parent ChildWorld (pass `memberId`, Supabase
 // session) and the kid dashboard (pass `kidToken`, token-scoped /api/kid/learn +
 // /api/kid/reading-log). In kid mode the subjects list comes back lessons-only
 // (World Flags is kid-scoped separately in FHS-373), so its card never renders.
@@ -80,14 +80,14 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
   const { session } = useAuth();
   const kid = !!kidToken;
 
-  // Subject routing state — null = overview, string = subject detail
+  // Subject routing state: null = overview, string = subject detail
   const [selectedSubject, setSelectedSubject] = useState<SelectedSubject>(null);
 
   // Learn subjects state
   const [learnStatus, setLearnStatus] = useState<Status>('loading');
   const [subjects, setSubjects] = useState<Subject[]>([]);
 
-  // FHS-387 — kid mode: real World Flags explored count → progress %.
+  // FHS-387: kid mode: real World Flags explored count → progress %.
   const [kidWorldFlagsProgress, setKidWorldFlagsProgress] = useState<number>(0);
 
   // Reading log state
@@ -138,7 +138,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
     return () => ac.abort();
   }, [loadSubjects]);
 
-  // ── FHS-387: Kid mode — fetch real World Flags explored progress ───────────
+  // ── FHS-387: Kid mode: fetch real World Flags explored progress ───────────
 
   useEffect(() => {
     if (!kid || !headers) return;
@@ -289,10 +289,10 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
             <WorldFlags memberId={memberId!} />
           )
         ) : kid && selectedSubject === 'Maths' ? (
-          // FHS-394 — kid Maths uses the progressive placement+journey flow.
+          // FHS-394: kid Maths uses the progressive placement+journey flow.
           <MathsSubject kidToken={kidToken!} />
         ) : kid && selectedSubject === 'Logic' ? (
-          // FHS-395 — kid Logic uses the game-type + trophy-wall flow.
+          // FHS-395: kid Logic uses the game-type + trophy-wall flow.
           // Logic is kid-only: ChildWorldPage (parent mode) has no Learn tab,
           // so the LESSON_SUBJECTS Logic fallthrough below is unreachable in kid mode.
           <LogicSubject kidToken={kidToken!} />
@@ -360,18 +360,18 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
           {learnStatus === 'ready' && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {[
-                // FHS-387 — in kid mode inject World Flags with real explored progress.
+                // FHS-387: in kid mode inject World Flags with real explored progress.
                 ...(kid ? [{ ...WORLD_FLAGS_SUBJECT, progress: kidWorldFlagsProgress }] : []),
                 ...subjects,
                 ART_SUBJECT,
               ].map((s) => {
                 const style = SUBJECT_STYLE[s.subject] ?? FALLBACK_STYLE;
                 const pct = Math.max(0, Math.min(100, s.progress));
-                // FHS-387 — hasProgress defaults to true; Art has it set to false.
+                // FHS-387: hasProgress defaults to true; Art has it set to false.
                 const showProgress = s.hasProgress !== false;
                 // Slug for testid: lowercase, spaces → hyphens
                 const slug = s.subject.toLowerCase().replace(/\s+/g, '-');
-                // FHS-403 — Science isn't built yet; FHS-414 — Art is being
+                // FHS-403: Science isn't built yet; FHS-414: Art is being
                 // redesigned. Show these cards but disabled (dimmed + unclickable)
                 // so kids can't drill into an empty/old experience.
                 const isComingSoon = s.subject === 'Science' || s.subject === 'Art';
@@ -417,7 +417,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                     </div>
                     {/* Subject name */}
                     <h3 className="mb-2 font-heading text-xl">{s.subject}</h3>
-                    {/* Progress bar — omitted for Art (no progress) + disabled Science */}
+                    {/* Progress bar: omitted for Art (no progress) + disabled Science */}
                     {!isComingSoon && showProgress && (
                       <div
                         role="progressbar"
@@ -428,7 +428,7 @@ export function LearnTab({ memberId, kidToken }: LearnTabProps) {
                         data-testid={`learn-progress-${s.subject}`}
                         className="h-3 w-full overflow-hidden rounded-full border-2 border-black bg-white/50"
                       >
-                        {/* FHS-397 — white/dark fill is readable on any coloured card bg */}
+                        {/* FHS-397: white/dark fill is readable on any coloured card bg */}
                         <div className="h-full bg-gray-800" style={{ width: `${pct}%` }} />
                       </div>
                     )}

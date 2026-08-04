@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-// FHS-308 — AdminPanelPage unit tests.
-// Uses URL-matched fetch mock — no MSW, no window.confirm.
+// FHS-308: AdminPanelPage unit tests.
+// Uses URL-matched fetch mock: no MSW, no window.confirm.
 // Tests: render with child selected, tab switching, Savings edit PUT,
 // History reopen via ConfirmDialog, Settings tab (FHS-455 rename of "App
 // Info") currency PUT, and FHS-435 GDPR export/delete-account flows.
@@ -45,9 +45,9 @@ const CURRENT_WEEK = {
   isFinalized: false,
 };
 
-// FHS-512 — field names + values match the real GET /mw/weeks/:id/stats
+// FHS-512: field names + values match the real GET /mw/weeks/:id/stats
 // response (previously `availableStickers`/`availableCash`, which the real
-// API never returns — the display silently always read 0). cashValue is
+// API never returns: the display silently always read 0). cashValue is
 // what the server computes at this child's configured rate.
 const WEEK_STATS = {
   weekId: WEEK_ID,
@@ -69,7 +69,7 @@ const WEEKS_LIST = [
     id: WEEK_ID,
     weekNumber: 23,
     year: 2026,
-    // FHS-444 — the API returns the week's Monday so the UI can show a real
+    // FHS-444: the API returns the week's Monday so the UI can show a real
     // date range next to "Week 23" instead of a bare number.
     startDate: '2026-06-01',
     status: 'Active',
@@ -97,7 +97,7 @@ const APP_SETTINGS = {
   currency: 'AED',
 };
 
-// FHS-435 — a fake downloadable JSON payload + a Content-Disposition header
+// FHS-435: a fake downloadable JSON payload + a Content-Disposition header
 // matching what GET /api/admin/export returns.
 const EXPORT_PAYLOAD = {
   exportedAt: '2026-06-15T00:00:00.000Z',
@@ -147,7 +147,7 @@ function installApi(
       });
     }
     if (u.includes('/api/mw/weeks/current')) {
-      // Real API wraps the week: { week: {...} } — mock must match or the
+      // Real API wraps the week: { week: {...} }: mock must match or the
       // Balance tab's unwrap regression slips through (FHS-311).
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ week: CURRENT_WEEK }) });
     }
@@ -298,7 +298,7 @@ describe('<AdminPanelPage />', () => {
     expect(screen.getByTestId('admin-balance-cash-display').textContent).toBe('AED 6.00');
   });
 
-  // FHS-512 — the Balance tab must show the SERVER-computed cashValue
+  // FHS-512: the Balance tab must show the SERVER-computed cashValue
   // verbatim, never recompute it client-side at a hardcoded 0.5. Uses a
   // cashValue that would NOT match stickers*0.5, so a regression to the old
   // client-side recompute fails this test.
@@ -337,7 +337,7 @@ describe('<AdminPanelPage />', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          // 12 stickers at a 1.25 rate = 15.00 — NOT 6.00 (12 * the old
+          // 12 stickers at a 1.25 rate = 15.00: NOT 6.00 (12 * the old
           // hardcoded 0.5). A client-side recompute would show the wrong number.
           json: async () => ({
             weekId: WEEK_ID,
@@ -365,7 +365,7 @@ describe('<AdminPanelPage />', () => {
     expect(screen.getByTestId('admin-balance-action-withdraw')).toBeInTheDocument();
   });
 
-  it('FHS-416 — invest with too few stickers shows a clear reason, not the raw 409', async () => {
+  it('FHS-416: invest with too few stickers shows a clear reason, not the raw 409', async () => {
     const HABIT = { id: 'habit-1', name: 'Read a book' };
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
       const u = String(url);
@@ -484,7 +484,7 @@ describe('<AdminPanelPage />', () => {
     expect(screen.getByTestId('admin-savings-cash-display').textContent).not.toContain('AED');
   });
 
-  // FHS-512 — the sticker→cash conversion must use THIS child's configured
+  // FHS-512: the sticker→cash conversion must use THIS child's configured
   // rate, never a hardcoded 0.5. Locks the regression where a non-default
   // rate would previously be silently ignored client-side.
   it('Savings tab converts saved stickers to cash using the configured rate, not a hardcoded 0.5', async () => {
@@ -591,7 +591,7 @@ describe('<AdminPanelPage />', () => {
     expect(screen.getByTestId(`admin-history-week-close-btn-${WEEK_ID}`)).toBeInTheDocument();
     // Finalized week has Reopen button
     expect(screen.getByTestId('admin-history-week-reopen-btn-week-prev')).toBeInTheDocument();
-    // FHS-444 — "Week 23" alone reads like a mystery code; the real Mon–Sun
+    // FHS-444: "Week 23" alone reads like a mystery code; the real Mon–Sun
     // date range shows right next to it (UTC-anchored, matches startDate).
     expect(screen.getByTestId(`admin-history-week-${WEEK_ID}-range`).textContent).toMatch(
       /Jun 1.*Jun 7/,
@@ -625,7 +625,7 @@ describe('<AdminPanelPage />', () => {
     });
   });
 
-  // FHS-455 — App Info was renamed to Settings and its App Name/Subtitle
+  // FHS-455: App Info was renamed to Settings and its App Name/Subtitle
   // fields were dropped (they were never rendered anywhere else in the app).
   it('Settings tab no longer shows App Name/Subtitle fields; only Currency', async () => {
     renderAt();
@@ -657,7 +657,7 @@ describe('<AdminPanelPage />', () => {
     await waitFor(() => expect(screen.getByTestId('admin-settings-ready')).toBeInTheDocument());
     expect(screen.getByTestId('admin-settings-currency-display').textContent).toBe('AED');
 
-    // Open edit — the CurrencyPicker starts on the currently-saved currency.
+    // Open edit: the CurrencyPicker starts on the currently-saved currency.
     act(() => {
       fireEvent.click(screen.getByTestId('admin-settings-edit-btn'));
     });
@@ -689,16 +689,16 @@ describe('<AdminPanelPage />', () => {
     });
   });
 
-  // FHS-435 — GDPR: Download my data.
+  // FHS-435: GDPR: Download my data.
   it('Download my data calls GET /api/admin/export and triggers a file download', async () => {
-    // jsdom doesn't implement the Blob URL APIs at all — define them first
+    // jsdom doesn't implement the Blob URL APIs at all: define them first
     // so vi.spyOn has something to wrap.
     URL.createObjectURL ??= () => '';
     URL.revokeObjectURL ??= () => {};
     const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
     const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
     // jsdom doesn't understand the `download` attribute and tries to
-    // "navigate" the fake blob: URL on click — stub the click so the test
+    // "navigate" the fake blob: URL on click: stub the click so the test
     // only asserts the download was wired up, not a real navigation.
     const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
@@ -728,7 +728,7 @@ describe('<AdminPanelPage />', () => {
     anchorClick.mockRestore();
   });
 
-  // FHS-435 — GDPR: Delete my account (irreversible; two-step confirm).
+  // FHS-435: GDPR: Delete my account (irreversible; two-step confirm).
   describe('Delete my account', () => {
     async function openSettingsAndDeleteDialog() {
       renderAt();
@@ -745,7 +745,7 @@ describe('<AdminPanelPage />', () => {
       await waitFor(() =>
         expect(screen.getByTestId('admin-settings-delete-confirm')).toBeInTheDocument(),
       );
-      // Family name is loaded async from /api/me — wait for it to render.
+      // Family name is loaded async from /api/me: wait for it to render.
       await waitFor(() =>
         expect(screen.getByTestId('admin-settings-delete-family-name').textContent).toBe(
           'The Khans',
@@ -844,7 +844,7 @@ describe('<AdminPanelPage />', () => {
     });
   });
 
-  // FHS-535 — the read-only "Users" tab was removed (redundant with Manage
+  // FHS-535: the read-only "Users" tab was removed (redundant with Manage
   // Members); add a guard that it no longer appears.
   it('has no Users tab (member management lives on Manage Members)', async () => {
     renderAt();

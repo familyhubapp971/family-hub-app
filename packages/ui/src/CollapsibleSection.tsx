@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-// FHS-513 — reusable collapsible group card: an emoji tile + title +
+// FHS-513: reusable collapsible group card: an emoji tile + title +
 // optional subtitle/count in a header bar, a chevron that flips on
 // toggle, and a body that only renders while open.
 //
-// FHS-520 (design-fidelity pass) — two visual variants, matching the
+// FHS-520 (design-fidelity pass): two visual variants, matching the
 // Magic Patterns "Manage Family" mock exactly:
-//   'card'  (default) — a white rounded card, a round white icon tile,
+//   'card'  (default): a white rounded card, a round white icon tile,
 //           a plain chevron. Used for helper cards like "How your kids
 //           sign in".
-//   'group' — the member-group wrapper: a DARK translucent card
+//   'group': the member-group wrapper: a DARK translucent card
 //           (bg-black/25) with a full-width coloured accent header bar,
 //           square white icon + chevron tiles. Used for the "Grown-ups"
-//           / "Kids" member groups on Manage Family — never white.
+//           / "Kids" member groups on Manage Family, never white.
 
 export interface CollapsibleSectionProps {
   /** Emoji (or any short glyph) shown in the tile on the left. */

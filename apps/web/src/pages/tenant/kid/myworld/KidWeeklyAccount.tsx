@@ -2,10 +2,10 @@ import { Wallet } from 'lucide-react';
 import { habitIcon } from './icons';
 import type { KidHabitView } from './types';
 
-// FHS-376 — "My Account" sidebar card: what the kid earned THIS WEEK. Big star
+// FHS-376: "My Account" sidebar card: what the kid earned THIS WEEK. Big star
 // count, the cash it's worth, then a per-habit breakdown of where the stars
 // came from. Pure presentation off the viewed week's habits.
-// FHS-387 — stickerRate is now supplied by the caller (no hardcoded 0.5).
+// FHS-387: stickerRate is now supplied by the caller (no hardcoded 0.5).
 export function KidWeeklyAccount({
   habits,
   earnedThisWeek,

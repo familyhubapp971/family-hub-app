@@ -19,7 +19,7 @@ export function friendlyAuthErrorMessage(raw: string | undefined): string {
     return "We've sent too many sign-in links recently. Try again in an hour, or use Continue with Google.";
   }
 
-  // Generic per-IP / per-method rate limit hit — same advice without
+  // Generic per-IP / per-method rate limit hit: same advice without
   // singling out email since the limit may be the OTP-verify or
   // token-refresh bucket.
   if (/rate\s*limit/i.test(message) || /too\s+many\s+requests/i.test(message)) {
@@ -33,7 +33,7 @@ export function friendlyAuthErrorMessage(raw: string | undefined): string {
     return 'That sign-in link has expired or already been used. Request a new one.';
   }
 
-  // FHS-279 — Log in with an email that has no account. The login form
+  // FHS-279: Log in with an email that has no account. The login form
   // sends shouldCreateUser=false on purpose (login must not create
   // accounts), and Supabase answers "Signups not allowed for otp".
   if (/signups?\s+not\s+allowed/i.test(message)) {

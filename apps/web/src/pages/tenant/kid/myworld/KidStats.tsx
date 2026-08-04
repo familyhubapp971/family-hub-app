@@ -4,9 +4,9 @@ import type { KidAnalytics, KidHabitView } from './types';
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const FULL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-// FHS-376 — the kid "Analytics" view: a celebration, not a chart. Hero greeting,
+// FHS-376: the kid "Analytics" view: a celebration, not a chart. Hero greeting,
 // three "treasure" tiles, a one-line summary banner, then a per-habit "what I did
-// this week" row of day cells. Everything reads encouraging — no negative framing.
+// this week" row of day cells. Everything reads encouraging: no negative framing.
 export function KidStats({
   name,
   analytics,

@@ -1,4 +1,4 @@
-# 0014 — My World economy uses its own per-child tables
+# 0014: My World economy uses its own per-child tables
 
 **Status:** accepted
 **Date:** 2026-06-14
@@ -13,7 +13,7 @@ invested (grow +5/day, −2/miss), spent on rewards, and reconciled at a
 weekly "close week".
 
 The schema already had unused stub tables named `weeks`, `savings`,
-`investments`, and `week_actions` — scaffolded in Sprint 1 for a future
+`investments`, and `week_actions`: scaffolded in Sprint 1 for a future
 **family-level finance** feature (a savings _goal_ like a "Hajj fund",
 stock/ETF holdings, tenant-wide weeks). Their shapes and meaning are
 incompatible with the kid economy, and no code references them.
@@ -42,12 +42,12 @@ here each child has their own economy, so the scoping is per member.
   for a future family-finance feature; no risk of one feature's migration
   breaking the other; each child's economy is cleanly isolated.
 - **Harder:** two similarly-named concepts coexist (`savings` vs
-  `mw_savings`) — mitigated by the `mw_` prefix + this ADR.
+  `mw_savings`), mitigated by the `mw_` prefix + this ADR.
 - **Follow-up:** the lightweight FHS-268 model (`habit_logs` +
   `reward_redemptions`) is superseded by `habit_stickers` + the claim flow;
   it is left in place until FHS-292 rewires the UI/API, then removed in a
   later cleanup.
-- **FHS-378 — deductible investments.** `mw_investments` gained a
+- **FHS-378, deductible investments.** `mw_investments` gained a
   `deductible boolean NOT NULL DEFAULT true` column. When `true` (the legacy
   behaviour, and the default for every existing row) a missed day still
   subtracts −2/day; when `false` the investment keeps counting and showing
@@ -59,8 +59,8 @@ here each child has their own economy, so the scoping is per member.
 
 ## Alternatives considered
 
-- **Repurpose the stub tables** — bends generic family-finance tables into
+- **Repurpose the stub tables**: bends generic family-finance tables into
   kid-only meaning and would force a future family-finance feature to add
   its own tables anyway; rejected.
-- **Single shared economy across the family** (not per-child) — contradicts
+- **Single shared economy across the family** (not per-child), contradicts
   "My World" being each child's own space; rejected.

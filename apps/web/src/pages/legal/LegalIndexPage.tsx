@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { SiteFooter, SiteHeader } from '../../components/SiteChrome';
 
-// LegalIndexPage — /legal (FHS-509). Forensic port of the Magic
+// LegalIndexPage: /legal (FHS-509). Forensic port of the Magic
 // Patterns design (7f19f840-c796-4eaa-90fc-934fb4ef587d,
 // pages/legal/LegalIndex.tsx): four cards linking to the Privacy,
 // Children & Parents, Terms and Cookies pages. Copy (blurbs,

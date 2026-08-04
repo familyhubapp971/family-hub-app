@@ -10,7 +10,7 @@ import { tryResolveSupabaseUrl } from './support/auth/env.js';
 // from the CI workflow's env when set.
 const apiDatabaseUrl = process.env.DATABASE_URL ?? 'postgres://localhost:5432/familyhub_test';
 
-// FHS-516 — see playwright.config.ts for the full rationale (non-throwing
+// FHS-516: see playwright.config.ts for the full rationale (non-throwing
 // lookup so specs that don't use the authed fixture keep working on a
 // machine with no Supabase configured).
 const supabaseUrl = tryResolveSupabaseUrl();
@@ -27,7 +27,7 @@ const testDir = defineBddConfig({
   steps: 'steps/**/*.ts',
   outputDir: '.features-gen-critical',
   tags: '@critical',
-  // FHS-516 — see playwright.config.ts for the rationale.
+  // FHS-516: see playwright.config.ts for the rationale.
   importTestFrom: 'support/fixtures.ts',
 });
 
@@ -59,7 +59,7 @@ export default defineConfig({
       url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      // FHS-516 — see playwright.config.ts for the rationale.
+      // FHS-516: see playwright.config.ts for the rationale.
       env: apiWebServerEnv,
     },
     {
@@ -67,10 +67,10 @@ export default defineConfig({
       url: 'http://localhost:5273',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      // FHS-516 — the web app reads VITE_API_URL (apps/web/src/lib/api.ts), and
+      // FHS-516: the web app reads VITE_API_URL (apps/web/src/lib/api.ts), and
       // apps/web/.env.development.local points it at the STAGING api by default
       // (a local-dev convenience). For e2e the browser MUST hit the local api on
-      // :3001 — the only one that trusts the test-minted JWT via E2E_TEST_JWKS.
+      // :3001, the only one that trusts the test-minted JWT via E2E_TEST_JWKS.
       // Vite gives a real env var priority over .env files.
       env: { VITE_API_URL: 'http://localhost:3001' },
     },

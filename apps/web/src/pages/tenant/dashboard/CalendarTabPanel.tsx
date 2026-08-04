@@ -19,7 +19,7 @@ import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 import { CalendarSyncCard } from './CalendarSyncCard';
 
-// FHS-230 / FHS-265 — CalendarTabPanel (Magic Patterns layout).
+// FHS-230 / FHS-265: CalendarTabPanel (Magic Patterns layout).
 //
 // Week-based day list with School / Home sub-tabs. Each day is a card:
 // a header (pink + "Today" pill on the current day, activity count),
@@ -43,9 +43,9 @@ interface EventItem {
   type: EventType;
   location: string | null;
   wear: string | null;
-  // FHS-476 — weekly recurrence. recurrenceDays/recurrenceEndDate describe
+  // FHS-476: weekly recurrence. recurrenceDays/recurrenceEndDate describe
   // the series; isRecurring flags a virtual occurrence (or a repeating
-  // series row); seriesStartDate is the real anchor date — PUT that back
+  // series row); seriesStartDate is the real anchor date: PUT that back
   // as `date` when editing, never the occurrence's own `date`, or the
   // series start silently moves to whichever day was clicked.
   recurrenceDays: number[] | null;
@@ -73,9 +73,9 @@ interface DraftForm {
   startTime: string;
   location: string;
   wear: string;
-  // FHS-476 — "Repeat weekly". repeatDays uses 0=Sunday..6=Saturday,
+  // FHS-476: "Repeat weekly". repeatDays uses 0=Sunday..6=Saturday,
   // matching the API. anchorDate is only set when editing a recurring
-  // OCCURRENCE (not its anchor day) — it holds the series' real start
+  // OCCURRENCE (not its anchor day): it holds the series' real start
   // date so save sends that back as `date` instead of the day the form
   // happens to be open on (see EventItem.seriesStartDate).
   repeatWeekly: boolean;
@@ -165,7 +165,7 @@ function weekdayOfIso(iso: string): number {
   return new Date(Date.UTC(y!, m! - 1, d!)).getUTCDay();
 }
 
-// "Monday 15 Jun" — UTC-anchored so the server date never shifts.
+// "Monday 15 Jun": UTC-anchored so the server date never shifts.
 function dayLabel(iso: string): string {
   if (!ISO_DATE.test(iso)) return iso;
   const [y, m, d] = iso.split('-').map((s) => Number.parseInt(s, 10));
@@ -203,7 +203,7 @@ export function CalendarTabPanel() {
   const { session } = useAuth();
   const [weekStart, setWeekStart] = useState<string>(() => mondayOf(new Date()));
   // Default to School per the founder's call (matches the mockup). Note:
-  // events created before FHS-265 carry type='home' — they live under the
+  // events created before FHS-265 carry type='home': they live under the
   // Home sub-tab.
   const [subTab, setSubTab] = useState<EventType>('school');
   const [filter, setFilter] = useState<string>('all'); // 'all' | memberId
@@ -213,7 +213,7 @@ export function CalendarTabPanel() {
   const [saving, setSaving] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
-  // Synchronous double-submit guard — two fast clicks can both pass an
+  // Synchronous double-submit guard: two fast clicks can both pass an
   // `if (saving)` state check before React re-renders.
   const savingRef = useRef(false);
   const mountedRef = useRef(true);
@@ -268,7 +268,7 @@ export function CalendarTabPanel() {
   useEffect(() => {
     if (!headers) return;
     setStatus({ kind: 'loading' });
-    // Navigating weeks closes any open form — its day card is gone.
+    // Navigating weeks closes any open form: its day card is gone.
     setDraft(null);
     setEditingId(null);
     setSaveError(null);
@@ -284,13 +284,13 @@ export function CalendarTabPanel() {
       setSaveError('Give the activity a name.');
       return;
     }
-    // FHS-438 — belt-and-braces: the Add button is already hidden for past
+    // FHS-438: belt-and-braces: the Add button is already hidden for past
     // days, but guard the save itself too in case draft state gets stale.
     if (editingId === null && draft.date < localTodayIso()) {
       setSaveError('Pick today or a future date.');
       return;
     }
-    // FHS-476 — "Repeat weekly" is on but no day is ticked.
+    // FHS-476: "Repeat weekly" is on but no day is ticked.
     if (draft.repeatWeekly && draft.repeatDays.size === 0) {
       setSaveError('Pick at least one day to repeat on.');
       return;
@@ -305,7 +305,7 @@ export function CalendarTabPanel() {
     // series' real start date, not the day the form happened to open on
     // (see DraftForm.anchorDate). BUT if the user un-checks "Repeat weekly"
     // to turn this occurrence into a one-off, keep the day they were looking
-    // at — otherwise the event silently jumps back to the old series anchor.
+    // at: otherwise the event silently jumps back to the old series anchor.
     const outgoingDate =
       editingId && draft.anchorDate && draft.repeatWeekly ? draft.anchorDate : draft.date;
     savingRef.current = true;
@@ -370,7 +370,7 @@ export function CalendarTabPanel() {
     });
   }, []);
 
-  // FHS-476 — editing a recurring occurrence changes the WHOLE series, so
+  // FHS-476: editing a recurring occurrence changes the WHOLE series, so
   // a brief confirm gates it before the form opens.
   const [pendingEditConfirm, setPendingEditConfirm] = useState<EventItem | null>(null);
 
@@ -427,11 +427,11 @@ export function CalendarTabPanel() {
   const visible = events.filter((e) => {
     if (e.type !== subTab) return false;
     if (filter === 'all') return true;
-    // FHS-475 — the data model has one nullable member per event; a
+    // FHS-475: the data model has one nullable member per event; a
     // "both kids" activity is written with memberId=null (same as a
     // whole-family event, see the ActivityForm note below), so a
     // family-wide/multi-child event must show under EVERY child's
-    // filter too, not just "All" — otherwise filtering to one child
+    // filter too, not just "All": otherwise filtering to one child
     // hides activities that child is actually part of.
     return e.memberId === filter || e.memberId === null;
   });
@@ -545,9 +545,9 @@ export function CalendarTabPanel() {
       <div className="space-y-6">
         {days.map((dayIso) => {
           const isToday = dayIso === todayIso;
-          // FHS-438 — can't add NEW activities to a day that's already
+          // FHS-438: can't add NEW activities to a day that's already
           // passed (editing/deleting existing ones on a past day is
-          // still fine — see the "Add Activity" block below).
+          // still fine: see the "Add Activity" block below).
           const isPastDay = dayIso < todayIso;
           const dayEvents = visible
             .filter((e) => e.date === dayIso)
@@ -562,7 +562,7 @@ export function CalendarTabPanel() {
               }`}
               aria-labelledby={`calendar-day-${dayIso}-h`}
             >
-              {/* Day header — FHS-443: today gets an unmistakable pink
+              {/* Day header: FHS-443: today gets an unmistakable pink
                   header + badge; a passed day in this week is greyed out
                   and labelled "Past" so it never reads as ambiguous. */}
               <div
@@ -626,7 +626,7 @@ export function CalendarTabPanel() {
                             ? 'Family'
                             : (members.find((m) => m.id === ev.memberId)?.displayName ??
                               'Family member');
-                        // FHS-476 — a recurring series shares ONE id across
+                        // FHS-476: a recurring series shares ONE id across
                         // every occurrence in the week (a different day
                         // each time), so keys/testids must include the
                         // occurrence's own date to stay unique per row.
@@ -682,7 +682,7 @@ export function CalendarTabPanel() {
                                   ? ev.endTime
                                     ? `${ev.startTime} – ${ev.endTime}`
                                     : ev.startTime
-                                  : '—'}
+                                  : '-'}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 text-sm font-bold text-gray-700 sm:col-span-3">
@@ -694,7 +694,7 @@ export function CalendarTabPanel() {
                                 />
                               )}
                               <span data-testid={`calendar-event-${key}-location`}>
-                                {ev.location ?? '—'}
+                                {ev.location ?? '-'}
                               </span>
                             </div>
                             <div className="sm:col-span-2">
@@ -702,7 +702,7 @@ export function CalendarTabPanel() {
                                 className="inline-block rounded border-2 border-black/10 bg-white px-2 py-1 text-[10px] font-bold text-gray-700"
                                 data-testid={`calendar-event-${key}-wear`}
                               >
-                                {ev.wear ?? '—'}
+                                {ev.wear ?? '-'}
                               </span>
                             </div>
                             <div className="flex items-center justify-end gap-1 sm:col-span-1">
@@ -822,7 +822,7 @@ export function CalendarTabPanel() {
         title={pendingDelete ? `Delete "${pendingDelete.title}"?` : ''}
         message={
           pendingDelete?.isRecurring
-            ? 'This deletes the whole repeating activity — every day it repeats on, not just this one.'
+            ? 'This deletes the whole repeating activity: every day it repeats on, not just this one.'
             : 'This activity will be removed from the calendar.'
         }
         confirmLabel="Delete"

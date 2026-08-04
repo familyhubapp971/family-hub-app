@@ -4,11 +4,11 @@ import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 
-// FHS-379 — parent "Reward Requests" approval screen. Restyled to the
+// FHS-379: parent "Reward Requests" approval screen. Restyled to the
 // Magic Patterns neo-brutalist spec. Non-admins see a muted note in
 // place of the action buttons; admins get a two-step confirm flow for
 // Decline.
-// FHS-392 — accepts an optional `memberId` prop. When provided, only
+// FHS-392: accepts an optional `memberId` prop. When provided, only
 // that child's pending requests are shown (used in ChildWorldPage
 // sidebar). When omitted, all pending requests are listed.
 
@@ -81,7 +81,7 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
       })
       .catch(() => {});
     return () => ac.abort();
-    // memberId is in the filter — re-run if the viewed child changes without unmount.
+    // memberId is in the filter: re-run if the viewed child changes without unmount.
   }, [headers, memberId]);
 
   const decide = useCallback(
@@ -115,7 +115,7 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
   );
 
   const pendingCount = requests.length;
-  // FHS-408 — in single-child mode this panel sits in a NARROW sidebar, so the
+  // FHS-408: in single-child mode this panel sits in a NARROW sidebar, so the
   // 12-col grid crams (cost/time/buttons + helper text overlap). Stack instead.
   const singleChild = Boolean(memberId);
 
@@ -155,7 +155,7 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
       ) : (
         /* List card */
         <div className="overflow-hidden rounded-xl border-2 border-black bg-white shadow-neo-sm">
-          {/* Desktop column header — only in the wide multi-child grid layout */}
+          {/* Desktop column header: only in the wide multi-child grid layout */}
           {!singleChild && (
             <div
               className="hidden gap-4 border-b-2 border-black bg-gray-50 p-4 text-xs font-bold uppercase tracking-widest text-gray-500 md:grid md:grid-cols-12"
@@ -186,7 +186,7 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
                 >
                   {/* Child & Reward */}
                   <div className="col-span-4 flex items-center gap-4">
-                    {/* Avatar disc — hidden in single-child mode (memberId set) */}
+                    {/* Avatar disc: hidden in single-child mode (memberId set) */}
                     {!memberId && (
                       <span
                         aria-hidden="true"
@@ -312,8 +312,8 @@ export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
                       </p>
                     )}
 
-                    {/* Helper hint — admins only (it's about approving), not while
-                        in decline confirm. FHS-408 — also gate on isAdmin so the
+                    {/* Helper hint: admins only (it's about approving), not while
+                        in decline confirm. FHS-408: also gate on isAdmin so the
                         non-admin sidebar doesn't show "Approving will deduct…". */}
                     {isAdmin && !isDeclinePending && (
                       <p

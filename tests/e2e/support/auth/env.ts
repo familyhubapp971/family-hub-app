@@ -2,18 +2,18 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// FHS-516 — resolve SUPABASE_URL for the authed e2e fixture without
-// disturbing anything else in process.env (notably DATABASE_URL — see
+// FHS-516: resolve SUPABASE_URL for the authed e2e fixture without
+// disturbing anything else in process.env (notably DATABASE_URL, see
 // below).
 //
 // In CI, SUPABASE_URL is exported at the job level (ci-pr-staging.yml /
 // ci-staging.yml e2e-critical job) and inherited by every child process,
-// including this one — resolveSupabaseUrl() just reads it.
+// including this one: resolveSupabaseUrl() just reads it.
 //
 // Locally, only the api's OWN `dev` script loads it (via
-// `tsx watch --env-file=../../.env.local`, see apps/api/package.json) —
-// the Playwright test process itself never does. This module reads the
-// same repo-root .env.local file directly, but ONLY the SUPABASE_URL key —
+// `tsx watch --env-file=../../.env.local`, see apps/api/package.json).
+// The Playwright test process itself never does. This module reads the
+// same repo-root .env.local file directly, but ONLY the SUPABASE_URL key:
 // unlike `process.loadEnvFile()`, it never mutates process.env, so it can't
 // accidentally pull the STAGING DATABASE_URL (also defined in .env.local)
 // into this process and make the seed script below write to the wrong
@@ -45,14 +45,14 @@ function readSupabaseUrlFromRootEnvLocal(): string | undefined {
   return found;
 }
 
-/** Test-only — resets the memoised value so a test can cover both branches. */
+/** Test-only: resets the memoised value so a test can cover both branches. */
 let cached: string | undefined;
 export function _resetSupabaseUrlCacheForTests(): void {
   cached = undefined;
 }
 
 /**
- * Non-throwing lookup — used by playwright*.config.ts at CONFIG LOAD TIME,
+ * Non-throwing lookup: used by playwright*.config.ts at CONFIG LOAD TIME,
  * which runs for every e2e spec, not just ones that use the authed
  * fixture. A contributor machine (or hypothetical future CI job) with no
  * Supabase configured at all must still be able to run the marketing/login
@@ -75,7 +75,7 @@ export function tryResolveSupabaseUrl(): string | undefined {
 }
 
 /**
- * Throwing variant — used by the fixture (support/fixtures.ts) at actual
+ * Throwing variant: used by the fixture (support/fixtures.ts) at actual
  * test-run time, where failing loudly and immediately is exactly right:
  * only specs that use `authedFamily` ever call this, so an unconfigured
  * Supabase project fails just those specs with a clear message instead of
@@ -86,7 +86,7 @@ export function resolveSupabaseUrl(): string {
   if (url) return url;
   throw new Error(
     'resolveSupabaseUrl: could not determine SUPABASE_URL. CI sets it at the job level; ' +
-      'locally, ensure repo-root .env.local defines it (see .env.example) — the authed e2e ' +
+      'locally, ensure repo-root .env.local defines it (see .env.example): the authed e2e ' +
       'fixture needs it to mint a test JWT whose `iss` claim matches what the running api ' +
       'expects.',
   );

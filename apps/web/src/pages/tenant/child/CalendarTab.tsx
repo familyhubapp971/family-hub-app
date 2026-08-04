@@ -4,7 +4,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-269 — ChildWorld Calendar tab (read-only).
+// FHS-269: ChildWorld Calendar tab (read-only).
 //
 // Reuses GET /api/events and shows just this child's events: tagged for
 // them plus whole-family events (memberId === null), grouped by day. No
@@ -50,7 +50,7 @@ const DAY_TINT = [
 function formatDay(iso: string): string {
   const [y, m, d] = iso.split('-').map((s) => Number.parseInt(s, 10));
   // y/m/d are 1-based for a real date, so a falsy value means a missing
-  // or malformed part — fall back to the raw string. (This also narrows
+  // or malformed part: fall back to the raw string. (This also narrows
   // the `number | undefined` from the indexed access.)
   if (!y || !m || !d) return iso;
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(undefined, {

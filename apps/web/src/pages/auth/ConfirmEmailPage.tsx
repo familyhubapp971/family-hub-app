@@ -5,23 +5,23 @@ import { Loader2, Check, MailX, Mail, AlertTriangle } from 'lucide-react';
 import { Button, Card } from '@familyhub/ui';
 import { apiFetch, ApiError } from '../../lib/api';
 
-// FHS-510 — the landing page for a self-serve sign-in email change.
+// FHS-510: the landing page for a self-serve sign-in email change.
 // A grown-up sets a new email for their OWN account on Manage Members; a
 // one-time link is emailed to the NEW address; clicking it lands here and
-// applies the change. Root-level route (outside ProtectedRoute) — the person
+// applies the change. Root-level route (outside ProtectedRoute): the person
 // clicking may not be signed in at all.
 //
 // Five states:
-//   ready    — the token is present in the URL; waits for an explicit tap
+//   ready    : the token is present in the URL; waits for an explicit tap
 //              before firing the confirm request (see below).
-//   checking — spinner while the confirm request is in flight.
-//   done     — the change applied; shows the new email + a way back in.
-//   expired  — the link is missing/used/expired; nothing was changed.
-//   error    — a transient failure (Supabase hiccup, network drop, or a
-//              post-apply drift) — NOT "expired". The token may still be
+//   checking : spinner while the confirm request is in flight.
+//   done     : the change applied; shows the new email + a way back in.
+//   expired  : the link is missing/used/expired; nothing was changed.
+//   error    : a transient failure (Supabase hiccup, network drop, or a
+//              post-apply drift), NOT "expired". The token may still be
 //              good, so this offers a retry instead of "ask for a new link".
 //
-// SECURITY — click-to-confirm, not auto-fire-on-mount: corporate email
+// SECURITY: click-to-confirm, not auto-fire-on-mount: corporate email
 // link-scanners (Microsoft Safe Links, Proofpoint, etc.) prefetch every URL
 // in an email before the recipient ever opens it. If this page fired the
 // POST inside a useEffect on mount, the scanner's prefetch would consume the
@@ -48,7 +48,7 @@ export function ConfirmEmailPage() {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const token = params.get('token');
-  // No token/memberId at all — there's nothing to confirm, so skip straight
+  // No token/memberId at all: there's nothing to confirm, so skip straight
   // to "expired" rather than showing a button that can never work.
   const [status, setStatus] = useState<Status>(
     memberId && token ? { kind: 'ready' } : { kind: 'expired' },
@@ -77,7 +77,7 @@ export function ConfirmEmailPage() {
       .catch((err: unknown) => {
         // 410 = the link is genuinely missing/used/expired. Anything else
         // (network drop, 502 Supabase hiccup, 500 post-apply drift) is a
-        // TRANSIENT failure — the token may still be good, so "try again"
+        // TRANSIENT failure: the token may still be good, so "try again"
         // is the honest message, not "ask for a new link".
         if (err instanceof ApiError && err.status === 410) {
           setStatus({ kind: 'expired' });

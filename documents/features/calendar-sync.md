@@ -22,7 +22,7 @@ A one-way **iCalendar (ICS) subscribe feed**, not a two-way login sync:
   Outlook, which mishandles bare IANA timezones) renders the right local time.
 
 Two-way sync (create an event in Google → it flows back into FamilyHub) is out
-of scope for v1 — it needs Google/Microsoft OAuth apps the founder must set up,
+of scope for v1, it needs Google/Microsoft OAuth apps the founder must set up,
 and is tracked separately.
 
 ## User stories
@@ -42,7 +42,7 @@ and is tracked separately.
 - **Then** I get a private subscribe URL
 - **And** fetching that URL (with no login) returns a calendar feed listing our activities
 
-**Scenario: Tenant isolation — a family's feed never includes another family's events**
+**Scenario: Tenant isolation: a family's feed never includes another family's events**
 
 - **Given** family A and family B each have activities
 - **When** family A's subscribe URL is fetched

@@ -4,12 +4,12 @@
 **Status:** shipped
 **Owner:** product-manager
 
-A grown-up can update their OWN sign-in email from Manage Members —
+A grown-up can update their OWN sign-in email from Manage Members,
 **self-serve only; nobody can change someone else's login email, admin or
 not.** A one-time confirm link is emailed to the NEW address; the old
 address keeps working until that link is clicked and the recipient
-explicitly confirms. The OLD address is also notified — both when the
-change starts and when it completes — so a silent account takeover isn't
+explicitly confirms. The OLD address is also notified, both when the
+change starts and when it completes, so a silent account takeover isn't
 possible. Clicking the link lands on a ConfirmEmail screen that applies the
 change only after an explicit tap.
 
@@ -25,7 +25,7 @@ change only after an explicit tap.
 
 ### Story 1: A member starts a change to their OWN email
 
-**As a** signed-in grown-up (any role — admin, adult, teen)
+**As a** signed-in grown-up (any role, admin, adult, teen)
 **I want to** set a new sign-in email for MYSELF
 **so that** my account moves to my current email address without losing
 access in the meantime.
@@ -136,17 +136,17 @@ the link.
 
 ## Out of scope
 
-- **An admin changing another member's email** — the original pitch for
+- **An admin changing another member's email**: the original pitch for
   this ticket; reversed before rollout (see the pivot note above). An
   admin who wants to help a grown-up who's locked out still has to ask
   them to do it themselves, or reset their password via the normal
   Supabase auth recovery flow.
-- Changing a kid's PIN-login identity — kids don't have a sign-in email
+- Changing a kid's PIN-login identity, kids don't have a sign-in email
   (ADR 0009).
 - Per-target throttling beyond the one-pending-change-per-member database
   constraint, drift monitoring/alerting on the rare Supabase-succeeded-but-
   local-apply-failed case, and revoking the target's other active sessions
-  on a completed change — tracked as follow-ups, not blocking for v1.
+  on a completed change, tracked as follow-ups, not blocking for v1.
 
 ## Open questions
 
@@ -154,11 +154,11 @@ the link.
 
 ## Success metrics
 
-- Zero cross-member email changes — nobody can start, resend, or cancel a
+- Zero cross-member email changes, nobody can start, resend, or cancel a
   change for a row that isn't their own (verified by the single-use,
   hashed-token design + the self-serve `target.userId !== userRow.id` gate).
 - Members can recover from a mis-typed new address without engineering
   support (Resend / Cancel cover it).
-- Zero silent account takeovers — the OLD address always gets a signal
+- Zero silent account takeovers, the OLD address always gets a signal
   (start + completion notices), so an unexpected change is always
   detectable by the person it happened to.

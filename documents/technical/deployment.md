@@ -1,4 +1,4 @@
-# Deployment topology — Railway
+# Deployment topology: Railway
 
 Authoritative reference for the `family-hub-saas` Railway project. Captures
 the running infrastructure, env-var matrix, deploy flow, and known
@@ -9,24 +9,24 @@ secret format, change a branch tracking rule, upgrade plan).
 > staging**. Trial plan ($5 / 28-day cap). Both `api` and `frontend`
 > deploy cleanly from the `staging` branch; the W1 vertical slice
 > (Supabase login → JWT-protected `/api/me` → frontend greeting) is
-> live and verified — see
-> [W1 vertical slice — staging verification](#w1-vertical-slice--staging-verification-fhs-198).
+> live and verified, see
+> [W1 vertical slice: staging verification](#w1-vertical-slice-staging-verification-fhs-198).
 > Production environment exists but is intentionally unconfigured
-> pending Hobby-plan upgrade — see
+> pending Hobby-plan upgrade, see
 > [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202).
 
 ## Project
 
-| Field     | Value                                                                      |
-| --------- | -------------------------------------------------------------------------- |
-| Name      | `family-hub-saas`                                                          |
-| ID        | `bc7e539b-fc8b-4f56-99e2-daffee70138f`                                     |
-| Workspace | Trial workspace (1 contributor)                                            |
-| Plan      | Trial ($5 cap)                                                             |
-| Region    | us-east4 (forced on trial — see [Region constraints](#region-constraints)) |
+| Field     | Value                                                                     |
+| --------- | ------------------------------------------------------------------------- |
+| Name      | `family-hub-saas`                                                         |
+| ID        | `bc7e539b-fc8b-4f56-99e2-daffee70138f`                                    |
+| Workspace | Trial workspace (1 contributor)                                           |
+| Plan      | Trial ($5 cap)                                                            |
+| Region    | us-east4 (forced on trial: see [Region constraints](#region-constraints)) |
 
 Created via the Railway MCP server (`@jasontanswe/railway-mcp`)
-configured in `.mcp.json` (gitignored — see [`.env.example`](../../.env.example)
+configured in `.mcp.json` (gitignored, see [`.env.example`](../../.env.example)
 for variable names).
 
 ## Environments
@@ -34,7 +34,7 @@ for variable names).
 | Name         | ID                                     | Purpose                                 | Branch           |
 | ------------ | -------------------------------------- | --------------------------------------- | ---------------- |
 | `staging`    | `3fb76a04-e926-4bdf-ae03-659966366dfb` | Pre-prod, all bootstrap work lands here | `staging`        |
-| `production` | `4d84223a-86d3-49ef-a66c-acefe2100158` | GA target — currently unconfigured      | `main` (planned) |
+| `production` | `4d84223a-86d3-49ef-a66c-acefe2100158` | GA target: currently unconfigured       | `main` (planned) |
 
 The branching strategy is documented in
 [ADR 0006](../decisions/0006-branching-strategy.md): merges land on
@@ -75,9 +75,9 @@ flowchart TB
 
 | Service    | ID                                     | Source                           | Image                |
 | ---------- | -------------------------------------- | -------------------------------- | -------------------- |
-| `postgres` | `e2a7c43f-46db-44e8-bc06-a934fe290699` | —                                | `postgres:16-alpine` |
-| `api`      | `7a93c040-1220-4afb-a564-f4cf98901948` | `familyhubapp971/family-hub-app` | —                    |
-| `frontend` | `f3048c9c-195b-4141-8cca-daf0f213d6a9` | `familyhubapp971/family-hub-app` | —                    |
+| `postgres` | `e2a7c43f-46db-44e8-bc06-a934fe290699` | n/a                              | `postgres:16-alpine` |
+| `api`      | `7a93c040-1220-4afb-a564-f4cf98901948` | `familyhubapp971/family-hub-app` | n/a                  |
+| `frontend` | `f3048c9c-195b-4141-8cca-daf0f213d6a9` | `familyhubapp971/family-hub-app` | n/a                  |
 
 ### Postgres
 
@@ -85,7 +85,7 @@ Persistent volume `postgres-volume-lbGE`
 (ID `0531fd3b-5390-4c40-9a59-36988741cc42`) mounted at
 `/var/lib/postgresql/data` in the staging instance. Production instance
 has no volume and is set to `sleepApplication: true` (deploys CRASHED on
-boot due to missing `POSTGRES_PASSWORD` — intentional, prevents trial
+boot due to missing `POSTGRES_PASSWORD`: intentional, prevents trial
 credit drain until [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202)).
 
 > **2026-04-30 password recovery.** Original volume
@@ -98,12 +98,12 @@ credit drain until [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202)).
 > postgres service, recreate the volume so the postgres image
 > re-initialises with that password, and set `DATABASE_URL` on the api
 > as a literal string (not a cross-service reference) including the new
-> password. The recipe for any future password rotation is the same —
+> password. The recipe for any future password rotation is the same,
 > see "Rotating postgres credentials" below.
 
 ### api
 
-Hono server (Node 20+, ESM). pnpm workspace — depends on
+Hono server (Node 20+, ESM). pnpm workspace, depends on
 `@familyhub/shared` via `workspace:*`. Build/start config lives at the
 service-instance level so per-env overrides are possible later.
 
@@ -119,7 +119,7 @@ bound to `$PORT`. Public domain
 **[`frontend-staging-409d.up.railway.app`](https://frontend-staging-409d.up.railway.app)**
 (domain ID `098cbd7e-9a09-40d2-9004-c37bf6a62518`, target port `8080`).
 
-`vite preview` is acceptable for staging but not ideal long-term — it
+`vite preview` is acceptable for staging but not ideal long-term, it
 runs a full Node process to serve static files. Post-upgrade we can
 switch to a static-file server (Caddy/nginx) or Railway Edge.
 
@@ -129,21 +129,21 @@ switch to a static-file server (Caddy/nginx) or Railway Edge.
 | ---------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `api`      | `corepack enable && pnpm install --frozen-lockfile && pnpm -F @familyhub/api build` | `pnpm -F @familyhub/api start`                                               |
 | `frontend` | `corepack enable && pnpm install --frozen-lockfile && pnpm -F @familyhub/web build` | `pnpm --filter @familyhub/web exec vite preview --host 0.0.0.0 --port $PORT` |
-| `postgres` | — (image)                                                                           | — (image entrypoint)                                                         |
+| `postgres` | n/a (image)                                                                         | n/a (image entrypoint)                                                       |
 
-`rootDirectory` is left at the default (`/` — repo root) on every
+`rootDirectory` is left at the default (`/`: repo root) on every
 instance because rootDirectory: `apps/api`/`apps/web` would break
 pnpm workspace resolution (Railway can't see the workspace packages).
 
 Healthcheck: api uses `/health`
 ([`apps/api/src/routes/health.ts`](../../apps/api/src/routes/health.ts)).
-Frontend has no healthcheck — Railway falls back to TCP-level checks.
+Frontend has no healthcheck, Railway falls back to TCP-level checks.
 
 ### Schema migration on api start
 
 The api `start` script runs `drizzle-kit push --force` _before_
 booting the server. Every deploy reconciles the live Postgres schema
-against `apps/api/src/db/schema.ts` automatically — no separate
+against `apps/api/src/db/schema.ts` automatically, no separate
 "apply migrations" step, no opportunity for code-vs-database drift to
 ship.
 
@@ -158,7 +158,7 @@ Trade-offs we accepted:
 - **`--force` skips destructive-change confirmation prompts.** With
   Sprint 0 schema (one `users` table, no production data), this is
   safe. Pre-launch we move to `drizzle-kit migrate` with explicit
-  migration files generated at PR time and applied at deploy time —
+  migration files generated at PR time and applied at deploy time,
   proper change review, no surprises. Tracked as a follow-up.
 - **drizzle-kit must remain installed in the runtime image.** Today
   Railway's build runs `pnpm install --frozen-lockfile` (no `--prod`),
@@ -189,14 +189,14 @@ Trade-offs we accepted:
 | `DATABASE_URL`              | MCP (Railway-resolved at deploy) | `postgresql://${{postgres.POSTGRES_USER}}:${{postgres.POSTGRES_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{postgres.POSTGRES_DB}}` (see [cross-service references](#cross-service-references)) |
 | `PORT`                      | Railway-injected                 | (assigned by Railway, read by [`apps/api/src/config.ts`](../../apps/api/src/config.ts))                                                                                                                    |
 | `SUPABASE_URL`              | MCP (FHS-189)                    | `https://maolytpqazmykjzdybtj.supabase.co` (staging Supabase project per [ADR 0008](../decisions/0008-supabase-environments.md))                                                                           |
-| `SUPABASE_ANON_KEY`         | MCP (FHS-189)                    | legacy HS256 anon JWT — client-safe role, used for the public-API client                                                                                                                                   |
-| `SUPABASE_SERVICE_ROLE_KEY` | MCP (FHS-189)                    | legacy HS256 admin JWT — server-side only, bypasses RLS; **never** mirror onto the frontend service                                                                                                        |
-| `SUPABASE_PUBLISHABLE_KEY`  | MCP (FHS-189)                    | modern asymmetric `sb_publishable_…` — client-safe, complement to anon key                                                                                                                                 |
-| `SUPABASE_SECRET_KEY`       | MCP (FHS-189)                    | modern asymmetric `sb_secret_…` — server-side only                                                                                                                                                         |
+| `SUPABASE_ANON_KEY`         | MCP (FHS-189)                    | legacy HS256 anon JWT: client-safe role, used for the public-API client                                                                                                                                    |
+| `SUPABASE_SERVICE_ROLE_KEY` | MCP (FHS-189)                    | legacy HS256 admin JWT: server-side only, bypasses RLS; **never** mirror onto the frontend service                                                                                                         |
+| `SUPABASE_PUBLISHABLE_KEY`  | MCP (FHS-189)                    | modern asymmetric `sb_publishable_…`: client-safe, complement to anon key                                                                                                                                  |
+| `SUPABASE_SECRET_KEY`       | MCP (FHS-189)                    | modern asymmetric `sb_secret_…`: server-side only                                                                                                                                                          |
 
 JWT verification is via Supabase's JWKS endpoint at
 `$SUPABASE_URL/auth/v1/.well-known/jwks.json` (ES256), not a shared HMAC
-secret — `SUPABASE_JWT_SECRET` is therefore not used. See FHS-191 for the
+secret, `SUPABASE_JWT_SECRET` is therefore not used. See FHS-191 for the
 JWKS-cached middleware that lands once auth wiring begins.
 
 ### frontend vars
@@ -204,12 +204,12 @@ JWKS-cached middleware that lands once auth wiring begins.
 | Variable                        | Source        | Value                                                                 |
 | ------------------------------- | ------------- | --------------------------------------------------------------------- |
 | `VITE_SUPABASE_URL`             | MCP (FHS-189) | `https://maolytpqazmykjzdybtj.supabase.co` (staging Supabase project) |
-| `VITE_SUPABASE_ANON_KEY`        | MCP (FHS-189) | legacy HS256 anon JWT — baked into the browser bundle, safe by design |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | MCP (FHS-189) | modern asymmetric `sb_publishable_…` — baked into the browser bundle  |
+| `VITE_SUPABASE_ANON_KEY`        | MCP (FHS-189) | legacy HS256 anon JWT: baked into the browser bundle, safe by design  |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | MCP (FHS-189) | modern asymmetric `sb_publishable_…`: baked into the browser bundle   |
 
 The frontend service deliberately gets **only** publishable / anon
 client-safe variants. `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_SECRET_KEY`
-must never be set behind a `VITE_` prefix — Vite inlines `VITE_*` into the
+must never be set behind a `VITE_` prefix, Vite inlines `VITE_*` into the
 client bundle at build time and exposes them to every browser.
 
 ### Production env
@@ -219,7 +219,7 @@ Mirrors the staging layout above with the production Supabase project ref
 `VITE_SUPABASE_URL` and the matching `_PRODUCTION` keys for everything
 else. Variables are pre-set on the paused production services so the env
 is ready when [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202)
-unblocks the Hobby-plan upgrade — no separate provisioning step at
+unblocks the Hobby-plan upgrade, no separate provisioning step at
 unblock time.
 
 ### Cross-service references
@@ -230,12 +230,12 @@ and matches what was passed as `name` on `service_create_*`. Empirically
 verified at the api service in staging via `list_service_variables`,
 where the resolved `DATABASE_URL` showed:
 
-| Token                                  | Resolves to                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `${{postgres.POSTGRES_USER}}`          | `familyhub` ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `${{postgres.POSTGRES_DB}}`            | `familyhub_staging` ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `${{postgres.RAILWAY_PRIVATE_DOMAIN}}` | `postgres.railway.internal` ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `${{postgres.POSTGRES_PASSWORD}}`      | **Empirically did NOT resolve** — `DATABASE_URL` was stored as a literal with an empty password slot, and end-to-end auth requests returned 500 with `SASL: client password must be a string`. The fix (2026-04-30) is to store `DATABASE_URL` on the api as a complete literal string with the password embedded directly, NOT as a cross-service reference. Whether this is a Railway display artefact or a real resolution failure isn't worth chasing further; the literal-string approach works and rotates cleanly. |
+| Token                                  | Resolves to                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `${{postgres.POSTGRES_USER}}`          | `familyhub` ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `${{postgres.POSTGRES_DB}}`            | `familyhub_staging` ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `${{postgres.RAILWAY_PRIVATE_DOMAIN}}` | `postgres.railway.internal` ✓                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `${{postgres.POSTGRES_PASSWORD}}`      | **Empirically did NOT resolve**: `DATABASE_URL` was stored as a literal with an empty password slot, and end-to-end auth requests returned 500 with `SASL: client password must be a string`. The fix (2026-04-30) is to store `DATABASE_URL` on the api as a complete literal string with the password embedded directly, NOT as a cross-service reference. Whether this is a Railway display artefact or a real resolution failure isn't worth chasing further; the literal-string approach works and rotates cleanly. |
 
 ### Rotating postgres credentials
 
@@ -245,11 +245,11 @@ that landed alongside FHS-197):
 
 1. Pick a new password (`python3 -c "import secrets; print(secrets.token_urlsafe(32))"`).
 2. `mcp__railway__variable_set` `POSTGRES_PASSWORD` on the postgres service to the new value.
-3. `mcp__railway__volume_delete` the postgres volume — wipes the on-disk
+3. `mcp__railway__volume_delete` the postgres volume, wipes the on-disk
    user/role with the old password. Acceptable only when staging has
    no irreplaceable data; capture a `pg_dump` first if not.
 4. `mcp__railway__volume_create` a fresh volume mounted at `/var/lib/postgresql/data`.
-5. `mcp__railway__service_restart` the postgres service — image init
+5. `mcp__railway__service_restart` the postgres service, image init
    uses the new `POSTGRES_PASSWORD`.
 6. `mcp__railway__variable_set` `DATABASE_URL` on the api service to a
    literal `postgresql://familyhub:<new-password>@postgres.railway.internal:5432/familyhub_staging`.
@@ -290,7 +290,7 @@ the staging branch.
 
 | Branch                                                   | Environment       | Trigger                                                                                                     | Notes                                                                                                                                                                         |
 | -------------------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `feature/*`, `fix/*`, `documents/*`, `chore/*`, `test/*` | none (no preview) | —                                                                                                           | Verified by CI workflows + local dev. Railway preview environments require a paid plan; we don't use them.                                                                    |
+| `feature/*`, `fix/*`, `documents/*`, `chore/*`, `test/*` | none (no preview) | n/a                                                                                                         | Verified by CI workflows + local dev. Railway preview environments require a paid plan; we don't use them.                                                                    |
 | `staging`                                                | staging           | auto-deploy on push (per-service triggers above)                                                            | All bootstrap work merges here per [ADR 0006](../decisions/0006-branching-strategy.md).                                                                                       |
 | `main`                                                   | production        | auto-deploy on push (planned, configured during [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202)) | `main` is held at its current commit until the W1 vertical slice ([FHS-198](https://qualicion2.atlassian.net/browse/FHS-198)) is verified, then promoted as one tested batch. |
 
@@ -336,14 +336,14 @@ Service / env IDs are listed in the [Services](#services) and
 [Environments](#environments) tables above.
 
 For non-MCP environments, the equivalent shell call hits the GraphQL
-endpoint directly — see [Operational handles](#operational-handles).
+endpoint directly, see [Operational handles](#operational-handles).
 
-### Git-side rollback (worst case — bad code already on `staging`)
+### Git-side rollback (worst case: bad code already on `staging`)
 
 If `staging` itself is poisoned and a future merge would re-break:
 
 1. Identify the bad commit on `staging` (`git log staging`).
-2. Open a PR that **reverts** the bad commit — never `git push --force`,
+2. Open a PR that **reverts** the bad commit, never `git push --force`,
    never `git reset --hard`. Title: `revert: <original commit subject>
 (FHS-XXX)`. CI runs as normal.
 3. Squash-merge to `staging`. Railway auto-deploys the revert.
@@ -357,10 +357,10 @@ the deploy target.
 
 Schema migrations are forward-only. If a migration is broken:
 
-1. Don't reach for a `down` migration — write a **new forward migration**
+1. Don't reach for a `down` migration, write a **new forward migration**
    that undoes the bad change.
 2. If data has been corrupted, restore from Railway's automated Postgres
-   backup (Hobby+ plan — not yet available; documented for FHS-202).
+   backup (Hobby+ plan, not yet available; documented for FHS-202).
 3. Until backups are configured, the recovery path is: re-bootstrap the
    staging Postgres volume from the Drizzle schema at
    [`apps/api/src/db/schema.ts`](../../apps/api/src/db/schema.ts).
@@ -372,7 +372,7 @@ Schema migrations are forward-only. If a migration is broken:
 The Railway trial plan does **not** allow region selection. Setting
 `region` via either the MCP `service_update` or the GraphQL
 `serviceInstanceUpdate` mutation returns success but does **not**
-persist — a silent no-op. All workloads run in `us-east4`.
+persist, a silent no-op. All workloads run in `us-east4`.
 
 The user-facing edge (TLS termination + static asset cache) is auto-
 selected by Railway based on visitor geography. UAE traffic terminates
@@ -386,11 +386,11 @@ unlocks `europe-west4` for closer Middle East peering.
 
 - Idle frontend service: ~free (no traffic ⇒ minimal compute)
 - Postgres staging: low constant cost (small image, single replica)
-- Postgres production: $0 — never wakes (CRASHED + sleep)
+- Postgres production: $0, never wakes (CRASHED + sleep)
 - api staging: ~free until [FHS-201](https://qualicion2.atlassian.net/browse/FHS-201) lands and it actually runs
 
 The $5 trial cap is the upper bound until upgrade. Burn rate so far
-(2026-04-26 provisioning session): negligible — most credit was
+(2026-04-26 provisioning session): negligible, most credit was
 consumed by image pulls and the Postgres staging instance running.
 
 ## Logs & monitoring
@@ -400,24 +400,24 @@ consumed by image pulls and the Postgres staging instance running.
 - **Historical logs (scripted):** `mcp__railway__deployment_logs --deploymentId <id>`.
 - **api healthcheck:** `GET https://api-staging-5500.up.railway.app/health`
   returns `{ "status": "ok" }`. Use as an uptime probe target.
-- **frontend healthcheck:** none beyond TCP — fetch the root URL
+- **frontend healthcheck:** none beyond TCP, fetch the root URL
   ([frontend-staging-409d.up.railway.app](https://frontend-staging-409d.up.railway.app))
   and assert HTTP 200 with the expected document title.
 - **Sentry / structured logging:** wired in [FHS-166](https://qualicion2.atlassian.net/browse/FHS-166)
-  and [FHS-167](https://qualicion2.atlassian.net/browse/FHS-167) — until
+  and [FHS-167](https://qualicion2.atlassian.net/browse/FHS-167): until
   those land, Railway's deployment-log view is the only signal.
 - **Uptime alerts (FHS-167):** Better Stack / UptimeRobot pings every
   60s on:
 
   - `https://api-staging-5500.up.railway.app/health` (staging)
-  - `https://<api-prod-domain>/health` (production — wires once FHS-202 lands)
+  - `https://<api-prod-domain>/health` (production, wires once FHS-202 lands)
 
   Alert channels: Slack `#family-hub-alerts` + email `oduniyi@gmail.com`.
   Two consecutive failures (~120s) → page; recovery on next OK.
   Configure via the SaaS dashboard; no code or env var needed. Track
   the configured monitor URLs here when set up.
 
-## W1 vertical slice — staging verification (FHS-198)
+## W1 vertical slice: staging verification (FHS-198)
 
 The Sprint 0 vertical slice (Supabase login → mirror sync → protected
 `GET /api/me` → frontend `/me` greeting) is live on staging. Public URLs:
@@ -462,7 +462,7 @@ diagnose with [`mcp__railway__deployment_logs`](#logs--monitoring).
 
 ## Runbook: add a new service to staging
 
-The MCP doesn't expose a single "create + connect + deploy" call —
+The MCP doesn't expose a single "create + connect + deploy" call,
 service setup is a 5-step workflow. Capturing it here so it's not
 re-derived each time.
 
@@ -471,8 +471,8 @@ re-derived each time.
    - Image-based: `mcp__railway__service_create_from_image({ projectId, image: "<image>:<tag>", name: "<svc-name>" })`
    - Capture the returned `serviceId`.
 2. **Configure the staging instance** via `mcp__railway__service_update`:
-   - Always: `region` (no-op on trial — see [Region constraints](#region-constraints)), `buildCommand`, `startCommand`, `healthcheckPath` if applicable.
-   - **Don't** set `rootDirectory` to `apps/<svc>` — it breaks pnpm workspace resolution. Leave at the default `/`.
+   - Always: `region` (no-op on trial, see [Region constraints](#region-constraints)), `buildCommand`, `startCommand`, `healthcheckPath` if applicable.
+   - **Don't** set `rootDirectory` to `apps/<svc>`: it breaks pnpm workspace resolution. Leave at the default `/`.
 3. **Wire branch-based deploys** via direct GraphQL (the MCP doesn't expose `deploymentTriggerCreate`):
 
    ```graphql
@@ -493,7 +493,7 @@ re-derived each time.
    }
    ```
 
-4. **Set env vars** via `mcp__railway__variable_bulk_set` — secrets must
+4. **Set env vars** via `mcp__railway__variable_bulk_set`: secrets must
    not be inlined in the MCP call (transcript exposure); set those via
    the Railway dashboard "Generate" affordance or, if necessary, via
    `mcp__railway__variable_set` accepting the transcript trade-off.
@@ -512,8 +512,8 @@ to neutralize the production instance before it racks up runtime.
 
 ## References
 
-- [FHS-156](https://qualicion2.atlassian.net/browse/FHS-156) — Create Railway project (this work)
-- [FHS-201](https://qualicion2.atlassian.net/browse/FHS-201) — Fix api production build (blocks staging api deploy)
-- [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202) — Configure Railway production post-upgrade
-- [FHS-155](https://qualicion2.atlassian.net/browse/FHS-155) — Railway Infrastructure & DNS (parent epic)
-- [ADR 0006](../decisions/0006-branching-strategy.md) — branching strategy
+- [FHS-156](https://qualicion2.atlassian.net/browse/FHS-156): Create Railway project (this work)
+- [FHS-201](https://qualicion2.atlassian.net/browse/FHS-201): Fix api production build (blocks staging api deploy)
+- [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202): Configure Railway production post-upgrade
+- [FHS-155](https://qualicion2.atlassian.net/browse/FHS-155): Railway Infrastructure & DNS (parent epic)
+- [ADR 0006](../decisions/0006-branching-strategy.md): branching strategy

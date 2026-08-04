@@ -1,4 +1,4 @@
-# 0003 — Auth library: Supabase Auth
+# 0003: Auth library: Supabase Auth
 
 **Status:** accepted
 **Date:** 2026-04-24
@@ -54,20 +54,20 @@ Specifics:
 - Some Supabase-specific quirks leak into the codebase (JWT
   audience claim, RLS policy syntax that uses `auth.uid()` in
   Supabase docs but plain `current_setting('app.tenant_id')` in
-  ours — see ADR 0001).
+  ours, see ADR 0001).
 - We pay per Monthly Active User above the free tier; cost grows
   with users, not infra.
 
 ## Alternatives considered
 
-- **better-auth** — rejected: we'd still build email-provider
+- **better-auth**, rejected: we'd still build email-provider
   integration, OAuth-app management, and template versioning ourselves.
   Re-evaluate if Supabase pricing becomes prohibitive at >50k MAU.
-- **Auth.js / NextAuth** — rejected: coupled to Next.js; we're on
+- **Auth.js / NextAuth**, rejected: coupled to Next.js; we're on
   Hono + React + Vite.
-- **Custom JWT + Postgres** — rejected (explicit non-goal): months
+- **Custom JWT + Postgres**, rejected (explicit non-goal): months
   of work for zero customer-facing value.
-- **Auth0 / Clerk** — rejected: more expensive at our scale and
+- **Auth0 / Clerk**, rejected: more expensive at our scale and
   doesn't bundle Postgres + Storage like Supabase.
 
 ## Re-evaluate when
@@ -81,6 +81,6 @@ Specifics:
 
 ## References
 
-- [ADR 0001 — Multi-tenancy strategy](0001-multi-tenancy.md)
-- [FHS-178 — Supabase Auth Integration epic](https://qualicion2.atlassian.net/browse/FHS-178)
-- [FHS-200 — Production environments + batch promotion](https://qualicion2.atlassian.net/browse/FHS-200)
+- [ADR 0001: Multi-tenancy strategy](0001-multi-tenancy.md)
+- [FHS-178: Supabase Auth Integration epic](https://qualicion2.atlassian.net/browse/FHS-178)
+- [FHS-200: Production environments + batch promotion](https://qualicion2.atlassian.net/browse/FHS-200)

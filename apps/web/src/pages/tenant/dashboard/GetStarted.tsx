@@ -6,12 +6,12 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 
-// FHS-511 — first-run "Getting started" guide on the parent dashboard.
+// FHS-511: first-run "Getting started" guide on the parent dashboard.
 //
 // Walks a brand-new family through the first four setup steps, celebrates when
 // all four are ticked, then clears itself. Returning families (who dismissed it
-// or finished it) never see it again. Completion is tap-driven — tapping a
-// step's CTA marks it done and takes you to that area — and persisted per
+// or finished it) never see it again. Completion is tap-driven: tapping a
+// step's CTA marks it done and takes you to that area: and persisted per
 // tenant in localStorage so it survives reloads.
 
 interface GetStartedStep {
@@ -84,7 +84,7 @@ function writeState(slug: string, state: StoredState): void {
   try {
     window.localStorage.setItem(storageKey(slug), JSON.stringify(state));
   } catch {
-    /* private mode / storage full — the guide just won't persist */
+    /* private mode / storage full: the guide just won't persist */
   }
 }
 
@@ -122,7 +122,7 @@ export function GetStarted() {
         setCallerIsAdmin(caller ? caller.role === 'admin' : false);
       })
       .catch(() => {
-        /* aborted or failed load — the card stays hidden (callerIsAdmin null) */
+        /* aborted or failed load: the card stays hidden (callerIsAdmin null) */
       });
     return () => ac.abort();
   }, [session, slug, state.dismissed]);
@@ -167,13 +167,13 @@ export function GetStarted() {
   }, [state, slug]);
 
   if (state.dismissed) return null;
-  // Hidden while the role is still loading, and for non-admins — the setup
+  // Hidden while the role is still loading, and for non-admins: the setup
   // steps all land on admin-only screens (FHS-511 QA).
   if (callerIsAdmin !== true) return null;
 
   const allDone = doneCount >= TOTAL;
 
-  // ── Celebrate card — every step ticked ──────────────────────────────────
+  // ── Celebrate card: every step ticked ──────────────────────────────────
   if (allDone) {
     return (
       <div
@@ -295,7 +295,7 @@ export function GetStarted() {
                   <span className="mt-0.5 block text-xs font-bold text-gray-500">{s.blurb}</span>
                 )}
               </span>
-              {/* Only the NEXT step is actionable — earlier steps show Done,
+              {/* Only the NEXT step is actionable: earlier steps show Done,
                   later ones sit as a quiet "Up next" so you can't skip ahead
                   and complete an empty family out of order (FHS-511 QA). */}
               {isDone ? (

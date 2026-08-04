@@ -1,23 +1,23 @@
 # Feature: Family members
 
 **Jira:** [FHS-1](https://qualicion2.atlassian.net/browse/FHS-1) (schema) · [FHS-513](https://qualicion2.atlassian.net/browse/FHS-513)/[FHS-485](https://qualicion2.atlassian.net/browse/FHS-485)/[FHS-486](https://qualicion2.atlassian.net/browse/FHS-486)/[FHS-514](https://qualicion2.atlassian.net/browse/FHS-514)/[FHS-520](https://qualicion2.atlassian.net/browse/FHS-520)/[FHS-521](https://qualicion2.atlassian.net/browse/FHS-521) (Manage Family redesign) · [FHS-519](https://qualicion2.atlassian.net/browse/FHS-519) (Manage Family follow-up cleanups)
-**Status:** shipped — member data model + the Manage Family page
+**Status:** shipped, member data model + the Manage Family page
 **Owner:** product-manager
 **ADR:** [0015](../decisions/0015-role-model-owner-flag.md), [0019](../decisions/0019-role-privilege-matrix.md)
 
 > **Note (roles):** the real member role enum is `admin | adult | teen |
 child | guest` (ADR 0015/0019). Earlier drafts of this doc referenced a
-> `guardian`/`grandparent` role that was never built — a grandparent or
+> `guardian`/`grandparent` role that was never built, a grandparent or
 > nanny is added today as `adult` (helps day-to-day) or `guest` (read-only).
 >
 > **Note (Part 1 vs Part 2):** Part 1 below is the **original pre-Sprint-1
-> design brief** — it captured the family shapes the schema needed to
+> design brief**, it captured the family shapes the schema needed to
 > support (twins, blended families, multi-generational households) before
 > any table existed. Some of its ideas were never built as literal columns:
 > there is no `birth_rank` or `multiple_birth_group_id` field, and the role
 > names shipped as `admin | adult | teen | child | guest`, not
 > `parent | child | guardian | other`. **Part 2** describes what actually
-> shipped — the real `/t/:slug/members` "Manage Family" page — and is the
+> shipped (the real `/t/:slug/members` "Manage Family" page) and is the
 > one to read for current behaviour.
 
 The model for "who is in this family". Captures parents, children, and
@@ -35,7 +35,7 @@ the data model has to support. The implementation lives under FHS-1
 ### Story 1: Add a family member
 
 **As a** parent (signed-in account holder)
-**I want to** add a person to my family — child, partner, parent,
+**I want to** add a person to my family, child, partner, parent,
 guardian, or helper
 **so that** the rest of the app (tasks, calendar, milestones) can
 reference them.
@@ -95,7 +95,7 @@ individual without the system collapsing them into one row.
 
 **Scenario: Parent groups a set of multiples**
 
-- **Given** I have added triplets — Sara, Mira, Lina (all born 2021-05-04)
+- **Given** I have added triplets, Sara, Mira, Lina (all born 2021-05-04)
 - **When** I mark them as a multiple-birth set
 - **Then** they share a `multiple_birth_group_id`
 - **And** the family timeline can render their first-birthday as a single
@@ -110,7 +110,7 @@ individual without the system collapsing them into one row.
 - **Then** the system accepts the addition without error
 - **And** the UI disambiguates them by `display_name` (e.g. "Mohammed
   (Sr)" / "Mohammed (Jr)") or by a parent-supplied nickname
-- **And** task assignments to "Mohammed" surface a picker — never a silent
+- **And** task assignments to "Mohammed" surface a picker, never a silent
   guess
 
 ### Story 3: Blended and multi-generational families
@@ -148,7 +148,7 @@ fictional parentage.
 - **And** they are also a member of their other parent's family
 - **When** I add them to my family with role "child"
 - **Then** the same `auth.users` row references two `family_members`
-  rows (one per family) — Sprint 2 multi-family support
+  rows (one per family), Sprint 2 multi-family support
 - **And** in _my_ family, they show up under my roster
 - **And** in their other parent's family, they show up there too
 
@@ -171,11 +171,11 @@ through the transition.
 - **And** every historical task, milestone, photo previously assigned to
   me remains attached to the same id (no dangling references)
 
-## Part 2 — the Manage Family page (shipped)
+## Part 2: the Manage Family page (shipped)
 
 `/t/:slug/members` is where an admin sees the whole household, split into two
-collapsible groups — **Grown-ups** (sign in with email) and **Kids** (sign in
-with a PIN) — invites new grown-ups, adds new kids, and manages each person's
+collapsible groups, **Grown-ups** (sign in with email) and **Kids** (sign in
+with a PIN), invites new grown-ups, adds new kids, and manages each person's
 name, PIN, admin rights, or removal.
 
 ### Story 5: See the household at a glance
@@ -209,20 +209,20 @@ that** I can walk them through it.
 **Scenario: "How your kids sign in" card explains how to reach the login (FHS-530)**
 
 - **Given** I open Manage Family and expand the "How your kids sign in" card
-- **Then** step 1 ("Open their login page") shows two ways to open the login —
+- **Then** step 1 ("Open their login page") shows two ways to open the login,
   the kid-login page link with a copy button, **or** the family code (the family slug)
 - **And** step 2 is "They tap their face and enter their PIN"
 
 ### Story 7: Invite an adult or add a child
 
-**As an** admin **I want** two purpose-built forms — one for grown-ups, one
+**As an** admin **I want** two purpose-built forms, one for grown-ups, one
 for kids **so that** the right fields show for each kind of person.
 
 **Scenario: Invite an adult sends an email sign-in link**
 
 - **Given** I am an admin opening "Invite an adult"
 - **When** I enter a name + email and pick a role (Parent/partner, Adult, Guest)
-- **Then** only an admin can see/select "Parent / partner" (admin) — see
+- **Then** only an admin can see/select "Parent / partner" (admin), see
   [role-permissions.md](role-permissions.md) for the server-side safeguard
 - **And** on submit they appear under "Waiting to join" until they accept
 
@@ -276,22 +276,22 @@ or remove someone **so that** the roster stays accurate.
 
 - **Given** I open the profile menu from any dashboard page
 - **Then** I see each child with a "View World →" link into their world
-- **And** "Manage family" and "Reward settings" (edits admin-only server-side —
+- **And** "Manage family" and "Reward settings" (edits admin-only server-side,
   see [reward-economy.md](reward-economy.md)), with "Log out" at the bottom
 
 ## Out of scope
 
-- **A grown-up changing their sign-in email** (FHS-510) — shipped as a
+- **A grown-up changing their sign-in email** (FHS-510), shipped as a
   self-serve flow on their own card only; see
   [change-email.md](change-email.md) for the full behaviour.
-- **Schema implementation** — lives under FHS-1 (Tenant Foundation
+- **Schema implementation**: lives under FHS-1 (Tenant Foundation
   epic) when Sprint 1 starts. This doc only constrains what the schema
   must support.
-- **Per-role permissions** — task visibility, calendar editing rights,
-  who can invite a new member — Sprint 2.
-- **Custody / legal flags** — court-ordered visitation calendars,
+- **Per-role permissions**: task visibility, calendar editing rights,
+  who can invite a new member, Sprint 2.
+- **Custody / legal flags**: court-ordered visitation calendars,
   restricted-access flags. Backlog; needs legal review before design.
-- **Pets** — out of scope for the foundation. Could be added as a `role`
+- **Pets**: out of scope for the foundation. Could be added as a `role`
   later if user research surfaces strong demand.
 
 ## Open questions
@@ -303,14 +303,14 @@ or remove someone **so that** the roster stays accurate.
   African) assign meaningful seniority to birth order; others don't.
   Default UI: hide `birth_rank` unless the family explicitly enables
   it. Confirm during user research.
-- **Display-name vs legal-name.** Probably split — legal_name for
+- **Display-name vs legal-name.** Probably split, legal_name for
   records (school, healthcare integrations later), display_name for
   the app UI. Validate with a few real families before locking the
   field shape.
 - **Identity continuity across families.** A step-child who exists in
   two families: does the app surface that to the parent (e.g. "this
   child also has a calendar in their other parent's family")? Privacy
-  question — answer in Sprint 2 alongside multi-family work.
+  question, answer in Sprint 2 alongside multi-family work.
 
 ## Success metrics
 
@@ -322,30 +322,30 @@ or remove someone **so that** the roster stays accurate.
 - **Twin/triplet error rate:** zero "duplicate child" errors reported
   by twin/triplet families in their first 30 days.
 - **Blended-family adoption:** at least 10 % of paying customers in
-  Year 1 self-identify as blended/multi-generational households —
+  Year 1 self-identify as blended/multi-generational households,
   proves the model isn't just nuclear-family-coded.
 
 ## Implementation notes for Sprint 1 schema design
 
 These are non-binding hints to the dev who designs the actual tables:
 
-- **One table for everyone.** A single `family_members` table — rows
-  for parents, children, guardians, others — keyed on a UUID, with a
+- **One table for everyone.** A single `family_members` table, rows
+  for parents, children, guardians, others, keyed on a UUID, with a
   `role` enum and an optional `auth_user_id` foreign key. Avoid a
   separate `children` table; that path makes joins worse and forces
   awkward migrations when a child grows up and gets a login.
 
 - **No accidentally-unique constraints.** Specifically:
 
-  - `(family_id, first_name)` should NOT be unique — twins, blended families.
-  - `(family_id, date_of_birth)` should NOT be unique — twins, triplets.
-  - `(family_id, last_name)` should NOT be unique — single-parent + biological-father separate surnames.
+  - `(family_id, first_name)` should NOT be unique, twins, blended families.
+  - `(family_id, date_of_birth)` should NOT be unique, twins, triplets.
+  - `(family_id, last_name)` should NOT be unique, single-parent + biological-father separate surnames.
 
 - **Optional disambiguators.** Add nullable `birth_rank: int` and
   `multiple_birth_group_id: uuid` for the twins/triplets cases. Both
   default to NULL so they don't clutter single-child families.
 
-- **Per-tenant RLS.** Inherits from ADR 0001 — every row carries
+- **Per-tenant RLS.** Inherits from ADR 0001, every row carries
   `tenant_id` (a.k.a. `family_id`); RLS policies prevent cross-family
   reads. The user-mirror `users` table stays global (a single auth
   identity belongs to multiple families).

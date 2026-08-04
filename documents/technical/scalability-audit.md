@@ -1,4 +1,4 @@
-# Scalability audit — will Family Hub hold up as it grows?
+# Scalability audit: will Family Hub hold up as it grows?
 
 **Date:** 2026-07-09 · **Jira:** FHS-459 (epic) · **Method:** three parallel
 specialist audits (app code, database, load-test readiness).
@@ -87,7 +87,7 @@ Each: what it is in plain words, then the technical detail, then the fix + ticke
   ```
   `habit_stickers` is the fastest-growing table (one row per kid per habit per
   day) and its existing indexes lead with `member_id`, which the dashboard's
-  per-week query never filters on — so the index can't be used past the
+  per-week query never filters on, so the index can't be used past the
   `tenant_id` prefix. RLS leading-column convention (`tenant_id` first) holds
   everywhere else. Candidate to review/drop: `tasks_tenant_member_done_idx`
   (no query filters/sorts by `done_at`).
@@ -101,7 +101,7 @@ Each: what it is in plain words, then the technical detail, then the fix + ticke
   active family).
 - **Technical:** `taskRows` (no `LIMIT`, no `member`/`done` filter), `txRows`
   (all savings transactions, summed in JS), and the My World `listInvestments`
-  N+1 (`Promise.all` of 2 `count()` per investment — serial on the one
+  N+1 (`Promise.all` of 2 `count()` per investment, serial on the one
   connection anyway). All in [dashboard.ts](../../apps/api/src/routes/dashboard.ts)
   / [lib/myworld.ts](../../apps/api/src/lib/myworld.ts).
 - **Fix:** `LIMIT` every list/feed; push sums into SQL `GROUP BY`; one grouped
@@ -132,7 +132,7 @@ Each: what it is in plain words, then the technical detail, then the fix + ticke
 - Managed Postgres typically allows ~100 connections total → **~8–9 instances
   is the ceiling** at today's pool size, with no headroom for migrations/cron.
 - "1,000 concurrent in-flight requests" would need ~1,000 held connections at
-  the current one-per-request design — far past any direct-Postgres budget.
+  the current one-per-request design, far past any direct-Postgres budget.
 - **Answer:** a transaction-mode pooler (PgBouncer / Supavisor) lets 1,000
   concurrent requests multiplex through ~20–50 real Postgres connections. Needed
   before scaling past a handful of instances. Also: run `SHOW max_connections;`
@@ -140,24 +140,24 @@ Each: what it is in plain words, then the technical detail, then the fix + ticke
 
 ## What we're doing about testing
 
-The old performance tests only pinged `/health` and `/hello` — no login, no
-database, no family data — so they proved nothing about real scale. The new
+The old performance tests only pinged `/health` and `/hello`: no login, no
+database, no family data, so they proved nothing about real scale. The new
 suite (FHS-460, see [tests/performance/README.md](../../tests/performance/README.md))
 drives **real logged-in parent + kid sessions** through the actual hot screens
 (dashboard, kid dashboard, My World, learn), so a load run measures what a real
 morning rush would feel like. Caveat baked into the docs: the API rate-limits
 100 requests/min per IP, so a real load run needs that raised for the test
-window (or distributed load) — otherwise it just measures rejections.
+window (or distributed load), otherwise it just measures rejections.
 
 ## Prioritized plan
 
 **Before ~1,000 families** (the ones that break first):
 
-1. Fix the connection model + add a pooler (FHS-462) — load-bearing.
-2. Slim the dashboard to ~3–5 queries (FHS-463) — also the fastest single win.
-3. Move rate-limit + kid-PIN lockout to Redis (FHS-464) — unblocks scale-out.
+1. Fix the connection model + add a pooler (FHS-462), load-bearing.
+2. Slim the dashboard to ~3–5 queries (FHS-463), also the fastest single win.
+3. Move rate-limit + kid-PIN lockout to Redis (FHS-464), unblocks scale-out.
 4. Cache the per-request lookups + stop the `users` write (FHS-465).
-5. Add the missing indexes (FHS-461) — cheap, do it early.
+5. Add the missing indexes (FHS-461), cheap, do it early.
 
 **Before ~10,000 families:** 6. `LIMIT` the unbounded lists + fold the N+1 counts (FHS-466). 7. Confirm the pooler ceiling under load; set replica count × pool size against
 the real `max_connections`. 8. Close the `mw_transaction_stickers` RLS gap (FHS-467).

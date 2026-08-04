@@ -35,7 +35,7 @@ describe('friendlyAuthErrorMessage', () => {
     expect(friendlyAuthErrorMessage(undefined)).toMatch(/something went wrong/i);
   });
 
-  it("FHS-279 — unknown email on login maps 'Signups not allowed' to plain copy", () => {
+  it("FHS-279: unknown email on login maps 'Signups not allowed' to plain copy", () => {
     expect(friendlyAuthErrorMessage('Signups not allowed for otp')).toBe(
       'No account found for this email - create an account first, then log in.',
     );

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-// FHS-371 — ArtDrawingCanvas: renders canvas + colour swatches, swatch selection,
+// FHS-371: ArtDrawingCanvas: renders canvas + colour swatches, swatch selection,
 // Clear button, and Save triggering toDataURL + anchor download.
 
 // jsdom provides no real 2d canvas context. Stub getContext so the component

@@ -123,7 +123,7 @@ export function KidFinishedWeekRecap({
           </div>
         </div>
 
-        {/* Where My Stars Went — always rendered so the allocation testid is
+        {/* Where My Stars Went: always rendered so the allocation testid is
             always present; content varies by state. */}
         <div data-testid="kid-recap-stars-allocation" className="space-y-2">
           <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">

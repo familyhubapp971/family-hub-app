@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "//": "Source-only workspace package — exports raw .ts. Consumers transpile via Vite/Vitest. Do NOT npm publish; build dist/ + dual import/types exports when an external consumer needs it.",
+  "//": "Source-only workspace package: exports raw .ts. Consumers transpile via Vite/Vitest. Do NOT npm publish; build dist/ + dual import/types exports when an external consumer needs it.",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {

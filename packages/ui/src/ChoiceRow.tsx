@@ -10,7 +10,7 @@ export interface ChoiceRowProps {
 }
 
 /**
- * One row in a single-choice list — e.g. the "Pocket money" screen's
+ * One row in a single-choice list, e.g. the "Pocket money" screen's
  * (FHS-512) "What happens on a day they skip it?" Nothing / They-lose-
  * some-money choice. Generic enough for any radio-style choice list.
  */

@@ -4,20 +4,20 @@ import { API_BASE } from '../../../lib/api';
 import { MathsAILesson } from './learn/maths/MathsAILesson';
 import { useBodyScrollLock } from '@familyhub/ui';
 
-// FHS-283 — interactive Learn lesson. Difficulty pills + a question/answer area
+// FHS-283: interactive Learn lesson. Difficulty pills + a question/answer area
 // + a streak/best/score stats bar with progress toward a certificate. Grading
 // and all stats are server-authoritative (POST /api/learn/:subject/answer).
 //
-// FHS-371 — Logic sub-topic picker: when subject === 'Logic', a row of 4 sub-
+// FHS-371: Logic sub-topic picker: when subject === 'Logic', a row of 4 sub-
 // topic pills appears above the difficulty pills; selecting one refetches
 // questions filtered by that sub-topic.
 //
-// FHS-389 — Maths in kid mode: probe the AI endpoint once on mount. When
+// FHS-389: Maths in kid mode: probe the AI endpoint once on mount. When
 // { enabled: true }, surface a toggleable AI Lesson panel above the static
 // question bank. When { enabled: false } (flag is off), the static bank is
-// the full experience — no broken AI button visible.
+// the full experience: no broken AI button visible.
 //
-// FHS-397 — Design parity: certificate modal, wrong-answer reveal, streak
+// FHS-397: Design parity: certificate modal, wrong-answer reveal, streak
 // celebration overlay, animate-shake on wrong choice, gradient progress bar.
 
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -37,10 +37,10 @@ const LOGIC_SUBTOPICS = [
 ] as const;
 type LogicSubtopic = (typeof LOGIC_SUBTOPICS)[number]['slug'];
 
-// FHS-397 — wrong-answer encouragement phrases (ported from MathsLesson).
+// FHS-397: wrong-answer encouragement phrases (ported from MathsLesson).
 const ENCOURAGEMENT = ['Try again!', 'Almost!', 'Keep going!', 'You can do it!', 'Don’t give up!'];
 
-// FHS-397 — streak milestone messages. Subject-neutral (no "Maths" leaking to Science).
+// FHS-397: streak milestone messages. Subject-neutral (no "Maths" leaking to Science).
 const STREAK_MESSAGES: Record<number, string> = {
   3: 'On fire! 🔥',
   5: 'Super Star! ⭐',
@@ -50,7 +50,7 @@ const STREAK_MESSAGES: Record<number, string> = {
 };
 const STREAK_MILESTONES = [3, 5, 10, 15, 20] as const;
 
-// FHS-397 — confetti pieces for the certificate modal.
+// FHS-397: confetti pieces for the certificate modal.
 const CONFETTI_EMOJIS = ['🌟', '🎉', '🎊', '✨', '🏆', '🥇', '💫', '🌈'];
 
 function pickRandom<T>(arr: T[]): T {
@@ -93,7 +93,7 @@ function CertificateModal({ subject, onDismiss }: { subject: string; onDismiss: 
     dismissRef.current = onDismiss;
   }, [onDismiss]);
 
-  // Timer runs exactly once on mount — stable [] deps, no timer-reset on parent re-render.
+  // Timer runs exactly once on mount: stable [] deps, no timer-reset on parent re-render.
   useEffect(() => {
     const t = setTimeout(() => dismissRef.current(), 6000);
     return () => clearTimeout(t);
@@ -113,7 +113,7 @@ function CertificateModal({ subject, onDismiss }: { subject: string; onDismiss: 
 
   return (
     <>
-      {/* Inline keyframes — Tailwind can't express these without a plugin */}
+      {/* Inline keyframes: Tailwind can't express these without a plugin */}
       <style>{`
         @keyframes certPop {
           0% { transform: scale(0) rotate(-8deg); opacity: 0; }
@@ -153,7 +153,7 @@ function CertificateModal({ subject, onDismiss }: { subject: string; onDismiss: 
         aria-label={`${subject} certificate of achievement`}
         className="fixed inset-0 z-50 flex items-center justify-center"
       >
-        {/* Dismiss backdrop (native button — a11y compliant) */}
+        {/* Dismiss backdrop (native button: a11y compliant) */}
         <button
           type="button"
           aria-label="Close certificate"
@@ -175,7 +175,7 @@ function CertificateModal({ subject, onDismiss }: { subject: string; onDismiss: 
           ))}
         </div>
 
-        {/* Certificate card — sits above the backdrop button via z-index */}
+        {/* Certificate card: sits above the backdrop button via z-index */}
         <div className="cert-pop relative z-10 mx-4 w-full max-w-md overflow-hidden rounded-2xl border-2 border-black bg-gradient-to-br from-yellow-50 via-white to-amber-50 shadow-neo-lg">
           {/* Gold header band */}
           <div className="cert-shine border-b-2 border-black bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-6 py-4 text-center">
@@ -213,7 +213,7 @@ function CertificateModal({ subject, onDismiss }: { subject: string; onDismiss: 
               ))}
             </div>
 
-            {/* Dismiss — receives focus on modal open */}
+            {/* Dismiss: receives focus on modal open */}
             <button
               ref={dismissBtnRef}
               data-testid="lesson-cert-dismiss"
@@ -266,7 +266,7 @@ export function LessonView({
   const isMaths = subject === 'Maths';
   const isLogic = subject === 'Logic';
 
-  // FHS-389 — AI Maths lesson availability (kid + Maths only).
+  // FHS-389: AI Maths lesson availability (kid + Maths only).
   // 'unknown' = not probed yet; 'enabled' = show AI panel toggle;
   // 'disabled' = flag is off, skip AI UI entirely (static bank only).
   const [aiStatus, setAiStatus] = useState<'unknown' | 'enabled' | 'disabled'>('unknown');
@@ -275,7 +275,7 @@ export function LessonView({
   useEffect(() => {
     if (!kid || !isMaths || !kidToken || aiStatus !== 'unknown') return;
     let cancelled = false;
-    // Cheap GET probe — returns just { enabled } with NO Anthropic call, so
+    // Cheap GET probe: returns just { enabled } with NO Anthropic call, so
     // checking availability never burns a paid lesson generation.
     fetch(`${API_BASE}/api/kid/learn/maths/ai-lesson/status`, {
       headers: { Authorization: `Bearer ${kidToken}` },
@@ -302,16 +302,16 @@ export function LessonView({
   const [result, setResult] = useState<AnswerResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pickError, setPickError] = useState(false);
-  // FHS-397 — shake the wrong-choice button briefly after a wrong answer.
+  // FHS-397: shake the wrong-choice button briefly after a wrong answer.
   const [shakingIndex, setShakingIndex] = useState<number | null>(null);
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // FHS-397 — random encouragement for the current wrong-answer feedback card.
+  // FHS-397: random encouragement for the current wrong-answer feedback card.
   const [currentEncouragement, setCurrentEncouragement] = useState(() => pickRandom(ENCOURAGEMENT));
-  // FHS-397 — certificate modal: fires only on the not-certified→certified transition.
+  // FHS-397: certificate modal: fires only on the not-certified→certified transition.
   // Seeded to true on first stats load if already certified (pre-existing cert = no modal).
   const certShown = useRef(false);
   const [showCertModal, setShowCertModal] = useState(false);
-  // FHS-397 — streak overlay: track which milestones have already been celebrated.
+  // FHS-397: streak overlay: track which milestones have already been celebrated.
   // Seeded from initial stats so re-entering a lesson at streak 10 doesn't re-celebrate.
   const celebratedStreaks = useRef<Set<number>>(new Set());
   // true once the first stats response has been processed (used for seeding guards).
@@ -351,7 +351,7 @@ export function LessonView({
         setQuestions(body.questions ?? []);
         setStats(body.stats);
         setStatus('ready');
-        // FHS-397 — seed guards from the first stats load so we only celebrate
+        // FHS-397: seed guards from the first stats load so we only celebrate
         // in-session transitions, not values that were already true on arrival.
         if (!firstStatsSeeded.current) {
           firstStatsSeeded.current = true;
@@ -373,7 +373,7 @@ export function LessonView({
 
   useEffect(() => load(), [load]);
 
-  // FHS-397 — fire certificate modal only on the not-certified → certified transition.
+  // FHS-397: fire certificate modal only on the not-certified → certified transition.
   useEffect(() => {
     if (stats?.certificate && !certShown.current) {
       certShown.current = true;
@@ -381,7 +381,7 @@ export function LessonView({
     }
   }, [stats?.certificate]);
 
-  // FHS-397 — fire streak overlay only at in-session milestone crossings.
+  // FHS-397: fire streak overlay only at in-session milestone crossings.
   useEffect(() => {
     if (!stats) return;
     const streak = stats.streak;
@@ -418,12 +418,12 @@ export function LessonView({
             : { memberId, questionId: current.id, choiceIndex },
         ),
       });
-      if (roundId.current !== myRound) return; // difficulty/round changed — drop it
+      if (roundId.current !== myRound) return; // difficulty/round changed: drop it
       if (res.ok) {
         const body = (await res.json()) as AnswerResponse;
         setResult(body);
         setStats(body.stats);
-        // FHS-397 — shake the wrong button and pick a fresh encouragement phrase.
+        // FHS-397: shake the wrong button and pick a fresh encouragement phrase.
         if (!body.correct) {
           setShakingIndex(choiceIndex);
           setCurrentEncouragement(pickRandom(ENCOURAGEMENT));
@@ -461,12 +461,12 @@ export function LessonView({
 
   return (
     <div className="flex flex-col gap-4" data-testid="lesson-view">
-      {/* FHS-397 — certificate modal (full-screen, fires once on earn) */}
+      {/* FHS-397: certificate modal (full-screen, fires once on earn) */}
       {showCertModal && (
         <CertificateModal subject={subject} onDismiss={() => setShowCertModal(false)} />
       )}
 
-      {/* FHS-397 — streak celebration overlay */}
+      {/* FHS-397: streak celebration overlay */}
       {streakMessage && <StreakOverlay message={streakMessage} />}
 
       {/* Inline keyframes for animate-shake (FHS-397) */}
@@ -479,7 +479,7 @@ export function LessonView({
         .animate-shake { animation: shake 0.4s ease-in-out; }
       `}</style>
 
-      {/* FHS-389 — AI Maths lesson toggle (kid + Maths + flag ON only) */}
+      {/* FHS-389: AI Maths lesson toggle (kid + Maths + flag ON only) */}
       {kid && isMaths && aiStatus === 'enabled' && (
         <div data-testid="ai-lesson-section">
           <button
@@ -504,7 +504,7 @@ export function LessonView({
         </div>
       )}
 
-      {/* Logic sub-topic picker — only shown for the Logic subject */}
+      {/* Logic sub-topic picker: only shown for the Logic subject */}
       {isLogic && (
         <div className="flex flex-col gap-2">
           <p className="text-xs font-black uppercase tracking-wide text-gray-500">Topic</p>
@@ -559,14 +559,14 @@ export function LessonView({
         </div>
       )}
 
-      {/* Progress + certificate (inline banner — kept for persistent visibility) */}
+      {/* Progress + certificate (inline banner: kept for persistent visibility) */}
       {stats && (
         <div className="rounded-xl border-2 border-black bg-white p-3 shadow-neo-sm">
           <div className="mb-1 flex items-center justify-between text-xs font-black uppercase tracking-wide">
             <span>Certificate progress</span>
             <span data-testid="lesson-progress-pct">{stats.progress}%</span>
           </div>
-          {/* FHS-397 — gradient fill (was flat bg-green-400) */}
+          {/* FHS-397: gradient fill (was flat bg-green-400) */}
           <div className="h-3 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100">
             <div
               data-testid="lesson-progress"
@@ -666,7 +666,7 @@ export function LessonView({
                   Correct! 🎉
                 </p>
               ) : (
-                /* FHS-397 — wrong-answer feedback card with encouragement + correct answer reveal */
+                /* FHS-397: wrong-answer feedback card with encouragement + correct answer reveal */
                 <div
                   data-testid="lesson-feedback"
                   className="rounded-xl border-2 border-black bg-red-50 px-4 py-3 shadow-neo-xs"

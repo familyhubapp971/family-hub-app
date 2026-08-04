@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 // Tear-off calendar that mimics the look of the 📅 emoji glyph but
 // shows the user's actual current date. Built because the OS-rendered
 // 📅 emoji is hard-coded to "JUL 17" on Apple platforms and varies
-// arbitrarily on other platforms — an obvious tell when used as a
+// arbitrarily on other platforms, an obvious tell when used as a
 // "today's plan" visual cue.
 //
 // The component picks up the date on mount and refreshes itself once
@@ -19,7 +19,7 @@ export interface DynamicCalendarProps {
    */
   locale?: string;
   /**
-   * Tailwind sizing — defaults to a square `h-12 w-12`. Width controls
+   * Tailwind sizing: defaults to a square `h-12 w-12`. Width controls
    * the card; height is required so the two halves can split 50/50.
    */
   className?: string;
@@ -43,7 +43,7 @@ export function DynamicCalendar({
 
   useEffect(() => {
     if (now) return;
-    // Tick once a minute — cheap, and resilient to a tab kept open
+    // Tick once a minute, cheap, and resilient to a tab kept open
     // across midnight without needing a precise sleep-to-midnight
     // calculation.
     const id = window.setInterval(() => setToday(new Date()), 60_000);
