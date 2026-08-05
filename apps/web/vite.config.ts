@@ -27,6 +27,21 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), ...(sentryPlugin ? [sentryPlugin] : [])],
     build: {
       sourcemap: true,
+      rollupOptions: {
+        output: {
+          // FHS-560: split the big third-party libraries out of the entry
+          // chunk so the landing page does not pay for charting, mapping
+          // and animation code it never renders. Route-level code splitting
+          // (React.lazy in App.tsx) does the rest.
+          manualChunks: {
+            react: ['react', 'react-dom', 'react-router-dom'],
+            charts: ['recharts'],
+            maps: ['leaflet', 'react-leaflet'],
+            motion: ['framer-motion'],
+            supabase: ['@supabase/supabase-js'],
+          },
+        },
+      },
     },
     server: {
       port: 5273,

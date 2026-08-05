@@ -1,6 +1,9 @@
+/* Fonts are loaded from apps/web/index.html, not with @import (FHS-562).
+   An @import cannot start downloading until this stylesheet has itself
+   been fetched and parsed, which delayed the fonts far enough that text
+   visibly re-flowed after first paint. */
 /* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE,
    ABOVE THE TAILWIND IMPORTS: DO NOT DELETE THIS COMMENT */
-@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
 
 /* CRITICAL: TAILWIND IMPORTS MUST NEVER BE DELETED OR REORDERED */
 @tailwind base;
