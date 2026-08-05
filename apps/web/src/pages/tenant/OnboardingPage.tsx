@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
+import { isKidRole } from '@familyhub/shared';
 
 // FHS-36 / FHS-37: OnboardingWizard at /t/:slug/onboarding.
 //
@@ -234,9 +235,7 @@ export function OnboardingPage() {
             role: m.role,
             ...(m.avatarEmoji ? { avatarEmoji: m.avatarEmoji } : {}),
             ...(m.role === 'adult' && m.email?.trim() ? { email: m.email.trim() } : {}),
-            ...((m.role === 'child' || m.role === 'teen') && typeof m.age === 'number'
-              ? { age: m.age }
-              : {}),
+            ...(isKidRole(m.role) && typeof m.age === 'number' ? { age: m.age } : {}),
           })),
         }),
       });
@@ -418,7 +417,7 @@ export function OnboardingPage() {
                     )}
                     {/* FHS-487: optional age for kids (child or teen). Shows on
                         their Manage Members card (e.g. "Child (6)"). */}
-                    {(m.role === 'child' || m.role === 'teen') && (
+                    {isKidRole(m.role) && (
                       <div className="mt-3">
                         <Label htmlFor={`member-age-${m.uiId}`}>Age (optional)</Label>
                         <Input

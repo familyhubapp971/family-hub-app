@@ -18,6 +18,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 import { CalendarSyncCard } from './CalendarSyncCard';
+import { isKidRole } from '@familyhub/shared';
 
 // FHS-230 / FHS-265: CalendarTabPanel (Magic Patterns layout).
 //
@@ -420,7 +421,7 @@ export function CalendarTabPanel() {
   }
 
   const { events, members } = status;
-  const children = members.filter((m) => m.role === 'child' || m.role === 'teen');
+  const children = members.filter((m) => isKidRole(m.role));
   const todayIso = localTodayIso();
   const days = Array.from({ length: 7 }, (_, i) => addDaysIso(weekStart, i));
 

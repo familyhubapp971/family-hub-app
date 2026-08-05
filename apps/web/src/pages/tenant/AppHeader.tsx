@@ -26,6 +26,7 @@ import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { useDashboardStaleSignal } from '../../lib/dashboard-refresh';
 import { TABS, DEFAULT_TAB } from './dashboard-tabs';
+import { isKidRole } from '@familyhub/shared';
 
 // In-app tab badge counts: typed map so wiring is in place for FHS-262.
 type TabBadgeMap = Partial<Record<(typeof TABS)[number]['id'], number>>;
@@ -466,7 +467,10 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
     user?.email ??
     'You';
 
-  const childMembers = (members ?? []).filter((m) => m.role === 'child');
+  // FHS-569: this filtered on 'child' alone, so a family whose only kid
+  // was a teen saw "No kids added yet" while that teen showed on the
+  // dashboard behind the menu.
+  const childMembers = (members ?? []).filter((m) => isKidRole(m.role));
 
   const tabBadges: TabBadgeMap = { tasks: openTasks };
   const navTabs: TopNavTab[] = TABS.map((t) => ({
