@@ -240,3 +240,38 @@ describe('SiteHeader burger menu', () => {
     }
   });
 });
+
+// FHS-567: at 375px the five legal links wrapped 4-then-1 and the floating
+// feedback button sat on top of the copyright line.
+describe('SiteFooter layout on phones', () => {
+  function renderFooter() {
+    return render(
+      <MemoryRouter>
+        <SiteFooter />
+      </MemoryRouter>,
+    );
+  }
+
+  it('lays the legal links out as an even grid on phones and a row from md up', () => {
+    renderFooter();
+    const nav = screen.getByRole('navigation', { name: 'Legal' });
+    expect(nav.className).toContain('grid-cols-2');
+    expect(nav.className).toContain('md:flex');
+  });
+
+  it('keeps every legal link at the 44px tap floor', () => {
+    renderFooter();
+    const links = within(screen.getByRole('navigation', { name: 'Legal' })).getAllByRole('link');
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      expect(link.className).toContain('min-h-[44px]');
+    }
+  });
+
+  it('reserves room under the small print so the floating button cannot cover it', () => {
+    renderFooter();
+    const copyright = screen.getByText(/virtual rewards are play money/i);
+    expect(copyright.className).toContain('pb-28');
+    expect(copyright.className).toContain('md:pb-8');
+  });
+});
