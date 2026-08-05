@@ -52,9 +52,11 @@ describe('SiteHeader burger menu', () => {
     openMenu();
 
     const open = within(panel()!);
-    for (const label of ['Features', 'About', 'Pricing', 'Legal', 'Log in']) {
+    for (const label of ['Features', 'About', 'Pricing', 'Legal']) {
       expect(open.getByRole('link', { name: label })).toBeInTheDocument();
     }
+    // FHS-568: Log in carries a button's weight, not a link's.
+    expect(open.getByRole('button', { name: 'Log in' })).toBeInTheDocument();
   });
 
   it('marks the current section inside the panel', () => {
@@ -119,7 +121,7 @@ describe('SiteHeader burger menu', () => {
     openMenu();
 
     const open = within(panel()!);
-    const login = open.getByRole('link', { name: 'Log in' });
+    const login = open.getByRole('button', { name: 'Log in' });
     login.focus();
     fireEvent.keyDown(panel()!, { key: 'Tab' });
 
@@ -134,7 +136,7 @@ describe('SiteHeader burger menu', () => {
     open.getByRole('link', { name: 'Features' }).focus();
     fireEvent.keyDown(panel()!, { key: 'Tab', shiftKey: true });
 
-    expect(open.getByRole('link', { name: 'Log in' })).toHaveFocus();
+    expect(open.getByRole('button', { name: 'Log in' })).toHaveFocus();
   });
 
   it('locks page scroll while the panel is open and restores it after', () => {
@@ -173,6 +175,28 @@ describe('SiteHeader burger menu', () => {
     expect(new Set(names).size).toBe(1);
   });
 
+  // FHS-568: it used to render as a fifth plain link under the divider.
+  it('presents Log in as a button in the panel, not a plain link', () => {
+    renderHeader();
+    openMenu();
+
+    const open = within(panel()!);
+    const login = open.getByTestId('site-nav-login');
+    expect(login.tagName).toBe('BUTTON');
+    expect(open.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument();
+    // Button styling from the design system, sized for a thumb.
+    expect(login.className).toContain('border-2');
+    expect(login.className).toContain('min-h-[52px]');
+  });
+
+  it('closes the menu when Log in is tapped', () => {
+    renderHeader();
+    openMenu();
+
+    fireEvent.click(within(panel()!).getByTestId('site-nav-login'));
+    expect(panel()).not.toBeInTheDocument();
+  });
+
   it('gives the burger a 44px minimum tap target', () => {
     renderHeader();
     // h-11 w-11 is Tailwind's 44px square: the repo's tap-target floor.
@@ -202,7 +226,7 @@ describe('SiteHeader burger menu', () => {
     openMenu();
 
     const open = within(panel()!);
-    expect(open.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument();
+    expect(open.queryByRole('button', { name: 'Log in' })).not.toBeInTheDocument();
     for (const label of ['Features', 'About', 'Pricing', 'Legal']) {
       expect(open.getByRole('link', { name: label })).toBeInTheDocument();
     }
