@@ -40,4 +40,19 @@ describe('friendlyAuthErrorMessage', () => {
       'No account found for this email - create an account first, then log in.',
     );
   });
+  // FHS-564: the short per-address throttle says neither "rate limit" nor
+  // "too many requests", so it used to reach the screen verbatim.
+  it('FHS-564: maps the Supabase throttle message and keeps the wait in seconds', () => {
+    expect(
+      friendlyAuthErrorMessage(
+        'For security purposes, you can only request this after 30 seconds.',
+      ),
+    ).toBe('Please wait 30 seconds before asking for another link, or use Continue with Google.');
+  });
+
+  it('FHS-564: handles the throttle message when it carries no number', () => {
+    expect(friendlyAuthErrorMessage('For security purposes, please try again later.')).toMatch(
+      /wait a moment before asking for another link/i,
+    );
+  });
 });

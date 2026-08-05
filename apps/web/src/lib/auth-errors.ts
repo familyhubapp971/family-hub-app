@@ -26,6 +26,20 @@ export function friendlyAuthErrorMessage(raw: string | undefined): string {
     return 'Too many attempts. Please wait a moment and try again, or use Continue with Google.';
   }
 
+  // FHS-564: over_email_send_rate_limit is the short per-address throttle
+  // and its message says neither "rate limit" nor "too many requests", so
+  // it slipped through the two patterns above and reached the screen raw:
+  // "For security purposes, you can only request this after 30 seconds."
+  // Keep the number when Supabase gives us one, since "wait 30 seconds" is
+  // more useful than "wait a moment".
+  const throttle = /for security purposes.*?after (\d+) seconds?/i.exec(message);
+  if (throttle) {
+    return `Please wait ${throttle[1]} seconds before asking for another link, or use Continue with Google.`;
+  }
+  if (/for security purposes/i.test(message)) {
+    return 'Please wait a moment before asking for another link, or use Continue with Google.';
+  }
+
   // A user who clicks a link Supabase has already consumed gets this on
   // verify. Surfaces during testing when a tab reloads with `?code=...`
   // still on the URL.

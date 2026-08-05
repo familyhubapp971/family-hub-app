@@ -325,4 +325,13 @@ describe('<LoginPage />', () => {
     fireEvent.click(screen.getByTestId('login-role-parent'));
     expect(screen.queryByTestId('login-error')).toBeNull();
   });
+  // FHS-565: the error used to be inserted with no space reserved, pushing
+  // the submit button 20px down under the user's finger.
+  it('FHS-565: keeps the error slot in the layout before any error appears', () => {
+    renderPage();
+    const slot = screen.getByTestId('login-error-slot');
+    expect(slot).toBeInTheDocument();
+    expect(slot.className).toContain('min-h-');
+    expect(screen.queryByTestId('login-error')).not.toBeInTheDocument();
+  });
 });
