@@ -92,6 +92,21 @@ const CURRENCIES: readonly CurrencyEntry[] = ALL_CURRENCIES.filter(
  */
 export function detectBrowserCurrency(): string {
   const knownCodes = new Set(CURRENCIES.map((c) => c.code));
+
+  // FHS-570: the timezone comes first because it says where the family
+  // LIVES, and where you live decides what you spend. Language only says
+  // what your browser is set to: an English-speaking family in Dubai
+  // reports en-GB or en-US and used to be handed pounds or dollars while
+  // the very same screen showed their timezone as Asia/Dubai.
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? '';
+    const region = TIMEZONE_TO_REGION[tz];
+    const fromZone = region ? REGION_TO_CURRENCY[region] : undefined;
+    if (fromZone && knownCodes.has(fromZone)) return fromZone;
+  } catch {
+    // fall through to the language guess
+  }
+
   try {
     const locale = (typeof navigator !== 'undefined' && navigator.language) || 'en-US';
     const region = new Intl.Locale(locale).maximize().region ?? '';
@@ -102,6 +117,80 @@ export function detectBrowserCurrency(): string {
   }
   return 'USD';
 }
+
+// Timezone→region for every region in REGION_TO_CURRENCY below. Only the
+// zones a real family is plausibly in: this is a preselection, and the
+// picker is one tap away, so an unlisted zone simply falls through to the
+// language guess rather than pretending to know.
+const TIMEZONE_TO_REGION: Record<string, string> = {
+  // Gulf + wider Middle East
+  'Asia/Dubai': 'AE',
+  'Asia/Riyadh': 'SA',
+  'Asia/Qatar': 'AE',
+  'Asia/Bahrain': 'AE',
+  'Asia/Kuwait': 'SA',
+  'Asia/Muscat': 'AE',
+  'Asia/Istanbul': 'TR',
+  'Europe/Istanbul': 'TR',
+  // South + South-East Asia
+  'Asia/Karachi': 'PK',
+  'Asia/Kolkata': 'IN',
+  'Asia/Calcutta': 'IN',
+  'Asia/Colombo': 'IN',
+  'Asia/Dhaka': 'IN',
+  'Asia/Jakarta': 'ID',
+  'Asia/Kuala_Lumpur': 'MY',
+  'Asia/Bangkok': 'TH',
+  'Asia/Singapore': 'SG',
+  'Asia/Hong_Kong': 'HK',
+  'Asia/Seoul': 'KR',
+  'Asia/Tokyo': 'JP',
+  'Asia/Shanghai': 'CN',
+  // Africa
+  'Africa/Lagos': 'NG',
+  'Africa/Accra': 'GH',
+  'Africa/Nairobi': 'KE',
+  'Africa/Cairo': 'EG',
+  'Africa/Johannesburg': 'ZA',
+  // Europe
+  'Europe/London': 'GB',
+  'Europe/Dublin': 'IE',
+  'Europe/Paris': 'FR',
+  'Europe/Berlin': 'DE',
+  'Europe/Madrid': 'ES',
+  'Europe/Rome': 'IT',
+  'Europe/Amsterdam': 'NL',
+  'Europe/Brussels': 'BE',
+  'Europe/Vienna': 'AT',
+  'Europe/Lisbon': 'PT',
+  'Europe/Athens': 'GR',
+  'Europe/Helsinki': 'FI',
+  'Europe/Zurich': 'CH',
+  'Europe/Stockholm': 'SE',
+  'Europe/Oslo': 'NO',
+  'Europe/Copenhagen': 'DK',
+  // Americas + Oceania
+  'America/New_York': 'US',
+  'America/Chicago': 'US',
+  'America/Denver': 'US',
+  'America/Phoenix': 'US',
+  'America/Los_Angeles': 'US',
+  'America/Anchorage': 'US',
+  'Pacific/Honolulu': 'US',
+  'America/Toronto': 'CA',
+  'America/Vancouver': 'CA',
+  'America/Edmonton': 'CA',
+  'America/Winnipeg': 'CA',
+  'America/Halifax': 'CA',
+  'America/Mexico_City': 'MX',
+  'America/Sao_Paulo': 'BR',
+  'Australia/Sydney': 'AU',
+  'Australia/Melbourne': 'AU',
+  'Australia/Brisbane': 'AU',
+  'Australia/Perth': 'AU',
+  'Australia/Adelaide': 'AU',
+  'Pacific/Auckland': 'NZ',
+};
 
 // Region→default-currency map for the curated set. Keep aligned with
 // CURRENCIES, anything not here defaults to USD.
