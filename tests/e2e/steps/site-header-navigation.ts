@@ -66,7 +66,10 @@ Then('the header menu button has focus', async ({ page }) => {
 
 // FHS-559: the skip link must be the first thing a keyboard user reaches.
 When('I press Tab', async ({ page }) => {
-  await page.keyboard.press('Tab');
+  // Press against <body> rather than page.keyboard: in headless CI the page
+  // can have no focused element yet, and a bare keyboard.press then goes
+  // nowhere, so the assertion below saw an empty activeElement.
+  await page.locator('body').press('Tab');
 });
 
 Then('the skip to content link is focused', async ({ page }) => {
@@ -74,7 +77,7 @@ Then('the skip to content link is focused', async ({ page }) => {
     const a = document.activeElement as HTMLAnchorElement | null;
     return a ? `${a.tagName}|${(a.textContent ?? '').trim()}|${a.getAttribute('href') ?? ''}` : '';
   });
-  expect(focused).toBe('A|Skip to content|#main-content');
+  expect(focused, `first tab stop was: ${focused}`).toBe('A|Skip to content|#main-content');
 });
 
 Then('activating it moves focus to the main content', async ({ page }) => {
