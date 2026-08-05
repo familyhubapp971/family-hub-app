@@ -84,7 +84,11 @@ describe('<WelcomePage />: logged-in state (FHS-358)', () => {
     // FHS-544: the logged-out homepage now uses the shared SiteHeader +
     // SiteFooter, so the chrome matches the legal/marketing pages exactly.
     // Header Legal link → /legal.
-    expect(screen.getByRole('link', { name: /^legal$/i })).toHaveAttribute('href', '/legal');
+    // FHS-561: header + footer both name this link "Legal", so there are
+    // two matches and both must point at the legal index.
+    const legalLinks = screen.getAllByRole('link', { name: /^legal$/i });
+    expect(legalLinks.length).toBeGreaterThan(0);
+    for (const link of legalLinks) expect(link).toHaveAttribute('href', '/legal');
     // Shared footer: the full legal-links set.
     expect(screen.getByRole('link', { name: /^privacy$/i })).toHaveAttribute(
       'href',
@@ -99,7 +103,7 @@ describe('<WelcomePage />: logged-in state (FHS-358)', () => {
       'href',
       '/legal/cookies',
     );
-    expect(screen.getByRole('link', { name: /all legal/i })).toHaveAttribute('href', '/legal');
+    // FHS-561: the footer index link is named "Legal" too, asserted above.
   });
 
   it('while the session is restoring: shows a splash, not the logged-out hero', () => {

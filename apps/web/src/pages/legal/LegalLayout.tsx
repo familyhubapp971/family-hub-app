@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { SiteFooter, SiteHeader } from '../../components/SiteChrome';
+import { SiteFooter, SiteHeader, MAIN_CONTENT_ID } from '../../components/SiteChrome';
 
 // LegalLayout: shared shell for every /legal/* page (FHS-509). Ported
 // forensically from the Magic Patterns design
@@ -49,7 +49,7 @@ export function LegalLayout({
           to="/legal"
           className="mb-3 inline-flex min-h-[44px] items-center gap-2 text-sm font-bold text-purple-200 hover:text-yellow-300"
         >
-          <ArrowLeft size={16} strokeWidth={3} /> All legal pages
+          <ArrowLeft size={16} strokeWidth={3} /> Legal
         </Link>
 
         {/* title block */}
@@ -106,7 +106,7 @@ export function LegalLayout({
           </aside>
 
           {/* body */}
-          <main className="min-w-0">
+          <main id={MAIN_CONTENT_ID} className="min-w-0">
             <div className="divide-y-2 divide-dashed divide-gray-200 rounded-xl border-2 border-black bg-white text-black shadow-neo-sm">
               {sections.map((section, index) => (
                 <section key={section.id} id={section.id} className="scroll-mt-6 p-5 sm:p-6">

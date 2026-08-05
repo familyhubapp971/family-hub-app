@@ -34,3 +34,10 @@ Feature: Public site header navigation
     And I press Escape
     Then the menu panel is closed
     And the header menu button has focus
+
+  @critical
+  Scenario: Keyboard users can skip past the navigation
+    Given I open the Welcome page at desktop width
+    When I press Tab
+    Then the skip to content link is focused
+    And activating it moves focus to the main content

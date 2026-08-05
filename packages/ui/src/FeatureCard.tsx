@@ -26,6 +26,13 @@ interface FeatureCardProps {
   accentBar: string;
   /** Optional className passthrough for layout overrides. */
   className?: string;
+  /**
+   * Heading level for the card title (FHS-558). Defaults to h3, which is
+   * correct under a section h2. Set it when the surrounding outline needs
+   * a different level: skipping a level breaks the document outline
+   * screen readers build (WCAG 1.3.1).
+   */
+  headingLevel?: 2 | 3 | 4;
   testId?: string;
 }
 
@@ -49,8 +56,10 @@ export function FeatureCard({
   iconColor,
   accentBar,
   className = '',
+  headingLevel = 3,
   testId,
 }: FeatureCardProps) {
+  const Heading = `h${headingLevel}` as const;
   return (
     <div
       data-testid={testId}
@@ -73,7 +82,7 @@ export function FeatureCard({
         </div>
       </div>
       <div className="p-4">
-        <h3 className="mb-1 font-heading text-base md:text-lg">{title}</h3>
+        <Heading className="mb-1 font-heading text-base md:text-lg">{title}</Heading>
         <p className="text-xs font-bold text-gray-600 md:text-sm">{body}</p>
       </div>
     </div>

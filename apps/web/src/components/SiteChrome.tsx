@@ -24,6 +24,30 @@ import { Button, useBodyScrollLock } from '@familyhub/ui';
 
 export type SiteChromeSection = 'features' | 'about' | 'pricing' | 'legal';
 
+/**
+ * The id every public page puts on its <main>, and the target of the skip
+ * link below. Exported so pages cannot drift from the link (FHS-559).
+ */
+export const MAIN_CONTENT_ID = 'main-content';
+
+/**
+ * FHS-559: keyboard and screen-reader users had to tab through the whole
+ * navigation on every page before reaching content (WCAG 2.4.1). This is
+ * the first focusable element on every public page. It is invisible until
+ * focused, so it costs the visual design nothing.
+ */
+export function SkipToContent() {
+  return (
+    <a
+      href={`#${MAIN_CONTENT_ID}`}
+      data-testid="skip-to-content"
+      className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:flex focus:min-h-[44px] focus:items-center focus:rounded-xl focus:border-2 focus:border-black focus:bg-yellow-400 focus:px-4 focus:font-black focus:text-black focus:shadow-neo focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
+    >
+      Skip to content
+    </a>
+  );
+}
+
 const NAV_LINKS: {
   to: string;
   label: string;
@@ -115,6 +139,7 @@ export function SiteHeader({
 
   return (
     <header className="relative z-50 mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-4 py-4 md:px-6">
+      <SkipToContent />
       <Link
         to="/"
         className="relative z-50 shrink-0 rounded-lg font-heading text-xl text-white transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 md:text-2xl"
@@ -234,7 +259,7 @@ export const LEGAL_LINKS = [
   { to: '/legal/children', label: 'Children & Parents' },
   { to: '/legal/terms', label: 'Terms' },
   { to: '/legal/cookies', label: 'Cookies' },
-  { to: '/legal', label: 'All legal' },
+  { to: '/legal', label: 'Legal' },
 ];
 
 export function SiteFooter() {

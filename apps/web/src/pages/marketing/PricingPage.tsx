@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { PricingCard, type PricingFeature } from '@familyhub/ui';
-import { SiteHeader, SiteFooter } from '../../components/SiteChrome';
+import { SiteHeader, SiteFooter, MAIN_CONTENT_ID } from '../../components/SiteChrome';
 
 // Pricing page: port of Magic Patterns design
 // kudjspxd3xxroueg5jw11o pages/Pricing.tsx. Tier copy is the source of
@@ -75,7 +75,10 @@ export function PricingPage() {
           (Legal link in the nav, full legal footer). */}
       <SiteHeader current="pricing" />
 
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-6 pb-6 pt-6 md:pt-10">
+      <main
+        id={MAIN_CONTENT_ID}
+        className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-6 pb-6 pt-6 md:pt-10"
+      >
         <div className="mb-6 text-center sm:mb-16 md:mb-20">
           <h1 className="mb-1 font-heading text-2xl md:text-3xl lg:text-4xl">
             Simple, honest pricing
