@@ -99,6 +99,9 @@ export function LoginPage() {
       return;
     }
     sessionStorage.setItem('fh.signup.email', parsed.data.email);
+    // FHS-563: /verify-email is reached from both login and signup, and its
+    // "Or go back" link used to always point at /signup.
+    sessionStorage.setItem('fh.auth.origin', '/login');
     navigate('/verify-email');
   }
 
@@ -151,11 +154,20 @@ export function LoginPage() {
               />
             </div>
 
-            {status.kind === 'error' && (
-              <p className="font-body text-sm text-red-600" data-testid="login-error" role="alert">
-                {status.message}
-              </p>
-            )}
+            {/* FHS-565: the slot is always in the layout, so an error
+                appearing never pushes the submit button down under the
+                user's finger. min-h holds two lines of message. */}
+            <div className="min-h-[2.5rem]" aria-live="polite" data-testid="login-error-slot">
+              {status.kind === 'error' && (
+                <p
+                  className="font-body text-sm text-red-600"
+                  data-testid="login-error"
+                  role="alert"
+                >
+                  {status.message}
+                </p>
+              )}
+            </div>
 
             <Button
               type="submit"

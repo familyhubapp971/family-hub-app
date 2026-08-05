@@ -72,6 +72,7 @@ export function SignupPage() {
     }
     // Stash the email so /verify-email can render "Check your inbox at <email>".
     sessionStorage.setItem('fh.signup.email', parsed.data.email);
+    sessionStorage.setItem('fh.auth.origin', '/signup');
     navigate('/verify-email');
   }
 

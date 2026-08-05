@@ -22,6 +22,7 @@ function renderAt(initial: string) {
       <Routes>
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/signup" element={<div data-testid="route-marker">signup</div>} />
+        <Route path="/login" element={<div data-testid="route-marker">login</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -90,7 +91,25 @@ describe('<VerifyEmailPage />', () => {
     expect(screen.queryByTestId('verify-email-open-mailbox')).toBeNull();
   });
 
-  it('Back link routes to /signup', () => {
+  it('Back link routes to /signup when the signup flow sent the visitor here', () => {
+    sessionStorage.setItem('fh.signup.email', 'sarah@example.com');
+    sessionStorage.setItem('fh.auth.origin', '/signup');
+    renderAt('/verify-email');
+    fireEvent.click(screen.getByTestId('verify-email-back'));
+    expect(screen.getByTestId('route-marker').textContent).toBe('signup');
+  });
+
+  // FHS-563: the link used to be hard-coded to /signup, so a parent who
+  // came from the login page was sent to create-a-family instead.
+  it('Back link routes to /login when the login flow sent the visitor here', () => {
+    sessionStorage.setItem('fh.signup.email', 'sarah@example.com');
+    sessionStorage.setItem('fh.auth.origin', '/login');
+    renderAt('/verify-email');
+    fireEvent.click(screen.getByTestId('verify-email-back'));
+    expect(screen.getByTestId('route-marker').textContent).toBe('login');
+  });
+
+  it('Back link falls back to /signup on a direct visit', () => {
     sessionStorage.setItem('fh.signup.email', 'sarah@example.com');
     renderAt('/verify-email');
     fireEvent.click(screen.getByTestId('verify-email-back'));

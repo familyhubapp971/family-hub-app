@@ -40,6 +40,17 @@ export function VerifyEmailPage() {
   const [email, setEmail] = useState<string | null>(null);
   const [resend, setResend] = useState<ResendState>({ kind: 'idle' });
 
+  // FHS-563: this page is reached from both the login and the signup flow.
+  // "Or go back" used to always point at /signup, so a parent who came from
+  // the login page was sent to create-a-family instead of back to log in.
+  // Whichever flow sent them here records it; a direct visit falls back to
+  // signup, which is where a stranger most likely wants to go.
+  const [backTo] = useState<string>(() => {
+    const origin =
+      typeof sessionStorage !== 'undefined' && sessionStorage.getItem('fh.auth.origin');
+    return origin === '/login' ? '/login' : '/signup';
+  });
+
   useEffect(() => {
     const candidate = params.get('email') ?? sessionStorage.getItem('fh.signup.email');
     if (!candidate) {
@@ -173,7 +184,7 @@ export function VerifyEmailPage() {
           )}
 
           <Link
-            to="/signup"
+            to={backTo}
             className="inline-block py-3 px-3 text-purple-600 transition-colors hover:text-purple-800"
             data-testid="verify-email-back"
           >
