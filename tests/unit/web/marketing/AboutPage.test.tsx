@@ -60,7 +60,11 @@ describe('<AboutPage />', () => {
   it('uses the shared site chrome (home link, Legal in the header, full legal footer)', () => {
     renderPage();
     expect(screen.getByRole('link', { name: 'FamilyHub' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: /^legal$/i })).toHaveAttribute('href', '/legal');
+    // FHS-561: header + footer both name this link "Legal", so there are
+    // two matches and both must point at the legal index.
+    const legalLinks = screen.getAllByRole('link', { name: /^legal$/i });
+    expect(legalLinks.length).toBeGreaterThan(0);
+    for (const link of legalLinks) expect(link).toHaveAttribute('href', '/legal');
     expect(screen.getByRole('link', { name: /^privacy$/i })).toHaveAttribute(
       'href',
       '/legal/privacy',
@@ -74,6 +78,6 @@ describe('<AboutPage />', () => {
       'href',
       '/legal/cookies',
     );
-    expect(screen.getByRole('link', { name: /all legal/i })).toHaveAttribute('href', '/legal');
+    // FHS-561: the footer index link is named "Legal" too, asserted above.
   });
 });

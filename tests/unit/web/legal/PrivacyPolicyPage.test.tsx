@@ -62,8 +62,13 @@ describe('<PrivacyPolicyPage />', () => {
     expect(screen.getAllByText('[Privacy contact]').length).toBeGreaterThan(0);
   });
 
-  it('has a working "All legal pages" link back to the index', () => {
+  // FHS-561: every link to /legal carries the same name, so the back link
+  // reads "Legal" rather than a third variant of the same destination.
+  it('has a working "Legal" link back to the index', () => {
     renderPage();
-    expect(screen.getByRole('link', { name: /All legal pages/ })).toHaveAttribute('href', '/legal');
+    const backLinks = screen
+      .getAllByRole('link', { name: /^Legal$/ })
+      .filter((a) => a.getAttribute('href') === '/legal');
+    expect(backLinks.length).toBeGreaterThan(0);
   });
 });

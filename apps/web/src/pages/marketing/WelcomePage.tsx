@@ -22,7 +22,7 @@ import {
 import { useAuth, signOutAll, getKidToken } from '../../lib/auth-context';
 import { API_BASE } from '../../lib/api';
 import { BetaFeedbackWidget } from '../../components/BetaFeedbackWidget';
-import { SiteHeader, SiteFooter } from '../../components/SiteChrome';
+import { SiteHeader, SiteFooter, MAIN_CONTENT_ID } from '../../components/SiteChrome';
 
 // Hero copy rotates between four ad pitches every 5 seconds, each
 // targeting a different persona:
@@ -287,8 +287,6 @@ export function WelcomePage() {
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-kingdom-bg font-body text-white">
-      {/* Public feedback widget: visible to logged-out AND logged-in visitors on this page */}
-      <BetaFeedbackWidget variant="public" />
       {/* Subtle radial purple glow at the top of the hero. */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.4),rgba(61,16,101,0)_60%)]" />
 
@@ -360,7 +358,10 @@ export function WelcomePage() {
           vertical rhythm without pushing the feature row off-screen.
           Logged-out only, logged-in users get LoggedInLanding above. */}
       {!loggedIn && (
-        <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 px-6 pb-6 text-center">
+        <main
+          id={MAIN_CONTENT_ID}
+          className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 px-6 pb-6 text-center"
+        >
           {/* Cross-fading slide area */}
           <div className="relative flex min-h-[180px] w-full flex-col items-center justify-center md:min-h-[200px]">
             <AnimatePresence mode="wait">
@@ -464,7 +465,11 @@ export function WelcomePage() {
           </p>
 
           {/* Feature cards: 4 pillars: Calendar, Tasks, Learn, Journal.
-            Cultural angle woven into the Learn card description. */}
+            Cultural angle woven into the Learn card description.
+            FHS-558: the h2 gives the card h3s a parent level so the
+            heading outline never skips. Visually hidden because the
+            design deliberately runs the cards straight off the hero. */}
+          <h2 className="sr-only">What Family Hub does</h2>
           <div className="grid w-full grid-cols-1 gap-4 text-left sm:grid-cols-2 lg:grid-cols-4">
             {featureCards.map(
               ({ accentBar, headerBg, cardBg, iconColor, Icon, title, body }, idx) => (
@@ -496,6 +501,11 @@ export function WelcomePage() {
       {/* FHS-544: shared site footer (same legal links + branding as the
           legal/marketing pages) so the homepage never drifts from the rest. */}
       <SiteFooter />
+
+      {/* Public feedback widget: visible to logged-out AND logged-in visitors
+          on this page. FHS-559: it renders last so the skip link, not this
+          floating button, is the first thing a keyboard user reaches. */}
+      <BetaFeedbackWidget variant="public" />
     </div>
   );
 }
@@ -619,6 +629,7 @@ function LoggedInLanding({
 
   return (
     <main
+      id={MAIN_CONTENT_ID}
       className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-8 px-6 pb-10 pt-4 text-center"
       data-testid="welcome-loggedin"
     >
@@ -643,6 +654,8 @@ function LoggedInLanding({
         <ArrowRight size={18} strokeWidth={3} aria-hidden="true" />
       </Button>
 
+      {/* FHS-558: parent level for the quick-link card h3s. */}
+      <h2 className="sr-only">Jump back in</h2>
       <div className="grid w-full grid-cols-1 gap-4 text-left sm:grid-cols-2 lg:grid-cols-4">
         {quickLinks.map((q, idx) => (
           <motion.button

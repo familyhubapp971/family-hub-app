@@ -5,7 +5,11 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { SiteHeader } from '../../../../apps/web/src/components/SiteChrome';
+import {
+  SiteHeader,
+  SiteFooter,
+  MAIN_CONTENT_ID,
+} from '../../../../apps/web/src/components/SiteChrome';
 
 function renderHeader(props: Parameters<typeof SiteHeader>[0] = {}) {
   return render(
@@ -151,6 +155,24 @@ describe('SiteHeader burger menu', () => {
     expect(within(panel()!).queryByRole('button', { name: 'Start free' })).not.toBeInTheDocument();
   });
 
+  // FHS-561: header said "Legal", footer said "All legal", same destination.
+  it('names every link to the legal index the same thing', () => {
+    render(
+      <MemoryRouter>
+        <SiteHeader />
+        <SiteFooter />
+      </MemoryRouter>,
+    );
+
+    const names = screen
+      .getAllByRole('link')
+      .filter((a) => a.getAttribute('href') === '/legal')
+      .map((a) => a.textContent?.trim());
+
+    expect(names.length).toBeGreaterThan(1);
+    expect(new Set(names).size).toBe(1);
+  });
+
   it('gives the burger a 44px minimum tap target', () => {
     renderHeader();
     // h-11 w-11 is Tailwind's 44px square: the repo's tap-target floor.
@@ -184,6 +206,26 @@ describe('SiteHeader burger menu', () => {
     for (const label of ['Features', 'About', 'Pricing', 'Legal']) {
       expect(open.getByRole('link', { name: label })).toBeInTheDocument();
     }
+  });
+
+  // FHS-559: keyboard users had to tab the whole nav on every page.
+  it('puts a skip-to-content link before everything else in the header', () => {
+    renderHeader();
+    const header = screen.getByRole('banner');
+    const skip = screen.getByTestId('skip-to-content');
+
+    expect(skip).toHaveAttribute('href', `#${MAIN_CONTENT_ID}`);
+    expect(skip).toHaveAccessibleName('Skip to content');
+    // First element in the header means first in the tab order.
+    expect(header.firstElementChild).toBe(skip);
+  });
+
+  it('keeps the skip link invisible until it is focused', () => {
+    renderHeader();
+    const skip = screen.getByTestId('skip-to-content');
+
+    expect(skip.className).toContain('sr-only');
+    expect(skip.className).toContain('focus:not-sr-only');
   });
 
   it('hides the burger and shows the inline row from lg up', () => {

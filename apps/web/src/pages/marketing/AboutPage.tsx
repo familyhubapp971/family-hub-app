@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, CheckSquare, Utensils, Star, ArrowRight } from 'lucide-react';
 import { Button, FeatureCard } from '@familyhub/ui';
-import { SiteHeader, SiteFooter } from '../../components/SiteChrome';
+import { SiteHeader, SiteFooter, MAIN_CONTENT_ID } from '../../components/SiteChrome';
 
 // AboutPage: public /about route (FHS-436). A beta reviewer said it
 // wasn't clear WHAT Family Hub is, WHO it's for, and its value. This
@@ -59,6 +59,7 @@ export function AboutPage() {
       <SiteHeader current="about" />
 
       <main
+        id={MAIN_CONTENT_ID}
         className="mx-auto w-full max-w-4xl flex-1 px-4 pb-16 pt-4 md:px-6 md:pt-8"
         data-testid="about-page"
       >

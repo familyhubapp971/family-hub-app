@@ -63,3 +63,22 @@ Then('the menu panel is closed', async ({ page }) => {
 Then('the header menu button has focus', async ({ page }) => {
   expect(await new WelcomePagePO(page).burgerHasFocus()).toBe(true);
 });
+
+// FHS-559: the skip link must be the first thing a keyboard user reaches.
+When('I press Tab', async ({ page }) => {
+  await page.keyboard.press('Tab');
+});
+
+Then('the skip to content link is focused', async ({ page }) => {
+  const focused = await page.evaluate(() => {
+    const a = document.activeElement as HTMLAnchorElement | null;
+    return a ? `${a.tagName}|${(a.textContent ?? '').trim()}|${a.getAttribute('href') ?? ''}` : '';
+  });
+  expect(focused).toBe('A|Skip to content|#main-content');
+});
+
+Then('activating it moves focus to the main content', async ({ page }) => {
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#main-content')).toBeVisible();
+  expect(await page.evaluate(() => window.location.hash)).toBe('#main-content');
+});

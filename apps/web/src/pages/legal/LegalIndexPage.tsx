@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { SiteFooter, SiteHeader } from '../../components/SiteChrome';
+import { SiteFooter, SiteHeader, MAIN_CONTENT_ID } from '../../components/SiteChrome';
 
 // LegalIndexPage: /legal (FHS-509). Forensic port of the Magic
 // Patterns design (7f19f840-c796-4eaa-90fc-934fb4ef587d,
@@ -40,7 +40,7 @@ export function LegalIndexPage() {
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-white">
       <SiteHeader current="legal" />
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6">
+      <main id={MAIN_CONTENT_ID} className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6">
         <h1 className="font-heading text-3xl sm:text-4xl">Legal</h1>
         <p className="mt-3 max-w-xl font-bold leading-relaxed text-purple-200">
           Short, honest documents written for parents rather than lawyers. Last updated [Effective
