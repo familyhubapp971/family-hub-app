@@ -24,9 +24,12 @@ export default {
         // Magic Patterns design imported in FHS-220. Both resolve to the
         // same font so existing code and ported MP code coexist without a
         // find-and-replace sweep.
-        display: ['"Fredoka One"', 'cursive'],
-        heading: ['"Fredoka One"', 'cursive'],
-        body: ['Nunito', 'sans-serif'],
+        // FHS-566: the fallback used to be `cursive`, which macOS renders as
+        // a formal script face, so any moment the brand font was missing
+        // looked like a wedding invitation rather than merely plain.
+        display: ['"Fredoka One"', 'system-ui', 'sans-serif'],
+        heading: ['"Fredoka One"', 'system-ui', 'sans-serif'],
+        body: ['Nunito', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'neo-xs': '1px 1px 0px 0px rgba(0,0,0,1)',
