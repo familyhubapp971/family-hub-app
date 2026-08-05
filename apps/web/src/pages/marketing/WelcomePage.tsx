@@ -360,7 +360,7 @@ export function WelcomePage() {
       {!loggedIn && (
         <main
           id={MAIN_CONTENT_ID}
-          className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 px-6 pb-6 text-center"
+          className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-5 px-6 pb-6 pt-8 text-center md:pt-6"
         >
           {/* Cross-fading slide area */}
           <div className="relative flex min-h-[180px] w-full flex-col items-center justify-center md:min-h-[200px]">
@@ -630,7 +630,7 @@ function LoggedInLanding({
   return (
     <main
       id={MAIN_CONTENT_ID}
-      className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-8 px-6 pb-10 pt-4 text-center"
+      className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-8 px-6 pb-10 pt-8 text-center md:pt-4"
       data-testid="welcome-loggedin"
     >
       <div>
