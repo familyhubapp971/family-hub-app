@@ -1,30 +1,68 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './lib/auth-context';
 import { TenantProvider } from './lib/tenant-context';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { LoadingScreen } from './components/LoadingScreen';
 import { LandingPage } from './pages/marketing/LandingPage';
 import { WelcomePage } from './pages/marketing/WelcomePage';
 import { PricingPage } from './pages/marketing/PricingPage';
 import { AboutPage } from './pages/marketing/AboutPage';
-import { LegalIndexPage } from './pages/legal/LegalIndexPage';
-import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
-import { ChildrenPrivacyPage } from './pages/legal/ChildrenPrivacyPage';
-import { TermsOfServicePage } from './pages/legal/TermsOfServicePage';
-import { CookiesPage } from './pages/legal/CookiesPage';
-import { KidLoginPage } from './pages/auth/KidLoginPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
-import { ConfirmEmailPage } from './pages/auth/ConfirmEmailPage';
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
-import { DashboardPage } from './pages/tenant/DashboardPage';
-import { ChildWorldPage } from './pages/tenant/child/ChildWorldPage';
-import { LegacyDashboardRedirect } from './pages/redirects/LegacyDashboardRedirect';
-import { AdminPanelPage } from './pages/tenant/AdminPanelPage';
-import { MembersPage } from './pages/tenant/MembersPage';
-import { MePage } from './pages/tenant/MePage';
-import { OnboardingPage } from './pages/tenant/OnboardingPage';
-import { RewardSettingsPage } from './pages/tenant/RewardSettingsPage';
+
+// FHS-560: the whole app used to ship as one ~1.9MB bundle, so a first-time
+// visitor downloaded and parsed every signed-in screen (Recharts, Leaflet,
+// D3, the Learn modules) just to read the landing page. Marketing and the
+// entry auth pages stay eager because they ARE the first paint; everything
+// behind them loads on demand.
+const LegalIndexPage = lazy(() =>
+  import('./pages/legal/LegalIndexPage').then((m) => ({ default: m.LegalIndexPage })),
+);
+const PrivacyPolicyPage = lazy(() =>
+  import('./pages/legal/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage })),
+);
+const ChildrenPrivacyPage = lazy(() =>
+  import('./pages/legal/ChildrenPrivacyPage').then((m) => ({ default: m.ChildrenPrivacyPage })),
+);
+const TermsOfServicePage = lazy(() =>
+  import('./pages/legal/TermsOfServicePage').then((m) => ({ default: m.TermsOfServicePage })),
+);
+const CookiesPage = lazy(() =>
+  import('./pages/legal/CookiesPage').then((m) => ({ default: m.CookiesPage })),
+);
+const DashboardPage = lazy(() =>
+  import('./pages/tenant/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+);
+const ChildWorldPage = lazy(() =>
+  import('./pages/tenant/child/ChildWorldPage').then((m) => ({ default: m.ChildWorldPage })),
+);
+const AdminPanelPage = lazy(() =>
+  import('./pages/tenant/AdminPanelPage').then((m) => ({ default: m.AdminPanelPage })),
+);
+const MembersPage = lazy(() =>
+  import('./pages/tenant/MembersPage').then((m) => ({ default: m.MembersPage })),
+);
+const MePage = lazy(() => import('./pages/tenant/MePage').then((m) => ({ default: m.MePage })));
+const OnboardingPage = lazy(() =>
+  import('./pages/tenant/OnboardingPage').then((m) => ({ default: m.OnboardingPage })),
+);
+const RewardSettingsPage = lazy(() =>
+  import('./pages/tenant/RewardSettingsPage').then((m) => ({ default: m.RewardSettingsPage })),
+);
+const LegacyDashboardRedirect = lazy(() =>
+  import('./pages/redirects/LegacyDashboardRedirect').then((m) => ({
+    default: m.LegacyDashboardRedirect,
+  })),
+);
+const KidLoginPage = lazy(() =>
+  import('./pages/auth/KidLoginPage').then((m) => ({ default: m.KidLoginPage })),
+);
+const ConfirmEmailPage = lazy(() =>
+  import('./pages/auth/ConfirmEmailPage').then((m) => ({ default: m.ConfirmEmailPage })),
+);
 
 // Top-level routing. AuthProvider wraps every route so useAuth() is
 // available everywhere, including the OAuth callback page that needs
@@ -38,149 +76,151 @@ export function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          {/* Marketing + auth: no tenant context. */}
-          <Route path="/" element={<WelcomePage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          {/* FHS-436: public "what is Family Hub" page for beta reviewers
+        <Suspense fallback={<LoadingScreen />}>
+          <Routes>
+            {/* Marketing + auth: no tenant context. */}
+            <Route path="/" element={<WelcomePage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            {/* FHS-436: public "what is Family Hub" page for beta reviewers
               and first-time visitors. */}
-          <Route path="/about" element={<AboutPage />} />
-          {/* FHS-509: Legal pages (Privacy, Children & Parents, Terms,
+            <Route path="/about" element={<AboutPage />} />
+            {/* FHS-509: Legal pages (Privacy, Children & Parents, Terms,
               Cookies) + an index. */}
-          <Route path="/legal" element={<LegalIndexPage />} />
-          <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
-          <Route path="/legal/children" element={<ChildrenPrivacyPage />} />
-          <Route path="/legal/terms" element={<TermsOfServicePage />} />
-          <Route path="/legal/cookies" element={<CookiesPage />} />
-          {/* FHS-435's public draft privacy policy page moved under /legal
+            <Route path="/legal" element={<LegalIndexPage />} />
+            <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/legal/children" element={<ChildrenPrivacyPage />} />
+            <Route path="/legal/terms" element={<TermsOfServicePage />} />
+            <Route path="/legal/cookies" element={<CookiesPage />} />
+            {/* FHS-435's public draft privacy policy page moved under /legal
               (FHS-509). Redirect so the signup consent link + the other
               pages still linking to /privacy (AdminPanelPage, SignupPage,
               AboutPage, PricingPage, WelcomePage) keep working. */}
-          <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
-          {/* Legacy /api/hello debug card preserved at /_health so the
+            <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
+            {/* Legacy /api/hello debug card preserved at /_health so the
               FHS-198 staging-deploy spec keeps validating end-to-end. */}
-          <Route path="/_health" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          {/* FHS-224 / ADR 0011: passwords retired. The old reset-password
+            <Route path="/_health" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            {/* FHS-224 / ADR 0011: passwords retired. The old reset-password
               entry point now redirects into the magic-link flow so any
               bookmarked link still works. */}
-          <Route path="/auth/reset-request" element={<Navigate to="/login" replace />} />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
-          {/* FHS-510: admin-initiated email-change confirm link. Root-level
+            <Route path="/auth/reset-request" element={<Navigate to="/login" replace />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            {/* FHS-510: admin-initiated email-change confirm link. Root-level
               and outside ProtectedRoute: the recipient may not be signed in
               at all, the one-time token in the query string is the
               credential, verified server-side. */}
-          <Route path="/confirm-email/:memberId" element={<ConfirmEmailPage />} />
+            <Route path="/confirm-email/:memberId" element={<ConfirmEmailPage />} />
 
-          {/* FHS-238: kid login. Tenant-scoped (slug in URL) but NOT
+            {/* FHS-238: kid login. Tenant-scoped (slug in URL) but NOT
               behind ProtectedRoute: the kid hasn't authenticated yet,
               that's the whole point. The page reads :slug via useParams
               directly so it can resolve the family + show the avatar
               grid. After successful PIN entry the kid lands on
               /t/:slug/dashboard like any other authenticated user. */}
-          <Route path="/t/:slug/kid-login" element={<KidLoginPage />} />
+            <Route path="/t/:slug/kid-login" element={<KidLoginPage />} />
 
-          {/* Tenant-scoped pages. The TenantProvider reads :slug from
+            {/* Tenant-scoped pages. The TenantProvider reads :slug from
               the URL and exposes it to descendants via useTenantSlug(). */}
-          <Route
-            path="/t/:slug/onboarding"
-            element={
-              <ProtectedRoute>
-                <TenantProvider>
-                  <OnboardingPage />
-                </TenantProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/t/:slug/dashboard"
-            element={
-              <ProtectedRoute allowKid>
-                <TenantProvider>
-                  <DashboardPage />
-                </TenantProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/t/:slug/members"
-            element={
-              <ProtectedRoute>
-                <TenantProvider>
-                  <MembersPage />
-                </TenantProvider>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/t/:slug/me"
-            element={
-              <ProtectedRoute>
-                <TenantProvider>
-                  <MePage />
-                </TenantProvider>
-              </ProtectedRoute>
-            }
-          />
-          {/* FHS-308: Admin Panel */}
-          <Route
-            path="/t/:slug/admin"
-            element={
-              <ProtectedRoute>
-                <TenantProvider>
-                  <AdminPanelPage />
-                </TenantProvider>
-              </ProtectedRoute>
-            }
-          />
-          {/* FHS-512: "Pocket money" reward-config settings screen. */}
-          <Route
-            path="/t/:slug/reward-settings"
-            element={
-              <ProtectedRoute>
-                <TenantProvider>
-                  <RewardSettingsPage />
-                </TenantProvider>
-              </ProtectedRoute>
-            }
-          />
-          {/* FHS-268: ChildWorld: a parent views a child's world. */}
-          <Route
-            path="/t/:slug/child/:memberId"
-            element={
-              <ProtectedRoute>
-                <TenantProvider>
-                  <ChildWorldPage />
-                </TenantProvider>
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/t/:slug/onboarding"
+              element={
+                <ProtectedRoute>
+                  <TenantProvider>
+                    <OnboardingPage />
+                  </TenantProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/t/:slug/dashboard"
+              element={
+                <ProtectedRoute allowKid>
+                  <TenantProvider>
+                    <DashboardPage />
+                  </TenantProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/t/:slug/members"
+              element={
+                <ProtectedRoute>
+                  <TenantProvider>
+                    <MembersPage />
+                  </TenantProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/t/:slug/me"
+              element={
+                <ProtectedRoute>
+                  <TenantProvider>
+                    <MePage />
+                  </TenantProvider>
+                </ProtectedRoute>
+              }
+            />
+            {/* FHS-308: Admin Panel */}
+            <Route
+              path="/t/:slug/admin"
+              element={
+                <ProtectedRoute>
+                  <TenantProvider>
+                    <AdminPanelPage />
+                  </TenantProvider>
+                </ProtectedRoute>
+              }
+            />
+            {/* FHS-512: "Pocket money" reward-config settings screen. */}
+            <Route
+              path="/t/:slug/reward-settings"
+              element={
+                <ProtectedRoute>
+                  <TenantProvider>
+                    <RewardSettingsPage />
+                  </TenantProvider>
+                </ProtectedRoute>
+              }
+            />
+            {/* FHS-268: ChildWorld: a parent views a child's world. */}
+            <Route
+              path="/t/:slug/child/:memberId"
+              element={
+                <ProtectedRoute>
+                  <TenantProvider>
+                    <ChildWorldPage />
+                  </TenantProvider>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Legacy un-prefixed routes: kept as-is for now so existing
+            {/* Legacy un-prefixed routes: kept as-is for now so existing
               deep links don't 404. Cleanup tracked under FHS-205.
               `/dashboard` resolves the user's first tenant via /api/me
               and forwards to /t/<slug>/dashboard so the new tenant-
               scoped DashboardPage (which requires TenantProvider) keeps
               working from older bookmarks + the OAuth callback. */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <LegacyDashboardRedirect />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/me"
-            element={
-              <ProtectedRoute>
-                <MePage />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <LegacyDashboardRedirect />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/me"
+              element={
+                <ProtectedRoute>
+                  <MePage />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   );
