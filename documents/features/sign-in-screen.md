@@ -1,6 +1,7 @@
 # Feature: Sign-in screen
 
 **Jira:** [FHS-573](https://qualicion2.atlassian.net/browse/FHS-573) (design alignment),
+[FHS-578](https://qualicion2.atlassian.net/browse/FHS-578) (email box to button gap),
 [FHS-360](https://qualicion2.atlassian.net/browse/FHS-360) (kid sign-in),
 [FHS-237](https://qualicion2.atlassian.net/browse/FHS-237) (the card)
 **Status:** shipped
@@ -79,6 +80,12 @@ magic link or Google. Kids pick their face and type a PIN.
   to a stale measurement.
 - **Parent side** stays passwordless: one email field, a magic link, or
   Continue with Google.
+- **The button sits close under the email box** (FHS-578). The slot that
+  reserves room for an error lives inside the field's own wrapper, so the
+  form's stacking gap is counted once rather than above and below it. The
+  space between the box and the button is 24px, and one line of error text
+  fits the reserved slot exactly, so the button never moves when an error
+  appears or clears.
 
 ## Deliberate deviations from the Magic Patterns design
 
@@ -105,6 +112,12 @@ with a progress bar still creeping along while nothing was loading.
 - A confirmation follows, so nobody wonders whether it sent.
 - A genuinely slow sign-in still shows the loading screen, because that one
   really is waiting.
+
+The Magic Patterns design still draws an editable email box on that screen
+even when the address is known. The app is right and the design is not, so
+the design is being corrected under
+[FHS-579](https://qualicion2.atlassian.net/browse/FHS-579) rather than the
+code being changed to match it.
 
 ## Out of scope
 

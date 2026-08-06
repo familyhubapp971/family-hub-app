@@ -335,4 +335,38 @@ describe('<LoginPage />', () => {
     expect(slot.className).toContain('min-h-');
     expect(screen.queryByTestId('login-error')).not.toBeInTheDocument();
   });
+
+  // FHS-578: the slot used to be a sibling of the email field, so the form's
+  // 16px stacking gap landed above AND below it, leaving a 44px empty band
+  // under the box. Nesting it inside the field counts that gap once.
+  it('FHS-578: the error slot sits inside the email field, not beside it', () => {
+    renderPage();
+    const slot = screen.getByTestId('login-error-slot');
+    const input = screen.getByTestId('login-email');
+    expect(slot.parentElement).toBe(input.parentElement);
+    expect(screen.getByTestId('login-form').className).toContain('space-y-1');
+    expect(slot.className).toContain('min-h-[1rem]');
+  });
+
+  // FHS-578: one line of error text has to fit the reserved slot exactly, or
+  // the button moves the moment an error appears.
+  it('FHS-578: an error fits the reserved slot and leaves the button in place', () => {
+    renderPage();
+    const form = screen.getByTestId('login-form');
+    const buttonIndexBefore = Array.from(form.children).indexOf(
+      screen.getByTestId('login-submit').closest('button') as Element,
+    );
+
+    fireEvent.change(screen.getByTestId('login-email'), { target: { value: 'not-an-email' } });
+    fireEvent.submit(form);
+
+    const error = screen.getByTestId('login-error');
+    expect(error.className).toContain('text-xs');
+    expect(error.className).toContain('leading-4');
+    expect(
+      Array.from(form.children).indexOf(
+        screen.getByTestId('login-submit').closest('button') as Element,
+      ),
+    ).toBe(buttonIndexBefore);
+  });
 });
