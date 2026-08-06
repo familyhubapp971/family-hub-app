@@ -4,6 +4,7 @@ import { Button, Card } from '@familyhub/ui';
 import type { Session } from '@supabase/supabase-js';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE } from '../../lib/api';
+import { LoadingScreen } from '../../components/LoadingScreen';
 
 // FHS-227: bridge for the un-prefixed `/dashboard` route. Fetches
 // /api/me, picks the user's first tenant, and forwards to the
@@ -97,16 +98,9 @@ export function LegacyDashboardRedirect() {
     if (!session) return <Navigate to="/" replace />;
     return <CreateFamilyPanel session={session} />;
   }
-  return (
-    <main className="flex min-h-full items-center justify-center px-4 py-10">
-      <p
-        className="font-body text-sm text-gray-600"
-        data-testid="legacy-dashboard-redirect-loading"
-      >
-        Finding your family hub…
-      </p>
-    </main>
-  );
+  // FHS-550: this was near-invisible grey text on the dark background while
+  // the family was looked up. It is the shared branded wait now.
+  return <LoadingScreen context="redirect" />;
 }
 
 interface CreateFamilyPanelProps {

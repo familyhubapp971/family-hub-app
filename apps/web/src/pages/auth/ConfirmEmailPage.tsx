@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Loader2, Check, MailX, Mail, AlertTriangle } from 'lucide-react';
-import { Button, Card } from '@familyhub/ui';
+import { Check, MailX, Mail, AlertTriangle } from 'lucide-react';
+import { Button, Card, Spinner } from '@familyhub/ui';
 import { apiFetch, ApiError } from '../../lib/api';
 
 // FHS-510: the landing page for a self-serve sign-in email change.
@@ -131,12 +131,7 @@ export function ConfirmEmailPage() {
           {status.kind === 'checking' && (
             <>
               <IconDisc bg="bg-yellow-100" reduceMotion={!!reduceMotion}>
-                <Loader2
-                  className="animate-spin text-black"
-                  size={32}
-                  aria-hidden="true"
-                  data-testid="confirm-email-spinner"
-                />
+                <Spinner size="lg" className="text-black" />
               </IconDisc>
               <h1 className="mb-2 font-heading text-3xl">Checking your link</h1>
               <p className="font-bold text-gray-600">One moment&hellip;</p>

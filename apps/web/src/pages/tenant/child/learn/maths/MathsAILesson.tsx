@@ -13,7 +13,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   BookOpen,
-  Loader2,
   ChevronRight,
   ChevronLeft,
   Sparkles,
@@ -23,6 +22,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { API_BASE } from '../../../../../lib/api';
+import { Spinner } from '@familyhub/ui';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -588,7 +588,7 @@ export function MathsAILesson({
       <div data-testid="ai-lesson-loading" className="space-y-6">
         <div className="bg-white border-2 sm:border-3 border-black rounded-2xl p-8 sm:p-10 shadow-neo text-center space-y-4">
           <div className="flex justify-center">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-500" aria-hidden="true" />
+            <Spinner size="lg" className="text-blue-500" />
           </div>
           <h3 className="font-black text-lg text-gray-800" aria-live="polite" aria-busy="true">
             Creating your lesson…

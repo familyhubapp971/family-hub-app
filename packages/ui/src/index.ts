@@ -55,3 +55,4 @@ export {
 export { CollapsibleSection, type CollapsibleSectionProps } from './CollapsibleSection';
 export { MemberCard, type MemberCardProps } from './MemberCard';
 export { FormCard, type FormCardProps } from './FormCard';
+export { Spinner } from './Spinner';

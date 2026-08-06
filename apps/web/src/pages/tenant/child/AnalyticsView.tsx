@@ -10,6 +10,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Trophy } from 'lucide-react';
+import { Spinner } from '@familyhub/ui';
 
 // FHS-298: My World analytics (faithful port of the legacy AnalyticsView).
 // Read-only summary + weekly-trend chart + habit leaderboard for one child.
@@ -130,8 +131,8 @@ export function AnalyticsView({
     return (
       <div data-testid="analytics-loading" className="flex items-center justify-center py-20">
         <div className="text-center">
-          <div className="motion-safe:animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-3"></div>
-          <p className="text-sm font-bold text-gray-400">Loading analytics...</p>
+          <Spinner size="md" className="mx-auto mb-3 text-purple-600" />
+          <p className="text-sm font-bold text-gray-600">Loading analytics…</p>
         </div>
       </div>
     );
