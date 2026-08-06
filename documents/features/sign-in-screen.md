@@ -2,6 +2,7 @@
 
 **Jira:** [FHS-573](https://qualicion2.atlassian.net/browse/FHS-573) (design alignment),
 [FHS-578](https://qualicion2.atlassian.net/browse/FHS-578) (email box to button gap),
+[FHS-602](https://qualicion2.atlassian.net/browse/FHS-602) (one read-only box on the expired-link screen),
 [FHS-586](https://qualicion2.atlassian.net/browse/FHS-586) (email box colour + helper copy),
 [FHS-360](https://qualicion2.atlassian.net/browse/FHS-360) (kid sign-in),
 [FHS-237](https://qualicion2.atlassian.net/browse/FHS-237) (the card)
@@ -117,18 +118,22 @@ with a progress bar still creeping along while nothing was loading.
   anything is still happening.
 - Expired, already used and malformed share one shape: the outcome is the
   same, so only the headline and the line beneath it change.
-- Getting a new link happens on that screen. Where we already know the
-  address we say it once rather than asking for it again, with "Use a
-  different email" for when it is wrong.
+- Getting a new link happens on that screen. There is one email box in both
+  states, so the screen never changes shape (FHS-602). When we already know
+  the address it sits in that box read-only, with "Use a different email"
+  underneath for when it is wrong; tapping that turns the same box editable
+  and empty and puts the cursor in it. The box is read-only rather than
+  disabled, so a screen reader can still read back the address the dead link
+  was sent to.
 - A confirmation follows, so nobody wonders whether it sent.
 - A genuinely slow sign-in still shows the loading screen, because that one
   really is waiting.
 
-The design already covers both states, so the two are not in conflict: the
-editable box in the mock is the state where the address is unknown. What did
-drift was the spacing. The reserved error line sat as its own band above the
-button, putting it 32px below the address panel where the design has it
-close. Nesting that line brings it to 24px (FHS-578).
+Two things were corrected after the first port. The reserved error line sat
+as its own band above the button, putting it 32px below the field where the
+design has it close; nesting that line brings it to 24px (FHS-578). And the
+known-address state used a pale coloured panel rather than the design's
+labelled box, so the screen changed shape between the two states (FHS-602).
 
 ## Out of scope
 
