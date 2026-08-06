@@ -125,6 +125,11 @@ export function LoginPage() {
   // live panel lets the card ease to its new height instead.
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelHeight, setPanelHeight] = useState<number>();
+  // FHS-575: clipping is only needed WHILE the height animates. Left on at
+  // rest it cut 24px off the bottom of the card, because this design language
+  // draws hard offset shadows outside the element's own box and offsetHeight
+  // does not count them.
+  const [animatingHeight, setAnimatingHeight] = useState(false);
   useEffect(() => {
     const el = panelRef.current;
     // No ResizeObserver (jsdom, very old browsers): fall back to auto height
@@ -161,7 +166,9 @@ export function LoginPage() {
         animate={{ height: panelHeight ?? 'auto' }}
         initial={false}
         transition={reduceMotion ? { duration: 0 } : { duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
-        style={{ overflow: 'hidden' }}
+        onAnimationStart={() => setAnimatingHeight(true)}
+        onAnimationComplete={() => setAnimatingHeight(false)}
+        style={{ overflow: animatingHeight ? 'hidden' : 'visible' }}
       >
         <div ref={panelRef}>
           <AnimatePresence mode="popLayout" initial={false}>

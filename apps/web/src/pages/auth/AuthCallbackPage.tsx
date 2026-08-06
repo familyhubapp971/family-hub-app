@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../lib/auth-context';
 import { LoadingScreen } from '../../components/LoadingScreen';
+import { LinkExpired, reasonFromError } from './LinkExpired';
 import { supabase } from '../../lib/supabase';
 
 // FHS-331: Supabase appends auth failures (expired/used magic link, denied
@@ -146,10 +147,18 @@ export function AuthCallbackPage() {
     navigate('/dashboard', { replace: true });
   }, [exchangeState, loading, session, navigate]);
 
-  return (
-    <LoadingScreen
-      context="callback"
-      error={status.kind === 'error' ? { message: status.message } : null}
-    />
-  );
+  // FHS-575: a dead link is not a slow load. It gets its own screen with the
+  // form to request a new one, rather than borrowing the loading screen's
+  // stalled state and showing a progress bar while nothing is happening.
+  if (status.kind === 'error') {
+    return (
+      <LinkExpired
+        reason={reasonFromError(status.message)}
+        email={sessionStorage.getItem('fh.signup.email') ?? ''}
+      />
+    );
+  }
+
+  // Still genuinely waiting: this one really is a load.
+  return <LoadingScreen context="callback" />;
 }

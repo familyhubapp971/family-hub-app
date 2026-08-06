@@ -89,11 +89,26 @@ magic link or Google. Kids pick their face and type a PIN.
 | Kept the accessible label on the PIN inputs | MP's PIN boxes have no label; a screen reader would read four unnamed boxes                                                                                                    |
 | Kids are fetched, not hard-coded            | MP lists two example children; the real screen loads the family's own                                                                                                          |
 
+### The expired link screen (FHS-574 design, FHS-575 build)
+
+A sign-in link lasts an hour and works once. A dead one used to land on the
+loading screen's stalled state, saying "This is taking longer than usual."
+with a progress bar still creeping along while nothing was loading.
+
+- It has its own screen now, with no progress bar and no suggestion that
+  anything is still happening.
+- Expired, already used and malformed share one shape: the outcome is the
+  same, so only the headline and the line beneath it change.
+- Getting a new link happens on that screen. Where we already know the
+  address we say it once rather than asking for it again, with "Use a
+  different email" for when it is wrong.
+- A confirmation follows, so nobody wonders whether it sent.
+- A genuinely slow sign-in still shows the loading screen, because that one
+  really is waiting.
+
 ## Out of scope
 
-- The expired sign-in link screen, which borrows the loading screen today.
-  Design in [FHS-574](https://qualicion2.atlassian.net/browse/FHS-574), fix in
-  [FHS-575](https://qualicion2.atlassian.net/browse/FHS-575).
+- Password sign-in. The product is passwordless by decision (ADR 0011).
 
 ## Known drift elsewhere
 
