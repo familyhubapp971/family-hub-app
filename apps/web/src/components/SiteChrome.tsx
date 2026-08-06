@@ -293,8 +293,11 @@ export const LEGAL_LINKS = [
 ];
 
 export function SiteFooter() {
+  // FHS-601: no rule above the footer. The page and the footer share one
+  // purple, so a border drew a seam across it. The top margin still gives the
+  // footer its own block of air.
   return (
-    <footer className="relative z-10 mt-12 border-t-2 border-black/30 text-white md:mt-16">
+    <footer className="relative z-10 mt-12 text-white md:mt-16">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-5 py-6 md:flex-row md:items-center md:gap-10 md:px-6 md:py-10">
         <div className="md:flex-1">
           <p className="font-heading text-base md:text-xl">FamilyHub</p>
