@@ -131,7 +131,7 @@ export function ConfirmEmailPage() {
           {status.kind === 'checking' && (
             <>
               <IconDisc bg="bg-yellow-100" reduceMotion={!!reduceMotion}>
-                <Spinner size="lg" className="text-black" />
+                <Spinner size="lg" className="text-black" testId="confirm-email-spinner" />
               </IconDisc>
               <h1 className="mb-2 font-heading text-3xl">Checking your link</h1>
               <p className="font-bold text-gray-600">One moment&hellip;</p>
