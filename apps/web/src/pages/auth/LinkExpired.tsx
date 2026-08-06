@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Button, Card } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
 import { friendlyAuthErrorMessage } from '../../lib/auth-errors';
-import { rememberAuthEmail } from '../../lib/auth-email';
+import { rememberAuthEmail, authCallbackUrl } from '../../lib/auth-email';
 
 // FHS-575: the screen for a sign-in link that no longer works.
 //
@@ -83,7 +83,7 @@ export function LinkExpired({
     const { error } = await supabase.auth.signInWithOtp({
       email: parsed.data,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: authCallbackUrl(parsed.data),
         shouldCreateUser: false,
       },
     });

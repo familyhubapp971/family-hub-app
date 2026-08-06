@@ -28,3 +28,25 @@ export function recallAuthEmail(): string {
     return '';
   }
 }
+
+// FHS-605: device memory cannot follow you to another device, and a link
+// requested before it existed saved nothing. Putting the address inside the
+// link's return URL works everywhere, always: request on the laptop, open on
+// the phone, and the phone still knows who the link was for. The email the
+// link sits in was sent to that address anyway, so the link reveals nothing
+// its own envelope does not.
+
+/** The return URL a magic-link request hands Supabase, carrying the address. */
+export function authCallbackUrl(email: string): string {
+  return `${window.location.origin}/auth/callback?email=${encodeURIComponent(email)}`;
+}
+
+/**
+ * The address the link itself carries, or '' when absent or not an address.
+ * Anyone can type a URL, so junk that does not look like an email is ignored
+ * rather than displayed.
+ */
+export function emailFromLink(params: URLSearchParams): string {
+  const raw = params.get('email')?.trim() ?? '';
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw) ? raw : '';
+}

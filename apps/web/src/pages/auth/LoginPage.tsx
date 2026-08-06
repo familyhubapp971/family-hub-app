@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { Button, Input, Label } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
 import { friendlyAuthErrorMessage } from '../../lib/auth-errors';
-import { rememberAuthEmail } from '../../lib/auth-email';
+import { rememberAuthEmail, authCallbackUrl } from '../../lib/auth-email';
 import { AuthLayout } from './AuthLayout';
 import { KidSignIn } from './KidSignIn';
 
@@ -97,7 +97,7 @@ export function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email: parsed.data.email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: authCallbackUrl(parsed.data.email),
         shouldCreateUser: false,
       },
     });
