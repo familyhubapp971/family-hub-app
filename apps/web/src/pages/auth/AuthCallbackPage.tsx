@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../lib/auth-context';
 import { LoadingScreen } from '../../components/LoadingScreen';
 import { LinkExpired, reasonFromError } from './LinkExpired';
+import { recallAuthEmail } from '../../lib/auth-email';
 import { supabase } from '../../lib/supabase';
 
 // FHS-331: Supabase appends auth failures (expired/used magic link, denied
@@ -154,7 +155,7 @@ export function AuthCallbackPage() {
     return (
       <LinkExpired
         reason={reasonFromError(status.message)}
-        email={sessionStorage.getItem('fh.signup.email') ?? ''}
+        email={sessionStorage.getItem('fh.signup.email') || recallAuthEmail()}
       />
     );
   }

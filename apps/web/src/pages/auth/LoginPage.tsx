@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Button, Input, Label } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
 import { friendlyAuthErrorMessage } from '../../lib/auth-errors';
+import { rememberAuthEmail } from '../../lib/auth-email';
 import { AuthLayout } from './AuthLayout';
 import { KidSignIn } from './KidSignIn';
 
@@ -105,6 +106,7 @@ export function LoginPage() {
       return;
     }
     sessionStorage.setItem('fh.signup.email', parsed.data.email);
+    rememberAuthEmail(parsed.data.email);
     // FHS-563: /verify-email is reached from both login and signup, and its
     // "Or go back" link used to always point at /signup.
     sessionStorage.setItem('fh.auth.origin', '/login');
