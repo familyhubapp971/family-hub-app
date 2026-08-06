@@ -41,12 +41,15 @@ PHASES: list[tuple[str, str]] = [
     ("auth", "Auth & Access Control"),
     ("parent", "Parent App"),
     ("kid", "Kid World"),
+    ("design", "Design & UX"),
+    ("beta", "Beta & Feedback"),
     ("signup", "Signup & Custom URL"),
     ("modules", "Modules & Gating"),
     ("billing", "Billing"),
     ("invites", "Invites & Roles"),
     ("launch", "White-Label Launch"),
     ("crosscut", "Cross-cutting & Ops"),
+    ("commercial", "Commercial"),
 ]
 
 # Every FHS epic -> its delivery phase. Curated (see module docstring).
@@ -55,7 +58,7 @@ EPIC_PHASE: dict[str, str] = {
     "FHS-1": "foundation", "FHS-7": "foundation", "FHS-12": "foundation",
     "FHS-18": "foundation", "FHS-143": "foundation", "FHS-149": "foundation",
     "FHS-155": "foundation", "FHS-160": "foundation", "FHS-165": "foundation",
-    "FHS-171": "foundation", "FHS-177": "foundation",
+    "FHS-171": "foundation", "FHS-177": "foundation", "FHS-588": "foundation",
     # Auth & Access Control
     "FHS-178": "auth", "FHS-179": "auth", "FHS-333": "auth", "FHS-344": "auth",
     # Parent App
@@ -63,7 +66,7 @@ EPIC_PHASE: dict[str, str] = {
     "FHS-260": "parent", "FHS-272": "parent",
     # Kid World
     "FHS-234": "kid", "FHS-239": "kid", "FHS-282": "kid", "FHS-290": "kid",
-    "FHS-368": "kid",
+    "FHS-368": "kid", "FHS-388": "kid", "FHS-393": "kid",
     # Signup & Custom URL
     "FHS-23": "signup", "FHS-29": "signup", "FHS-35": "signup", "FHS-42": "signup",
     # Modules & Gating
@@ -74,8 +77,15 @@ EPIC_PHASE: dict[str, str] = {
     "FHS-90": "invites", "FHS-97": "invites", "FHS-104": "invites", "FHS-110": "invites",
     # White-Label Launch
     "FHS-116": "launch", "FHS-123": "launch", "FHS-129": "launch", "FHS-136": "launch",
+    # Design & UX
+    "FHS-423": "design", "FHS-496": "design", "FHS-576": "design",
+    "FHS-580": "design",
+    # Beta & Feedback
+    "FHS-417": "beta", "FHS-434": "beta", "FHS-470": "beta",
     # Cross-cutting & Ops
-    "FHS-205": "crosscut", "FHS-254": "crosscut",
+    "FHS-205": "crosscut", "FHS-254": "crosscut", "FHS-459": "crosscut",
+    # Commercial
+    "FHS-590": "commercial",
 }
 
 # A resolved status counts as "delivered" for progress (CLAUDE.md treats
