@@ -66,10 +66,17 @@ magic link or Google. Kids pick their face and type a PIN.
   above. The faces are replaced rather than left on screen underneath.
 - **Coloured tiles.** Each face sits on a coloured tile with a white avatar
   disc inside it, matching the design.
-- **Motion.** The arriving panel or step slides in over 180ms. We do not wait
-  for the outgoing one to leave: making a child watch a cross-fade before
-  their PIN box appears is worse than no animation. Reduced motion gets an
-  instant swap.
+- **The faces fill the card** (FHS-577). Two sit side by side at full width.
+  Three squeeze into one row at a smaller size rather than leaving one
+  stranded on its own line. One renders alone rather than half a grid.
+- **Motion.** Panels and steps fade up on the way in and out over 220ms, and
+  the card itself eases to its new height over 320ms rather than snapping
+  between three differently sized views. `popLayout` takes the outgoing view
+  out of flow at once, so the arriving one is never held waiting for it.
+  Reduced motion gets an instant swap and no height animation.
+- **Height measuring** uses a `ResizeObserver` on the live panel. Where that
+  does not exist the card simply uses auto height rather than pinning itself
+  to a stale measurement.
 - **Parent side** stays passwordless: one email field, a magic link, or
   Continue with Google.
 
