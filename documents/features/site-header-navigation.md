@@ -1,6 +1,7 @@
 # Feature: Public site header navigation
 
 **Jira:** [FHS-572](https://qualicion2.atlassian.net/browse/FHS-572) (Magic Patterns port),
+[FHS-601](https://qualicion2.atlassian.net/browse/FHS-601) (no rule above the footer),
 [FHS-568](https://qualicion2.atlassian.net/browse/FHS-568) (Log in as a button),
 [FHS-559](https://qualicion2.atlassian.net/browse/FHS-559) (skip link),
 [FHS-555](https://qualicion2.atlassian.net/browse/FHS-555) (burger menu),
@@ -100,6 +101,9 @@ primary one, not a fallback.
   repo's tap floor, so the height is ours and the look is MP's.
 - The small print keeps clearance beneath it so the floating feedback
   button cannot cover it.
+- **No rule above the footer** (FHS-601). The page and the footer share one
+  purple, so a top border drew a seam across the page. Space separates the
+  footer now, not a line.
 
 ## Out of scope
 

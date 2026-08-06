@@ -333,4 +333,15 @@ describe('SiteFooter layout on phones', () => {
     renderFooter();
     expect(screen.getByTestId('site-footer-legal-mobile').className).toContain('gap-x-2');
   });
+
+  // FHS-601: the page and the footer share one purple, so a top border drew a
+  // seam across it. Space separates the footer now, not a line.
+  it('FHS-601: draws no rule above the footer', () => {
+    const { container } = renderFooter();
+    const footer = container.querySelector('footer');
+    expect(footer).not.toBeNull();
+    expect(footer!.className).not.toContain('border-t');
+    // Still its own block: the top margin stays.
+    expect(footer!.className).toContain('mt-12');
+  });
 });
