@@ -142,6 +142,7 @@ export function ProfilePill({
   onRewardSettings,
   onLogout,
   onSelectChild,
+  activeChildId,
   signingOut,
   slug,
 }: {
@@ -156,6 +157,10 @@ export function ProfilePill({
   // FHS-523: when provided, "View World" switches child via this handler
   // (in-app SPA nav). Without it, we hard-navigate (dashboard's default).
   onSelectChild?: (childId: string) => void;
+  // FHS-585: the child whose world is on screen, so the menu can say which
+  // one you are looking at. Left out on the family dashboard, where no
+  // child's world is open and nothing should be marked.
+  activeChildId?: string;
   signingOut: boolean;
   slug: string;
 }) {
@@ -249,35 +254,53 @@ export function ProfilePill({
             </p>
             {childMembers.length > 0 ? (
               <ul>
-                {childMembers.map((c, i) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setOpen(false);
-                        if (onSelectChild) onSelectChild(c.id);
-                        else window.location.assign(`/t/${slug}/child/${c.id}`);
-                      }}
-                      data-testid={`dashboard-profile-child-${c.id}`}
-                      className="group flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-gray-100"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-black font-heading text-sm ${CHILD_DISC_COLORS[i % CHILD_DISC_COLORS.length]}`}
+                {childMembers.map((c, i) => {
+                  // FHS-585: every row used to read "View World", including
+                  // the world already on screen, so with two children a
+                  // parent had to remember which one they opened.
+                  const viewing = c.id === activeChildId;
+                  return (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        aria-current={viewing ? 'true' : undefined}
+                        onClick={() => {
+                          setOpen(false);
+                          // Already here: closing the menu is the whole job.
+                          if (viewing) return;
+                          if (onSelectChild) onSelectChild(c.id);
+                          else window.location.assign(`/t/${slug}/child/${c.id}`);
+                        }}
+                        data-testid={`dashboard-profile-child-${c.id}`}
+                        className={`group flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                          viewing
+                            ? 'bg-purple-100 ring-2 ring-inset ring-purple-700'
+                            : 'hover:bg-gray-100'
+                        }`}
                       >
-                        {[...c.displayName.trim()][0]?.toUpperCase() ?? '?'}
-                      </span>
-                      <span className="truncate text-sm font-bold">{c.displayName}</span>
-                      <span
-                        aria-hidden="true"
-                        className="ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400 group-hover:text-purple-600"
-                      >
-                        View World →
-                      </span>
-                    </button>
-                  </li>
-                ))}
+                        <span
+                          aria-hidden="true"
+                          className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-black font-heading text-sm ${CHILD_DISC_COLORS[i % CHILD_DISC_COLORS.length]}`}
+                        >
+                          {[...c.displayName.trim()][0]?.toUpperCase() ?? '?'}
+                        </span>
+                        <span className="truncate text-sm font-bold">{c.displayName}</span>
+                        <span
+                          aria-hidden="true"
+                          data-testid={`dashboard-profile-child-${c.id}-state`}
+                          className={`ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wider ${
+                            viewing
+                              ? 'text-purple-800'
+                              : 'text-gray-400 group-hover:text-purple-600'
+                          }`}
+                        >
+                          {viewing ? 'Viewing ✓' : 'View World →'}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <button

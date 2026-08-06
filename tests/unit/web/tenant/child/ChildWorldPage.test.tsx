@@ -255,6 +255,49 @@ describe('<ChildWorldPage />', () => {
     await waitFor(() => expect(screen.getByTestId('login-page')).toBeInTheDocument());
   });
 
+  // FHS-585: every row read "View World", including the world already on
+  // screen, so with two children a parent had to remember which one they
+  // opened or tap one to find out.
+  it('the account menu marks the child whose world is open', async () => {
+    renderAt();
+    const pill = await screen.findByTestId('dashboard-profile-pill');
+    await waitFor(() => expect(pill.textContent).toMatch(/Nadia/));
+    await act(async () => {
+      fireEvent.click(pill);
+    });
+
+    const open = await screen.findByTestId(`dashboard-profile-child-${MEMBER}`);
+    const other = await screen.findByTestId(`dashboard-profile-child-${SIBLING}`);
+
+    expect(open).toHaveAttribute('aria-current', 'true');
+    expect(other).not.toHaveAttribute('aria-current');
+    expect(screen.getByTestId(`dashboard-profile-child-${MEMBER}-state`).textContent).toMatch(
+      /Viewing/,
+    );
+    expect(screen.getByTestId(`dashboard-profile-child-${SIBLING}-state`).textContent).toMatch(
+      /View World/,
+    );
+    // Marked in more than colour: the row carries a ring, not just a tint.
+    expect(open.className).toMatch(/ring-purple-700/);
+  });
+
+  it('tapping the child already on screen just closes the menu', async () => {
+    renderAt();
+    const pill = await screen.findByTestId('dashboard-profile-pill');
+    await waitFor(() => expect(pill.textContent).toMatch(/Nadia/));
+    await act(async () => {
+      fireEvent.click(pill);
+    });
+    await act(async () => {
+      fireEvent.click(await screen.findByTestId(`dashboard-profile-child-${MEMBER}`));
+    });
+    // No pointless re-navigation to the page we are already on.
+    expect(screen.getByTestId('location').textContent).toBe(`/t/khan/child/${MEMBER}`);
+    await waitFor(() =>
+      expect(screen.queryByTestId(`dashboard-profile-child-${SIBLING}`)).toBeNull(),
+    );
+  });
+
   it('switching to a sibling from the account menu navigates in-app to their world', async () => {
     renderAt();
     const pill = await screen.findByTestId('dashboard-profile-pill');
