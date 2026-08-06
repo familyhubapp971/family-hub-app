@@ -2,6 +2,7 @@
 
 **Jira:** [FHS-573](https://qualicion2.atlassian.net/browse/FHS-573) (design alignment),
 [FHS-578](https://qualicion2.atlassian.net/browse/FHS-578) (email box to button gap),
+[FHS-586](https://qualicion2.atlassian.net/browse/FHS-586) (email box colour + helper copy),
 [FHS-360](https://qualicion2.atlassian.net/browse/FHS-360) (kid sign-in),
 [FHS-237](https://qualicion2.atlassian.net/browse/FHS-237) (the card)
 **Status:** shipped
@@ -84,6 +85,12 @@ magic link or Google. Kids pick their face and type a PIN.
   to a stale measurement.
 - **Parent side** stays passwordless: one email field, a magic link, or
   Continue with Google.
+- **The email box reads as the thing to fill in, not as disabled**
+  (FHS-586). It is white with a black border (the shared Input's `dark`
+  variant), matching the design's boxes elsewhere on this card; the
+  shared component's default gray-fill variant used elsewhere in the app
+  is unchanged. The helper line above it reads "We will email you a link
+  that signs you in. No password needed."
 - **The button sits close under the email box** (FHS-578). The slot that
   reserves room for an error lives inside the field's own wrapper, so the
   form's stacking gap is counted once rather than above and below it. The

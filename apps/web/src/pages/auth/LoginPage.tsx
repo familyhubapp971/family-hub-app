@@ -196,7 +196,7 @@ export function LoginPage() {
                   Parent log in
                 </h2>
                 <p className="mb-4 font-body text-sm text-gray-700">
-                  We&rsquo;ll email you a one-time link to log in. No password to remember.
+                  We will email you a link that signs you in. No password needed.
                 </p>
 
                 <form onSubmit={onSubmit} className="space-y-1" data-testid="login-form" noValidate>
@@ -208,6 +208,7 @@ export function LoginPage() {
                       id="email"
                       name="email"
                       type="email"
+                      variant="dark"
                       autoComplete="email"
                       required
                       value={email}
