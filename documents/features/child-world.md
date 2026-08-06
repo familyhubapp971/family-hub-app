@@ -1,6 +1,6 @@
 # Feature: Child world (a per-child screen)
 
-**Jira:** [FHS-268](https://qualicion2.atlassian.net/browse/FHS-268) (shell) · [FHS-401](https://qualicion2.atlassian.net/browse/FHS-401) (Learning Insights) · [FHS-523](https://qualicion2.atlassian.net/browse/FHS-523) (account pill) · [FHS-529](https://qualicion2.atlassian.net/browse/FHS-529) (header matches the design)
+**Jira:** [FHS-268](https://qualicion2.atlassian.net/browse/FHS-268) (shell) · [FHS-401](https://qualicion2.atlassian.net/browse/FHS-401) (Learning Insights) · [FHS-523](https://qualicion2.atlassian.net/browse/FHS-523) (account pill) · [FHS-529](https://qualicion2.atlassian.net/browse/FHS-529) (header matches the design) · [FHS-585](https://qualicion2.atlassian.net/browse/FHS-585) (the menu marks the open world)
 **Status:** shipped
 **Owner:** product-manager
 
@@ -41,6 +41,25 @@ account menu's "View World" links.
 - **Given** I have more than one child
 - **When** I open the account pill and tap another child's "View World"
 - **Then** that child's world opens
+
+**Scenario: The menu says which world is open**
+
+- **Given** I am viewing one child's world and have more than one child
+- **When** I open the account menu
+- **Then** that child's row is marked as the one being viewed and reads "Viewing ✓", and every other child still reads "View World →"
+- **And** a screen reader announces that row as the current item
+
+**Scenario: Tapping the child I am already viewing**
+
+- **Given** the account menu is open on that child's world
+- **When** I tap their row
+- **Then** the menu closes and nothing reloads
+
+**Scenario: Nothing is marked on the family dashboard**
+
+- **Given** I am on the family dashboard with no child's world open
+- **When** I open the account menu
+- **Then** no child row is marked as being viewed
 
 **Scenario: The pill shows my name, never my login email**
 

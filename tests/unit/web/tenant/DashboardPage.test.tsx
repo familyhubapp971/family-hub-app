@@ -333,6 +333,22 @@ describe('<DashboardPage />: FHS-261 header', () => {
     expect(screen.queryByTestId('dashboard-profile-child-m-2')).toBeNull();
   });
 
+  // FHS-585: the marker belongs on a child's world, not here. No child's
+  // world is open on the family dashboard, so nothing should be marked.
+  it('marks no child as being viewed on the family dashboard', async () => {
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('dashboard-family-name')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    for (const id of ['m-3', 'm-4']) {
+      expect(screen.getByTestId(`dashboard-profile-child-${id}`)).not.toHaveAttribute(
+        'aria-current',
+      );
+      expect(screen.getByTestId(`dashboard-profile-child-${id}-state`).textContent).toMatch(
+        /View World/,
+      );
+    }
+  });
+
   // FHS-500: add-member now lives on the Family Overview (FHS-498), so the
   // profile dropdown no longer carries a "+" or an "Add member" button.
   it('the profile dropdown has no add-member controls (FHS-500)', async () => {

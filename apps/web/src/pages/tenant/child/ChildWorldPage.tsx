@@ -211,6 +211,7 @@ export function ChildWorldPage() {
             onRewardSettings={onRewardSettings}
             onLogout={() => void onLogout()}
             onSelectChild={(id) => navigate(`/t/${slug}/child/${id}`)}
+            activeChildId={memberId}
             signingOut={signingOut}
             slug={slug}
           />
