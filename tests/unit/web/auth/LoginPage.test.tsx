@@ -348,6 +348,30 @@ describe('<LoginPage />', () => {
     expect(slot.className).toContain('min-h-[1rem]');
   });
 
+  // FHS-584: the observer used to watch a static wrapper, which reported
+  // transient heights mid-swap and retargeted the card's height tween while it
+  // was still running. That is what made the role switch lurch. Watching the
+  // arriving panel itself gives one target and one ease.
+  it('FHS-584: measures the arriving panel itself, not a wrapper around it', () => {
+    const observed: Element[] = [];
+    class StubResizeObserver {
+      observe(el: Element) {
+        observed.push(el);
+      }
+      unobserve() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', StubResizeObserver);
+
+    renderPage();
+    expect(observed).toContain(screen.getByTestId('login-parent-panel'));
+
+    fireEvent.click(screen.getByTestId('login-role-kid'));
+    expect(observed.at(-1)).toBe(screen.getByTestId('login-kid-panel-shell'));
+
+    vi.unstubAllGlobals();
+  });
+
   // FHS-578: one line of error text has to fit the reserved slot exactly, or
   // the button moves the moment an error appears.
   it('FHS-578: an error fits the reserved slot and leaves the button in place', () => {
