@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { Button, Input } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
 import { friendlyAuthErrorMessage } from '../../lib/auth-errors';
-import { rememberAuthEmail } from '../../lib/auth-email';
+import { rememberAuthEmail, authCallbackUrl } from '../../lib/auth-email';
 
 // SignupPage: auth-first onboarding. The signup form collects only
 // the email address (or kicks off Google OAuth); family name + slug
@@ -65,7 +65,7 @@ export function SignupPage() {
     setStatus({ kind: 'submitting' });
     const { error } = await supabase.auth.signInWithOtp({
       email: parsed.data.email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: authCallbackUrl(parsed.data.email) },
     });
     if (error) {
       setStatus({ kind: 'error', message: friendlyAuthErrorMessage(error.message) });

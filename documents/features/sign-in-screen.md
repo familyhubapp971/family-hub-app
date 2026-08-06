@@ -4,6 +4,7 @@
 [FHS-578](https://qualicion2.atlassian.net/browse/FHS-578) (email box to button gap),
 [FHS-602](https://qualicion2.atlassian.net/browse/FHS-602) (one read-only box on the expired-link screen),
 [FHS-604](https://qualicion2.atlassian.net/browse/FHS-604) (the address survives into a new tab),
+[FHS-605](https://qualicion2.atlassian.net/browse/FHS-605) (the link itself carries the address),
 [FHS-586](https://qualicion2.atlassian.net/browse/FHS-586) (email box colour + helper copy),
 [FHS-360](https://qualicion2.atlassian.net/browse/FHS-360) (kid sign-in),
 [FHS-237](https://qualicion2.atlassian.net/browse/FHS-237) (the card)
@@ -126,6 +127,12 @@ with a progress bar still creeping along while nothing was loading.
   and empty and puts the cursor in it. The box is read-only rather than
   disabled, so a screen reader can still read back the address the dead link
   was sent to.
+- **The link itself carries the address** (FHS-605). Every magic-link
+  request hands Supabase a return URL of `/auth/callback?email=...`, so the
+  expired screen knows who the link was for on any device and in any browser,
+  including one that never requested it. Junk in that parameter is ignored
+  rather than displayed. Deliberate trade-off: the address appears in the
+  link URL; the email it sits in was sent to that address anyway.
 - **The address survives into a new tab** (FHS-604). An email link always
   opens a fresh tab, whose per-tab memory is empty, so requesting a link also
   remembers the address on the device (`localStorage`, key `fh.auth.email`).

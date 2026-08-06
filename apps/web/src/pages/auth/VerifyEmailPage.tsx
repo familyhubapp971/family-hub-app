@@ -4,6 +4,7 @@ import { Mail } from 'lucide-react';
 import { z } from 'zod';
 import { Button, Card } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
+import { authCallbackUrl } from '../../lib/auth-email';
 import { webmailFor } from '../../lib/webmail';
 
 // Validate the email source BEFORE we render it or hand it to Supabase.
@@ -101,7 +102,7 @@ export function VerifyEmailPage() {
     // (ADR 0011) signInWithOtp is the correct path.
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: authCallbackUrl(email) },
     });
     if (error) {
       setResend({ kind: 'error', message: error.message });

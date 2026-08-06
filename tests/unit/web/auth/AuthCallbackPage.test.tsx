@@ -112,6 +112,37 @@ describe('<AuthCallbackPage />', () => {
     expect(screen.getByTestId('link-expired-email')).toHaveValue('tab@khan.family');
   });
 
+  // FHS-605: the link itself carries the address, so a device that never
+  // requested anything still knows who the link was for.
+  it('FHS-605: the address in the link wins on a strange device', async () => {
+    renderAt(
+      '/auth/callback?email=sarah%40khan.family#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
+    );
+    await screen.findByTestId('link-expired-title');
+    const box = screen.getByTestId('link-expired-email');
+    expect(box).toHaveValue('sarah@khan.family');
+    expect(box).toHaveAttribute('readonly');
+  });
+
+  it('FHS-605: junk in the email parameter is ignored', async () => {
+    renderAt(
+      '/auth/callback?email=%3Cscript%3Enope#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
+    );
+    await screen.findByTestId('link-expired-title');
+    const box = screen.getByTestId('link-expired-email');
+    expect(box).toHaveValue('');
+    expect(box).not.toHaveAttribute('readonly');
+  });
+
+  it('FHS-605: a valid sign-in carrying the address still lands on the dashboard', async () => {
+    authState.session = {
+      access_token: 'jwt-abc',
+      user: { id: 'u1', email: 'sarah@example.com', user_metadata: {} },
+    };
+    renderAt('/auth/callback?email=sarah%40khan.family');
+    await waitFor(() => expect(screen.getByTestId('route-marker').textContent).toBe('dashboard'));
+  });
+
   it('FHS-604: a device that never asked for a link still gets the empty box', async () => {
     renderAt(
       '/auth/callback#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
