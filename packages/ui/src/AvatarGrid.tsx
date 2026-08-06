@@ -61,7 +61,11 @@ export function AvatarGrid({
             aria-label={a.role ? `${a.name}, ${a.role}` : a.name}
             onClick={() => onSelect?.(a.id)}
             className={[
-              'group flex flex-col items-center gap-2 rounded-xl border-2 border-black bg-white p-3 text-black transition-all duration-150',
+              // FHS-573: the Magic Patterns design colours the whole tile and
+              // sits a white avatar disc inside it, rather than a white tile
+              // with a coloured disc. Only the kid sign-in uses this grid.
+              'group flex flex-col items-center gap-3 rounded-xl border-2 border-black p-6 text-black transition-all duration-150',
+              a.color,
               'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2',
               selected
                 ? 'shadow-neo-lg ring-4 ring-yellow-300 ring-offset-2 -translate-y-0.5'
@@ -70,16 +74,19 @@ export function AvatarGrid({
           >
             <div
               className={[
-                'flex h-16 w-16 items-center justify-center rounded-full border-2 border-black text-2xl font-heading',
-                a.color,
+                'flex h-16 w-16 items-center justify-center rounded-full border-2 border-black bg-white text-3xl font-heading shadow-neo-xs',
               ].join(' ')}
               aria-hidden="true"
             >
               {a.avatar ?? a.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col items-center">
-              <span className="font-heading text-sm">{a.name}</span>
-              {a.role && <span className="text-xs font-bold text-gray-500">{a.role}</span>}
+              <span className="font-heading text-lg">{a.name}</span>
+              {a.role && (
+                <span className="text-[10px] font-bold uppercase tracking-wider text-black/60">
+                  {a.role}
+                </span>
+              )}
             </div>
           </button>
         );

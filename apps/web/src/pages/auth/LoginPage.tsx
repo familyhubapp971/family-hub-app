@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button, Input, Label } from '@familyhub/ui';
@@ -57,6 +58,7 @@ function isKnownRole(value: string | null): value is Role {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
   const [params, setParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
@@ -122,8 +124,19 @@ export function LoginPage() {
     <AuthLayout title="Welcome Back!" subtitle="Sign in to Family Hub" centered>
       <RoleToggle role={role} onChange={onRoleChange} />
 
+      {/* FHS-573: the arriving panel slides in. We deliberately do not wait
+          on the outgoing one: making someone watch a cross-fade before the
+          form they asked for appears is worse than no animation. */}
       {role === 'parent' ? (
-        <section
+        <motion.section
+          key="parent"
+          {...(reduceMotion
+            ? {}
+            : {
+                initial: { opacity: 0, x: -20 },
+                animate: { opacity: 1, x: 0 },
+                transition: { duration: 0.18, ease: 'easeOut' as const },
+              })}
           id="login-parent-panel"
           aria-labelledby="login-parent-heading"
           data-testid="login-parent-panel"
@@ -201,11 +214,21 @@ export function LoginPage() {
               {status.kind === 'submitting-google' ? 'Redirecting…' : 'Continue with Google'}
             </span>
           </Button>
-        </section>
+        </motion.section>
       ) : (
-        <div className="mt-6">
+        <motion.div
+          key="kid"
+          {...(reduceMotion
+            ? {}
+            : {
+                initial: { opacity: 0, x: 20 },
+                animate: { opacity: 1, x: 0 },
+                transition: { duration: 0.18, ease: 'easeOut' as const },
+              })}
+          className="mt-6"
+        >
           <KidLoginPanel />
-        </div>
+        </motion.div>
       )}
 
       {/* MP "Create a new family" footer: single CTA for both views. */}
