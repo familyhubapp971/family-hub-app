@@ -25,7 +25,7 @@ Then('I see four feature cards: Calendar, Tasks, Learn, Journal', async ({ page 
 });
 
 When('I click the Start free button in the header', async ({ page }) => {
-  await new WelcomePagePO(page).startFreeButton().click();
+  await new WelcomePagePO(page).clickStartFreeInHeader();
 });
 
 When('I click the Pricing nav link', async ({ page }) => {

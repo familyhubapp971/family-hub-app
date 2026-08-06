@@ -22,6 +22,28 @@ export class WelcomePagePO {
     return this.page.getByRole('button', { name: /start free/i }).first();
   }
 
+  /**
+   * FHS-603: clicks the header's Start free at any viewport. On a phone the
+   * header carries only the logo and the burger (FHS-572 moved both actions
+   * into the panel), so the page's first "Start free" is the hidden one inside
+   * the closed panel and clicking it waits forever. The panel's copy is also a
+   * link rather than a button, so a role lookup never finds it either. Open the
+   * burger and use the panel's own control.
+   */
+  async clickStartFreeInHeader() {
+    const burger = this.burgerButton();
+    // isVisible() does not wait, so ask only once the header has rendered.
+    // The burger is always in the page and hidden by CSS from lg up, so this
+    // resolves at every width.
+    await burger.waitFor({ state: 'attached' });
+    if (await burger.isVisible()) {
+      await burger.click();
+      await this.menuSignupButton().click();
+      return;
+    }
+    await this.startFreeButton().click();
+  }
+
   pricingNavLink() {
     return this.page.getByRole('link', { name: /^Pricing$/i });
   }
@@ -32,6 +54,10 @@ export class WelcomePagePO {
    */
   async clickHeaderNavLink(name: string) {
     const burger = this.burgerButton();
+    // FHS-603: isVisible() does not wait. Asking before the header rendered
+    // read "no burger", so on a phone this fell through to the desktop row and
+    // clicked a link nobody could see.
+    await burger.waitFor({ state: 'attached' });
     if (await burger.isVisible()) await burger.click();
     await this.page
       .getByRole('link', { name: new RegExp(`^${name}$`, 'i') })
