@@ -156,9 +156,18 @@ export function LinkExpired({
                 </>
               )}
 
-              <div className="min-h-[1.25rem]" aria-live="polite">
+              {/* FHS-578: the slot reserves one line so the button never moves
+                  when a send fails, but it used to reserve a 20px band on top
+                  of the button's own margin, which pushed the button 32px
+                  below the address panel where the design has 16px. One tight
+                  line plus a 4px margin lands at 24px. */}
+              <div
+                className="mt-1 min-h-[1rem]"
+                aria-live="polite"
+                data-testid="link-expired-error-slot"
+              >
                 {state.kind === 'error' && (
-                  <p className="mt-1 font-body text-sm text-red-600" role="alert">
+                  <p className="font-body text-xs leading-4 text-red-600" role="alert">
                     {state.message}
                   </p>
                 )}
@@ -171,7 +180,7 @@ export function LinkExpired({
                 fullWidth
                 disabled={state.kind === 'sending'}
                 testId="link-expired-send"
-                className="mt-3 min-h-[48px]"
+                className="mt-1 min-h-[48px]"
               >
                 {state.kind === 'sending' ? 'Sending…' : 'Send me a new link →'}
               </Button>

@@ -113,11 +113,11 @@ with a progress bar still creeping along while nothing was loading.
 - A genuinely slow sign-in still shows the loading screen, because that one
   really is waiting.
 
-The Magic Patterns design still draws an editable email box on that screen
-even when the address is known. The app is right and the design is not, so
-the design is being corrected under
-[FHS-579](https://qualicion2.atlassian.net/browse/FHS-579) rather than the
-code being changed to match it.
+The design already covers both states, so the two are not in conflict: the
+editable box in the mock is the state where the address is unknown. What did
+drift was the spacing. The reserved error line sat as its own band above the
+button, putting it 32px below the address panel where the design has it
+close. Nesting that line brings it to 24px (FHS-578).
 
 ## Out of scope
 

@@ -121,4 +121,27 @@ describe('LinkExpired', () => {
     expect(screen.getByTestId('link-expired-send').className).toContain('min-h-[48px]');
     expect(screen.getByTestId('link-expired-back').className).toContain('min-h-[44px]');
   });
+
+  // FHS-578: the reserved error line used to be a 20px band on top of the
+  // button's own margin, so the button sat 32px below the address panel where
+  // the Magic Patterns design has it much closer.
+  it('FHS-578: the reserved error line does not open a band above the button', () => {
+    renderScreen();
+    const slot = screen.getByTestId('link-expired-error-slot');
+    expect(slot.className).toContain('min-h-[1rem]');
+    expect(slot.className).toContain('mt-1');
+    expect(screen.getByTestId('link-expired-send').className).toContain('mt-1');
+  });
+
+  it('FHS-578: a send failure fits the reserved line', async () => {
+    signInWithOtp.mockResolvedValue({
+      error: { message: 'For security purposes, you can only request this after 30 seconds.' },
+    });
+    renderScreen();
+    fireEvent.submit(screen.getByTestId('link-expired-send').closest('form')!);
+
+    const error = await screen.findByRole('alert');
+    expect(error.className).toContain('text-xs');
+    expect(error.className).toContain('leading-4');
+  });
 });
