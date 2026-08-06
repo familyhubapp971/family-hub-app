@@ -79,7 +79,8 @@ describe('<AuthCallbackPage />', () => {
     renderAt(
       '/auth/callback#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
     );
-    expect(screen.getByRole('alert').textContent).toMatch(/expired/i);
+    // FHS-575: a dead link gets its own screen, not the loader's alert.
+    expect(screen.getByTestId('link-expired-title').textContent).toMatch(/expired/i);
     // Must NOT have navigated into the app.
     expect(screen.queryByTestId('route-marker')).toBeNull();
     await waitFor(() => expect(signOut).toHaveBeenCalled());
@@ -145,7 +146,9 @@ describe('<AuthCallbackPage />', () => {
         error: { message: 'one-time use' },
       });
       renderAt('/auth/callback?code=stale&state=xyz');
-      await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/expired|used/i));
+      await waitFor(() =>
+        expect(screen.getByTestId('link-expired-title').textContent).toMatch(/expired|used/i),
+      );
       // We do NOT bounce to /login on an exchange error: the user
       // needs to see the message and request a fresh link.
       expect(screen.queryByTestId('route-marker')).toBeNull();

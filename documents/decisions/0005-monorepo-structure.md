@@ -20,7 +20,7 @@ utilities. We need a code layout that:
 ## Decision
 
 **Single repo, pnpm workspaces, two top-level workspace types:
-`apps/*` and `packages/*`. Plus `tests/`, `documents/`, `deploy/` as
+`apps/*` and `packages/*`. Plus `tests/` and `documents/` as
 non-workspace folders.**
 
 Layout:
@@ -38,7 +38,6 @@ tests/
   e2e/         # Playwright (cross-app, mirrors Gherkin per CLAUDE.md)
   perf/        # k6 scripts
 documents/          # see documents/README.md
-deploy/        # Railway configs, Dockerfiles, infra scripts
 .github/       # workflows + PR template
 ```
 
@@ -95,3 +94,16 @@ deps, hoisting) need occasional troubleshooting.
 
 - [ADR 0006: Branching strategy](0006-branching-strategy.md)
 - [`/CLAUDE.md` Project context layout](../../CLAUDE.md#project-context)
+
+## Update, 2026-08-06
+
+`deploy/` was removed. It never held anything but a README describing a
+layout that was never built: Railway keeps its own service configuration,
+the test database runs from `docker-compose.test.yml` at the root, and the
+Supabase settings live in Supabase. An empty folder promising structure is
+worse than no folder, because it implies a home for config that is
+actually elsewhere.
+
+`bugs/` went at the same time. Every bug goes straight to Jira (see the
+"every reported bug gets logged" rule in CLAUDE.md), so the local backlog
+had nothing left in it.
