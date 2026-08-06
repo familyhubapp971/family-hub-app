@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button, useBodyScrollLock } from '@familyhub/ui';
@@ -163,18 +163,21 @@ export function SiteHeader({
       {/* z-50 keeps the bar's own controls above the open menu's scrim
           (they are siblings of it inside this header). */}
       <div className="relative z-50 flex items-center gap-2 md:gap-4">
+        {/* FHS-572: on phones both actions moved inside the menu (MP's
+            design), so the bar carries the logo and one control. From lg up
+            the inline pair is unchanged. */}
         {actions ?? (
-          <>
+          <div className="hidden items-center gap-4 lg:flex">
             <Link
               to="/login"
-              className="hidden rounded-lg px-2 py-2.5 font-bold text-white transition-colors hover:text-yellow-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 lg:inline"
+              className="rounded-lg px-2 py-2.5 font-bold text-white transition-colors hover:text-yellow-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300"
             >
               Log in
             </Link>
             <Button onClick={() => navigate('/signup')} variant="primary">
               Start free
             </Button>
-          </>
+          </div>
         )}
 
         {/* Phone + tablet: everything else lives behind this. */}
@@ -186,12 +189,12 @@ export function SiteHeader({
           aria-expanded={open}
           aria-controls={panelId}
           data-testid="site-nav-burger"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-white text-black shadow-neo transition-all duration-150 active:translate-y-1 active:shadow-none focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-neo-md lg:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-kingdom-800 text-white shadow-neo transition-all duration-150 active:translate-y-1 active:shadow-none focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-neo-md lg:hidden"
         >
           {open ? (
-            <X className="h-6 w-6" aria-hidden="true" />
+            <X className="h-6 w-6" strokeWidth={3} aria-hidden="true" />
           ) : (
-            <Menu className="h-6 w-6" aria-hidden="true" />
+            <Menu className="h-6 w-6" strokeWidth={3} aria-hidden="true" />
           )}
         </button>
       </div>
@@ -210,8 +213,9 @@ export function SiteHeader({
             data-testid="site-nav-scrim"
             className="fixed inset-0 z-40 cursor-default bg-black/50 lg:hidden"
           />
-          {/* Modal in behaviour (scrim + scroll lock + focus trap), so it
-              carries the matching role rather than being a bare div. */}
+          {/* FHS-572: MP's top sheet. It spans the width and sits over the
+              header rather than hanging off it as a card. Modal in behaviour
+              (scrim + scroll lock + focus trap), so it carries the role. */}
           <div
             ref={panelRef}
             id={panelId}
@@ -219,43 +223,58 @@ export function SiteHeader({
             aria-modal="true"
             aria-label="Main menu"
             data-testid="site-nav-panel"
-            className="absolute left-4 right-4 top-full z-50 overflow-hidden rounded-2xl border-3 border-black bg-kingdom-700 shadow-neo-lg motion-safe:animate-menu-drop lg:hidden"
+            className="fixed inset-x-0 top-0 z-50 border-b-2 border-black bg-kingdom-bg shadow-neo-md motion-safe:animate-menu-drop lg:hidden"
           >
-            <nav className="flex flex-col p-2">
-              {NAV_LINKS.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={close}
-                  className={`flex min-h-[56px] items-center rounded-xl px-4 text-lg font-black transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 ${linkColor(link.section)}`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              {/* Log in only belongs in the panel when the visitor is
-                  logged out; the logged-in header passes its own actions. */}
-              {!actions && (
-                <>
-                  <span className="my-2 h-0.5 bg-white/20" aria-hidden="true" />
-                  {/* FHS-568: Log in is the action a returning parent came
-                      for, so it carries a button's weight rather than
-                      looking like a fifth page link. Matches Start free in
-                      the bar above, which is also a Button + navigate. */}
-                  <div className="px-2 pb-2 pt-1">
-                    <Button
-                      variant="secondary"
-                      fullWidth
-                      className="min-h-[52px] text-base"
-                      testId="site-nav-login"
-                      onClick={() => {
-                        close();
-                        navigate('/login');
-                      }}
+            <div className="flex h-[76px] items-center justify-between px-5">
+              <span className="font-heading text-xl text-white">FamilyHub</span>
+              <button
+                type="button"
+                onClick={close}
+                aria-label="Close menu"
+                data-testid="site-nav-close"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-black bg-white text-black shadow-neo-xs focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300"
+              >
+                <X className="h-5 w-5" strokeWidth={3} aria-hidden="true" />
+              </button>
+            </div>
+
+            <nav className="px-5 pb-5">
+              <ul className="border-t-2 border-white/15">
+                {NAV_LINKS.map((link) => (
+                  <li key={link.to} className="border-b-2 border-white/15">
+                    <Link
+                      to={link.to}
+                      onClick={close}
+                      className={`flex min-h-[52px] items-center text-base font-bold focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 ${linkColor(link.section)}`}
                     >
-                      Log in
-                    </Button>
-                  </div>
-                </>
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Both actions live here on phones now: the homepage carries
+                  its own Start free, so the bar does not need a second one.
+                  Hidden when the caller supplies its own logged-in actions. */}
+              {!actions && (
+                <div className="mt-5 flex gap-3">
+                  <Link
+                    to="/login"
+                    onClick={close}
+                    data-testid="site-nav-login"
+                    className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl border-2 border-black bg-white font-heading text-sm text-black shadow-neo-xs focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/signup"
+                    onClick={close}
+                    data-testid="site-nav-signup"
+                    className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl border-2 border-black bg-yellow-300 font-heading text-sm text-black shadow-neo-xs focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
+                  >
+                    Start free
+                  </Link>
+                </div>
               )}
             </nav>
           </div>
@@ -275,23 +294,46 @@ export const LEGAL_LINKS = [
 
 export function SiteFooter() {
   return (
-    <footer className="relative z-10 mt-8 border-t-2 border-black/30 text-white md:mt-16">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-6 py-6 md:flex-row md:items-center md:gap-10 md:py-10">
+    <footer className="relative z-10 mt-12 border-t-2 border-black/30 text-white md:mt-16">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-5 py-6 md:flex-row md:items-center md:gap-10 md:px-6 md:py-10">
         <div className="md:flex-1">
-          <p className="font-heading text-xl">FamilyHub</p>
-          <p className="mt-1 text-sm font-bold text-purple-300">
+          <p className="font-heading text-base md:text-xl">FamilyHub</p>
+          <p className="mt-0.5 text-xs font-bold text-purple-300 md:mt-1 md:text-sm">
             One calm place for the whole family.
           </p>
         </div>
 
-        {/* FHS-567: five links in a flex-wrap broke 4-then-1 at 375px and
-            orphaned the last one. An even two-column grid reads as a list
-            on a phone; the inline row is unchanged from md up.
-            FHS-571: gap-y-2 because the 44px hit areas were flush against
-            each other, so a slightly low tap on one row hit the next. */}
+        {/* FHS-572: MP's phone footer is one tight dot-separated row rather
+            than the grid FHS-567 introduced. MP sets py-1 on these, which
+            is roughly 22px and half this repo's tap floor, so they keep
+            44px of height while reading as a single flowing line. */}
         <nav
           aria-label="Legal"
-          className="grid grid-cols-2 gap-x-4 gap-y-2 border-t-2 border-white/10 pt-2 sm:grid-cols-3 md:flex md:flex-wrap md:gap-x-6 md:border-0 md:pt-0 md:justify-end"
+          data-testid="site-footer-legal-mobile"
+          className="flex flex-wrap items-center gap-x-2 text-xs font-bold text-purple-200 md:hidden"
+        >
+          {LEGAL_LINKS.map((item, index) => (
+            <Fragment key={item.to}>
+              {index > 0 && (
+                <span aria-hidden="true" className="text-purple-500">
+                  ·
+                </span>
+              )}
+              <Link
+                to={item.to}
+                className="flex min-h-[44px] items-center transition-colors active:text-yellow-300"
+              >
+                {item.label}
+              </Link>
+            </Fragment>
+          ))}
+        </nav>
+
+        {/* Tablet + desktop: unchanged. */}
+        <nav
+          aria-label="Legal"
+          data-testid="site-footer-legal-desktop"
+          className="hidden flex-wrap gap-x-6 gap-y-2 md:flex md:justify-end"
         >
           {LEGAL_LINKS.map((item) => (
             <Link
@@ -308,7 +350,7 @@ export function SiteFooter() {
       {/* FHS-571: pb-20 is the clearance the floating feedback button
           actually needs (24px offset + ~48px tall) plus a margin.
           pb-28 left 40px of dead space on every phone screen. */}
-      <p className="mx-auto w-full max-w-7xl px-6 pb-24 text-xs font-bold text-purple-400 md:pb-8">
+      <p className="mx-auto w-full max-w-7xl px-5 pb-24 text-[10px] font-bold text-purple-400 md:px-6 md:pb-8 md:text-xs">
         © {new Date().getFullYear()} [Legal entity name]. Virtual rewards are play money with no
         cash value.
       </p>
