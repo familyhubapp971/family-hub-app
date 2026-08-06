@@ -303,4 +303,35 @@ describe('<KidLoginPage />', () => {
     expect(screen.queryByTestId('kid-login-pick-different')).toBeNull();
     expect(screen.getByTestId('kid-login-avatars')).toBeInTheDocument();
   });
+  // FHS-577: the faces must fill the card, and three must still fit one row.
+  it('lays two faces out two-up at the roomy size', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ family: { slug: 'khan', name: 'Khan Family' }, kids: KIDS }),
+    );
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Khan Family')).toBeInTheDocument());
+
+    const grid = screen.getByTestId('kid-login-avatars');
+    expect(grid.className).toContain('grid-cols-2');
+    for (const tile of grid.querySelectorAll('button')) {
+      expect(tile.className).toContain('w-full');
+      expect(tile.className).toContain('p-6');
+    }
+  });
+
+  it('squeezes three faces into one row at the tighter size', async () => {
+    const three = [...KIDS, { id: 'kid-3', displayName: 'Faith', avatarEmoji: '🐼' }];
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ family: { slug: 'khan', name: 'Khan Family' }, kids: three }),
+    );
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Khan Family')).toBeInTheDocument());
+
+    const grid = screen.getByTestId('kid-login-avatars');
+    expect(grid.className).toContain('grid-cols-3');
+    // Tighter padding so three fit a 375px card without overflowing.
+    for (const tile of grid.querySelectorAll('button')) {
+      expect(tile.className).toContain('p-3');
+    }
+  });
 });

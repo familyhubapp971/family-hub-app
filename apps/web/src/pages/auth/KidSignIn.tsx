@@ -250,10 +250,22 @@ export function KidSignIn({
           <p className="text-center font-bold text-gray-500" data-testid="kid-signin-who">
             Who are you?
           </p>
+          {/* FHS-577: the faces fill the width of the card, as the design
+              shows. Two sit side by side; three squeeze into one row at a
+              smaller size rather than leaving one stranded on its own line;
+              four or more wrap two-up. */}
           <AvatarGrid
             avatars={tiles}
             onSelect={onSelectKid}
             {...(selectedId ? { selectedId } : {})}
+            gridClassName={
+              tiles.length === 1
+                ? 'grid grid-cols-1'
+                : tiles.length === 3
+                  ? 'grid grid-cols-3 gap-2 sm:gap-3'
+                  : 'grid grid-cols-2 gap-4'
+            }
+            density={tiles.length >= 3 ? 'tight' : 'roomy'}
             testId="kid-login-avatars"
           />
         </motion.div>

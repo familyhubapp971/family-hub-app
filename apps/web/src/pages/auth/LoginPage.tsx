@@ -167,10 +167,17 @@ export function LoginPage() {
               />
             </div>
 
-            {/* FHS-565: the slot is always in the layout, so an error
-                appearing never pushes the submit button down under the
-                user's finger. min-h holds two lines of message. */}
-            <div className="min-h-[2.5rem]" aria-live="polite" data-testid="login-error-slot">
+            {/* FHS-565: the slot stays in the layout so an error appearing
+                never pushes the submit button down under the user's finger.
+                FHS-577: it used to reserve two lines (40px) on top of the
+                form's own gap, which left an empty band under the email box.
+                One line covers every message we actually show, and the
+                negative margin absorbs the stacking gap. */}
+            <div
+              className="-mt-2 min-h-[1.25rem]"
+              aria-live="polite"
+              data-testid="login-error-slot"
+            >
               {status.kind === 'error' && (
                 <p
                   className="font-body text-sm text-red-600"
