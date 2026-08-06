@@ -53,26 +53,41 @@ describe('LinkExpired', () => {
     expect(screen.getByTestId('link-expired-title').textContent).toMatch(/didn't come through/i);
   });
 
-  // Design revision: when we know the address we state it rather than
-  // asking someone to retype what we can already see.
-  it('states the address we know instead of asking for it again', () => {
+  // FHS-602: one box in both states, so the screen never changes shape. When
+  // we know the address it sits in the box read-only, not in a separate panel.
+  it('FHS-602: shows the known address in the box, not editable', () => {
     renderScreen({ email: 'sarah@khan.family' });
-    expect(screen.getByTestId('link-expired-known-address').textContent).toContain(
-      'sarah@khan.family',
-    );
-    expect(screen.queryByTestId('link-expired-email')).not.toBeInTheDocument();
+    const box = screen.getByTestId('link-expired-email');
+    expect(box).toHaveValue('sarah@khan.family');
+    expect(box).toHaveAttribute('readonly');
+    // The old coloured panel is gone.
+    expect(screen.queryByTestId('link-expired-known-address')).not.toBeInTheDocument();
+  });
+
+  // Read-only, not disabled: a disabled input leaves the tab order, so a
+  // screen reader user could not read back the address the link went to.
+  it('FHS-602: the read-only box is still reachable and labelled', () => {
+    renderScreen({ email: 'sarah@khan.family' });
+    const box = screen.getByTestId('link-expired-email');
+    expect(box).not.toBeDisabled();
+    expect(screen.getByLabelText(/email/i)).toBe(box);
   });
 
   it('asks for the address when we do not have one', () => {
     renderScreen();
-    expect(screen.getByTestId('link-expired-email')).toHaveValue('');
-    expect(screen.queryByTestId('link-expired-known-address')).not.toBeInTheDocument();
+    const box = screen.getByTestId('link-expired-email');
+    expect(box).toHaveValue('');
+    expect(box).not.toHaveAttribute('readonly');
   });
 
+  // FHS-602: switching turns the same box editable AND empty, rather than
+  // making someone clear the wrong address by hand.
   it('lets someone switch to a different address', () => {
     renderScreen({ email: 'wrong@khan.family' });
     fireEvent.click(screen.getByTestId('link-expired-different-email'));
-    expect(screen.getByTestId('link-expired-email')).toBeInTheDocument();
+    const box = screen.getByTestId('link-expired-email');
+    expect(box).not.toHaveAttribute('readonly');
+    expect(box).toHaveValue('');
   });
 
   it('sends a new link and confirms it', async () => {
