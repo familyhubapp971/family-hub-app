@@ -348,6 +348,23 @@ describe('<LoginPage />', () => {
     expect(slot.className).toContain('min-h-[1rem]');
   });
 
+  // FHS-584: the card's height tween ran for 320ms while the arriving panel
+  // faded in over 220ms, so the content landed 100ms before the card stopped
+  // moving under it. Both now run for the same time, and the leaving panel
+  // clears faster than the arriving one appears.
+  it('FHS-584: one role swap leaves exactly one panel on screen', async () => {
+    stubKidMembersFetch();
+    renderPage();
+    expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('login-role-kid'));
+    await waitFor(() => expect(screen.queryByTestId('login-parent-panel')).toBeNull());
+
+    fireEvent.click(screen.getByTestId('login-role-parent'));
+    await waitFor(() => expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument());
+    vi.unstubAllGlobals();
+  });
+
   // FHS-578: one line of error text has to fit the reserved slot exactly, or
   // the button moves the moment an error appears.
   it('FHS-578: an error fits the reserved slot and leaves the button in place', () => {

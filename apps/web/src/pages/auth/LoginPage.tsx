@@ -42,6 +42,10 @@ function GoogleIcon() {
   );
 }
 
+// FHS-584: the arriving panel and the card's height run for the same time, so
+// they settle together instead of the content landing 100ms early.
+const PANEL_MS = 260;
+
 const loginSchema = z.object({
   email: z.string().email('enter a valid email'),
 });
@@ -125,11 +129,6 @@ export function LoginPage() {
   // live panel lets the card ease to its new height instead.
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelHeight, setPanelHeight] = useState<number>();
-  // FHS-575: clipping is only needed WHILE the height animates. Left on at
-  // rest it cut 24px off the bottom of the card, because this design language
-  // draws hard offset shadows outside the element's own box and offsetHeight
-  // does not count them.
-  const [animatingHeight, setAnimatingHeight] = useState(false);
   useEffect(() => {
     const el = panelRef.current;
     // No ResizeObserver (jsdom, very old browsers): fall back to auto height
@@ -142,17 +141,27 @@ export function LoginPage() {
     return () => observer.disconnect();
   }, []);
 
+  // FHS-575: clipping is only needed WHILE the height animates. Left on at
+  // rest it cut 24px off the bottom of the card, because this design language
+  // draws hard offset shadows outside the element's own box and offsetHeight
+  // does not count them.
+  const [animatingHeight, setAnimatingHeight] = useState(false);
+
   // Panels fade up on the way in and out. popLayout takes the outgoing one
   // out of flow at once, so the arriving panel is never held back waiting
   // for it (which mode="wait" does).
+  //
+  // FHS-584: the old panel leaves faster than the new one arrives, and the
+  // arrival is timed to finish with the card's own height tween, so the
+  // content never floats over a card that is still moving under it.
   const panelMotion = () => ({
     ...(reduceMotion
       ? {}
       : {
           initial: { opacity: 0, y: 8 },
           animate: { opacity: 1, y: 0 },
-          exit: { opacity: 0, y: -8 },
-          transition: { duration: 0.22, ease: 'easeOut' as const },
+          exit: { opacity: 0, y: -6, transition: { duration: 0.12, ease: 'easeIn' as const } },
+          transition: { duration: PANEL_MS / 1000, ease: [0.4, 0, 0.2, 1] as const },
         }),
   });
 
@@ -165,7 +174,9 @@ export function LoginPage() {
       <motion.div
         animate={{ height: panelHeight ?? 'auto' }}
         initial={false}
-        transition={reduceMotion ? { duration: 0 } : { duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+        transition={
+          reduceMotion ? { duration: 0 } : { duration: PANEL_MS / 1000, ease: [0.4, 0, 0.2, 1] }
+        }
         onAnimationStart={() => setAnimatingHeight(true)}
         onAnimationComplete={() => setAnimatingHeight(false)}
         style={{ overflow: animatingHeight ? 'hidden' : 'visible' }}
