@@ -29,6 +29,7 @@ import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
+import { isKidRole, isPinEligibleRole } from '@familyhub/shared';
 
 // FHS-513: Manage Family rebuild to the finalised Magic Patterns
 // design: a family-name header with a "{N} members · {M} waiting to
@@ -83,9 +84,7 @@ type Status =
   | { kind: 'error'; message: string };
 
 const GROWN_UP_ROLES = new Set(['admin', 'adult', 'guest']);
-const KID_ROLES = new Set(['child', 'teen']);
 const ADMIN_OR_ADULT = new Set(['admin', 'adult']);
-const PIN_ELIGIBLE_ROLES = new Set(['child', 'teen']);
 
 // FHS-521: show the family name as "The {Name} Family" to match the design
 // (tenant name "Khan" → "The Khan Family"). If the stored name already reads
@@ -219,7 +218,7 @@ export function MembersPage() {
   // are never "waiting" (PIN login, no signup step): see FHS-276.
   const grownUps = allMembers.filter((m) => GROWN_UP_ROLES.has(m.role) && m.status === 'active');
   const waiting = allMembers.filter((m) => GROWN_UP_ROLES.has(m.role) && m.status !== 'active');
-  const kids = allMembers.filter((m) => KID_ROLES.has(m.role));
+  const kids = allMembers.filter((m) => isKidRole(m.role));
   const memberCount = grownUps.length + kids.length;
 
   return (
@@ -841,7 +840,7 @@ function KidCard({
   fetchMembers,
   mutate,
 }: KidCardProps) {
-  const callerCanManagePin = ADMIN_OR_ADULT.has(callerRole) && PIN_ELIGIBLE_ROLES.has(m.role);
+  const callerCanManagePin = ADMIN_OR_ADULT.has(callerRole) && isPinEligibleRole(m.role);
   const testId = `members-kid-${idx}`;
 
   return (

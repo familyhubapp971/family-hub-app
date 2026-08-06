@@ -21,6 +21,7 @@ import { roleStyle } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
+import { isKidRole } from '@familyhub/shared';
 
 // FHS-263 (exact Magic Patterns match): Today / Family Dashboard tab.
 //
@@ -38,10 +39,6 @@ type Status =
   | { kind: 'loading' }
   | { kind: 'ready'; data: DashboardTodayResponse }
   | { kind: 'error'; message: string };
-
-function isYoungMember(role: string): boolean {
-  return role === 'child' || role === 'teen';
-}
 
 function goalPercent(goal: DashboardGoal): number | null {
   if (goal.target === null || goal.target <= 0) return null;
@@ -128,7 +125,7 @@ export function TodayTabPanel() {
   }
 
   const { date, members, counts, goals, recentActivity } = status.data;
-  const kids = members.filter((m) => isYoungMember(m.role));
+  const kids = members.filter((m) => isKidRole(m.role));
   const kidsHabitsDone = kids.reduce((s, m) => s + m.habitsDone, 0);
   const kidsHabitsTotal = kids.reduce((s, m) => s + m.habitsTotal, 0);
   const topGoal = goals[0] ?? null;
@@ -285,7 +282,7 @@ function MemberCard({
   index: number;
 }) {
   const rs = roleStyle(member.role);
-  const young = isYoungMember(member.role);
+  const young = isKidRole(member.role);
   const habitPct =
     member.habitsTotal > 0 ? Math.round((member.habitsDone / member.habitsTotal) * 100) : 0;
 

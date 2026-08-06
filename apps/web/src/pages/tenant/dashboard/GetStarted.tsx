@@ -5,6 +5,7 @@ import type { DashboardMember } from '@familyhub/shared';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
+import { isKidRole } from '@familyhub/shared';
 
 // FHS-511: first-run "Getting started" guide on the parent dashboard.
 //
@@ -88,10 +89,6 @@ function writeState(slug: string, state: StoredState): void {
   }
 }
 
-function isYoungMember(role: string): boolean {
-  return role === 'child' || role === 'teen';
-}
-
 export function GetStarted() {
   const slug = useTenantSlug();
   const navigate = useNavigate();
@@ -116,7 +113,7 @@ export function GetStarted() {
       .then((body) => {
         if (!body || !Array.isArray(body.members)) return;
         const members = body.members as DashboardMember[];
-        const kid = members.find((m) => isYoungMember(m.role));
+        const kid = members.find((m) => isKidRole(m.role));
         setFirstKidId(kid?.id ?? null);
         const caller = members.find((m) => m.id === body.callerMemberId);
         setCallerIsAdmin(caller ? caller.role === 'admin' : false);

@@ -38,6 +38,7 @@ import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
 import { RewardsTab } from './admin/RewardsTab';
+import { isKidRole } from '@familyhub/shared';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -2032,7 +2033,7 @@ export function AdminPanelPage() {
       })
       .then((b) => {
         setCallerRole(b.callerRole ?? '__denied__');
-        const kids = (b.members ?? []).filter((m) => m.role === 'child' || m.role === 'teen');
+        const kids = (b.members ?? []).filter((m) => isKidRole(m.role));
         setChildren(kids);
         if (kids.length > 0 && !selectedChildId) {
           setSelectedChildId(kids[0]!.id);
