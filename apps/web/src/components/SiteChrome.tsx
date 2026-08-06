@@ -237,13 +237,24 @@ export function SiteHeader({
               {!actions && (
                 <>
                   <span className="my-2 h-0.5 bg-white/20" aria-hidden="true" />
-                  <Link
-                    to="/login"
-                    onClick={close}
-                    className="flex min-h-[56px] items-center rounded-xl px-4 text-lg font-black text-white transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300"
-                  >
-                    Log in
-                  </Link>
+                  {/* FHS-568: Log in is the action a returning parent came
+                      for, so it carries a button's weight rather than
+                      looking like a fifth page link. Matches Start free in
+                      the bar above, which is also a Button + navigate. */}
+                  <div className="px-2 pb-2 pt-1">
+                    <Button
+                      variant="secondary"
+                      fullWidth
+                      className="min-h-[52px] text-base"
+                      testId="site-nav-login"
+                      onClick={() => {
+                        close();
+                        navigate('/login');
+                      }}
+                    >
+                      Log in
+                    </Button>
+                  </div>
                 </>
               )}
             </nav>
