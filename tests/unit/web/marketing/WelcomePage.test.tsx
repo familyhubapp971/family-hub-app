@@ -84,25 +84,20 @@ describe('<WelcomePage />: logged-in state (FHS-358)', () => {
     // FHS-544: the logged-out homepage now uses the shared SiteHeader +
     // SiteFooter, so the chrome matches the legal/marketing pages exactly.
     // Header Legal link → /legal.
-    // FHS-561: header + footer both name this link "Legal", so there are
-    // two matches and both must point at the legal index.
+    // FHS-561 + FHS-572: the header names it "Legal" and the footer renders
+    // a phone nav and a desktop nav, so several match. All go to the index.
     const legalLinks = screen.getAllByRole('link', { name: /^legal$/i });
     expect(legalLinks.length).toBeGreaterThan(0);
     for (const link of legalLinks) expect(link).toHaveAttribute('href', '/legal');
     // Shared footer: the full legal-links set.
-    expect(screen.getByRole('link', { name: /^privacy$/i })).toHaveAttribute(
-      'href',
-      '/legal/privacy',
-    );
-    expect(screen.getByRole('link', { name: /children & parents/i })).toHaveAttribute(
-      'href',
-      '/legal/children',
-    );
-    expect(screen.getByRole('link', { name: /^terms$/i })).toHaveAttribute('href', '/legal/terms');
-    expect(screen.getByRole('link', { name: /^cookies$/i })).toHaveAttribute(
-      'href',
-      '/legal/cookies',
-    );
+    for (const l of screen.getAllByRole('link', { name: /^privacy$/i }))
+      expect(l).toHaveAttribute('href', '/legal/privacy');
+    for (const l of screen.getAllByRole('link', { name: /children & parents/i }))
+      expect(l).toHaveAttribute('href', '/legal/children');
+    for (const l of screen.getAllByRole('link', { name: /^terms$/i }))
+      expect(l).toHaveAttribute('href', '/legal/terms');
+    for (const l of screen.getAllByRole('link', { name: /^cookies$/i }))
+      expect(l).toHaveAttribute('href', '/legal/cookies');
     // FHS-561: the footer index link is named "Legal" too, asserted above.
   });
 

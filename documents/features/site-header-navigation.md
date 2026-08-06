@@ -1,6 +1,9 @@
 # Feature: Public site header navigation
 
-**Jira:** [FHS-555](https://qualicion2.atlassian.net/browse/FHS-555) (burger menu),
+**Jira:** [FHS-572](https://qualicion2.atlassian.net/browse/FHS-572) (Magic Patterns port),
+[FHS-568](https://qualicion2.atlassian.net/browse/FHS-568) (Log in as a button),
+[FHS-559](https://qualicion2.atlassian.net/browse/FHS-559) (skip link),
+[FHS-555](https://qualicion2.atlassian.net/browse/FHS-555) (burger menu),
 [FHS-554](https://qualicion2.atlassian.net/browse/FHS-554) (design),
 [FHS-509](https://qualicion2.atlassian.net/browse/FHS-509) (shared header introduced),
 [FHS-544](https://qualicion2.atlassian.net/browse/FHS-544) (homepage adopts it)
@@ -28,7 +31,8 @@ primary one, not a fallback.
 
 - **Given** a visitor opens the public site at 375px wide
 - **When** they tap the burger menu button in the header
-- **Then** a panel opens listing Features, About, Pricing, Legal and Log in
+- **Then** a panel opens listing Features, About, Pricing and Legal
+- **And** it offers both Log in and Start free
 - **And** tapping any of them navigates to that page
 
 **Scenario: Nothing wraps or overflows**
@@ -36,7 +40,7 @@ primary one, not a fallback.
 - **Given** a visitor opens the public site at 375px wide
 - **When** the header is rendered
 - **Then** the header sits on one line with no wrapped text and no sideways scrolling
-- **And** Start free is still visible
+- **And** the menu button is visible
 
 **Scenario: Desktop keeps the full row**
 
@@ -74,16 +78,28 @@ primary one, not a fallback.
 
 ## Behaviour as shipped
 
-- The switch happens at `lg` (1024px). Below it: wordmark, `Start free` and
-  the burger only. At `lg` and up: the inline row, unchanged.
-- `Start free` never hides inside the menu; it stays in the bar at every width.
-- The panel is a purple card (`kingdom-700`) under the header bar, with a
-  black border, hard offset shadow, and rows at least 56px tall.
+- The switch happens at `lg` (1024px). Below it the bar carries the wordmark
+  and the menu button only. At `lg` and up: the inline row, unchanged.
+- Both `Log in` and `Start free` live inside the menu on phones (FHS-572,
+  matching the Magic Patterns design). The homepage carries its own call to
+  action, so the bar does not need a second one.
+- The panel is a full-width sheet over the header (`kingdom-bg`) with a
+  black bottom border, a brand row with a close button, links separated by
+  hairlines at 52px, and the two actions side by side at 48px.
 - A scrim covers the page behind the panel. Tapping it closes the menu.
 - Page scroll is locked while the menu is open (`useBodyScrollLock`).
 - Navigating closes the menu, so it never survives into the next page.
 - The drop-in animation is gated behind `motion-safe:`, so reduced-motion
   visitors get the panel with no movement.
+
+### Footer on phones (FHS-567, FHS-571, FHS-572)
+
+- Legal links sit on one dot-separated row, matching the Magic Patterns
+  design. Tablet and desktop keep the plain inline row.
+- Each link still stands 44px tall: MP's own `py-1` is about half this
+  repo's tap floor, so the height is ours and the look is MP's.
+- The small print keeps clearance beneath it so the floating feedback
+  button cannot cover it.
 
 ## Out of scope
 
