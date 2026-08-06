@@ -464,9 +464,11 @@ export function OnboardingPage() {
               <div className="mb-4" data-testid="onboarding-location-timezone-row">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                      Timezone
-                    </p>
+                    {!showTimezonePicker && (
+                      <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                        Timezone
+                      </p>
+                    )}
                     {!showTimezonePicker && (
                       <p
                         className="mt-0.5 text-base font-semibold text-gray-900"
@@ -505,9 +507,13 @@ export function OnboardingPage() {
               <div className="mb-2" data-testid="onboarding-location-currency-row">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                      Currency
-                    </p>
+                    {/* FHS-570: the picker brings its own <Label>, so the
+                        row heading would print "Currency" twice once open. */}
+                    {!showCurrencyPicker && (
+                      <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                        Currency
+                      </p>
+                    )}
                     {!showCurrencyPicker && (
                       <p
                         className="mt-0.5 text-base font-semibold text-gray-900"

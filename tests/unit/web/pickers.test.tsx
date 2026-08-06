@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import {
   CurrencyPicker,
@@ -174,5 +174,45 @@ describe('detectBrowserCurrency()', () => {
   // render (only 2-decimal currencies are in the offered set).
   it('only ever returns a 2-decimal currency', () => {
     expect(currencyDecimals(detectBrowserCurrency())).toBe(2);
+  });
+
+  // FHS-570: an English-speaking family in Dubai reports en-GB or en-US, so
+  // detecting from language alone handed them pounds or dollars while the
+  // same screen showed their timezone as Asia/Dubai. Location wins now.
+  describe('follows the timezone before the browser language', () => {
+    // Spy on the one method the detector reads. Replacing the whole
+    // Intl.DateTimeFormat constructor breaks everything else that formats
+    // a date while the stub is in place.
+    function stubTimezone(timeZone: string) {
+      const real = Intl.DateTimeFormat.prototype.resolvedOptions;
+      return vi
+        .spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions')
+        .mockImplementation(function (this: Intl.DateTimeFormat) {
+          return { ...real.call(this), timeZone };
+        });
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it.each([
+      ['Asia/Dubai', 'AED'],
+      ['Asia/Riyadh', 'SAR'],
+      ['Africa/Lagos', 'NGN'],
+      ['Europe/London', 'GBP'],
+      ['America/New_York', 'USD'],
+      ['Europe/Paris', 'EUR'],
+    ])('%s resolves to %s', (tz, expected) => {
+      stubTimezone(tz);
+      expect(detectBrowserCurrency()).toBe(expected);
+    });
+
+    it('falls back to a valid currency for a timezone it does not know', () => {
+      stubTimezone('Antarctica/Troll');
+      const c = detectBrowserCurrency();
+      expect(c).toMatch(/^[A-Z]{3}$/);
+      expect(currencyDecimals(c)).toBe(2);
+    });
   });
 });
