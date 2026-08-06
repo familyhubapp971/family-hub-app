@@ -23,9 +23,11 @@ When('I press Escape', async ({ page }) => {
 Then('the menu panel lists Features, About, Pricing and Legal', async ({ page }) => {
   const po = new WelcomePagePO(page);
   await expect(po.menuPanel()).toBeVisible();
-  for (const label of ['Features', 'About', 'Pricing', 'Legal', 'Log in']) {
+  for (const label of ['Features', 'About', 'Pricing', 'Legal']) {
     await expect(po.menuLink(label)).toBeVisible();
   }
+  // FHS-568: Log in carries a button's weight in the panel, not a link's.
+  await expect(po.menuLoginButton()).toBeVisible();
 });
 
 Then('tapping Pricing in the menu opens the pricing page', async ({ page }) => {
