@@ -13,6 +13,7 @@ Feature: Public site header navigation
     Given I open the Welcome page at phone width
     When I tap the header menu button
     Then the menu panel lists Features, About, Pricing and Legal
+    And the menu offers both Log in and Start free
     And tapping Pricing in the menu opens the pricing page
 
   @critical
@@ -20,7 +21,7 @@ Feature: Public site header navigation
     Given I open the Welcome page at phone width
     Then the header sits on a single line
     And the public page has no horizontal scroll
-    And the Start free button is visible
+    And the header menu button is visible
 
   @critical
   Scenario: Desktop keeps the full row

@@ -43,8 +43,16 @@ Then('the public page has no horizontal scroll', async ({ page }) => {
   expect(await new WelcomePagePO(page).horizontalOverflowPx()).toBeLessThanOrEqual(0);
 });
 
-Then('the Start free button is visible', async ({ page }) => {
-  await expect(new WelcomePagePO(page).startFreeButton()).toBeVisible();
+// FHS-572: Start free moved into the menu on phones, so the bar carries the
+// logo and one control. The homepage has its own call to action below.
+Then('the header menu button is visible', async ({ page }) => {
+  await expect(new WelcomePagePO(page).burgerButton()).toBeVisible();
+});
+
+Then('the menu offers both Log in and Start free', async ({ page }) => {
+  const po = new WelcomePagePO(page);
+  await expect(po.menuLoginButton()).toBeVisible();
+  await expect(po.menuSignupButton()).toBeVisible();
 });
 
 Then('the header menu button is not shown', async ({ page }) => {

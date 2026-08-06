@@ -74,9 +74,13 @@ export class WelcomePagePO {
     return this.menuPanel().getByRole('link', { name: new RegExp(`^${name}$`, 'i') });
   }
 
-  /** FHS-568: Log in is a button in the panel, not a link. */
+  /** FHS-568 / FHS-572: both actions sit inside the panel on phones. */
   menuLoginButton() {
     return this.menuPanel().getByTestId('site-nav-login');
+  }
+
+  menuSignupButton() {
+    return this.menuPanel().getByTestId('site-nav-signup');
   }
 
   header() {

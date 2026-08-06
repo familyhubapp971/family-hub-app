@@ -56,7 +56,7 @@ describe('SiteHeader burger menu', () => {
       expect(open.getByRole('link', { name: label })).toBeInTheDocument();
     }
     // FHS-568: Log in carries a button's weight, not a link's.
-    expect(open.getByRole('button', { name: 'Log in' })).toBeInTheDocument();
+    expect(open.getByRole('link', { name: 'Log in' })).toBeInTheDocument();
   });
 
   it('marks the current section inside the panel', () => {
@@ -108,7 +108,7 @@ describe('SiteHeader burger menu', () => {
     renderHeader();
     openMenu();
 
-    expect(within(panel()!).getByRole('link', { name: 'Features' })).toHaveFocus();
+    expect(within(panel()!).getByTestId('site-nav-close')).toHaveFocus();
   });
 
   it('does not steal focus on first render', () => {
@@ -121,11 +121,11 @@ describe('SiteHeader burger menu', () => {
     openMenu();
 
     const open = within(panel()!);
-    const login = open.getByRole('button', { name: 'Log in' });
+    const login = open.getByRole('link', { name: 'Start free' });
     login.focus();
     fireEvent.keyDown(panel()!, { key: 'Tab' });
 
-    expect(open.getByRole('link', { name: 'Features' })).toHaveFocus();
+    expect(open.getByTestId('site-nav-close')).toHaveFocus();
   });
 
   it('traps Shift+Tab off the first item back to the last', () => {
@@ -133,10 +133,10 @@ describe('SiteHeader burger menu', () => {
     openMenu();
 
     const open = within(panel()!);
-    open.getByRole('link', { name: 'Features' }).focus();
+    open.getByTestId('site-nav-close').focus();
     fireEvent.keyDown(panel()!, { key: 'Tab', shiftKey: true });
 
-    expect(open.getByRole('button', { name: 'Log in' })).toHaveFocus();
+    expect(open.getByRole('link', { name: 'Start free' })).toHaveFocus();
   });
 
   it('locks page scroll while the panel is open and restores it after', () => {
@@ -149,12 +149,22 @@ describe('SiteHeader burger menu', () => {
     expect(document.body.style.overflow).not.toBe('hidden');
   });
 
-  it('keeps Start free in the bar rather than inside the menu', () => {
+  // FHS-572: both actions moved into the sheet on phones. The bar keeps
+  // its inline pair from lg up, which CSS hides below that.
+  it('offers Log in and Start free inside the menu', () => {
     renderHeader();
-    expect(screen.getByRole('button', { name: 'Start free' })).toBeInTheDocument();
-
     openMenu();
-    expect(within(panel()!).queryByRole('button', { name: 'Start free' })).not.toBeInTheDocument();
+
+    const open = within(panel()!);
+    expect(open.getByTestId('site-nav-login')).toHaveAttribute('href', '/login');
+    expect(open.getByTestId('site-nav-signup')).toHaveAttribute('href', '/signup');
+  });
+
+  it('keeps the bar pair for desktop only', () => {
+    renderHeader();
+    const bar = screen.getByRole('button', { name: 'Start free' }).parentElement!;
+    expect(bar.className).toContain('hidden');
+    expect(bar.className).toContain('lg:flex');
   });
 
   // FHS-561: header said "Legal", footer said "All legal", same destination.
@@ -176,17 +186,19 @@ describe('SiteHeader burger menu', () => {
   });
 
   // FHS-568: it used to render as a fifth plain link under the divider.
-  it('presents Log in as a button in the panel, not a plain link', () => {
+  // FHS-572: MP styles it as a button but keeps it an anchor, which is the
+  // right element for something that navigates. The point of FHS-568 was
+  // the visual weight, and that holds.
+  it("presents Log in with a button's weight, not as a plain text link", () => {
     renderHeader();
     openMenu();
 
-    const open = within(panel()!);
-    const login = open.getByTestId('site-nav-login');
-    expect(login.tagName).toBe('BUTTON');
-    expect(open.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument();
-    // Button styling from the design system, sized for a thumb.
+    const login = within(panel()!).getByTestId('site-nav-login');
+    expect(login.tagName).toBe('A');
     expect(login.className).toContain('border-2');
-    expect(login.className).toContain('min-h-[52px]');
+    expect(login.className).toContain('border-black');
+    expect(login.className).toContain('shadow-neo-xs');
+    expect(login.className).toContain('bg-white');
   });
 
   it('closes the menu when Log in is tapped', () => {
@@ -204,13 +216,17 @@ describe('SiteHeader burger menu', () => {
     expect(burger().className).toContain('w-11');
   });
 
-  it('gives every panel row a 56px minimum height', () => {
+  // FHS-572: MP's sheet uses 52px rows and a 48px action pair.
+  it('keeps every panel row and action above the tap floor', () => {
     renderHeader();
     openMenu();
 
-    for (const link of within(panel()!).getAllByRole('link')) {
-      expect(link.className).toContain('min-h-[56px]');
+    const open = within(panel()!);
+    for (const label of ['Features', 'About', 'Pricing', 'Legal']) {
+      expect(open.getByRole('link', { name: label }).className).toContain('min-h-[52px]');
     }
+    expect(open.getByTestId('site-nav-login').className).toContain('min-h-[48px]');
+    expect(open.getByTestId('site-nav-signup').className).toContain('min-h-[48px]');
   });
 
   it('swaps Log in and Start free for caller-supplied actions', () => {
@@ -226,7 +242,7 @@ describe('SiteHeader burger menu', () => {
     openMenu();
 
     const open = within(panel()!);
-    expect(open.queryByRole('button', { name: 'Log in' })).not.toBeInTheDocument();
+    expect(open.queryByRole('link', { name: 'Log in' })).not.toBeInTheDocument();
     for (const label of ['Features', 'About', 'Pricing', 'Legal']) {
       expect(open.getByRole('link', { name: label })).toBeInTheDocument();
     }
@@ -276,16 +292,26 @@ describe('SiteFooter layout on phones', () => {
     );
   }
 
-  it('lays the legal links out as an even grid on phones and a row from md up', () => {
+  // FHS-572: MP's phone footer is one dot-separated row, not a grid.
+  it('lays the legal links out as one dot-separated row on phones', () => {
     renderFooter();
-    const nav = screen.getByRole('navigation', { name: 'Legal' });
-    expect(nav.className).toContain('grid-cols-2');
-    expect(nav.className).toContain('md:flex');
+    const mobile = screen.getByTestId('site-footer-legal-mobile');
+    expect(mobile.className).toContain('flex-wrap');
+    expect(mobile.className).toContain('md:hidden');
+    expect(mobile.textContent).toContain('·');
+  });
+
+  it('keeps the plain inline row for tablet and desktop', () => {
+    renderFooter();
+    const desktop = screen.getByTestId('site-footer-legal-desktop');
+    expect(desktop.className).toContain('hidden');
+    expect(desktop.className).toContain('md:flex');
+    expect(desktop.textContent).not.toContain('·');
   });
 
   it('keeps every legal link at the 44px tap floor', () => {
     renderFooter();
-    const links = within(screen.getByRole('navigation', { name: 'Legal' })).getAllByRole('link');
+    const links = within(screen.getByTestId('site-footer-legal-mobile')).getAllByRole('link');
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
       expect(link.className).toContain('min-h-[44px]');
@@ -303,10 +329,8 @@ describe('SiteFooter layout on phones', () => {
 
   // FHS-571: the 44px hit areas were stacked flush, so a slightly low tap
   // on one row landed on the next. 8px is the documented minimum.
-  it('separates stacked legal links so adjacent taps cannot collide', () => {
+  it('spaces the dot-separated links apart', () => {
     renderFooter();
-    const nav = screen.getByRole('navigation', { name: 'Legal' });
-    expect(nav.className).toContain('gap-y-2');
-    expect(nav.className).toContain('gap-x-4');
+    expect(screen.getByTestId('site-footer-legal-mobile').className).toContain('gap-x-2');
   });
 });
