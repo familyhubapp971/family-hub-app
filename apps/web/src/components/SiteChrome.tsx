@@ -275,8 +275,8 @@ export const LEGAL_LINKS = [
 
 export function SiteFooter() {
   return (
-    <footer className="relative z-10 mt-12 border-t-2 border-black/30 text-white md:mt-16">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-8 md:flex-row md:items-center md:gap-10 md:py-10">
+    <footer className="relative z-10 mt-8 border-t-2 border-black/30 text-white md:mt-16">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-6 py-6 md:flex-row md:items-center md:gap-10 md:py-10">
         <div className="md:flex-1">
           <p className="font-heading text-xl">FamilyHub</p>
           <p className="mt-1 text-sm font-bold text-purple-300">
@@ -286,10 +286,12 @@ export function SiteFooter() {
 
         {/* FHS-567: five links in a flex-wrap broke 4-then-1 at 375px and
             orphaned the last one. An even two-column grid reads as a list
-            on a phone; the inline row is unchanged from md up. */}
+            on a phone; the inline row is unchanged from md up.
+            FHS-571: gap-y-2 because the 44px hit areas were flush against
+            each other, so a slightly low tap on one row hit the next. */}
         <nav
           aria-label="Legal"
-          className="grid grid-cols-2 gap-x-4 border-t-2 border-white/10 pt-4 sm:grid-cols-3 md:flex md:flex-wrap md:gap-x-6 md:gap-y-2 md:border-0 md:pt-0 md:justify-end"
+          className="grid grid-cols-2 gap-x-4 gap-y-2 border-t-2 border-white/10 pt-2 sm:grid-cols-3 md:flex md:flex-wrap md:gap-x-6 md:border-0 md:pt-0 md:justify-end"
         >
           {LEGAL_LINKS.map((item) => (
             <Link
@@ -303,9 +305,10 @@ export function SiteFooter() {
         </nav>
       </div>
 
-      {/* pb-28 on phones keeps the small print clear of the floating
-          feedback button, which is fixed 24px off the bottom edge. */}
-      <p className="mx-auto w-full max-w-7xl px-6 pb-28 text-xs font-bold text-purple-400 md:pb-8">
+      {/* FHS-571: pb-20 is the clearance the floating feedback button
+          actually needs (24px offset + ~48px tall) plus a margin.
+          pb-28 left 40px of dead space on every phone screen. */}
+      <p className="mx-auto w-full max-w-7xl px-6 pb-24 text-xs font-bold text-purple-400 md:pb-8">
         © {new Date().getFullYear()} [Legal entity name]. Virtual rewards are play money with no
         cash value.
       </p>
