@@ -127,27 +127,19 @@ export function LoginPage() {
   // FHS-577: the parent form, the kid picker and the PIN step are all
   // different heights, so the card used to snap between them. Measuring the
   // live panel lets the card ease to its new height instead.
-  //
-  // FHS-584: the observer used to watch a static wrapper holding whatever
-  // AnimatePresence was rendering at that instant. Under popLayout the
-  // leaving panel is pulled out of flow while the arriving one mounts, so
-  // that wrapper reported transient heights mid-swap and each one retargeted
-  // the tween already in flight, which is what made the card lurch. The ref
-  // now rides the arriving panel itself, so there is one target and one ease.
+  const panelRef = useRef<HTMLDivElement>(null);
   const [panelHeight, setPanelHeight] = useState<number>();
-  const observerRef = useRef<ResizeObserver>();
-  const measurePanel = useCallback((el: HTMLElement | null) => {
-    observerRef.current?.disconnect();
-    observerRef.current = undefined;
+  useEffect(() => {
+    const el = panelRef.current;
     // No ResizeObserver (jsdom, very old browsers): fall back to auto height
     // rather than pinning the card to a stale measurement.
     if (!el || typeof ResizeObserver === 'undefined') return;
-    setPanelHeight(el.offsetHeight);
-    const observer = new ResizeObserver(() => setPanelHeight(el.offsetHeight));
+    const measure = () => setPanelHeight(el.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
     observer.observe(el);
-    observerRef.current = observer;
+    return () => observer.disconnect();
   }, []);
-  useEffect(() => () => observerRef.current?.disconnect(), []);
 
   // FHS-575: clipping is only needed WHILE the height animates. Left on at
   // rest it cut 24px off the bottom of the card, because this design language
@@ -189,12 +181,11 @@ export function LoginPage() {
         onAnimationComplete={() => setAnimatingHeight(false)}
         style={{ overflow: animatingHeight ? 'hidden' : 'visible' }}
       >
-        <div>
+        <div ref={panelRef}>
           <AnimatePresence mode="popLayout" initial={false}>
             {role === 'parent' ? (
               <motion.section
                 key="parent"
-                ref={measurePanel}
                 {...panelMotion()}
                 id="login-parent-panel"
                 aria-labelledby="login-parent-heading"
@@ -283,13 +274,7 @@ export function LoginPage() {
                 </Button>
               </motion.section>
             ) : (
-              <motion.div
-                key="kid"
-                ref={measurePanel}
-                {...panelMotion()}
-                data-testid="login-kid-panel-shell"
-                className="mt-6"
-              >
+              <motion.div key="kid" {...panelMotion()} className="mt-6">
                 <KidLoginPanel />
               </motion.div>
             )}

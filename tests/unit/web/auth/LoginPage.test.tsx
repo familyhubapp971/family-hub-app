@@ -348,27 +348,20 @@ describe('<LoginPage />', () => {
     expect(slot.className).toContain('min-h-[1rem]');
   });
 
-  // FHS-584: the observer used to watch a static wrapper, which reported
-  // transient heights mid-swap and retargeted the card's height tween while it
-  // was still running. That is what made the role switch lurch. Watching the
-  // arriving panel itself gives one target and one ease.
-  it('FHS-584: measures the arriving panel itself, not a wrapper around it', () => {
-    const observed: Element[] = [];
-    class StubResizeObserver {
-      observe(el: Element) {
-        observed.push(el);
-      }
-      unobserve() {}
-      disconnect() {}
-    }
-    vi.stubGlobal('ResizeObserver', StubResizeObserver);
-
+  // FHS-584: the card's height tween ran for 320ms while the arriving panel
+  // faded in over 220ms, so the content landed 100ms before the card stopped
+  // moving under it. Both now run for the same time, and the leaving panel
+  // clears faster than the arriving one appears.
+  it('FHS-584: one role swap leaves exactly one panel on screen', async () => {
+    stubKidMembersFetch();
     renderPage();
-    expect(observed).toContain(screen.getByTestId('login-parent-panel'));
+    expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('login-role-kid'));
-    expect(observed.at(-1)).toBe(screen.getByTestId('login-kid-panel-shell'));
+    await waitFor(() => expect(screen.queryByTestId('login-parent-panel')).toBeNull());
 
+    fireEvent.click(screen.getByTestId('login-role-parent'));
+    await waitFor(() => expect(screen.getByTestId('login-parent-panel')).toBeInTheDocument());
     vi.unstubAllGlobals();
   });
 
