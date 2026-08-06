@@ -224,7 +224,7 @@ describe('<KidLoginPage />', () => {
     expect(screen.queryByTestId('kid-login-error')).toBeNull();
   });
 
-  it('discards an in-flight PIN submit if a sibling taps a different avatar mid-flight', async () => {
+  it('discards an in-flight PIN submit if a sibling switches to a different avatar mid-flight', async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ family: { slug: 'khan', name: 'Khan Family' }, kids: KIDS }),
     );
@@ -245,7 +245,10 @@ describe('<KidLoginPage />', () => {
       fireEvent.change(inputs[i]!, { target: { value: d } });
     });
 
-    // Sibling grabs the iPad mid-flight.
+    // Sibling grabs the iPad mid-flight. FHS-573 made this two steps to
+    // match the design, so they go Back to the faces first. The stale-submit
+    // guard is the point of this test and still has to hold.
+    fireEvent.click(screen.getByTestId('kid-login-pick-different'));
     fireEvent.click(screen.getByRole('button', { name: /Yusuf/ }));
 
     // Now resolve the original (Aisha's) fetch with a successful token.

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AvatarGrid, Button, PinInput, type AvatarTile } from '@familyhub/ui';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ChevronLeft } from 'lucide-react';
+import { AvatarGrid, PinInput, type AvatarTile } from '@familyhub/ui';
 import { API_BASE } from '../../lib/api';
 
 // FHS-360: the kid sign-in flow (avatar tiles → PIN → kid token), shared by
@@ -66,6 +68,7 @@ export function KidSignIn({
   onFamilyNotFound?: () => void;
 }) {
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
   const [load, setLoad] = useState<LoadState>({ kind: 'loading' });
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [submit, setSubmit] = useState<SubmitState>({ kind: 'idle' });
@@ -221,30 +224,72 @@ export function KidSignIn({
   }
 
   const selectedKid = load.kids.find((k) => k.id === selectedId);
+  const selectedTile = tiles.find((t) => t.id === selectedId);
+
+  // FHS-573: the Magic Patterns design is two steps: pick a face, then a
+  // focused view of that child with their PIN and a way back. We used to show
+  // the grid and the PIN together, which is why the kid screen never looked
+  // like the design.
+  // Animate the step that is arriving, and let the old one go at once.
+  // AnimatePresence with mode="wait" holds the new step back until the old
+  // one has finished leaving, which makes a kid tapping their own face wait
+  // for a cross-fade before the PIN shows up.
+  const slide = (from: number) =>
+    reduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, x: from },
+          animate: { opacity: 1, x: 0 },
+          transition: { duration: 0.18, ease: 'easeOut' as const },
+        };
 
   return (
     <div className="space-y-4">
-      <p className="text-center font-bold text-gray-500" data-testid="kid-signin-who">
-        Who are you?
-      </p>
-      <AvatarGrid
-        avatars={tiles}
-        onSelect={onSelectKid}
-        {...(selectedId ? { selectedId } : {})}
-        testId="kid-login-avatars"
-      />
+      {!selectedKid ? (
+        <motion.div key="kid-pick" {...slide(20)} className="space-y-4">
+          <p className="text-center font-bold text-gray-500" data-testid="kid-signin-who">
+            Who are you?
+          </p>
+          <AvatarGrid
+            avatars={tiles}
+            onSelect={onSelectKid}
+            {...(selectedId ? { selectedId } : {})}
+            testId="kid-login-avatars"
+          />
+        </motion.div>
+      ) : (
+        <motion.section
+          key="kid-pin"
+          {...slide(20)}
+          className="space-y-5"
+          data-testid="kid-login-pin-section"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedId(undefined);
+              setSubmit({ kind: 'idle' });
+            }}
+            data-testid="kid-login-pick-different"
+            className="flex min-h-[44px] items-center gap-1 rounded-lg font-body text-sm font-bold text-gray-500 transition-colors hover:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-purple-400"
+          >
+            <ChevronLeft size={16} aria-hidden="true" /> Back
+          </button>
 
-      {/* FHS-402: reserve the PIN-slot height so the card doesn't jump when the
-          PIN box appears/disappears. Breakdown at each breakpoint:
-            greeting text (~24px) + PinInput (h-14=56px mobile / h-16=64px sm+)
-            + status line (~40px) + "Pick a different face" button (~40px) + gaps
-          mobile: 24+56+40+40+48gap = ~208px; sm+: 24+64+40+40+48gap = ~216px.
-          Use sm:min-h-[232px] to give comfortable headroom at the larger size. */}
-      <div className="mt-4 min-h-[208px] sm:min-h-[232px]">
-        {selectedKid && (
-          <section data-testid="kid-login-pin-section">
-            <p className="mb-3 text-center font-body text-sm text-gray-600">
-              Hi <span className="font-bold">{selectedKid.displayName}</span>, type your PIN.
+          {/* The chosen child, front and centre, as in the design. */}
+          <div className="flex flex-col items-center gap-3">
+            <div
+              className={`flex h-20 w-20 items-center justify-center rounded-full border-2 border-black shadow-neo-sm ${selectedTile?.color ?? 'bg-yellow-300'}`}
+              aria-hidden="true"
+            >
+              <span className="text-4xl">{selectedKid.avatarEmoji ?? '🙂'}</span>
+            </div>
+            <p className="font-heading text-2xl">{selectedKid.displayName}</p>
+          </div>
+
+          <div>
+            <p className="mb-4 text-center font-body text-sm font-bold text-gray-500">
+              Enter your PIN
             </p>
             <PinInput
               key={pinNonce}
@@ -255,59 +300,46 @@ export function KidSignIn({
               label={`PIN for ${selectedKid.displayName}`}
               testId="kid-login-pin"
             />
-            {submit.kind === 'submitting' && (
-              <p
-                className="mt-3 text-center font-body text-sm text-gray-600"
-                data-testid="kid-login-status-submitting"
-              >
-                Checking&hellip;
-              </p>
-            )}
-            {submit.kind === 'wrong-pin' && (
-              <p
-                className="mt-3 text-center font-body text-sm text-red-600"
-                role="alert"
-                data-testid="kid-login-error"
-              >
-                That PIN didn&rsquo;t match. Try again.
-              </p>
-            )}
-            {submit.kind === 'locked' && (
-              <p
-                className="mt-3 text-center font-body text-sm text-red-600"
-                role="alert"
-                data-testid="kid-login-locked"
-              >
-                Too many tries. Wait {Math.ceil(submit.retryAfterSec / 60)} minute
-                {Math.ceil(submit.retryAfterSec / 60) === 1 ? '' : 's'} or ask a grown-up.
-              </p>
-            )}
-            {submit.kind === 'error' && (
-              <p
-                className="mt-3 text-center font-body text-sm text-red-600"
-                role="alert"
-                data-testid="kid-login-error"
-              >
-                {submit.message}
-              </p>
-            )}
-            <div className="mt-4 text-center">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setSelectedId(undefined);
-                  setSubmit({ kind: 'idle' });
-                }}
-                testId="kid-login-pick-different"
-              >
-                Pick a different face
-              </Button>
-            </div>
-          </section>
-        )}
-      </div>
+          </div>
+
+          {submit.kind === 'submitting' && (
+            <p
+              className="text-center font-body text-sm text-gray-600"
+              data-testid="kid-login-status-submitting"
+            >
+              Checking&hellip;
+            </p>
+          )}
+          {submit.kind === 'wrong-pin' && (
+            <p
+              className="text-center font-body text-sm text-red-600"
+              role="alert"
+              data-testid="kid-login-error"
+            >
+              That PIN didn&rsquo;t match. Try again.
+            </p>
+          )}
+          {submit.kind === 'locked' && (
+            <p
+              className="text-center font-body text-sm text-red-600"
+              role="alert"
+              data-testid="kid-login-locked"
+            >
+              Too many tries. Wait {Math.ceil(submit.retryAfterSec / 60)} minute
+              {Math.ceil(submit.retryAfterSec / 60) === 1 ? '' : 's'} or ask a grown-up.
+            </p>
+          )}
+          {submit.kind === 'error' && (
+            <p
+              className="text-center font-body text-sm text-red-600"
+              role="alert"
+              data-testid="kid-login-error"
+            >
+              {submit.message}
+            </p>
+          )}
+        </motion.section>
+      )}
     </div>
   );
 }
