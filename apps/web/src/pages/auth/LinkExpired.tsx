@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Button, Card } from '@familyhub/ui';
 import { supabase } from '../../lib/supabase';
 import { friendlyAuthErrorMessage } from '../../lib/auth-errors';
+import { rememberAuthEmail } from '../../lib/auth-email';
 
 // FHS-575: the screen for a sign-in link that no longer works.
 //
@@ -91,6 +92,7 @@ export function LinkExpired({
       return;
     }
     sessionStorage.setItem('fh.signup.email', parsed.data);
+    rememberAuthEmail(parsed.data);
     sessionStorage.setItem('fh.auth.origin', '/login');
     setState({ kind: 'sent' });
   }

@@ -3,6 +3,7 @@
 **Jira:** [FHS-573](https://qualicion2.atlassian.net/browse/FHS-573) (design alignment),
 [FHS-578](https://qualicion2.atlassian.net/browse/FHS-578) (email box to button gap),
 [FHS-602](https://qualicion2.atlassian.net/browse/FHS-602) (one read-only box on the expired-link screen),
+[FHS-604](https://qualicion2.atlassian.net/browse/FHS-604) (the address survives into a new tab),
 [FHS-586](https://qualicion2.atlassian.net/browse/FHS-586) (email box colour + helper copy),
 [FHS-360](https://qualicion2.atlassian.net/browse/FHS-360) (kid sign-in),
 [FHS-237](https://qualicion2.atlassian.net/browse/FHS-237) (the card)
@@ -125,6 +126,13 @@ with a progress bar still creeping along while nothing was loading.
   and empty and puts the cursor in it. The box is read-only rather than
   disabled, so a screen reader can still read back the address the dead link
   was sent to.
+- **The address survives into a new tab** (FHS-604). An email link always
+  opens a fresh tab, whose per-tab memory is empty, so requesting a link also
+  remembers the address on the device (`localStorage`, key `fh.auth.email`).
+  The tab's own memory still wins when present, and a device that never
+  requested a link still gets the empty editable box. Deliberate trade-off:
+  the address persists on the device; it is the same address the sign-in
+  screens already display, not a secret.
 - A confirmation follows, so nobody wonders whether it sent.
 - A genuinely slow sign-in still shows the loading screen, because that one
   really is waiting.

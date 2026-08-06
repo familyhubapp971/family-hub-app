@@ -47,6 +47,7 @@ function renderAt(initial: string) {
 describe('<AuthCallbackPage />', () => {
   beforeEach(() => {
     sessionStorage.clear();
+    localStorage.clear();
     authState.loading = false;
     authState.session = null;
     exchangeCodeForSession.mockReset();
@@ -57,6 +58,7 @@ describe('<AuthCallbackPage />', () => {
 
   afterEach(() => {
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   it('navigates to /dashboard once the session is established', async () => {
@@ -84,6 +86,40 @@ describe('<AuthCallbackPage />', () => {
     // Must NOT have navigated into the app.
     expect(screen.queryByTestId('route-marker')).toBeNull();
     await waitFor(() => expect(signOut).toHaveBeenCalled());
+  });
+
+  // FHS-604: an email link opens a NEW tab, whose sessionStorage is empty.
+  // The device-level memory has to carry the address across, or the screen
+  // asks who you are even though we sent the link to you.
+  it('FHS-604: a fresh tab recalls the address from device memory', async () => {
+    localStorage.setItem('fh.auth.email', 'sarah@khan.family');
+    renderAt(
+      '/auth/callback#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
+    );
+    await screen.findByTestId('link-expired-title');
+    const box = screen.getByTestId('link-expired-email');
+    expect(box).toHaveValue('sarah@khan.family');
+    expect(box).toHaveAttribute('readonly');
+  });
+
+  it('FHS-604: the same tab still wins over device memory', async () => {
+    sessionStorage.setItem('fh.signup.email', 'tab@khan.family');
+    localStorage.setItem('fh.auth.email', 'device@khan.family');
+    renderAt(
+      '/auth/callback#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
+    );
+    await screen.findByTestId('link-expired-title');
+    expect(screen.getByTestId('link-expired-email')).toHaveValue('tab@khan.family');
+  });
+
+  it('FHS-604: a device that never asked for a link still gets the empty box', async () => {
+    renderAt(
+      '/auth/callback#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
+    );
+    await screen.findByTestId('link-expired-title');
+    const box = screen.getByTestId('link-expired-email');
+    expect(box).toHaveValue('');
+    expect(box).not.toHaveAttribute('readonly');
   });
 
   it('does NOT POST any tenant-create call from the callback page', async () => {
