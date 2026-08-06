@@ -295,7 +295,18 @@ describe('SiteFooter layout on phones', () => {
   it('reserves room under the small print so the floating button cannot cover it', () => {
     renderFooter();
     const copyright = screen.getByText(/virtual rewards are play money/i);
-    expect(copyright.className).toContain('pb-28');
+    // FHS-571: pb-24 is the clearance the button needs plus a margin.
+    // pb-28 was 40px of dead space on every phone screen.
+    expect(copyright.className).toContain('pb-24');
     expect(copyright.className).toContain('md:pb-8');
+  });
+
+  // FHS-571: the 44px hit areas were stacked flush, so a slightly low tap
+  // on one row landed on the next. 8px is the documented minimum.
+  it('separates stacked legal links so adjacent taps cannot collide', () => {
+    renderFooter();
+    const nav = screen.getByRole('navigation', { name: 'Legal' });
+    expect(nav.className).toContain('gap-y-2');
+    expect(nav.className).toContain('gap-x-4');
   });
 });
