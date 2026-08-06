@@ -188,7 +188,7 @@ export function LoginPage() {
                   We&rsquo;ll email you a one-time link to log in. No password to remember.
                 </p>
 
-                <form onSubmit={onSubmit} className="space-y-4" data-testid="login-form" noValidate>
+                <form onSubmit={onSubmit} className="space-y-1" data-testid="login-form" noValidate>
                   <div>
                     <Label htmlFor="email" required>
                       Email
@@ -204,28 +204,29 @@ export function LoginPage() {
                       placeholder="sarah@example.com"
                       testId="login-email"
                     />
-                  </div>
 
-                  {/* FHS-565: the slot stays in the layout so an error appearing
-                never pushes the submit button down under the user's finger.
-                FHS-577: it used to reserve two lines (40px) on top of the
-                form's own gap, which left an empty band under the email box.
-                One line covers every message we actually show, and the
-                negative margin absorbs the stacking gap. */}
-                  <div
-                    className="-mt-2 min-h-[1.25rem]"
-                    aria-live="polite"
-                    data-testid="login-error-slot"
-                  >
-                    {status.kind === 'error' && (
-                      <p
-                        className="font-body text-sm text-red-600"
-                        data-testid="login-error"
-                        role="alert"
-                      >
-                        {status.message}
-                      </p>
-                    )}
+                    {/* FHS-565: the slot stays in the layout so an error
+                    appearing never pushes the submit button down under the
+                    user's finger. FHS-578: it sits inside the field's own
+                    wrapper, so the form's stacking gap is counted once
+                    rather than above and below it. One line at text-xs
+                    covers every message we actually show, which puts the
+                    button 24px under the box instead of 44px. */}
+                    <div
+                      className="mt-1 min-h-[1rem]"
+                      aria-live="polite"
+                      data-testid="login-error-slot"
+                    >
+                      {status.kind === 'error' && (
+                        <p
+                          className="font-body text-xs leading-4 text-red-600"
+                          data-testid="login-error"
+                          role="alert"
+                        >
+                          {status.message}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <Button
