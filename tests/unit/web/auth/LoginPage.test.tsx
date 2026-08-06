@@ -365,6 +365,26 @@ describe('<LoginPage />', () => {
     vi.unstubAllGlobals();
   });
 
+  // FHS-586: the helper line above the email box must read exactly as the
+  // design copy, no apostrophe/contraction variant.
+  it('FHS-586: shows the exact helper copy above the email field', () => {
+    renderPage();
+    expect(
+      screen.getByText('We will email you a link that signs you in. No password needed.'),
+    ).toBeInTheDocument();
+  });
+
+  // FHS-586: the shared Input's `default` variant reads as disabled
+  // (gray-50 fill, gray border). The email field must use the `dark`
+  // variant instead: white fill, black border, matching the design.
+  it('FHS-586: the email field renders the white/black-border input variant', () => {
+    renderPage();
+    const input = screen.getByTestId('login-email');
+    expect(input.className).toContain('bg-white');
+    expect(input.className).toContain('border-black');
+    expect(input.className).not.toContain('bg-gray-50');
+  });
+
   // FHS-578: one line of error text has to fit the reserved slot exactly, or
   // the button moves the moment an error appears.
   it('FHS-578: an error fits the reserved slot and leaves the button in place', () => {
