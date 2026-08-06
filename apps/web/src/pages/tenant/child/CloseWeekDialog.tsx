@@ -10,7 +10,7 @@
  * - Uses fetch + headers instead of a generated API client.
  */
 import { useEffect, useState } from 'react';
-import { BoostButton, useBodyScrollLock } from '@familyhub/ui';
+import { BoostButton, useBodyScrollLock, Spinner } from '@familyhub/ui';
 import {
   X,
   ShieldCheck,
@@ -21,7 +21,6 @@ import {
   Banknote,
   Info,
   Check,
-  Loader2,
 } from 'lucide-react';
 import { API_BASE } from '../../../lib/api';
 
@@ -196,7 +195,7 @@ function ClaimDialog({
         <div className="p-4 max-h-[60vh] overflow-y-auto space-y-3 bg-white">
           {loadingRewards ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-pink-400" />
+              <Spinner size="md" className="text-pink-400" label="Loading rewards" />
             </div>
           ) : totalStickers === 0 || affordable.length === 0 ? (
             <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 flex items-start gap-3">
@@ -256,7 +255,7 @@ function ClaimDialog({
             className="w-full bg-pink-500 text-white border-2 border-black font-black py-4 rounded-xl shadow-neo motion-safe:hover:translate-y-0.5 motion-safe:hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase tracking-wider text-lg"
           >
             {submitting ? (
-              <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+              <Spinner size="sm" className="mx-auto" />
             ) : totalStickers === 0 ? (
               'No stickers available'
             ) : selected ? (
@@ -447,7 +446,7 @@ function CashOutDialog({
               className="bg-green-500 border-2 border-black text-white font-black py-3 rounded-xl shadow-neo motion-safe:hover:translate-y-0.5 motion-safe:hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
             >
               {submitting ? (
-                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                <Spinner size="sm" className="mx-auto" />
               ) : totalStickers === 0 ? (
                 'Save stickers first'
               ) : (
@@ -642,7 +641,7 @@ function SaveDialog({
             data-testid="close-week-save-submit-btn"
             className="bg-blue-500 border-2 border-black text-white font-black py-3 rounded-xl shadow-neo motion-safe:hover:translate-y-0.5 motion-safe:hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
           >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Save It!'}
+            {submitting ? <Spinner size="sm" className="mx-auto" /> : 'Save It!'}
           </button>
         </div>
       </div>
@@ -1113,7 +1112,7 @@ function InvestDialog({
                 className="bg-red-600 border-2 border-black text-white font-black py-3 rounded-xl shadow-neo motion-safe:hover:translate-y-0.5 motion-safe:hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
               >
                 {withdrawingId !== null ? (
-                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                  <Spinner size="sm" className="mx-auto" />
                 ) : (
                   'Yes, withdraw stickers'
                 )}
@@ -1154,7 +1153,7 @@ function InvestDialog({
                   className="bg-yellow-400 border-2 border-black text-black font-black py-3 rounded-xl shadow-neo motion-safe:hover:translate-y-0.5 motion-safe:hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
                 >
                   {submitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                    <Spinner size="sm" className="mx-auto" />
                   ) : (
                     `Invest ${currency} ${cashVal}`
                   )}
@@ -1297,7 +1296,7 @@ function WithdrawDialog({
         <div className="p-6 max-h-[65vh] overflow-y-auto space-y-4 bg-purple-50">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+              <Spinner size="md" className="text-purple-400" label="Loading" />
             </div>
           ) : investments.length === 0 ? (
             <div className="text-center py-8">
@@ -1397,7 +1396,7 @@ function WithdrawDialog({
                       className="w-full bg-orange-400 border-2 border-black text-black font-black text-sm px-4 py-3 rounded-xl shadow-neo-xs hover:brightness-105 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase"
                     >
                       {withdrawingId === inv.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                        <Spinner size="sm" className="mx-auto" />
                       ) : (
                         `Withdraw ${selectedStickers} sticker${selectedStickers !== 1 ? 's' : ''} (${currency} ${selectedCash})`
                       )}
@@ -2080,7 +2079,7 @@ export function CloseWeekDialog({
               >
                 {finalizing ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Spinner size="sm" />
                     Closing Week...
                   </>
                 ) : (
