@@ -290,11 +290,12 @@ describe('<LoginPage />', () => {
     expect(screen.queryByTestId('login-kid-code')).toBeNull();
   });
 
-  it('clicking the kid tab swaps the panel + sets ?role=kid in the URL', () => {
+  it('clicking the kid tab swaps the panel + sets ?role=kid in the URL', async () => {
     renderPage();
     fireEvent.click(screen.getByTestId('login-role-kid'));
     expect(screen.getByTestId('login-kid-panel')).toBeInTheDocument();
-    expect(screen.queryByTestId('login-parent-panel')).toBeNull();
+    // FHS-577: the parent panel fades out, so it lingers for a beat.
+    await waitFor(() => expect(screen.queryByTestId('login-parent-panel')).toBeNull());
     expect(screen.getByTestId('location-search').textContent).toBe('?role=kid');
     expect(screen.getByTestId('login-role-kid').getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByTestId('login-role-parent').getAttribute('aria-pressed')).toBe('false');

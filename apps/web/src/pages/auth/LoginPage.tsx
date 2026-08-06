@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button, Input, Label } from '@familyhub/ui';
@@ -120,123 +120,148 @@ export function LoginPage() {
 
   const submitting = status.kind === 'submitting' || status.kind === 'submitting-google';
 
+  // FHS-577: the parent form, the kid picker and the PIN step are all
+  // different heights, so the card used to snap between them. Measuring the
+  // live panel lets the card ease to its new height instead.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelHeight, setPanelHeight] = useState<number>();
+  useEffect(() => {
+    const el = panelRef.current;
+    // No ResizeObserver (jsdom, very old browsers): fall back to auto height
+    // rather than pinning the card to a stale measurement.
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const measure = () => setPanelHeight(el.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Panels fade up on the way in and out. popLayout takes the outgoing one
+  // out of flow at once, so the arriving panel is never held back waiting
+  // for it (which mode="wait" does).
+  const panelMotion = () => ({
+    ...(reduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, y: 8 },
+          animate: { opacity: 1, y: 0 },
+          exit: { opacity: 0, y: -8 },
+          transition: { duration: 0.22, ease: 'easeOut' as const },
+        }),
+  });
+
   return (
     <AuthLayout title="Welcome Back!" subtitle="Sign in to Family Hub" centered>
       <RoleToggle role={role} onChange={onRoleChange} />
 
-      {/* FHS-573: the arriving panel slides in. We deliberately do not wait
-          on the outgoing one: making someone watch a cross-fade before the
-          form they asked for appears is worse than no animation. */}
-      {role === 'parent' ? (
-        <motion.section
-          key="parent"
-          {...(reduceMotion
-            ? {}
-            : {
-                initial: { opacity: 0, x: -20 },
-                animate: { opacity: 1, x: 0 },
-                transition: { duration: 0.18, ease: 'easeOut' as const },
-              })}
-          id="login-parent-panel"
-          aria-labelledby="login-parent-heading"
-          data-testid="login-parent-panel"
-          className="mt-6"
-        >
-          <h2 id="login-parent-heading" className="sr-only">
-            Parent log in
-          </h2>
-          <p className="mb-4 font-body text-sm text-gray-700">
-            We&rsquo;ll email you a one-time link to log in. No password to remember.
-          </p>
+      {/* FHS-577: the card grows and shrinks with its content rather than
+          snapping between the three views. */}
+      <motion.div
+        animate={{ height: panelHeight ?? 'auto' }}
+        initial={false}
+        transition={reduceMotion ? { duration: 0 } : { duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+        style={{ overflow: 'hidden' }}
+      >
+        <div ref={panelRef}>
+          <AnimatePresence mode="popLayout" initial={false}>
+            {role === 'parent' ? (
+              <motion.section
+                key="parent"
+                {...panelMotion()}
+                id="login-parent-panel"
+                aria-labelledby="login-parent-heading"
+                data-testid="login-parent-panel"
+                className="mt-6"
+              >
+                <h2 id="login-parent-heading" className="sr-only">
+                  Parent log in
+                </h2>
+                <p className="mb-4 font-body text-sm text-gray-700">
+                  We&rsquo;ll email you a one-time link to log in. No password to remember.
+                </p>
 
-          <form onSubmit={onSubmit} className="space-y-4" data-testid="login-form" noValidate>
-            <div>
-              <Label htmlFor="email" required>
-                Email
-              </Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="sarah@example.com"
-                testId="login-email"
-              />
-            </div>
+                <form onSubmit={onSubmit} className="space-y-4" data-testid="login-form" noValidate>
+                  <div>
+                    <Label htmlFor="email" required>
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="sarah@example.com"
+                      testId="login-email"
+                    />
+                  </div>
 
-            {/* FHS-565: the slot stays in the layout so an error appearing
+                  {/* FHS-565: the slot stays in the layout so an error appearing
                 never pushes the submit button down under the user's finger.
                 FHS-577: it used to reserve two lines (40px) on top of the
                 form's own gap, which left an empty band under the email box.
                 One line covers every message we actually show, and the
                 negative margin absorbs the stacking gap. */}
-            <div
-              className="-mt-2 min-h-[1.25rem]"
-              aria-live="polite"
-              data-testid="login-error-slot"
-            >
-              {status.kind === 'error' && (
-                <p
-                  className="font-body text-sm text-red-600"
-                  data-testid="login-error"
-                  role="alert"
+                  <div
+                    className="-mt-2 min-h-[1.25rem]"
+                    aria-live="polite"
+                    data-testid="login-error-slot"
+                  >
+                    {status.kind === 'error' && (
+                      <p
+                        className="font-body text-sm text-red-600"
+                        data-testid="login-error"
+                        role="alert"
+                      >
+                        {status.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    disabled={submitting}
+                    fullWidth
+                    testId="login-submit"
+                  >
+                    {status.kind === 'submitting' ? 'Sending…' : 'Continue with email →'}
+                  </Button>
+                </form>
+
+                <div className="my-6 flex items-center gap-3 font-body text-xs uppercase tracking-widest text-gray-500">
+                  <div className="h-px flex-1 bg-gray-300" />
+                  or
+                  <div className="h-px flex-1 bg-gray-300" />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  onClick={onGoogle}
+                  disabled={submitting}
+                  testId="login-google"
+                  fullWidth
                 >
-                  {status.message}
-                </p>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="md"
-              disabled={submitting}
-              fullWidth
-              testId="login-submit"
-            >
-              {status.kind === 'submitting' ? 'Sending…' : 'Continue with email →'}
-            </Button>
-          </form>
-
-          <div className="my-6 flex items-center gap-3 font-body text-xs uppercase tracking-widest text-gray-500">
-            <div className="h-px flex-1 bg-gray-300" />
-            or
-            <div className="h-px flex-1 bg-gray-300" />
-          </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            onClick={onGoogle}
-            disabled={submitting}
-            testId="login-google"
-            fullWidth
-          >
-            <span className="inline-flex items-center justify-center gap-3">
-              <GoogleIcon />
-              {status.kind === 'submitting-google' ? 'Redirecting…' : 'Continue with Google'}
-            </span>
-          </Button>
-        </motion.section>
-      ) : (
-        <motion.div
-          key="kid"
-          {...(reduceMotion
-            ? {}
-            : {
-                initial: { opacity: 0, x: 20 },
-                animate: { opacity: 1, x: 0 },
-                transition: { duration: 0.18, ease: 'easeOut' as const },
-              })}
-          className="mt-6"
-        >
-          <KidLoginPanel />
-        </motion.div>
-      )}
+                  <span className="inline-flex items-center justify-center gap-3">
+                    <GoogleIcon />
+                    {status.kind === 'submitting-google' ? 'Redirecting…' : 'Continue with Google'}
+                  </span>
+                </Button>
+              </motion.section>
+            ) : (
+              <motion.div key="kid" {...panelMotion()} className="mt-6">
+                <KidLoginPanel />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
 
       {/* MP "Create a new family" footer: single CTA for both views. */}
       <p className="mt-6 text-center font-body text-sm text-gray-700">

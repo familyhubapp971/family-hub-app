@@ -220,7 +220,9 @@ describe('<KidLoginPage />', () => {
     await waitFor(() => expect(screen.getByTestId('kid-login-error')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('kid-login-pick-different'));
-    expect(screen.queryByTestId('kid-login-pin-section')).toBeNull();
+    // FHS-577: the outgoing view now fades out, so it lingers for a beat.
+    // waitFor covers the exit rather than asserting mid-animation.
+    await waitFor(() => expect(screen.queryByTestId('kid-login-pin-section')).toBeNull());
     expect(screen.queryByTestId('kid-login-error')).toBeNull();
   });
 
@@ -276,7 +278,7 @@ describe('<KidLoginPage />', () => {
 
   // FHS-399 / FHS-402 - PIN-slot reserved height: the wrapper div stays in the
   // DOM whether or not a kid is selected, keeping the card height constant.
-  it('after "Pick a different face" the PIN-slot reserve div is still in the DOM (no height jump)', async () => {
+  it('going back from the PIN lands on the faces with the PIN view gone', async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ family: { slug: 'khan', name: 'Khan Family' }, kids: KIDS }),
     );
@@ -292,14 +294,10 @@ describe('<KidLoginPage />', () => {
     // Click "Pick a different face"
     fireEvent.click(screen.getByTestId('kid-login-pick-different'));
 
-    // PIN section gone, but the reserve wrapper (which holds the min-h-* classes
-    // that prevent the card from jumping) must still be in the DOM.
-    expect(screen.queryByTestId('kid-login-pin-section')).toBeNull();
-
-    // The reserve div doesn't have its own testid, but its parent (the space-y-4
-    // container) and the AvatarGrid are still there, confirming the layout wrapper
-    // didn't unmount. Verify by checking the pick-different button is gone and
-    // the avatar grid is still present.
+    // FHS-573 made this two steps and FHS-577 gave them a fade, so the PIN
+    // view leaves rather than collapsing a reserved slot. Going back lands on
+    // the faces with the PIN view gone.
+    await waitFor(() => expect(screen.queryByTestId('kid-login-pin-section')).toBeNull());
     expect(screen.queryByTestId('kid-login-pick-different')).toBeNull();
     expect(screen.getByTestId('kid-login-avatars')).toBeInTheDocument();
   });
