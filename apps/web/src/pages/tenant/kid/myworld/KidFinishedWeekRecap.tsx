@@ -7,6 +7,8 @@ import { API_BASE } from '../../../../lib/api';
 // and a completion-% badge. Data for Saved/Planted fetched via
 // GET /api/kid/weeks/:id/actions (Bearer kidToken).
 
+import { summariseWeekActions } from '@familyhub/shared';
+
 interface WeekAction {
   actionType: string;
   stickersUsed: number | null;
@@ -18,7 +20,6 @@ interface RecapProps {
   earnedThisWeek: number; // sum of habit-progress days (already computed by KidMyWorld)
   stickerRate: number;
   currency: string;
-  carriedOverStickers: number; // fallback for Saved when no explicit save actions
   doneThisView: number;
   totalThisView: number;
 }
@@ -28,17 +29,16 @@ function computeCompletion(done: number, total: number): number {
   return Math.min(100, Math.round((done / total) * 100));
 }
 
-function mapActions(actions: WeekAction[], carriedOverStickers: number) {
-  const saved = actions
-    .filter((a) => a.actionType === 'save' || a.actionType === 'auto_save')
-    .reduce((s, a) => s + (a.stickersUsed ?? 0), 0);
-  const planted = actions
-    .filter((a) => a.actionType === 'invest' || a.actionType === 'invest_continue')
-    .reduce((s, a) => s + (a.stickersUsed ?? 0), 0);
-  // Mirror the parent MyWorldTab fallback: if no explicit save actions, use
-  // carriedOverStickers as the "saved" figure.
-  const effectiveSaved = saved > 0 ? saved : carriedOverStickers > 0 ? carriedOverStickers : 0;
-  return { saved: effectiveSaved, planted };
+// FHS-608: the split comes from the one shared function, so a kid and their
+// parent can never read different numbers off the same finished week. This
+// copy netted no withdrawals, so a week that invested 10 and pulled 4 back
+// showed the kid "Planted 10" while the parent's card said 6.
+//
+// The old carriedOverStickers fallback is gone with it: that figure is what
+// came INTO the week from the previous close, not what this week saved.
+function mapActions(actions: WeekAction[]) {
+  const { saved, invested } = summariseWeekActions(actions);
+  return { saved, planted: invested };
 }
 
 export function KidFinishedWeekRecap({
@@ -47,7 +47,6 @@ export function KidFinishedWeekRecap({
   earnedThisWeek,
   stickerRate,
   currency,
-  carriedOverStickers,
   doneThisView,
   totalThisView,
 }: RecapProps) {
@@ -71,7 +70,7 @@ export function KidFinishedWeekRecap({
         }
         const body = (await res.json()) as { actions: WeekAction[] };
         if (cancelled) return;
-        const { saved: s, planted: p } = mapActions(body.actions ?? [], carriedOverStickers);
+        const { saved: s, planted: p } = mapActions(body.actions ?? []);
         setSaved(s);
         setPlanted(p);
         setActionsStatus('ready');
@@ -83,7 +82,7 @@ export function KidFinishedWeekRecap({
     return () => {
       cancelled = true;
     };
-  }, [weekId, headers, carriedOverStickers]);
+  }, [weekId, headers]);
 
   const pct = computeCompletion(doneThisView, totalThisView);
   const cashValue = (earnedThisWeek * stickerRate).toFixed(2);
