@@ -97,6 +97,13 @@ describe('TopNav', () => {
     expect(screen.getByRole('tab', { name: /meals/i })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('lets the brand shrink so a long name cannot widen the page (FHS-606)', () => {
+    render(<TopNav tabs={tabs} activeTab="meals" onTabChange={() => {}} brand="FamilyHub" />);
+    const wrapper = screen.getByText('FamilyHub').closest('div');
+    expect(wrapper).toHaveClass('min-w-0', 'max-w-full');
+    expect(wrapper).not.toHaveClass('shrink-0');
+  });
+
   it('calls onTabChange with the clicked tab id', () => {
     const onTabChange = vi.fn();
     render(<TopNav tabs={tabs} activeTab="dashboard" onTabChange={onTabChange} />);

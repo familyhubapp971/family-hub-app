@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 // FHS-293: My World habit tracker (faithful legacy port): week navigator,
@@ -34,6 +34,7 @@ interface St {
   balance: number;
   savedStickers: number;
   savedCash: number;
+  earnedLastWeekStickers?: number;
   unallocated: number;
   stickerRate: number;
   rewards: Array<{
@@ -72,6 +73,7 @@ function installApi(over: Partial<St> = {}) {
     ],
     stickers: over.stickers ?? [],
     balance: over.balance ?? 0,
+    earnedLastWeekStickers: over.earnedLastWeekStickers,
     savedStickers: over.savedStickers ?? 0,
     savedCash: over.savedCash ?? 0,
     unallocated: over.unallocated ?? 0,
@@ -139,6 +141,9 @@ function installApi(over: Partial<St> = {}) {
         json: async () => ({
           savedStickers: state.savedStickers,
           savedCash: state.savedCash,
+          // FHS-606: the server-derived split; the two always sum to the total.
+          earnedLastWeekStickers: state.earnedLastWeekStickers ?? 0,
+          keptFromEarlierStickers: state.savedStickers - (state.earnedLastWeekStickers ?? 0),
           currency: 'AED',
           stickerRate: state.stickerRate,
           stickerRateMinor: Math.round(state.stickerRate * 100),
@@ -1247,5 +1252,196 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     await waitFor(() => expect(screen.getByTestId('finalized-week-summary')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByTestId('finalized-saved-stars')).toBeInTheDocument());
     expect(screen.queryByTestId('finalized-planted-stars')).not.toBeInTheDocument();
+  });
+});
+
+// ── FHS-606: the parent money row ────────────────────────────────────────────
+describe('<MyWorldTab /> money row (FHS-606)', () => {
+  it('lays Savings, Investments and This Week out as one row with the split', async () => {
+    installApi({ savedStickers: 475, earnedLastWeekStickers: 240, unallocated: 15 });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('money-row')).toBeInTheDocument());
+    const row = screen.getByTestId('money-row');
+    // Three cards inside one grid that goes 1 → 2 → 3 columns.
+    expect(row.className).toContain('md:grid-cols-2');
+    expect(row.className).toContain('xl:grid-cols-3');
+    expect(within(row).getByTestId('your-savings')).toBeInTheDocument();
+    expect(within(row).getByTestId('active-investments')).toBeInTheDocument();
+    expect(within(row).getByTestId('bankable-week')).toBeInTheDocument();
+    // The split reconciles: 240 earned + 235 kept = 475.
+    expect(screen.getByTestId('savings-earned-last-week').textContent).toBe('240');
+    expect(screen.getByTestId('savings-kept-from-earlier').textContent).toBe('235');
+  });
+
+  it('sums the investments and counts the ones that can lose value', async () => {
+    installApi({ savedStickers: 10 });
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/api/mw/financial/investments')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            investments: [
+              {
+                id: 'inv1',
+                habitId: HABIT,
+                habitName: 'Read a book',
+                habitIcon: 'star',
+                investedStickers: 10,
+                originalInvestedStickers: 10,
+                currentValue: 7.5,
+                currentValueStickers: 15,
+                daysCompleted: 3,
+                daysMissed: 0,
+                deductible: true,
+              },
+              {
+                id: 'inv2',
+                habitId: HABIT,
+                habitName: 'Tidy up',
+                habitIcon: 'zap',
+                investedStickers: 8,
+                originalInvestedStickers: 8,
+                currentValue: 4,
+                currentValueStickers: 8,
+                daysCompleted: 1,
+                daysMissed: 1,
+                deductible: false,
+              },
+            ],
+          }),
+        });
+      }
+      return base(url, init);
+    });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('investments-worth')).toBeInTheDocument());
+    // 7.50 + 4.00, and one of the two is deductible.
+    expect(screen.getByTestId('investments-worth').textContent).toContain('11.50');
+    expect(screen.getByTestId('investments-at-risk').textContent).toContain('1 of 2 could');
+  });
+
+  it('shows the week progress inside This Week', async () => {
+    installApi({ unallocated: 15 });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('bankable-week')).toBeInTheDocument());
+    const card = screen.getByTestId('bankable-week');
+    expect(card.textContent).toContain('Stickers to bank');
+    expect(card.textContent).toContain('Habit days done');
+    expect(card.textContent).toContain('One sticker is');
+  });
+
+  // QA gap: the cash display path is new code, distinct from the kid card.
+  it('shows the cash line and folds cash into Total Value when cash exists', async () => {
+    installApi({ savedStickers: 10, savedCash: 5, earnedLastWeekStickers: 4, stickerRate: 0.5 });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('money-row')).toBeInTheDocument());
+    const card = screen.getByTestId('your-savings');
+    expect(card.textContent).toContain('Saved as cash');
+    // 10 stickers at 0.5 + 5.00 cash = 10.00 total.
+    expect(card.textContent).toContain('10.00');
+    expect(screen.getByTestId('savings-earned-last-week').textContent).toBe('4');
+    expect(screen.getByTestId('savings-kept-from-earlier').textContent).toBe('6');
+  });
+
+  // QA gap: the readOnly gate is the exact line this ticket changed. A kid
+  // must keep the simple pair and never see the parent money row.
+  it('keeps the kid pair and hides the money row in kid (readOnly) mode', async () => {
+    installApi();
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/api/kid/weeks') && u.includes('/stats')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            weekId: WEEK,
+            totalStickers: 0,
+            unallocatedStickers: 2,
+            allocatedStickers: 0,
+            cashValue: 1,
+          }),
+        });
+      }
+      if (u.includes('/api/kid/weeks') && u.includes('/actions')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ actions: [] }) });
+      }
+      if (u.includes('/api/kid/weeks')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            weeks: [
+              {
+                id: WEEK,
+                weekNumber: 9,
+                year: 2026,
+                startDate: '2026-02-23',
+                isFinalized: false,
+                carriedOverStickers: 0,
+                carriedOverCash: 0,
+                retrievedStickers: 0,
+                retrievedCash: 0,
+              },
+            ],
+          }),
+        });
+      }
+      if (u.includes('/api/kid/financial/savings')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            savedStickers: 12,
+            savedCash: 0,
+            earnedLastWeekStickers: 2,
+            keptFromEarlierStickers: 10,
+            currency: 'AED',
+            stickerRate: 0.5,
+            stickerRateMinor: 50,
+          }),
+        });
+      }
+      if (u.includes('/api/kid/financial/investments')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ investments: [] }) });
+      }
+      if (u.includes('/api/kid/rewards')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ rewards: [], stickerBalance: 0 }),
+        });
+      }
+      return base(url, init);
+    });
+    render(
+      <MemoryRouter initialEntries={['/t/khan/child/' + MEMBER]}>
+        <Routes>
+          <Route
+            path="/t/:slug/child/:memberId"
+            element={
+              <TenantProvider>
+                <MyWorldTab kidToken="kid.jwt.tok" />
+              </TenantProvider>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByTestId('your-savings')).toBeInTheDocument());
+    expect(screen.getByTestId('active-investments')).toBeInTheDocument();
+    // The parent-only surfaces stay hidden from a kid.
+    expect(screen.queryByTestId('money-row')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('bankable-week')).not.toBeInTheDocument();
+  });
+
+  it('passes the week label into the Reward Requests heading', async () => {
+    installApi({});
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('reward-requests-week')).toBeInTheDocument());
+    expect(screen.getByTestId('reward-requests-week').textContent).toBe('Week 9, 2026');
   });
 });
