@@ -178,8 +178,16 @@ the kid view keeps its simpler savings pair and never sees bankable figures
 - **This Week** replaces the sidebar's Bankable card: stickers to bank, habit
   days done with a progress bar, the child's sticker rate, and the week's
   worth. Same underlying numbers as before, new home.
-- **Reward Requests** now carries the week label at the right of its heading,
-  so the panel says which week it belongs to.
+- **Reward Requests** keeps its title and pending count only. It carried the
+  week label for one release; the board already names the week at the top, so
+  the label just crowded the heading and came back off in
+  [FHS-612](https://qualicion2.atlassian.net/browse/FHS-612).
+
+All the small labels on these cards are neutral light greys, not tinted
+purples. The tinted ones read as washed out against the purple panels, and the
+ones inside the investment rows measured 3.3:1, below the 4.5:1 accessibility
+floor ([FHS-611](https://qualicion2.atlassian.net/browse/FHS-611)). The
+contrast maths is locked by a test, so a faint colour cannot come back.
 
 Deliberate deviations from the mock: the mock's sample data had no cash
 savings, so the cash line and its inclusion in Total Value are ours; and the

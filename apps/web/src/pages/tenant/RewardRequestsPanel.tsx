@@ -11,8 +11,6 @@ import { API_BASE } from '../../lib/api';
 // FHS-392: accepts an optional `memberId` prop. When provided, only
 // that child's pending requests are shown (used in ChildWorldPage
 // sidebar). When omitted, all pending requests are listed.
-// FHS-606: accepts an optional `weekLabel`, shown at the right of the
-// heading row so the panel says which week it belongs to, per the design.
 
 interface RequestItem {
   id: string;
@@ -52,10 +50,7 @@ function relativeTime(iso: string): string {
   return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
-export function RewardRequestsPanel({
-  memberId,
-  weekLabel,
-}: { memberId?: string; weekLabel?: string } = {}) {
+export function RewardRequestsPanel({ memberId }: { memberId?: string } = {}) {
   const { session } = useAuth();
   const slug = useTenantSlug();
   const accessToken = session?.access_token ?? null;
@@ -143,14 +138,6 @@ export function RewardRequestsPanel({
         >
           {pendingCount} Pending
         </span>
-        {weekLabel && (
-          <span
-            data-testid="reward-requests-week"
-            className="ml-auto whitespace-nowrap text-[11px] font-bold uppercase tracking-widest text-purple-200"
-          >
-            {weekLabel}
-          </span>
-        )}
       </h2>
 
       {/* Empty state */}
