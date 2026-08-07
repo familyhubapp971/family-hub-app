@@ -26,7 +26,7 @@ import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { useDashboardStaleSignal } from '../../lib/dashboard-refresh';
 import { TABS, DEFAULT_TAB } from './dashboard-tabs';
-import { isKidRole } from '@familyhub/shared';
+import { isKidRole, isGrownUpRole, isFamilyAdminRole } from '@familyhub/shared';
 
 // FHS-621: one menu door. The note under the label is what stops a parent
 // having to open a page to find out whether it is the one they wanted.
@@ -203,6 +203,12 @@ export function ProfilePill({
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
+  // FHS-625: which doors this person can actually walk through. `role` is null
+  // until /api/me answers, and an unknown role gets nothing: showing a door and
+  // taking it away reads worse than it arriving a moment late.
+  const grownUp = isGrownUpRole(role);
+  const familyAdmin = isFamilyAdminRole(role);
+
   // Close on outside click + Escape.
   useEffect(() => {
     if (!open) return;
@@ -362,50 +368,64 @@ export function ProfilePill({
               </button>
             )}
           </div>
-          <div className="space-y-2 border-t-2 border-black px-3 pb-3 pt-3">
-            {/* FHS-621: one door per job, in the order a parent needs them,
-                each saying what is behind it so nobody has to guess. */}
-            <MenuDoor
-              testId="dashboard-profile-kids-money"
-              icon={<Wallet size={16} strokeWidth={3} aria-hidden="true" />}
-              label="Kids money"
-              note="Balances and week history"
-              onClick={() => {
-                setOpen(false);
-                onKidsMoney();
-              }}
-            />
-            <MenuDoor
-              testId="dashboard-profile-reward-settings"
-              icon={<Sliders size={16} strokeWidth={3} aria-hidden="true" />}
-              label="Earning rules"
-              note="What a sticker is worth"
-              onClick={() => {
-                setOpen(false);
-                onRewardSettings();
-              }}
-            />
-            <MenuDoor
-              testId="dashboard-profile-manage-members"
-              icon={<Users size={16} strokeWidth={3} aria-hidden="true" />}
-              label="Manage family"
-              note="Grown-ups and kids"
-              onClick={() => {
-                setOpen(false);
-                onManageMembers();
-              }}
-            />
-            <MenuDoor
-              testId="dashboard-profile-family-settings"
-              icon={<Settings size={16} strokeWidth={3} aria-hidden="true" />}
-              label="Family settings"
-              note="Name, currency, your data"
-              onClick={() => {
-                setOpen(false);
-                onFamilySettings();
-              }}
-            />
-          </div>
+          {grownUp && (
+            <div className="space-y-2 border-t-2 border-black px-3 pb-3 pt-3">
+              {/* FHS-621: one door per job, in the order a parent needs them,
+                  each saying what is behind it so nobody has to guess.
+                  FHS-625: and only if the person can actually use what is
+                  behind it. An adult can move money and set a kid's PIN, so
+                  they keep the first three doors; every control behind Family
+                  settings is admin-only, so that door is not offered to them. */}
+              {grownUp && (
+                <MenuDoor
+                  testId="dashboard-profile-kids-money"
+                  icon={<Wallet size={16} strokeWidth={3} aria-hidden="true" />}
+                  label="Kids money"
+                  note="Balances and week history"
+                  onClick={() => {
+                    setOpen(false);
+                    onKidsMoney();
+                  }}
+                />
+              )}
+              {grownUp && (
+                <MenuDoor
+                  testId="dashboard-profile-reward-settings"
+                  icon={<Sliders size={16} strokeWidth={3} aria-hidden="true" />}
+                  label="Earning rules"
+                  note="What a sticker is worth"
+                  onClick={() => {
+                    setOpen(false);
+                    onRewardSettings();
+                  }}
+                />
+              )}
+              {grownUp && (
+                <MenuDoor
+                  testId="dashboard-profile-manage-members"
+                  icon={<Users size={16} strokeWidth={3} aria-hidden="true" />}
+                  label="Manage family"
+                  note="Grown-ups and kids"
+                  onClick={() => {
+                    setOpen(false);
+                    onManageMembers();
+                  }}
+                />
+              )}
+              {familyAdmin && (
+                <MenuDoor
+                  testId="dashboard-profile-family-settings"
+                  icon={<Settings size={16} strokeWidth={3} aria-hidden="true" />}
+                  label="Family settings"
+                  note="Name, currency, your data"
+                  onClick={() => {
+                    setOpen(false);
+                    onFamilySettings();
+                  }}
+                />
+              )}
+            </div>
+          )}
           {/* FHS-520 (design-fidelity): Log out now lives at the bottom of
               this dropdown (not a separate top-nav button) to match the
               Magic Patterns mock. */}

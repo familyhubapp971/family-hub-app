@@ -355,9 +355,40 @@ describe('Kids money (FHS-622)', () => {
     expect(await screen.findByTestId('on-reward-settings')).toBeInTheDocument();
   });
 
-  it('a non-admin caller is sent back to the dashboard', async () => {
+  // FHS-625: this page used to bounce everyone but an admin, inherited from
+  // the Admin Panel it replaced. The server has always let an adult move a
+  // child's money, so that gate locked adults out of something they were
+  // allowed to do. Any grown-up gets in; kids and guests do not.
+  it('an adult is let in, because the server lets them move money', async () => {
     installApi({ callerRole: 'adult' });
     renderPage();
-    expect(await screen.findByTestId('on-dashboard')).toBeInTheDocument();
+    expect(await screen.findByTestId('kids-money-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('on-dashboard')).not.toBeInTheDocument();
+  });
+
+  it.each(['teen', 'child', 'guest'])(
+    'a %s who reaches the address is sent back to the dashboard',
+    async (role) => {
+      installApi({ callerRole: role });
+      renderPage();
+      expect(await screen.findByTestId('on-dashboard')).toBeInTheDocument();
+    },
+  );
+
+  // FHS-625: the redirect runs in an effect, one render AFTER the role lands,
+  // so gating the page on "do we know the role yet" showed a child's balances
+  // and the money buttons to a teen or guest for a frame first.
+  it('never paints a child\u2019s money to someone who may not see it', async () => {
+    installApi({ callerRole: 'teen' });
+    renderPage();
+    // Watch every render between mount and the redirect landing, not just the
+    // end state: the leak this guards was only ever visible in between.
+    const seen: string[] = [];
+    await waitFor(() => {
+      if (screen.queryByTestId('kids-money-page')) seen.push('the page');
+      if (screen.queryByTestId('kids-money-total')) seen.push('a balance');
+      expect(screen.getByTestId('on-dashboard')).toBeInTheDocument();
+    });
+    expect(seen, 'someone who may not see a kid\u2019s money was shown it').toEqual([]);
   });
 });
