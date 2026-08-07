@@ -1,13 +1,16 @@
 import React, { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RewardRequestsPanel } from '../RewardRequestsPanel';
 import {
+  AlertTriangle,
   Award,
   BarChart2,
   Check,
   CheckCircle,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Coins,
+  ShieldCheck,
   Edit2,
   Heart,
   Lock,
@@ -20,7 +23,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { Button, useBodyScrollLock } from '@familyhub/ui';
+import { Button, InvestmentTag, investmentRule, useBodyScrollLock } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -347,6 +350,9 @@ export function MyWorldTab(
 
   // ── Investments state ─────────────────────────────────────────────────────
   const [investments, setInvestments] = useState<Investment[]>([]);
+  // FHS-607: which investment row is open. One at a time, so the card's height
+  // does not run away with five habits invested.
+  const [openInvestmentId, setOpenInvestmentId] = useState<string | null>(null);
 
   // ── Close Week dialog state ───────────────────────────────────────────────
   const [closeWeekOpen, setCloseWeekOpen] = useState(false);
@@ -679,14 +685,16 @@ export function MyWorldTab(
   const totalPossible = habits.length * 7;
 
   // ── Investment derived values ─────────────────────────────────────────────
-  const investedHabitIds = useMemo(
-    () => new Set(investments.map((inv) => inv.habitId)),
+  // FHS-607: one map from habit to its investment. The habit row now needs the
+  // kind as well as the multiplier (FHS-534), and two parallel lookups of the
+  // same join drift apart, so the whole record crosses over.
+  const investmentByHabitId = useMemo(
+    () => new Map(investments.map((inv) => [inv.habitId, inv])),
     [investments],
   );
-  // FHS-534: per-habit growth rate, so the "Invested · Nx" badge shows the
-  // real coefficient instead of a hardcoded 5x.
-  const investedCoefficientByHabitId = useMemo(
-    () => new Map(investments.map((inv) => [inv.habitId, inv.coefficient])),
+  // At-risk first: those are the ones a parent may want to change.
+  const sortedInvestments = useMemo(
+    () => [...investments].sort((a, b) => Number(b.deductible) - Number(a.deductible)),
     [investments],
   );
 
@@ -697,144 +705,230 @@ export function MyWorldTab(
   // cash converted at this child's rate), not the spendable balance.
   const savingsStars = savedStickers + Math.floor(stickersFromCash(savedCash, stickerRate));
 
-  // FHS-606: one investments card, rendered both in the kid pair and in the
-  // parent money row. withTotals adds the row footer: what the investments
-  // are worth right now, and how many a missed day can still hurt.
-  const renderActiveInvestments = (withTotals: boolean) => (
-    <div data-testid="active-investments" className="relative">
-      <div className="absolute inset-0 bg-fuchsia-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
-      <div className="relative h-full flex flex-col bg-purple-900 border-2 sm:border-3 border-fuchsia-400/30 rounded-2xl p-4 sm:p-5">
-        <div className="flex items-center gap-2 sm:gap-3 mb-4">
-          <div className="bg-fuchsia-400 p-1.5 sm:p-2 rounded-lg border-2 border-black text-black">
-            <Coins className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wide">
-            Active Investments
-          </h3>
-        </div>
-        {investments.length > 0 ? (
-          investments.map((inv) => {
-            const delta = inv.currentValueStickers - inv.investedStickers;
-            const showOriginally =
-              inv.originalInvestedStickers !== null &&
-              inv.originalInvestedStickers !== undefined &&
-              inv.originalInvestedStickers !== inv.investedStickers;
-            return (
-              <div
-                key={inv.id}
-                data-testid={`investment-card-${inv.id}`}
-                className="bg-white/10 border-2 border-white/20 rounded-xl p-4 mb-2 last:mb-0"
-              >
-                <p className="text-sm font-bold text-slate-200 leading-snug mb-2">
-                  {inv.habitName ?? `Investment #${inv.id}`}
-                </p>
-                {/* FHS-378: penalty mode tag + admin toggle.
-                    FHS-407: wrap so the tag + toggle don't collide on narrow cards. */}
-                <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span
-                    data-testid={`investment-mode-${inv.id}`}
-                    className={`rounded-full border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase ${
-                      inv.deductible ? 'bg-red-300 text-black' : 'bg-green-300 text-black'
-                    }`}
-                  >
-                    {inv.deductible ? 'Deductible' : 'No-penalty'}
-                  </span>
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      data-testid={`investment-toggle-${inv.id}`}
-                      onClick={() => void setInvestmentDeductible(inv, !inv.deductible)}
-                      className="text-[10px] font-bold text-fuchsia-300 underline transition-colors hover:text-fuchsia-200"
-                    >
-                      {inv.deductible ? 'Make no-penalty' : 'Make deductible'}
-                    </button>
-                  )}
-                </div>
-                {/* FHS-413: one shared 2-col grid (label | value) so the
-                    Originally/Invested/Now rows always line up: labels in
-                    col 1, values right-aligned in col 2, no ragged wrapping. */}
-                <div className="mb-2 grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-1.5 text-xs font-mono tabular-nums">
-                  {showOriginally && (
-                    <>
-                      <span className="text-slate-400">Originally</span>
-                      <span
-                        data-testid="investment-original"
-                        className="justify-self-end break-words font-bold text-slate-200"
-                      >
-                        {inv.originalInvestedStickers} stickers ({currency}{' '}
-                        {(inv.originalInvestedStickers! * stickerRate).toFixed(2)})
-                      </span>
-                    </>
-                  )}
-                  <span className="text-slate-400">Invested</span>
-                  <span
-                    data-testid="investment-invested"
-                    className="justify-self-end break-words font-bold text-yellow-400"
-                  >
-                    {inv.investedStickers} stickers ({currency}{' '}
-                    {(inv.investedStickers * stickerRate).toFixed(2)})
-                  </span>
-                  <span className="text-slate-400">Now</span>
-                  <span
-                    data-testid="investment-current"
-                    className="justify-self-end break-words font-black text-fuchsia-300"
-                  >
-                    {inv.currentValueStickers} stickers ({currency} {inv.currentValue.toFixed(2)})
-                    {delta !== 0 && (
-                      <span
-                        data-testid="investment-delta"
-                        className={`ml-1.5 font-mono text-[10px] ${delta > 0 ? 'text-emerald-300' : 'text-red-400'}`}
-                      >
-                        ({delta > 0 ? '+' : ''}
-                        {delta})
-                      </span>
-                    )}
-                  </span>
-                </div>
-                {/* FHS-413 follow-up: day detail sits with the bar (not
-                    crammed into the "Now" label) so the rows read cleanly. */}
-                <div className="mb-1 flex items-center justify-between text-[10px] font-mono text-slate-400">
-                  <span>{inv.daysCompleted}/7 days done</span>
-                  {inv.daysMissed > 0 && (
-                    <span className="text-red-400">{inv.daysMissed} missed</span>
-                  )}
-                </div>
-                <div className="w-full bg-white/10 h-2 rounded-full border border-white/10 overflow-hidden">
-                  <div
-                    className="h-full bg-fuchsia-400 rounded-full"
-                    style={{ width: `${(inv.daysCompleted / 7) * 100}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="bg-white/10 border-2 border-white/20 rounded-xl p-4 text-center">
-            <p className="text-sm text-slate-400 font-medium">No active investments</p>
-          </div>
-        )}
-        {/* FHS-606: totals, so five investments still read at a glance. */}
-        {withTotals && investments.length > 0 && (
-          <div className="mt-4 pt-4 border-t-2 border-white/10">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-300 font-bold text-sm sm:text-base">Worth this week</span>
-              <span data-testid="investments-worth" className="text-2xl font-black text-lime-400">
-                {currency} {investments.reduce((sum, inv) => sum + inv.currentValue, 0).toFixed(2)}
-              </span>
+  // FHS-606/607: one investments card, rendered both in the kid pair and in the
+  // parent money row. withTotals adds the row footer: what the investments are
+  // worth right now, and how many a missed day can still hurt.
+  //
+  // Rows are one compact line each and only one opens at a time, so ten
+  // investments take ten lines and the card keeps a steady height (the design
+  // dropped the older inner-scroll idea for this).
+  const renderActiveInvestments = (withTotals: boolean) => {
+    const count = investments.length;
+    // The kid sees every tag but never the control (FHS-376/378 gates).
+    const canFlip = isAdmin && !readOnly;
+    return (
+      <div data-testid="active-investments" className="relative">
+        <div className="absolute inset-0 bg-fuchsia-400 rounded-2xl translate-x-1.5 translate-y-1.5 border-2 sm:border-3 border-black" />
+        <div className="relative h-full flex flex-col bg-purple-900 border-2 sm:border-3 border-fuchsia-400/30 rounded-2xl p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
+            <div className="bg-fuchsia-400 p-1.5 sm:p-2 rounded-lg border-2 border-black text-black">
+              <Coins className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <p
-              data-testid="investments-at-risk"
-              className="mt-1 text-right text-xs font-bold text-purple-300"
-            >
-              {investments.filter((inv) => inv.deductible).length} of {investments.length} could
-              lose value
-            </p>
+            <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wide">
+              Active Investments
+            </h3>
+            {count > 0 && (
+              <span
+                data-testid="investments-count"
+                className="ml-auto whitespace-nowrap rounded-full border-2 border-black bg-yellow-300 px-2.5 py-1 text-xs font-bold text-black shadow-neo-xs"
+              >
+                {count} {count === 1 ? 'habit' : 'habits'}
+              </span>
+            )}
           </div>
-        )}
-        {withTotals && <div className="flex-1" />}
+          {count === 0 ? (
+            <div className="flex-1 flex flex-col">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-bold text-slate-200">Habits invested</span>
+                <span className="text-2xl font-black text-purple-300">0</span>
+              </div>
+              <p className="mt-4 pt-4 border-t-2 border-white/10 text-sm font-bold text-slate-400">
+                Nothing growing yet. Mark a habit as invested to pay a multiple.
+              </p>
+            </div>
+          ) : (
+            <>
+              <ul className="flex-1 flex flex-col gap-2">
+                {sortedInvestments.map((inv) => {
+                  const isOpen = openInvestmentId === inv.id;
+                  const multiplier = inv.coefficient ?? 5;
+                  const original = inv.originalInvestedStickers;
+                  const showOriginally =
+                    original !== null &&
+                    original !== undefined &&
+                    original !== inv.investedStickers;
+                  const delta = inv.currentValueStickers - inv.investedStickers;
+                  const kind = inv.deductible ? 'Deductible' : 'No penalty';
+                  return (
+                    <li
+                      key={inv.id}
+                      data-testid={`investment-card-${inv.id}`}
+                      className={`rounded-xl border-2 bg-white/10 ${
+                        isOpen ? 'border-yellow-300' : 'border-white/20'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        data-testid={`investment-row-${inv.id}`}
+                        onClick={() => setOpenInvestmentId(isOpen ? null : inv.id)}
+                        aria-expanded={isOpen}
+                        className="flex w-full min-h-[44px] items-center gap-2 rounded-xl p-2.5 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300"
+                      >
+                        {/* Kind as a dot with its icon; the word rides along for
+                            screen readers, so a closed row still says which it is. */}
+                        <span
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-black text-black ${
+                            inv.deductible ? 'bg-red-300' : 'bg-green-300'
+                          }`}
+                        >
+                          {inv.deductible ? (
+                            <AlertTriangle size={12} strokeWidth={3} aria-hidden="true" />
+                          ) : (
+                            <ShieldCheck size={12} strokeWidth={3} aria-hidden="true" />
+                          )}
+                          <span className="sr-only">{kind}</span>
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-100">
+                          {inv.habitName ?? `Investment #${inv.id}`}
+                        </span>
+                        <span
+                          data-testid={`investment-worth-${inv.id}`}
+                          className="shrink-0 whitespace-nowrap text-base font-black text-lime-400"
+                        >
+                          {currency} {inv.currentValue.toFixed(2)}
+                        </span>
+                        <ChevronDown
+                          size={16}
+                          aria-hidden="true"
+                          className={`shrink-0 text-purple-200 transition-transform ${
+                            isOpen ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
+                      {isOpen && (
+                        <div className="px-2.5 pb-2.5">
+                          <InvestmentTag
+                            testId={`investment-mode-${inv.id}`}
+                            multiplier={multiplier}
+                            deductible={inv.deductible}
+                          />
+                          {/* FHS-413: one shared 2-col grid (label | value) so the
+                              Originally/Invested/Now rows always line up. */}
+                          <dl className="mt-2.5 grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-1.5 text-xs font-mono tabular-nums">
+                            {showOriginally && (
+                              <>
+                                <dt className="text-slate-400">Originally</dt>
+                                <dd
+                                  data-testid="investment-original"
+                                  className="justify-self-end break-words font-bold text-slate-200"
+                                >
+                                  {original} stickers ({currency}{' '}
+                                  {(original * stickerRate).toFixed(2)})
+                                </dd>
+                              </>
+                            )}
+                            <dt className="text-slate-400">Invested</dt>
+                            <dd
+                              data-testid="investment-invested"
+                              className="justify-self-end break-words font-bold text-yellow-400"
+                            >
+                              {inv.investedStickers} stickers ({currency}{' '}
+                              {(inv.investedStickers * stickerRate).toFixed(2)})
+                            </dd>
+                            <dt className="text-slate-400">Now</dt>
+                            <dd
+                              data-testid="investment-current"
+                              className="justify-self-end break-words font-black text-fuchsia-300"
+                            >
+                              {inv.currentValueStickers} stickers ({currency}{' '}
+                              {inv.currentValue.toFixed(2)})
+                              {delta !== 0 && (
+                                <span
+                                  data-testid="investment-delta"
+                                  className={`ml-1.5 font-mono text-[10px] ${
+                                    delta > 0 ? 'text-emerald-300' : 'text-red-400'
+                                  }`}
+                                >
+                                  ({delta > 0 ? '+' : ''}
+                                  {delta})
+                                </span>
+                              )}
+                            </dd>
+                          </dl>
+                          <div className="mt-2.5 flex items-center justify-between gap-3 text-[10px] font-mono text-slate-400">
+                            <span>{inv.daysCompleted}/7 days done</span>
+                            {inv.daysMissed > 0 && (
+                              <span className={inv.deductible ? 'text-red-400' : 'text-slate-400'}>
+                                {inv.daysMissed} missed
+                              </span>
+                            )}
+                          </div>
+                          <div
+                            className="mt-1 h-2 w-full overflow-hidden rounded-full border border-white/10 bg-white/10"
+                            role="img"
+                            aria-label={`${inv.daysCompleted} of 7 days done, ${inv.daysMissed} missed`}
+                          >
+                            <div
+                              className="h-full rounded-full bg-fuchsia-400"
+                              style={{ width: `${(inv.daysCompleted / 7) * 100}%` }}
+                            />
+                          </div>
+                          <p
+                            data-testid={`investment-per-day-${inv.id}`}
+                            className="mt-2 text-xs font-bold text-purple-200"
+                          >
+                            Pays {currency} {(multiplier * stickerRate).toFixed(2)} each day it is
+                            done.
+                          </p>
+                          {canFlip ? (
+                            <button
+                              type="button"
+                              data-testid={`investment-toggle-${inv.id}`}
+                              onClick={() => void setInvestmentDeductible(inv, !inv.deductible)}
+                              className="mt-2.5 min-h-[44px] w-full rounded-xl border-2 border-black bg-white text-sm font-bold text-black shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300"
+                            >
+                              {inv.deductible ? 'Switch to no penalty' : 'Switch to deductible'}
+                            </button>
+                          ) : (
+                            <p className="mt-2 text-xs font-bold text-purple-200">
+                              {investmentRule(inv.deductible)}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {/* FHS-606: totals, so five investments still read at a glance. */}
+              {withTotals && (
+                <div className="mt-4 pt-4 border-t-2 border-white/10">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-300 font-bold text-sm sm:text-base">
+                      Worth this week
+                    </span>
+                    <span
+                      data-testid="investments-worth"
+                      className="text-2xl font-black text-lime-400"
+                    >
+                      {currency}{' '}
+                      {investments.reduce((sum, inv) => sum + inv.currentValue, 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <p
+                    data-testid="investments-at-risk"
+                    className="mt-1 text-right text-xs font-bold text-purple-300"
+                  >
+                    {investments.filter((inv) => inv.deductible).length} of {count} could lose value
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // ── Habit state updater ───────────────────────────────────────────────────
   const updateWeekHabits = useCallback(
@@ -1133,21 +1227,19 @@ export function MyWorldTab(
     habit: Habit,
     editEnabled: boolean,
     editDayFn: (i: number) => boolean,
-    isInvested: boolean,
+    // FHS-607: the habit's investment, or undefined when it has none. Carries
+    // both the kind and the growth rate (FHS-534), which the tag needs.
+    investment: Investment | undefined,
     // FHS-342: adding/editing/deleting a habit is admin-only. Sticker
     // affordances stay on `editEnabled` so a normal user can still tick.
     canManageHabits: boolean,
     // FHS-399: when true, replace the live "Progress this week" label with
     // the finalized "PROGRESS THAT WEEK X/7" pill used in the kid view.
     weekIsFinalized = false,
-    // FHS-534: the invested habit's real growth rate (stickers/day). Falls
-    // back to the legacy default of 5 when the investment record predates
-    // the coefficient field.
-    investedCoefficient?: number,
   ) => (
     <div
       className={`relative ${
-        isInvested
+        investment
           ? 'bg-amber-50 border-2 sm:border-3 border-amber-400'
           : 'bg-white border-2 sm:border-3 border-black'
       } rounded-2xl p-4 md:p-6 transition-transform ${
@@ -1186,6 +1278,19 @@ export function MyWorldTab(
                 </button>
               )}
             </div>
+
+            {/* FHS-607: on phone and tablet the tag sits under the habit name,
+                where it cannot push the day circles. From desktop it moves to
+                the right column instead (see below). */}
+            {investment && (
+              <div className="mt-1 lg:hidden">
+                <InvestmentTag
+                  testId={`habit-card-invested-badge-${habit.id}`}
+                  multiplier={investment.coefficient ?? 5}
+                  deductible={investment.deductible}
+                />
+              </div>
+            )}
 
             {/* Progress bar */}
             <div className="w-full bg-gray-200 h-3 rounded-full mt-2 border-2 border-black overflow-hidden">
@@ -1251,18 +1356,18 @@ export function MyWorldTab(
           </div>
         </div>
 
-        {/* RIGHT: 7-day grid. FHS-406: the "Invested · 5x" tag sits in-flow
-            above the grid (was an absolute badge that overlapped the day cells). */}
+        {/* RIGHT: 7-day grid. FHS-406: the tag sits in-flow above the grid (it
+            was an absolute badge that overlapped the day cells). FHS-607: from
+            desktop this is the design's top-right position; below lg the tag
+            renders under the habit name instead, so it shows exactly once. */}
         <div className="flex-1">
-          {isInvested && (
-            <div className="mb-2 flex justify-end">
-              <span
-                data-testid={`habit-card-invested-badge-${habit.id}`}
-                className="inline-flex items-center gap-1 rounded-full border border-amber-600 bg-amber-500 px-2 py-0.5 text-[10px] font-black uppercase text-white"
-              >
-                <BarChart2 className="w-3 h-3" aria-hidden="true" /> Invested ·{' '}
-                {investedCoefficient ?? 5}x
-              </span>
+          {investment && (
+            <div className="mb-2 hidden justify-end lg:flex">
+              <InvestmentTag
+                testId={`habit-card-invested-badge-lg-${habit.id}`}
+                multiplier={investment.coefficient ?? 5}
+                deductible={investment.deductible}
+              />
             </div>
           )}
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
@@ -1980,10 +2085,9 @@ export function MyWorldTab(
                       habit,
                       canEdit,
                       canEditDay,
-                      investedHabitIds.has(habit.id),
+                      investmentByHabitId.get(habit.id),
                       isAdmin && canEdit,
                       week.isFinalized,
-                      investedCoefficientByHabitId.get(habit.id),
                     )}
                   </div>
                 ))}

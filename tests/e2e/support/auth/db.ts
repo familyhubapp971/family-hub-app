@@ -57,9 +57,26 @@ export function ensureReaderFunctions(): Promise<void> {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const drizzleDir = path.resolve(here, '../../../../apps/api/drizzle');
     const pool = getPool();
-    for (const file of FUNCTION_SQL_FILES) {
-      const sql = await readFile(path.join(drizzleDir, file), 'utf8');
-      await pool.query(sql);
+    // FHS-607: memoising per process is not enough once two authed specs run
+    // in parallel, because Playwright gives each worker its own process and
+    // two concurrent CREATE OR REPLACE FUNCTION calls on the same catalogue
+    // row fail with "tuple concurrently updated". A transaction-scoped
+    // advisory lock serialises the workers; the SQL is idempotent, so the
+    // second one simply re-applies it.
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock(6070607)');
+      for (const file of FUNCTION_SQL_FILES) {
+        const sql = await readFile(path.join(drizzleDir, file), 'utf8');
+        await client.query(sql);
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw err;
+    } finally {
+      client.release();
     }
   })();
   return _functionsApplied;

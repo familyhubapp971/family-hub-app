@@ -53,6 +53,7 @@ export {
   type AvatarDiscProps,
 } from './RoleBadge';
 export { CollapsibleSection, type CollapsibleSectionProps } from './CollapsibleSection';
+export { InvestmentTag, investmentRule, type InvestmentTagProps } from './InvestmentTag';
 export { MemberCard, type MemberCardProps } from './MemberCard';
 export { FormCard, type FormCardProps } from './FormCard';
 export { Spinner } from './Spinner';
