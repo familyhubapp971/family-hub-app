@@ -53,41 +53,31 @@ describe('LinkExpired', () => {
     expect(screen.getByTestId('link-expired-title').textContent).toMatch(/didn't come through/i);
   });
 
-  // FHS-602: one box in both states, so the screen never changes shape. When
-  // we know the address it sits in the box read-only, not in a separate panel.
-  it('FHS-602: shows the known address in the box, not editable', () => {
+  // FHS-609: the founder's revised design. A known address is stated in the
+  // panel, nothing to type; the labelled box only appears when unknown.
+  it('FHS-609: states the known address in the panel instead of a box', () => {
     renderScreen({ email: 'sarah@khan.family' });
-    const box = screen.getByTestId('link-expired-email');
-    expect(box).toHaveValue('sarah@khan.family');
-    expect(box).toHaveAttribute('readonly');
-    // The old coloured panel is gone.
-    expect(screen.queryByTestId('link-expired-known-address')).not.toBeInTheDocument();
-  });
-
-  // Read-only, not disabled: a disabled input leaves the tab order, so a
-  // screen reader user could not read back the address the link went to.
-  it('FHS-602: the read-only box is still reachable and labelled', () => {
-    renderScreen({ email: 'sarah@khan.family' });
-    const box = screen.getByTestId('link-expired-email');
-    expect(box).not.toBeDisabled();
-    expect(screen.getByLabelText(/email/i)).toBe(box);
+    const panel = screen.getByTestId('link-expired-known-address');
+    expect(panel.textContent).toContain('We will send it to');
+    expect(panel.textContent).toContain('sarah@khan.family');
+    expect(screen.queryByTestId('link-expired-email')).not.toBeInTheDocument();
   });
 
   it('asks for the address when we do not have one', () => {
     renderScreen();
     const box = screen.getByTestId('link-expired-email');
     expect(box).toHaveValue('');
-    expect(box).not.toHaveAttribute('readonly');
+    expect(screen.queryByTestId('link-expired-known-address')).not.toBeInTheDocument();
   });
 
-  // FHS-602: switching turns the same box editable AND empty, rather than
-  // making someone clear the wrong address by hand.
+  // FHS-609: switching swaps to the empty box, rather than making someone
+  // clear the wrong address by hand.
   it('lets someone switch to a different address', () => {
     renderScreen({ email: 'wrong@khan.family' });
     fireEvent.click(screen.getByTestId('link-expired-different-email'));
     const box = screen.getByTestId('link-expired-email');
-    expect(box).not.toHaveAttribute('readonly');
     expect(box).toHaveValue('');
+    expect(screen.queryByTestId('link-expired-known-address')).not.toBeInTheDocument();
   });
 
   it('sends a new link and confirms it', async () => {
