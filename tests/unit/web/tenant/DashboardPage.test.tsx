@@ -494,6 +494,124 @@ describe('<DashboardPage />: FHS-261 header', () => {
     await waitFor(() => expect(screen.queryByTestId('tab-tasks-badge')).not.toBeInTheDocument());
   });
 
+  // FHS-312: two dashboard-stale signals fired close together used to race
+  // two /today fetches with no ordering guarantee, so a slow "older" response
+  // could land after the newer one and overwrite fresh badge counts with
+  // stale data. Aborting the older in-flight fetch when a newer signal fires
+  // fixes that: only the newest request's response can ever apply.
+  it('aborts the older in-flight refresh when a second dashboard-stale signal fires before it resolves (FHS-312)', async () => {
+    type TodayCall = { signal?: AbortSignal; resolve: (v: Response) => void };
+    const todayCalls: TodayCall[] = [];
+    mocks.fetchMock.mockImplementation((url: string, options?: RequestInit) => {
+      if (url.includes('/api/me')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            id: 'u-1',
+            email: 'sarah@example.com',
+            tenants: [{ id: 't-1', slug: 'khans', name: 'The Khans', role: 'admin' }],
+          }),
+        } as Response);
+      }
+      if (url.includes('/api/dashboard/today')) {
+        return new Promise<Response>((resolve, reject) => {
+          todayCalls.push({ signal: options?.signal, resolve });
+          // Mirrors the browser's real fetch()-vs-AbortSignal contract: an
+          // aborted signal rejects the in-flight request.
+          options?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) } as Response);
+    });
+
+    // Shape matches the full DashboardTodayResponse (not just the fields
+    // AppHeader reads) because TodayTabPanel and GetStarted also render
+    // from whatever resolves these same /today calls.
+    const memberFixture = (tasksPending: number) => ({
+      date: '2026-06-10',
+      callerMemberId: 'm-1',
+      counts: {
+        members: 1,
+        habits: 0,
+        rewards: 0,
+        tasksDoneToday: 0,
+        tasksTotalToday: tasksPending,
+        mealsPlanned: 0,
+      },
+      members: [
+        {
+          id: 'm-1',
+          displayName: 'Sarah',
+          role: 'admin',
+          avatarEmoji: null,
+          habitsDone: 0,
+          habitsTotal: 0,
+          streak: 0,
+          tasksPending,
+          statusText: tasksPending > 0 ? `${tasksPending} task left` : 'All done',
+          starBalance: 0,
+          pendingSignup: false,
+        },
+      ],
+      goals: [],
+      recentActivity: [],
+    });
+
+    renderAt('/t/khans/dashboard');
+
+    // The home tab has more than one panel that independently fetches
+    // /api/dashboard/today on mount (AppHeader itself, plus the Today and
+    // GetStarted panels), so more than one call can be in flight before any
+    // signal ever fires. None of those other panels listen for
+    // fh:dashboard-stale, so resolve every call currently pending (mount
+    // effects only) with the caller's task still open, then treat the call
+    // count from here as the baseline: any call pushed after this point can
+    // only come from AppHeader's refreshToday.
+    await waitFor(() => expect(todayCalls.length).toBeGreaterThan(0));
+    await act(async () => {
+      todayCalls.forEach((call) =>
+        call.resolve({ ok: true, json: async () => memberFixture(1) } as Response),
+      );
+    });
+    await waitFor(() => expect(screen.getByTestId('tab-tasks-badge').textContent).toBe('1'));
+    const baseline = todayCalls.length;
+
+    // First dashboard-stale signal starts the "slow, stale" refresh that
+    // will get superseded before it resolves.
+    await act(async () => {
+      window.dispatchEvent(new Event('fh:dashboard-stale'));
+    });
+    await waitFor(() => expect(todayCalls.length).toBe(baseline + 1));
+    const staleCall = todayCalls[baseline];
+    expect(staleCall.signal?.aborted).toBe(false);
+
+    // Second dashboard-stale signal fires before the first refresh resolves:
+    // it starts a newer refresh and must abort the older one.
+    await act(async () => {
+      window.dispatchEvent(new Event('fh:dashboard-stale'));
+    });
+    await waitFor(() => expect(todayCalls.length).toBe(baseline + 2));
+    const freshCall = todayCalls[baseline + 1];
+    expect(staleCall.signal?.aborted).toBe(true);
+    expect(freshCall.signal?.aborted).toBe(false);
+
+    // Resolve the newer call first: the caller's task is now done.
+    await act(async () => {
+      freshCall.resolve({ ok: true, json: async () => memberFixture(0) } as Response);
+    });
+    await waitFor(() => expect(screen.queryByTestId('tab-tasks-badge')).not.toBeInTheDocument());
+
+    // The stale call's own promise already rejected when it was aborted, so
+    // this resolve() is a no-op; confirms the stale "1 pending" data can
+    // never resurrect the badge, even if something tried to apply it late.
+    await act(async () => {
+      staleCall.resolve({ ok: true, json: async () => memberFixture(1) } as Response);
+    });
+    expect(screen.queryByTestId('tab-tasks-badge')).not.toBeInTheDocument();
+  });
+
   // FHS-506: the account menu shows the person's roster name, not their email,
   // when the login carries no name (common for magic-link signups).
   it('uses the roster display name (not the email) when the login has no name', async () => {
