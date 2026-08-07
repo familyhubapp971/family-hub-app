@@ -73,16 +73,6 @@ export async function seedFamily(): Promise<SeededFamily> {
     .returning({ id: schema.members.id });
   if (!childMember) throw new Error('seedFamily: child member insert returned no row');
 
-  const [habit] = await db
-    .insert(schema.habits)
-    .values({
-      tenantId: tenant.id,
-      memberId: childMember.id,
-      name: 'Brush teeth',
-    })
-    .returning({ id: schema.habits.id });
-  if (!habit) throw new Error('seedFamily: habit insert returned no row');
-
   // FHS-607: a live week + one active investment, so the Active Investments
   // card renders a real row (not just its empty state) in the responsive
   // check. The board opens on the current week, so the week's start date is
@@ -95,6 +85,25 @@ export async function seedFamily(): Promise<SeededFamily> {
       now.getUTCDate() - ((now.getUTCDay() + 6) % 7),
     ),
   );
+  // FHS-608 seeds a finished week dated LAST week; FHS-616 scopes a finished
+  // week's habits to ones that existed before it closed, so the habit must
+  // actually predate that week (not just be inserted before it in this
+  // script, which all happens "now"). Back-date createdAt to before
+  // lastMonday so it counts.
+  const lastMonday = new Date(monday.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const habitCreatedAt = new Date(lastMonday.getTime() - 24 * 60 * 60 * 1000);
+
+  const [habit] = await db
+    .insert(schema.habits)
+    .values({
+      tenantId: tenant.id,
+      memberId: childMember.id,
+      name: 'Brush teeth',
+      createdAt: habitCreatedAt,
+    })
+    .returning({ id: schema.habits.id });
+  if (!habit) throw new Error('seedFamily: habit insert returned no row');
+
   const [week] = await db
     .insert(schema.mwWeeks)
     .values({
@@ -110,8 +119,10 @@ export async function seedFamily(): Promise<SeededFamily> {
   if (!week) throw new Error('seedFamily: week insert returned no row');
 
   // FHS-608: a finished week before this one, with one banked action, so the
-  // recap has a real record to render in the responsive check.
-  const lastMonday = new Date(monday.getTime() - 7 * 24 * 60 * 60 * 1000);
+  // recap has a real record to render in the responsive check. `closureSnapshot`
+  // mirrors what a real POST /finalize call stamps (FHS-616 reads
+  // `capturedAt` from it as the week's real close moment); a moment inside
+  // the week's own span keeps the "closed early" case realistic.
   const [pastWeek] = await db
     .insert(schema.mwWeeks)
     .values({
@@ -125,6 +136,9 @@ export async function seedFamily(): Promise<SeededFamily> {
       startDate: lastMonday.toISOString().slice(0, 10),
       isFinalized: true,
       carriedOverStickers: 3,
+      closureSnapshot: {
+        capturedAt: new Date(lastMonday.getTime() + 6 * 60 * 60 * 1000).toISOString(),
+      },
     })
     .returning({ id: schema.mwWeeks.id });
   if (!pastWeek) throw new Error('seedFamily: past week insert returned no row');
