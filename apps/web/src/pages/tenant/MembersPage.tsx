@@ -9,7 +9,6 @@ import {
   Mail,
   Plus,
   Send,
-  Settings2,
   Trash2,
   UserPlus,
 } from 'lucide-react';
@@ -364,8 +363,6 @@ export function MembersPage() {
                         setEditingFor={setEditingFor}
                         emailChangeFor={emailChangeFor}
                         setEmailChangeFor={setEmailChangeFor}
-                        navigate={navigate}
-                        slug={slug}
                         mutate={mutate}
                       />
                     </li>
@@ -511,8 +508,6 @@ interface GrownUpCardProps {
   setEditingFor: (id: string | null) => void;
   emailChangeFor: string | null;
   setEmailChangeFor: (id: string | null) => void;
-  navigate: ReturnType<typeof useNavigate>;
-  slug: string;
   mutate: (path: string, init: RequestInit) => Promise<boolean>;
 }
 
@@ -526,8 +521,6 @@ function GrownUpCard({
   setEditingFor,
   emailChangeFor,
   setEmailChangeFor,
-  navigate,
-  slug,
   mutate,
 }: GrownUpCardProps) {
   const isParentRow = m.role === 'admin' || m.role === 'adult';
@@ -581,16 +574,6 @@ function GrownUpCard({
                   }`}
                 >
                   <Mail size={14} aria-hidden="true" /> Change email
-                </button>
-              )}
-              {callerIsAdmin && isAdminRole && (
-                <button
-                  type="button"
-                  data-testid="members-admin-panel-btn"
-                  onClick={() => navigate(`/t/${slug}/admin`)}
-                  className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-orange-600 transition-colors hover:bg-orange-50"
-                >
-                  <Settings2 size={14} aria-hidden="true" /> Admin Panel
                 </button>
               )}
             </div>

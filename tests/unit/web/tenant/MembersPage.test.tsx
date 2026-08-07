@@ -625,7 +625,7 @@ describe('<MembersPage />', () => {
         'members-grownup-1-change-email',
       ) as HTMLButtonElement;
       expect(changeEmailBtn.disabled).toBe(false);
-      // Not an admin: no "Edit name" or "Admin Panel" buttons.
+      // Not an admin: no "Edit name" button.
       expect(screen.queryByTestId('members-grownup-1-edit-name')).not.toBeInTheDocument();
       expect(screen.queryByTestId('members-admin-panel-btn')).not.toBeInTheDocument();
     });
@@ -1099,7 +1099,7 @@ describe('<MembersPage />', () => {
     });
   });
 
-  describe('Edit name, admin toggle, Admin Panel, Remove: grown-up card actions', () => {
+  describe('Edit name, admin toggle, Remove: grown-up card actions', () => {
     it('edits a grown-up name via the inline edit form', async () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');
@@ -1386,29 +1386,17 @@ describe('<MembersPage />', () => {
       });
     });
 
-    it('renders the Admin Panel button on the admin card and navigates on click', async () => {
+    // FHS-629: the Admin Panel button is gone. FHS-621 split that panel into
+    // Kids money, Earning rules and Family settings, each with its own door in
+    // the profile menu, so a button named after a screen that no longer exists
+    // was sending parents somewhere other than where it said.
+    it('has no Admin Panel button, because that panel no longer exists', async () => {
       membersResponse = adminOnlyList();
-      render(
-        <MemoryRouter initialEntries={['/t/khans/members']}>
-          <Routes>
-            <Route
-              path="/t/:slug/members"
-              element={
-                <TenantProvider>
-                  <MembersPage />
-                </TenantProvider>
-              }
-            />
-            <Route path="/t/:slug/admin" element={<div data-testid="admin-panel-page" />} />
-          </Routes>
-        </MemoryRouter>,
-      );
+      renderAt('/t/khans/members');
       await expandGrownups();
-      await waitFor(() =>
-        expect(screen.getByTestId('members-admin-panel-btn')).toBeInTheDocument(),
-      );
-      fireEvent.click(screen.getByTestId('members-admin-panel-btn'));
-      await waitFor(() => expect(screen.getByTestId('admin-panel-page')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByTestId('members-grownup-0-role')).toBeInTheDocument());
+      expect(screen.queryByTestId('members-admin-panel-btn')).not.toBeInTheDocument();
+      expect(screen.queryByText('Admin Panel')).not.toBeInTheDocument();
     });
 
     it('remove is last-admin-protected on the sole admin, and works on a second grown-up', async () => {
