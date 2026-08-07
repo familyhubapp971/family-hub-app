@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { KidsMoneyPage } from '../../../../apps/web/src/pages/tenant/KidsMoneyPage';
 import { FamilySettingsPage } from '../../../../apps/web/src/pages/tenant/FamilySettingsPage';
 import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
 
 // FHS-621: the Admin Panel is split into pages named after the job they do.
 // Each page shows its own half and nothing else, so a parent never lands on a
-// tab they have to guess at.
+// tab they have to guess at. FHS-622 then replaced Kids money's body with the
+// designed page (no more tab bar there at all): its own coverage lives in
+// tests/unit/web/tenant/KidsMoneyPage.test.tsx, so this file only keeps the
+// half still true today, that Family settings shows nothing else.
 
 vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => ({
@@ -49,16 +51,6 @@ function renderPage(page: React.ReactNode, path: string) {
 }
 
 describe('the Admin Panel split (FHS-621)', () => {
-  it('Kids money shows the money tabs and never the settings one', async () => {
-    renderPage(<KidsMoneyPage />, '/t/khan/money');
-    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-balance')).toBeInTheDocument());
-    expect(screen.getByTestId('admin-panel-tab-savings')).toBeInTheDocument();
-    expect(screen.getByTestId('admin-panel-tab-history')).toBeInTheDocument();
-    expect(screen.getByTestId('admin-panel-tab-rewards')).toBeInTheDocument();
-    // The rare and dangerous things live behind their own door now.
-    expect(screen.queryByTestId('admin-panel-tab-settings')).not.toBeInTheDocument();
-  });
-
   it('Family settings shows only its own half, with no tabs to choose between', async () => {
     renderPage(<FamilySettingsPage />, '/t/khan/family-settings');
     await waitFor(() => expect(screen.queryByTestId('admin-panel-tab-balance')).toBeNull());
