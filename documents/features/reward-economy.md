@@ -302,6 +302,12 @@ than a live screen. Ported from the Magic Patterns design.
   rewards, and Cashed out. Every figure is read from the week's recorded
   actions (`GET /api/mw/weeks/:id/actions`), never inferred by subtraction.
   A withdrawal nets off what was invested, clamped at zero.
+- **Invested counts only stickers newly committed that week.** Closing a week
+  writes a roll-forward record for any investment that keeps running, carrying
+  its _entire current value_. Counting that reported the same investment again
+  every week it rolled on: a week that earned 21 stickers claimed 101 invested
+  ([FHS-617](https://qualicion2.atlassian.net/browse/FHS-617)). Roll-forwards
+  are excluded on both the parent and the child side.
 - **How much was done** reads "{done} of {possible}" with a bar and the line
   "{percent}% of the week's habits were done."
 
