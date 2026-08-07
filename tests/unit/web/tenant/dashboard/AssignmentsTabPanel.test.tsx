@@ -35,7 +35,12 @@ const MEMBERS = [
 
 // URL-routing fetch mock: assignments + members are fetched together via
 // Promise.all, so a sequence of mockResolvedValueOnce can't model it.
-function installApi(opts: { assignments?: A[]; aOk?: boolean; aStatus?: number }) {
+function installApi(opts: {
+  assignments?: A[];
+  aOk?: boolean;
+  aStatus?: number;
+  callerRole?: string;
+}) {
   const state = { assignments: [...(opts.assignments ?? [])] };
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url);
@@ -43,7 +48,7 @@ function installApi(opts: { assignments?: A[]; aOk?: boolean; aStatus?: number }
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: async () => ({ members: MEMBERS, callerRole: 'admin' }),
+        json: async () => ({ members: MEMBERS, callerRole: opts.callerRole ?? 'admin' }),
       });
     }
     if (init?.method === 'POST') {
@@ -466,5 +471,127 @@ describe('<AssignmentsTabPanel />', () => {
     );
     expect(putCall).toBeTruthy();
     expect(JSON.parse((putCall![1] as RequestInit).body as string).title).toBe('New Spelling');
+  });
+
+  // FHS-313: gate the add/edit affordances by the caller's role, the same
+  // rule the API already enforces (WRITE_ROLES = admin/adult).
+  it('hides the add + edit controls for a child caller', async () => {
+    installApi({
+      assignments: [
+        {
+          id: 'a1',
+          title: 'Maths',
+          notes: null,
+          dueDate: null,
+          memberId: ALI,
+          done: false,
+          doneAt: null,
+        },
+      ],
+      callerRole: 'child',
+    });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignments-ready')).toBeInTheDocument());
+    expect(screen.queryByTestId('assignments-add')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('assignment-edit-a1')).not.toBeInTheDocument();
+  });
+
+  it('hides the add control for a teen caller', async () => {
+    installApi({ assignments: [], callerRole: 'teen' });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignments-ready')).toBeInTheDocument());
+    expect(screen.queryByTestId('assignments-add')).not.toBeInTheDocument();
+  });
+
+  it('keeps the add + edit controls visible for an admin caller', async () => {
+    installApi({
+      assignments: [
+        {
+          id: 'a1',
+          title: 'Maths',
+          notes: null,
+          dueDate: null,
+          memberId: ALI,
+          done: false,
+          doneAt: null,
+        },
+      ],
+      callerRole: 'admin',
+    });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignments-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('assignments-add')).toBeInTheDocument();
+    expect(screen.getByTestId('assignment-edit-a1')).toBeInTheDocument();
+  });
+
+  it('keeps the add + edit controls visible for an adult caller', async () => {
+    installApi({
+      assignments: [
+        {
+          id: 'a1',
+          title: 'Maths',
+          notes: null,
+          dueDate: null,
+          memberId: ALI,
+          done: false,
+          doneAt: null,
+        },
+      ],
+      callerRole: 'adult',
+    });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignments-ready')).toBeInTheDocument());
+    expect(screen.getByTestId('assignments-add')).toBeInTheDocument();
+    expect(screen.getByTestId('assignment-edit-a1')).toBeInTheDocument();
+  });
+
+  it('a 404 on save (PUT) reloads the list and shows a plain-words message', async () => {
+    let assignmentsState: A[] = [
+      {
+        id: 'a-edit',
+        title: 'Old Spelling',
+        notes: null,
+        dueDate: null,
+        memberId: ALI,
+        done: false,
+        doneAt: null,
+      },
+    ];
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/api/members')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ members: MEMBERS, callerRole: 'admin' }),
+        });
+      }
+      if (init?.method === 'PUT') {
+        // The row was deleted by someone else while the form was open.
+        assignmentsState = [];
+        return Promise.resolve({
+          ok: false,
+          status: 404,
+          json: async () => ({ error: 'not found' }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ assignments: assignmentsState }),
+      });
+    });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignment-edit-a-edit')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignment-edit-a-edit'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('assignments-add-submit'));
+    });
+    expect(screen.getByTestId('assignments-add-error').textContent).toMatch(/removed/i);
+    await waitFor(() =>
+      expect(screen.queryByTestId('assignment-row-a-edit')).not.toBeInTheDocument(),
+    );
   });
 });
