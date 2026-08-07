@@ -39,6 +39,7 @@ export {
   type SkinToneModifier,
 } from './emojiTone';
 export { AmountPicker, type AmountPickerProps } from './AmountPicker';
+export { StepHeading, type StepHeadingProps } from './StepHeading';
 export { StickerAmountPicker, type StickerAmountPickerProps } from './StickerAmountPicker';
 export { Toggle, type ToggleProps } from './Toggle';
 export { BoostButton, type BoostButtonProps } from './BoostButton';

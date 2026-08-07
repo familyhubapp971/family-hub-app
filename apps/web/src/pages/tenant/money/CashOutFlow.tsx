@@ -7,10 +7,13 @@
  * "In savings".
  */
 import { useState } from 'react';
-import { Button, ResultBanner, StickerAmountPicker } from '@familyhub/ui';
+import { Button, ResultBanner, StickerAmountPicker, StepHeading } from '@familyhub/ui';
 import { formatMoney } from '@familyhub/shared';
 import { cashOut, MoneyActionError } from './moneyActionsApi';
 import { friendlyFailureMessage, type MoneyFlowProps } from './types';
+
+// The action's colour, carried from its button into the step disc.
+const TONE = 'bg-lime-400';
 
 export function CashOutFlow({ child, snapshot, headers, onSuccess, onCancel }: MoneyFlowProps) {
   const max = snapshot.saved;
@@ -52,12 +55,25 @@ export function CashOutFlow({ child, snapshot, headers, onSuccess, onCancel }: M
 
   return (
     <div className="space-y-4">
+      {/* FHS-630: numbered question, matching the approved design. */}
+      <StepHeading
+        number={1}
+        title="How many stickers are you cashing out?"
+        tone={TONE}
+        testId="money-cash-step-1"
+      />
+      <p className="text-sm font-bold text-gray-600">
+        {`${child.name} has ${max} stickers ready to spend, worth ${formatMoney(
+          max * snapshot.stickerRate,
+          snapshot.currency,
+        )}.`}
+      </p>
       <StickerAmountPicker
         value={amount}
         min={0}
         max={max}
         onChange={setAmount}
-        label={`How many stickers to cash out (up to ${max})`}
+        useAllTone={TONE}
         preview={`= ${formatMoney(cash, snapshot.currency)}`}
         testId="money-cash-amount"
       />

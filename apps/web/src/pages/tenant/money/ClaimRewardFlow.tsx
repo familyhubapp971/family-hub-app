@@ -7,10 +7,13 @@
  * picked at all, so nothing here can be confirmed into a 409.
  */
 import { useEffect, useState } from 'react';
-import { Button, ChoiceRow, ResultBanner, Spinner } from '@familyhub/ui';
+import { Button, ChoiceRow, ResultBanner, Spinner, StepHeading } from '@familyhub/ui';
 import { formatMoney } from '@familyhub/shared';
 import { fetchRewards, redeemReward, MoneyActionError, type RewardOption } from './moneyActionsApi';
 import { friendlyFailureMessage, type MoneyFlowProps } from './types';
+
+// The action's colour, carried from its button into the step disc.
+const TONE = 'bg-pink-300';
 
 export function ClaimRewardFlow({ child, snapshot, headers, onSuccess, onCancel }: MoneyFlowProps) {
   const [loading, setLoading] = useState(true);
@@ -92,6 +95,13 @@ export function ClaimRewardFlow({ child, snapshot, headers, onSuccess, onCancel 
 
   return (
     <div className="space-y-4">
+      {/* FHS-630: numbered question, matching the approved design. */}
+      <StepHeading
+        number={1}
+        title="What are they claiming?"
+        tone={TONE}
+        testId="money-claim-step-1"
+      />
       <div
         className="max-h-72 space-y-2 overflow-y-auto pr-1"
         role="radiogroup"

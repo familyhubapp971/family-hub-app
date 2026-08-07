@@ -14,6 +14,11 @@ export interface StickerAmountPickerProps {
   label?: string;
   /** A plain-words line under the stepper, e.g. "= AED 10.00". */
   preview?: string;
+  /**
+   * FHS-630: the design's one-tap "Use all N" shortcut. Tailwind background
+   * class for it, carrying the action's colour. Omit to hide the button.
+   */
+  useAllTone?: string;
   testId?: string;
 }
 
@@ -32,6 +37,7 @@ export function StickerAmountPicker({
   onChange,
   label,
   preview,
+  useAllTone,
   testId,
 }: StickerAmountPickerProps) {
   const clamp = (v: number): number => {
@@ -92,6 +98,17 @@ export function StickerAmountPicker({
           <Plus size={18} strokeWidth={3} aria-hidden="true" />
         </button>
       </div>
+      {useAllTone && (
+        <button
+          type="button"
+          onClick={() => onChange(max)}
+          disabled={value >= max}
+          data-testid={testId ? `${testId}-use-all` : undefined}
+          className={`mt-2 min-h-11 rounded-lg border-2 border-black px-3 text-sm font-bold shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 ${useAllTone}`}
+        >
+          Use all {max}
+        </button>
+      )}
       {preview && (
         <p
           className="mt-1.5 text-sm font-bold text-gray-600"
