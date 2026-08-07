@@ -49,12 +49,14 @@ Then('its detail fits the phone without sideways scrolling', async ({ page }) =>
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
+// FHS-608: this step is shared with the finished-week scenario, which has no
+// money row, so it only resizes. What must be on screen is the next step's job.
 When('the viewport grows to tablet width', async ({ page }) => {
   await page.setViewportSize({ width: 768, height: 1024 });
-  await expect(page.getByTestId('money-row')).toBeVisible();
 });
 
 Then('the money row still fits without sideways scrolling', async ({ page }) => {
+  await expect(page.getByTestId('money-row')).toBeVisible();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
