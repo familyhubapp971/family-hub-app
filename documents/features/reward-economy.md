@@ -1,6 +1,6 @@
 # Feature: Reward economy (sticker rate, habit boosts, skip penalty)
 
-**Jira:** [FHS-512](https://qualicion2.atlassian.net/browse/FHS-512) (build), [FHS-488](https://qualicion2.atlassian.net/browse/FHS-488) (rate placement), [FHS-489](https://qualicion2.atlassian.net/browse/FHS-489) (boosts + skip penalty), [FHS-534](https://qualicion2.atlassian.net/browse/FHS-534) (investment coefficient → pay + growth), [FHS-606](https://qualicion2.atlassian.net/browse/FHS-606) (the money row), [FHS-607](https://qualicion2.atlassian.net/browse/FHS-607) (investment tags + the Active Investments rows)
+**Jira:** [FHS-512](https://qualicion2.atlassian.net/browse/FHS-512) (build), [FHS-488](https://qualicion2.atlassian.net/browse/FHS-488) (rate placement), [FHS-489](https://qualicion2.atlassian.net/browse/FHS-489) (boosts + skip penalty), [FHS-534](https://qualicion2.atlassian.net/browse/FHS-534) (investment coefficient → pay + growth), [FHS-606](https://qualicion2.atlassian.net/browse/FHS-606) (the money row), [FHS-607](https://qualicion2.atlassian.net/browse/FHS-607) (investment tags + the Active Investments rows), [FHS-613](https://qualicion2.atlassian.net/browse/FHS-613) (value over time + localised money)
 **Status:** shipped
 **Owner:** product-manager
 **ADR:** [0020: configurable reward economy (rate, boost, skip penalty)](../decisions/0020-configurable-reward-economy.md)
@@ -215,8 +215,8 @@ as a list rather than a stack of cards. Ported from the Magic Patterns design
   kind's word for screen readers), the habit's name, its worth, and a chevron.
   At-risk rows sort first. Opening a row closes any other, so the card keeps a
   steady height instead of scrolling inside itself.
-- **The open row** shows the tag, the Originally / Invested / Now figures, days
-  done with its bar, and "Pays {currency} X each day it is done." (the
+- **The open row** shows the tag, then the investment's value as three points
+  in time, then days done with its bar, then "Pays X each day it is done." (the
   coefficient at the child's sticker rate).
 - **Parents get a full-width "Switch to no penalty" / "Switch to deductible"
   button**, which saves through the existing investment settings endpoint. Kids
@@ -224,6 +224,49 @@ as a list rather than a stack of cards. Ported from the Magic Patterns design
   instead of the control (FHS-376/378 gates).
 - **Empty state** reads "Habits invested 0" with "Nothing growing yet. Mark a
   habit as invested to pay a multiple."
+
+## An investment's value over time (FHS-613)
+
+The open row used to list Originally / Invested / Now. "Invested" described the
+same money as the rows around it, so the three lines did not read as three
+different things. They are now three points in time, each a sticker count with
+its money value beside it:
+
+- **Put in at the start**: `originalInvestedStickers`, the stickers first placed
+  into this investment.
+- **After last week's roll over**: `investedStickers`, the principal the server
+  carried forward when the previous week closed.
+- **Today**: `currentValueStickers` with the server's own cash figure. Emphasised,
+  because it is the figure that matters.
+
+The Today row carries a change tag measured **against last week's total**, not
+against the original: green "+N", red "−N", grey "0". The sign always renders, so
+the direction survives greyscale, and a sentence under the rows restates it
+("Up 2 stickers since last week" / "Down 3 stickers since last week" / "No change
+since last week"). The tag itself is `aria-hidden`, so a screen reader hears the
+sentence once rather than the figure twice.
+
+The change is exactly this week's growth less anything a deductible habit clawed
+back for days missed, which is why a no-penalty investment can only stay flat or
+rise while a deductible one can show a real loss. That contrast is the point of
+having two kinds.
+
+### Money is formatted, never concatenated
+
+Every money figure on the board goes through `formatMoney` in
+`packages/shared/src/money.ts`, which wraps `Intl.NumberFormat` with the family's
+currency (`tenants.currency`, chosen at onboarding) and the viewer's own locale.
+Hand-built strings like `` `${currency} ${x.toFixed(2)}` `` only ever looked right
+for codes that sit in front with a space: they render "USD 7.50" instead of
+"$7.50" and "EUR 7.50" instead of "7,50 €", and they ignore decimal separators and
+digit grouping. There is no locale column (the family picks a currency, not a
+language), so the conventions come from the device, the same source the currency
+picker already uses to guess a currency. The duplicated `formatMinor` in the api
+and on the reward settings page now both delegate to this one helper.
+
+Deviations from the mock: its figures are invented (a 6% and a 4% growth
+constant), so all three come from the live payload instead; and the change
+sentence pluralises, so one sticker reads "Up 1 sticker since last week".
 
 One API change, additive: `GET /api/kid/financial/investments` now returns
 `coefficient`. Its response schema was silently stripping the field, so every

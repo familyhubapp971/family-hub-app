@@ -1456,7 +1456,7 @@ describe('<MyWorldTab /> money row (FHS-606)', () => {
     expect(screen.getByTestId('investment-row-risk1')).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByTestId('investment-mode-risk1')).toHaveTextContent('Deductible');
     expect(screen.getByTestId('investment-mode-risk1')).toHaveTextContent('Invested · 3x');
-    // Real payload figures, not the design's mock arithmetic.
+    // FHS-613: three points in time, from the real payload.
     expect(screen.getByTestId('investment-original')).toHaveTextContent('6 stickers');
     expect(screen.getByTestId('investment-invested')).toHaveTextContent('10 stickers');
     expect(screen.getByTestId('investment-current')).toHaveTextContent('15 stickers');
@@ -1494,6 +1494,120 @@ describe('<MyWorldTab /> money row (FHS-606)', () => {
         .map((el) => `${el.tagName}.${el.className}`);
       expect(offenders, `${testId} still has faint text`).toEqual([]);
     }
+  });
+
+  // FHS-613: the detail reads as three moments in time, and the change is
+  // measured against LAST WEEK's total, not the original amount.
+  it('labels the three figures as moments in time, with money beside each', async () => {
+    installApi({ savedStickers: 10 });
+    twoInvestments(fetchMock.getMockImplementation());
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('investment-row-risk1')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-row-risk1'));
+    });
+    const card = screen.getByTestId('active-investments');
+    expect(card).toHaveTextContent('Put in at the start');
+    expect(card).toHaveTextContent('After last week\u2019s roll over');
+    expect(card).toHaveTextContent('Today');
+    // Every sticker count carries its money value: 6, 10 and 15 stickers at
+    // AED 0.50, and Today uses the server's own cash figure (7.50).
+    expect(screen.getByTestId('investment-original')).toHaveTextContent('6 stickers');
+    expect(screen.getByTestId('investment-original')).toHaveTextContent('3.00');
+    expect(screen.getByTestId('investment-invested')).toHaveTextContent('10 stickers');
+    expect(screen.getByTestId('investment-invested')).toHaveTextContent('5.00');
+    expect(screen.getByTestId('investment-current')).toHaveTextContent('15 stickers');
+    expect(screen.getByTestId('investment-current')).toHaveTextContent('7.50');
+  });
+
+  it('shows a gain against last week as a signed green tag and a sentence', async () => {
+    installApi({ savedStickers: 10 });
+    twoInvestments(fetchMock.getMockImplementation());
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('investment-row-risk1')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-row-risk1'));
+    });
+    // 15 today against 10 after the roll over.
+    const tag = screen.getByTestId('investment-delta');
+    // Exact, not a substring: the sign is what makes the direction readable
+    // in greyscale, so a refactor that drops it must fail here.
+    expect(tag.textContent).toBe('+5');
+    expect(tag.className).toContain('bg-green-300');
+    expect(screen.getByTestId('investment-change-note-risk1')).toHaveTextContent(
+      'Up 5 stickers since last week',
+    );
+  });
+
+  it('shows a real loss on a deductible habit, and never one on a no-penalty habit', async () => {
+    installApi({ savedStickers: 10 });
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/api/mw/financial/investments')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            investments: [
+              // Deductible: grew 2, lost 5 to missed days, so it is down 3.
+              {
+                id: 'lost1',
+                habitId: HABIT,
+                habitName: 'Read a book',
+                habitIcon: 'star',
+                investedStickers: 20,
+                originalInvestedStickers: 20,
+                currentValue: 8.5,
+                currentValueStickers: 17,
+                daysCompleted: 2,
+                daysMissed: 5,
+                deductible: true,
+                coefficient: 1,
+              },
+              // No penalty: missed days cost nothing, so it only held flat.
+              {
+                id: 'flat1',
+                habitId: HABIT,
+                habitName: 'Tidy up',
+                habitIcon: 'zap',
+                investedStickers: 12,
+                originalInvestedStickers: 12,
+                currentValue: 6,
+                currentValueStickers: 12,
+                daysCompleted: 0,
+                daysMissed: 5,
+                deductible: false,
+                coefficient: 2,
+              },
+            ],
+          }),
+        });
+      }
+      return base(url, init);
+    });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('investment-row-lost1')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-row-lost1'));
+    });
+    const down = screen.getByTestId('investment-delta');
+    expect(down.textContent).toBe('\u22123');
+    expect(down.className).toContain('bg-red-300');
+    expect(screen.getByTestId('investment-change-note-lost1')).toHaveTextContent(
+      'Down 3 stickers since last week',
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-row-flat1'));
+    });
+    const flat = screen.getByTestId('investment-delta');
+    expect(flat.textContent).toBe('0');
+    expect(flat.className).toContain('bg-gray-200');
+    expect(screen.getByTestId('investment-change-note-flat1')).toHaveTextContent(
+      'No change since last week',
+    );
   });
 
   it('tells a parent when nothing is invested yet', async () => {

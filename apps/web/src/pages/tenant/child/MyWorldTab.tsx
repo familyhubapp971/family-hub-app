@@ -24,6 +24,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { Button, InvestmentTag, investmentRule, useBodyScrollLock } from '@familyhub/ui';
+import { formatMoney } from '@familyhub/shared';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -698,8 +699,13 @@ export function MyWorldTab(
     [investments],
   );
 
+  // FHS-613: every money figure on this board goes through one formatter, so
+  // the family's currency renders the way the viewer's locale writes it
+  // ("$7.50", "£7.50", "7,50 €") instead of a hand-glued "USD 7.50".
+  const money = useCallback((amount: number) => formatMoney(amount, currency), [currency]);
+
   // ── Savings derived values ────────────────────────────────────────────────
-  const weeklyValue = (unallocatedStickers * stickerRate).toFixed(2);
+  const weeklyValue = money(unallocatedStickers * stickerRate);
   // FHS-376: a kid's reward request is paid from SAVINGS on approval, so the
   // "Ask for this" affordability must match savings (banked stars + banked
   // cash converted at this child's rate), not the spendable balance.
@@ -752,12 +758,25 @@ export function MyWorldTab(
                 {sortedInvestments.map((inv) => {
                   const isOpen = openInvestmentId === inv.id;
                   const multiplier = inv.coefficient ?? 5;
-                  const original = inv.originalInvestedStickers;
-                  const showOriginally =
-                    original !== null &&
-                    original !== undefined &&
-                    original !== inv.investedStickers;
-                  const delta = inv.currentValueStickers - inv.investedStickers;
+                  // FHS-613: three points in time, not three loose stats.
+                  // What was put in, what it had grown to when last week rolled
+                  // over (the principal the server carried forward), and what
+                  // it is worth today.
+                  const putIn = inv.originalInvestedStickers ?? inv.investedStickers;
+                  const afterRollOver = inv.investedStickers;
+                  const today = inv.currentValueStickers;
+                  // Against LAST WEEK's total, not the original: this week's
+                  // growth less anything a deductible habit clawed back for
+                  // days missed. A no-penalty habit can only stay flat or rise.
+                  const change = today - afterRollOver;
+                  const changeNote =
+                    change > 0
+                      ? `Up ${change} ${change === 1 ? 'sticker' : 'stickers'} since last week`
+                      : change < 0
+                        ? `Down ${Math.abs(change)} ${
+                            Math.abs(change) === 1 ? 'sticker' : 'stickers'
+                          } since last week`
+                        : 'No change since last week';
                   const kind = inv.deductible ? 'Deductible' : 'No penalty';
                   return (
                     <li
@@ -795,7 +814,7 @@ export function MyWorldTab(
                           data-testid={`investment-worth-${inv.id}`}
                           className="shrink-0 whitespace-nowrap text-base font-black text-lime-400"
                         >
-                          {currency} {inv.currentValue.toFixed(2)}
+                          {money(inv.currentValue)}
                         </span>
                         <ChevronDown
                           size={16}
@@ -812,49 +831,78 @@ export function MyWorldTab(
                             multiplier={multiplier}
                             deductible={inv.deductible}
                           />
-                          {/* FHS-413: one shared 2-col grid (label | value) so the
-                              Originally/Invested/Now rows always line up. */}
-                          <dl className="mt-2.5 grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-1.5 text-xs font-mono tabular-nums">
-                            {showOriginally && (
-                              <>
-                                <dt className="text-slate-300">Originally</dt>
-                                <dd
-                                  data-testid="investment-original"
-                                  className="justify-self-end break-words font-bold text-slate-200"
-                                >
-                                  {original} stickers ({currency}{' '}
-                                  {(original * stickerRate).toFixed(2)})
-                                </dd>
-                              </>
-                            )}
-                            <dt className="text-slate-300">Invested</dt>
-                            <dd
-                              data-testid="investment-invested"
-                              className="justify-self-end break-words font-bold text-yellow-400"
-                            >
-                              {inv.investedStickers} stickers ({currency}{' '}
-                              {(inv.investedStickers * stickerRate).toFixed(2)})
-                            </dd>
-                            <dt className="text-slate-300">Now</dt>
-                            <dd
-                              data-testid="investment-current"
-                              className="justify-self-end break-words font-black text-fuchsia-300"
-                            >
-                              {inv.currentValueStickers} stickers ({currency}{' '}
-                              {inv.currentValue.toFixed(2)})
-                              {delta !== 0 && (
+                          {/* FHS-613: the value over time. A sticker count is
+                              never shown without its money value beside it. */}
+                          <dl className="mt-2.5 flex flex-col gap-1">
+                            <div className="flex items-center justify-between gap-3">
+                              <dt className="text-xs font-bold text-slate-300">
+                                Put in at the start
+                              </dt>
+                              <dd
+                                data-testid="investment-original"
+                                className="whitespace-nowrap text-sm font-bold text-slate-100"
+                              >
+                                {putIn} stickers
+                                <span className="text-slate-300">
+                                  {' '}
+                                  ({money(putIn * stickerRate)})
+                                </span>
+                              </dd>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <dt className="text-xs font-bold text-slate-300">
+                                After last week&rsquo;s roll over
+                              </dt>
+                              <dd
+                                data-testid="investment-invested"
+                                className="whitespace-nowrap text-sm font-bold text-slate-100"
+                              >
+                                {afterRollOver} stickers
+                                <span className="text-slate-300">
+                                  {' '}
+                                  ({money(afterRollOver * stickerRate)})
+                                </span>
+                              </dd>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <dt className="text-xs font-bold text-slate-300">Today</dt>
+                              <dd
+                                data-testid="investment-current"
+                                className="whitespace-nowrap text-sm font-black text-yellow-300"
+                              >
+                                {today} stickers
+                                <span className="text-yellow-200">
+                                  {' '}
+                                  ({money(inv.currentValue)})
+                                </span>
+                                {/* Sign as well as colour, so the direction
+                                    still reads in greyscale. The sentence
+                                    below carries it for screen readers. */}
                                 <span
+                                  aria-hidden="true"
                                   data-testid="investment-delta"
-                                  className={`ml-1.5 font-mono text-[10px] ${
-                                    delta > 0 ? 'text-emerald-300' : 'text-red-200'
+                                  className={`ml-1.5 inline-block rounded-full border-2 border-black px-1.5 align-middle text-[10px] font-bold text-black ${
+                                    change > 0
+                                      ? 'bg-green-300'
+                                      : change < 0
+                                        ? 'bg-red-300'
+                                        : 'bg-gray-200'
                                   }`}
                                 >
-                                  ({delta > 0 ? '+' : ''}
-                                  {delta})
+                                  {change > 0 ? '+' : change < 0 ? '\u2212' : ''}
+                                  {Math.abs(change)}
                                 </span>
-                              )}
-                            </dd>
+                              </dd>
+                            </div>
                           </dl>
+                          {/* Outside the list: a <dl> may only hold dt/dd
+                              groups, and axe flags anything else. */}
+                          <p
+                            data-testid={`investment-change-note-${inv.id}`}
+                            className="text-right text-xs font-bold text-slate-300"
+                          >
+                            {changeNote}
+                          </p>
                           <div className="mt-2.5 flex items-center justify-between gap-3 text-xs font-mono text-slate-300">
                             <span>{inv.daysCompleted}/7 days done</span>
                             {inv.daysMissed > 0 && (
@@ -877,8 +925,7 @@ export function MyWorldTab(
                             data-testid={`investment-per-day-${inv.id}`}
                             className="mt-2 text-xs font-bold text-slate-200"
                           >
-                            Pays {currency} {(multiplier * stickerRate).toFixed(2)} each day it is
-                            done.
+                            Pays {money(multiplier * stickerRate)} each day it is done.
                           </p>
                           {canFlip ? (
                             <button
@@ -911,8 +958,7 @@ export function MyWorldTab(
                       data-testid="investments-worth"
                       className="text-2xl font-black text-lime-400"
                     >
-                      {currency}{' '}
-                      {investments.reduce((sum, inv) => sum + inv.currentValue, 0).toFixed(2)}
+                      {money(investments.reduce((sum, inv) => sum + inv.currentValue, 0))}
                     </span>
                   </div>
                   <p
@@ -1547,7 +1593,7 @@ export function MyWorldTab(
                   data-testid="habit-day-sticker-value"
                   className="mb-4 text-xs font-bold text-gray-500"
                 >
-                  1 sticker = {currency} {stickerRate.toFixed(2)}
+                  1 sticker = {money(stickerRate)}
                 </p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   {AVAILABLE_STICKERS.map((sticker) => (
@@ -2179,7 +2225,7 @@ export function MyWorldTab(
                           <p className="text-2xl font-black text-yellow-700 leading-none">
                             {week.summary.totalStickers}
                             <span className="text-sm font-bold text-yellow-600 ml-2">
-                              = {currency} {(week.summary.totalStickers * stickerRate).toFixed(2)}
+                              = {money(week.summary.totalStickers * stickerRate)}
                             </span>
                           </p>
                         </div>
@@ -2300,7 +2346,7 @@ export function MyWorldTab(
                     </span>
                   </div>
                   <span className="text-2xl sm:text-3xl font-black text-lime-400">
-                    {currency} {(savedStickers * stickerRate + savedCash).toFixed(2)}
+                    {money(savedStickers * stickerRate + savedCash)}
                   </span>
                 </div>
               </div>
@@ -2466,10 +2512,10 @@ export function MyWorldTab(
                   <Star size={22} className="fill-yellow-400 text-yellow-500" aria-hidden="true" />
                 </p>
                 <p className="text-lg font-black text-emerald-700" data-testid="kid-account-cash">
-                  {currency} {(balance * stickerRate).toFixed(2)}
+                  {money(balance * stickerRate)}
                 </p>
                 <p className="text-[10px] font-bold text-emerald-600">
-                  Each star is worth {currency} {stickerRate.toFixed(2)}
+                  Each star is worth {money(stickerRate)}
                 </p>
               </div>
               {habits.some((h) => h.total > 0) && (
@@ -2550,9 +2596,7 @@ export function MyWorldTab(
                       <span className="text-slate-200 font-bold text-xs sm:text-sm">
                         Saved as cash
                       </span>
-                      <span className="font-bold text-sm">
-                        {currency} {savedCash.toFixed(2)}
-                      </span>
+                      <span className="font-bold text-sm">{money(savedCash)}</span>
                     </div>
                   )}
                 </div>
@@ -2565,7 +2609,7 @@ export function MyWorldTab(
                   Total Value
                 </span>
                 <span className="text-2xl sm:text-3xl font-black text-lime-400">
-                  {currency} {(savedStickers * stickerRate + savedCash).toFixed(2)}
+                  {money(savedStickers * stickerRate + savedCash)}
                 </span>
               </div>
             </div>
@@ -2625,9 +2669,7 @@ export function MyWorldTab(
                     <span className="text-slate-200 font-bold text-xs sm:text-sm">
                       One sticker is
                     </span>
-                    <span className="font-bold text-sm">
-                      {currency} {stickerRate.toFixed(2)}
-                    </span>
+                    <span className="font-bold text-sm">{money(stickerRate)}</span>
                   </div>
                   <p className="text-xs font-bold text-slate-300">
                     Invested habits are counted separately
@@ -2645,7 +2687,7 @@ export function MyWorldTab(
                   data-testid="bankable-week-value"
                   className="text-2xl sm:text-3xl font-black text-lime-400"
                 >
-                  {currency} {weeklyValue}
+                  {weeklyValue}
                 </span>
               </div>
             </div>

@@ -31,6 +31,10 @@ export default defineConfig({
         find: /^@familyhub\/ui$/,
         replacement: fileURLToPath(new URL('../../packages/ui/src/index.ts', import.meta.url)),
       },
+      {
+        find: /^@familyhub\/shared$/,
+        replacement: fileURLToPath(new URL('../../packages/shared/src/index.ts', import.meta.url)),
+      },
     ],
   },
   // @familyhub/ui is a source-only workspace package (main: ./src/index.ts).
