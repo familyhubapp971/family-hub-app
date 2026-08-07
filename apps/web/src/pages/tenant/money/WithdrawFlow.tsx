@@ -7,7 +7,14 @@
  * deliberate partial withdrawal is always possible.
  */
 import { useEffect, useState } from 'react';
-import { Button, ChoiceRow, ResultBanner, Spinner, StickerAmountPicker } from '@familyhub/ui';
+import {
+  Button,
+  ChoiceRow,
+  ResultBanner,
+  Spinner,
+  StepHeading,
+  StickerAmountPicker,
+} from '@familyhub/ui';
 import { formatMoney } from '@familyhub/shared';
 import {
   fetchInvestments,
@@ -16,6 +23,9 @@ import {
   type ActiveInvestment,
 } from './moneyActionsApi';
 import { friendlyFailureMessage, type MoneyFlowProps } from './types';
+
+// The action's colour, carried from its button into every step disc.
+const TONE = 'bg-orange-300';
 
 export function WithdrawFlow({ child, snapshot, headers, onSuccess, onCancel }: MoneyFlowProps) {
   const [loading, setLoading] = useState(true);
@@ -32,11 +42,6 @@ export function WithdrawFlow({ child, snapshot, headers, onSuccess, onCancel }: 
       .then((body) => {
         if (cancelled) return;
         setInvestments(body.investments);
-        const first = body.investments[0];
-        if (first) {
-          setSelectedId(first.id);
-          setAmount(first.currentValueStickers);
-        }
       })
       .catch(() => {
         if (!cancelled) setLoadFailed(true);
@@ -54,9 +59,12 @@ export function WithdrawFlow({ child, snapshot, headers, onSuccess, onCancel }: 
   const max = selected?.currentValueStickers ?? 0;
   const cash = amount * snapshot.stickerRate;
 
+  // FHS-630: picking an investment does not pre-fill the amount. The design
+  // starts at zero and makes the parent say how much, so "Take out" can never
+  // empty an investment they only meant to look at.
   const handlePick = (inv: ActiveInvestment) => {
     setSelectedId(inv.id);
-    setAmount(inv.currentValueStickers);
+    setAmount(0);
   };
 
   const handleConfirm = async () => {
@@ -112,78 +120,109 @@ export function WithdrawFlow({ child, snapshot, headers, onSuccess, onCancel }: 
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-          Which investment?
-        </p>
-        <div
-          className="max-h-40 space-y-2 overflow-y-auto pr-1"
-          role="radiogroup"
-          aria-label="Investment"
-        >
-          {investments.map((inv) => (
-            <ChoiceRow
-              key={inv.id}
-              selected={selectedId === inv.id}
-              onClick={() => handlePick(inv)}
-              icon={inv.habitIcon ?? '📈'}
-              title={inv.habitName ?? 'Investment'}
-              description={`${inv.currentValueStickers} stickers now · ${inv.coefficient ?? 5}x · ${
-                inv.deductible ? 'a missed day takes value off' : 'no penalty for a missed day'
-              }`}
-              testId={`money-withdraw-investment-${inv.id}`}
-            />
-          ))}
-        </div>
+    <div>
+      {/* FHS-630: ported from the approved design (MoneyActions.tsx). The
+          amount step appears once an investment is picked, because how many
+          stickers you can take out depends on which one you chose. */}
+      <StepHeading
+        number={1}
+        title="Which investment?"
+        tone={TONE}
+        testId="money-withdraw-step-1"
+      />
+      <div
+        className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1"
+        role="radiogroup"
+        aria-label="Investment"
+      >
+        {investments.map((inv) => (
+          <ChoiceRow
+            key={inv.id}
+            selected={selectedId === inv.id}
+            onClick={() => handlePick(inv)}
+            icon={inv.habitIcon ?? '📈'}
+            title={inv.habitName ?? 'Investment'}
+            description={`${inv.currentValueStickers} stickers · ${formatMoney(
+              inv.currentValueStickers * snapshot.stickerRate,
+              snapshot.currency,
+            )} · ${inv.coefficient ?? 5}x · ${
+              inv.deductible ? 'a missed day takes value off' : 'no penalty for a missed day'
+            }`}
+            testId={`money-withdraw-investment-${inv.id}`}
+          />
+        ))}
       </div>
 
       {selected && (
-        <StickerAmountPicker
-          value={amount}
-          min={0}
-          max={max}
-          onChange={setAmount}
-          label={`How many stickers to take out (up to ${max})`}
-          preview={`= ${formatMoney(cash, snapshot.currency)}`}
-          testId="money-withdraw-amount"
-        />
+        <>
+          <StepHeading
+            number={2}
+            title="How many stickers are you taking out?"
+            tone={TONE}
+            testId="money-withdraw-step-2"
+          />
+          <p className="mt-1 text-sm font-bold text-gray-600">
+            {`"${selected.habitName ?? 'This investment'}" holds ${max} stickers, worth ${formatMoney(
+              max * snapshot.stickerRate,
+              snapshot.currency,
+            )}.`}
+          </p>
+          <div className="mt-3">
+            <StickerAmountPicker
+              value={amount}
+              min={0}
+              max={max}
+              onChange={setAmount}
+              preview={`= ${formatMoney(cash, snapshot.currency)}`}
+              useAllTone={TONE}
+              testId="money-withdraw-amount"
+            />
+          </div>
+
+          <div className="mt-5 space-y-3">
+            <ResultBanner testId="money-withdraw-preview">
+              {amount > 0
+                ? `${amount} stickers move to savings (${formatMoney(cash, snapshot.currency)}). ${
+                    max - amount
+                  } stay invested and keep growing.`
+                : 'Pick how many stickers to take out.'}
+            </ResultBanner>
+
+            {error && (
+              <ResultBanner tone="warning" testId="money-withdraw-error">
+                {error}
+              </ResultBanner>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={onCancel}
+                disabled={submitting}
+                testId="money-withdraw-cancel"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={handleConfirm}
+                disabled={amount <= 0 || submitting}
+                testId="money-withdraw-confirm"
+              >
+                {submitting ? 'Withdrawing…' : `Take out ${amount} stickers`}
+              </Button>
+            </div>
+          </div>
+        </>
       )}
 
-      <ResultBanner testId="money-withdraw-preview">
-        {selected && amount > 0
-          ? `${amount} stickers move to savings (${formatMoney(cash, snapshot.currency)}). ${
-              max - amount
-            } stay invested and keep growing.`
-          : 'Pick how many stickers to take out.'}
-      </ResultBanner>
-
-      {error && (
-        <ResultBanner tone="warning" testId="money-withdraw-error">
-          {error}
-        </ResultBanner>
+      {!selected && (
+        <p className="mt-5 text-sm font-bold text-gray-600" data-testid="money-withdraw-pick-first">
+          Pick an investment to choose how much comes out of it.
+        </p>
       )}
-
-      <div className="flex gap-3">
-        <Button
-          variant="secondary"
-          fullWidth
-          onClick={onCancel}
-          disabled={submitting}
-          testId="money-withdraw-cancel"
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          fullWidth
-          onClick={handleConfirm}
-          disabled={!selected || amount <= 0 || submitting}
-          testId="money-withdraw-confirm"
-        >
-          {submitting ? 'Withdrawing…' : 'Take it out'}
-        </Button>
-      </div>
     </div>
   );
 }

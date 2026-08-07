@@ -12,6 +12,7 @@ import {
   ChoiceRow,
   ResultBanner,
   Spinner,
+  StepHeading,
   StickerAmountPicker,
   investmentRule,
 } from '@familyhub/ui';
@@ -30,6 +31,8 @@ import { friendlyFailureMessage, type MoneyFlowProps } from './types';
 // rejects anything below this, so the picker never lets a family reach it.
 const INVEST_MIN_STICKERS = 10;
 const COEFFICIENTS: readonly InvestCoefficient[] = [1, 2, 3, 5];
+// The action's colour, carried from its button into every step disc.
+const TONE = 'bg-yellow-300';
 
 export function InvestFlow({
   child,
@@ -44,8 +47,11 @@ export function InvestFlow({
   const [habits, setHabits] = useState<InvestableHabit[]>([]);
   const [investedHabitIds, setInvestedHabitIds] = useState<Set<string>>(new Set());
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
-  const [coefficient, setCoefficient] = useState<InvestCoefficient>(1);
-  const [deductible, setDeductible] = useState(true);
+  // FHS-630: the design opens on 2x with no missed-day penalty. Those are the
+  // gentler defaults, and they are what a parent sees before touching anything,
+  // so they are the ones that must match.
+  const [coefficient, setCoefficient] = useState<InvestCoefficient>(2);
+  const [deductible, setDeductible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -162,124 +168,143 @@ export function InvestFlow({
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-          Behind which habit?
-        </p>
-        <div
-          className="max-h-40 space-y-2 overflow-y-auto pr-1"
-          role="radiogroup"
-          aria-label="Habit"
-        >
-          {availableHabits.map((habit) => (
+    <div>
+      {/* FHS-630: ported from the approved design (MoneyActions.tsx). Numbered
+          questions, and the later steps appear once a habit is picked, so the
+          sheet asks one thing at a time instead of presenting a long form. */}
+      <StepHeading number={1} title="Which habit?" tone={TONE} testId="money-invest-step-1" />
+      <div
+        className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1"
+        role="radiogroup"
+        aria-label="Habit"
+      >
+        {availableHabits.map((habit) => (
+          <ChoiceRow
+            key={habit.id}
+            selected={selectedHabitId === habit.id}
+            onClick={() => setSelectedHabitId(habit.id)}
+            icon={habit.icon ?? '⭐'}
+            title={habit.name}
+            testId={`money-invest-habit-${habit.id}`}
+          />
+        ))}
+      </div>
+
+      {selectedHabit && (
+        <>
+          <StepHeading
+            number={2}
+            title="How much does it pay?"
+            tone={TONE}
+            testId="money-invest-step-2"
+          />
+          <div role="radiogroup" aria-label="How much does it pay?" className="mt-3 flex gap-2">
+            {COEFFICIENTS.map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={coefficient === n}
+                data-testid={`money-invest-coefficient-${n}`}
+                onClick={() => setCoefficient(n)}
+                className={[
+                  'min-h-11 flex-1 rounded-xl border-2 border-black px-3 py-2.5 font-heading text-lg transition-all',
+                  'motion-safe:hover:-translate-y-0.5',
+                  coefficient === n
+                    ? 'bg-yellow-300 text-black shadow-neo-xs'
+                    : 'bg-white text-gray-500 hover:bg-gray-50',
+                ].join(' ')}
+              >
+                {n}x
+              </button>
+            ))}
+          </div>
+
+          <StepHeading
+            number={3}
+            title="What happens on a skipped day?"
+            tone={TONE}
+            testId="money-invest-step-3"
+          />
+          <div
+            role="radiogroup"
+            aria-label="What happens on a skipped day?"
+            className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
+          >
             <ChoiceRow
-              key={habit.id}
-              selected={selectedHabitId === habit.id}
-              onClick={() => setSelectedHabitId(habit.id)}
-              icon={habit.icon ?? '⭐'}
-              title={habit.name}
-              testId={`money-invest-habit-${habit.id}`}
+              selected={!deductible}
+              onClick={() => setDeductible(false)}
+              title="Nothing"
+              description={investmentRule(false)}
+              testId="money-invest-deductible-off"
             />
-          ))}
-        </div>
-      </div>
+            <ChoiceRow
+              selected={deductible}
+              onClick={() => setDeductible(true)}
+              title="Some comes off"
+              description={investmentRule(true)}
+              testId="money-invest-deductible-on"
+            />
+          </div>
 
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-          Growth multiplier
-        </p>
-        <div role="radiogroup" aria-label="Growth multiplier" className="flex gap-2">
-          {COEFFICIENTS.map((n) => (
-            <button
-              key={n}
-              type="button"
-              role="radio"
-              aria-checked={coefficient === n}
-              data-testid={`money-invest-coefficient-${n}`}
-              onClick={() => setCoefficient(n)}
-              className={[
-                'min-h-11 flex-1 rounded-xl border-2 border-black px-3 py-2.5 text-sm font-black uppercase tracking-wide transition-all',
-                'motion-safe:hover:-translate-y-0.5',
-                coefficient === n
-                  ? 'bg-yellow-400 text-black shadow-neo-xs'
-                  : 'bg-white text-gray-500 hover:bg-gray-50',
-              ].join(' ')}
-            >
-              {n}x
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-          What happens on a skipped day?
-        </p>
-        <div
-          role="radiogroup"
-          aria-label="Skipped day rule"
-          className="grid grid-cols-1 gap-2 sm:grid-cols-2"
-        >
-          <ChoiceRow
-            selected={deductible}
-            onClick={() => setDeductible(true)}
-            title="Takes value off"
-            description={investmentRule(true)}
-            testId="money-invest-deductible-on"
+          <StepHeading
+            number={4}
+            title="How many stickers?"
+            tone={TONE}
+            testId="money-invest-step-4"
           />
-          <ChoiceRow
-            selected={!deductible}
-            onClick={() => setDeductible(false)}
-            title="No penalty"
-            description={investmentRule(false)}
-            testId="money-invest-deductible-off"
-          />
-        </div>
-      </div>
+          <div className="mt-3">
+            <StickerAmountPicker
+              value={amount}
+              min={INVEST_MIN_STICKERS}
+              max={maxInvestable}
+              onChange={setAmount}
+              preview={`= ${formatMoney(cash, snapshot.currency)} now, and ${INVEST_MIN_STICKERS} is the least you can invest`}
+              useAllTone={TONE}
+              testId="money-invest-amount"
+            />
+          </div>
 
-      <StickerAmountPicker
-        value={amount}
-        min={INVEST_MIN_STICKERS}
-        max={maxInvestable}
-        onChange={setAmount}
-        label={`How many stickers to invest (${INVEST_MIN_STICKERS} to ${maxInvestable})`}
-        preview={`= ${formatMoney(cash, snapshot.currency)} now`}
-        testId="money-invest-amount"
-      />
+          <div className="mt-5 space-y-3">
+            <ResultBanner testId="money-invest-preview">
+              {`Invest ${amount} stickers behind ${selectedHabit.name} at ${coefficient}x. ${investmentRule(deductible)}`}
+            </ResultBanner>
 
-      <ResultBanner testId="money-invest-preview">
-        {selectedHabit
-          ? `Invest ${amount} stickers behind ${selectedHabit.name} at ${coefficient}x. ${investmentRule(deductible)}`
-          : 'Pick a habit to see what this does.'}
-      </ResultBanner>
+            {error && (
+              <ResultBanner tone="warning" testId="money-invest-error">
+                {error}
+              </ResultBanner>
+            )}
 
-      {error && (
-        <ResultBanner tone="warning" testId="money-invest-error">
-          {error}
-        </ResultBanner>
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={onCancel}
+                disabled={submitting}
+                testId="money-invest-cancel"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={handleConfirm}
+                disabled={amount < INVEST_MIN_STICKERS || submitting}
+                testId="money-invest-confirm"
+              >
+                {submitting ? 'Investing…' : `Invest ${amount} stickers`}
+              </Button>
+            </div>
+          </div>
+        </>
       )}
 
-      <div className="flex gap-3">
-        <Button
-          variant="secondary"
-          fullWidth
-          onClick={onCancel}
-          disabled={submitting}
-          testId="money-invest-cancel"
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          fullWidth
-          onClick={handleConfirm}
-          disabled={!selectedHabit || amount < INVEST_MIN_STICKERS || submitting}
-          testId="money-invest-confirm"
-        >
-          {submitting ? 'Investing…' : 'Invest'}
-        </Button>
-      </div>
+      {!selectedHabit && (
+        <p className="mt-5 text-sm font-bold text-gray-600" data-testid="money-invest-pick-first">
+          Pick a habit to choose how much it pays and how many stickers go behind it.
+        </p>
+      )}
     </div>
   );
 }

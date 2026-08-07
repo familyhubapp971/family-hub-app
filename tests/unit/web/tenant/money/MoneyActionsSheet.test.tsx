@@ -272,7 +272,11 @@ describe('MoneyActionsSheet: Take money out of an investment', () => {
       expect(screen.getByTestId('money-withdraw-investment-inv-1')).toBeInTheDocument(),
     );
 
-    // Defaults to the full 20; the AC wants a chosen PART of it.
+    // FHS-630: nothing is pre-selected and no amount is pre-filled, matching
+    // the design, so the investment is chosen and then a PART of it is asked
+    // for. That is the AC: a partial withdrawal, never the whole thing by
+    // default.
+    fireEvent.click(screen.getByTestId('money-withdraw-investment-inv-1'));
     fireEvent.change(screen.getByTestId('money-withdraw-amount-input'), { target: { value: '8' } });
     fireEvent.click(screen.getByTestId('money-withdraw-confirm'));
 
@@ -342,5 +346,110 @@ describe('MoneyActionsSheet: chrome', () => {
     const dialog = screen.getByTestId('money-actions-sheet');
     expect(dialog.className).toContain('items-end');
     expect(dialog.className).toContain('sm:items-center');
+  });
+});
+
+// FHS-630: ported from the approved Magic Patterns design. The sheets were
+// built from the written spec (FHS-623) and looked different from the design
+// the founder signed off: no numbered steps, different wording, and every
+// step shown at once instead of appearing as each answer is given.
+describe('MoneyActionsSheet: the approved design (FHS-630)', () => {
+  function investApi(habits = [{ id: 'h-1', name: 'Read a book', icon: null }]) {
+    return vi.fn((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/habits')) {
+        return Promise.resolve({ ok: true, json: async () => ({ habits }) });
+      }
+      if (u.includes('/api/mw/financial/investments')) {
+        return Promise.resolve({ ok: true, json: async () => ({ investments: [] }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+  }
+
+  it('asks for the habit first, and nothing else until one is picked', async () => {
+    vi.stubGlobal('fetch', investApi());
+    renderSheet('invest', { snap: snapshot({ available: 40, saved: 60 }) });
+    await waitFor(() => expect(screen.getByTestId('money-invest-habit-h-1')).toBeInTheDocument());
+
+    // Step 1 is numbered and phrased as a question.
+    expect(screen.getByTestId('money-invest-step-1')).toHaveTextContent('Which habit?');
+    expect(screen.getByTestId('money-invest-step-1')).toHaveTextContent('1');
+
+    // The rest of the sheet is not there yet, and says why.
+    expect(screen.queryByTestId('money-invest-step-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('money-invest-step-3')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('money-invest-step-4')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('money-invest-confirm')).not.toBeInTheDocument();
+    expect(screen.getByTestId('money-invest-pick-first')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('money-invest-habit-h-1'));
+
+    // Now every remaining question is there, worded as the design words them.
+    expect(screen.getByTestId('money-invest-step-2')).toHaveTextContent('How much does it pay?');
+    expect(screen.getByTestId('money-invest-step-3')).toHaveTextContent(
+      'What happens on a skipped day?',
+    );
+    expect(screen.getByTestId('money-invest-step-4')).toHaveTextContent('How many stickers?');
+    expect(screen.getByTestId('money-invest-confirm')).toBeInTheDocument();
+    expect(screen.queryByTestId('money-invest-pick-first')).not.toBeInTheDocument();
+  });
+
+  it('offers the one-tap "use all" shortcut once a habit is picked', async () => {
+    vi.stubGlobal('fetch', investApi());
+    renderSheet('invest', { snap: snapshot({ available: 40, saved: 60 }) });
+    await waitFor(() => expect(screen.getByTestId('money-invest-habit-h-1')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('money-invest-habit-h-1'));
+
+    const useAll = screen.getByTestId('money-invest-amount-use-all');
+    expect(useAll).toHaveTextContent('Use all 100');
+    fireEvent.click(useAll);
+    expect((screen.getByTestId('money-invest-amount-input') as HTMLInputElement).value).toBe('100');
+  });
+
+  it('asks which investment first, and how much only after that', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (String(url).includes('/api/mw/financial/investments')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              investments: [
+                {
+                  id: 'inv-1',
+                  habitId: 'h-1',
+                  habitName: 'Read a book',
+                  habitIcon: null,
+                  investedStickers: 30,
+                  currentValueStickers: 30,
+                  daysCompleted: 2,
+                  daysMissed: 0,
+                  deductible: true,
+                  coefficient: 3,
+                },
+              ],
+            }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({}) });
+      }),
+    );
+    renderSheet('withdraw', { snap: snapshot({ investedStickers: 30 }) });
+    await waitFor(() =>
+      expect(screen.getByTestId('money-withdraw-investment-inv-1')).toBeInTheDocument(),
+    );
+
+    expect(screen.getByTestId('money-withdraw-step-1')).toHaveTextContent('Which investment?');
+    expect(screen.queryByTestId('money-withdraw-step-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('money-withdraw-confirm')).not.toBeInTheDocument();
+    expect(screen.getByTestId('money-withdraw-pick-first')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('money-withdraw-investment-inv-1'));
+
+    expect(screen.getByTestId('money-withdraw-step-2')).toHaveTextContent(
+      'How many stickers are you taking out?',
+    );
+    expect(screen.getByTestId('money-withdraw-confirm')).toBeInTheDocument();
   });
 });

@@ -6,10 +6,13 @@
  * ceiling is `snapshot.available` ("Ready to spend" on the page).
  */
 import { useState } from 'react';
-import { Button, ResultBanner, StickerAmountPicker } from '@familyhub/ui';
+import { Button, ResultBanner, StickerAmountPicker, StepHeading } from '@familyhub/ui';
 import { formatMoney } from '@familyhub/shared';
 import { moveToSavings, MoneyActionError } from './moneyActionsApi';
 import { friendlyFailureMessage, type MoneyFlowProps } from './types';
+
+// The action's colour, carried from its button into the step disc.
+const TONE = 'bg-cyan-300';
 
 export function SaveFlow({ child, snapshot, headers, onSuccess, onCancel }: MoneyFlowProps) {
   const max = snapshot.available;
@@ -45,12 +48,25 @@ export function SaveFlow({ child, snapshot, headers, onSuccess, onCancel }: Mone
 
   return (
     <div className="space-y-4">
+      {/* FHS-630: numbered question, matching the approved design. */}
+      <StepHeading
+        number={1}
+        title="How many stickers are you moving to savings?"
+        tone={TONE}
+        testId="money-save-step-1"
+      />
+      <p className="text-sm font-bold text-gray-600">
+        {`${child.name} has ${max} stickers ready to spend, worth ${formatMoney(
+          max * snapshot.stickerRate,
+          snapshot.currency,
+        )}.`}
+      </p>
       <StickerAmountPicker
         value={amount}
         min={0}
         max={max}
         onChange={setAmount}
-        label={`How many stickers to move into savings (up to ${max})`}
+        useAllTone={TONE}
         preview={`= ${formatMoney(amount * snapshot.stickerRate, snapshot.currency)}`}
         testId="money-save-amount"
       />
