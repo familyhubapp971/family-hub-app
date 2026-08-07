@@ -31,6 +31,7 @@ import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
+import { formatMoneyMinor as formatMinor } from '@familyhub/shared';
 
 const BOOST_PRESETS = [2, 3, 5] as const;
 // FIX 3 (BLOCKER): matches the API's cap on rateMinor / skipPenaltyMinor
@@ -69,16 +70,6 @@ interface HabitItem {
   isBonus: boolean;
   boost: number;
   skipPenaltyMinor: number;
-}
-
-function formatMinor(amountMinor: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(
-      amountMinor / 100,
-    );
-  } catch {
-    return `${currency} ${(amountMinor / 100).toFixed(2)}`;
-  }
 }
 
 function initial(name: string): string {
