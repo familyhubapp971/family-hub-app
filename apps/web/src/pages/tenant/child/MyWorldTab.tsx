@@ -742,7 +742,7 @@ export function MyWorldTab(
                 <span className="text-sm font-bold text-slate-200">Habits invested</span>
                 <span className="text-2xl font-black text-purple-300">0</span>
               </div>
-              <p className="mt-4 pt-4 border-t-2 border-white/10 text-sm font-bold text-slate-400">
+              <p className="mt-4 pt-4 border-t-2 border-white/10 text-sm font-bold text-slate-300">
                 Nothing growing yet. Mark a habit as invested to pay a multiple.
               </p>
             </div>
@@ -817,7 +817,7 @@ export function MyWorldTab(
                           <dl className="mt-2.5 grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-1.5 text-xs font-mono tabular-nums">
                             {showOriginally && (
                               <>
-                                <dt className="text-slate-400">Originally</dt>
+                                <dt className="text-slate-300">Originally</dt>
                                 <dd
                                   data-testid="investment-original"
                                   className="justify-self-end break-words font-bold text-slate-200"
@@ -827,7 +827,7 @@ export function MyWorldTab(
                                 </dd>
                               </>
                             )}
-                            <dt className="text-slate-400">Invested</dt>
+                            <dt className="text-slate-300">Invested</dt>
                             <dd
                               data-testid="investment-invested"
                               className="justify-self-end break-words font-bold text-yellow-400"
@@ -835,7 +835,7 @@ export function MyWorldTab(
                               {inv.investedStickers} stickers ({currency}{' '}
                               {(inv.investedStickers * stickerRate).toFixed(2)})
                             </dd>
-                            <dt className="text-slate-400">Now</dt>
+                            <dt className="text-slate-300">Now</dt>
                             <dd
                               data-testid="investment-current"
                               className="justify-self-end break-words font-black text-fuchsia-300"
@@ -846,7 +846,7 @@ export function MyWorldTab(
                                 <span
                                   data-testid="investment-delta"
                                   className={`ml-1.5 font-mono text-[10px] ${
-                                    delta > 0 ? 'text-emerald-300' : 'text-red-400'
+                                    delta > 0 ? 'text-emerald-300' : 'text-red-200'
                                   }`}
                                 >
                                   ({delta > 0 ? '+' : ''}
@@ -855,10 +855,10 @@ export function MyWorldTab(
                               )}
                             </dd>
                           </dl>
-                          <div className="mt-2.5 flex items-center justify-between gap-3 text-[10px] font-mono text-slate-400">
+                          <div className="mt-2.5 flex items-center justify-between gap-3 text-xs font-mono text-slate-300">
                             <span>{inv.daysCompleted}/7 days done</span>
                             {inv.daysMissed > 0 && (
-                              <span className={inv.deductible ? 'text-red-400' : 'text-slate-400'}>
+                              <span className={inv.deductible ? 'text-red-200' : 'text-slate-300'}>
                                 {inv.daysMissed} missed
                               </span>
                             )}
@@ -875,7 +875,7 @@ export function MyWorldTab(
                           </div>
                           <p
                             data-testid={`investment-per-day-${inv.id}`}
-                            className="mt-2 text-xs font-bold text-purple-200"
+                            className="mt-2 text-xs font-bold text-slate-200"
                           >
                             Pays {currency} {(multiplier * stickerRate).toFixed(2)} each day it is
                             done.
@@ -890,7 +890,7 @@ export function MyWorldTab(
                               {inv.deductible ? 'Switch to no penalty' : 'Switch to deductible'}
                             </button>
                           ) : (
-                            <p className="mt-2 text-xs font-bold text-purple-200">
+                            <p className="mt-2 text-xs font-bold text-slate-200">
                               {investmentRule(inv.deductible)}
                             </p>
                           )}
@@ -917,7 +917,7 @@ export function MyWorldTab(
                   </div>
                   <p
                     data-testid="investments-at-risk"
-                    className="mt-1 text-right text-xs font-bold text-purple-300"
+                    className="mt-1 text-right text-xs font-bold text-slate-300"
                   >
                     {investments.filter((inv) => inv.deductible).length} of {count} could lose value
                   </p>
@@ -2283,7 +2283,7 @@ export function MyWorldTab(
                       {savedStickers + Math.floor(stickersFromCash(savedCash, stickerRate))}
                     </span>
                     {savedCash > 0 && savedStickers > 0 && (
-                      <p className="text-[10px] text-purple-300 font-bold mt-0.5">
+                      <p className="text-xs text-slate-300 font-bold mt-0.5">
                         {savedStickers} saved +{' '}
                         {Math.floor(stickersFromCash(savedCash, stickerRate))} from cash
                       </p>
@@ -2327,10 +2327,7 @@ export function MyWorldTab(
             <div data-testid="reward-requests-sidebar">
               {/* The panel is its own labelled region (reward-requests-heading);
                   no extra landmark needed here. */}
-              <RewardRequestsPanel
-                memberId={memberId}
-                weekLabel={`Week ${week.weekNumber}, ${week.year}`}
-              />
+              <RewardRequestsPanel memberId={memberId} />
             </div>
           )}
 
@@ -2457,7 +2454,7 @@ export function MyWorldTab(
               <h2 id="kid-account-heading" className="font-heading text-lg uppercase text-white">
                 My Account
               </h2>
-              <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-purple-300">
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-300">
                 What you earned this week
               </p>
               <div className="rounded-xl border-2 border-black bg-emerald-50 p-4 text-center">
@@ -2533,7 +2530,7 @@ export function MyWorldTab(
                     they always sum to the sticker total. */}
                 <div className="rounded-xl border-2 border-black bg-purple-950 p-3 flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-purple-200 font-bold text-xs sm:text-sm">
+                    <span className="text-slate-200 font-bold text-xs sm:text-sm">
                       Earned last week
                     </span>
                     <span data-testid="savings-earned-last-week" className="font-bold text-sm">
@@ -2541,7 +2538,7 @@ export function MyWorldTab(
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-purple-200 font-bold text-xs sm:text-sm">
+                    <span className="text-slate-200 font-bold text-xs sm:text-sm">
                       Kept from every week before
                     </span>
                     <span data-testid="savings-kept-from-earlier" className="font-bold text-sm">
@@ -2550,7 +2547,7 @@ export function MyWorldTab(
                   </div>
                   {savedCash > 0 && (
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-purple-200 font-bold text-xs sm:text-sm">
+                      <span className="text-slate-200 font-bold text-xs sm:text-sm">
                         Saved as cash
                       </span>
                       <span className="font-bold text-sm">
@@ -2605,7 +2602,7 @@ export function MyWorldTab(
                 {/* How the week is going, so the card carries its height. */}
                 <div className="rounded-xl border-2 border-black bg-purple-950 p-3 flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-purple-200 font-bold text-xs sm:text-sm">
+                    <span className="text-slate-200 font-bold text-xs sm:text-sm">
                       Habit days done
                     </span>
                     <span className="font-bold text-sm">
@@ -2625,14 +2622,14 @@ export function MyWorldTab(
                     />
                   </div>
                   <div className="mt-1 pt-2 border-t-2 border-white/10 flex items-center justify-between gap-3">
-                    <span className="text-purple-200 font-bold text-xs sm:text-sm">
+                    <span className="text-slate-200 font-bold text-xs sm:text-sm">
                       One sticker is
                     </span>
                     <span className="font-bold text-sm">
                       {currency} {stickerRate.toFixed(2)}
                     </span>
                   </div>
-                  <p className="text-[10px] font-bold text-purple-300">
+                  <p className="text-xs font-bold text-slate-300">
                     Invested habits are counted separately
                   </p>
                 </div>

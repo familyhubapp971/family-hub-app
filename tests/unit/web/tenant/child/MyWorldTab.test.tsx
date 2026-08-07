@@ -1475,6 +1475,27 @@ describe('<MyWorldTab /> money row (FHS-606)', () => {
     expect(screen.getByTestId('investment-toggle-safe1')).toHaveTextContent('Switch to deductible');
   });
 
+  // FHS-611: the faint purple/slate-400 labels were unreadable on the dark
+  // cards, and the investment-row ones measured below the 4.5:1 floor (the
+  // maths is in money-row-contrast.test.tsx). None of them may come back.
+  it('keeps faint text off the money row and the investments card', async () => {
+    installApi({ savedStickers: 10 });
+    twoInvestments(fetchMock.getMockImplementation());
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('money-row')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-row-risk1'));
+    });
+    const faint = ['text-purple-200', 'text-purple-300', 'text-slate-400', 'text-red-400'];
+    for (const testId of ['your-savings', 'bankable-week', 'active-investments']) {
+      const card = screen.getByTestId(testId);
+      const offenders = [...card.querySelectorAll<HTMLElement>('*')]
+        .filter((el) => faint.some((c) => el.className?.toString().split(/\s+/).includes(c)))
+        .map((el) => `${el.tagName}.${el.className}`);
+      expect(offenders, `${testId} still has faint text`).toEqual([]);
+    }
+  });
+
   it('tells a parent when nothing is invested yet', async () => {
     installApi({ savedStickers: 10 });
     renderTab();
@@ -1722,10 +1743,13 @@ describe('<MyWorldTab /> money row (FHS-606)', () => {
     );
   });
 
-  it('passes the week label into the Reward Requests heading', async () => {
+  // FHS-612: the heading carried the week for one release. The board already
+  // says which week it is, so the label only crowded the pending count.
+  it('keeps the Reward Requests heading to its title and pending count', async () => {
     installApi({});
     renderTab();
-    await waitFor(() => expect(screen.getByTestId('reward-requests-week')).toBeInTheDocument());
-    expect(screen.getByTestId('reward-requests-week').textContent).toBe('Week 9, 2026');
+    await waitFor(() => expect(screen.getByTestId('reward-requests-count')).toBeInTheDocument());
+    expect(screen.queryByTestId('reward-requests-week')).not.toBeInTheDocument();
+    expect(screen.getByTestId('reward-requests-count').textContent).toContain('Pending');
   });
 });
