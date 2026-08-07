@@ -100,7 +100,9 @@ export async function seedFamily(): Promise<SeededFamily> {
     .values({
       tenantId: tenant.id,
       memberId: childMember.id,
-      weekNumber: 1,
+      // The unique index is (tenant, member, year, weekNumber), so the live
+      // week and the finished one before it must carry different numbers.
+      weekNumber: 2,
       year: monday.getUTCFullYear(),
       startDate: monday.toISOString().slice(0, 10),
     })
@@ -116,7 +118,10 @@ export async function seedFamily(): Promise<SeededFamily> {
       tenantId: tenant.id,
       memberId: childMember.id,
       weekNumber: 1,
-      year: lastMonday.getUTCFullYear(),
+      // Deliberately the live week's year, not lastMonday's: across a new-year
+      // boundary the two would otherwise land in different years and the
+      // board would order them apart.
+      year: monday.getUTCFullYear(),
       startDate: lastMonday.toISOString().slice(0, 10),
       isFinalized: true,
       carriedOverStickers: 3,
