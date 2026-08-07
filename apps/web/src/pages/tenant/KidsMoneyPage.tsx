@@ -42,6 +42,7 @@ import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
+import { MoneyActionsSheet } from './money/MoneyActionsSheet';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,7 +54,7 @@ interface KidRow {
 }
 
 /** What one child has right now, all in stickers plus the money they're worth. */
-interface ChildMoneySnapshot {
+export interface ChildMoneySnapshot {
   available: number;
   saved: number;
   invested: number;
@@ -139,7 +140,7 @@ async function fetchWeekBreakdown(
 async function fetchChildMoney(
   memberId: string,
   headers: Record<string, string>,
-): Promise<{ snapshot: ChildMoneySnapshot; weeks: WeekListItem[] }> {
+): Promise<{ snapshot: ChildMoneySnapshot; weeks: WeekListItem[]; currentWeekId: string }> {
   const [currentWeekBody, savings, investmentsBody, weeksBody] = await Promise.all([
     fetchJson<{ week: { id: string } }>(
       `${API_BASE}/api/mw/weeks/current?memberId=${memberId}`,
@@ -201,6 +202,7 @@ async function fetchChildMoney(
       stickerRate: savings.stickerRate,
     },
     weeks: [...visibleWithEarned, ...rest.map((w) => ({ ...w, earned: null }))],
+    currentWeekId: currentWeekBody.week.id,
   };
 }
 
@@ -749,6 +751,16 @@ export function KidsMoneyPage({ onMoneyAction }: KidsMoneyPageProps = {}) {
   const [state, setState] = useState<LoadState>('loading');
   const [snapshot, setSnapshot] = useState<ChildMoneySnapshot | null>(null);
   const [weeks, setWeeks] = useState<WeekListItem[]>([]);
+  const [currentWeekId, setCurrentWeekId] = useState<string | null>(null);
+
+  // FHS-623: which action sheet is open, if any. `onMoneyAction` stays an
+  // overridable prop (the FHS-622 seam + this page's own tests still pass a
+  // stub); when the caller doesn't supply one, tapping a button opens this
+  // page's own sheet instead of doing nothing.
+  const [sheetTarget, setSheetTarget] = useState<{
+    action: MoneyAction;
+    child: { id: string; name: string };
+  } | null>(null);
 
   const token = session?.access_token ?? '';
   const headers = useMemo<Record<string, string> | null>(
@@ -794,9 +806,10 @@ export function KidsMoneyPage({ onMoneyAction }: KidsMoneyPageProps = {}) {
     if (!headers || !selectedId) return;
     setState('loading');
     fetchChildMoney(selectedId, headers)
-      .then(({ snapshot: s, weeks: w }) => {
+      .then(({ snapshot: s, weeks: w, currentWeekId: wk }) => {
         setSnapshot(s);
         setWeeks(w);
+        setCurrentWeekId(wk);
         setState('ready');
       })
       .catch(() => setState('error'));
@@ -805,6 +818,28 @@ export function KidsMoneyPage({ onMoneyAction }: KidsMoneyPageProps = {}) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // FHS-623: re-fetch the figures after a money action saves, without
+  // flashing the full-page skeleton over an open (now-closing) sheet.
+  const refreshAfterAction = useCallback(() => {
+    if (!headers || !selectedId) return;
+    fetchChildMoney(selectedId, headers)
+      .then(({ snapshot: s, weeks: w, currentWeekId: wk }) => {
+        setSnapshot(s);
+        setWeeks(w);
+        setCurrentWeekId(wk);
+      })
+      .catch(() => {
+        // A save already reached the server and succeeded; a failed refresh
+        // just means these figures go stale until the next reload/retry,
+        // not that the action itself failed. Nothing to show the user here.
+      });
+  }, [headers, selectedId]);
+
+  const openMoneySheet = useCallback((action: MoneyAction, child: { id: string; name: string }) => {
+    setSheetTarget({ action, child });
+  }, []);
+  const effectiveOnMoneyAction = onMoneyAction ?? openMoneySheet;
 
   const revealOlderWeeks = useCallback(() => {
     if (!headers || !selectedId) return;
@@ -890,7 +925,7 @@ export function KidsMoneyPage({ onMoneyAction }: KidsMoneyPageProps = {}) {
                       name={child.displayName}
                       childId={child.id}
                       snapshot={snapshot}
-                      onMoneyAction={onMoneyAction}
+                      onMoneyAction={effectiveOnMoneyAction}
                     />
                   </div>
                   {headers && (
@@ -926,6 +961,19 @@ export function KidsMoneyPage({ onMoneyAction }: KidsMoneyPageProps = {}) {
           </button>
         </div>
       </div>
+
+      {headers && (
+        <MoneyActionsSheet
+          isOpen={sheetTarget !== null}
+          action={sheetTarget?.action ?? null}
+          child={sheetTarget?.child ?? null}
+          snapshot={snapshot}
+          weekId={currentWeekId}
+          headers={headers}
+          onClose={() => setSheetTarget(null)}
+          onSaved={refreshAfterAction}
+        />
+      )}
     </div>
   );
 }

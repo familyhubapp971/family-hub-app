@@ -6,6 +6,9 @@ export interface ChoiceRowProps {
   title: string;
   description?: string;
   icon?: ReactNode;
+  /** FHS-623: greys the row out and blocks the click, e.g. a reward that
+   *  costs more than the child has. */
+  disabled?: boolean;
   testId?: string;
 }
 
@@ -14,17 +17,26 @@ export interface ChoiceRowProps {
  * (FHS-512) "What happens on a day they skip it?" Nothing / They-lose-
  * some-money choice. Generic enough for any radio-style choice list.
  */
-export function ChoiceRow({ selected, onClick, title, description, icon, testId }: ChoiceRowProps) {
+export function ChoiceRow({
+  selected,
+  onClick,
+  title,
+  description,
+  icon,
+  disabled = false,
+  testId,
+}: ChoiceRowProps) {
   return (
     <button
       type="button"
       role="radio"
       aria-checked={selected}
+      disabled={disabled}
       data-testid={testId}
       onClick={onClick}
       className={[
         'flex w-full items-start gap-3 rounded-xl border-2 border-black p-3.5 text-left transition-all',
-        'motion-safe:hover:-translate-y-0.5',
+        disabled ? 'cursor-not-allowed opacity-40' : 'motion-safe:hover:-translate-y-0.5',
         selected ? 'bg-yellow-50 shadow-neo-xs' : 'bg-white hover:bg-gray-50',
       ].join(' ')}
     >

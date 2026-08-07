@@ -81,6 +81,18 @@ describe('ChoiceRow', () => {
     fireEvent.click(screen.getByTestId('choice'));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  // FHS-623: a reward costing more than the child has must not be pickable.
+  it('a disabled row cannot be clicked', () => {
+    const onClick = vi.fn();
+    render(
+      <ChoiceRow selected={false} disabled title="Too pricey" onClick={onClick} testId="choice" />,
+    );
+    const row = screen.getByTestId('choice');
+    expect(row).toBeDisabled();
+    fireEvent.click(row);
+    expect(onClick).not.toHaveBeenCalled();
+  });
 });
 
 describe('ResultBanner', () => {
