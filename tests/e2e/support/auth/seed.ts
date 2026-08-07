@@ -107,6 +107,30 @@ export async function seedFamily(): Promise<SeededFamily> {
     .returning({ id: schema.mwWeeks.id });
   if (!week) throw new Error('seedFamily: week insert returned no row');
 
+  // FHS-608: a finished week before this one, with one banked action, so the
+  // recap has a real record to render in the responsive check.
+  const lastMonday = new Date(monday.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const [pastWeek] = await db
+    .insert(schema.mwWeeks)
+    .values({
+      tenantId: tenant.id,
+      memberId: childMember.id,
+      weekNumber: 1,
+      year: lastMonday.getUTCFullYear(),
+      startDate: lastMonday.toISOString().slice(0, 10),
+      isFinalized: true,
+      carriedOverStickers: 3,
+    })
+    .returning({ id: schema.mwWeeks.id });
+  if (!pastWeek) throw new Error('seedFamily: past week insert returned no row');
+  await db.insert(schema.mwWeekActions).values({
+    tenantId: tenant.id,
+    memberId: childMember.id,
+    weekId: pastWeek.id,
+    actionType: 'save',
+    stickersUsed: 3,
+  });
+
   await db.insert(schema.mwInvestments).values({
     tenantId: tenant.id,
     memberId: childMember.id,

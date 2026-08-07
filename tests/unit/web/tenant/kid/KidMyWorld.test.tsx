@@ -650,7 +650,7 @@ describe('<KidMyWorld />', () => {
     expect(screen.queryByTestId('kid-recap-saved-stars')).not.toBeInTheDocument();
   });
 
-  it('finalized week: no save actions falls back to carriedOverStickers for Saved', async () => {
+  it('finalized week: a carry-in from the previous week is not shown as saved', async () => {
     // carriedOverStickers = 7 (override WEEK fixture)
     const weekWithCarry = { ...WEEK, isFinalized: true, carriedOverStickers: 7 };
     fetchMock.mockImplementation((url: string) => {
@@ -698,9 +698,10 @@ describe('<KidMyWorld />', () => {
     });
 
     render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
-    await waitFor(() => expect(screen.getByTestId('kid-recap-saved-stars')).toBeInTheDocument());
-    // Falls back to carriedOverStickers = 7
-    expect(screen.getByTestId('kid-recap-saved-stars')).toHaveTextContent('Saved 7 stars');
+    await waitFor(() => expect(screen.getByTestId('kid-finished-week-recap')).toBeInTheDocument());
+    // FHS-608: carriedOverStickers is what came INTO this week from the last
+    // close, not what this week saved, so it is no longer shown as "Saved".
+    expect(screen.queryByTestId('kid-recap-saved-stars')).not.toBeInTheDocument();
   });
 
   it('finalized week: actions-fetch failure degrades gracefully (stars + % still show)', async () => {

@@ -284,6 +284,61 @@ value, and Originally / Invested / Now are the real sticker figures with the
 existing delta chip. The mock flipped the kind in local state only; the app
 saves it. The mock's tag took an unused `base` prop, dropped here.
 
+## The finished-week recap (FHS-608)
+
+When a parent walks back to a closed week, the board reads as a record rather
+than a live screen. Ported from the Magic Patterns design.
+
+- **The banner** says "This week is finished" with the line "A record of what
+  happened. Nothing here can be changed." It used to carry the kid's
+  celebratory copy, which was the wrong voice for this viewer.
+- **"Habits that week"** heads the cards, which stay read-only. Each still
+  shows its own progress out of its own target.
+- **The Final summary** sits in the sidebar, so the habit cards keep exactly
+  the width they have on the live week. It shows the stickers earned with
+  their money value, where those stickers went, and how much of the week was
+  done.
+- **Where they went** is a single bar plus a legend: Saved, Invested, Spent on
+  rewards, and Cashed out. Every figure is read from the week's recorded
+  actions (`GET /api/mw/weeks/:id/actions`), never inferred by subtraction.
+  A withdrawal nets off what was invested, clamped at zero.
+- **How much was done** reads "{done} of {possible}" with a bar and the line
+  "{percent}% of the week's habits were done."
+
+The action split is one shared function, `summariseWeekActions` in
+`packages/shared/src/week-actions.ts`. The parent board and the kid recap each
+kept their own copy of the same filters, and they had already drifted: the kid's
+copy never netted withdrawals, so a week that invested 10 and pulled 4 back
+showed the child "Planted 10" while the parent's card said 6. Both now read the
+same function.
+
+Neither view falls back to the week's carried-in balance any more. That figure
+is what arrived from the previous week's close, not what the week itself saved,
+so showing it here put the same stickers in two weeks and contradicted
+"Stickers earned: 0" in the same card. A week with nothing recorded now shows no
+split at all, and a week whose activity could not be loaded says so instead of
+drawing one.
+
+Deviations from the mock: the mock has three buckets and works the third out by
+subtracting the other two from the total. The app has a fourth real outcome its
+sample data never had, **cashed out**, where stickers become money; folding that
+into "spent on rewards" would misreport it, so it gets its own line, shown only
+when it happened.
+
+**Tidied alongside:** four separate places each computed the week's "possible
+days" as seven per habit, while the per-habit pill already read the habit's own
+target. They now all call one helper that adds up the targets. Nothing moves on
+screen today, because the api does not surface a habit target yet and every
+habit is therefore seven; the point is that the week total and the pill can no
+longer drift apart once one arrives.
+
+**Known limitation, tracked as [FHS-616](https://qualicion2.atlassian.net/browse/FHS-616):**
+a closed week's habit list is whatever the child has today, not what they had
+that week, because the server loads habits by "not archived" with no date
+scoping. Adding a habit makes a phantom card appear on every past week and drags
+its percentage down. The banner says the week cannot change; until FHS-616 lands,
+its habit list still can.
+
 ## Out of scope
 
 - **Cadence-aware "due days."** Every day currently counts as due for the

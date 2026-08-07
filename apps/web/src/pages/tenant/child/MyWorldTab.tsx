@@ -14,17 +14,15 @@ import {
   Edit2,
   Heart,
   Lock,
-  PiggyBank,
   Plus,
   Sparkles,
   Star,
-  TrendingUp,
   Wallet,
   X,
   Zap,
 } from 'lucide-react';
 import { Button, InvestmentTag, investmentRule, useBodyScrollLock } from '@familyhub/ui';
-import { formatMoney } from '@familyhub/shared';
+import { formatMoney, summariseWeekActions } from '@familyhub/shared';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -39,6 +37,15 @@ import { type MyWorldDataApi, kidDataApi, parentDataApi } from './myWorldApi';
 // stickers). Mirrors the api's cashAsStickers guard (apps/api/src/lib/myworld.ts).
 function stickersFromCash(cash: number, rate: number): number {
   return rate <= 0 ? 0 : cash / rate;
+}
+
+// FHS-608: how many habit days the week could have had. Four places computed
+// this, each assuming seven days per habit, while the per-habit pill already
+// read `habit.target`. The api does not surface a target yet, so every habit
+// is seven today and nothing on screen moves: this exists so the week total
+// and the pill cannot drift apart the moment one does arrive.
+function possibleDays(habits: Array<{ target: number }>): number {
+  return habits.reduce((sum, h) => sum + h.target, 0);
 }
 
 // ── Re-exported for other modules / tests ────────────────────────────────────
@@ -146,7 +153,9 @@ interface WeekSummary {
   performance: number;
   carriedOver: number;
   cashOut: number;
-  actions?: WeekAction[];
+  actions?: WeekAction[] | undefined;
+  /** FHS-608: the week's actions could not be loaded, so the split is unknown. */
+  actionsFailed?: boolean | undefined;
 }
 
 interface WeekData {
@@ -399,7 +408,7 @@ export function MyWorldTab(
 
   const buildWeekData = useCallback((apiWeek: ApiWeek, habits: Habit[]): WeekData => {
     const totalStickers = habits.reduce((s, h) => s + h.total, 0);
-    const totalPossible = habits.length * 7;
+    const totalPossible = possibleDays(habits);
     const performance = totalPossible > 0 ? Math.round((totalStickers / totalPossible) * 100) : 0;
     const data: WeekData = {
       weekId: apiWeek.id,
@@ -588,13 +597,16 @@ export function MyWorldTab(
     setWeekLoading(true);
 
     const habitsPromise = fetchWeekHabits(w.weekId);
-    const actionsPromise: Promise<WeekAction[]> = w.isFinalized
+    // FHS-608: null means "we could not load this", which is NOT the same as
+    // an empty list. Swallowing the failure let the card fall back to the
+    // carried-over balance and present it as this week's savings.
+    const actionsPromise: Promise<WeekAction[] | null> = w.isFinalized
       ? fetch(api!.weekActions(w.weekId), {
           headers: api!.headers,
         })
-          .then((r) => (r.ok ? (r.json() as Promise<{ actions: WeekAction[] }>) : { actions: [] }))
-          .then((b) => b.actions ?? [])
-          .catch(() => [])
+          .then((r) => (r.ok ? (r.json() as Promise<{ actions: WeekAction[] }>) : null))
+          .then((b) => b?.actions ?? null)
+          .catch(() => null)
       : Promise.resolve([]);
 
     Promise.all([habitsPromise, actionsPromise])
@@ -604,7 +616,7 @@ export function MyWorldTab(
           prev.map((wk, i) => {
             if (i !== weekIndex) return wk;
             const totalStickers = habits.reduce((s, h) => s + h.total, 0);
-            const totalPossible = habits.length * 7;
+            const totalPossible = possibleDays(habits);
             const performance =
               totalPossible > 0 ? Math.round((totalStickers / totalPossible) * 100) : 0;
             if (wk.isFinalized) {
@@ -616,7 +628,9 @@ export function MyWorldTab(
                   performance,
                   carriedOver: wk.summary?.carriedOver ?? 0,
                   cashOut: wk.summary?.cashOut ?? 0,
-                  actions,
+                  // undefined = we could not load them (see actionsPromise).
+                  actions: actions ?? undefined,
+                  actionsFailed: actions === null,
                 },
               };
             }
@@ -683,7 +697,7 @@ export function MyWorldTab(
 
   const habits = week?.habits ?? [];
   const totalDone = habits.reduce((s, h) => s + h.total, 0);
-  const totalPossible = habits.length * 7;
+  const totalPossible = possibleDays(habits);
 
   // ── Investment derived values ─────────────────────────────────────────────
   // FHS-607: one map from habit to its investment. The habit row now needs the
@@ -1543,7 +1557,9 @@ export function MyWorldTab(
           column is narrower (FHS-327). On a finalised week the right column
           is hidden so the left goes full-width (FHS-316).
           ════════════════════════════════════════════════════════════════════ */}
-      <div className={`space-y-6 ${isCurrentWeek ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+      {/* FHS-608: a finished week keeps the 8/4 split too, so the Final summary
+          sits beside the habit cards instead of below them. */}
+      <div className="space-y-6 lg:col-span-8">
         {/* ── Day Sticker Dialog ── */}
         {dayStickerDialog && dayStickerHabit && canEdit && (
           // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
@@ -2063,17 +2079,27 @@ export function MyWorldTab(
                 </button>
               </div>
 
+              {/* FHS-608: the design's calm, parent-facing wording. It used to
+                  read like the kid's copy, which is wrong for this viewer. */}
               {week.isFinalized && (
                 <div
                   data-testid="finalized-week-banner"
-                  className="relative z-10 mt-3 bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-2 flex items-center gap-2"
+                  className="relative z-10 mt-3 flex items-start gap-3 rounded-xl border-2 border-black bg-white px-4 py-3 shadow-neo-sm"
                 >
-                  <span className="text-base flex-shrink-0" aria-hidden="true">
-                    🎉
+                  <span
+                    aria-hidden="true"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-green-200"
+                  >
+                    <Check size={16} strokeWidth={3} className="text-black" />
                   </span>
-                  <p className="text-xs font-bold text-amber-200">
-                    You&apos;re looking at a finished week. Here&apos;s what you did!
-                  </p>
+                  <div className="min-w-0">
+                    <h3 className="font-heading text-base uppercase tracking-wide text-gray-900">
+                      This week is finished
+                    </h3>
+                    <p className="text-sm font-bold text-gray-600">
+                      A record of what happened. Nothing here can be changed.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -2090,6 +2116,24 @@ export function MyWorldTab(
 
             {/* ── Invested habits (no investedHabitIds prop here; section renders when empty array) ── */}
             {/* investedHabitIds is Dashboard-level state; hardcode [] for now: section stays hidden */}
+
+            {/* FHS-608: on a finished week the cards are a record, so they get
+                a heading that says so. The live week needs no heading: the
+                board's own header already frames it. */}
+            {week.isFinalized && habits.length > 0 && (
+              <div className="flex items-center gap-2" data-testid="finalized-habits-heading">
+                <span
+                  aria-hidden="true"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border-2 border-black bg-pink-100"
+                >
+                  <Star className="h-3.5 w-3.5 text-pink-500" />
+                </span>
+                <h2 className="font-heading text-lg uppercase tracking-widest text-pink-300">
+                  Habits that week
+                </h2>
+                <div className="h-0.5 flex-1 rounded-full bg-purple-800/50" />
+              </div>
+            )}
 
             {/* ── Regular Habit Cards: a future week (not yet started) blurs
                 the cards under a lock overlay: nothing to mark done yet
@@ -2150,151 +2194,6 @@ export function MyWorldTab(
                 <Plus className="w-6 h-6 sm:w-8 sm:h-8" /> Add New Habit
               </button>
             )}
-
-            {/* ── FHS-399 What I Did That Week (finalized weeks) ── */}
-            {week.isFinalized &&
-              week.summary &&
-              (() => {
-                const actions = week.summary.actions ?? [];
-                // Map actions → "saved" vs "planted" buckets for the kid-friendly breakdown.
-                // saved  = save + auto_save (banked in piggy bank)
-                // planted = invest + invest_continue (growing like a seed)
-                const savedStars = actions
-                  .filter((a) => a.actionType === 'save' || a.actionType === 'auto_save')
-                  .reduce((s, a) => s + (a.stickersUsed ?? 0), 0);
-                const plantedStars = actions
-                  .filter((a) => a.actionType === 'invest' || a.actionType === 'invest_continue')
-                  .reduce((s, a) => s + (a.stickersUsed ?? 0), 0);
-                // Fall back to carriedOver when no explicit actions recorded yet
-                const effectiveSaved =
-                  savedStars > 0
-                    ? savedStars
-                    : week.summary.carriedOver > 0
-                      ? week.summary.carriedOver
-                      : 0;
-
-                // Prefer the server-computed performance value (bounded 0-100, correct
-                // even if habits were deleted after close). Fall back to a client-side
-                // calculation only when unavailable, clamped so bonus stickers can't push
-                // it above 100%.
-                const totalPossibleWeek = habits.length * 7;
-                const completionPct =
-                  week.summary.performance > 0
-                    ? week.summary.performance
-                    : totalPossibleWeek > 0
-                      ? Math.min(
-                          100,
-                          Math.max(
-                            0,
-                            Math.round((week.summary.totalStickers / totalPossibleWeek) * 100),
-                          ),
-                        )
-                      : 0;
-                // Adaptive message: only celebrate at ≥50%; below that use a neutral line
-                // to avoid "Great job! You finished 0%". Applied inline in the JSX below.
-
-                return (
-                  <div
-                    data-testid="finalized-week-summary"
-                    className="bg-white border-2 sm:border-3 border-black rounded-2xl overflow-hidden shadow-neo"
-                  >
-                    {/* Header */}
-                    <div className="px-5 py-4 border-b-2 border-gray-100 flex items-center gap-2 bg-purple-50">
-                      <span className="text-xl" aria-hidden="true">
-                        🏆
-                      </span>
-                      <h3 className="font-black text-gray-900 text-base sm:text-lg uppercase tracking-wide">
-                        What I Did That Week
-                      </h3>
-                    </div>
-
-                    <div className="p-5 space-y-4">
-                      {/* Stars Earned row */}
-                      <div
-                        data-testid="finalized-stars-earned"
-                        className="flex items-center gap-3 bg-yellow-50 border-2 border-yellow-300 rounded-xl px-4 py-3"
-                      >
-                        <Star
-                          className="w-6 h-6 text-yellow-500 fill-current flex-shrink-0"
-                          aria-hidden="true"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-700">
-                            Stars Earned
-                          </p>
-                          <p className="text-2xl font-black text-yellow-700 leading-none">
-                            {week.summary.totalStickers}
-                            <span className="text-sm font-bold text-yellow-600 ml-2">
-                              = {money(week.summary.totalStickers * stickerRate)}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Where My Stars Went */}
-                      {(effectiveSaved > 0 || plantedStars > 0) && (
-                        <div data-testid="finalized-stars-allocation" className="space-y-2">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                            Where My Stars Went
-                          </p>
-                          {effectiveSaved > 0 && (
-                            <div
-                              data-testid="finalized-saved-stars"
-                              className="flex items-center gap-3 bg-cyan-50 border-2 border-cyan-300 rounded-xl px-4 py-2.5"
-                            >
-                              <PiggyBank
-                                className="w-5 h-5 text-cyan-600 flex-shrink-0"
-                                aria-hidden="true"
-                              />
-                              <p className="text-sm font-bold text-cyan-800">
-                                Saved {effectiveSaved} star{effectiveSaved !== 1 ? 's' : ''}
-                              </p>
-                            </div>
-                          )}
-                          {plantedStars > 0 && (
-                            <div
-                              data-testid="finalized-planted-stars"
-                              className="flex items-center gap-3 bg-emerald-50 border-2 border-emerald-300 rounded-xl px-4 py-2.5"
-                            >
-                              <TrendingUp
-                                className="w-5 h-5 text-emerald-600 flex-shrink-0"
-                                aria-hidden="true"
-                              />
-                              <p className="text-sm font-bold text-emerald-800">
-                                Planted {plantedStars} star{plantedStars !== 1 ? 's' : ''}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Completion line + % badge */}
-                      <div
-                        data-testid="finalized-completion"
-                        className="bg-purple-50 border-2 border-purple-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3"
-                      >
-                        <p
-                          data-testid="finalized-completion-message"
-                          className="text-sm font-bold text-purple-700"
-                        >
-                          {completionPct >= 50
-                            ? 'Great job! You finished'
-                            : 'Here’s how this week went. You finished'}
-                        </p>
-                        <span
-                          data-testid="finalized-completion-pct"
-                          className="flex-shrink-0 bg-purple-500 text-white text-sm font-black px-3 py-1 rounded-full border-2 border-black shadow-neo-xs"
-                        >
-                          {completionPct}%
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-gray-400 font-mono text-center">
-                        of your habits that week
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
           </>
         )}
 
@@ -2364,6 +2263,174 @@ export function MyWorldTab(
           current-week-only controls; a finalised week hides the whole column
           (FHS-316). (FHS-537/539 removed the Big-Rewards + My-Stickers cards.)
           ════════════════════════════════════════════════════════════════════ */}
+      {/* ── FHS-608: Final summary (finished weeks only) ── */}
+      {week && week.isFinalized && week.summary && (
+        <div className="space-y-4 lg:col-span-4 lg:self-start">
+          {(() => {
+            const outcome = summariseWeekActions(week.summary.actions ?? []);
+            const earned = week.summary.totalStickers;
+            // FHS-608: an unreadable week must say so rather than show a
+            // confident split built from nothing.
+            const splitUnknown = week.summary.actionsFailed === true;
+            // A close-week that banked everything automatically leaves no
+            // explicit save action on older weeks, so fall back to what the
+            // week carried over rather than showing nothing.
+            // Still fetching this week: the figures are all zero until it lands,
+            // and a flash of "0 earned, 0%" reads as a real answer.
+            const stillLoading = weekLoading && habits.length === 0;
+            const split = [
+              // Only this week's own save actions. `carriedOver` is what came
+              // INTO the week from the previous close, so reporting it here
+              // showed the same stickers as saved in two different weeks.
+              { key: 'saved', label: 'Saved', stickers: outcome.saved, bar: 'bg-cyan-300' },
+              {
+                key: 'invested',
+                label: 'Invested',
+                stickers: outcome.invested,
+                bar: 'bg-green-300',
+              },
+              {
+                key: 'spent',
+                label: 'Spent on rewards',
+                stickers: outcome.spent,
+                bar: 'bg-pink-300',
+              },
+              // FHS-608: the mock had no cash-outs, but turning stickers into
+              // money is a real, different outcome. Shown only when it happened.
+              {
+                key: 'cashed-out',
+                label: 'Cashed out',
+                stickers: outcome.cashedOut,
+                bar: 'bg-yellow-300',
+              },
+            ].filter((part) => part.stickers > 0 || part.key !== 'cashed-out');
+            const splitTotal = split.reduce((sum, part) => sum + part.stickers, 0);
+            const percent =
+              totalPossible > 0
+                ? Math.min(100, Math.max(0, Math.round((totalDone / totalPossible) * 100)))
+                : 0;
+            if (stillLoading) return null;
+            return (
+              <div
+                data-testid="finalized-week-summary"
+                className="overflow-hidden rounded-2xl border-2 sm:border-3 border-black bg-white shadow-neo"
+              >
+                <div className="border-b-2 border-black bg-yellow-100 px-5 py-3">
+                  <h3 className="font-heading text-lg uppercase tracking-wide text-gray-900">
+                    Final summary
+                  </h3>
+                </div>
+                <div className="flex flex-col gap-5 p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                      Stickers earned
+                    </p>
+                    <div
+                      data-testid="finalized-stars-earned"
+                      className="mt-1 flex flex-wrap items-baseline gap-2"
+                    >
+                      <span className="font-heading text-3xl text-gray-900">{earned}</span>
+                      <span className="font-bold text-green-700">
+                        = {money(earned * stickerRate)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {splitUnknown && (
+                    <p
+                      data-testid="finalized-split-unavailable"
+                      className="text-sm font-bold text-gray-600"
+                    >
+                      We could not load what happened that week. Try again in a moment.
+                    </p>
+                  )}
+
+                  {!splitUnknown && splitTotal > 0 && (
+                    <div data-testid="finalized-stars-allocation">
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                        Where they went
+                      </p>
+                      <div
+                        className="mt-2 flex h-4 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100"
+                        role="img"
+                        aria-label={split
+                          .map((part) => `${part.stickers} ${part.label.toLowerCase()}`)
+                          .join(', ')}
+                      >
+                        {split.map(
+                          (part) =>
+                            part.stickers > 0 && (
+                              <div
+                                key={part.key}
+                                className={`h-full ${part.bar} border-r-2 border-black last:border-r-0`}
+                                style={{ width: `${(part.stickers / splitTotal) * 100}%` }}
+                              />
+                            ),
+                        )}
+                      </div>
+                      <ul className="mt-2 flex flex-col gap-1.5">
+                        {split.map((part) => (
+                          <li
+                            key={part.key}
+                            data-testid={`finalized-${part.key}-stars`}
+                            className="flex items-center justify-between gap-3"
+                          >
+                            <span className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                              <span
+                                aria-hidden="true"
+                                className={`h-3 w-3 shrink-0 rounded-full border-2 border-black ${part.bar}`}
+                              />
+                              {part.label}
+                            </span>
+                            <span className="whitespace-nowrap text-sm font-bold text-gray-900">
+                              {part.stickers} stickers
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {totalPossible === 0 ? (
+                    <p
+                      data-testid="finalized-no-habits"
+                      className="border-t-2 border-gray-100 pt-4 text-sm font-bold text-gray-600"
+                    >
+                      No habits are on record for that week.
+                    </p>
+                  ) : (
+                    <div className="border-t-2 border-gray-100 pt-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-bold text-gray-900">Habit days done</span>
+                        <span
+                          data-testid="finalized-days-done"
+                          className="whitespace-nowrap font-heading text-xl text-gray-900"
+                        >
+                          {totalDone} of {totalPossible}
+                        </span>
+                      </div>
+                      <div
+                        className="mt-2 h-4 w-full overflow-hidden rounded-full border-2 border-black bg-gray-100"
+                        role="img"
+                        aria-label={`${totalDone} of ${totalPossible} habit days done, ${percent} percent`}
+                      >
+                        <div className="h-full bg-yellow-300" style={{ width: `${percent}%` }} />
+                      </div>
+                      <p
+                        data-testid="finalized-completion-message"
+                        className="mt-1.5 text-sm font-bold text-gray-600"
+                      >
+                        {percent}% of the week&rsquo;s habits were done.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {isCurrentWeek && (
         <div className="space-y-4 lg:col-span-4 lg:self-start">
           {/* FHS-392: Reward Requests in-context sidebar (parent/admin only).

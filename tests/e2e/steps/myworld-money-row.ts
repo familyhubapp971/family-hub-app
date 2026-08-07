@@ -60,3 +60,24 @@ Then('the money row still fits without sideways scrolling', async ({ page }) => 
   );
   expect(overflow).toBeLessThanOrEqual(1);
 });
+
+// FHS-608: the finished-week recap (banner, Habits that week, Final summary).
+// The seeded family's week is open, so the spec walks back one week: the
+// board creates the previous week on demand and shows it as a record.
+When('I move back to the finished week', async ({ page }) => {
+  await page.getByTestId('habit-tracker-week-prev-btn').click();
+  await expect(page.getByTestId('finalized-week-banner')).toBeVisible({ timeout: 15000 });
+});
+
+Then("the finished week's recap fits without sideways scrolling", async ({ page }) => {
+  await expect(page.getByTestId('finalized-week-banner')).toContainText('This week is finished');
+  await expect(page.getByTestId('finalized-week-summary')).toBeVisible();
+  // The seeded finished week banked 3 stickers and had no habit days done, so
+  // the card is checked against real figures, not just for being on screen.
+  await expect(page.getByTestId('finalized-saved-stars')).toContainText('3 stickers');
+  await expect(page.getByTestId('finalized-days-done')).toContainText('0 of 7');
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});

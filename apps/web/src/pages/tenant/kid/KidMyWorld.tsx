@@ -467,7 +467,6 @@ export function KidMyWorld({
                     earnedThisWeek={earnedThisWeek}
                     stickerRate={stickerRate}
                     currency={currency}
-                    carriedOverStickers={week.carriedOverStickers}
                     doneThisView={doneThisView}
                     totalThisView={totalThisView}
                   />

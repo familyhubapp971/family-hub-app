@@ -23,3 +23,12 @@ Feature: My World money row fits every screen
     When I open the child's world at phone width
     And I open the seeded investment's row
     Then its detail fits the phone without sideways scrolling
+
+  @critical @authed-local
+  Scenario: A finished week's recap fits a phone and a tablet
+    Given I am signed in as the admin of a seeded family for the money row
+    When I open the child's world at phone width
+    And I move back to the finished week
+    Then the finished week's recap fits without sideways scrolling
+    When the viewport grows to tablet width
+    Then the finished week's recap fits without sideways scrolling

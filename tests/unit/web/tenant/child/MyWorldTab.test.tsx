@@ -866,18 +866,18 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     );
   }
 
-  it('FHS-399: shows the friendly finished-week banner on a finalized week', async () => {
+  // FHS-608: the banner is parent-facing now. It used to carry the kid's
+  // celebratory line, which is the wrong voice for this viewer.
+  it('says plainly that a finished week is a record and cannot change', async () => {
     installFinalizedWeekApi();
     renderTab();
     await navigateToFinalizedWeek();
     await waitFor(() => expect(screen.getByTestId('finalized-week-banner')).toBeInTheDocument());
-    // Friendly copy: no "viewing past records"
-    expect(screen.getByTestId('finalized-week-banner').textContent).toContain(
-      'looking at a finished week',
-    );
-    expect(screen.getByTestId('finalized-week-banner').textContent).not.toContain(
-      'viewing past records',
-    );
+    const banner = screen.getByTestId('finalized-week-banner');
+    expect(banner).toHaveTextContent('This week is finished');
+    expect(banner).toHaveTextContent('Nothing here can be changed');
+    // The heading over the cards says what they are.
+    expect(screen.getByTestId('finalized-habits-heading')).toHaveTextContent('Habits that week');
   });
 
   it('FHS-399: shows the "What I Did That Week" summary card with stars + cash', async () => {
@@ -891,30 +891,111 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     expect(earned.textContent).toContain('2.50');
   });
 
-  it('FHS-399: shows the saved + planted breakdown in the summary card', async () => {
+  // FHS-608: "where they went", read from the actions rather than inferred.
+  it('splits the finished week into where the stickers went', async () => {
     installFinalizedWeekApi();
     renderTab();
     await navigateToFinalizedWeek();
     await waitFor(() =>
       expect(screen.getByTestId('finalized-stars-allocation')).toBeInTheDocument(),
     );
-    // save action → "Saved 3 stars"
-    expect(screen.getByTestId('finalized-saved-stars').textContent).toContain('3');
-    // invest action → "Planted 2 stars"
-    expect(screen.getByTestId('finalized-planted-stars').textContent).toContain('2');
+    expect(screen.getByTestId('finalized-saved-stars')).toHaveTextContent('Saved');
+    expect(screen.getByTestId('finalized-saved-stars')).toHaveTextContent('3 stickers');
+    expect(screen.getByTestId('finalized-invested-stars')).toHaveTextContent('Invested');
+    expect(screen.getByTestId('finalized-invested-stars')).toHaveTextContent('2 stickers');
+    expect(screen.getByTestId('finalized-spent-stars')).toHaveTextContent('Spent on rewards');
+    // Nothing was cashed out in this week, so that line stays off.
+    expect(screen.queryByTestId('finalized-cashed-out-stars')).not.toBeInTheDocument();
   });
 
-  it('FHS-399: shows "Great job!" at ≥50% and neutral message at <50%', async () => {
-    // Default fixture: 5 stickers / 7 possible = 71% → "Great job!"
+  // FHS-608: turning stickers into money is a real outcome the mock's sample
+  // data never had. It only shows when it happened, and it is never folded
+  // into "spent on rewards".
+  it('shows a cashed-out line only when the week actually cashed out', async () => {
+    installFinalizedWeekApi([
+      {
+        id: 1,
+        weekId: FINALIZED_WEEK,
+        actionType: 'save',
+        stickersUsed: 2,
+        cashAmount: 1.0,
+        rewardName: null,
+        habitId: null,
+        habitName: null,
+        createdAt: '2026-02-22T00:00:00Z',
+      },
+      {
+        id: 2,
+        weekId: FINALIZED_WEEK,
+        actionType: 'cashout',
+        stickersUsed: 4,
+        cashAmount: 2.0,
+        rewardName: null,
+        habitId: null,
+        habitName: null,
+        createdAt: '2026-02-22T00:00:00Z',
+      },
+    ]);
+    renderTab();
+    await navigateToFinalizedWeek();
+    await waitFor(() =>
+      expect(screen.getByTestId('finalized-stars-allocation')).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('finalized-cashed-out-stars')).toHaveTextContent('Cashed out');
+    expect(screen.getByTestId('finalized-cashed-out-stars')).toHaveTextContent('4 stickers');
+    // Not double-counted as a reward.
+    expect(screen.getByTestId('finalized-spent-stars')).toHaveTextContent('0 stickers');
+  });
+
+  // FHS-608: a bonus habit can ask for fewer than seven days. The week total
+  // used to assume seven for every habit, so it disagreed with the habit's
+  // own pill.
+  it("counts the week out of each habit's own target, not seven each", async () => {
+    installApi({
+      habits: [
+        {
+          id: HABIT,
+          name: 'Brush teeth',
+          description: null,
+          color: 'bg-yellow-400',
+          icon: 'star',
+          isBonus: false,
+        },
+        {
+          id: 'habit-bonus',
+          name: 'Extra reading',
+          description: null,
+          color: 'bg-cyan-400',
+          icon: 'star',
+          isBonus: true,
+          target: 3,
+        },
+      ],
+    });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('bankable-week')).toBeInTheDocument());
+    // 7 for the daily habit + 3 for the bonus one, never 14.
+    const days = screen.getByTestId('week-days-done');
+    expect(days).toHaveTextContent('of 10');
+    expect(days).not.toHaveTextContent('of 14');
+  });
+
+  // FHS-608: the summary states the week plainly instead of praising it.
+  it('states how much of the week was done, without praise', async () => {
+    // Default fixture: 5 of 7 habit days = 71%.
     installFinalizedWeekApi();
     renderTab();
     await navigateToFinalizedWeek();
-    await waitFor(() => expect(screen.getByTestId('finalized-completion')).toBeInTheDocument());
-    expect(screen.getByTestId('finalized-completion-pct').textContent).toContain('%');
-    expect(screen.getByTestId('finalized-completion-message').textContent).toContain('Great job');
+    await waitFor(() =>
+      expect(screen.getByTestId('finalized-completion-message')).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('finalized-days-done')).toHaveTextContent('5 of 7');
+    const message = screen.getByTestId('finalized-completion-message');
+    expect(message).toHaveTextContent('71% of the week\u2019s habits were done.');
+    expect(message).not.toHaveTextContent('Great job');
   });
 
-  it('FHS-399: shows neutral message at 0% (kid skipped the week)', async () => {
+  it('reads a week with nothing done as zero, with no split to draw', async () => {
     // Zero stickers on the finalized week → performance=0 from the lazy-load rebuild
     const base2 = fetchMock.getMockImplementation()!;
     // Call installApi first to set up the weeks array, then override habits for FINALIZED_WEEK
@@ -975,13 +1056,15 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     void base2; // suppress unused warning
     renderTab();
     await navigateToFinalizedWeek();
-    await waitFor(() => expect(screen.getByTestId('finalized-completion')).toBeInTheDocument());
-    expect(screen.getByTestId('finalized-completion-message').textContent).not.toContain(
-      'Great job',
+    await waitFor(() =>
+      expect(screen.getByTestId('finalized-completion-message')).toBeInTheDocument(),
     );
-    expect(screen.getByTestId('finalized-completion-message').textContent).toContain(
-      'this week went',
+    expect(screen.getByTestId('finalized-days-done')).toHaveTextContent('0 of 7');
+    expect(screen.getByTestId('finalized-completion-message')).toHaveTextContent(
+      '0% of the week\u2019s habits were done.',
     );
+    // Nothing happened, so there is no split to draw.
+    expect(screen.queryByTestId('finalized-stars-allocation')).not.toBeInTheDocument();
   });
 
   it('FHS-399: each habit card shows PROGRESS THAT WEEK X/target on a finalized week', async () => {
@@ -1103,7 +1186,7 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     ).toBe(false);
   });
 
-  it('FHS-399 #6: carriedOver-only path: actions=[] + carriedOverStickers=5 → Saved shown, Planted absent', async () => {
+  it("does not report the previous week's carry-in as this week's savings", async () => {
     installApi({
       weeks: [
         {
@@ -1161,11 +1244,12 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     renderTab();
     await navigateToFinalizedWeek();
     await waitFor(() => expect(screen.getByTestId('finalized-week-summary')).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByTestId('finalized-saved-stars')).toBeInTheDocument());
-    // carriedOver=5 maps to effectiveSaved=5
-    expect(screen.getByTestId('finalized-saved-stars').textContent).toContain('5');
-    // No invest actions → planted absent
-    expect(screen.queryByTestId('finalized-planted-stars')).not.toBeInTheDocument();
+    // FHS-608: `carriedOver` is what came INTO this week from the previous
+    // week's close, not what this week saved. Reporting it here put the same
+    // stickers in two weeks and contradicted "Stickers earned: 0" above it.
+    // With nothing recorded, there is simply no split to draw.
+    expect(screen.queryByTestId('finalized-stars-allocation')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('finalized-saved-stars')).not.toBeInTheDocument();
   });
 
   it('FHS-399 #7: navigating across two finalized weeks updates finalized-stars-earned', async () => {
@@ -1308,7 +1392,21 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     await navigateToFinalizedWeek();
     await waitFor(() => expect(screen.getByTestId('finalized-week-summary')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByTestId('finalized-saved-stars')).toBeInTheDocument());
-    expect(screen.queryByTestId('finalized-planted-stars')).not.toBeInTheDocument();
+    expect(screen.getByTestId('finalized-saved-stars')).toHaveTextContent('3 stickers');
+    expect(screen.getByTestId('finalized-invested-stars')).toHaveTextContent('0 stickers');
+  });
+
+  // FHS-608: the live sidebar must not leak onto a finished week now that the
+  // finished week has a sidebar of its own.
+  it('keeps the live sidebar and money row off a finished week', async () => {
+    installFinalizedWeekApi();
+    renderTab();
+    await navigateToFinalizedWeek();
+    await waitFor(() => expect(screen.getByTestId('finalized-week-summary')).toBeInTheDocument());
+    expect(screen.queryByTestId('reward-requests-sidebar')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('rewards-shop')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('money-row')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('bankable-week')).not.toBeInTheDocument();
   });
 });
 
