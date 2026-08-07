@@ -77,6 +77,11 @@ export function AssignmentsTabPanel() {
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // FHS-313: gates the Add/Edit affordances by the caller's own role
+  // (admin/adult), the same rule the API already enforces server-side.
+  // Comes from the same /api/members fetch already used for the member
+  // filter pills, so no extra network call.
+  const [callerRole, setCallerRole] = useState<string | null>(null);
   const [statusAnnouncement, setStatusAnnouncement] = useState('');
   const [errorAnnouncement, setErrorAnnouncement] = useState('');
   const togglingRef = useRef<Set<string>>(new Set());
@@ -117,8 +122,14 @@ export function AssignmentsTabPanel() {
         }
         const aBody = (await aRes.json()) as { assignments: Assignment[] };
         let members: MemberLite[] = [];
-        if (mRes.ok) members = ((await mRes.json()) as { members: MemberLite[] }).members ?? [];
+        let role: string | null = null;
+        if (mRes.ok) {
+          const mBody = (await mRes.json()) as { members: MemberLite[]; callerRole?: string };
+          members = mBody.members ?? [];
+          role = mBody.callerRole ?? null;
+        }
         setStatus({ kind: 'ready', assignments: aBody.assignments ?? [], members });
+        setCallerRole(role);
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
         setStatus({
@@ -170,6 +181,14 @@ export function AssignmentsTabPanel() {
           }),
         });
         if (!res.ok) {
+          // FHS-313: someone else deleted this assignment while it was
+          // open for editing. Refresh the list so the dead row drops
+          // off, and say so in plain words instead of a generic error.
+          if (res.status === 404 && editingId) {
+            setSaveError('This assignment was removed elsewhere. The list has been refreshed.');
+            await load();
+            return;
+          }
           let detail = `Couldn't save (server returned ${res.status})`;
           try {
             const body = (await res.json()) as {
@@ -287,6 +306,9 @@ export function AssignmentsTabPanel() {
 
   const { members } = status;
   const visible = status.assignments.filter((a) => filter === 'all' || a.memberId === filter);
+  // FHS-313: only admins/adults may add or edit assignments (matches the
+  // API's WRITE_ROLES). Everyone else just sees the list.
+  const canWrite = callerRole === 'admin' || callerRole === 'adult';
 
   return (
     <div className="mx-auto max-w-4xl space-y-4" data-testid="assignments-ready">
@@ -346,117 +368,119 @@ export function AssignmentsTabPanel() {
                 members={members}
                 onToggle={onToggleDone}
                 onEdit={onEditClick}
+                canEdit={canWrite}
               />
             ))}
           </ul>
         )}
 
-        {adding ? (
-          <form
-            onSubmit={onAddSubmit}
-            className="mt-5 grid grid-cols-1 gap-3 rounded-md border-2 border-black bg-yellow-50 p-4 sm:grid-cols-2"
-            data-testid="assignments-add-form"
-            aria-label={editingId ? 'Edit assignment' : 'Add assignment'}
-          >
-            <p className="col-span-full text-sm font-bold text-black">
-              {editingId ? 'Edit assignment' : 'Add assignment'}
-            </p>
-            <label className="flex flex-col gap-1 text-sm font-bold text-black sm:col-span-2">
-              Title
-              <input
-                type="text"
-                required
-                maxLength={200}
-                value={draft.title}
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                data-testid="assignments-add-title"
-                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </label>
-            <div className="flex flex-col gap-1 text-sm font-bold text-black">
-              For
-              <Dropdown
-                ariaLabel="For"
-                testId="assignments-add-member"
-                value={draft.memberId}
-                onChange={(v) => setDraft({ ...draft, memberId: v })}
-                className="flex min-h-[38px] w-full items-center justify-between gap-2 rounded border-2 border-black bg-white px-2 py-1 text-sm font-normal text-black"
-                options={[
-                  { value: '', label: 'Whole family' },
-                  ...members.map((m) => ({ value: m.id, label: m.displayName })),
-                ]}
-              />
-            </div>
-            <label className="flex flex-col gap-1 text-sm font-bold text-black">
-              Due date (optional)
-              <input
-                type="date"
-                value={draft.dueDate}
-                onChange={(e) => setDraft({ ...draft, dueDate: e.target.value })}
-                data-testid="assignments-add-due"
-                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm font-bold text-black sm:col-span-2">
-              Notes (optional)
-              <input
-                type="text"
-                maxLength={500}
-                value={draft.notes}
-                onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
-                data-testid="assignments-add-notes"
-                className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </label>
-            {saveError && (
-              <p
-                role="alert"
-                data-testid="assignments-add-error"
-                className="col-span-full text-xs font-bold text-red-600"
-              >
-                {saveError}
+        {canWrite &&
+          (adding ? (
+            <form
+              onSubmit={onAddSubmit}
+              className="mt-5 grid grid-cols-1 gap-3 rounded-md border-2 border-black bg-yellow-50 p-4 sm:grid-cols-2"
+              data-testid="assignments-add-form"
+              aria-label={editingId ? 'Edit assignment' : 'Add assignment'}
+            >
+              <p className="col-span-full text-sm font-bold text-black">
+                {editingId ? 'Edit assignment' : 'Add assignment'}
               </p>
-            )}
-            <div className="col-span-full flex gap-2">
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                disabled={saving}
-                testId="assignments-add-submit"
-              >
-                {saving ? 'Saving…' : editingId ? 'Update' : 'Add'}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={onAddCancel}
-                disabled={saving}
-                testId="assignments-add-cancel"
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <button
-            type="button"
-            ref={addButtonRef}
-            onClick={() => {
-              // Opening "Add" must clear any leftover edit state so the
-              // form submits a POST, not a PUT (matches Notices/Tasks).
-              setEditingId(null);
-              setDraft({ title: '', dueDate: '', memberId: '', notes: '' });
-              setAdding(true);
-              setSaveError(null);
-            }}
-            data-testid="assignments-add"
-            className="mt-5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-gray-400 py-2.5 font-bold text-gray-500 hover:border-black hover:bg-gray-50 hover:text-black motion-safe:transition-colors"
-          >
-            <Plus size={18} aria-hidden="true" /> Add Assignment
-          </button>
-        )}
+              <label className="flex flex-col gap-1 text-sm font-bold text-black sm:col-span-2">
+                Title
+                <input
+                  type="text"
+                  required
+                  maxLength={200}
+                  value={draft.title}
+                  onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                  data-testid="assignments-add-title"
+                  className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </label>
+              <div className="flex flex-col gap-1 text-sm font-bold text-black">
+                For
+                <Dropdown
+                  ariaLabel="For"
+                  testId="assignments-add-member"
+                  value={draft.memberId}
+                  onChange={(v) => setDraft({ ...draft, memberId: v })}
+                  className="flex min-h-[38px] w-full items-center justify-between gap-2 rounded border-2 border-black bg-white px-2 py-1 text-sm font-normal text-black"
+                  options={[
+                    { value: '', label: 'Whole family' },
+                    ...members.map((m) => ({ value: m.id, label: m.displayName })),
+                  ]}
+                />
+              </div>
+              <label className="flex flex-col gap-1 text-sm font-bold text-black">
+                Due date (optional)
+                <input
+                  type="date"
+                  value={draft.dueDate}
+                  onChange={(e) => setDraft({ ...draft, dueDate: e.target.value })}
+                  data-testid="assignments-add-due"
+                  className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-bold text-black sm:col-span-2">
+                Notes (optional)
+                <input
+                  type="text"
+                  maxLength={500}
+                  value={draft.notes}
+                  onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+                  data-testid="assignments-add-notes"
+                  className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </label>
+              {saveError && (
+                <p
+                  role="alert"
+                  data-testid="assignments-add-error"
+                  className="col-span-full text-xs font-bold text-red-600"
+                >
+                  {saveError}
+                </p>
+              )}
+              <div className="col-span-full flex gap-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={saving}
+                  testId="assignments-add-submit"
+                >
+                  {saving ? 'Saving…' : editingId ? 'Update' : 'Add'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={onAddCancel}
+                  disabled={saving}
+                  testId="assignments-add-cancel"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <button
+              type="button"
+              ref={addButtonRef}
+              onClick={() => {
+                // Opening "Add" must clear any leftover edit state so the
+                // form submits a POST, not a PUT (matches Notices/Tasks).
+                setEditingId(null);
+                setDraft({ title: '', dueDate: '', memberId: '', notes: '' });
+                setAdding(true);
+                setSaveError(null);
+              }}
+              data-testid="assignments-add"
+              className="mt-5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-gray-400 py-2.5 font-bold text-gray-500 hover:border-black hover:bg-gray-50 hover:text-black motion-safe:transition-colors"
+            >
+              <Plus size={18} aria-hidden="true" /> Add Assignment
+            </button>
+          ))}
       </div>
     </div>
   );
@@ -493,11 +517,13 @@ function AssignmentRow({
   members,
   onToggle,
   onEdit,
+  canEdit,
 }: {
   assignment: Assignment;
   members: MemberLite[];
   onToggle: (id: string, nextDone: boolean) => void;
   onEdit: (a: Assignment) => void;
+  canEdit: boolean;
 }) {
   const who = members.find((m) => m.id === assignment.memberId);
   const whoLabel = who ? who.displayName : 'Family';
@@ -558,15 +584,17 @@ function AssignmentRow({
             </span>
           </div>
         </div>
-        <button
-          type="button"
-          aria-label={`Edit "${assignment.title}"`}
-          data-testid={`assignment-edit-${assignment.id}`}
-          onClick={() => onEdit(assignment)}
-          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-black hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-        >
-          <Pencil size={14} aria-hidden="true" />
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            aria-label={`Edit "${assignment.title}"`}
+            data-testid={`assignment-edit-${assignment.id}`}
+            onClick={() => onEdit(assignment)}
+            className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded border-2 border-black/20 bg-white text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:border-black hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          >
+            <Pencil size={14} aria-hidden="true" />
+          </button>
+        )}
       </div>
     </li>
   );

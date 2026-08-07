@@ -58,6 +58,10 @@ export function NoticeboardTabPanel() {
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // FHS-313: gates the Post/Edit/Delete affordances by the caller's own
+  // role (admin/adult), the same rule the API already enforces
+  // server-side. Fetched once, same pattern as RewardRequestsPanel.
+  const [callerRole, setCallerRole] = useState<string | null>(null);
   const [statusAnnouncement, setStatusAnnouncement] = useState('');
   const [errorAnnouncement, setErrorAnnouncement] = useState('');
   const addButtonRef = useRef<HTMLButtonElement>(null);
@@ -88,6 +92,18 @@ export function NoticeboardTabPanel() {
         message: err instanceof Error ? err.message : 'Network error. Try again.',
       });
     }
+  }, [headers]);
+
+  useEffect(() => {
+    if (!headers) return;
+    const ac = new AbortController();
+    fetch(`${API_BASE}/api/members`, { headers, signal: ac.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+      .then((b: { callerRole?: string }) => setCallerRole(b.callerRole ?? null))
+      .catch(() => {
+        /* unknown role: controls stay hidden until it resolves */
+      });
+    return () => ac.abort();
   }, [headers]);
 
   useEffect(() => {
@@ -158,6 +174,14 @@ export function NoticeboardTabPanel() {
           body: JSON.stringify({ body: trimmed, pinned: draft.pinned, icon: draft.icon }),
         });
         if (!res.ok) {
+          // FHS-313: someone else deleted this note while it was open
+          // for editing. Refresh the list so the dead card drops off,
+          // and say so in plain words instead of a generic error.
+          if (res.status === 404 && editingId) {
+            setSaveError('This note was removed elsewhere. The list has been refreshed.');
+            await refetch();
+            return;
+          }
           let detail = `Couldn't save (server returned ${res.status})`;
           try {
             const body = (await res.json()) as {
@@ -248,6 +272,9 @@ export function NoticeboardTabPanel() {
   }
 
   const notices = status.notices;
+  // FHS-313: only admins/adults may post, edit, or delete notices
+  // (matches the API's WRITE_ROLES). Everyone else just reads the board.
+  const canWrite = callerRole === 'admin' || callerRole === 'adult';
 
   return (
     <div className="mx-auto max-w-4xl space-y-4" data-testid="notices-ready">
@@ -268,7 +295,7 @@ export function NoticeboardTabPanel() {
       </p>
 
       <div className="rounded-xl border-2 border-black bg-lime-100 p-4 shadow-neo-sm md:p-6">
-        {adding && (
+        {adding && canWrite && (
           <form
             onSubmit={onAddSubmit}
             className="mb-6 flex flex-col gap-3 rounded-md border-2 border-black bg-white p-4"
@@ -369,12 +396,13 @@ export function NoticeboardTabPanel() {
                 color={CARD_COLORS[i % CARD_COLORS.length]!}
                 onDelete={onDelete}
                 onEdit={onEditClick}
+                canEdit={canWrite}
               />
             ))}
           </ul>
         )}
 
-        {!adding && (
+        {!adding && canWrite && (
           <button
             type="button"
             ref={addButtonRef}
@@ -395,11 +423,13 @@ function NoticeCard({
   color,
   onDelete,
   onEdit,
+  canEdit,
 }: {
   notice: Notice;
   color: string;
   onDelete: (id: string) => void;
   onEdit: (n: Notice) => void;
+  canEdit: boolean;
 }) {
   return (
     <li data-testid={`notice-row-${notice.id}`}>
@@ -418,24 +448,28 @@ function NoticeCard({
             {notice.pinned && (
               <Pin size={16} role="img" className="text-gray-500" aria-label="Pinned" />
             )}
-            <button
-              type="button"
-              onClick={() => onEdit(notice)}
-              aria-label={`Edit note: ${notice.body.slice(0, 40)}`}
-              data-testid={`notice-edit-${notice.id}`}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-            >
-              <Pencil size={14} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(notice.id)}
-              aria-label={`Delete note: ${notice.body.slice(0, 40)}`}
-              data-testid={`notice-delete-${notice.id}`}
-              className="-mr-2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-gray-500 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-            >
-              <X size={16} />
-            </button>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(notice)}
+                aria-label={`Edit note: ${notice.body.slice(0, 40)}`}
+                data-testid={`notice-edit-${notice.id}`}
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-gray-500 motion-safe:transition-transform motion-safe:hover:-translate-y-0.5 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+              >
+                <Pencil size={14} aria-hidden="true" />
+              </button>
+            )}
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => onDelete(notice.id)}
+                aria-label={`Delete note: ${notice.body.slice(0, 40)}`}
+                data-testid={`notice-delete-${notice.id}`}
+                className="-mr-2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-gray-500 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+              >
+                <X size={16} />
+              </button>
+            )}
           </span>
         </div>
         <p

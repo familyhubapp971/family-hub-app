@@ -189,6 +189,46 @@ without a separate promotion step, but only an admin can hand out that power.
 - **When** I try to change a sibling's role
 - **Then** the request is rejected with a 403 "forbidden" error
 
+### Story 5: The Assignments and Noticeboard tabs don't offer buttons they'll refuse
+
+**As a** guest, teen, or child who somehow lands on the Assignments or
+Noticeboard tab
+**I want** to see only the controls I'm actually allowed to use
+**so that** I never tap "Add" or "Edit" only to be told no by an error message.
+
+Only **admin** and **adult** may add, edit, or (on the Noticeboard) delete;
+everyone else is read-only, per the rights matrix above. Before FHS-313 the
+buttons showed for every caller and only the API's 403 stopped the action.
+FHS-313 hides the buttons up front, using the same `callerRole` the API
+already returns from `GET /api/members`.
+
+#### Acceptance criteria
+
+**Scenario: A non-write caller sees no Add or Edit button**
+
+- **Given** I open the Assignments tab or the Noticeboard tab as a guest
+  (or, defensively, a teen or child)
+- **When** the tab finishes loading
+- **Then** I do not see an "Add" / "Post" button
+- **And** I do not see an "Edit" pencil on any row or card
+- **And** on the Noticeboard, I do not see a "Delete" button either
+
+**Scenario: An admin or adult still sees the full controls**
+
+- **Given** I open either tab as an admin or an adult
+- **When** the tab finishes loading
+- **Then** I see the "Add" / "Post" button and the "Edit" control on each row
+
+**Scenario: Saving an edit whose row was deleted elsewhere**
+
+- **Given** I am an admin or adult with the edit form open for an assignment
+  or notice
+- **And** someone else deletes that same row while I'm editing it
+- **When** I press Save/Update and the server returns a 404
+- **Then** the list refreshes and the now-deleted row disappears from it
+- **And** I see a plain-language message telling me it was removed elsewhere,
+  not a generic "server returned 404" error
+
 ## Story → ticket map
 
 | Story                                                                              | Ticket                                                     | Points |
