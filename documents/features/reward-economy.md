@@ -164,7 +164,7 @@ the kid view keeps its simpler savings pair and never sees bankable figures
 (FHS-376).
 
 - **Your Savings** shows the sticker total split into "Earned last week" and
-  "Kept from every week before". The split is server-derived
+  "Rest of the total". The split is server-derived
   (`GET /api/mw/financial/savings`, fields `earnedLastWeekStickers` and
   `keptFromEarlierStickers`): sticker-type savings ledger entries recorded
   since a day before the current week began count as earned last week, capped

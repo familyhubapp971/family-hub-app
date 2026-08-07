@@ -1426,6 +1426,10 @@ describe('<MyWorldTab /> money row (FHS-606)', () => {
     // The split reconciles: 240 earned + 235 kept = 475.
     expect(screen.getByTestId('savings-earned-last-week').textContent).toBe('240');
     expect(screen.getByTestId('savings-kept-from-earlier').textContent).toBe('235');
+    // FHS-618: the two lines are named plainly, and together they are the total.
+    expect(screen.getByTestId('your-savings')).toHaveTextContent('Earned last week');
+    expect(screen.getByTestId('your-savings')).toHaveTextContent('Rest of the total');
+    expect(screen.getByTestId('your-savings')).not.toHaveTextContent('Kept from every week');
   });
 
   it('sums the investments and counts the ones that can lose value', async () => {
