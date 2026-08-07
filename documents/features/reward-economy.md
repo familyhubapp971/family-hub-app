@@ -340,12 +340,21 @@ screen today, because the api does not surface a habit target yet and every
 habit is therefore seven; the point is that the week total and the pill can no
 longer drift apart once one arrives.
 
-**Known limitation, tracked as [FHS-616](https://qualicion2.atlassian.net/browse/FHS-616):**
-a closed week's habit list is whatever the child has today, not what they had
-that week, because the server loads habits by "not archived" with no date
-scoping. Adding a habit makes a phantom card appear on every past week and drags
-its percentage down. The banner says the week cannot change; until FHS-616 lands,
-its habit list still can.
+**Fixed in [FHS-616](https://qualicion2.atlassian.net/browse/FHS-616):** a
+closed week's habit list is now scoped to that week, not to whichever habits
+the child has today. `loadHabitsForWeek` (`apps/api/src/lib/myworld.ts`)
+branches on `week.isFinalized`: a finalized week returns only habits created
+before the week actually closed (read from `closureSnapshot.capturedAt`,
+since a week can close early, mid-week, not just at the calendar boundary)
+and not archived before the week started; the still-open (live) week keeps
+the old "not archived right now" rule unchanged, so adding or archiving a
+habit shows up on it immediately. This closes the two bugs the banner ("This
+week is finished... nothing here can be changed") was contradicting: a habit
+added today no longer grows a phantom 0-day card on every past week, and a
+habit archived today no longer vanishes from weeks it actually belonged to.
+Shared by the parent board, the kid recap, and any other reader of the same
+helper. Covered by
+`tests/integration/features/mw-week-scoped-habits.feature`.
 
 ## Out of scope
 
