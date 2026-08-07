@@ -442,10 +442,20 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
 
   // FHS-309: refresh badge counts when a task/notice mutation elsewhere
   // fires the dashboard-stale signal so the badge updates live.
+  // FHS-312: two signals firing close together used to race two fetches
+  // with no guarantee the newer one lands last, so a stale response could
+  // overwrite fresh badge counts. Aborting the previous in-flight fetch
+  // before starting a new one makes "last request wins" instead of
+  // "last response wins".
+  const refreshTodayAbortRef = useRef<AbortController | null>(null);
   const refreshToday = useCallback(() => {
     if (!session) return;
+    refreshTodayAbortRef.current?.abort();
+    const controller = new AbortController();
+    refreshTodayAbortRef.current = controller;
     fetch(`${API_BASE}/api/dashboard/today`, {
       headers: { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug },
+      signal: controller.signal,
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((today) => {
@@ -460,6 +470,12 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
       .catch(() => {});
   }, [session, slug]);
   useDashboardStaleSignal(refreshToday);
+  // Abort any in-flight refresh when the header unmounts.
+  useEffect(() => {
+    return () => {
+      refreshTodayAbortRef.current?.abort();
+    };
+  }, []);
 
   const onLogout = useCallback(async () => {
     setSigningOut(true);
