@@ -355,11 +355,21 @@ describe('<DashboardPage />: FHS-261 header', () => {
     }
   });
 
+  // FHS-625: the account-menu doors only render once the caller's role has
+  // arrived, so tests must open the menu after /api/me answers. The family
+  // name comes back in that same response, which makes it the signal to wait
+  // on. Before FHS-625 the doors rendered for everyone immediately, so these
+  // tests could click in the same tick as render.
+  async function openAccountMenu() {
+    await waitFor(() => expect(screen.getByTestId('dashboard-family-name')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+  }
+
   // FHS-500: add-member now lives on the Family Overview (FHS-498), so the
   // profile dropdown no longer carries a "+" or an "Add member" button.
   it('the profile dropdown has no add-member controls (FHS-500)', async () => {
     renderAt('/t/khans/dashboard');
-    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await openAccountMenu();
     expect(screen.queryByTestId('dashboard-profile-add-member')).toBeNull();
     expect(screen.queryByTestId('dashboard-profile-add-member-plus')).toBeNull();
     // Manage members stays.
@@ -368,7 +378,7 @@ describe('<DashboardPage />: FHS-261 header', () => {
 
   it('Manage members item navigates to the members page (FHS-273)', async () => {
     renderAt('/t/khans/dashboard');
-    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await openAccountMenu();
     fireEvent.click(screen.getByTestId('dashboard-profile-manage-members'));
     await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
     expect(screen.getByTestId('location-search').textContent).toBe('');
@@ -377,7 +387,7 @@ describe('<DashboardPage />: FHS-261 header', () => {
   // FHS-512 / FHS-514: "Reward settings" opens the Pocket money screen.
   it('the profile dropdown has a Reward settings item that navigates to /t/:slug/reward-settings', async () => {
     renderAt('/t/khans/dashboard');
-    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await openAccountMenu();
     expect(screen.getByTestId('dashboard-profile-reward-settings')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('dashboard-profile-reward-settings'));
     await waitFor(() => expect(screen.getByTestId('reward-settings-route')).toBeInTheDocument());
@@ -386,7 +396,7 @@ describe('<DashboardPage />: FHS-261 header', () => {
   // FHS-621: four doors, one per job, each saying what is behind it.
   it('the account menu offers one door per job, in order, each with a note', async () => {
     renderAt('/t/khans/dashboard');
-    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await openAccountMenu();
     const doors = [
       ['dashboard-profile-kids-money', 'Kids money', 'Balances and week history'],
       ['dashboard-profile-reward-settings', 'Earning rules', 'What a sticker is worth'],
@@ -409,14 +419,14 @@ describe('<DashboardPage />: FHS-261 header', () => {
 
   it('the Kids money door opens the money page', async () => {
     renderAt('/t/khans/dashboard');
-    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await openAccountMenu();
     fireEvent.click(screen.getByTestId('dashboard-profile-kids-money'));
     await waitFor(() => expect(screen.getByTestId('money-route')).toBeInTheDocument());
   });
 
   it('the Family settings door opens the family settings page', async () => {
     renderAt('/t/khans/dashboard');
-    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await openAccountMenu();
     fireEvent.click(screen.getByTestId('dashboard-profile-family-settings'));
     await waitFor(() => expect(screen.getByTestId('family-settings-route')).toBeInTheDocument());
   });
