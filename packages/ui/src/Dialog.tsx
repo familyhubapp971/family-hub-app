@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useBodyScrollLock } from './useBodyScrollLock';
 
 interface DialogProps {
@@ -10,12 +10,22 @@ interface DialogProps {
   /** Accessible label or labelled-by id, required by WCAG 2.4.6. */
   ariaLabel?: string;
   ariaLabelledBy?: string;
+  /**
+   * 'center' (default): the classic centred card, unchanged.
+   * 'bottom-sheet' (FHS-623): pinned to the bottom edge with no side gap on
+   * a phone, becoming a centred panel from the `sm:` breakpoint up. The
+   * child content still owns its own rounded corners / max-width.
+   */
+  align?: 'center' | 'bottom-sheet';
 }
 
-// Minimum-viable accessible dialog. Full focus-trap + scroll-lock land
-// in a follow-up (TODO a11y): this version covers role/aria-modal and
-// Escape-to-close so spec authors can ship features behind it today
-// without committing the WCAG sin of a non-modal modal.
+// Accessible dialog shell: role=dialog + aria-modal, Escape-to-close,
+// scroll-lock (useBodyScrollLock), and a focus trap (FHS-623): opening
+// moves focus into the dialog, Tab/Shift+Tab cycle within it instead of
+// escaping to the page behind, and closing returns focus to whatever
+// element opened it (the triggering button, in practice).
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function Dialog({
   isOpen,
@@ -25,8 +35,11 @@ export function Dialog({
   testId,
   ariaLabel,
   ariaLabelledBy,
+  align = 'center',
 }: DialogProps) {
   useBodyScrollLock(isOpen);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -36,6 +49,38 @@ export function Dialog({
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    const container = contentRef.current;
+    const focusables = () =>
+      container ? Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) : [];
+    (focusables()[0] ?? container)?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !container) return;
+      const items = focusables();
+      if (items.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const firstEl = items[0]!;
+      const lastEl = items[items.length - 1]!;
+      if (e.shiftKey && document.activeElement === firstEl) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && document.activeElement === lastEl) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previouslyFocused.current?.focus?.();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -54,13 +99,20 @@ export function Dialog({
       aria-labelledby={ariaLabelledBy}
       // Tailwind utilities for backdrop so strict CSP (no 'unsafe-inline'
       // style-src) still works (FHS-170 will add CSP).
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      className={
+        align === 'bottom-sheet'
+          ? 'fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4'
+          : 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm'
+      }
       onClick={closeOnBackdrop ? onClose : undefined}
       data-testid={testId}
     >
       <div
+        ref={contentRef}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         data-testid={testId ? `${testId}-content` : undefined}
+        className={align === 'bottom-sheet' ? 'w-full outline-none sm:w-auto' : 'outline-none'}
       >
         {children}
       </div>
