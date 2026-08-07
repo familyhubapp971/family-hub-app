@@ -451,7 +451,13 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     });
     renderTab(true);
     await waitFor(() => expect(screen.getByTestId('investment-card-inv1')).toBeInTheDocument());
-    expect(screen.getByTestId('investment-mode-inv1')).toHaveTextContent('No-penalty');
+    // FHS-607: the row is one compact line until it is opened, so the kind tag
+    // and the switch control live behind the row's own button.
+    expect(screen.queryByTestId('investment-mode-inv1')).not.toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-row-inv1'));
+    });
+    expect(screen.getByTestId('investment-mode-inv1')).toHaveTextContent('No penalty');
     // FHS-406: the invested habit shows its "Invested · 5x" tag (now in-flow
     // above the day grid instead of an absolute badge that overlapped the cells).
     // FHS-534: this investment has no `coefficient` field (legacy record),
@@ -500,6 +506,57 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     // A coefficient-3 investment shows "3x", never the hardcoded "5x".
     expect(screen.getByTestId(`habit-card-invested-badge-${HABIT}`)).toHaveTextContent('3x');
     expect(screen.getByTestId(`habit-card-invested-badge-${HABIT}`)).not.toHaveTextContent('5x');
+    // FHS-607: the tag also names the kind, not just the multiplier.
+    expect(screen.getByTestId(`habit-card-invested-badge-${HABIT}`)).toHaveTextContent(
+      'Deductible',
+    );
+  });
+
+  // FHS-607: the design puts the tag under the habit name on phone and tablet
+  // (where it cannot push the day circles) and in the card's right column from
+  // desktop. Exactly one of the two shows at any width.
+  it('places the habit tag under the name on small screens and right on desktop', async () => {
+    installApi();
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/api/mw/financial/investments')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            investments: [
+              {
+                id: 'inv1',
+                habitId: HABIT,
+                habitName: 'Brush teeth',
+                habitIcon: 'star',
+                investedStickers: 10,
+                originalInvestedStickers: 10,
+                currentValue: 5,
+                currentValueStickers: 12,
+                daysCompleted: 2,
+                daysMissed: 0,
+                deductible: false,
+                coefficient: 3,
+              },
+            ],
+          }),
+        });
+      }
+      return base(url, init);
+    });
+    renderTab(true);
+    await waitFor(() =>
+      expect(screen.getByTestId(`habit-card-invested-badge-${HABIT}`)).toBeInTheDocument(),
+    );
+    const small = screen.getByTestId(`habit-card-invested-badge-${HABIT}`).parentElement!;
+    const large = screen.getByTestId(`habit-card-invested-badge-lg-${HABIT}`).parentElement!;
+    expect(small.className).toContain('lg:hidden');
+    expect(large.className).toContain('hidden');
+    expect(large.className).toContain('lg:flex');
+    // A habit with no investment gets no tag and no empty wrapper.
+    expect(screen.queryByTestId('habit-card-invested-badge-no-such-habit')).not.toBeInTheDocument();
   });
 
   it('shows the Close Week banner only from the last day of the week (FHS-319)', async () => {
@@ -1323,6 +1380,113 @@ describe('<MyWorldTab /> money row (FHS-606)', () => {
     expect(screen.getByTestId('investments-at-risk').textContent).toContain('1 of 2 could');
   });
 
+  // FHS-607: the card as the approved design draws it — a count badge, one
+  // compact line per investment, at-risk first, and only one row open at once.
+  const twoInvestments = (base: ReturnType<typeof fetchMock.getMockImplementation>) => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/api/mw/financial/investments')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            investments: [
+              // Deliberately no-penalty FIRST in the payload, so the rendered
+              // order proves the sort rather than echoing the response.
+              {
+                id: 'safe1',
+                habitId: HABIT,
+                habitName: 'Tidy up',
+                habitIcon: 'zap',
+                investedStickers: 8,
+                originalInvestedStickers: 8,
+                currentValue: 4,
+                currentValueStickers: 8,
+                daysCompleted: 1,
+                daysMissed: 1,
+                deductible: false,
+                coefficient: 2,
+              },
+              {
+                id: 'risk1',
+                habitId: HABIT,
+                habitName: 'Read a book',
+                habitIcon: 'star',
+                investedStickers: 10,
+                originalInvestedStickers: 6,
+                currentValue: 7.5,
+                currentValueStickers: 15,
+                daysCompleted: 3,
+                daysMissed: 2,
+                deductible: true,
+                coefficient: 3,
+              },
+            ],
+          }),
+        });
+      }
+      return base!(url, init);
+    });
+  };
+
+  it('counts the invested habits and puts the at-risk ones first', async () => {
+    installApi({ savedStickers: 10 });
+    twoInvestments(fetchMock.getMockImplementation());
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('investments-count')).toBeInTheDocument());
+    expect(screen.getByTestId('investments-count')).toHaveTextContent('2 habits');
+    const rows = screen
+      .getAllByTestId(/^investment-row-/)
+      .map((el) => el.getAttribute('data-testid'));
+    expect(rows).toEqual(['investment-row-risk1', 'investment-row-safe1']);
+    // Each row is one line: name and worth, nothing else on show.
+    expect(screen.getByTestId('investment-worth-risk1')).toHaveTextContent('AED 7.50');
+    expect(screen.queryByTestId('investment-mode-risk1')).not.toBeInTheDocument();
+  });
+
+  it('opens one investment at a time and shows its detail', async () => {
+    installApi({ savedStickers: 10 });
+    twoInvestments(fetchMock.getMockImplementation());
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('investment-row-risk1')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-row-risk1'));
+    });
+    expect(screen.getByTestId('investment-row-risk1')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('investment-mode-risk1')).toHaveTextContent('Deductible');
+    expect(screen.getByTestId('investment-mode-risk1')).toHaveTextContent('Invested · 3x');
+    // Real payload figures, not the design's mock arithmetic.
+    expect(screen.getByTestId('investment-original')).toHaveTextContent('6 stickers');
+    expect(screen.getByTestId('investment-invested')).toHaveTextContent('10 stickers');
+    expect(screen.getByTestId('investment-current')).toHaveTextContent('15 stickers');
+    // 3 stickers a day at AED 0.50 each.
+    expect(screen.getByTestId('investment-per-day-risk1')).toHaveTextContent(
+      'Pays AED 1.50 each day it is done.',
+    );
+    expect(screen.getByTestId('investment-toggle-risk1')).toHaveTextContent('Switch to no penalty');
+
+    // Opening the second row closes the first.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-row-safe1'));
+    });
+    expect(screen.queryByTestId('investment-mode-risk1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('investment-mode-safe1')).toHaveTextContent('No penalty');
+    expect(screen.getByTestId('investment-toggle-safe1')).toHaveTextContent('Switch to deductible');
+  });
+
+  it('tells a parent when nothing is invested yet', async () => {
+    installApi({ savedStickers: 10 });
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('active-investments')).toBeInTheDocument());
+    const card = screen.getByTestId('active-investments');
+    expect(card).toHaveTextContent('Habits invested');
+    expect(card).toHaveTextContent(
+      'Nothing growing yet. Mark a habit as invested to pay a multiple.',
+    );
+    expect(screen.queryByTestId('investments-count')).not.toBeInTheDocument();
+  });
+
   it('shows the week progress inside This Week', async () => {
     installApi({ unallocated: 15 });
     renderTab();
@@ -1436,6 +1600,126 @@ describe('<MyWorldTab /> money row (FHS-606)', () => {
     // The parent-only surfaces stay hidden from a kid.
     expect(screen.queryByTestId('money-row')).not.toBeInTheDocument();
     expect(screen.queryByTestId('bankable-week')).not.toBeInTheDocument();
+  });
+
+  // FHS-607: a kid sees the same tags and rows, but never the control that
+  // changes what an investment costs them.
+  it('shows a kid the investment detail without the switch control', async () => {
+    installApi();
+    const base = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/api/kid/weeks') && u.includes('/stats')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            weekId: WEEK,
+            totalStickers: 0,
+            unallocatedStickers: 2,
+            allocatedStickers: 0,
+            cashValue: 1,
+          }),
+        });
+      }
+      if (u.includes('/api/kid/weeks') && u.includes('/actions')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ actions: [] }) });
+      }
+      if (u.includes('/api/kid/weeks')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            weeks: [
+              {
+                id: WEEK,
+                weekNumber: 9,
+                year: 2026,
+                startDate: '2026-02-23',
+                isFinalized: false,
+                carriedOverStickers: 0,
+                carriedOverCash: 0,
+                retrievedStickers: 0,
+                retrievedCash: 0,
+              },
+            ],
+          }),
+        });
+      }
+      if (u.includes('/api/kid/financial/savings')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            savedStickers: 12,
+            savedCash: 0,
+            earnedLastWeekStickers: 2,
+            keptFromEarlierStickers: 10,
+            currency: 'AED',
+            stickerRate: 0.5,
+            stickerRateMinor: 50,
+          }),
+        });
+      }
+      if (u.includes('/api/kid/financial/investments')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            investments: [
+              {
+                id: 'kidinv1',
+                habitId: HABIT,
+                habitName: 'Read a book',
+                habitIcon: 'star',
+                investedStickers: 10,
+                originalInvestedStickers: 10,
+                currentValue: 7.5,
+                currentValueStickers: 15,
+                daysCompleted: 3,
+                daysMissed: 0,
+                deductible: true,
+                // FHS-607: the kid endpoint now carries the coefficient too,
+                // so a kid's tag shows the real multiplier, not a flat 5x.
+                coefficient: 3,
+              },
+            ],
+          }),
+        });
+      }
+      if (u.includes('/api/kid/rewards')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ rewards: [], stickerBalance: 0 }),
+        });
+      }
+      return base(url, init);
+    });
+    render(
+      <MemoryRouter initialEntries={['/t/khan/child/' + MEMBER]}>
+        <Routes>
+          <Route
+            path="/t/:slug/child/:memberId"
+            element={
+              <TenantProvider>
+                <MyWorldTab kidToken="kid.jwt.tok" />
+              </TenantProvider>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByTestId('investment-row-kidinv1')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-row-kidinv1'));
+    });
+    expect(screen.getByTestId('investment-mode-kidinv1')).toHaveTextContent('Invested · 3x');
+    expect(screen.queryByTestId('investment-toggle-kidinv1')).not.toBeInTheDocument();
+    // Instead of the control, a kid gets the plain sentence explaining the kind.
+    expect(screen.getByTestId('active-investments')).toHaveTextContent(
+      'A missed day takes value off this investment.',
+    );
   });
 
   it('passes the week label into the Reward Requests heading', async () => {

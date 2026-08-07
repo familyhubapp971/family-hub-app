@@ -1,6 +1,6 @@
 # Feature: Reward economy (sticker rate, habit boosts, skip penalty)
 
-**Jira:** [FHS-512](https://qualicion2.atlassian.net/browse/FHS-512) (build), [FHS-488](https://qualicion2.atlassian.net/browse/FHS-488) (rate placement), [FHS-489](https://qualicion2.atlassian.net/browse/FHS-489) (boosts + skip penalty), [FHS-534](https://qualicion2.atlassian.net/browse/FHS-534) (investment coefficient → pay + growth), [FHS-606](https://qualicion2.atlassian.net/browse/FHS-606) (the money row)
+**Jira:** [FHS-512](https://qualicion2.atlassian.net/browse/FHS-512) (build), [FHS-488](https://qualicion2.atlassian.net/browse/FHS-488) (rate placement), [FHS-489](https://qualicion2.atlassian.net/browse/FHS-489) (boosts + skip penalty), [FHS-534](https://qualicion2.atlassian.net/browse/FHS-534) (investment coefficient → pay + growth), [FHS-606](https://qualicion2.atlassian.net/browse/FHS-606) (the money row), [FHS-607](https://qualicion2.atlassian.net/browse/FHS-607) (investment tags + the Active Investments rows)
 **Status:** shipped
 **Owner:** product-manager
 **ADR:** [0020: configurable reward economy (rate, boost, skip penalty)](../decisions/0020-configurable-reward-economy.md)
@@ -183,8 +183,51 @@ the kid view keeps its simpler savings pair and never sees bankable figures
 
 Deliberate deviations from the mock: the mock's sample data had no cash
 savings, so the cash line and its inclusion in Total Value are ours; and the
-investment card's row redesign (tags, flip buttons) ships separately under
-FHS-607.
+investment card's row redesign (tags, flip buttons) shipped separately under
+FHS-607, described next.
+
+## Investment tags and the Active Investments rows (FHS-607)
+
+Every invested habit says so on its row, and the Active Investments card reads
+as a list rather than a stack of cards. Ported from the Magic Patterns design
+(FHS-583).
+
+- **The tag** is a shared design-system component (`packages/ui/InvestmentTag`):
+  two pills, the kind (red warning + "Deductible", or green shield + "No
+  penalty") then a yellow chart + "Invested · Nx", where N is the investment's
+  own coefficient (FHS-534). Colour is never the only signal: each pill carries
+  an icon and a word, and the pair has one plain-words spoken label ("Invested
+  at 3 times. Deductible, so a missed day takes value away.").
+- **On a habit row** the tag sits under the habit's name on phone and tablet,
+  where it cannot push the day circles, and moves to the card's right column
+  from desktop. Exactly one of the two renders at any width. An uninvested
+  habit gets no tag and no gap.
+- **The card header** carries a yellow "N habits" count badge.
+- **Each investment is one line**: a coloured dot with the kind's icon (and the
+  kind's word for screen readers), the habit's name, its worth, and a chevron.
+  At-risk rows sort first. Opening a row closes any other, so the card keeps a
+  steady height instead of scrolling inside itself.
+- **The open row** shows the tag, the Originally / Invested / Now figures, days
+  done with its bar, and "Pays {currency} X each day it is done." (the
+  coefficient at the child's sticker rate).
+- **Parents get a full-width "Switch to no penalty" / "Switch to deductible"
+  button**, which saves through the existing investment settings endpoint. Kids
+  see the same rows and tags but get a plain sentence explaining the kind
+  instead of the control (FHS-376/378 gates).
+- **Empty state** reads "Habits invested 0" with "Nothing growing yet. Mark a
+  habit as invested to pay a multiple."
+
+One API change, additive: `GET /api/kid/financial/investments` now returns
+`coefficient`. Its response schema was silently stripping the field, so every
+kid's tag read 5x whatever the parent had chosen. The parent endpoint already
+carried it.
+
+Deliberate deviations from the mock: the mock's figures are invented
+(`base × multiplier × days`, and a 10% growth constant), so every number here
+comes from the live payload instead: worth is the investment's real current
+value, and Originally / Invested / Now are the real sticker figures with the
+existing delta chip. The mock flipped the kind in local state only; the app
+saves it. The mock's tag took an unused `base` prop, dropped here.
 
 ## Out of scope
 

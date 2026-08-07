@@ -32,6 +32,23 @@ Then('the money row shows its three cards without sideways scrolling', async ({ 
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
+// FHS-607: the seeded family carries one active investment, so the card shows
+// a real row. Opening it must not push the page sideways on a phone.
+When("I open the seeded investment's row", async ({ page }) => {
+  const row = page.getByTestId(/^investment-row-/).first();
+  await expect(row).toBeVisible();
+  await row.click();
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
+});
+
+Then('its detail fits the phone without sideways scrolling', async ({ page }) => {
+  await expect(page.getByText('each day it is done.')).toBeVisible();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
 When('the viewport grows to tablet width', async ({ page }) => {
   await page.setViewportSize({ width: 768, height: 1024 });
   await expect(page.getByTestId('money-row')).toBeVisible();

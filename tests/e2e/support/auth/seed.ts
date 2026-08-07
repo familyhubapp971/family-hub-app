@@ -83,6 +83,42 @@ export async function seedFamily(): Promise<SeededFamily> {
     .returning({ id: schema.habits.id });
   if (!habit) throw new Error('seedFamily: habit insert returned no row');
 
+  // FHS-607: a live week + one active investment, so the Active Investments
+  // card renders a real row (not just its empty state) in the responsive
+  // check. The board opens on the current week, so the week's start date is
+  // this week's Monday in UTC.
+  const now = new Date();
+  const monday = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - ((now.getUTCDay() + 6) % 7),
+    ),
+  );
+  const [week] = await db
+    .insert(schema.mwWeeks)
+    .values({
+      tenantId: tenant.id,
+      memberId: childMember.id,
+      weekNumber: 1,
+      year: monday.getUTCFullYear(),
+      startDate: monday.toISOString().slice(0, 10),
+    })
+    .returning({ id: schema.mwWeeks.id });
+  if (!week) throw new Error('seedFamily: week insert returned no row');
+
+  await db.insert(schema.mwInvestments).values({
+    tenantId: tenant.id,
+    memberId: childMember.id,
+    habitId: habit.id,
+    weekId: week.id,
+    investedAmount: '5.00',
+    investedStickers: 10,
+    originalInvestedStickers: 10,
+    coefficient: 3,
+    deductible: true,
+  });
+
   return {
     tenantId: tenant.id,
     slug,
