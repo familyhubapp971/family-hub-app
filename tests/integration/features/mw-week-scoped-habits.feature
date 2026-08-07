@@ -32,3 +32,15 @@ Feature: My World: a closed week's habit list is scoped to that week (FHS-616)
     When the caller views habits for "Ali" in the current week
     Then the habit list includes "Piano"
     And the habit list does not include "Reading"
+
+  # Real-world safety net: a habit's `created_at` can postdate a week it
+  # actually belonged to (seeded/backfilled data, a re-created row, a close
+  # whose captured moment predates some habit's insert). A sticker recorded
+  # for that exact (habit, week) is proof the habit existed then, whatever
+  # its `created_at` says, so it must still count.
+  Scenario: A habit whose sticker is recorded for a closed week still appears, even with a late createdAt
+    Given the caller closes the current week for "Ali"
+    And the caller creates a habit "Piano" for "Ali"
+    And the caller places a sticker on "Piano" day 0 for "Ali" in the closed week
+    When the caller views habits for "Ali" in the closed week
+    Then the habit list includes "Piano"

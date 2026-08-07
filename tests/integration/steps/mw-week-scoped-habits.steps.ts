@@ -104,6 +104,23 @@ describeFeature(feature, ({ Background, Scenario }) => {
     habitIds[name] = body.id;
   }
 
+  // The caller here is an admin, and gateStickerDay lets an admin place a
+  // sticker on any day of a FINALIZED week (only a non-admin is blocked), so
+  // this hits the real POST /:id/stickers route against a closed week's id.
+  async function placeStickerInWeek(
+    habitName: string,
+    memberName: string,
+    day: number,
+    weekId: string,
+  ) {
+    const res = await app.request(`/api/habits/${habitIds[habitName]!}/stickers`, {
+      method: 'POST',
+      headers: headers('khan'),
+      body: JSON.stringify({ memberId: memberIds[memberName]!, weekId, day, sticker: 'gold-star' }),
+    });
+    expect(res.status).toBe(200);
+  }
+
   // No API endpoint sets habits.archivedAt today (DELETE hard-deletes the
   // row instead), so this seeds the state directly against real Postgres,
   // the way "Ali has an earlier open week from 2020" seeds state elsewhere.
@@ -290,6 +307,30 @@ describeFeature(feature, ({ Background, Scenario }) => {
       );
       And('the habit list does not include {string}', (_c, name: string) =>
         expect(lastHabitNames).not.toContain(name),
+      );
+    },
+  );
+
+  Scenario(
+    'A habit whose sticker is recorded for a closed week still appears, even with a late createdAt',
+    ({ Given, And, When, Then }) => {
+      Given('the caller closes the current week for {string}', async (_c, m: string) => {
+        closedWeekIds[m] = await finalize(m);
+      });
+      And('the caller creates a habit {string} for {string}', async (_c, h: string, m: string) => {
+        await createHabit(h, m);
+      });
+      And(
+        'the caller places a sticker on {string} day {int} for {string} in the closed week',
+        async (_c, h: string, day: number, m: string) => {
+          await placeStickerInWeek(h, m, day, closedWeekIds[m]!);
+        },
+      );
+      When('the caller views habits for {string} in the closed week', async (_c, m: string) => {
+        lastHabitNames = await habitNames(m, closedWeekIds[m]!);
+      });
+      Then('the habit list includes {string}', (_c, name: string) =>
+        expect(lastHabitNames).toContain(name),
       );
     },
   );

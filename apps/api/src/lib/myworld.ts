@@ -811,18 +811,41 @@ export async function loadHabitsForWeek(
   // the habits that existed while it was open, not whichever habits are
   // non-archived TODAY. Otherwise a habit created after the week closed grows
   // a phantom 0-day card in every past week, and a habit archived after the
-  // week closed vanishes from weeks it was actually part of. Scope by dates:
-  // created before the week actually closed (closureCutoff, not the calendar
-  // week end — a week can close early), and (never archived, or archived
-  // on/after the week's first day). The LIVE (non-finalized) week keeps the
-  // old "non-archived right now" rule unchanged, so adding or archiving a
-  // habit still shows up on it immediately.
+  // week closed vanishes from weeks it was actually part of. A habit counts
+  // as belonging to the week if EITHER:
+  //   (a) its dates say so: created before the week actually closed
+  //       (closureCutoff, not the calendar week end — a week can close
+  //       early), and never archived or archived on/after the week's first
+  //       day; OR
+  //   (b) it has at least one habit_stickers row recorded for this exact
+  //       (habit, week) — proof it existed then whatever `created_at` says.
+  // (b) is a safety net for real-world data where `created_at` can postdate
+  // the week (a seeded/backfilled row, a habit re-created with the same
+  // name, a close whose `capturedAt` predates some habit's insert): without
+  // it, a date-only filter can BLANK a real week's habit list, which is
+  // worse than the bug it fixes. The LIVE (non-finalized) week keeps the old
+  // "non-archived right now" rule unchanged, so adding or archiving a habit
+  // still shows up on it immediately.
   const habitFilter = week.isFinalized
     ? and(
         eq(habits.tenantId, tenantId),
         eq(habits.memberId, memberId),
-        lt(habits.createdAt, closureCutoff(week)),
-        or(isNull(habits.archivedAt), gte(habits.archivedAt, weekBoundsUtc(week.startDate).start)),
+        or(
+          and(
+            lt(habits.createdAt, closureCutoff(week)),
+            or(
+              isNull(habits.archivedAt),
+              gte(habits.archivedAt, weekBoundsUtc(week.startDate).start),
+            ),
+          ),
+          sql`EXISTS (
+            SELECT 1 FROM ${habitStickers}
+            WHERE ${habitStickers.habitId} = ${habits.id}
+              AND ${habitStickers.tenantId} = ${tenantId}
+              AND ${habitStickers.memberId} = ${memberId}
+              AND ${habitStickers.weekId} = ${week.id}
+          )`,
+        ),
       )
     : and(eq(habits.tenantId, tenantId), eq(habits.memberId, memberId), isNull(habits.archivedAt));
   const [habitRows, stickerRows, balance, currency] = await Promise.all([
