@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { Button, Card } from '@familyhub/ui';
@@ -70,6 +70,7 @@ export function LinkExpired({
   // someone to retype what we can see. "Use a different email" opens the
   // field for the case where we have the wrong one.
   const [knowsAddress, setKnowsAddress] = useState(Boolean(initialEmail));
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const copy = REASONS[reason];
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -128,30 +129,42 @@ export function LinkExpired({
             {/* The job is getting a new link, so it happens here rather than
                 after a bounce back to sign-in. */}
             <form onSubmit={onSubmit} className="mt-6" noValidate>
-              {/* FHS-602: one box in both states, so the screen never changes
-                  shape. When we already know the address it sits in the box
-                  read-only, rather than in a separate coloured panel. Read-only
-                  and not disabled: a disabled input drops out of the tab order
-                  and greys out, so a screen reader user could not read back the
-                  address the link was sent to. */}
-              <label
-                htmlFor="relink-email"
-                className="block font-body text-xs font-bold uppercase tracking-widest text-gray-500"
-              >
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="relink-email"
-                type="email"
-                required
-                autoComplete="email"
-                readOnly={knowsAddress}
-                placeholder={knowsAddress ? undefined : 'sarah@example.com'}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                data-testid="link-expired-email"
-                className="mt-1.5 min-h-[48px] w-full rounded-xl border-2 border-black p-3 font-body font-bold shadow-neo-xs placeholder:font-bold placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-pastel-cyan read-only:cursor-default"
-              />
+              {/* FHS-609: the founder's revised design. When we already know
+                  where the dead link went we state it once in the panel,
+                  nothing to type and nothing to check. The labelled box only
+                  appears when we genuinely do not know. This supersedes the
+                  FHS-602 read-only box; the address itself still arrives via
+                  the link (FHS-605) or device memory (FHS-604). */}
+              {knowsAddress ? (
+                <div
+                  className="rounded-xl border-2 border-black bg-pastel-cyan p-4 text-center shadow-neo-xs"
+                  data-testid="link-expired-known-address"
+                >
+                  <p className="font-body text-sm font-bold text-gray-600">We will send it to</p>
+                  <p className="mt-1 break-words font-heading text-lg text-black">{email}</p>
+                </div>
+              ) : (
+                <>
+                  <label
+                    htmlFor="relink-email"
+                    className="block font-body text-xs font-bold uppercase tracking-widest text-gray-500"
+                  >
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    ref={emailInputRef}
+                    id="relink-email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="sarah@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    data-testid="link-expired-email"
+                    className="mt-1.5 min-h-[48px] w-full overflow-hidden text-ellipsis rounded-xl border-2 border-black p-3 font-body font-bold shadow-neo-xs placeholder:font-bold placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-pastel-cyan"
+                  />
+                </>
+              )}
 
               {/* FHS-578: the slot reserves one line so the button never moves
                   when a send fails, but it used to reserve a 20px band on top
@@ -188,12 +201,12 @@ export function LinkExpired({
                 <button
                   type="button"
                   onClick={() => {
-                    // FHS-602: the same box turns editable and empty, ready to
-                    // type into, rather than making someone clear it first.
+                    // Clear it for them and put the cursor in the box, so
+                    // nobody has to delete the old address by hand.
                     setKnowsAddress(false);
                     setEmail('');
                     setState({ kind: 'idle' });
-                    document.getElementById('relink-email')?.focus();
+                    requestAnimationFrame(() => emailInputRef.current?.focus());
                   }}
                   data-testid="link-expired-different-email"
                   className="inline-flex min-h-[44px] items-center font-body text-sm font-bold text-purple-600 underline decoration-2 underline-offset-2 hover:text-purple-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-pastel-cyan"

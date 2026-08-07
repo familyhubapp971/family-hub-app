@@ -97,9 +97,10 @@ describe('<AuthCallbackPage />', () => {
       '/auth/callback#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
     );
     await screen.findByTestId('link-expired-title');
-    const box = screen.getByTestId('link-expired-email');
-    expect(box).toHaveValue('sarah@khan.family');
-    expect(box).toHaveAttribute('readonly');
+    // FHS-609: a known address is stated in the panel, not typed in a box.
+    expect(screen.getByTestId('link-expired-known-address').textContent).toContain(
+      'sarah@khan.family',
+    );
   });
 
   it('FHS-604: the same tab still wins over device memory', async () => {
@@ -109,7 +110,9 @@ describe('<AuthCallbackPage />', () => {
       '/auth/callback#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
     );
     await screen.findByTestId('link-expired-title');
-    expect(screen.getByTestId('link-expired-email')).toHaveValue('tab@khan.family');
+    expect(screen.getByTestId('link-expired-known-address').textContent).toContain(
+      'tab@khan.family',
+    );
   });
 
   // FHS-605: the link itself carries the address, so a device that never
@@ -119,9 +122,9 @@ describe('<AuthCallbackPage />', () => {
       '/auth/callback?email=sarah%40khan.family#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
     );
     await screen.findByTestId('link-expired-title');
-    const box = screen.getByTestId('link-expired-email');
-    expect(box).toHaveValue('sarah@khan.family');
-    expect(box).toHaveAttribute('readonly');
+    expect(screen.getByTestId('link-expired-known-address').textContent).toContain(
+      'sarah@khan.family',
+    );
   });
 
   it('FHS-605: junk in the email parameter is ignored', async () => {
@@ -129,9 +132,8 @@ describe('<AuthCallbackPage />', () => {
       '/auth/callback?email=%3Cscript%3Enope#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
     );
     await screen.findByTestId('link-expired-title');
-    const box = screen.getByTestId('link-expired-email');
-    expect(box).toHaveValue('');
-    expect(box).not.toHaveAttribute('readonly');
+    expect(screen.getByTestId('link-expired-email')).toHaveValue('');
+    expect(screen.queryByTestId('link-expired-known-address')).not.toBeInTheDocument();
   });
 
   it('FHS-605: a valid sign-in carrying the address still lands on the dashboard', async () => {
@@ -148,9 +150,8 @@ describe('<AuthCallbackPage />', () => {
       '/auth/callback#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
     );
     await screen.findByTestId('link-expired-title');
-    const box = screen.getByTestId('link-expired-email');
-    expect(box).toHaveValue('');
-    expect(box).not.toHaveAttribute('readonly');
+    expect(screen.getByTestId('link-expired-email')).toHaveValue('');
+    expect(screen.queryByTestId('link-expired-known-address')).not.toBeInTheDocument();
   });
 
   it('does NOT POST any tenant-create call from the callback page', async () => {

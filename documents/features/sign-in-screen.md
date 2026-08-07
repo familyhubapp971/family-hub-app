@@ -5,6 +5,7 @@
 [FHS-602](https://qualicion2.atlassian.net/browse/FHS-602) (one read-only box on the expired-link screen),
 [FHS-604](https://qualicion2.atlassian.net/browse/FHS-604) (the address survives into a new tab),
 [FHS-605](https://qualicion2.atlassian.net/browse/FHS-605) (the link itself carries the address),
+[FHS-609](https://qualicion2.atlassian.net/browse/FHS-609) (the known address is stated in the panel),
 [FHS-586](https://qualicion2.atlassian.net/browse/FHS-586) (email box colour + helper copy),
 [FHS-360](https://qualicion2.atlassian.net/browse/FHS-360) (kid sign-in),
 [FHS-237](https://qualicion2.atlassian.net/browse/FHS-237) (the card)
@@ -120,13 +121,12 @@ with a progress bar still creeping along while nothing was loading.
   anything is still happening.
 - Expired, already used and malformed share one shape: the outcome is the
   same, so only the headline and the line beneath it change.
-- Getting a new link happens on that screen. There is one email box in both
-  states, so the screen never changes shape (FHS-602). When we already know
-  the address it sits in that box read-only, with "Use a different email"
-  underneath for when it is wrong; tapping that turns the same box editable
-  and empty and puts the cursor in it. The box is read-only rather than
-  disabled, so a screen reader can still read back the address the dead link
-  was sent to.
+- Getting a new link happens on that screen. When we already know the
+  address, the pale blue panel states it once: "We will send it to" with the
+  address beneath, nothing to type (FHS-609, the founder's revised design,
+  superseding the FHS-602 read-only box). The labelled email box appears only
+  when the address is genuinely unknown. "Use a different email" swaps to the
+  empty box and puts the cursor in it.
 - **The link itself carries the address** (FHS-605). Every magic-link
   request hands Supabase a return URL of `/auth/callback?email=...`, so the
   expired screen knows who the link was for on any device and in any browser,
@@ -144,11 +144,12 @@ with a progress bar still creeping along while nothing was loading.
 - A genuinely slow sign-in still shows the loading screen, because that one
   really is waiting.
 
-Two things were corrected after the first port. The reserved error line sat
-as its own band above the button, putting it 32px below the field where the
-design has it close; nesting that line brings it to 24px (FHS-578). And the
-known-address state used a pale coloured panel rather than the design's
-labelled box, so the screen changed shape between the two states (FHS-602).
+The spacing was corrected after the first port: the reserved error line sat
+as its own band above the button, and nesting it brought the gap to 24px
+(FHS-578). The known-address state moved twice: FHS-602 tried one read-only
+box for both states, and the founder's design revision brought back the
+stated panel, which shipped as FHS-609. The panel is fed by the address in
+the link (FHS-605) with device memory as the fallback (FHS-604).
 
 ## Out of scope
 
