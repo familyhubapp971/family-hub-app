@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, LogOut, Settings, Users } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, Sliders, Users, Wallet } from 'lucide-react';
 import { TopNav, type TopNavTab } from '@familyhub/ui';
 import type { DashboardMember } from '@familyhub/shared';
 import { signOutAll, useAuth } from '../../lib/auth-context';
@@ -27,6 +27,38 @@ import { API_BASE } from '../../lib/api';
 import { useDashboardStaleSignal } from '../../lib/dashboard-refresh';
 import { TABS, DEFAULT_TAB } from './dashboard-tabs';
 import { isKidRole } from '@familyhub/shared';
+
+// FHS-621: one menu door. The note under the label is what stops a parent
+// having to open a page to find out whether it is the one they wanted.
+function MenuDoor({
+  testId,
+  icon,
+  label,
+  note,
+  onClick,
+}: {
+  testId: string;
+  icon: React.ReactNode;
+  label: string;
+  note: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      data-testid={testId}
+      className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-gray-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-pastel-cyan"
+    >
+      <span className="shrink-0 text-gray-900">{icon}</span>
+      <span className="min-w-0">
+        <span className="block text-sm font-bold text-gray-900">{label}</span>
+        <span className="block text-xs font-bold text-gray-500">{note}</span>
+      </span>
+    </button>
+  );
+}
 
 // In-app tab badge counts: typed map so wiring is in place for FHS-262.
 type TabBadgeMap = Partial<Record<(typeof TABS)[number]['id'], number>>;
@@ -140,6 +172,8 @@ export function ProfilePill({
   childMembers,
   onManageMembers,
   onRewardSettings,
+  onKidsMoney,
+  onFamilySettings,
   onLogout,
   onSelectChild,
   activeChildId,
@@ -153,6 +187,8 @@ export function ProfilePill({
   childMembers: Array<{ id: string; displayName: string }>;
   onManageMembers: () => void;
   onRewardSettings: () => void;
+  onKidsMoney: () => void;
+  onFamilySettings: () => void;
   onLogout: () => void;
   // FHS-523: when provided, "View World" switches child via this handler
   // (in-app SPA nav). Without it, we hard-navigate (dashboard's default).
@@ -327,33 +363,48 @@ export function ProfilePill({
             )}
           </div>
           <div className="space-y-2 border-t-2 border-black px-3 pb-3 pt-3">
-            <button
-              type="button"
-              role="menuitem"
+            {/* FHS-621: one door per job, in the order a parent needs them,
+                each saying what is behind it so nobody has to guess. */}
+            <MenuDoor
+              testId="dashboard-profile-kids-money"
+              icon={<Wallet size={16} strokeWidth={3} aria-hidden="true" />}
+              label="Kids money"
+              note="Balances and week history"
               onClick={() => {
                 setOpen(false);
-                onManageMembers();
+                onKidsMoney();
               }}
-              data-testid="dashboard-profile-manage-members"
-              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-gray-100"
-            >
-              <Users size={16} strokeWidth={3} aria-hidden="true" />
-              Manage family
-            </button>
-            {/* FHS-512 / FHS-514: reward-config ("Pocket money") settings. */}
-            <button
-              type="button"
-              role="menuitem"
+            />
+            <MenuDoor
+              testId="dashboard-profile-reward-settings"
+              icon={<Sliders size={16} strokeWidth={3} aria-hidden="true" />}
+              label="Earning rules"
+              note="What a sticker is worth"
               onClick={() => {
                 setOpen(false);
                 onRewardSettings();
               }}
-              data-testid="dashboard-profile-reward-settings"
-              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-gray-100"
-            >
-              <Settings size={16} strokeWidth={3} aria-hidden="true" />
-              Reward settings
-            </button>
+            />
+            <MenuDoor
+              testId="dashboard-profile-manage-members"
+              icon={<Users size={16} strokeWidth={3} aria-hidden="true" />}
+              label="Manage family"
+              note="Grown-ups and kids"
+              onClick={() => {
+                setOpen(false);
+                onManageMembers();
+              }}
+            />
+            <MenuDoor
+              testId="dashboard-profile-family-settings"
+              icon={<Settings size={16} strokeWidth={3} aria-hidden="true" />}
+              label="Family settings"
+              note="Name, currency, your data"
+              onClick={() => {
+                setOpen(false);
+                onFamilySettings();
+              }}
+            />
           </div>
           {/* FHS-520 (design-fidelity): Log out now lives at the bottom of
               this dropdown (not a separate top-nav button) to match the
@@ -496,6 +547,15 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
     navigate(`/t/${slug}/reward-settings`);
   }, [navigate, slug]);
 
+  // FHS-621: the Admin Panel's two halves, each with its own door.
+  const onKidsMoney = useCallback(() => {
+    navigate(`/t/${slug}/money`);
+  }, [navigate, slug]);
+
+  const onFamilySettings = useCallback(() => {
+    navigate(`/t/${slug}/family-settings`);
+  }, [navigate, slug]);
+
   // FHS-506: prefer the caller's roster display name (the name shown on their
   // member card) over the auth email. Magic-link signups often carry no
   // full_name, so the email used to leak into the account menu.
@@ -546,6 +606,8 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
           childMembers={childMembers}
           onManageMembers={onManageMembers}
           onRewardSettings={onRewardSettings}
+          onKidsMoney={onKidsMoney}
+          onFamilySettings={onFamilySettings}
           onLogout={() => void onLogout()}
           signingOut={signingOut}
           slug={slug}
