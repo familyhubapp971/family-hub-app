@@ -2382,8 +2382,13 @@ export function MyWorldTab(
                               />
                               {part.label}
                             </span>
+                            {/* FHS-619: a sticker count never stands alone on
+                                this board; its money value rides beside it. */}
                             <span className="whitespace-nowrap text-sm font-bold text-gray-900">
-                              {part.stickers} stickers
+                              {part.stickers} stickers{' '}
+                              <span className="font-bold text-gray-500">
+                                ({money(part.stickers * stickerRate)})
+                              </span>
                             </span>
                           </li>
                         ))}

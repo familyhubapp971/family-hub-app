@@ -899,11 +899,17 @@ describe('<MyWorldTab /> (legacy habit tracker)', () => {
     await waitFor(() =>
       expect(screen.getByTestId('finalized-stars-allocation')).toBeInTheDocument(),
     );
-    expect(screen.getByTestId('finalized-saved-stars')).toHaveTextContent('Saved');
-    expect(screen.getByTestId('finalized-saved-stars')).toHaveTextContent('3 stickers');
-    expect(screen.getByTestId('finalized-invested-stars')).toHaveTextContent('Invested');
-    expect(screen.getByTestId('finalized-invested-stars')).toHaveTextContent('2 stickers');
-    expect(screen.getByTestId('finalized-spent-stars')).toHaveTextContent('Spent on rewards');
+    // FHS-619: every line pairs its sticker count with its money value, at the
+    // family's own rate (0.50 here), including the zero line.
+    expect(screen.getByTestId('finalized-saved-stars')).toHaveTextContent(
+      /Saved\s*3 stickers \(AED 1\.50\)/,
+    );
+    expect(screen.getByTestId('finalized-invested-stars')).toHaveTextContent(
+      /Invested\s*2 stickers \(AED 1\.00\)/,
+    );
+    expect(screen.getByTestId('finalized-spent-stars')).toHaveTextContent(
+      /Spent on rewards\s*0 stickers \(AED 0\.00\)/,
+    );
     // Nothing was cashed out in this week, so that line stays off.
     expect(screen.queryByTestId('finalized-cashed-out-stars')).not.toBeInTheDocument();
   });
