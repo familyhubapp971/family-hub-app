@@ -299,7 +299,9 @@ than a live screen. Ported from the Magic Patterns design.
   their money value, where those stickers went, and how much of the week was
   done.
 - **Where they went** is a single bar plus a legend: Saved, Invested, Spent on
-  rewards, and Cashed out. Every figure is read from the week's recorded
+  rewards, and Cashed out. Each line pairs its sticker count with its money
+  value at the family's rate, including the zero lines, so no number on this
+  card stands on its own. Every figure is read from the week's recorded
   actions (`GET /api/mw/weeks/:id/actions`), never inferred by subtraction.
   A withdrawal nets off what was invested, clamped at zero.
 - **Invested counts only stickers newly committed that week.** Closing a week
