@@ -114,6 +114,11 @@ Feature: Who is allowed to touch a child's money and the family's settings
       | teen  | the settings  |
       | guest | the settings  |
 
+  Scenario: An admin may reopen a week they closed
+    When "admin" tries to "close the week" for the child
+    And "admin" tries to "reopen the week" for the child
+    Then the money-permission call is allowed
+
   Scenario: A child may bank their own stickers
     When the child banks her own stickers
     Then the money-permission call is allowed

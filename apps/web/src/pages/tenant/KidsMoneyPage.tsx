@@ -494,9 +494,12 @@ function Actions({
         </button>
       )}
 
+      {/* FHS-625: this used to read "As an admin you can do these", which was
+          true while the page was admin-only. Any grown-up can open it now, so
+          an adult was being told they were an admin while using it. */}
       <p className="mt-4 flex items-start gap-2 border-t-2 border-gray-100 pt-4 text-sm font-bold text-gray-600">
         <ShieldCheck size={16} strokeWidth={3} className="mt-0.5 shrink-0" />
-        As an admin you can do these on any day. Kids cannot.
+        Any grown-up in the family can do these on any day. Kids cannot.
       </p>
     </section>
   );
@@ -837,7 +840,11 @@ export function KidsMoneyPage({ onMoneyAction }: KidsMoneyPageProps = {}) {
 
   const child = kids.find((k) => k.id === selectedId) ?? null;
 
-  if (callerRole === null) {
+  // FHS-625: hold the page back until we know the caller is a grown-up, not
+  // just until we know their role. The redirect above runs in an effect, one
+  // render AFTER the role lands, so gating on `=== null` alone showed a child's
+  // balances and the money buttons to a teen or guest for a frame.
+  if (!isGrownUpRole(callerRole)) {
     return (
       <div
         data-testid="kids-money-role-loading"

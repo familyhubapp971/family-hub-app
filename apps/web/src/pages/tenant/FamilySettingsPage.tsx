@@ -229,7 +229,12 @@ export function FamilySettingsPage() {
     }
   };
 
-  if (callerRole === null) {
+  // FHS-625: hold the page back until we know the caller is an admin, not just
+  // until we know their role. The redirect above runs in an effect, one render
+  // AFTER the role lands, so gating on `=== null` alone painted the family
+  // name, the currency picker and the Download / Delete buttons to a non-admin
+  // for a frame before bouncing them.
+  if (!isFamilyAdminRole(callerRole)) {
     return (
       <div
         data-testid="family-settings-loading"

@@ -371,6 +371,19 @@ describeFeature(feature, ({ Background, Scenario, ScenarioOutline }) => {
     },
   );
 
+  // Reopen needs a week that is actually closed, so it cannot be a row in the
+  // allowed-endpoints outline (every scenario starts from a fresh open week).
+  Scenario('An admin may reopen a week they closed', ({ When, And, Then }) => {
+    When('"admin" tries to "close the week" for the child', async () => {
+      await callEndpoint('admin', 'close the week', childId);
+      expectAllowed();
+    });
+    And('"admin" tries to "reopen the week" for the child', async () => {
+      await callEndpoint('admin', 'reopen the week', childId);
+    });
+    Then('the money-permission call is allowed', () => expectAllowed());
+  });
+
   Scenario('A child may bank their own stickers', ({ When, Then }) => {
     When('the child banks her own stickers', async () => {
       await callEndpoint('child', 'bank stickers', childId);

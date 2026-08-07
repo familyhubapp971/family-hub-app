@@ -114,24 +114,32 @@ silent regression: this is the seam that ticket attaches to.
 
 ## Who can see this page
 
-Kids money keeps the same admin-only gate the Admin Panel it replaces had:
-a non-admin caller is redirected to the dashboard. FHS-620 (the epic) flags
-that the server actually lets an "adult" (not just "admin") move money, and
-that the front end has never reflected that split. FHS-622 does not resolve
-that: it's an open question the epic still owns.
+**Any grown-up: an admin or an adult.** Anyone else (teen, child, guest) who
+reaches the address is sent back to the dashboard, and the door to this page
+does not appear in their profile menu at all.
+
+Settled by [FHS-625](https://qualicion2.atlassian.net/browse/FHS-625). FHS-622
+shipped with the admin-only redirect it had inherited from the Admin Panel,
+which was wrong: the server has always let an adult move a child's money
+(`canManage`, [ADR 0015](../decisions/0015-role-model-owner-flag.md)), so the
+gate was locking adults out of something they were allowed to do. The rule now
+matches the server exactly:
+
+- **Any grown-up** may bank, invest, withdraw, claim and cash out. All of it
+  can be undone.
+- **Only an admin** may close, reopen or repair a week, or set a balance by
+  hand. None of those controls live on this page, so nothing here 403s for an
+  adult.
+
+The page is not the gate: the server refuses regardless. See
+[role-permissions.md](role-permissions.md), Story 6, for the full door-by-door
+rule, and `tests/integration/features/money-permissions-by-role.feature` for
+the per-role, per-endpoint proof.
 
 ## Out of scope
 
 - The action sheet itself (FHS-623).
-- Any change to who is allowed to see or use this page (flagged, not
-  decided, by FHS-620).
 - The reward shop (unchanged; still reached from the child's own world).
-
-## Open questions
-
-- Should "adult" (not just "admin") be able to open Kids money, matching
-  what the server already allows for some money actions? Tracked on
-  FHS-620.
 
 ## Success metrics
 

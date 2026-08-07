@@ -368,7 +368,7 @@ export function ProfilePill({
               </button>
             )}
           </div>
-          {(grownUp || familyAdmin) && (
+          {grownUp && (
             <div className="space-y-2 border-t-2 border-black px-3 pb-3 pt-3">
               {/* FHS-621: one door per job, in the order a parent needs them,
                   each saying what is behind it so nobody has to guess.

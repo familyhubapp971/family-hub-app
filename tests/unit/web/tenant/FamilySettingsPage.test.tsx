@@ -144,11 +144,32 @@ describe('<FamilySettingsPage />', () => {
     expect(screen.getByTestId('family-settings-currency').textContent).toContain('AED');
   });
 
-  it('redirects a non-admin caller to the dashboard', async () => {
+  it.each(['adult', 'teen', 'child', 'guest'])(
+    'redirects a %s caller to the dashboard',
+    async (role) => {
+      installApi({ callerRole: role });
+      renderAt();
+      await waitFor(() => expect(screen.getByTestId('dashboard-page')).toBeInTheDocument());
+      expect(screen.queryByTestId('family-settings-page')).not.toBeInTheDocument();
+    },
+  );
+
+  // FHS-625: the redirect runs in an effect, one render AFTER the role lands.
+  // Gating the page on "do we know the role yet" therefore painted the family
+  // name, the currency picker and the Download / Delete buttons to a non-admin
+  // for a frame first. Nothing but the holding screen may ever appear.
+  it('never paints the settings, or the Download and Delete buttons, to a non-admin', async () => {
     installApi({ callerRole: 'adult' });
     renderAt();
-    await waitFor(() => expect(screen.getByTestId('dashboard-page')).toBeInTheDocument());
-    expect(screen.queryByTestId('family-settings-page')).not.toBeInTheDocument();
+    // Watch every render between mount and the redirect landing, not just the
+    // end state: the leak this guards was only ever visible in between.
+    const seen: string[] = [];
+    await waitFor(() => {
+      if (screen.queryByTestId('family-settings-ready')) seen.push('the settings form');
+      if (screen.queryByTestId('family-settings-careful-zone')) seen.push('the careful zone');
+      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
+    });
+    expect(seen, 'a non-admin saw admin-only content before being redirected').toEqual([]);
   });
 
   it('links to Earning rules for what a sticker is worth', async () => {

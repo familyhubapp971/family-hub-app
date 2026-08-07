@@ -374,4 +374,21 @@ describe('Kids money (FHS-622)', () => {
       expect(await screen.findByTestId('on-dashboard')).toBeInTheDocument();
     },
   );
+
+  // FHS-625: the redirect runs in an effect, one render AFTER the role lands,
+  // so gating the page on "do we know the role yet" showed a child's balances
+  // and the money buttons to a teen or guest for a frame first.
+  it('never paints a child\u2019s money to someone who may not see it', async () => {
+    installApi({ callerRole: 'teen' });
+    renderPage();
+    // Watch every render between mount and the redirect landing, not just the
+    // end state: the leak this guards was only ever visible in between.
+    const seen: string[] = [];
+    await waitFor(() => {
+      if (screen.queryByTestId('kids-money-page')) seen.push('the page');
+      if (screen.queryByTestId('kids-money-total')) seen.push('a balance');
+      expect(screen.getByTestId('on-dashboard')).toBeInTheDocument();
+    });
+    expect(seen, 'someone who may not see a kid\u2019s money was shown it').toEqual([]);
+  });
 });
