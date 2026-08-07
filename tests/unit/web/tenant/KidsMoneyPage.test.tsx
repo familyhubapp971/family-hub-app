@@ -355,9 +355,23 @@ describe('Kids money (FHS-622)', () => {
     expect(await screen.findByTestId('on-reward-settings')).toBeInTheDocument();
   });
 
-  it('a non-admin caller is sent back to the dashboard', async () => {
+  // FHS-625: this page used to bounce everyone but an admin, inherited from
+  // the Admin Panel it replaced. The server has always let an adult move a
+  // child's money, so that gate locked adults out of something they were
+  // allowed to do. Any grown-up gets in; kids and guests do not.
+  it('an adult is let in, because the server lets them move money', async () => {
     installApi({ callerRole: 'adult' });
     renderPage();
-    expect(await screen.findByTestId('on-dashboard')).toBeInTheDocument();
+    expect(await screen.findByTestId('kids-money-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('on-dashboard')).not.toBeInTheDocument();
   });
+
+  it.each(['teen', 'child', 'guest'])(
+    'a %s who reaches the address is sent back to the dashboard',
+    async (role) => {
+      installApi({ callerRole: role });
+      renderPage();
+      expect(await screen.findByTestId('on-dashboard')).toBeInTheDocument();
+    },
+  );
 });

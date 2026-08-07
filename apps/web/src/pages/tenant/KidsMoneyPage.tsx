@@ -33,6 +33,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@familyhub/ui';
 import {
   formatMoney,
+  isGrownUpRole,
   isKidRole,
   summariseWeekActions,
   type WeekActionLike,
@@ -782,12 +783,14 @@ export function KidsMoneyPage({ onMoneyAction }: KidsMoneyPageProps = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [headers]);
 
-  // Kids money is admin-only, matching the panel it replaces. FHS-620 flags
-  // who-can-see-what as a still-open epic question; this ticket doesn't
-  // change the existing gate.
+  // FHS-625: any grown-up, not admins only. The server has always let an adult
+  // move a child's money (canManage, ADR 0015); this page inherited a blanket
+  // admin gate from the Admin Panel it replaced, which locked adults out of
+  // something they were allowed to do. The admin-only actions are week close /
+  // reopen / repair and setting a balance by hand, none of which live here.
   useEffect(() => {
     if (callerRole === null) return;
-    if (callerRole !== 'admin') navigate(`/t/${slug}/dashboard`, { replace: true });
+    if (!isGrownUpRole(callerRole)) navigate(`/t/${slug}/dashboard`, { replace: true });
   }, [callerRole, slug, navigate]);
 
   const load = useCallback(() => {

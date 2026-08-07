@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, GraduationCap, Home, PenLine, Utensils } from 'lucide-react';
 import { TopNav, type TopNavTab } from '@familyhub/ui';
+import { isGrownUpRole, isFamilyAdminRole } from '@familyhub/shared';
 import { useAuth, signOutAll } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -132,7 +133,7 @@ export function ChildWorldPage() {
   // world sees the page but must not see (or be able to navigate to) the
   // Insights tab: the API returns 403 for child/teen tokens anyway, but we
   // should not surface the tab at all. Only admin and adult callers see it.
-  const isParentCaller = callerRole === 'admin' || callerRole === 'adult';
+  const isParentCaller = isGrownUpRole(callerRole);
   const visibleTabs = CHILD_TABS.filter((t) => t.id !== 'insights' || isParentCaller);
 
   const navTabs: TopNavTab[] = visibleTabs.map((t) => ({
@@ -235,7 +236,7 @@ export function ChildWorldPage() {
           data-testid={`child-panel-${active.id}`}
         >
           {active.id === 'world' ? (
-            <MyWorldTab memberId={memberId} isAdmin={callerRole === 'admin'} />
+            <MyWorldTab memberId={memberId} isAdmin={isFamilyAdminRole(callerRole)} />
           ) : active.id === 'meals' ? (
             <MealsTab memberId={memberId} />
           ) : active.id === 'calendar' ? (

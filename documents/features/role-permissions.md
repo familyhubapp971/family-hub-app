@@ -229,6 +229,73 @@ already returns from `GET /api/members`.
 - **And** I see a plain-language message telling me it was removed elsewhere,
   not a generic "server returned 404" error
 
+### Story 6: The profile menu only offers doors you can walk through
+
+**As** any grown-up in the family
+**I want** the menu to show me the pages I can actually use
+**so that** I never open one and find every control closed to me.
+
+Shipped in [FHS-625](https://qualicion2.atlassian.net/browse/FHS-625). Splitting
+the old Admin Panel into three pages ([FHS-621](https://qualicion2.atlassian.net/browse/FHS-621))
+removed the blanket redirect that had been hiding this: the panel bounced every
+non-admin off the whole page, so nobody ever saw a door they could not use.
+Three separate pages have no such blanket, and the menu was showing all four
+doors to everyone.
+
+The dividing line is **whether the action can be undone**:
+
+| Door            | Who sees it   | Why                                                                     |
+| --------------- | ------------- | ----------------------------------------------------------------------- |
+| Kids money      | admin + adult | Moving a child's money is reversible, and the server allows it          |
+| Earning rules   | admin + adult | Readable by all, changeable by admins, and it says so on screen         |
+| Manage family   | admin + adult | An adult can set a kid's PIN even though only an admin can add a member |
+| Family settings | admin only    | Every control behind it (name, currency, export, delete) is admin-only  |
+
+**What shipped, and what deliberately did not:**
+
+- The server's rules were **not changed**. They were already right (see the
+  rights matrix above); the app was the thing lying about them. Widening or
+  narrowing the adult tier is a product decision, deliberately left alone.
+- **Kids money now admits any grown-up.** It had inherited the Admin Panel's
+  admin-only redirect, which locked adults out of money moves the server has
+  always allowed them. This is the one behaviour change in the ticket.
+- **Family settings keeps its admin-only redirect.** Unlike Earning rules,
+  there is nothing on it for a non-admin to read, so there is no read-only
+  view to fall back to.
+- Both predicates live in `packages/shared` (`isGrownUpRole`,
+  `isFamilyAdminRole`) and are pinned to the API's own `canManage` / `isAdmin`
+  by `tests/unit/shared/family-permissions.test.ts`, so the menu cannot drift
+  from what the server enforces.
+
+#### Acceptance criteria
+
+**Scenario: A door only shows if it leads somewhere**
+
+- **Given** I am an adult who is not an admin
+- **When** I open the profile menu
+- **Then** I see Kids money, Earning rules and Manage family
+- **And** I do not see Family settings, where every control is closed to me
+
+**Scenario: Reading without changing is explained**
+
+- **Given** I am an adult who is not an admin
+- **When** I open Earning rules
+- **Then** I see the current figures
+- **And** one plain line tells me only an admin can change them
+
+**Scenario: The browser is never the gate**
+
+- **Given** someone calls a money or settings endpoint directly, without the app
+- **When** their role does not allow it
+- **Then** the server refuses with 403, whatever the browser would have shown
+
+**Scenario: A grown-up can still move a child's money**
+
+- **Given** I am an adult who is not an admin
+- **When** I open Kids money
+- **Then** the page loads and I can bank, invest and cash out for a child
+- **And** I am not offered the week controls, which are admin-only
+
 ## Story → ticket map
 
 | Story                                                                              | Ticket                                                     | Points |
@@ -236,6 +303,7 @@ already returns from `GET /api/members`.
 | Onboarding registrant is admin; admins set members admin/normal (never a child)    | [FHS-334](https://qualicion2.atlassian.net/browse/FHS-334) | 5      |
 | Legacy admin-only actions are admin-only (past-day stickers, economy, destructive) | [FHS-335](https://qualicion2.atlassian.net/browse/FHS-335) | 5      |
 | Centralize the admin check + hide admin-only UI + child-can't-be-admin guard + RLS | [FHS-336](https://qualicion2.atlassian.net/browse/FHS-336) | 5      |
+| The profile menu only offers doors you can walk through                            | [FHS-625](https://qualicion2.atlassian.net/browse/FHS-625) | 5      |
 
 (The earlier owner-tier stories FHS-337/338/339 were cancelled when the model
 was simplified.)

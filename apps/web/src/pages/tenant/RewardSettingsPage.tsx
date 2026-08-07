@@ -31,7 +31,7 @@ import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
-import { formatMoneyMinor as formatMinor } from '@familyhub/shared';
+import { formatMoneyMinor as formatMinor, isFamilyAdminRole } from '@familyhub/shared';
 
 const BOOST_PRESETS = [2, 3, 5] as const;
 // FIX 3 (BLOCKER): matches the API's cap on rateMinor / skipPenaltyMinor
@@ -145,7 +145,7 @@ export function RewardSettingsPage() {
 
       if (membersRes.ok) {
         const body = (await membersRes.json()) as { members: MemberItem[]; callerRole: string };
-        setIsAdmin(body.callerRole === 'admin');
+        setIsAdmin(isFamilyAdminRole(body.callerRole));
         const kidMembers = (body.members ?? []).filter((m) => m.isChild);
         setAllKids(kidMembers);
         setSelectedKidId((prev) => prev ?? kidMembers[0]?.id ?? null);

@@ -29,7 +29,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Compass, Download, Trash2 } from 'lucide-react';
 import { Button, Card, ConfirmDialog, CurrencyPicker, Label } from '@familyhub/ui';
-import { formatMoney } from '@familyhub/shared';
+import { formatMoney, isFamilyAdminRole } from '@familyhub/shared';
 import { signOutAll, useAuth } from '../../lib/auth-context';
 import { useTenantSlug } from '../../lib/tenant-context';
 import { API_BASE } from '../../lib/api';
@@ -112,11 +112,15 @@ export function FamilySettingsPage() {
     void load();
   }, [load]);
 
-  // Family settings is admin-only, like every other family-wide control
-  // (FHS-620): redirect anyone else to the dashboard once the role is known.
+  // FHS-625: admin-only, and it stays that way. Every control on this page
+  // (family name, currency, export, delete the family) is admin-only on the
+  // server, so there is nothing here for anyone else to read: unlike Earning
+  // rules, which shows its figures to all and explains who can change them.
+  // Nobody but an admin is offered the door, so reaching this by typing the
+  // address means going back to the dashboard.
   useEffect(() => {
     if (callerRole === null) return;
-    if (callerRole !== 'admin') {
+    if (!isFamilyAdminRole(callerRole)) {
       navigate(`/t/${slug}/dashboard`, { replace: true });
     }
   }, [callerRole, slug, navigate]);
