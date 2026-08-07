@@ -2579,7 +2579,10 @@ export function MyWorldTab(
                     <span className="text-slate-200 font-bold text-xs sm:text-sm">
                       Earned last week
                     </span>
-                    <span data-testid="savings-earned-last-week" className="font-bold text-sm">
+                    <span
+                      data-testid="savings-earned-last-week"
+                      className="text-sm font-bold text-white"
+                    >
                       {earnedLastWeekStickers}
                     </span>
                   </div>
@@ -2587,7 +2590,10 @@ export function MyWorldTab(
                     <span className="text-slate-200 font-bold text-xs sm:text-sm">
                       Kept from every week before
                     </span>
-                    <span data-testid="savings-kept-from-earlier" className="font-bold text-sm">
+                    <span
+                      data-testid="savings-kept-from-earlier"
+                      className="text-sm font-bold text-white"
+                    >
                       {Math.max(0, savedStickers - earnedLastWeekStickers)}
                     </span>
                   </div>
@@ -2596,7 +2602,9 @@ export function MyWorldTab(
                       <span className="text-slate-200 font-bold text-xs sm:text-sm">
                         Saved as cash
                       </span>
-                      <span className="font-bold text-sm">{money(savedCash)}</span>
+                      <span data-testid="savings-cash" className="text-sm font-bold text-white">
+                        {money(savedCash)}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -2649,7 +2657,7 @@ export function MyWorldTab(
                     <span className="text-slate-200 font-bold text-xs sm:text-sm">
                       Habit days done
                     </span>
-                    <span className="font-bold text-sm">
+                    <span data-testid="week-days-done" className="text-sm font-bold text-white">
                       {totalDone} of {totalPossible}
                     </span>
                   </div>
@@ -2669,7 +2677,9 @@ export function MyWorldTab(
                     <span className="text-slate-200 font-bold text-xs sm:text-sm">
                       One sticker is
                     </span>
-                    <span className="font-bold text-sm">{money(stickerRate)}</span>
+                    <span data-testid="week-sticker-rate" className="text-sm font-bold text-white">
+                      {money(stickerRate)}
+                    </span>
                   </div>
                   <p className="text-xs font-bold text-slate-300">
                     Invested habits are counted separately

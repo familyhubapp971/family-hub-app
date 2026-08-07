@@ -187,7 +187,11 @@ All the small labels on these cards are neutral light greys, not tinted
 purples. The tinted ones read as washed out against the purple panels, and the
 ones inside the investment rows measured 3.3:1, below the 4.5:1 accessibility
 floor ([FHS-611](https://qualicion2.atlassian.net/browse/FHS-611)). The
-contrast maths is locked by a test, so a faint colour cannot come back.
+contrast maths is locked by a test, so a faint colour cannot come back. The
+values beside those labels carried no colour at all for one release, so they
+inherited the page's near-black body text onto a dark panel
+([FHS-615](https://qualicion2.atlassian.net/browse/FHS-615)); a second test now
+fails if any text inside these cards takes its colour from outside the card.
 
 Deliberate deviations from the mock: the mock's sample data had no cash
 savings, so the cash line and its inclusion in Total Value are ours; and the

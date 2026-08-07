@@ -1610,6 +1610,47 @@ describe('<MyWorldTab /> money row (FHS-606)', () => {
     );
   });
 
+  // FHS-615: the labels were lightened but the values beside them carried no
+  // colour at all, so they inherited the page's near-black body text onto a
+  // dark purple panel. This catches the whole class: any text inside these
+  // cards whose colour comes from OUTSIDE the card.
+  it('never lets text on the money cards inherit its colour from the page', async () => {
+    installApi({ savedStickers: 240, savedCash: 10 });
+    twoInvestments(fetchMock.getMockImplementation());
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('money-row')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('investment-row-risk1'));
+    });
+    const hasTextColour = (el: Element) =>
+      /(^|\s)text-(white|black|slate-|purple-|yellow-|lime-|green-|red-|emerald-|gray-|fuchsia-)/.test(
+        el.className?.toString() ?? '',
+      );
+    for (const testId of ['your-savings', 'bankable-week', 'active-investments']) {
+      const card = screen.getByTestId(testId);
+      const orphans: string[] = [];
+      for (const el of card.querySelectorAll<HTMLElement>('*')) {
+        // Only elements that own visible text of their own.
+        const ownText = [...el.childNodes]
+          .filter((n) => n.nodeType === 3)
+          .map((n) => n.textContent?.trim() ?? '')
+          .join('');
+        if (!ownText) continue;
+        let node: Element | null = el;
+        let coloured = false;
+        while (node && node !== card.parentElement) {
+          if (hasTextColour(node)) {
+            coloured = true;
+            break;
+          }
+          node = node.parentElement;
+        }
+        if (!coloured) orphans.push(`"${ownText.slice(0, 30)}" in ${el.tagName}.${el.className}`);
+      }
+      expect(orphans, `${testId} has text with no colour of its own`).toEqual([]);
+    }
+  });
+
   it('tells a parent when nothing is invested yet', async () => {
     installApi({ savedStickers: 10 });
     renderTab();
