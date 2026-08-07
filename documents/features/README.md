@@ -54,6 +54,7 @@ Drafted / scoped:
 - [child-world.md](child-world.md): per-child screen + its header/nav (FHS-268/401/523)
 - [getting-started.md](getting-started.md): first-run setup guide card on the dashboard (FHS-511)
 - [onboarding-wizard.md](onboarding-wizard.md): the 4-step signup wizard, incl. optional child age capture (FHS-36/37/38/39/274/275/432/487)
+- [family-settings.md](family-settings.md): family name, currency, data export, account deletion (FHS-620/621/624/626)
 
 Placeholder docs (to be filled as the corresponding features are scoped):
 
