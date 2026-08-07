@@ -60,7 +60,9 @@ export function TopNav({
       <div className="mx-auto w-full max-w-[1400px] px-4 md:px-6">
         {/* Row 1: branding left, profile/logout right. */}
         <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-          {brand && <div className="shrink-0">{brand}</div>}
+          {/* min-w-0 + max-w-full let a long brand (e.g. a long child name)
+              shrink and truncate instead of widening the page sideways. */}
+          {brand && <div className="min-w-0 max-w-full">{brand}</div>}
           {rightSlot && (
             <div className="flex max-w-full flex-wrap items-center gap-3 self-end md:self-auto">
               {rightSlot}

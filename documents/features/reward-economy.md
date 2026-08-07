@@ -1,6 +1,6 @@
 # Feature: Reward economy (sticker rate, habit boosts, skip penalty)
 
-**Jira:** [FHS-512](https://qualicion2.atlassian.net/browse/FHS-512) (build), [FHS-488](https://qualicion2.atlassian.net/browse/FHS-488) (rate placement), [FHS-489](https://qualicion2.atlassian.net/browse/FHS-489) (boosts + skip penalty), [FHS-534](https://qualicion2.atlassian.net/browse/FHS-534) (investment coefficient → pay + growth)
+**Jira:** [FHS-512](https://qualicion2.atlassian.net/browse/FHS-512) (build), [FHS-488](https://qualicion2.atlassian.net/browse/FHS-488) (rate placement), [FHS-489](https://qualicion2.atlassian.net/browse/FHS-489) (boosts + skip penalty), [FHS-534](https://qualicion2.atlassian.net/browse/FHS-534) (investment coefficient → pay + growth), [FHS-606](https://qualicion2.atlassian.net/browse/FHS-606) (the money row)
 **Status:** shipped
 **Owner:** product-manager
 **ADR:** [0020: configurable reward economy (rate, boost, skip penalty)](../decisions/0020-configurable-reward-economy.md)
@@ -154,6 +154,37 @@ but were unrelated.
 - **When** the parent changes the habit to 2x in Reward Settings
 - **Then** future completions pay 2x
 - **And** the active investment keeps growing at its own snapshotted 5x
+
+## The money row (FHS-606)
+
+The parent My World board shows three money cards on one full-width row with
+matched heights: Your Savings, Active Investments, and This Week. Ported from
+the Magic Patterns board rework (FHS-540). Current week only, parents only:
+the kid view keeps its simpler savings pair and never sees bankable figures
+(FHS-376).
+
+- **Your Savings** shows the sticker total split into "Earned last week" and
+  "Kept from every week before". The split is server-derived
+  (`GET /api/mw/financial/savings`, fields `earnedLastWeekStickers` and
+  `keptFromEarlierStickers`): sticker-type savings ledger entries recorded
+  since a day before the current week began count as earned last week, capped
+  at the balance so the two lines always sum to the total. Total Value is
+  stickers at the child's rate plus any saved cash, and a "Saved as cash"
+  line appears only when cash exists.
+- **Active Investments** keeps its rows and gains a footer: "Worth this week"
+  (the sum of each investment's current value) and "N of M could lose value"
+  (the deductible count). Both computed on the client from the existing
+  investments payload; no API change.
+- **This Week** replaces the sidebar's Bankable card: stickers to bank, habit
+  days done with a progress bar, the child's sticker rate, and the week's
+  worth. Same underlying numbers as before, new home.
+- **Reward Requests** now carries the week label at the right of its heading,
+  so the panel says which week it belongs to.
+
+Deliberate deviations from the mock: the mock's sample data had no cash
+savings, so the cash line and its inclusion in Total Value are ours; and the
+investment card's row redesign (tags, flip buttons) ships separately under
+FHS-607.
 
 ## Out of scope
 
