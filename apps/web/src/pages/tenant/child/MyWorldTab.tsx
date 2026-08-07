@@ -2655,7 +2655,7 @@ export function MyWorldTab(
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-slate-200 font-bold text-xs sm:text-sm">
-                      Kept from every week before
+                      Rest of the total
                     </span>
                     <span
                       data-testid="savings-kept-from-earlier"
