@@ -635,7 +635,10 @@ describe('<KidMyWorld />', () => {
     expect(screen.getByTestId('kid-recap-completion-message')).toHaveTextContent(/Great job/);
   });
 
-  it('finalized week: invest_continue actions count toward Planted', async () => {
+  // FHS-617: an `invest_continue` carries the WHOLE value of an investment
+  // that keeps running, not stickers newly planted. Counting it told the child
+  // they planted the same stars again every week the investment rolled on.
+  it('finalized week: a rolled-over investment is not counted as newly planted', async () => {
     mockFinalizedBoot({
       actions: [
         { actionType: 'invest', stickersUsed: 1 },
@@ -645,7 +648,7 @@ describe('<KidMyWorld />', () => {
 
     render(<KidMyWorld kidToken={KID_TOKEN} displayName="Amina" />);
     await waitFor(() => expect(screen.getByTestId('kid-recap-planted-stars')).toBeInTheDocument());
-    expect(screen.getByTestId('kid-recap-planted-stars')).toHaveTextContent('Planted 4 stars');
+    expect(screen.getByTestId('kid-recap-planted-stars')).toHaveTextContent('Planted 1 star');
     // No save actions and carriedOverStickers = 0 -> no Saved row
     expect(screen.queryByTestId('kid-recap-saved-stars')).not.toBeInTheDocument();
   });
