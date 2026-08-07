@@ -1997,12 +1997,32 @@ function SettingsTab({ headers, slug }: { headers: Record<string, string> | null
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export function AdminPanelPage() {
+/**
+ * FHS-621: the Admin Panel is being split into pages named after the job they
+ * do. This component still holds the work; the `variant` decides which half of
+ * it a page shows, so the split can land without moving 2,000 lines in one go.
+ *
+ *   'money'           what a child has and what happened: balance, savings,
+ *                     history, and the reward shop
+ *   'family-settings' the rare and the dangerous: currency, export, delete
+ *   'all'             the legacy combined panel, kept only for the old route
+ *
+ * FHS-622 and FHS-624 replace each half with the designed page.
+ */
+export type AdminPanelVariant = 'all' | 'money' | 'family-settings';
+
+const VARIANT_TABS: Record<AdminPanelVariant, Tab[]> = {
+  all: ['balance', 'savings', 'history', 'rewards', 'settings'],
+  money: ['balance', 'savings', 'history', 'rewards'],
+  'family-settings': ['settings'],
+};
+
+export function AdminPanelPage({ variant = 'all' }: { variant?: AdminPanelVariant } = {}) {
   const slug = useTenantSlug();
   const { session } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<Tab>('balance');
+  const [activeTab, setActiveTab] = useState<Tab>(VARIANT_TABS[variant][0]!);
   const [children, setChildren] = useState<MemberItem[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [currentWeek, setCurrentWeek] = useState<CurrentWeek | null>(null);
@@ -2066,13 +2086,16 @@ export function AdminPanelPage() {
     setCurrentWeek(null);
   };
 
-  const TABS: { key: Tab; icon: React.ReactNode; label: string }[] = [
+  const ALL_TABS: { key: Tab; icon: React.ReactNode; label: string }[] = [
     { key: 'balance', icon: <Star className="w-4 h-4" />, label: 'Balance' },
     { key: 'savings', icon: <Pencil className="w-4 h-4" />, label: 'Savings' },
     { key: 'history', icon: <Calendar className="w-4 h-4" />, label: 'History' },
     { key: 'rewards', icon: <Gift className="w-4 h-4" />, label: 'Rewards' },
     { key: 'settings', icon: <SettingsIcon className="w-4 h-4" />, label: 'Settings' },
   ];
+  // Only this page's own tabs. A page with one tab shows no tab bar at all:
+  // there is nothing to choose between.
+  const TABS = ALL_TABS.filter((t) => VARIANT_TABS[variant].includes(t.key));
 
   const childScopedTab =
     activeTab === 'balance' || activeTab === 'savings' || activeTab === 'history';
@@ -2142,27 +2165,30 @@ export function AdminPanelPage() {
             />
           )}
 
-          {/* Tab bar: scrollable on mobile */}
-          <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 shadow-inner overflow-x-auto">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                aria-label={t.label}
-                data-testid={`admin-panel-tab-${t.key}`}
-                onClick={() => setActiveTab(t.key)}
-                className={[
-                  'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap min-h-[44px]',
-                  activeTab === t.key
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50',
-                ].join(' ')}
-              >
-                {t.icon}
-                <span className="hidden xs:inline sm:inline">{t.label}</span>
-              </button>
-            ))}
-          </div>
+          {/* Tab bar: scrollable on mobile. Hidden when this page has only one
+              tab, since there is nothing to choose between (FHS-621). */}
+          {TABS.length > 1 && (
+            <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-1 shadow-inner overflow-x-auto">
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  aria-label={t.label}
+                  data-testid={`admin-panel-tab-${t.key}`}
+                  onClick={() => setActiveTab(t.key)}
+                  className={[
+                    'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap min-h-[44px]',
+                    activeTab === t.key
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50',
+                  ].join(' ')}
+                >
+                  {t.icon}
+                  <span className="hidden xs:inline sm:inline">{t.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Tab content */}
           <div className="min-h-[400px]">

@@ -111,6 +111,12 @@ export function ChildWorldPage() {
     () => navigate(`/t/${slug}/reward-settings`),
     [navigate, slug],
   );
+  // FHS-621: the Admin Panel's two halves have their own doors now.
+  const onKidsMoney = useCallback(() => navigate(`/t/${slug}/money`), [navigate, slug]);
+  const onFamilySettings = useCallback(
+    () => navigate(`/t/${slug}/family-settings`),
+    [navigate, slug],
+  );
   const onLogout = useCallback(async () => {
     setSigningOut(true);
     const { error } = await signOutAll();
@@ -209,6 +215,8 @@ export function ChildWorldPage() {
             childMembers={childMembers}
             onManageMembers={onManageMembers}
             onRewardSettings={onRewardSettings}
+            onKidsMoney={onKidsMoney}
+            onFamilySettings={onFamilySettings}
             onLogout={() => void onLogout()}
             onSelectChild={(id) => navigate(`/t/${slug}/child/${id}`)}
             activeChildId={memberId}

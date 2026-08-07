@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route, useParams } from 'react-router-dom';
 import { AuthProvider } from './lib/auth-context';
 import { TenantProvider } from './lib/tenant-context';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -39,8 +39,12 @@ const DashboardPage = lazy(() =>
 const ChildWorldPage = lazy(() =>
   import('./pages/tenant/child/ChildWorldPage').then((m) => ({ default: m.ChildWorldPage })),
 );
-const AdminPanelPage = lazy(() =>
-  import('./pages/tenant/AdminPanelPage').then((m) => ({ default: m.AdminPanelPage })),
+// FHS-621: the Admin Panel's two halves, each its own page.
+const KidsMoneyPage = lazy(() =>
+  import('./pages/tenant/KidsMoneyPage').then((m) => ({ default: m.KidsMoneyPage })),
+);
+const FamilySettingsPage = lazy(() =>
+  import('./pages/tenant/FamilySettingsPage').then((m) => ({ default: m.FamilySettingsPage })),
 );
 const MembersPage = lazy(() =>
   import('./pages/tenant/MembersPage').then((m) => ({ default: m.MembersPage })),
@@ -72,6 +76,12 @@ const ConfirmEmailPage = lazy(() =>
 // Marketing + auth routes stay at the root. Legacy `/dashboard` and
 // `/me` redirect into the tenant-scoped tree once the user's tenant is
 // known (the AuthCallbackPage figures it out post-login).
+// FHS-621: an old /admin link lands on the money page rather than nothing.
+function AdminRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={`/t/${slug}/money`} replace />;
+}
+
 export function App() {
   return (
     <BrowserRouter>
@@ -163,17 +173,31 @@ export function App() {
                 </ProtectedRoute>
               }
             />
-            {/* FHS-308: Admin Panel */}
+            {/* FHS-621: the Admin Panel split into pages named after the job
+                they do. One door each, no tab to guess at. */}
             <Route
-              path="/t/:slug/admin"
+              path="/t/:slug/money"
               element={
                 <ProtectedRoute>
                   <TenantProvider>
-                    <AdminPanelPage />
+                    <KidsMoneyPage />
                   </TenantProvider>
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/t/:slug/family-settings"
+              element={
+                <ProtectedRoute>
+                  <TenantProvider>
+                    <FamilySettingsPage />
+                  </TenantProvider>
+                </ProtectedRoute>
+              }
+            />
+            {/* The old combined panel. Kept as a redirect so saved links and
+                bookmarks still land somewhere sensible (FHS-621). */}
+            <Route path="/t/:slug/admin" element={<AdminRedirect />} />
             {/* FHS-512: "Pocket money" reward-config settings screen. */}
             <Route
               path="/t/:slug/reward-settings"

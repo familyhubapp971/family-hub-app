@@ -65,6 +65,12 @@ function renderAt(initial: string) {
           path="/t/:slug/reward-settings"
           element={<div data-testid="reward-settings-route" />}
         />
+        {/* FHS-621: the Admin Panel's two halves have their own doors. */}
+        <Route path="/t/:slug/money" element={<div data-testid="money-route" />} />
+        <Route
+          path="/t/:slug/family-settings"
+          element={<div data-testid="family-settings-route" />}
+        />
         <Route path="/" element={<div data-testid="welcome-route" />} />
       </Routes>
     </MemoryRouter>,
@@ -375,6 +381,44 @@ describe('<DashboardPage />: FHS-261 header', () => {
     expect(screen.getByTestId('dashboard-profile-reward-settings')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('dashboard-profile-reward-settings'));
     await waitFor(() => expect(screen.getByTestId('reward-settings-route')).toBeInTheDocument());
+  });
+
+  // FHS-621: four doors, one per job, each saying what is behind it.
+  it('the account menu offers one door per job, in order, each with a note', async () => {
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    const doors = [
+      ['dashboard-profile-kids-money', 'Kids money', 'Balances and week history'],
+      ['dashboard-profile-reward-settings', 'Earning rules', 'What a sticker is worth'],
+      ['dashboard-profile-manage-members', 'Manage family', 'Grown-ups and kids'],
+      ['dashboard-profile-family-settings', 'Family settings', 'Name, currency, your data'],
+    ] as const;
+    for (const [testId, label, note] of doors) {
+      const door = screen.getByTestId(testId);
+      expect(door).toHaveTextContent(label);
+      expect(door, `${label} should say what is behind it`).toHaveTextContent(note);
+    }
+    // In the order a parent needs them, top to bottom.
+    const order = doors.map(([id]) => screen.getByTestId(id));
+    for (let i = 1; i < order.length; i += 1) {
+      expect(
+        order[i - 1]!.compareDocumentPosition(order[i]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+  });
+
+  it('the Kids money door opens the money page', async () => {
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    fireEvent.click(screen.getByTestId('dashboard-profile-kids-money'));
+    await waitFor(() => expect(screen.getByTestId('money-route')).toBeInTheDocument());
+  });
+
+  it('the Family settings door opens the family settings page', async () => {
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    fireEvent.click(screen.getByTestId('dashboard-profile-family-settings'));
+    await waitFor(() => expect(screen.getByTestId('family-settings-route')).toBeInTheDocument());
   });
 
   // FHS-514: with no kids, the account menu shows an actionable "add your first child" row.
