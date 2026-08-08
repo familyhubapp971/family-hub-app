@@ -1,22 +1,31 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, KeyRound, PartyPopper, Plus, Sparkles, Wallet, X } from 'lucide-react';
-import type { DashboardMember } from '@familyhub/shared';
+import {
+  GET_STARTED_STEP_KEYS,
+  countGetStartedDone,
+  type GetStartedState,
+  type GetStartedStepKey,
+} from '@familyhub/shared';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
-import { isKidRole } from '@familyhub/shared';
 
 // FHS-511: first-run "Getting started" guide on the parent dashboard.
+// FHS-634: its state moved to the server.
 //
 // Walks a brand-new family through the first four setup steps, celebrates when
-// all four are ticked, then clears itself. Returning families (who dismissed it
-// or finished it) never see it again. Completion is tap-driven: tapping a
-// step's CTA marks it done and takes you to that area: and persisted per
-// tenant in localStorage so it survives reloads.
+// all four are done, then clears itself.
+//
+// A step is ticked when the family REALLY has that thing (a kid exists, every
+// kid has a PIN, the sticker rate has been chosen, a kid has a habit), not
+// when someone tapped the button here. Hiding the guide is remembered against
+// the parent's own member row. Both used to live in this browser's storage,
+// which is why a parent who had already set everything up was greeted with
+// "0 of 4 done: add your kids" the first time they signed in somewhere else.
 
 interface GetStartedStep {
-  key: string;
+  key: GetStartedStepKey;
   icon: React.ReactNode;
   title: string;
   blurb: string;
@@ -56,36 +65,29 @@ const STEPS: GetStartedStep[] = [
 
 const TOTAL = STEPS.length;
 
-interface StoredState {
-  dismissed: boolean;
-  completed: string[];
-}
+// FHS-634: the pre-server storage key. Read so a parent who already hid the
+// guide in this browser does not see it come back when the fix ships. Nothing
+// is ever written here again.
+const legacyStorageKey = (slug: string) => `fh.getStarted.${slug}`;
 
-const EMPTY_STATE: StoredState = { dismissed: false, completed: [] };
-
-const storageKey = (slug: string) => `fh.getStarted.${slug}`;
-
-function readState(slug: string): StoredState {
+function readLegacyDismissal(slug: string): boolean {
   try {
-    const raw = window.localStorage.getItem(storageKey(slug));
-    if (!raw) return EMPTY_STATE;
-    const parsed = JSON.parse(raw) as Partial<StoredState>;
-    return {
-      dismissed: parsed.dismissed === true,
-      completed: Array.isArray(parsed.completed)
-        ? parsed.completed.filter((k) => STEPS.some((s) => s.key === k))
-        : [],
-    };
+    const raw = window.localStorage.getItem(legacyStorageKey(slug));
+    if (!raw) return false;
+    return (JSON.parse(raw) as { dismissed?: unknown }).dismissed === true;
   } catch {
-    return EMPTY_STATE;
+    // Corrupted or storage blocked: drop the key if we can, and treat this
+    // browser as having nothing to carry over.
+    clearLegacyDismissal(slug);
+    return false;
   }
 }
 
-function writeState(slug: string, state: StoredState): void {
+function clearLegacyDismissal(slug: string): void {
   try {
-    window.localStorage.setItem(storageKey(slug), JSON.stringify(state));
+    window.localStorage.removeItem(legacyStorageKey(slug));
   } catch {
-    /* private mode / storage full: the guide just won't persist */
+    /* private mode: nothing to clean up */
   }
 }
 
@@ -94,43 +96,88 @@ export function GetStarted() {
   const navigate = useNavigate();
   const { session } = useAuth();
 
-  const [state, setState] = useState<StoredState>(() => readState(slug));
-  const [firstKidId, setFirstKidId] = useState<string | null>(null);
-  // null = still loading. The whole guide is admin work (add kids, set PINs, set
-  // the rate), so it only shows once we know the caller is an admin.
-  const [callerIsAdmin, setCallerIsAdmin] = useState<boolean | null>(null);
+  // null = not loaded yet, or the caller is not an admin. The guide is admin
+  // work top to bottom (add kids, set PINs, set the rate), so the API answers
+  // 403 for anyone else and the card simply never renders.
+  const [state, setState] = useState<GetStartedState | null>(null);
 
-  // One fetch of the dashboard payload gives us both the caller's role (to gate
-  // the guide) and the first kid's id (so "Open their world" can deep-link).
+  // Once this parent has hidden the guide in this tab, nothing may un-hide it.
+  // Supabase pushes a new session object on every background token refresh
+  // (roughly hourly on a tab left open), which re-runs the load below; without
+  // this guard a refresh landing just after the tap would fetch a not-yet-saved
+  // `dismissed: false` and pop the card back open in their face.
+  const dismissedHere = useRef(false);
+
+  // Depend on the TOKEN, not the session object: a refresh that hands back the
+  // same token should not refetch at all.
+  const accessToken = session?.access_token ?? null;
+
+  const authedFetch = useCallback(
+    (path: string, init?: RequestInit) =>
+      fetch(`${API_BASE}${path}`, {
+        ...init,
+        headers: {
+          ...(init?.headers ?? {}),
+          Authorization: `Bearer ${accessToken ?? ''}`,
+          'x-tenant-slug': slug,
+        },
+      }),
+    [accessToken, slug],
+  );
+
   useEffect(() => {
-    if (!session || state.dismissed) return;
+    if (!accessToken) return;
     const ac = new AbortController();
-    fetch(`${API_BASE}/api/dashboard/today`, {
-      headers: { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug },
-      signal: ac.signal,
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((body) => {
-        if (!body || !Array.isArray(body.members)) return;
-        const members = body.members as DashboardMember[];
-        const kid = members.find((m) => isKidRole(m.role));
-        setFirstKidId(kid?.id ?? null);
-        const caller = members.find((m) => m.id === body.callerMemberId);
-        setCallerIsAdmin(caller ? caller.role === 'admin' : false);
-      })
-      .catch(() => {
-        /* aborted or failed load: the card stays hidden (callerIsAdmin null) */
-      });
-    return () => ac.abort();
-  }, [session, slug, state.dismissed]);
+    let cancelled = false;
 
-  const completed = useMemo(() => new Set(state.completed), [state.completed]);
-  const doneCount = completed.size;
-  // The next step to do = the first step not yet ticked.
-  const nextKey = STEPS.find((s) => !completed.has(s.key))?.key ?? null;
+    void (async () => {
+      try {
+        const res = await authedFetch('/api/onboarding/get-started', { signal: ac.signal });
+        if (!res.ok || cancelled) return;
+        const body = (await res.json()) as GetStartedState;
+        if (cancelled) return;
+
+        // One-time carry-over of a dismissal made before the state moved
+        // server-side. Done here rather than in a migration because only the
+        // browser that holds it knows about it.
+        if (!body.dismissed && readLegacyDismissal(slug)) {
+          dismissedHere.current = true;
+          setState({ ...body, dismissed: true });
+          const saved = await authedFetch('/api/onboarding/get-started/dismiss', {
+            method: 'POST',
+            signal: ac.signal,
+          }).catch(() => null);
+          // Only forget the old key once the server has it. If this call was
+          // dropped, the key survives and the next visit tries again: deleting
+          // first would lose the carry-over for good on a single network blip.
+          if (saved?.ok) clearLegacyDismissal(slug);
+          return;
+        }
+        setState(dismissedHere.current ? { ...body, dismissed: true } : body);
+      } catch {
+        /* aborted or failed load: the card stays hidden */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [accessToken, slug, authedFetch]);
+
+  const dismiss = useCallback(() => {
+    // Optimistic: the card goes away on tap, and the server catches up. A
+    // failed call leaves it hidden for this visit and showing on the next one,
+    // which is the right way round to be wrong.
+    dismissedHere.current = true;
+    setState((prev) => (prev ? { ...prev, dismissed: true } : prev));
+    void authedFetch('/api/onboarding/get-started/dismiss', { method: 'POST' }).catch(
+      () => undefined,
+    );
+  }, [authedFetch]);
 
   const targetFor = useCallback(
-    (key: string): string => {
+    (key: GetStartedStepKey): string => {
       switch (key) {
         case 'kids':
         case 'pins':
@@ -138,39 +185,22 @@ export function GetStarted() {
         case 'rate':
           return `/t/${slug}/reward-settings`;
         case 'habits':
-          return firstKidId ? `/t/${slug}/child/${firstKidId}` : `/t/${slug}/members`;
+          return state?.firstKidId ? `/t/${slug}/child/${state.firstKidId}` : `/t/${slug}/members`;
         default:
           return `/t/${slug}/members`;
       }
     },
-    [slug, firstKidId],
+    [slug, state],
   );
 
-  const completeAndGo = useCallback(
-    (key: string) => {
-      const nextCompleted = completed.has(key) ? state.completed : [...state.completed, key];
-      const next: StoredState = { ...state, completed: nextCompleted };
-      writeState(slug, next);
-      setState(next);
-      navigate(targetFor(key));
-    },
-    [completed, state, slug, navigate, targetFor],
-  );
+  if (!state || state.dismissed) return null;
 
-  const dismiss = useCallback(() => {
-    const next: StoredState = { ...state, dismissed: true };
-    writeState(slug, next);
-    setState(next);
-  }, [state, slug]);
-
-  if (state.dismissed) return null;
-  // Hidden while the role is still loading, and for non-admins: the setup
-  // steps all land on admin-only screens (FHS-511 QA).
-  if (callerIsAdmin !== true) return null;
-
+  const doneCount = countGetStartedDone(state.steps);
+  // The next step to do = the first one the family hasn't actually done.
+  const nextKey = GET_STARTED_STEP_KEYS.find((k) => !state.steps[k]) ?? null;
   const allDone = doneCount >= TOTAL;
 
-  // ── Celebrate card: every step ticked ──────────────────────────────────
+  // ── Celebrate card: every step done ────────────────────────────────────
   if (allDone) {
     return (
       <div
@@ -243,12 +273,12 @@ export function GetStarted() {
         aria-valuenow={doneCount}
         aria-label={`${doneCount} of ${TOTAL} setup steps done`}
       >
-        {STEPS.map((s, i) => (
+        {STEPS.map((s) => (
           <span
             key={s.key}
             aria-hidden="true"
             className={`h-2.5 flex-1 rounded-full border-2 border-black ${
-              i < doneCount ? 'bg-green-400' : 'bg-gray-100'
+              state.steps[s.key] ? 'bg-green-400' : 'bg-gray-100'
             }`}
           />
         ))}
@@ -257,7 +287,7 @@ export function GetStarted() {
       {/* Steps. */}
       <ul className="mt-4 space-y-2.5">
         {STEPS.map((s) => {
-          const isDone = completed.has(s.key);
+          const isDone = state.steps[s.key];
           const isNext = s.key === nextKey;
           const isFuture = !isDone && !isNext;
           return (
@@ -306,7 +336,7 @@ export function GetStarted() {
                 <button
                   type="button"
                   data-testid={`get-started-cta-${s.key}`}
-                  onClick={() => completeAndGo(s.key)}
+                  onClick={() => navigate(targetFor(s.key))}
                   className="flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-black bg-yellow-300 px-4 font-heading text-sm uppercase tracking-wide text-black shadow-neo-xs transition-transform motion-safe:hover:-translate-y-0.5"
                 >
                   {s.cta}

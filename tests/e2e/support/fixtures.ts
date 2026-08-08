@@ -39,6 +39,14 @@ import { cleanupFamily, seedFamily, type SeededFamily } from './auth/seed.js';
 
 export interface AuthedFamily extends SeededFamily {
   accessToken: string;
+  /**
+   * The injected supabase session, as a localStorage key/value pair.
+   *
+   * FHS-634: exposed so a spec can open a SECOND browser context signed in as
+   * the same parent, which is how "does this survive changing browser?" gets
+   * asked honestly rather than by clearing storage in place.
+   */
+  sessionEntry: { key: string; value: string };
 }
 
 export const test = base.extend<{ authedFamily: AuthedFamily }>({
@@ -67,7 +75,7 @@ export const test = base.extend<{ authedFamily: AuthedFamily }>({
       { key: entry.key, value: entry.value },
     );
 
-    await use({ ...family, accessToken });
+    await use({ ...family, accessToken, sessionEntry: entry });
 
     await cleanupFamily(family);
   },
