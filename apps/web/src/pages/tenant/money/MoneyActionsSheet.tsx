@@ -15,7 +15,7 @@
  * buttons, never from a week-close flow.
  */
 import { useEffect, useId, useState } from 'react';
-import { Check, Gift, PiggyBank, TrendingDown, TrendingUp, Wallet, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { Button, Dialog } from '@familyhub/ui';
 import type { ChildMoneySnapshot, MoneyAction } from '../KidsMoneyPage';
 import type { MoneyHeaders } from './moneyActionsApi';
@@ -38,22 +38,21 @@ export interface MoneyActionsSheetProps {
   onSaved: () => void;
 }
 
-const ACTION_META: Record<MoneyAction, { title: string; icon: React.ReactNode; tone: string }> = {
-  claim: { title: 'Claim a reward', icon: <Gift size={20} strokeWidth={3} />, tone: 'bg-pink-300' },
-  cash: { title: 'Cash out', icon: <Wallet size={20} strokeWidth={3} />, tone: 'bg-lime-300' },
+// FHS-631: no icon here any more. The design's sheet header carries the title
+// and the child's sticker count, and no icon tile.
+const ACTION_META: Record<MoneyAction, { title: string; tone: string }> = {
+  claim: { title: 'Claim a reward', tone: 'bg-pink-300' },
+  cash: { title: 'Cash out', tone: 'bg-lime-300' },
   save: {
     title: 'Move to savings',
-    icon: <PiggyBank size={20} strokeWidth={3} />,
     tone: 'bg-cyan-300',
   },
   invest: {
     title: 'Invest and grow',
-    icon: <TrendingUp size={20} strokeWidth={3} />,
     tone: 'bg-yellow-300',
   },
   withdraw: {
     title: 'Take money out of an investment',
-    icon: <TrendingDown size={20} strokeWidth={3} />,
     tone: 'bg-orange-300',
   },
 };
@@ -105,14 +104,13 @@ export function MoneyActionsSheet({
           <div
             className={`flex items-start gap-3 border-b-2 border-black p-5 sm:border-b-3 ${meta.tone}`}
           >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-black bg-white">
-              {meta.icon}
-            </span>
             <div className="min-w-0 flex-1">
               <h2 id={titleId} className="font-heading text-xl uppercase tracking-wide">
                 {meta.title}
               </h2>
-              <p className="text-sm font-bold text-black/70">for {child.name}</p>
+              <p className="text-sm font-bold text-black/70">
+                {child.name} &middot; {snapshot.available} stickers ready to spend
+              </p>
             </div>
             <button
               type="button"

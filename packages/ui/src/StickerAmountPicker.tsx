@@ -19,6 +19,13 @@ export interface StickerAmountPickerProps {
    * class for it, carrying the action's colour. Omit to hide the button.
    */
   useAllTone?: string;
+  /**
+   * FHS-631: 'design' lays the control out as the approved design does, minus
+   * and plus as their own square buttons either side of the number, with no
+   * "stickers" suffix. Defaults to the original, so existing callers are
+   * unchanged.
+   */
+  variant?: 'default' | 'design';
   testId?: string;
 }
 
@@ -38,6 +45,7 @@ export function StickerAmountPicker({
   label,
   preview,
   useAllTone,
+  variant = 'default',
   testId,
 }: StickerAmountPickerProps) {
   const clamp = (v: number): number => {
@@ -61,18 +69,32 @@ export function StickerAmountPicker({
       {label && (
         <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-gray-500">{label}</p>
       )}
-      <div className="flex items-center gap-2 rounded-xl border-2 border-black bg-white p-1.5 shadow-neo-xs">
+      <div
+        className={
+          variant === 'design'
+            ? 'flex items-center gap-2'
+            : 'flex items-center gap-2 rounded-xl border-2 border-black bg-white p-1.5 shadow-neo-xs'
+        }
+      >
         <button
           type="button"
           aria-label="Fewer stickers"
           data-testid={testId ? `${testId}-decrement` : undefined}
           disabled={!canDecrement}
           onClick={() => onChange(clamp(value - step))}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-white font-black transition-all motion-safe:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:translate-y-0"
+          className={`flex shrink-0 items-center justify-center rounded-xl border-2 border-black bg-white font-black transition-all motion-safe:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:translate-y-0 ${
+            variant === 'design' ? 'h-12 w-12 shadow-neo-xs' : 'h-11 w-11 rounded-lg'
+          }`}
         >
           <Minus size={18} strokeWidth={3} aria-hidden="true" />
         </button>
-        <div className="flex flex-1 items-center justify-center gap-1.5 px-2">
+        <div
+          className={
+            variant === 'design'
+              ? 'flex min-h-[52px] flex-1 items-center justify-center rounded-xl border-2 border-black bg-white px-2 shadow-neo-xs'
+              : 'flex flex-1 items-center justify-center gap-1.5 px-2'
+          }
+        >
           <input
             type="number"
             inputMode="numeric"
@@ -85,7 +107,9 @@ export function StickerAmountPicker({
             aria-label={label ?? 'Stickers'}
             className="w-full min-w-0 border-none bg-transparent text-center text-2xl font-black text-gray-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
-          <span className="text-sm font-black uppercase text-gray-400">stickers</span>
+          {variant !== 'design' && (
+            <span className="text-sm font-black uppercase text-gray-400">stickers</span>
+          )}
         </div>
         <button
           type="button"
@@ -93,7 +117,11 @@ export function StickerAmountPicker({
           data-testid={testId ? `${testId}-increment` : undefined}
           disabled={!canIncrement}
           onClick={() => onChange(clamp(value + step))}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 border-black bg-yellow-400 font-black transition-all motion-safe:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:translate-y-0"
+          className={`flex shrink-0 items-center justify-center rounded-xl border-2 border-black font-black transition-all motion-safe:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:translate-y-0 ${
+            variant === 'design'
+              ? 'h-12 w-12 bg-white shadow-neo-xs'
+              : 'h-11 w-11 rounded-lg bg-yellow-400'
+          }`}
         >
           <Plus size={18} strokeWidth={3} aria-hidden="true" />
         </button>

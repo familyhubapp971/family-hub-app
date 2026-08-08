@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   ChoiceRow,
+  habitIcon,
   ResultBanner,
   Spinner,
   StepHeading,
@@ -26,6 +27,12 @@ import { friendlyFailureMessage, type MoneyFlowProps } from './types';
 
 // The action's colour, carried from its button into every step disc.
 const TONE = 'bg-orange-300';
+
+// FHS-631: the stored value is an icon NAME, not an icon. See packages/ui.
+function habitIconNode(name: string | null): React.ReactNode {
+  const Icon = habitIcon(name);
+  return <Icon size={18} strokeWidth={3} />;
+}
 
 export function WithdrawFlow({ child, snapshot, headers, onSuccess, onCancel }: MoneyFlowProps) {
   const [loading, setLoading] = useState(true);
@@ -140,7 +147,9 @@ export function WithdrawFlow({ child, snapshot, headers, onSuccess, onCancel }: 
             key={inv.id}
             selected={selectedId === inv.id}
             onClick={() => handlePick(inv)}
-            icon={inv.habitIcon ?? '📈'}
+            icon={habitIconNode(inv.habitIcon)}
+            marker="check"
+            selectedTone={TONE}
             title={inv.habitName ?? 'Investment'}
             description={`${inv.currentValueStickers} stickers · ${formatMoney(
               inv.currentValueStickers * snapshot.stickerRate,
@@ -173,6 +182,7 @@ export function WithdrawFlow({ child, snapshot, headers, onSuccess, onCancel }: 
               min={0}
               max={max}
               onChange={setAmount}
+              variant="design"
               preview={`= ${formatMoney(cash, snapshot.currency)}`}
               useAllTone={TONE}
               testId="money-withdraw-amount"
@@ -180,7 +190,7 @@ export function WithdrawFlow({ child, snapshot, headers, onSuccess, onCancel }: 
           </div>
 
           <div className="mt-5 space-y-3">
-            <ResultBanner testId="money-withdraw-preview">
+            <ResultBanner showIcon={false} testId="money-withdraw-preview">
               {amount > 0
                 ? `${amount} stickers move to savings (${formatMoney(cash, snapshot.currency)}). ${
                     max - amount
