@@ -1,6 +1,7 @@
 # Feature: Getting started (first-run setup guide)
 
-**Jira:** [FHS-511](https://qualicion2.atlassian.net/browse/FHS-511)
+**Jira:** [FHS-511](https://qualicion2.atlassian.net/browse/FHS-511),
+[FHS-634](https://qualicion2.atlassian.net/browse/FHS-634)
 **Status:** shipped
 **Owner:** product-manager
 
@@ -8,15 +9,15 @@ One-line: a card at the top of the family dashboard that walks a brand-new
 family through the first four setup steps, celebrates when they're all done,
 then clears itself and never comes back.
 
-The card lives above the Today content on the dashboard's home tab. Its progress
-is **tap-driven** (tapping a step's button both takes you to that area and ticks
-the step) and remembered per family in the browser, so a family that finished or
-hid the guide never sees it again.
+The card lives above the Today content on the dashboard's home tab. A step is
+ticked when the family **really has that thing**, and hiding the card is
+remembered **against the parent's account**, so both answers follow the person
+rather than the browser they happen to be using (FHS-634).
 
 Two guardrails: the guide **only shows to an admin** (every step lands on an
 admin-only setup screen, so a non-admin adult never sees it), and the steps are
-**sequential**: only the next step has an active button; later steps sit as a
-quiet "Up next" so you can't skip ahead and "finish" an empty family.
+**sequential**: only the next outstanding step has an active button; later steps
+sit as a quiet "Up next" so the eye lands on one job at a time.
 
 ## User stories
 
@@ -35,13 +36,12 @@ quiet "Up next" so you can't skip ahead and "finish" an empty family.
 - **Then** I see the "Getting started" card with "0 of 4 done" and the first
   step highlighted as the button to tap
 
-**Scenario: Completing a step**
+**Scenario: Steps tick when the family really has them**
 
-- **Given** I am on the "Getting started" card
-- **When** I tap a step's button
-- **Then** I'm taken to that area
-- **And** the step is marked done and the progress bar advances
-- **And** that progress is remembered if I come back
+- **Given** I am signed in as the admin of a freshly seeded family
+- **When** I open the family dashboard
+- **Then** the setup guide counts the steps my family has already done
+- **And** the steps my family has done are ticked off
 
 **Scenario: Finished**
 
@@ -49,38 +49,72 @@ quiet "Up next" so you can't skip ahead and "finish" an empty family.
 - **Then** the card celebrates with "You are all set up"
 - **And** a "Got it" button clears it for good
 
-**Scenario: Returning users**
+### Story 2: The guide remembers me, not my browser
 
-- **Given** a family that already set up (or hid the guide)
-- **Then** the card does not show
+**As a** parent who signs in from a phone and a laptop
+**I want** the guide to stay hidden once I hide it
+**so that** finished setup is not presented to me again as unfinished work.
+
+#### Acceptance criteria
+
+**Scenario: Hiding the guide follows the parent to another browser**
+
+- **Given** I am signed in as the admin of a freshly seeded family
+- **And** I have hidden the setup guide on the family dashboard
+- **When** I open the family dashboard in a different browser
+- **Then** the setup guide does not appear
+
+**Scenario: The guide is usable on a phone**
+
+- **Given** I am signed in as the admin of a freshly seeded family
+- **And** I am on a phone-sized screen
+- **When** I open the family dashboard
+- **Then** the setup guide fits the screen with no sideways scrolling
+- **And** its button is big enough to tap
+
+**Scenario: One parent hiding it does not hide it for the other parent**
+
+- **Given** two admins in the same family
+- **When** one of them hides the guide
+- **Then** the other still sees it, because it is their own setup view
 
 ## The four steps
 
-| #   | Step                           | Why                                             | Button           | Goes to                 |
-| --- | ------------------------------ | ----------------------------------------------- | ---------------- | ----------------------- |
-| 1   | Add your kids                  | Everything else hangs off who is in the family. | Add a child      | Manage Members          |
-| 2   | Give each kid a PIN            | It is how they sign in to their own world.      | Set PINs         | Manage Members          |
-| 3   | Choose what a sticker is worth | Decide how much a finished habit pays.          | Set pocket money | Reward Settings         |
-| 4   | Pick their first habits        | Start with two or three easy wins.              | Open their world | The first child's world |
+| #   | Step                           | Counts as done when                                             | Button           | Goes to                 |
+| --- | ------------------------------ | --------------------------------------------------------------- | ---------------- | ----------------------- |
+| 1   | Add your kids                  | The family has at least one child or teen.                      | Add a child      | Manage Members          |
+| 2   | Give each kid a PIN            | **Every** kid has a PIN, so nobody is locked out.               | Set PINs         | Manage Members          |
+| 3   | Choose what a sticker is worth | An admin has saved the sticker rate (family-wide or per child). | Set pocket money | Reward Settings         |
+| 4   | Pick their first habits        | At least one kid owns a habit of their own.                     | Open their world | The first child's world |
+
+Two deliberate calls in that table:
+
+- **Every kid needs a PIN**, not just one. A family where two of three children
+  cannot sign in has not finished that step, and ticking it would walk them
+  past a job that is still half done.
+- **The starter habits seeded at sign-up do not count.** Those are family-level
+  rows with no owner (`db/seed-tenant-defaults.ts`); step 4 asks whether the
+  family chose habits **for a child**.
+
+## How it is stored
+
+| Thing           | Where                                                                    |
+| --------------- | ------------------------------------------------------------------------ |
+| Step progress   | Nowhere. Derived per request from members, habits and the tenant's rate. |
+| Hidden by me    | `members.get_started_dismissed_at`, so it is per person per family.      |
+| Rate was chosen | `tenants.sticker_rate_set_at`, stamped by `PUT /api/reward-config`.      |
+
+`sticker_rate_minor` carries `NOT NULL DEFAULT 50`, so its value cannot say
+whether a family ever picked it. The separate timestamp is what tells a
+deliberate 0.50 apart from a family who never opened the screen.
 
 ## Out of scope
 
-- **Data-driven completion.** A step ticks when you tap its button, not by
-  detecting that the underlying data now exists (e.g. it doesn't auto-tick
-  "Add your kids" just because kids already exist). Matches the design; a
-  data-aware version is a possible follow-up.
-- **Cross-device memory.** "Done/hidden" is remembered in the browser
-  (localStorage, keyed per family, not per user), there's no backend flag yet.
-  So a different device/browser shows the guide again until dismissed, and two
-  family members on the **same** browser share one checklist. Fine for a one-off
-  setup task; a per-family server flag is a follow-up if it becomes a problem.
-
-## Open questions
-
-- Should completing a step be data-aware (auto-tick when the data is there) as
-  well as tap-driven?
-- Do we want a server-side "first-run done" flag so the guide is truly
-  once-per-family across devices?
+- **Un-hiding.** There is no "show me the guide again" control. Once hidden it
+  stays hidden for that parent; the underlying steps are all reachable from the
+  normal navigation anyway.
+- **A family-wide dismissal.** Hiding is per parent on purpose: a second parent
+  joining later still gets their own orientation.
 
 ## Success metrics
 
@@ -92,9 +126,18 @@ quiet "Up next" so you can't skip ahead and "finish" an empty family.
 
 - Component: `apps/web/src/pages/tenant/dashboard/GetStarted.tsx`, mounted above
   `TodayTabPanel` on the dashboard home tab (`DashboardPage.tsx`).
-- Persistence: `localStorage` key `fh.getStarted.<slug>` storing
-  `{ dismissed, completed: string[] }`, read/written through try/catch wrappers
-  (private-mode safe).
-- The step-4 deep-link needs a child id; the card reads the family's members
-  from `GET /api/dashboard/today` and targets the first kid, falling back to
-  Manage Members when there are no kids yet.
+- API: `GET /api/onboarding/get-started` returns `{ dismissed, steps, firstKidId }`;
+  `POST /api/onboarding/get-started/dismiss` hides it. Both admin-only (403
+  otherwise), both in `apps/api/openapi.json`.
+- Step rules live in `apps/api/src/lib/get-started.ts`; `deriveGetStartedSteps`
+  is pure so the rules are unit-tested without a database.
+- Migration `0045_get_started_state.sql` adds the two nullable columns; rollback
+  in `drizzle/down/`.
+
+### Deviations from FHS-511 as shipped
+
+| What changed                                  | Why                                                                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Tapping a step no longer ticks it             | Tapping proved nothing. The step ticks when the family has the thing.                                                    |
+| State moved out of `localStorage`             | It was keyed per family per browser, so it reset on every new browser and was shared between two parents on one machine. |
+| Existing browser-side dismissals carried over | Read once on first load after the upgrade, POSTed to the server, then the old key is deleted.                            |
