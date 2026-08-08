@@ -150,6 +150,12 @@ export async function seedFamily(): Promise<SeededFamily> {
     stickersUsed: 3,
   });
 
+  // FHS-631: `deductible: false` on purpose. A deductible investment loses
+  // value for every missed day, so with no stickers placed its worth decayed
+  // as the week went on and hit zero by about Friday. Kids money then showed
+  // its "nothing yet" empty state, which is correct behaviour, and the smoke
+  // tests failed depending on which day of the week CI happened to run. The
+  // seed must not change meaning with the calendar.
   await db.insert(schema.mwInvestments).values({
     tenantId: tenant.id,
     memberId: childMember.id,
@@ -159,7 +165,7 @@ export async function seedFamily(): Promise<SeededFamily> {
     investedStickers: 10,
     originalInvestedStickers: 10,
     coefficient: 3,
-    deductible: true,
+    deductible: false,
   });
 
   return {

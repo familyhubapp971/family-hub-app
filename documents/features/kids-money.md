@@ -182,6 +182,39 @@ design (`components/MoneyActions.tsx`, editor `kudjspxd3xxroueg5jw11o`).
 | "Take out" available with the whole investment pre-filled                                 | Nothing is pre-selected and the amount starts at zero, so one tap on Confirm can never empty an investment a parent only meant to look at.                                                                                                                     |
 | The "close the week" chooser                                                              | Still not built, as in FHS-623.                                                                                                                                                                                                                                |
 
+## FHS-631 finished the port
+
+FHS-630 said it matched the design. It did not. The founder spotted twelve
+differences on sight, one of which was a real bug.
+
+**The bug:** a habit's icon is stored as a **name** ("heart", "star"), not an
+emoji. The sheets rendered the stored value directly, so a habit row read
+"heart" in a grey box. The same bug class was fixed once before (FHS-374) by a
+helper that lived inside the kid pages, out of reach of anything else, so it was
+reintroduced somewhere new. That helper now lives in `packages/ui/habitIcon.tsx`
+so there is one copy every screen can reach, and two tests fail if a habit icon
+ever renders as raw text again.
+
+**The other eleven:** a tick instead of a radio dot on the chosen row; the
+chosen row solid yellow instead of pale; the skipped-day pair green and red
+instead of both pale; a shield and a warning triangle on that pair; the sticker
+count back in the sheet header, which had been lost; the header icon tile
+removed; the amount stepper rebuilt as separate square buttons either side of
+the number with no "stickers" suffix; the summary line without its star icon;
+and the design's own wording for the skipped-day choices.
+
+**Shared components gained options, they did not change.** `ChoiceRow` has
+`marker` and `selectedTone`, `ResultBanner` has `showIcon`, and
+`StickerAmountPicker` has `variant`. Every default preserves exactly what other
+screens rendered before, so nothing outside the money sheets moved.
+
+**Deliberate deviations that remain:**
+
+| In the design                                | What shipped, and why                                                                                                                                                                                                                                                   |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The habit icon is a bare emoji at `text-2xl` | Ours is a line icon inside the design system's bordered tile. The server stores icon **names**, so we draw a line icon, and a bare 18px line icon has no presence next to a 2xl emoji. The tile gives it weight and it is what `ChoiceRow` already does everywhere else |
+| Pays 2x, 3x, 5x                              | 1x is kept. The server accepts it, and a parent should be able to invest without a boost                                                                                                                                                                                |
+
 ## What the five actions do
 
 | Action                          | Endpoint                                              | Notes                                                                                    |

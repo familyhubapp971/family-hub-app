@@ -39,6 +39,7 @@ export {
   type SkinToneModifier,
 } from './emojiTone';
 export { AmountPicker, type AmountPickerProps } from './AmountPicker';
+export { habitIcon, HABIT_ICON_NAMES } from './habitIcon';
 export { StepHeading, type StepHeadingProps } from './StepHeading';
 export { StickerAmountPicker, type StickerAmountPickerProps } from './StickerAmountPicker';
 export { Toggle, type ToggleProps } from './Toggle';

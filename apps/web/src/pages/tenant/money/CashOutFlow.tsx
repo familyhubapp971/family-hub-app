@@ -43,7 +43,7 @@ export function CashOutFlow({ child, snapshot, headers, onSuccess, onCancel }: M
   if (max === 0) {
     return (
       <div className="space-y-4">
-        <ResultBanner testId="money-cash-empty">
+        <ResultBanner showIcon={false} testId="money-cash-empty">
           {child.name} has nothing in savings yet, so there is nothing to cash out.
         </ResultBanner>
         <Button variant="secondary" fullWidth onClick={onCancel} testId="money-cash-cancel">
@@ -73,12 +73,13 @@ export function CashOutFlow({ child, snapshot, headers, onSuccess, onCancel }: M
         min={0}
         max={max}
         onChange={setAmount}
+        variant="design"
         useAllTone={TONE}
         preview={`= ${formatMoney(cash, snapshot.currency)}`}
         testId="money-cash-amount"
       />
 
-      <ResultBanner testId="money-cash-preview">
+      <ResultBanner showIcon={false} testId="money-cash-preview">
         {amount > 0
           ? `${child.name} hands over ${amount} stickers and gets ${formatMoney(cash, snapshot.currency)}. ${max - amount} stickers stay in savings.`
           : 'Pick how many stickers to cash out.'}
