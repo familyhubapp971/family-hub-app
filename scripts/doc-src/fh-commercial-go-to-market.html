@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>FamilyHub · Go to market</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;500;600;700;800;900&display=swap"
+    />
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      :root {
+        --bg: #f6f1fa;
+        --ink: #191919;
+        --ink-soft: #4a4a4a;
+        --label: #4a5568;
+        --label-rule: #d9ccec;
+        --rule: #d9ccec;
+        --rule-soft: #ece3d5;
+        --yellow: #ffd21e;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow-tint: #fff6d9;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+        font-family:
+          'Nunito',
+          -apple-system,
+          sans-serif;
+        font-weight: 500;
+        font-size: 11px;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      h1,
+      h2,
+      h3,
+      .heading {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        letter-spacing: 0.005em;
+        color: var(--ink);
+      }
+      h1,
+      h2,
+      h3 {
+        break-after: avoid;
+      }
+
+      .page {
+        padding: 16mm 15mm 18mm;
+      }
+
+      /* Masthead */
+      .mast {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin: 0 0 10mm 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #000;
+      }
+      .mast .brand {
+        font-family: 'Fredoka One', cursive;
+        font-size: 24px;
+        color: var(--ink);
+        line-height: 1;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .mast .brand .star {
+        color: var(--yellow);
+        font-size: 24px;
+      }
+      .mast .meta {
+        font-size: 10px;
+        color: var(--ink-soft);
+        line-height: 1.5;
+        text-align: right;
+        font-weight: 700;
+      }
+      .mast .meta strong {
+        color: var(--ink);
+      }
+
+      /* Small uppercase section labels: eyebrow above H1, and the numbered
+         tag above each H2 ("01 · Inputs" etc.) share this same treatment. */
+      .kicker,
+      h2 .num {
+        display: block;
+        width: fit-content;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 10px;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: var(--label);
+        border-bottom: 1px solid var(--label-rule);
+        padding-bottom: 6px;
+      }
+      .kicker {
+        margin: 0 0 10px 0;
+      }
+      h2 .num {
+        margin: 0 0 8px 0;
+        font-size: 9.5px;
+      }
+
+      .title-row {
+        margin: 0 0 26px 0;
+      }
+      h1 {
+        font-size: 34px;
+        line-height: 1.08;
+        margin: 0 0 14px 0;
+        letter-spacing: -0.01em;
+      }
+      .lede {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        margin: 0;
+        max-width: 62ch;
+      }
+
+      /* Thesis callout: an accent card with a hard offset shadow */
+      .pullout {
+        background: var(--yellow-tint);
+        border: 2px solid #000;
+        border-radius: 14px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 16px 20px;
+        margin: 24px 0 10px;
+        font-size: 12px;
+        line-height: 1.6;
+        break-inside: avoid;
+      }
+      .pullout .pin-label {
+        display: inline-block;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink);
+        background: var(--yellow);
+        border: 2px solid #000;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 #000;
+        padding: 3px 12px;
+        margin: 0 0 10px 0;
+      }
+
+      /* Logic model chain */
+      .chain {
+        margin: 30px 0 34px;
+        padding: 0;
+        counter-reset: chain;
+        list-style: none;
+        break-inside: avoid;
+      }
+      .chain li {
+        counter-increment: chain;
+        display: grid;
+        grid-template-columns: 32px 118px 1fr;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 4px;
+        border-bottom: 1px solid var(--rule);
+        break-inside: avoid;
+      }
+      .chain li:first-child {
+        border-top: 2px solid #000;
+      }
+      .chain li:last-child {
+        border-bottom: 2px solid #000;
+      }
+      .chain li::before {
+        content: counter(chain, decimal-leading-zero);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 10px;
+        color: #000;
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 2px solid #000;
+        box-shadow: 2px 2px 0 #000;
+      }
+      .chain li:nth-child(1)::before {
+        background: var(--yellow);
+      }
+      .chain li:nth-child(2)::before {
+        background: var(--pink);
+      }
+      .chain li:nth-child(3)::before {
+        background: var(--green);
+      }
+      .chain li:nth-child(4)::before {
+        background: var(--cyan);
+      }
+      .chain li:nth-child(5)::before {
+        background: var(--coral);
+      }
+      .chain .stage {
+        font-family: 'Fredoka One', cursive;
+        font-size: 13px;
+        color: var(--ink);
+        letter-spacing: 0.01em;
+      }
+      .chain .body {
+        font-size: 11.5px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+      }
+      .chain .body strong {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      h2 {
+        font-size: 20px;
+        margin: 34px 0 8px 0;
+        letter-spacing: -0.005em;
+      }
+      h3 {
+        font-size: 13px;
+        margin: 18px 0 4px 0;
+      }
+      p {
+        margin: 8px 0;
+      }
+      strong {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      ul.clean {
+        list-style: none;
+        margin: 8px 0 0 0;
+        padding: 0;
+      }
+      ul.clean li {
+        padding: 6px 0 6px 18px;
+        position: relative;
+        font-size: 11.5px;
+        line-height: 1.6;
+        border-bottom: 1px solid var(--rule-soft);
+      }
+      ul.clean li:last-child {
+        border-bottom: none;
+      }
+      ul.clean li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 1.05em;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #000;
+        opacity: 0.7;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0 4px;
+        font-size: 11px;
+        font-weight: 500;
+        break-inside: avoid;
+      }
+      th,
+      td {
+        padding: 7px 8px 7px 0;
+        text-align: left;
+        line-height: 1.5;
+        border-bottom: 1px solid var(--rule-soft);
+        vertical-align: top;
+      }
+      th {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        color: var(--label);
+        text-transform: uppercase;
+        border-bottom: 2px solid #000;
+      }
+      td.num,
+      th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
+      }
+
+      /* Recurring financial-literacy thread: subtle, repeated, never dominant */
+      .fl-thread {
+        font-weight: 800;
+        color: var(--ink);
+        background: var(--green);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+      .fl-anchor {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      footer {
+        margin-top: 32px;
+        font-size: 10px;
+        color: var(--ink-soft);
+        border-top: 2px solid #000;
+        padding-top: 12px;
+        text-align: center;
+        break-inside: avoid;
+      }
+      footer strong {
+        color: var(--ink);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+      }
+
+      section {
+        break-inside: avoid;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+
+      /* h1-purple-panel: deck-style deep purple hero */
+      h1 {
+        background: #3d1065;
+        color: #fff !important;
+        padding: 5mm 7mm;
+        border: 3px solid #000;
+        border-radius: 12px;
+        box-shadow: 4px 4px 0 #000;
+        break-inside: avoid;
+      }
+      h1 * {
+        color: #fff !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="mast">
+        <div class="brand"><span class="star">★</span> Family Hub</div>
+        <div class="meta">
+          <strong>Go to market</strong><br />
+          8 August 2026 · Commercial
+        </div>
+      </div>
+
+      <p class="kicker">Commercial · Growth</p>
+      <h1>Go to market</h1>
+      <p class="lede">
+        What to say, where to say it, and how to get the first hundred families. Built for one
+        person with almost no budget.
+      </p>
+
+      <div class="pullout">
+        <span class="pin-label">The plan in one line</span>
+        Lead with the money message, not the calendar. Build trust on the page, because there is no
+        app store to borrow it from. Start with the two free channels, referral and parenting
+        groups, and only spend the first $200 once signups can actually be measured. Watch
+        <strong>activation</strong>, not signups.
+      </div>
+
+      <h2><span class="num">01 · Message</span>What to say</h2>
+      <table>
+        <tr>
+          <th style="width: 20%">Buyer</th>
+          <th style="width: 32%">The line</th>
+          <th>The objection it must beat</th>
+        </tr>
+        <tr>
+          <td><strong>Money-lessons parent</strong><br />(lead with this)</td>
+          <td>
+            <strong
+              >"Pocket money that teaches saving, not just spending. No card, no bank."</strong
+            >
+          </td>
+          <td>
+            "Is this just a sticker chart?" It is a full earn, save and invest loop in a currency
+            you set the value of, before any real card is involved
+          </td>
+        </tr>
+        <tr>
+          <td>Overwhelmed parent</td>
+          <td>"Your family's whole week, in one place."</td>
+          <td>
+            "I already use Cozi, free." Those do nothing for the children's side. This does both
+          </td>
+        </tr>
+        <tr>
+          <td>Many-children household</td>
+          <td>"Every child gets their own world. You get one screen for all of them."</td>
+          <td>
+            "Is setting up three children a hassle?" One device, one code each, five minutes each
+          </td>
+        </tr>
+      </table>
+      <p>
+        <strong>Lead with the money line.</strong> It is the only claim nothing else can make, the
+        only one that justifies a subscription, and financial literacy for children is something
+        parents already search for. Coordination is why someone opens the app on a Tuesday, so it
+        belongs in onboarding, not the first advert. Many-children is a
+        <strong>targeting lever, not a promise</strong>: most families have one or two children, but
+        larger households get more value and talk about it more.
+      </p>
+
+      <h2><span class="num">02 · Trust</span>The money conversation, in the actual words</h2>
+      <p>
+        The product tracks value but never touches real money. Say that plainly, at the top, before
+        anyone has to wonder.
+      </p>
+      <div class="pullout">
+        <span class="pin-label">We never touch your money</span>
+        Stickers are not real currency and they never leave your family. You decide what a sticker
+        is worth in your own money, and you pay your child yourself, the way you always have. Family
+        Hub only keeps score: what each child earned, saved and grew. No card is issued. No money
+        moves through us.
+      </div>
+      <table>
+        <tr>
+          <th style="width: 34%">The question</th>
+          <th>The answer</th>
+        </tr>
+        <tr>
+          <td>Is this a bank account?</td>
+          <td>
+            No. Family Hub is not a bank, a wallet, or a place that holds money. We do not hold or
+            move a single pound, dirham or dollar.
+          </td>
+        </tr>
+        <tr>
+          <td>Does my child get a card?</td>
+          <td>No. There is nothing to top up, and nothing for anyone to lose or misuse.</td>
+        </tr>
+        <tr>
+          <td>What does "invest" actually do?</td>
+          <td>
+            It is a lesson, not a market. Your family sets the rule: stickers grow a little on each
+            day the habit is kept, and can shrink a little on a day it is missed.
+          </td>
+        </tr>
+        <tr>
+          <td>Who holds the money?</td>
+          <td>
+            You do. Family Hub is a private record your family controls, worth exactly what you say
+            it is worth.
+          </td>
+        </tr>
+      </table>
+      <p>
+        That last line does the important work without using a legal word.
+        <strong
+          >Before any launch that implies real money, have a lawyer confirm this framing.</strong
+        >
+        Nothing here is legal advice.
+      </p>
+
+      <h2><span class="num">03 · Credibility</span>Closing the web-app trust gap</h2>
+      <p>
+        There is no app store, so no store review, no badge, and no implicit "someone checked this".
+        A parent is being asked to put their children's information into a website. That trust has
+        to be built on the page.
+      </p>
+      <ul class="clean">
+        <li>
+          A plain line high up: "Each family gets its own private space. Nobody outside your family
+          can see it."
+        </li>
+        <li>
+          Who sees what: parents see everything, children see only their own world, and we do not
+          browse family data.
+        </li>
+        <li>
+          <strong>A named founder with a face and one line of why.</strong> For a product this
+          personal, a real person beats a faceless company.
+        </li>
+        <li>Real screenshots of the actual product. Not stock photos of smiling families.</li>
+        <li>
+          A direct answer to "is my child's information safe": where the data lives, that it is
+          encrypted, that nothing is sold.
+        </li>
+        <li>
+          Testimonials with a first name and a town. Five real families beats "loved by thousands".
+        </li>
+      </ul>
+      <p>
+        <strong>App store, later not now.</strong> Add-to-home-screen costs nothing and waits on no
+        review. A real store listing earns its keep once a few hundred families are paying and
+        people start asking "is there an app".
+      </p>
+
+      <h2><span class="num">04 · Channels</span>Cheapest first</h2>
+      <table>
+        <tr>
+          <th style="width: 26%">Channel</th>
+          <th style="width: 13%">Money</th>
+          <th style="width: 16%">First customer</th>
+          <th>The two-week test, under $200</th>
+        </tr>
+        <tr>
+          <td><strong>1. Referral in the product</strong></td>
+          <td>$0</td>
+          <td>Needs 20 to 50 families first</td>
+          <td>Build the invite link now so it is ready</td>
+        </tr>
+        <tr>
+          <td><strong>2. Parenting groups</strong></td>
+          <td>$0</td>
+          <td>1 to 3 weeks</td>
+          <td>Join 5, post something useful 2 to 3 times a week, tag the links</td>
+        </tr>
+        <tr>
+          <td>3. Small creators, 5k to 30k</td>
+          <td>$0 to 150 each</td>
+          <td>2 to 4 weeks</td>
+          <td>5 creators, free lifetime access plus a small fee, one tracking link each</td>
+        </tr>
+        <tr>
+          <td>4. Schools, nurseries, clubs</td>
+          <td>$0</td>
+          <td>4 to 8 weeks, they are slow</td>
+          <td>Email 15 offering a free 10-minute slot at a parents' evening</td>
+        </tr>
+        <tr>
+          <td>5. Writing for real searches</td>
+          <td>$0 to 50/mo</td>
+          <td>8 to 12 weeks, then compounds</td>
+          <td>2 articles on exact long-tail phrases</td>
+        </tr>
+        <tr>
+          <td>6. Small paid adverts</td>
+          <td>up to $200</td>
+          <td>1 to 2 weeks for data</td>
+          <td>Split by message, measure cost per <strong>signup</strong>, not per click</td>
+        </tr>
+      </table>
+      <p>
+        Start at 1 and 2 in week one because they are free and start the flywheel. Only spend the
+        $200 once the page converts and signups can be measured.
+      </p>
+
+      <h2><span class="num">05 · Execution</span>The first hundred families</h2>
+      <table>
+        <tr>
+          <th style="width: 14%">Week</th>
+          <th>What to do</th>
+        </tr>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>
+            Finish the trust and money copy. Build the invite link. Track two things: signups, and
+            "first sticker earned". Join 5 parenting groups as a real member
+          </td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td>
+            Message 30 to 50 people in the personal network. Target 15 to 20 signups. Ask the first
+            5 for a testimonial
+          </td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td>Publish 2 articles. Post 3 useful, non-salesy things in the groups</td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td>Message 20 small creators. Give 5 free lifetime access and a small fee</td>
+        </tr>
+        <tr>
+          <td><strong>5</strong></td>
+          <td>Email 15 schools, nurseries and clubs. Expect slow replies, follow up weekly</td>
+        </tr>
+        <tr>
+          <td><strong>6</strong></td>
+          <td>Start the $200 advert test, one advert per message. Let it run two weeks</td>
+        </tr>
+        <tr>
+          <td><strong>7</strong></td>
+          <td>
+            Email the 40 to 60 families you have with a direct referral ask. Publish the first
+            testimonial
+          </td>
+        </tr>
+        <tr>
+          <td><strong>8</strong></td>
+          <td>Creator posts go live. Track signups per link. Message 20 more</td>
+        </tr>
+        <tr>
+          <td><strong>9</strong></td>
+          <td>School replies land. Run the demo or send a flyer home. Target 20 to 30 signups</td>
+        </tr>
+        <tr>
+          <td><strong>10 to 12</strong></td>
+          <td>
+            Two more articles. Read the advert results and kill the weaker platform. Second referral
+            push. Count every channel by cost per <strong>activated</strong> family and put the last
+            push into the best two
+          </td>
+        </tr>
+      </table>
+      <p>
+        Rough path to 100: personal network 15 to 20, groups and writing 10 to 15, creators 15 to
+        25, schools and clubs 30 to 40, referral 10 to 15, adverts 5 to 10. Ranges, not promises.
+      </p>
+
+      <h2><span class="num">06 · Measure</span>The one number before revenue</h2>
+      <div class="pullout">
+        <span class="pin-label">Watch this</span>
+        <strong
+          >Activation: the share of new families where a child signs in and earns a first sticker
+          within three days.</strong
+        >
+        Revenue lags weeks behind a channel's real quality. Activation shows within days, and it
+        tells you whether the people a channel sends actually try the thing that makes Family Hub
+        different. A channel with cheap signups and low activation is buying curiosity, not
+        families.
+      </div>
+      <p>
+        <strong>The second, as soon as there are activated families:</strong> invites sent per
+        family. If families who like it are not inviting anyone, the cheapest long-term channel will
+        not work, whatever is spent elsewhere.
+      </p>
+
+      <h2><span class="num">07 · Caveats</span>What this plan assumes</h2>
+      <ul class="clean">
+        <li>
+          That the personal network contains 30 to 50 reachable parents of 6 to 11 year olds. If
+          not, week 2 fails and everything shifts right.
+        </li>
+        <li>
+          That parenting groups tolerate a founder taking part. Many ban promotion outright, so "be
+          useful first" is not optional politeness.
+        </li>
+        <li>That schools reply at all in August. Aim the school push at the start of a term.</li>
+        <li>
+          That $200 buys enough data to judge a channel. It probably buys a direction, not a
+          conclusion.
+        </li>
+      </ul>
+
+      <footer>
+        <strong>Family Hub</strong> · Go to market · 8 August 2026 · Nothing here is legal advice
+      </footer>
+    </div>
+  </body>
+</html>

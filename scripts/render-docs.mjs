@@ -1,5 +1,7 @@
 // Renders every business-doc source in scripts/doc-src/ to its PDF in
-// documents/business/ (docs folders are PDF-only, FHS-552).
+// documents/business/ (docs folders are PDF-only, FHS-552), plus the
+// commercial case into documents/commercial/ and the Hub71 answers into
+// documents/investments/.
 //
 // Usage: node scripts/render-docs.mjs
 // The flowing docs (theory-of-change, impact framework) get a printed
@@ -43,6 +45,29 @@ const DOCS = [
     src: 'fh-pitch-deck.html',
     out: 'fh-pitch-deck.pdf',
     pageSize: { width: '338.66mm', height: '190.5mm' },
+  },
+  // Commercial case (FHS-620 follow-up): flowing docs, so they take the
+  // printed running footer and real top/bottom page margins.
+  {
+    src: 'fh-commercial-where-we-fit.html',
+    out: 'where-we-fit.pdf',
+    outDir: 'documents/commercial',
+    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
+    footerTitle: 'Where we fit',
+  },
+  {
+    src: 'fh-commercial-product-market-fit.html',
+    out: 'product-market-fit.pdf',
+    outDir: 'documents/commercial',
+    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
+    footerTitle: 'Product-market fit',
+  },
+  {
+    src: 'fh-commercial-go-to-market.html',
+    out: 'go-to-market.pdf',
+    outDir: 'documents/commercial',
+    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
+    footerTitle: 'Go to market',
   },
   {
     src: 'fh-hub71-answers.html',
