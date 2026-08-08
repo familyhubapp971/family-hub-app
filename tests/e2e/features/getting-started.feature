@@ -35,3 +35,13 @@ Feature: Getting started (first-run setup guide)
     When I open the family dashboard
     Then the setup guide fits the screen with no sideways scrolling
     And its button is big enough to tap
+
+  @critical @authed-local
+  Scenario: The guide is usable on a tablet
+
+    Given I am signed in as the admin of a freshly seeded family
+    And I am on a tablet-sized screen
+    When I open the family dashboard
+    Then the setup guide fits the screen with no sideways scrolling
+    And its button is big enough to tap
+    And each step sits on one row

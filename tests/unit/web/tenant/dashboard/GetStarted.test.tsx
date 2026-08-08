@@ -167,6 +167,52 @@ describe('<GetStarted /> (FHS-511, FHS-634)', () => {
     expect(window.localStorage.getItem(LEGACY_KEY)).toBeNull();
   });
 
+  it('keeps the old key when the carry-over call fails, so it can try again', async () => {
+    // Review finding: deleting the key first meant one dropped request lost a
+    // parent's dismissal for good, which is the very bug this ticket fixes.
+    window.localStorage.setItem(LEGACY_KEY, JSON.stringify({ dismissed: true, completed: [] }));
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/dismiss')) return Promise.reject(new Error('network down'));
+      return Promise.resolve({ ok: true, status: 200, json: async () => state() });
+    });
+    renderAt();
+    await waitFor(() => expect(dismissCalls()).toHaveLength(1));
+    expect(window.localStorage.getItem(LEGACY_KEY)).not.toBeNull();
+    expect(screen.queryByTestId('get-started')).not.toBeInTheDocument();
+  });
+
+  it('a background token refresh cannot pop the card back open after dismissing', async () => {
+    // Supabase hands back a new session object on every token refresh, which
+    // re-runs the load. If that lands before the dismiss is saved, the server
+    // still says "not dismissed": the card must not reappear on the parent.
+    const { rerender } = renderAt();
+    await screen.findByTestId('get-started');
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('get-started-dismiss'));
+    });
+    expect(screen.queryByTestId('get-started')).not.toBeInTheDocument();
+
+    authState.session = { access_token: 'tok-refreshed' };
+    await act(async () => {
+      rerender(
+        <MemoryRouter initialEntries={[`/t/${SLUG}/dashboard`]}>
+          <Routes>
+            <Route
+              path="/t/:slug/dashboard"
+              element={
+                <TenantProvider>
+                  <GetStarted />
+                </TenantProvider>
+              }
+            />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+    await act(async () => {});
+    expect(screen.queryByTestId('get-started')).not.toBeInTheDocument();
+  });
+
   it('ignores a corrupted legacy key and shows what the server says', async () => {
     window.localStorage.setItem(LEGACY_KEY, 'not json {{{');
     renderAt();

@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { getDb } from '../db/client.js';
 import { habits, members, tenants } from '../db/schema.js';
+import { DEFAULT_STICKER_RATE_MINOR } from './reward-config.js';
 import { isKidRole, type GetStartedState, type GetStartedSteps } from '@familyhub/shared';
 
 // FHS-634: what "done" means for each step of the dashboard Getting started
@@ -20,12 +21,16 @@ export interface GetStartedKid {
   pinHash: string | null;
   /** True when this kid owns at least one habit that is not archived. */
   hasHabit: boolean;
+  /** This kid's own rate override, in minor units; null = uses the family's. */
+  stickerRateMinor: number | null;
 }
 
 export interface GetStartedFacts {
   kids: GetStartedKid[];
   /** When an admin saved the family sticker rate; null = never chosen. */
   stickerRateSetAt: Date | null;
+  /** The family's current rate in minor units (NOT NULL DEFAULT 50 in the db). */
+  familyStickerRateMinor: number;
 }
 
 /**
@@ -37,10 +42,21 @@ export interface GetStartedFacts {
  */
 export function deriveGetStartedSteps(facts: GetStartedFacts): GetStartedSteps {
   const hasKids = facts.kids.length > 0;
+  // The rate step has three ways to be true, because the timestamp only exists
+  // from FHS-634 onwards. Every family that predates it has a null stamp, and
+  // asking a family who has been running for months to "choose what a sticker
+  // is worth" is exactly the nagging this ticket exists to stop. A rate that
+  // differs from the default, or any per-child override, is proof enough that
+  // somebody already decided. A family still sitting on an untouched 0.50 is
+  // genuinely indistinguishable from one that never looked, so they are asked.
+  const rateChosen =
+    facts.stickerRateSetAt !== null ||
+    facts.familyStickerRateMinor !== DEFAULT_STICKER_RATE_MINOR ||
+    facts.kids.some((k) => k.stickerRateMinor !== null);
   return {
     kids: hasKids,
     pins: hasKids && facts.kids.every((k) => k.pinHash !== null && k.pinHash !== ''),
-    rate: facts.stickerRateSetAt !== null,
+    rate: rateChosen,
     habits: facts.kids.some((k) => k.hasHabit),
   };
 }
@@ -63,6 +79,7 @@ export async function loadGetStartedState(
       role: members.role,
       isChild: members.isChild,
       pinHash: members.pinHash,
+      stickerRateMinor: members.stickerRateMinor,
       getStartedDismissedAt: members.getStartedDismissedAt,
       createdAt: members.createdAt,
     })
@@ -96,7 +113,10 @@ export async function loadGetStartedState(
   const kidsWithHabits = new Set(habitRows.map((h) => h.memberId));
 
   const [tenantRow] = await db
-    .select({ stickerRateSetAt: tenants.stickerRateSetAt })
+    .select({
+      stickerRateSetAt: tenants.stickerRateSetAt,
+      stickerRateMinor: tenants.stickerRateMinor,
+    })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
     .limit(1);
@@ -106,8 +126,10 @@ export async function loadGetStartedState(
       id: k.id,
       pinHash: k.pinHash,
       hasHabit: kidsWithHabits.has(k.id),
+      stickerRateMinor: k.stickerRateMinor,
     })),
     stickerRateSetAt: tenantRow?.stickerRateSetAt ?? null,
+    familyStickerRateMinor: tenantRow?.stickerRateMinor ?? DEFAULT_STICKER_RATE_MINOR,
   });
 
   const caller = memberRows.find((m) => m.id === callerMemberId);

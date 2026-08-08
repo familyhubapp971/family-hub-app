@@ -17,6 +17,7 @@ const { Given, When, Then } = createBdd(test);
 
 const EXPECTED_DONE = 2;
 const PHONE = { width: 375, height: 812 };
+const TABLET = { width: 768, height: 1024 };
 
 // The second browser's page, handed from the When step to the Then that reads
 // it. Module scope is per worker, and a worker runs one scenario at a time.
@@ -33,6 +34,10 @@ Given('I have hidden the setup guide on the family dashboard', async ({ page, au
 
 Given('I am on a phone-sized screen', async ({ page }) => {
   await page.setViewportSize(PHONE);
+});
+
+Given('I am on a tablet-sized screen', async ({ page }) => {
+  await page.setViewportSize(TABLET);
 });
 
 When('I open the family dashboard', async ({ page, authedFamily }) => {
@@ -93,4 +98,12 @@ Then('its button is big enough to tap', async ({ page }) => {
   const box = await new GetStartedPage(page).nextCtaBox('pins');
   expect(box.height).toBeGreaterThanOrEqual(44);
   expect(box.width).toBeGreaterThanOrEqual(44);
+});
+
+Then('each step sits on one row', async ({ page }) => {
+  // Each step is flex-col on a phone and sm:flex-row from 640px up. At tablet
+  // width the icon, the text and the button share a line, so the row is far
+  // shorter than the stacked version.
+  const height = await new GetStartedPage(page).stepHeight('pins');
+  expect(height).toBeLessThan(100);
 });

@@ -291,6 +291,152 @@ describeFeature(feature, ({ Background, Scenario }) => {
     },
   );
 
+  Scenario(
+    'A family that already changed its sticker rate is not asked again',
+    ({ Given, And, When, Then }) => {
+      Given(
+        'a kid member {string} exists in tenant {string} with a PIN',
+        async (_ctx, name: string, slug: string) => {
+          await addKid(slug, name, '1234');
+        },
+      );
+      And(
+        'tenant {string} runs on a sticker rate of {number} with no record of when it was set',
+        async (_ctx, slug: string, rate: number) => {
+          // Exactly the shape every pre-FHS-634 family is in after the
+          // migration: a real chosen rate, and a null timestamp.
+          await db
+            .update(tenants)
+            .set({ stickerRateMinor: rate, stickerRateSetAt: null })
+            .where(eq(tenants.id, tenantIds[slug]!));
+        },
+      );
+      When('the admin reads the setup guide for {string}', async (_ctx, slug: string) => {
+        res = await readGuide(adminToken, slug);
+        body = (await res.json()) as StepsBody;
+      });
+      Then(
+        'the steps are kids {string}, pins {string}, rate {string}, habits {string}',
+        (_ctx, kids: string, pins: string, rate: string, habitsDone: string) => {
+          expect(body.steps).toEqual({
+            kids: kids === 'true',
+            pins: pins === 'true',
+            rate: rate === 'true',
+            habits: habitsDone === 'true',
+          });
+        },
+      );
+    },
+  );
+
+  Scenario("A child's own rate override also counts as choosing", ({ Given, And, When, Then }) => {
+    Given(
+      'a kid member {string} exists in tenant {string} with a PIN',
+      async (_ctx, name: string, slug: string) => {
+        await addKid(slug, name, '1234');
+      },
+    );
+    And(
+      '{string} has their own sticker rate of {number}',
+      async (_ctx, name: string, rate: number) => {
+        await db
+          .update(members)
+          .set({ stickerRateMinor: rate })
+          .where(and(eq(members.tenantId, tenantIds['khan']!), eq(members.displayName, name)));
+      },
+    );
+    When('the admin reads the setup guide for {string}', async (_ctx, slug: string) => {
+      res = await readGuide(adminToken, slug);
+      body = (await res.json()) as StepsBody;
+    });
+    Then(
+      'the steps are kids {string}, pins {string}, rate {string}, habits {string}',
+      (_ctx, kids: string, pins: string, rate: string, habitsDone: string) => {
+        expect(body.steps).toEqual({
+          kids: kids === 'true',
+          pins: pins === 'true',
+          rate: rate === 'true',
+          habits: habitsDone === 'true',
+        });
+      },
+    );
+  });
+
+  Scenario('An archived habit does not count as picking a habit', ({ Given, And, When, Then }) => {
+    Given(
+      'a kid member {string} exists in tenant {string} with a PIN',
+      async (_ctx, name: string, slug: string) => {
+        await addKid(slug, name, '1234');
+      },
+    );
+    And(
+      '{string} has a habit of their own in tenant {string}',
+      async (_ctx, name: string, slug: string) => {
+        const [kid] = await db
+          .select({ id: members.id })
+          .from(members)
+          .where(and(eq(members.tenantId, tenantIds[slug]!), eq(members.displayName, name)))
+          .limit(1);
+        await db
+          .insert(habits)
+          .values({ tenantId: tenantIds[slug]!, memberId: kid!.id, name: 'Read' });
+      },
+    );
+    And('every habit in tenant {string} is archived', async (_ctx, slug: string) => {
+      await db
+        .update(habits)
+        .set({ archivedAt: new Date() })
+        .where(eq(habits.tenantId, tenantIds[slug]!));
+    });
+    When('the admin reads the setup guide for {string}', async (_ctx, slug: string) => {
+      res = await readGuide(adminToken, slug);
+      body = (await res.json()) as StepsBody;
+    });
+    Then(
+      'the steps are kids {string}, pins {string}, rate {string}, habits {string}',
+      (_ctx, kids: string, pins: string, rate: string, habitsDone: string) => {
+        expect(body.steps).toEqual({
+          kids: kids === 'true',
+          pins: pins === 'true',
+          rate: rate === 'true',
+          habits: habitsDone === 'true',
+        });
+      },
+    );
+  });
+
+  Scenario('A teen counts as a kid', ({ Given, When, Then }) => {
+    Given(
+      'a teen member {string} exists in tenant {string} with a PIN',
+      async (_ctx, name: string, slug: string) => {
+        // FHS-569's lesson: a teen-only family was once told it had no kids.
+        const pinHash = await bcrypt.hash('4321', 4);
+        await db.insert(members).values({
+          tenantId: tenantIds[slug]!,
+          displayName: name,
+          role: 'teen',
+          isChild: true,
+          pinHash,
+        });
+      },
+    );
+    When('the admin reads the setup guide for {string}', async (_ctx, slug: string) => {
+      res = await readGuide(adminToken, slug);
+      body = (await res.json()) as StepsBody;
+    });
+    Then(
+      'the steps are kids {string}, pins {string}, rate {string}, habits {string}',
+      (_ctx, kids: string, pins: string, rate: string, habitsDone: string) => {
+        expect(body.steps).toEqual({
+          kids: kids === 'true',
+          pins: pins === 'true',
+          rate: rate === 'true',
+          habits: habitsDone === 'true',
+        });
+      },
+    );
+  });
+
   Scenario('The PIN step waits until every kid has one', ({ Given, And, When, Then }) => {
     Given(
       'a kid member {string} exists in tenant {string} with a PIN',

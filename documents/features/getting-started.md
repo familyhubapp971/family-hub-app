@@ -72,6 +72,15 @@ sit as a quiet "Up next" so the eye lands on one job at a time.
 - **Then** the setup guide fits the screen with no sideways scrolling
 - **And** its button is big enough to tap
 
+**Scenario: The guide is usable on a tablet**
+
+- **Given** I am signed in as the admin of a freshly seeded family
+- **And** I am on a tablet-sized screen
+- **When** I open the family dashboard
+- **Then** the setup guide fits the screen with no sideways scrolling
+- **And** its button is big enough to tap
+- **And** each step sits on one row
+
 **Scenario: One parent hiding it does not hide it for the other parent**
 
 - **Given** two admins in the same family
@@ -80,12 +89,12 @@ sit as a quiet "Up next" so the eye lands on one job at a time.
 
 ## The four steps
 
-| #   | Step                           | Counts as done when                                             | Button           | Goes to                 |
-| --- | ------------------------------ | --------------------------------------------------------------- | ---------------- | ----------------------- |
-| 1   | Add your kids                  | The family has at least one child or teen.                      | Add a child      | Manage Members          |
-| 2   | Give each kid a PIN            | **Every** kid has a PIN, so nobody is locked out.               | Set PINs         | Manage Members          |
-| 3   | Choose what a sticker is worth | An admin has saved the sticker rate (family-wide or per child). | Set pocket money | Reward Settings         |
-| 4   | Pick their first habits        | At least one kid owns a habit of their own.                     | Open their world | The first child's world |
+| #   | Step                           | Counts as done when                                                       | Button           | Goes to                 |
+| --- | ------------------------------ | ------------------------------------------------------------------------- | ---------------- | ----------------------- |
+| 1   | Add your kids                  | The family has at least one child or teen.                                | Add a child      | Manage Members          |
+| 2   | Give each kid a PIN            | **Every** kid has a PIN, so nobody is locked out.                         | Set PINs         | Manage Members          |
+| 3   | Choose what a sticker is worth | The rate was saved, differs from the default, or a child has an override. | Set pocket money | Reward Settings         |
+| 4   | Pick their first habits        | At least one kid owns a habit of their own.                               | Open their world | The first child's world |
 
 Two deliberate calls in that table:
 
@@ -94,7 +103,14 @@ Two deliberate calls in that table:
   past a job that is still half done.
 - **The starter habits seeded at sign-up do not count.** Those are family-level
   rows with no owner (`db/seed-tenant-defaults.ts`); step 4 asks whether the
-  family chose habits **for a child**.
+  family chose habits **for a child**. An archived habit does not count either.
+- **The rate step has three ways to be true.** The timestamp only exists from
+  FHS-634 onwards, so every family that predates it starts with a null stamp.
+  Asking a family that has been running for months to go and choose a sticker
+  rate is the nagging this ticket exists to stop, so a rate that differs from
+  the 0.50 default, or any per-child override, counts as proof somebody already
+  decided. A family still sitting on an untouched 0.50 is genuinely
+  indistinguishable from one that never looked, so they are asked once.
 
 ## How it is stored
 
@@ -104,9 +120,10 @@ Two deliberate calls in that table:
 | Hidden by me    | `members.get_started_dismissed_at`, so it is per person per family.      |
 | Rate was chosen | `tenants.sticker_rate_set_at`, stamped by `PUT /api/reward-config`.      |
 
-`sticker_rate_minor` carries `NOT NULL DEFAULT 50`, so its value cannot say
-whether a family ever picked it. The separate timestamp is what tells a
-deliberate 0.50 apart from a family who never opened the screen.
+`sticker_rate_minor` carries `NOT NULL DEFAULT 50`, so its value alone cannot
+say whether a family ever picked it. From FHS-634 onwards the timestamp answers
+that precisely; for families that predate it, a non-default rate or a per-child
+override stands in (see the note above).
 
 ## Out of scope
 

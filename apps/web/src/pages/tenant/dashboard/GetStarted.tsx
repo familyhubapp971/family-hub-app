@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, KeyRound, PartyPopper, Plus, Sparkles, Wallet, X } from 'lucide-react';
 import {
@@ -65,19 +65,29 @@ const STEPS: GetStartedStep[] = [
 
 const TOTAL = STEPS.length;
 
-// FHS-634: the pre-server storage key. Read once, so a parent who already hid
-// the guide in this browser does not see it come back when the fix ships, then
-// deleted. Nothing is ever written here again.
+// FHS-634: the pre-server storage key. Read so a parent who already hid the
+// guide in this browser does not see it come back when the fix ships. Nothing
+// is ever written here again.
 const legacyStorageKey = (slug: string) => `fh.getStarted.${slug}`;
 
-function takeLegacyDismissal(slug: string): boolean {
+function readLegacyDismissal(slug: string): boolean {
   try {
     const raw = window.localStorage.getItem(legacyStorageKey(slug));
     if (!raw) return false;
-    window.localStorage.removeItem(legacyStorageKey(slug));
     return (JSON.parse(raw) as { dismissed?: unknown }).dismissed === true;
   } catch {
+    // Corrupted or storage blocked: drop the key if we can, and treat this
+    // browser as having nothing to carry over.
+    clearLegacyDismissal(slug);
     return false;
+  }
+}
+
+function clearLegacyDismissal(slug: string): void {
+  try {
+    window.localStorage.removeItem(legacyStorageKey(slug));
+  } catch {
+    /* private mode: nothing to clean up */
   }
 }
 
@@ -91,21 +101,32 @@ export function GetStarted() {
   // 403 for anyone else and the card simply never renders.
   const [state, setState] = useState<GetStartedState | null>(null);
 
+  // Once this parent has hidden the guide in this tab, nothing may un-hide it.
+  // Supabase pushes a new session object on every background token refresh
+  // (roughly hourly on a tab left open), which re-runs the load below; without
+  // this guard a refresh landing just after the tap would fetch a not-yet-saved
+  // `dismissed: false` and pop the card back open in their face.
+  const dismissedHere = useRef(false);
+
+  // Depend on the TOKEN, not the session object: a refresh that hands back the
+  // same token should not refetch at all.
+  const accessToken = session?.access_token ?? null;
+
   const authedFetch = useCallback(
     (path: string, init?: RequestInit) =>
       fetch(`${API_BASE}${path}`, {
         ...init,
         headers: {
           ...(init?.headers ?? {}),
-          Authorization: `Bearer ${session?.access_token ?? ''}`,
+          Authorization: `Bearer ${accessToken ?? ''}`,
           'x-tenant-slug': slug,
         },
       }),
-    [session, slug],
+    [accessToken, slug],
   );
 
   useEffect(() => {
-    if (!session) return;
+    if (!accessToken) return;
     const ac = new AbortController();
     let cancelled = false;
 
@@ -119,15 +140,20 @@ export function GetStarted() {
         // One-time carry-over of a dismissal made before the state moved
         // server-side. Done here rather than in a migration because only the
         // browser that holds it knows about it.
-        if (!body.dismissed && takeLegacyDismissal(slug)) {
+        if (!body.dismissed && readLegacyDismissal(slug)) {
+          dismissedHere.current = true;
           setState({ ...body, dismissed: true });
-          await authedFetch('/api/onboarding/get-started/dismiss', {
+          const saved = await authedFetch('/api/onboarding/get-started/dismiss', {
             method: 'POST',
             signal: ac.signal,
-          }).catch(() => undefined);
+          }).catch(() => null);
+          // Only forget the old key once the server has it. If this call was
+          // dropped, the key survives and the next visit tries again: deleting
+          // first would lose the carry-over for good on a single network blip.
+          if (saved?.ok) clearLegacyDismissal(slug);
           return;
         }
-        setState(body);
+        setState(dismissedHere.current ? { ...body, dismissed: true } : body);
       } catch {
         /* aborted or failed load: the card stays hidden */
       }
@@ -137,12 +163,13 @@ export function GetStarted() {
       cancelled = true;
       ac.abort();
     };
-  }, [session, slug, authedFetch]);
+  }, [accessToken, slug, authedFetch]);
 
   const dismiss = useCallback(() => {
     // Optimistic: the card goes away on tap, and the server catches up. A
     // failed call leaves it hidden for this visit and showing on the next one,
     // which is the right way round to be wrong.
+    dismissedHere.current = true;
     setState((prev) => (prev ? { ...prev, dismissed: true } : prev));
     void authedFetch('/api/onboarding/get-started/dismiss', { method: 'POST' }).catch(
       () => undefined,

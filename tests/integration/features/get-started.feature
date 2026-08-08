@@ -30,6 +30,30 @@ Feature: GET/POST /api/onboarding/get-started (FHS-634)
     When the admin reads the setup guide for "khan"
     Then the steps are kids "true", pins "true", rate "false", habits "false"
 
+  Scenario: A family that already changed its sticker rate is not asked again
+    Given a kid member "Iman" exists in tenant "khan" with a PIN
+    And tenant "khan" runs on a sticker rate of 100 with no record of when it was set
+    When the admin reads the setup guide for "khan"
+    Then the steps are kids "true", pins "true", rate "true", habits "false"
+
+  Scenario: A child's own rate override also counts as choosing
+    Given a kid member "Iman" exists in tenant "khan" with a PIN
+    And "Iman" has their own sticker rate of 75
+    When the admin reads the setup guide for "khan"
+    Then the steps are kids "true", pins "true", rate "true", habits "false"
+
+  Scenario: An archived habit does not count as picking a habit
+    Given a kid member "Iman" exists in tenant "khan" with a PIN
+    And "Iman" has a habit of their own in tenant "khan"
+    And every habit in tenant "khan" is archived
+    When the admin reads the setup guide for "khan"
+    Then the steps are kids "true", pins "true", rate "false", habits "false"
+
+  Scenario: A teen counts as a kid
+    Given a teen member "Yusra" exists in tenant "khan" with a PIN
+    When the admin reads the setup guide for "khan"
+    Then the steps are kids "true", pins "true", rate "false", habits "false"
+
   Scenario: The PIN step waits until every kid has one
     Given a kid member "Iman" exists in tenant "khan" with a PIN
     And a kid member "Sara" exists in tenant "khan" with no PIN

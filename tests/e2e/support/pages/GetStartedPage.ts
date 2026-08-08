@@ -45,6 +45,13 @@ export class GetStartedPage {
     return { width: box.width, height: box.height };
   }
 
+  /** Rendered height of one step row, used to tell stacked from side-by-side. */
+  async stepHeight(key: StepKey): Promise<number> {
+    const box = await this.page.getByTestId(`get-started-step-${key}`).boundingBox();
+    if (!box) throw new Error(`get-started-step-${key} has no bounding box`);
+    return box.height;
+  }
+
   async dismiss(): Promise<void> {
     await this.page.getByTestId('get-started-dismiss').click();
   }
