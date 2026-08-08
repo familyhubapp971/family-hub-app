@@ -103,7 +103,7 @@ export function ClaimRewardFlow({ child, snapshot, headers, onSuccess, onCancel 
         testId="money-claim-step-1"
       />
       <div
-        className="max-h-72 space-y-2 overflow-y-auto pr-1"
+        className="-mx-1 max-h-72 space-y-2 overflow-y-auto px-1 py-1"
         role="radiogroup"
         aria-label="Rewards"
       >

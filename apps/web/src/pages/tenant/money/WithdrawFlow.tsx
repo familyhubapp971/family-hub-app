@@ -138,7 +138,7 @@ export function WithdrawFlow({ child, snapshot, headers, onSuccess, onCancel }: 
         testId="money-withdraw-step-1"
       />
       <div
-        className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1"
+        className="-mx-1 mt-3 max-h-48 space-y-2 overflow-y-auto px-1 py-1"
         role="radiogroup"
         aria-label="Investment"
       >
