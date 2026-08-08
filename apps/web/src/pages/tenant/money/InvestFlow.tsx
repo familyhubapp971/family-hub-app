@@ -7,9 +7,11 @@
  * accepted both (they default to 5 / true server-side when omitted).
  */
 import { useEffect, useState } from 'react';
+import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import {
   Button,
   ChoiceRow,
+  habitIcon,
   ResultBanner,
   Spinner,
   StepHeading,
@@ -33,6 +35,13 @@ const INVEST_MIN_STICKERS = 10;
 const COEFFICIENTS: readonly InvestCoefficient[] = [1, 2, 3, 5];
 // The action's colour, carried from its button into every step disc.
 const TONE = 'bg-yellow-300';
+
+// FHS-631: a habit's icon is stored as a NAME, so it must be mapped to a
+// component. Rendering the raw value printed the word "heart" on the row.
+function habitIconNode(name: string | null): React.ReactNode {
+  const Icon = habitIcon(name);
+  return <Icon size={18} strokeWidth={3} />;
+}
 
 export function InvestFlow({
   child,
@@ -183,8 +192,10 @@ export function InvestFlow({
             key={habit.id}
             selected={selectedHabitId === habit.id}
             onClick={() => setSelectedHabitId(habit.id)}
-            icon={habit.icon ?? '⭐'}
+            icon={habitIconNode(habit.icon)}
             title={habit.name}
+            marker="check"
+            selectedTone={TONE}
             testId={`money-invest-habit-${habit.id}`}
           />
         ))}
@@ -234,15 +245,21 @@ export function InvestFlow({
             <ChoiceRow
               selected={!deductible}
               onClick={() => setDeductible(false)}
+              icon={<ShieldCheck size={18} strokeWidth={3} />}
               title="Nothing"
-              description={investmentRule(false)}
+              description="They keep what they have grown."
+              marker="check"
+              selectedTone="bg-green-300"
               testId="money-invest-deductible-off"
             />
             <ChoiceRow
               selected={deductible}
               onClick={() => setDeductible(true)}
+              icon={<AlertTriangle size={18} strokeWidth={3} />}
               title="Some comes off"
-              description={investmentRule(true)}
+              description="A missed day takes value away."
+              marker="check"
+              selectedTone="bg-red-300"
               testId="money-invest-deductible-on"
             />
           </div>
@@ -259,6 +276,7 @@ export function InvestFlow({
               min={INVEST_MIN_STICKERS}
               max={maxInvestable}
               onChange={setAmount}
+              variant="design"
               preview={`= ${formatMoney(cash, snapshot.currency)} now, and ${INVEST_MIN_STICKERS} is the least you can invest`}
               useAllTone={TONE}
               testId="money-invest-amount"
@@ -266,7 +284,7 @@ export function InvestFlow({
           </div>
 
           <div className="mt-5 space-y-3">
-            <ResultBanner testId="money-invest-preview">
+            <ResultBanner showIcon={false} testId="money-invest-preview">
               {`Invest ${amount} stickers behind ${selectedHabit.name} at ${coefficient}x. ${investmentRule(deductible)}`}
             </ResultBanner>
 

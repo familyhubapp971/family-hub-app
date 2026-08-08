@@ -83,7 +83,7 @@ export function ClaimRewardFlow({ child, snapshot, headers, onSuccess, onCancel 
   if (rewards.length === 0) {
     return (
       <div className="space-y-4">
-        <ResultBanner testId="money-claim-empty">
+        <ResultBanner showIcon={false} testId="money-claim-empty">
           No rewards in the shop yet. Add some from Earning rules first.
         </ResultBanner>
         <Button variant="secondary" fullWidth onClick={onCancel} testId="money-claim-cancel">
@@ -128,7 +128,7 @@ export function ClaimRewardFlow({ child, snapshot, headers, onSuccess, onCancel 
         })}
       </div>
 
-      <ResultBanner testId="money-claim-preview">
+      <ResultBanner showIcon={false} testId="money-claim-preview">
         {selected
           ? `${child.name} will get ${selected.name}, and spends ${selected.stickerCost} stickers (${formatMoney(
               selected.stickerCost * snapshot.stickerRate,

@@ -4,6 +4,9 @@ import { AlertTriangle, Star } from 'lucide-react';
 export interface ResultBannerProps {
   children: ReactNode;
   tone?: 'positive' | 'warning';
+  /** FHS-631: the design's summary line carries no icon. Defaults to showing
+   *  one, so every existing caller looks exactly as it does today. */
+  showIcon?: boolean;
   testId?: string;
 }
 
@@ -13,7 +16,12 @@ export interface ResultBannerProps {
  * boost picker. `tone="warning"` for the skip-penalty preview. The leading
  * icon is decorative (aria-hidden) and doesn't add to `.textContent`.
  */
-export function ResultBanner({ children, tone = 'positive', testId }: ResultBannerProps) {
+export function ResultBanner({
+  children,
+  tone = 'positive',
+  showIcon = true,
+  testId,
+}: ResultBannerProps) {
   const toneStyles =
     tone === 'warning'
       ? 'bg-red-50 border-red-300 text-red-800'
@@ -27,7 +35,7 @@ export function ResultBanner({ children, tone = 'positive', testId }: ResultBann
         toneStyles,
       ].join(' ')}
     >
-      <Icon size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+      {showIcon && <Icon size={16} className="mt-0.5 shrink-0" aria-hidden="true" />}
       <span>{children}</span>
     </p>
   );

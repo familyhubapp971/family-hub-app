@@ -453,3 +453,48 @@ describe('MoneyActionsSheet: the approved design (FHS-630)', () => {
     expect(screen.getByTestId('money-withdraw-confirm')).toBeInTheDocument();
   });
 });
+
+// FHS-631: the habit rows printed the word "heart" because the API stores an
+// icon NAME and the row rendered it straight. This is the sheet-level guard;
+// tests/unit/web/ui/habitIcon.test.tsx guards the helper itself.
+describe('MoneyActionsSheet: a habit icon is never raw text (FHS-631)', () => {
+  function investApiWithIcons(habits: Array<{ id: string; name: string; icon: string | null }>) {
+    return vi.fn((url: string) => {
+      const u = String(url);
+      if (u.includes('/api/habits')) {
+        return Promise.resolve({ ok: true, json: async () => ({ habits }) });
+      }
+      if (u.includes('/api/mw/financial/investments')) {
+        return Promise.resolve({ ok: true, json: async () => ({ investments: [] }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+  }
+
+  it('shows an icon, not the stored name, on every habit row', async () => {
+    vi.stubGlobal(
+      'fetch',
+      investApiWithIcons([
+        { id: 'h-1', name: 'I was polite', icon: 'heart' },
+        { id: 'h-2', name: 'I was tidy', icon: 'trophy' },
+      ]),
+    );
+    renderSheet('invest', { snap: snapshot({ available: 40, saved: 60 }) });
+    const row = await screen.findByTestId('money-invest-habit-h-1');
+
+    // The row reads as the habit's name and nothing else.
+    expect(row.textContent).toBe('I was polite');
+    expect(row.querySelector('svg')).toBeInTheDocument();
+    // And the words never appear anywhere in the sheet.
+    expect(screen.queryByText(/heart/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/trophy/i)).not.toBeInTheDocument();
+  });
+
+  it('still draws an icon when the habit has no icon set', async () => {
+    vi.stubGlobal('fetch', investApiWithIcons([{ id: 'h-1', name: 'I was polite', icon: null }]));
+    renderSheet('invest', { snap: snapshot({ available: 40, saved: 60 }) });
+    const row = await screen.findByTestId('money-invest-habit-h-1');
+    expect(row.querySelector('svg')).toBeInTheDocument();
+    expect(row.textContent).toBe('I was polite');
+  });
+});

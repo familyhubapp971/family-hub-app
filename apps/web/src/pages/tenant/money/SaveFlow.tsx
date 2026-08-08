@@ -36,7 +36,7 @@ export function SaveFlow({ child, snapshot, headers, onSuccess, onCancel }: Mone
   if (max === 0) {
     return (
       <div className="space-y-4">
-        <ResultBanner testId="money-save-empty">
+        <ResultBanner showIcon={false} testId="money-save-empty">
           {child.name} has nothing spendable yet, so there is nothing to move.
         </ResultBanner>
         <Button variant="secondary" fullWidth onClick={onCancel} testId="money-save-cancel">
@@ -66,12 +66,13 @@ export function SaveFlow({ child, snapshot, headers, onSuccess, onCancel }: Mone
         min={0}
         max={max}
         onChange={setAmount}
+        variant="design"
         useAllTone={TONE}
         preview={`= ${formatMoney(amount * snapshot.stickerRate, snapshot.currency)}`}
         testId="money-save-amount"
       />
 
-      <ResultBanner testId="money-save-preview">
+      <ResultBanner showIcon={false} testId="money-save-preview">
         {amount > 0
           ? `${amount} stickers move into savings. ${max - amount} stay ready to spend.`
           : 'Pick how many stickers to move into savings.'}
