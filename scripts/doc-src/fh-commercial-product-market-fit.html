@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>FamilyHub · Product-market fit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;500;600;700;800;900&display=swap"
+    />
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      :root {
+        --bg: #f6f1fa;
+        --ink: #191919;
+        --ink-soft: #4a4a4a;
+        --label: #4a5568;
+        --label-rule: #d9ccec;
+        --rule: #d9ccec;
+        --rule-soft: #ece3d5;
+        --yellow: #ffd21e;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow-tint: #fff6d9;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+        font-family:
+          'Nunito',
+          -apple-system,
+          sans-serif;
+        font-weight: 500;
+        font-size: 11px;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      h1,
+      h2,
+      h3,
+      .heading {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        letter-spacing: 0.005em;
+        color: var(--ink);
+      }
+      h1,
+      h2,
+      h3 {
+        break-after: avoid;
+      }
+
+      .page {
+        padding: 16mm 15mm 18mm;
+      }
+
+      /* Masthead */
+      .mast {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin: 0 0 10mm 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #000;
+      }
+      .mast .brand {
+        font-family: 'Fredoka One', cursive;
+        font-size: 24px;
+        color: var(--ink);
+        line-height: 1;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .mast .brand .star {
+        color: var(--yellow);
+        font-size: 24px;
+      }
+      .mast .meta {
+        font-size: 10px;
+        color: var(--ink-soft);
+        line-height: 1.5;
+        text-align: right;
+        font-weight: 700;
+      }
+      .mast .meta strong {
+        color: var(--ink);
+      }
+
+      /* Small uppercase section labels: eyebrow above H1, and the numbered
+         tag above each H2 ("01 · Inputs" etc.) share this same treatment. */
+      .kicker,
+      h2 .num {
+        display: block;
+        width: fit-content;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 10px;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: var(--label);
+        border-bottom: 1px solid var(--label-rule);
+        padding-bottom: 6px;
+      }
+      .kicker {
+        margin: 0 0 10px 0;
+      }
+      h2 .num {
+        margin: 0 0 8px 0;
+        font-size: 9.5px;
+      }
+
+      .title-row {
+        margin: 0 0 26px 0;
+      }
+      h1 {
+        font-size: 34px;
+        line-height: 1.08;
+        margin: 0 0 14px 0;
+        letter-spacing: -0.01em;
+      }
+      .lede {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        margin: 0;
+        max-width: 62ch;
+      }
+
+      /* Thesis callout: an accent card with a hard offset shadow */
+      .pullout {
+        background: var(--yellow-tint);
+        border: 2px solid #000;
+        border-radius: 14px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 16px 20px;
+        margin: 24px 0 10px;
+        font-size: 12px;
+        line-height: 1.6;
+        break-inside: avoid;
+      }
+      .pullout .pin-label {
+        display: inline-block;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink);
+        background: var(--yellow);
+        border: 2px solid #000;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 #000;
+        padding: 3px 12px;
+        margin: 0 0 10px 0;
+      }
+
+      /* Logic model chain */
+      .chain {
+        margin: 30px 0 34px;
+        padding: 0;
+        counter-reset: chain;
+        list-style: none;
+        break-inside: avoid;
+      }
+      .chain li {
+        counter-increment: chain;
+        display: grid;
+        grid-template-columns: 32px 118px 1fr;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 4px;
+        border-bottom: 1px solid var(--rule);
+        break-inside: avoid;
+      }
+      .chain li:first-child {
+        border-top: 2px solid #000;
+      }
+      .chain li:last-child {
+        border-bottom: 2px solid #000;
+      }
+      .chain li::before {
+        content: counter(chain, decimal-leading-zero);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 10px;
+        color: #000;
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 2px solid #000;
+        box-shadow: 2px 2px 0 #000;
+      }
+      .chain li:nth-child(1)::before {
+        background: var(--yellow);
+      }
+      .chain li:nth-child(2)::before {
+        background: var(--pink);
+      }
+      .chain li:nth-child(3)::before {
+        background: var(--green);
+      }
+      .chain li:nth-child(4)::before {
+        background: var(--cyan);
+      }
+      .chain li:nth-child(5)::before {
+        background: var(--coral);
+      }
+      .chain .stage {
+        font-family: 'Fredoka One', cursive;
+        font-size: 13px;
+        color: var(--ink);
+        letter-spacing: 0.01em;
+      }
+      .chain .body {
+        font-size: 11.5px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+      }
+      .chain .body strong {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      h2 {
+        font-size: 20px;
+        margin: 34px 0 8px 0;
+        letter-spacing: -0.005em;
+      }
+      h3 {
+        font-size: 13px;
+        margin: 18px 0 4px 0;
+      }
+      p {
+        margin: 8px 0;
+      }
+      strong {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      ul.clean {
+        list-style: none;
+        margin: 8px 0 0 0;
+        padding: 0;
+      }
+      ul.clean li {
+        padding: 6px 0 6px 18px;
+        position: relative;
+        font-size: 11.5px;
+        line-height: 1.6;
+        border-bottom: 1px solid var(--rule-soft);
+      }
+      ul.clean li:last-child {
+        border-bottom: none;
+      }
+      ul.clean li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 1.05em;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #000;
+        opacity: 0.7;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0 4px;
+        font-size: 11px;
+        font-weight: 500;
+        break-inside: avoid;
+      }
+      th,
+      td {
+        padding: 7px 8px 7px 0;
+        text-align: left;
+        line-height: 1.5;
+        border-bottom: 1px solid var(--rule-soft);
+        vertical-align: top;
+      }
+      th {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        color: var(--label);
+        text-transform: uppercase;
+        border-bottom: 2px solid #000;
+      }
+      td.num,
+      th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
+      }
+
+      /* Recurring financial-literacy thread: subtle, repeated, never dominant */
+      .fl-thread {
+        font-weight: 800;
+        color: var(--ink);
+        background: var(--green);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+      .fl-anchor {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      footer {
+        margin-top: 32px;
+        font-size: 10px;
+        color: var(--ink-soft);
+        border-top: 2px solid #000;
+        padding-top: 12px;
+        text-align: center;
+        break-inside: avoid;
+      }
+      footer strong {
+        color: var(--ink);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+      }
+
+      section {
+        break-inside: avoid;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+
+      /* h1-purple-panel: deck-style deep purple hero */
+      h1 {
+        background: #3d1065;
+        color: #fff !important;
+        padding: 5mm 7mm;
+        border: 3px solid #000;
+        border-radius: 12px;
+        box-shadow: 4px 4px 0 #000;
+        break-inside: avoid;
+      }
+      h1 * {
+        color: #fff !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="mast">
+        <div class="brand"><span class="star">★</span> Family Hub</div>
+        <div class="meta">
+          <strong>Product-market fit</strong><br />
+          8 August 2026 · Commercial
+        </div>
+      </div>
+
+      <p class="kicker">Commercial · Evidence</p>
+      <h1>Product-market fit</h1>
+      <p class="lede">
+        Whether anyone wants this, what proof would look like, and how to get that proof in ninety
+        days. Written for one person with a working app and no paying users.
+      </p>
+
+      <div class="pullout">
+        <span class="pin-label">Where we actually stand</span>
+        <strong>There is no evidence of a real user anywhere in this project.</strong> Every persona
+        and pain point in the strategy documents is founder judgement, not something observed. That
+        is normal at this stage. It also means the entire case rests on one person's instinct, which
+        is the most common way early products misread their market. Nothing here claims Family Hub
+        has fit. It is a plan to find out.
+      </div>
+
+      <h2><span class="num">01 · The wedge</span>One job, one age band</h2>
+      <div class="pullout">
+        <span class="pin-label">The wedge</span>
+        Turning a paper chore chart and hand-counted pocket money into a system where a child aged
+        roughly <strong>6 to 11</strong> earns, sees, and decides what to do with their own money,
+        for a parent who already does this by hand and is tired of it.
+      </div>
+      <p>
+        The strategy leads with "the operating system for modern family life". That is broader and
+        weaker, for a reason visible in the repository itself:
+      </p>
+      <ul class="clean">
+        <li>
+          The habit-to-money loop has had <strong>a dozen or more refinement tickets</strong>: the
+          money row, investment tags, contrast, the value-over-time maths, the action sheets. That
+          is where the product has a real opinion.
+        </li>
+        <li>
+          Meals, calendar, noticeboard and assignments have
+          <strong>no feature document at all</strong>. They are competent, and undifferentiated.
+        </li>
+      </ul>
+      <p>The product already voted with its effort. The positioning should follow it.</p>
+      <h3>Stated so it can be proved wrong</h3>
+      <p>
+        Among parents of a 6 to 11 year old who currently run pocket money by hand, at least
+        <strong>40% of households that activate</strong> will, in a second consecutive week, have
+        the child both complete a habit <strong>and</strong> take a money action, and will describe
+        it unprompted as better than what they did before. If that is false, the money layer is
+        decoration on a sticker chart.
+      </p>
+
+      <h2><span class="num">02 · The bet</span>The one thing that decides everything</h2>
+      <table>
+        <tr>
+          <th style="width: 22%">Reading</th>
+          <th>The case for it</th>
+        </tr>
+        <tr>
+          <td><strong>It is a moat</strong></td>
+          <td>
+            Three ideas proven separately (loss aversion, money staked on consistency, children
+            investing) that nobody has assembled for families, plausibly because the kids' money
+            companies were all consumed by card and banking regulation
+          </td>
+        </tr>
+        <tr>
+          <td><strong>It is a mistake</strong></td>
+          <td>
+            <strong>No data exists anywhere</strong> on whether shrinking a child's tracked value
+            for a missed habit improves the habit, or just produces resentment and a deleted app. A
+            penalty on a child's money can read badly out of context, however safe it is technically
+          </td>
+        </tr>
+      </table>
+      <p>
+        <strong>This must be tested on real children before it becomes the headline.</strong> It is
+        the first thing to learn, not the first thing to advertise.
+      </p>
+
+      <h2><span class="num">03 · Proof</span>What would count, and what would not</h2>
+      <p>
+        <strong>Activation has to mean two people, not one.</strong> A grown-up finishes signup,
+        adds a child, sets a habit, <strong>and</strong> the child signs in with their own PIN and
+        completes a habit, within seven days. The product does not work if only the adult shows up.
+      </p>
+      <table>
+        <tr>
+          <th style="width: 40%">Measure</th>
+          <th class="num">Green</th>
+          <th class="num">Amber</th>
+          <th class="num">Red, stop</th>
+        </tr>
+        <tr>
+          <td>Signup to activation, within 7 days</td>
+          <td class="num">50%+</td>
+          <td class="num">25 to 50%</td>
+          <td class="num">under 15%</td>
+        </tr>
+        <tr>
+          <td>Week 2 return with a habit done</td>
+          <td class="num">40%+</td>
+          <td class="num">20 to 40%</td>
+          <td class="num">under 20%</td>
+        </tr>
+        <tr>
+          <td>Week 4 return with a habit done</td>
+          <td class="num">25%+</td>
+          <td class="num">15 to 25%</td>
+          <td class="num">under 10%</td>
+        </tr>
+        <tr>
+          <td>A money action after week 1</td>
+          <td class="num">30%+</td>
+          <td class="num">15 to 30%</td>
+          <td class="num">under 10%</td>
+        </tr>
+      </table>
+      <p>
+        <strong>Track the last two separately, never blended.</strong> "Earns again in week 2" only
+        proves we beat a paper chart, which plenty of chore apps already do. "Takes a money action
+        after week 1" is the only one that tests what we are actually selling. If the first is
+        healthy and the second is not, we have built a nicer sticker chart.
+      </p>
+
+      <h2><span class="num">04 · Risk</span>The riskiest assumptions, in order</h2>
+      <table>
+        <tr>
+          <th style="width: 36%">The assumption</th>
+          <th style="width: 30%">Why it is this high</th>
+          <th>The cheapest test</th>
+        </tr>
+        <tr>
+          <td><strong>1.</strong> Both a grown-up and a child turn up, or nothing happens</td>
+          <td>The precondition for every other number</td>
+          <td>
+            Personally onboard 15 to 20 families on a call, and watch whether the child's first
+            session happens
+          </td>
+        </tr>
+        <tr>
+          <td><strong>2.</strong> The pain is bad enough that a parent finishes setup</td>
+          <td>If the paper chart is tolerable, nobody switches</td>
+          <td>15 to 20 interviews before showing the app</td>
+        </tr>
+        <tr>
+          <td><strong>3.</strong> Parents hand over the real money the app says they owe</td>
+          <td>We move no money and issue no card. Entirely trust</td>
+          <td>One line a week: did anything get cashed out, did you pay it</td>
+        </tr>
+        <tr>
+          <td><strong>4.</strong> An eight-year-old understands "invest"</td>
+          <td>If only the parent gets it, it is a parent feature in a child's costume</td>
+          <td>Five minutes with 5 to 8 children: ask them to explain it back</td>
+        </tr>
+        <tr>
+          <td><strong>5.</strong> "It can lose value" does not alarm the parent</td>
+          <td>A perception risk, separate from technical safety</td>
+          <td>Ask directly how the language reads</td>
+        </tr>
+        <tr>
+          <td><strong>6.</strong> Families want one app, not the best of each</td>
+          <td>Decides whether the six grown-up tabs earn their place</td>
+          <td>Ask which tool they would actually stop using</td>
+        </tr>
+      </table>
+
+      <h2><span class="num">05 · Against</span>The honest case against</h2>
+      <ul class="clean">
+        <li>
+          <strong>Too broad, for one person.</strong> Six grown-up tabs, a child's world, learning
+          games and an intricate money engine, before a single person has paid. Deep in one place,
+          thin everywhere else, pitched as a whole operating system.
+        </li>
+        <li>
+          <strong>The headline claim does not survive a check.</strong> Positioning leads with
+          understanding twins and step-children. The database has no field for either.
+        </li>
+        <li>
+          <strong>The financial projections are imaginary.</strong> Billing is an empty placeholder,
+          and the strategy projects $720k of annual revenue inside 24 months.
+        </li>
+        <li>
+          <strong>Money plus children has no second impression.</strong> "Invest" and "can lose
+          value" applied to a child read badly out of context, whatever the technical reality.
+        </li>
+        <li>
+          <strong>The wedge is not empty water.</strong> Greenlight, Acorns Early, Rooster Money and
+          BusyKid already own "children plus chores plus money", several with real cards and years
+          of trust.
+        </li>
+        <li>
+          <strong>There is no evidence of a real user anywhere in the project.</strong> Every
+          persona is founder judgement, not observation. Normal at this stage, and the most common
+          way early products misread their market.
+        </li>
+      </ul>
+
+      <h2><span class="num">06 · Plan</span>Ninety days, one person</h2>
+      <ul class="chain">
+        <li>
+          <span class="stage">Days 0 to 30</span
+          ><span class="body"
+            ><strong>Does anyone turn up, and is the pain real.</strong> Recruit 15 to 20 families
+            through warm channels only, skewed to a child aged 6 to 11. Interview before demoing.
+            Onboard every family personally. <strong>Gate:</strong> 8 activate, 5 return in week 2
+            with a habit done.</span
+          >
+        </li>
+        <li>
+          <span class="stage">Days 31 to 60</span
+          ><span class="body"
+            ><strong>Does the money loop land.</strong> Grow to 40 to 60 by referral, which doubles
+            as a free test of whether families invite families. Run the child think-aloud on the
+            invest screen. Ask directly about $7.99. <strong>Gate:</strong> week 4 retention 15 to
+            20%+, a money action after week 1 in 30%+.</span
+          >
+        </li>
+        <li>
+          <span class="stage">Days 61 to 90</span
+          ><span class="body"
+            ><strong>Does anyone actually pay.</strong> Charge 10 to 15 of the most engaged families
+            for real, even at a discount. In parallel run a stripped signup, habit tracker and money
+            only, on 10 to 15 new families. <strong>Decision:</strong> 3 to 5 paying plus holding
+            retention is a green light for one paid channel.</span
+          >
+        </li>
+      </ul>
+
+      <h2><span class="num">07 · Focus</span>What to cut from the pitch</h2>
+      <p>About the pitch and the default onboarding, not about deleting working code.</p>
+      <table>
+        <tr>
+          <th style="width: 32%">Feature</th>
+          <th style="width: 24%">Verdict</th>
+          <th>Why</th>
+        </tr>
+        <tr>
+          <td>Habit tracker and stickers</td>
+          <td><strong>Keep, it is the core</strong></td>
+          <td>Everything depends on it</td>
+        </tr>
+        <tr>
+          <td>Kids money: save, invest, spend</td>
+          <td><strong>Keep, make it the hero</strong></td>
+          <td>Where the depth and the difference live</td>
+        </tr>
+        <tr>
+          <td>Child PIN sign-in</td>
+          <td>Keep</td>
+          <td>Required for the wedge to work at all</td>
+        </tr>
+        <tr>
+          <td>Calendar</td>
+          <td>Keep, reframe</td>
+          <td>"This week's habits", not a Cozi replacement</td>
+        </tr>
+        <tr>
+          <td>Meals</td>
+          <td><strong>Out of the pitch</strong></td>
+          <td>A commodity job AnyList and Mealime own, with no link to the wedge</td>
+        </tr>
+        <tr>
+          <td>Noticeboard</td>
+          <td><strong>Out of the pitch</strong></td>
+          <td>WhatsApp wins, and inside one family there is nobody to broadcast to</td>
+        </tr>
+        <tr>
+          <td>Assignments and Tasks</td>
+          <td>Merge or hide one</td>
+          <td>Same job, two tabs invites the confusion the money redesign just fixed</td>
+        </tr>
+        <tr>
+          <td>Learning games</td>
+          <td>Keep shipped, out of the pitch</td>
+          <td>A third product competing with Khan Academy</td>
+        </tr>
+        <tr>
+          <td>Organisation and white-label</td>
+          <td><strong>Freeze</strong></td>
+          <td>Chasing a second buyer before the first has retention data</td>
+        </tr>
+      </table>
+
+      <footer>
+        <strong>Family Hub</strong> · Product-market fit · 8 August 2026 · No paying customers, no
+        live billing, no evidence yet
+      </footer>
+    </div>
+  </body>
+</html>

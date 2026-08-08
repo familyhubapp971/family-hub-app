@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>FamilyHub · Where we fit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;500;600;700;800;900&display=swap"
+    />
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      :root {
+        --bg: #f6f1fa;
+        --ink: #191919;
+        --ink-soft: #4a4a4a;
+        --label: #4a5568;
+        --label-rule: #d9ccec;
+        --rule: #d9ccec;
+        --rule-soft: #ece3d5;
+        --yellow: #ffd21e;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow-tint: #fff6d9;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+        font-family:
+          'Nunito',
+          -apple-system,
+          sans-serif;
+        font-weight: 500;
+        font-size: 11px;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      h1,
+      h2,
+      h3,
+      .heading {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        letter-spacing: 0.005em;
+        color: var(--ink);
+      }
+      h1,
+      h2,
+      h3 {
+        break-after: avoid;
+      }
+
+      .page {
+        padding: 16mm 15mm 18mm;
+      }
+
+      /* Masthead */
+      .mast {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin: 0 0 10mm 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #000;
+      }
+      .mast .brand {
+        font-family: 'Fredoka One', cursive;
+        font-size: 24px;
+        color: var(--ink);
+        line-height: 1;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .mast .brand .star {
+        color: var(--yellow);
+        font-size: 24px;
+      }
+      .mast .meta {
+        font-size: 10px;
+        color: var(--ink-soft);
+        line-height: 1.5;
+        text-align: right;
+        font-weight: 700;
+      }
+      .mast .meta strong {
+        color: var(--ink);
+      }
+
+      /* Small uppercase section labels: eyebrow above H1, and the numbered
+         tag above each H2 ("01 · Inputs" etc.) share this same treatment. */
+      .kicker,
+      h2 .num {
+        display: block;
+        width: fit-content;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 10px;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: var(--label);
+        border-bottom: 1px solid var(--label-rule);
+        padding-bottom: 6px;
+      }
+      .kicker {
+        margin: 0 0 10px 0;
+      }
+      h2 .num {
+        margin: 0 0 8px 0;
+        font-size: 9.5px;
+      }
+
+      .title-row {
+        margin: 0 0 26px 0;
+      }
+      h1 {
+        font-size: 34px;
+        line-height: 1.08;
+        margin: 0 0 14px 0;
+        letter-spacing: -0.01em;
+      }
+      .lede {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        margin: 0;
+        max-width: 62ch;
+      }
+
+      /* Thesis callout: an accent card with a hard offset shadow */
+      .pullout {
+        background: var(--yellow-tint);
+        border: 2px solid #000;
+        border-radius: 14px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 16px 20px;
+        margin: 24px 0 10px;
+        font-size: 12px;
+        line-height: 1.6;
+        break-inside: avoid;
+      }
+      .pullout .pin-label {
+        display: inline-block;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink);
+        background: var(--yellow);
+        border: 2px solid #000;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 #000;
+        padding: 3px 12px;
+        margin: 0 0 10px 0;
+      }
+
+      /* Logic model chain */
+      .chain {
+        margin: 30px 0 34px;
+        padding: 0;
+        counter-reset: chain;
+        list-style: none;
+        break-inside: avoid;
+      }
+      .chain li {
+        counter-increment: chain;
+        display: grid;
+        grid-template-columns: 32px 118px 1fr;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 4px;
+        border-bottom: 1px solid var(--rule);
+        break-inside: avoid;
+      }
+      .chain li:first-child {
+        border-top: 2px solid #000;
+      }
+      .chain li:last-child {
+        border-bottom: 2px solid #000;
+      }
+      .chain li::before {
+        content: counter(chain, decimal-leading-zero);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 10px;
+        color: #000;
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 2px solid #000;
+        box-shadow: 2px 2px 0 #000;
+      }
+      .chain li:nth-child(1)::before {
+        background: var(--yellow);
+      }
+      .chain li:nth-child(2)::before {
+        background: var(--pink);
+      }
+      .chain li:nth-child(3)::before {
+        background: var(--green);
+      }
+      .chain li:nth-child(4)::before {
+        background: var(--cyan);
+      }
+      .chain li:nth-child(5)::before {
+        background: var(--coral);
+      }
+      .chain .stage {
+        font-family: 'Fredoka One', cursive;
+        font-size: 13px;
+        color: var(--ink);
+        letter-spacing: 0.01em;
+      }
+      .chain .body {
+        font-size: 11.5px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+      }
+      .chain .body strong {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      h2 {
+        font-size: 20px;
+        margin: 34px 0 8px 0;
+        letter-spacing: -0.005em;
+      }
+      h3 {
+        font-size: 13px;
+        margin: 18px 0 4px 0;
+      }
+      p {
+        margin: 8px 0;
+      }
+      strong {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      ul.clean {
+        list-style: none;
+        margin: 8px 0 0 0;
+        padding: 0;
+      }
+      ul.clean li {
+        padding: 6px 0 6px 18px;
+        position: relative;
+        font-size: 11.5px;
+        line-height: 1.6;
+        border-bottom: 1px solid var(--rule-soft);
+      }
+      ul.clean li:last-child {
+        border-bottom: none;
+      }
+      ul.clean li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 1.05em;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #000;
+        opacity: 0.7;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0 4px;
+        font-size: 11px;
+        font-weight: 500;
+        break-inside: avoid;
+      }
+      th,
+      td {
+        padding: 7px 8px 7px 0;
+        text-align: left;
+        line-height: 1.5;
+        border-bottom: 1px solid var(--rule-soft);
+        vertical-align: top;
+      }
+      th {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        color: var(--label);
+        text-transform: uppercase;
+        border-bottom: 2px solid #000;
+      }
+      td.num,
+      th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
+      }
+
+      /* Recurring financial-literacy thread: subtle, repeated, never dominant */
+      .fl-thread {
+        font-weight: 800;
+        color: var(--ink);
+        background: var(--green);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+      .fl-anchor {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      footer {
+        margin-top: 32px;
+        font-size: 10px;
+        color: var(--ink-soft);
+        border-top: 2px solid #000;
+        padding-top: 12px;
+        text-align: center;
+        break-inside: avoid;
+      }
+      footer strong {
+        color: var(--ink);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+      }
+
+      section {
+        break-inside: avoid;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+
+      /* h1-purple-panel: deck-style deep purple hero */
+      h1 {
+        background: #3d1065;
+        color: #fff !important;
+        padding: 5mm 7mm;
+        border: 3px solid #000;
+        border-radius: 12px;
+        box-shadow: 4px 4px 0 #000;
+        break-inside: avoid;
+      }
+      h1 * {
+        color: #fff !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="mast">
+        <div class="brand"><span class="star">★</span> Family Hub</div>
+        <div class="meta">
+          <strong>Where we fit</strong><br />
+          8 August 2026 · Commercial
+        </div>
+      </div>
+
+      <p class="kicker">Commercial · Positioning</p>
+      <h1>Where Family Hub fits</h1>
+      <p class="lede">
+        Which market this is really in, who else is in it, and what we can honestly claim. Built
+        from four research passes. Every figure carries its source; calculations chaining two
+        sources are flagged; gaps say so rather than guess.
+      </p>
+
+      <div class="pullout">
+        <span class="pin-label">The short answer</span>
+        Sell Family Hub as <strong>a kids' money and habits app that needs no bank card</strong>.
+        Not a family calendar. Not a learning app. Those are included, and they are good, but they
+        are not why anyone would pay. Lead in the <strong>UK</strong>, not the Gulf. Ages
+        <strong>6 to 11</strong>. The buyer is a parent who already runs pocket money by hand and is
+        tired of it.
+      </div>
+
+      <h2><span class="num">01 · The market</span>Which market this is really in</h2>
+      <p>Family Hub touches four markets. Only one of them will pay for it.</p>
+      <table>
+        <tr>
+          <th style="width: 31%">Market</th>
+          <th style="width: 22%">Size, most recent</th>
+          <th style="width: 19%">Growth</th>
+          <th>What it means for us</th>
+        </tr>
+        <tr>
+          <td><strong>Kids' money and banking</strong></td>
+          <td>$1.8B (2024)</td>
+          <td>17.2% a year, to $7.2B by 2033</td>
+          <td>
+            <strong>This is the one.</strong> Proven revenue, and our price already matches what
+            people pay
+          </td>
+        </tr>
+        <tr>
+          <td>Kids' learning apps</td>
+          <td>$7.8B (2024)</td>
+          <td>13.7% a year</td>
+          <td>Big, but mostly free at entry. A bad place to lead</td>
+        </tr>
+        <tr>
+          <td>Family organisers</td>
+          <td>$717M to $1.93B (2026)</td>
+          <td>8% to 20%, wide spread means low confidence</td>
+          <td>Priced at $3 to $7 a month against free tools. Leading here caps our price</td>
+        </tr>
+        <tr>
+          <td>Chore and allowance</td>
+          <td>No separate report exists</td>
+          <td>n/a</td>
+          <td>Not a real market. A feature inside the kids' money apps</td>
+        </tr>
+      </table>
+      <p>
+        Greenlight reported <strong>$228.5M of annual revenue in 2024</strong> across 6M+ users.
+        Acorns Early (formerly GoHenry in the US) charges <strong>$8 and $12</strong> a month,
+        almost exactly our $7.99 and $12.99. Family organisers charge $3 to $7, so leading as an
+        organiser invites people to compare us at half our price.
+      </p>
+
+      <h2><span class="num">02 · The difference</span>What nobody else does</h2>
+      <p>
+        Every competitor found, global and Gulf, ties earning to finishing a chore. Where any of
+        them offer investing, it is a real brokerage account whose value moves with the stock
+        market, disconnected from the child once the money is in.
+      </p>
+      <div class="pullout">
+        <span class="pin-label">The finding</span>
+        <strong
+          >No competitor was found, anywhere, where an invested balance grows on the days a habit is
+          done and can lose value on the days it is missed.</strong
+        >
+        A return that depends on your own consistency rather than the market appears to be genuinely
+        unbuilt. Checked across roughly twenty searches by two independent researchers.
+      </div>
+      <p>
+        <strong>The honest other reading:</strong> it may be unbuilt because it does not work. There
+        is <strong>no data anywhere</strong> on whether shrinking a child's tracked value for a
+        missed habit improves the habit or just breeds resentment. Rooster Money markets "no risk of
+        debt" as a selling point, the opposite instinct. This is the single biggest bet in the
+        product and it is unproven.
+      </p>
+
+      <h2><span class="num">03 · The field</span>Who else is in the market</h2>
+      <h3>The card issuers, who own the words "teach kids about money"</h3>
+      <table>
+        <tr>
+          <th style="width: 22%">Who</th>
+          <th style="width: 26%">Price</th>
+          <th style="width: 20%">Scale</th>
+          <th>Their weakness</th>
+        </tr>
+        <tr>
+          <td>Greenlight</td>
+          <td>$4.99 to $14.98/mo, 5 kids and 2 adults</td>
+          <td>6M+ users, $228.5M (2024)</td>
+          <td>
+            Caps at <strong>2 adults</strong>. Valuation fell from $2.3B (2021) to about $601M on a
+            secondary estimate, roughly 74%
+          </td>
+        </tr>
+        <tr>
+          <td>Acorns Early (was GoHenry)</td>
+          <td>$8 or $12/mo</td>
+          <td>2M+ accounts</td>
+          <td>Caps at <strong>4 children</strong>. Mid-rebrand</td>
+        </tr>
+        <tr>
+          <td>Rooster Money</td>
+          <td>£1.99/mo, free for NatWest</td>
+          <td>Not disclosed</td>
+          <td>Tied to a UK bank account. Does not travel</td>
+        </tr>
+        <tr>
+          <td>Spriggy</td>
+          <td>AUD $5 to $9/mo</td>
+          <td>Not disclosed</td>
+          <td>Australia only</td>
+        </tr>
+      </table>
+      <p>
+        They earn twice: a subscription plus a cut of every card swipe. That second income quietly
+        rewards a child spending more, which sits awkwardly beside "teach saving". It also costs
+        them a sponsor bank, identity and anti-money-laundering work, and dispute handling.
+      </p>
+      <h3>In the Gulf specifically</h3>
+      <p>
+        Verity, Leap, Cashee, Edfundo and Savii already run kids' money products in the UAE and
+        Saudi. <strong>GEMS and Visa run a live card programme across 200,000+ students</strong> in
+        the UAE's largest school network. The space is not empty, and the institutional route is
+        already taken.
+      </p>
+
+      <h2><span class="num">04 · The call</span>Launch in the UK, not the Gulf</h2>
+      <p>The current strategy says Gulf first. The research says otherwise, and it is not close.</p>
+      <table>
+        <tr>
+          <th style="width: 34%">Reason</th>
+          <th>Detail</th>
+        </tr>
+        <tr>
+          <td><strong>The UK pool is about five times bigger</strong></td>
+          <td>
+            Roughly 8.1M UK families with dependent children against roughly 1.6M UAE households
+            with children. Both chain official statistics, so treat as orders of magnitude
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Our price is proven there and untested here</strong></td>
+          <td>
+            $7.99 and $12.99 sit on Acorns Early's $8 and $12 and ClassDojo's $7.99. In the Gulf,
+            Verity and Edfundo publish no price, and Edfundo's own words are "less than the price of
+            a coffee", implying $3 to $5
+          </td>
+        </tr>
+        <tr>
+          <td><strong>The words need more care there</strong></td>
+          <td>
+            A balance that grows over time sits close to a concept carrying real weight in a
+            Muslim-majority market, even though ours grows through effort rather than time, which is
+            materially different. A copy decision, not a reason to avoid the market
+          </td>
+        </tr>
+      </table>
+      <p>
+        <strong>What would change this call:</strong> a Gulf pilot showing families paying at or
+        near $7.99. Gulf smartphone use and cashless sentiment genuinely run ahead of the UK, and
+        education apps there convert over 40% of free trials against about 19% for games. The call
+        is reversible: currency is already per family and localised.
+      </p>
+
+      <h2><span class="num">05 · Honesty</span>What we can claim today</h2>
+      <div class="pullout">
+        <span class="pin-label">Drop this claim</span>
+        The positioning document leads with being "the first family app to ask about twins,
+        step-children, grandma".
+        <strong>The database has no field for twins, birth order or step-relationships.</strong>
+        They exist in a feature document and an architecture decision, and nowhere in the shipped
+        schema. A grandparent, a nanny and a step-parent are all just "adult" today. Leading with a
+        claim the product cannot demonstrate is the fastest way to lose a credible buyer.
+      </div>
+      <p>
+        <strong>Keep this one instead, because it is real and checkable:</strong> any number of
+        grown-ups, any number of children, one family space. Verified in the code: five roles, no
+        member cap anywhere, and a sticker rate settable per child.
+      </p>
+      <ul class="clean">
+        <li>
+          <strong>Greenlight</strong> caps at 2 adults. Two parents plus a grandparent does not fit.
+        </li>
+        <li>
+          <strong>Google Family</strong> caps at 6 people. Four children and two parents fills it
+          exactly.
+        </li>
+        <li><strong>Acorns Early</strong> caps at 4 children.</li>
+        <li>
+          <strong>OurFamilyWizard</strong>, what blended families actually use, charges
+          <strong>per parent</strong> at $110 to $300 a year each, for custody messaging alone.
+        </li>
+      </ul>
+      <p>
+        So the honest story is not "we understand twins". It is
+        <strong>"we do not charge you per adult, and we do not run out of seats."</strong>
+      </p>
+
+      <h2><span class="num">06 · Second buyer</span>Schools are distribution, not revenue</h2>
+      <table>
+        <tr>
+          <th style="width: 30%">Buyer</th>
+          <th style="width: 26%">What they pay</th>
+          <th>Verdict</th>
+        </tr>
+        <tr>
+          <td>Homeschool co-ops</td>
+          <td>About $9.95 per family per year</td>
+          <td>We charge $96 to $156. No org pays ten times its own admin software</td>
+        </tr>
+        <tr>
+          <td>Schools</td>
+          <td>Wide range, bought through procurement</td>
+          <td>Tenders, year contracts, IT approval. A long sale for one person</td>
+        </tr>
+        <tr>
+          <td><strong>The ClassDojo pattern</strong></td>
+          <td>Free for the school</td>
+          <td>
+            <strong>This is the one that works.</strong> Reached about 95% of US schools, then
+            families pay $7.99 each
+          </td>
+        </tr>
+      </table>
+      <p>
+        <strong>Freeze the paid organisation tier.</strong> Keep the architecture, it is built and
+        costs nothing to keep. Use organisations later as a cheap way to reach many paying families
+        at once, on the normal consumer subscription.
+      </p>
+
+      <h2><span class="num">07 · Position</span>The words to actually use</h2>
+      <div class="pullout">
+        <span class="pin-label">The line</span>
+        <strong style="font-size: 14px"
+          >Pocket money that teaches saving, not just spending. No card, no bank, no risk.</strong
+        ><br /><br />
+        A child earns stickers by keeping habits. The family decides what a sticker is worth. The
+        child can spend them in the family's own reward shop, put them safe in savings, or put them
+        behind a habit and watch the value grow while they keep it up. No card is issued. No real
+        money moves through us.
+      </div>
+      <p>
+        <strong>The limit to state out loud:</strong> this works for roughly ages 5 to 12, where the
+        lesson is behavioural. For teenagers who need to actually hold and spend a balance, a real
+        card wins, and we should not pretend otherwise. Saying so is more credible than claiming the
+        whole age range.
+      </p>
+
+      <footer>
+        <strong>Family Hub</strong> · Where we fit · 8 August 2026 · Research complete, decisions
+        proposed, none tested on real families
+      </footer>
+    </div>
+  </body>
+</html>
