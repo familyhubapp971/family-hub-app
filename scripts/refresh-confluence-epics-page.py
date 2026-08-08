@@ -21,6 +21,11 @@ Usage:
 Reads env vars: EMAIL, JIRA_API_TOKEN, URL. Standard library only.
 """
 
+# `dict | None` in an annotation is a syntax error before 3.10, and macOS still
+# ships 3.9 as its system python3. Deferring annotation evaluation keeps the
+# modern spelling working on a stock Mac with nothing installed.
+from __future__ import annotations
+
 import argparse
 import base64
 import html
