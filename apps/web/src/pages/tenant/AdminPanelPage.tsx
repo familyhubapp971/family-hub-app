@@ -38,7 +38,7 @@ import { API_BASE } from '../../lib/api';
 import { AppHeader } from './AppHeader';
 import { DEFAULT_TAB } from './dashboard-tabs';
 import { RewardsTab } from './admin/RewardsTab';
-import { isKidRole } from '@familyhub/shared';
+import { FALLBACK_CURRENCY, currencySymbol, formatMoney, isKidRole } from '@familyhub/shared';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -317,10 +317,12 @@ function ClaimQuickAction({
 function CashOutQuickAction({
   memberId,
   headers,
+  currency,
   onClose,
 }: {
   memberId: string;
   headers: Record<string, string> | null;
+  currency: string;
   onClose: () => void;
 }) {
   const [amount, setAmount] = useState('');
@@ -356,7 +358,7 @@ function CashOutQuickAction({
           htmlFor="qa-cashout-amount"
           className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block"
         >
-          Amount (AED)
+          Amount ({currencySymbol(currency)})
         </label>
         <input
           id="qa-cashout-amount"
@@ -391,10 +393,12 @@ function CashOutQuickAction({
 function SaveQuickAction({
   memberId,
   headers,
+  currency,
   onClose,
 }: {
   memberId: string;
   headers: Record<string, string> | null;
+  currency: string;
   onClose: () => void;
 }) {
   const [type, setType] = useState<'stickers' | 'cash'>('stickers');
@@ -447,7 +451,7 @@ function SaveQuickAction({
               : 'bg-white border-gray-200 hover:border-black',
           ].join(' ')}
         >
-          💵 Cash (AED)
+          💵 Cash ({currencySymbol(currency)})
         </button>
       </div>
       <div>
@@ -711,12 +715,14 @@ function QuickActionModal({
   memberId,
   currentWeekId,
   headers,
+  currency,
   onClose,
 }: {
   action: QuickAction;
   memberId: string;
   currentWeekId: string | null;
   headers: Record<string, string> | null;
+  currency: string;
   onClose: () => void;
 }) {
   if (!action) return null;
@@ -749,10 +755,20 @@ function QuickActionModal({
             <ClaimQuickAction memberId={memberId} headers={headers} onClose={onClose} />
           )}
           {action === 'cashout' && (
-            <CashOutQuickAction memberId={memberId} headers={headers} onClose={onClose} />
+            <CashOutQuickAction
+              memberId={memberId}
+              headers={headers}
+              currency={currency}
+              onClose={onClose}
+            />
           )}
           {action === 'save' && (
-            <SaveQuickAction memberId={memberId} headers={headers} onClose={onClose} />
+            <SaveQuickAction
+              memberId={memberId}
+              headers={headers}
+              currency={currency}
+              onClose={onClose}
+            />
           )}
           {action === 'invest' && (
             <InvestQuickAction
@@ -777,10 +793,12 @@ function BalanceTab({
   memberId,
   currentWeekId,
   headers,
+  currency,
 }: {
   memberId: string;
   currentWeekId: string | null;
   headers: Record<string, string> | null;
+  currency: string;
 }) {
   const [stats, setStats] = useState<WeekStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -831,7 +849,7 @@ function BalanceTab({
   const stickers = stats?.unallocatedStickers ?? 0;
   // FHS-512: cashValue comes straight from the API (rate applied server-side
   // for this child), never recomputed client-side with a hardcoded 0.5.
-  const cashValue = (stats?.cashValue ?? 0).toFixed(2);
+  const cashValue = formatMoney(stats?.cashValue ?? 0, currency);
 
   return (
     <div
@@ -862,7 +880,7 @@ function BalanceTab({
             data-testid="admin-balance-cash-display"
             className="text-3xl font-black text-green-700"
           >
-            AED {cashValue}
+            {cashValue}
           </span>
         </Card>
       </div>
@@ -972,6 +990,7 @@ function BalanceTab({
           memberId={memberId}
           currentWeekId={currentWeekId}
           headers={headers}
+          currency={currency}
           onClose={handleActionClose}
         />
       )}
@@ -984,9 +1003,11 @@ function BalanceTab({
 function SavingsTab({
   memberId,
   headers,
+  currency,
 }: {
   memberId: string;
   headers: Record<string, string> | null;
+  currency: string;
 }) {
   const [data, setData] = useState<SavingsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1060,11 +1081,11 @@ function SavingsTab({
   const savedStickers = data?.savedStickers ?? 0;
   // FHS-512: this child's effective rate, never a hardcoded 0.5.
   const stickerRate = data?.stickerRate ?? 0.5;
-  const cashEquiv = (savedStickers * stickerRate + savedCash).toFixed(2);
-  // FHS-441: GET /api/mw/financial/savings already returns the family's
-  // currency; use it instead of a hardcoded "AED" so a family that changed
-  // currency in App Info sees it reflected here too.
-  const currency = data?.currency ?? 'AED';
+  // FHS-441 read the currency off this tab's own savings response. FHS-614
+  // review: two sources for one answer means two tabs can show different
+  // currencies at once (and a currency changed in Settings never reached this
+  // one). The page owns it now and passes it in.
+  const cashEquiv = formatMoney(savedStickers * stickerRate + savedCash, currency);
 
   return (
     <div
@@ -1112,7 +1133,7 @@ function SavingsTab({
             data-testid="admin-savings-cash-display"
             className="text-3xl font-black text-green-700"
           >
-            {currency} {savedCash.toFixed(2)}
+            {formatMoney(savedCash, currency)}
           </span>
           <p className="text-xs text-gray-400 font-medium mt-2">Liquid cash for withdrawal</p>
         </Card>
@@ -1141,7 +1162,7 @@ function SavingsTab({
           className="text-3xl font-black text-orange-700"
           data-testid="admin-savings-cash-equivalent"
         >
-          {currency} {cashEquiv}
+          {cashEquiv}
         </span>
       </Card>
 
@@ -1162,7 +1183,7 @@ function SavingsTab({
                 htmlFor="savings-cash-input"
                 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block"
               >
-                Cash Savings ({currency})
+                Cash Savings ({currencySymbol(currency)})
               </label>
               <input
                 id="savings-cash-input"
@@ -1220,9 +1241,11 @@ function SavingsTab({
 function HistoryTab({
   memberId,
   headers,
+  currency,
 }: {
   memberId: string;
   headers: Record<string, string> | null;
+  currency: string;
 }) {
   const [weeks, setWeeks] = useState<WeekRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1511,7 +1534,7 @@ function HistoryTab({
                   <p className="font-medium text-gray-700">
                     {week.carriedOverStickers} stickers
                     <span className="text-gray-400 mx-1">•</span>
-                    AED {(week.carriedOverCash ?? 0).toFixed(2)}
+                    {formatMoney(week.carriedOverCash ?? 0, currency)}
                   </p>
                 </div>
                 <div>
@@ -1519,7 +1542,7 @@ function HistoryTab({
                   <p className="font-medium text-gray-700">
                     {week.retrievedStickers} stickers
                     <span className="text-gray-400 mx-1">•</span>
-                    AED {(week.retrievedCash ?? 0).toFixed(2)}
+                    {formatMoney(week.retrievedCash ?? 0, currency)}
                   </p>
                 </div>
               </div>
@@ -1550,7 +1573,7 @@ function HistoryTab({
                           </span>
                           <span className="text-gray-500">
                             {a.stickersUsed ? `${a.stickersUsed} stickers` : ''}
-                            {a.cashAmount ? ` • AED ${a.cashAmount.toFixed(2)}` : ''}
+                            {a.cashAmount ? ` • ${formatMoney(a.cashAmount, currency)}` : ''}
                             {a.rewardName ? ` • ${a.rewardName}` : ''}
                           </span>
                         </div>
@@ -1569,7 +1592,7 @@ function HistoryTab({
                         htmlFor={`hist-carried-cash-${week.id}`}
                         className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block"
                       >
-                        Carried Cash (AED)
+                        Carried Cash ({currencySymbol(currency)})
                       </label>
                       <input
                         id={`hist-carried-cash-${week.id}`}
@@ -1588,7 +1611,7 @@ function HistoryTab({
                         htmlFor={`hist-retrieved-cash-${week.id}`}
                         className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block"
                       >
-                        Retrieved Cash (AED)
+                        Retrieved Cash ({currencySymbol(currency)})
                       </label>
                       <input
                         id={`hist-retrieved-cash-${week.id}`}
@@ -1676,7 +1699,15 @@ function HistoryTab({
 // ── Settings tab (FHS-455 rename of "App Info"; FHS-435 GDPR data export +
 // account deletion) ─────────────────────────────────────────────────────────
 
-function SettingsTab({ headers, slug }: { headers: Record<string, string> | null; slug: string }) {
+function SettingsTab({
+  headers,
+  slug,
+  onCurrencyChange,
+}: {
+  headers: Record<string, string> | null;
+  slug: string;
+  onCurrencyChange: (currency: string) => void;
+}) {
   const navigate = useNavigate();
 
   const [settings, setSettings] = useState<AppSettings>({ currency: 'USD' });
@@ -1739,6 +1770,9 @@ function SettingsTab({ headers, slug }: { headers: Record<string, string> | null
         if (!res.ok) throw new Error(`Settings update failed: ${res.status}`);
       }
       setSettings({ currency: tempCurrency });
+      // FHS-614 review: tell the page, so Balance, Savings and History show the
+      // new currency straight away rather than the old one until a reload.
+      onCurrencyChange(tempCurrency);
       setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save settings');
@@ -2026,6 +2060,10 @@ export function AdminPanelPage({ variant = 'all' }: { variant?: AdminPanelVarian
   const [children, setChildren] = useState<MemberItem[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [currentWeek, setCurrentWeek] = useState<CurrentWeek | null>(null);
+  // FHS-614: the family's currency, read once here and passed to every tab.
+  // Each tab used to answer this for itself, and the Savings tab fell back to
+  // AED while the database and every other screen default to USD.
+  const [currency, setCurrency] = useState(FALLBACK_CURRENCY);
   // null = still loading; string = loaded (may be 'admin', 'adult', 'child', 'teen', etc.)
   const [callerRole, setCallerRole] = useState<string | null>(null);
 
@@ -2061,6 +2099,18 @@ export function AdminPanelPage({ variant = 'all' }: { variant?: AdminPanelVarian
       })
       .catch(() => setCallerRole('__denied__'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headers]);
+
+  useEffect(() => {
+    if (!headers) return;
+    fetch(`${API_BASE}/api/reward-config`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b: { currency?: string } | null) => {
+        if (b?.currency) setCurrency(b.currency);
+      })
+      .catch(() => {
+        /* keep the fallback: an unreadable currency must not blank the page */
+      });
   }, [headers]);
 
   // FHS-343: the Admin Panel is admin-only; redirect any non-admin (incl. a
@@ -2207,20 +2257,23 @@ export function AdminPanelPage({ variant = 'all' }: { variant?: AdminPanelVarian
                 memberId={selectedChildId}
                 currentWeekId={currentWeek?.id ?? null}
                 headers={headers}
+                currency={currency}
               />
             )}
 
             {activeTab === 'savings' && selectedChildId && (
-              <SavingsTab memberId={selectedChildId} headers={headers} />
+              <SavingsTab memberId={selectedChildId} headers={headers} currency={currency} />
             )}
 
             {activeTab === 'history' && selectedChildId && (
-              <HistoryTab memberId={selectedChildId} headers={headers} />
+              <HistoryTab memberId={selectedChildId} headers={headers} currency={currency} />
             )}
 
             {activeTab === 'rewards' && <RewardsTab headers={headers} />}
 
-            {activeTab === 'settings' && <SettingsTab headers={headers} slug={slug} />}
+            {activeTab === 'settings' && (
+              <SettingsTab headers={headers} slug={slug} onCurrencyChange={setCurrency} />
+            )}
           </div>
         </div>
       </div>

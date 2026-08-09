@@ -342,3 +342,43 @@ describe('<CloseWeekDialog />: InvestDialog growth-rate coefficient (FHS-534)', 
     ).not.toContain('5x');
   });
 });
+
+// FHS-614 review: every test above renders with currency="AED", and in the
+// en-US test locale Intl formats AED as the literal "AED 6.00". So they pass
+// identically whether the dialog uses the shared formatter or the old
+// hand-built string: they gave this conversion no protection at all. These run
+// the same surfaces in GBP, where the two answers differ.
+
+describe('<CloseWeekDialog />: money is written the family way (FHS-614)', () => {
+  it('cash out shows the symbol, never the code', async () => {
+    installFetch({ savedStickers: 10, savedCash: 5 });
+    renderDialog('cashout', { currency: 'GBP', weeklyStickers: 12 });
+    const dialog = await screen.findByTestId('close-week-cashout-dialog');
+    await waitFor(() => expect(dialog.textContent).toContain('£'));
+    expect(dialog.textContent).not.toContain('GBP');
+  });
+
+  it('save shows the cash option with the symbol', async () => {
+    installFetch();
+    renderDialog('save', { currency: 'GBP', weeklyStickers: 12 });
+    const dialog = await screen.findByTestId('close-week-save-dialog');
+    await waitFor(() => expect(dialog.textContent).toContain('£'));
+    expect(dialog.textContent).not.toContain('GBP');
+  });
+
+  it('invest states what is being invested with the symbol', async () => {
+    installFetch();
+    renderDialog('invest', { currency: 'GBP', weeklyStickers: 20 });
+    const dialog = await screen.findByTestId('close-week-invest-dialog');
+    await waitFor(() => expect(dialog.textContent).toContain('£'));
+    expect(dialog.textContent).not.toContain('GBP');
+  });
+
+  it('a euro family reads the amount its own way, symbol after the number', async () => {
+    installFetch({ savedStickers: 10, savedCash: 5 });
+    renderDialog('cashout', { currency: 'EUR', weeklyStickers: 12 });
+    const dialog = await screen.findByTestId('close-week-cashout-dialog');
+    await waitFor(() => expect(dialog.textContent).toContain('€'));
+    expect(dialog.textContent).not.toContain('EUR');
+  });
+});

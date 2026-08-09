@@ -16,6 +16,9 @@
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@familyhub/shared": "workspace:*"
+  },
   "peerDependencies": {
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.460.0",

@@ -7,7 +7,7 @@ import { API_BASE } from '../../../../lib/api';
 // and a completion-% badge. Data for Saved/Planted fetched via
 // GET /api/kid/weeks/:id/actions (Bearer kidToken).
 
-import { summariseWeekActions } from '@familyhub/shared';
+import { formatMoney, summariseWeekActions } from '@familyhub/shared';
 
 interface WeekAction {
   actionType: string;
@@ -85,7 +85,7 @@ export function KidFinishedWeekRecap({
   }, [weekId, headers]);
 
   const pct = computeCompletion(doneThisView, totalThisView);
-  const cashValue = (earnedThisWeek * stickerRate).toFixed(2);
+  const cashValue = formatMoney(earnedThisWeek * stickerRate, currency);
 
   return (
     <section
@@ -115,9 +115,7 @@ export function KidFinishedWeekRecap({
             </p>
             <p className="font-heading text-2xl leading-none text-yellow-700">
               {earnedThisWeek}
-              <span className="ml-2 text-sm font-bold text-yellow-600">
-                = {currency} {cashValue}
-              </span>
+              <span className="ml-2 text-sm font-bold text-yellow-600">= {cashValue}</span>
             </p>
           </div>
         </div>

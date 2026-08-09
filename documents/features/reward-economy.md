@@ -268,6 +268,31 @@ language), so the conventions come from the device, the same source the currency
 picker already uses to guess a currency. The duplicated `formatMinor` in the api
 and on the reward settings page now both delegate to this one helper.
 
+**FHS-614 finished the job across the product.** FHS-613 converted the My World
+board; the Close Week dialog, the Admin Panel, the kid panels and Reward Settings
+followed, so no screen glues a currency onto a number any more. Three things came
+out of that sweep:
+
+| Thing               | What changed                                                                                                                                                                                                                                                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The fallback        | The Admin Panel fell back to AED when the API sent no currency, while the database and every other screen fall back to USD. It now uses the shared `FALLBACK_CURRENCY`.                                                                                                                                                    |
+| One source per page | The Admin Panel reads the currency once at page level and passes it to every tab, and Settings pushes a change back up. The Savings tab used to resolve its own from a different endpoint, so two tabs could show different currencies at once and a currency changed in Settings never reached the others until a reload. |
+| Hardcoded labels    | Five Admin Panel labels had "AED" written into the text ("Amount (AED)", "Carried Cash (AED)"). They show the family's own currency symbol.                                                                                                                                                                                |
+| The one exception   | The ± amount stepper (`AmountPicker`) keeps its number in an editable input, so it cannot render one formatted string. It shows the symbol beside the input via `currencySymbol()`, and is the single allowlisted file in the guard below.                                                                                 |
+
+A guard test (`tests/unit/web/money-formatting-guard.test.ts`) walks the web and
+design-system source and fails the build if a hand-built money string reappears.
+It is narrow on purpose: it looks for a currency token sat directly beside an
+amount, not for the words "currency" or "toFixed" on their own. Its own patterns
+are pinned by a test, so a regex that quietly stops matching cannot quietly stop
+guarding. Known blind spots, accepted for now: a hand-built string split across
+more than two lines, and `+` concatenation rather than a template literal.
+
+**Not fixed here:** the ± amount control assumes every currency has two decimal
+places, so a zero-decimal currency (JPY, KRW, both offered by the picker) reads
+100 times too small. That predates this ticket and is tracked as
+[FHS-636](https://qualicion2.atlassian.net/browse/FHS-636).
+
 Deviations from the mock: its figures are invented (a 6% and a 4% growth
 constant), so all three come from the live payload instead; and the change
 sentence pluralises, so one sticker reads "Up 1 sticker since last week".
