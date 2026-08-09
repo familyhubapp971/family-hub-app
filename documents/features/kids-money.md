@@ -149,7 +149,7 @@ no screen builds a money string by hand.
 | Claim a reward hardcoded six rewards                                                               | Reads the family's real shop, `GET /api/rewards?memberId=`. A reward costing more than the child's real balance (the server's own `stickerBalance`, not a client guess) cannot be picked: its row is disabled with a "needs N more stickers" note.                                                                                                                                                                             |
 | Invest and grow never asked for a multiplier or a skipped-day rule                                 | Both are now real fields (`coefficient` 1/2/3/5, `deductible` on/off) and both are sent on `POST /api/mw/financial/investments`, which the server has always accepted but this app had never sent.                                                                                                                                                                                                                             |
 | Take money out of an investment always took the whole thing                                        | A `StickerAmountPicker` asks how much, and whatever is chosen is sent as an explicit `stickers` amount on `POST /investments/:id/withdraw`, never omitted. FHS-630 changed the starting point from the full value to zero: see below.                                                                                                                                                                                          |
-| The design's "close the week" chooser, reachable from the same `MoneyActions.tsx`                  | Not built. Closing a week already exists (`CloseWeekDialog.tsx`, `apps/web/src/pages/tenant/child/`), and nothing in the shipped Kids money page reaches that chooser: the five buttons this ticket wires up never lead to it.                                                                                                                                                                                                 |
+| The design's "close the week" chooser, reachable from the same `MoneyActions.tsx`                  | Not built at the time. Superseded by FHS-637: see "The chooser was the missing step" below.                                                                                                                                                                                                                                                                                                                                    |
 | Invest and grow's sticker ceiling                                                                  | The server's true ceiling also counts money already saved as cash, converted at the child's rate. The page's own snapshot only tracks spendable stickers + saved stickers (not saved cash), so the picker's ceiling (`available + saved`) is a conservative lower bound: it can under-offer by a few stickers for a family that saves cash rather than stickers, never over-offer. The server stays the final word either way. |
 
 ## The sheets were ported to the design in FHS-630
@@ -180,7 +180,7 @@ design (`components/MoneyActions.tsx`, editor `kudjspxd3xxroueg5jw11o`).
 | Three multipliers: 2x, 3x, 5x                                                             | Four: 1x, 2x, 3x, 5x. The server accepts 1 (no boost) and a parent should be able to invest without one.                                                                                                                                                       |
 | Nothing on screen before the first choice                                                 | A short line says what to pick first ("Pick a habit to choose how much it pays and how many stickers go behind it"). The design left the sheet ending in nothing, which reads as broken. This is the one place the port deliberately adds rather than matches. |
 | "Take out" available with the whole investment pre-filled                                 | Nothing is pre-selected and the amount starts at zero, so one tap on Confirm can never empty an investment a parent only meant to look at.                                                                                                                     |
-| The "close the week" chooser                                                              | Still not built, as in FHS-623.                                                                                                                                                                                                                                |
+| The "close the week" chooser                                                              | Still not built at the time. Superseded by FHS-637.                                                                                                                                                                                                            |
 
 ## FHS-631 finished the port
 
@@ -277,8 +277,7 @@ the per-role, per-endpoint proof.
 
 ## Out of scope
 
-- The design's "close the week" chooser (see the deviations table above):
-  closing a week already has its own dialog and this ticket doesn't touch it.
+- ~~The design's "close the week" chooser~~: built in FHS-637, see below.
 - The reward shop's catalogue management (unchanged; still reached from
   the child's own world / Earning rules).
 - Editing an already-running investment's rule after it's created
@@ -292,3 +291,39 @@ the per-role, per-endpoint proof.
 - No support question of the shape "where did the Balance tab go".
 - Every one of the five action buttons results in a real, persisted change,
   not a screen that resets itself on close.
+
+## The chooser was the missing step (FHS-637)
+
+FHS-623 left the design's "close the week" chooser out on the grounds that
+closing a week already existed. It did, in a much older dialog
+(`CloseWeekDialog.tsx`, built in FHS-297), so the My World board's Close Week
+button opened dark purple tiles and an "Admin Mode Active" banner while the
+screens either side of it were the redesigned sheet. The founder reported it as
+a regression, which is exactly how a deliberate carve-out with no follow-up
+ticket reads.
+
+What shipped:
+
+| Thing            | What it does                                                                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The chooser      | `CloseWeekChooser.tsx`, ported from `components/MoneyActions.tsx` in the Magic Patterns editor: what is on the table, one row per choice with a line of explanation, then the button that finishes the week. |
+| Where it opens   | The My World board's Close Week button, via the same `MoneyActionsSheet` Kids money uses. Kids money's own five buttons never reach it.                                                                      |
+| Going back       | A back arrow returns from any flow to the list, and the "all done" screen offers "Do something else" so a parent can make several decisions in one sitting.                                                  |
+| Closing the week | `POST /api/mw/weeks/{id}/finalize`, carrying every still-running investment into the new week. The ids are read fresh, so a withdrawal made in the same sitting is not re-continued.                         |
+| The old dialog   | Deleted, about 2,000 lines, along with its own copies of all five flows. Two copies of a money flow is how they drift.                                                                                       |
+
+Deliberate deviations, founder decision (2026-08-09) to follow the design
+exactly:
+
+- **The "Admin Mode Active" banner is gone.** It unlocked nothing; the server
+  is the real boundary (FHS-335).
+- **The running "actions taken this session" list and the finalize summary
+  screen are gone.** The design ends each action on its own "all done" screen
+  instead.
+
+Known gap: there is no browser test opening the chooser from My World, because
+that button only appears on the week's last day, so a naive test would pass on
+Sundays and fail the rest of the week. The QA review pointed out the e2e seed
+already back-dates a week on purpose to dodge exactly this, so the test is
+worth writing rather than blocked: FHS-638. Tap-target floors are pinned in the
+unit tier meanwhile.

@@ -26,7 +26,7 @@ import { formatMoney, summariseWeekActions } from '@familyhub/shared';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
-import { CloseWeekDialog } from './CloseWeekDialog';
+import { MoneyActionsSheet } from '../money/MoneyActionsSheet';
 import { AnalyticsView } from './AnalyticsView';
 import { type MyWorldDataApi, kidDataApi, parentDataApi } from './myWorldApi';
 
@@ -285,6 +285,8 @@ export function MyWorldTab(
         // week. Defaults to false so controls stay hidden until the caller's role
         // is known. The server (FHS-335) is the real boundary; this hides the UI.
         isAdmin?: boolean;
+        // FHS-637: the child's name, for the close-week sheet's header.
+        memberName?: string;
       }
     // FHS-374: kid mode: the logged-in kid reuses this exact screen READ-ONLY.
     // Data comes from /api/kid/* (self-scoped by the kid token); every write
@@ -294,6 +296,7 @@ export function MyWorldTab(
   const kidToken = 'kidToken' in props ? props.kidToken : null;
   const memberId = 'memberId' in props ? props.memberId : '';
   const isAdmin = props.isAdmin ?? false;
+  const memberName = 'memberName' in props ? (props.memberName ?? '') : '';
   const slug = useTenantSlug();
   const { session } = useAuth();
 
@@ -2807,17 +2810,35 @@ export function MyWorldTab(
 
       {/* ── Close Week Dialog ── */}
       {week && !week.isFinalized && headers && (
-        <CloseWeekDialog
+        <MoneyActionsSheet
           isOpen={closeWeekOpen}
-          onClose={() => setCloseWeekOpen(false)}
-          isAdmin={isAdmin}
-          weeklyStickers={unallocatedStickers}
+          action="chooser"
+          child={{ id: memberId, name: memberName }}
+          snapshot={{
+            available: unallocatedStickers,
+            saved: savedStickers,
+            // Today's value, matching what `invested` means on Kids money.
+            invested: investments.reduce((sum, inv) => sum + inv.currentValueStickers, 0),
+            currency,
+            stickerRate,
+          }}
           weekId={week.weekId}
           memberId={memberId}
-          currency={currency}
           headers={headers}
+          onClose={() => setCloseWeekOpen(false)}
+          onSaved={() => {
+            void fetchSavings();
+            void fetchInvestments();
+            // The sticker count the chooser shows, and the ceiling the Save and
+            // Invest flows offer, both come from the week's stats. Without this
+            // a second action in the same sitting is offered a stale total.
+            if (week) void fetchWeekStats(week.weekId);
+          }}
           onWeekFinalized={(nextWeekId) => {
-            setCloseWeekOpen(false);
+            // Deliberately does NOT close the sheet: it is showing the "week
+            // closed" message, and the parent dismisses it themselves. Closing
+            // it here unmounted the sheet in the same render that message
+            // appeared, so nobody ever saw it.
             // Refresh all data and jump to the newly-created week
             void fetchData().then(() => {
               setWeeks((prev) => {

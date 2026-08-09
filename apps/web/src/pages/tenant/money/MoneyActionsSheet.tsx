@@ -8,14 +8,13 @@
  * discarded on close: every confirm is a real POST, and a failure leaves
  * the sheet open with a plain-words error, never a silent no-op.
  *
- * Explicitly out of scope: the design's "close the week" chooser
- * (components/MoneyActions.tsx also has a path into that flow). Closing a
- * week already exists (CloseWeekDialog, apps/web/src/pages/tenant/child),
- * so this sheet only ever opens from the Kids money page's own five
- * buttons, never from a week-close flow.
+ * FHS-637: it also opens on the design's "close the week" chooser, from the
+ * My World board's Close Week button. FHS-623 left that step out on the
+ * grounds that closing a week already existed, which left one old-looking
+ * screen between two redesigned ones; the old dialog it deferred to is gone.
  */
-import { useEffect, useId, useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { ArrowLeft, Check, X } from 'lucide-react';
 import { Button, Dialog } from '@familyhub/ui';
 import type { ChildMoneySnapshot, MoneyAction } from '../KidsMoneyPage';
 import type { MoneyHeaders } from './moneyActionsApi';
@@ -24,10 +23,17 @@ import { CashOutFlow } from './CashOutFlow';
 import { SaveFlow } from './SaveFlow';
 import { InvestFlow } from './InvestFlow';
 import { WithdrawFlow } from './WithdrawFlow';
+import { CloseWeekChooser } from './CloseWeekChooser';
+import { MoneyActionError, finalizeWeek } from './moneyActionsApi';
+import { friendlyFailureMessage } from './types';
+
+/** FHS-637: the sheet also opens on the close-week chooser, which the five
+ *  Kids money buttons never emit: only the My World board's Close Week does. */
+export type MoneySheetAction = MoneyAction | 'chooser';
 
 export interface MoneyActionsSheetProps {
   isOpen: boolean;
-  action: MoneyAction | null;
+  action: MoneySheetAction | null;
   child: { id: string; name: string } | null;
   snapshot: ChildMoneySnapshot | null;
   weekId: string | null;
@@ -36,11 +42,18 @@ export interface MoneyActionsSheetProps {
   /** Fired the instant a mutation saves, so the page can refresh its
    *  figures while the sheet is still showing the "done" screen. */
   onSaved: () => void;
+  /** FHS-637: the member whose week is being closed, and what to do once it
+   *  is. Only needed when the sheet can open on the chooser. */
+  memberId?: string;
+  onWeekFinalized?: (nextWeekId: string) => void;
 }
 
 // FHS-631: no icon here any more. The design's sheet header carries the title
 // and the child's sticker count, and no icon tile.
-const ACTION_META: Record<MoneyAction, { title: string; tone: string }> = {
+const ACTION_META: Record<MoneySheetAction, { title: string; tone: string }> = {
+  // The chooser wears the kingdom purple header from the design, so closing
+  // the week reads as the bigger moment that contains the other five.
+  chooser: { title: 'Close the week', tone: 'bg-kingdom text-white' },
   claim: { title: 'Claim a reward', tone: 'bg-pink-300' },
   cash: { title: 'Cash out', tone: 'bg-lime-300' },
   save: {
@@ -66,10 +79,20 @@ export function MoneyActionsSheet({
   headers,
   onClose,
   onSaved,
+  memberId,
+  onWeekFinalized,
 }: MoneyActionsSheetProps) {
   const titleId = useId();
   const [phase, setPhase] = useState<'form' | 'done'>('form');
   const [doneMessage, setDoneMessage] = useState('');
+  // Which step is on screen. Starts at whatever opened the sheet; picking a row
+  // in the chooser walks forward, and the back arrow walks home.
+  const [step, setStep] = useState<MoneySheetAction | null>(action);
+  const [closing, setClosing] = useState(false);
+  // A ref, not the state above: two clicks in one tick both read the same
+  // stale `closing` and both fire, which is exactly what a double tap is.
+  const closingRef = useRef(false);
+  const [closeError, setCloseError] = useState<string | null>(null);
 
   const ready = isOpen && action !== null && child !== null && snapshot !== null;
 
@@ -78,11 +101,40 @@ export function MoneyActionsSheet({
     if (!ready) return;
     setPhase('form');
     setDoneMessage('');
+    setStep(action);
+    setClosing(false);
+    setCloseError(null);
   }, [ready, action, child?.id]);
 
-  if (!ready) return null;
+  if (!ready || step === null) return null;
 
-  const meta = ACTION_META[action];
+  const meta = ACTION_META[step];
+  // Only a journey that began at the chooser can go back to it, and only
+  // while a form is on screen: on the "all done" screen the way back is the
+  // "Do something else" button, which also clears the finished message.
+  const inFlowFromChooser = action === 'chooser' && step !== 'chooser';
+  const cameFromChooser = inFlowFromChooser && phase === 'form';
+
+  const handleCloseWeek = async () => {
+    if (!memberId || !weekId || closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    setCloseError(null);
+    try {
+      const result = await finalizeWeek(weekId, memberId, headers);
+      onSaved();
+      setDoneMessage(`The week is closed and a new one has started for ${child.name}.`);
+      setPhase('done');
+      if (result.nextWeekId) onWeekFinalized?.(result.nextWeekId);
+    } catch (err) {
+      setCloseError(
+        friendlyFailureMessage(err instanceof MoneyActionError ? err.detail : undefined),
+      );
+    } finally {
+      closingRef.current = false;
+      setClosing(false);
+    }
+  };
 
   const handleSuccess = (message: string) => {
     setDoneMessage(message);
@@ -104,11 +156,29 @@ export function MoneyActionsSheet({
           <div
             className={`flex items-start gap-3 border-b-2 border-black p-5 sm:border-b-3 ${meta.tone}`}
           >
+            {cameFromChooser && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('chooser');
+                  setCloseError(null);
+                }}
+                aria-label="Back to the list"
+                data-testid="money-actions-sheet-back"
+                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border-2 border-black bg-white transition-transform motion-safe:hover:-translate-y-0.5"
+              >
+                <ArrowLeft size={18} strokeWidth={3} aria-hidden="true" />
+              </button>
+            )}
             <div className="min-w-0 flex-1">
               <h2 id={titleId} className="font-heading text-xl uppercase tracking-wide">
                 {meta.title}
               </h2>
-              <p className="text-sm font-bold text-black/70">
+              <p
+                className={`text-sm font-bold ${
+                  step === 'chooser' ? 'text-purple-200' : 'text-black/70'
+                }`}
+              >
                 {child.name} &middot; {snapshot.available} stickers ready to spend
               </p>
             </div>
@@ -132,6 +202,20 @@ export function MoneyActionsSheet({
                 <p className="font-bold text-gray-900" data-testid="money-actions-done-message">
                   {doneMessage}
                 </p>
+                {action === 'chooser' && step !== 'chooser' && (
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    onClick={() => {
+                      setPhase('form');
+                      setDoneMessage('');
+                      setStep('chooser');
+                    }}
+                    testId="money-actions-done-more"
+                  >
+                    Do something else
+                  </Button>
+                )}
                 <Button
                   variant="primary"
                   fullWidth
@@ -141,41 +225,50 @@ export function MoneyActionsSheet({
                   Done
                 </Button>
               </div>
-            ) : action === 'claim' ? (
+            ) : step === 'chooser' ? (
+              <CloseWeekChooser
+                child={child}
+                snapshot={snapshot}
+                busy={closing}
+                error={closeError}
+                onPick={setStep}
+                onCloseWeek={() => void handleCloseWeek()}
+              />
+            ) : step === 'claim' ? (
               <ClaimRewardFlow
                 child={child}
                 snapshot={snapshot}
                 weekId={weekId}
                 headers={headers}
                 onSuccess={handleSuccess}
-                onCancel={onClose}
+                onCancel={inFlowFromChooser ? () => setStep('chooser') : onClose}
               />
-            ) : action === 'cash' ? (
+            ) : step === 'cash' ? (
               <CashOutFlow
                 child={child}
                 snapshot={snapshot}
                 weekId={weekId}
                 headers={headers}
                 onSuccess={handleSuccess}
-                onCancel={onClose}
+                onCancel={inFlowFromChooser ? () => setStep('chooser') : onClose}
               />
-            ) : action === 'save' ? (
+            ) : step === 'save' ? (
               <SaveFlow
                 child={child}
                 snapshot={snapshot}
                 weekId={weekId}
                 headers={headers}
                 onSuccess={handleSuccess}
-                onCancel={onClose}
+                onCancel={inFlowFromChooser ? () => setStep('chooser') : onClose}
               />
-            ) : action === 'invest' ? (
+            ) : step === 'invest' ? (
               <InvestFlow
                 child={child}
                 snapshot={snapshot}
                 weekId={weekId}
                 headers={headers}
                 onSuccess={handleSuccess}
-                onCancel={onClose}
+                onCancel={inFlowFromChooser ? () => setStep('chooser') : onClose}
               />
             ) : (
               <WithdrawFlow
@@ -184,7 +277,7 @@ export function MoneyActionsSheet({
                 weekId={weekId}
                 headers={headers}
                 onSuccess={handleSuccess}
-                onCancel={onClose}
+                onCancel={inFlowFromChooser ? () => setStep('chooser') : onClose}
               />
             )}
           </div>

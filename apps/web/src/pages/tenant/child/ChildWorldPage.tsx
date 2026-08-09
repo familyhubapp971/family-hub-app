@@ -236,7 +236,11 @@ export function ChildWorldPage() {
           data-testid={`child-panel-${active.id}`}
         >
           {active.id === 'world' ? (
-            <MyWorldTab memberId={memberId} isAdmin={isFamilyAdminRole(callerRole)} />
+            <MyWorldTab
+              memberId={memberId}
+              isAdmin={isFamilyAdminRole(callerRole)}
+              memberName={childName}
+            />
           ) : active.id === 'meals' ? (
             <MealsTab memberId={memberId} />
           ) : active.id === 'calendar' ? (
