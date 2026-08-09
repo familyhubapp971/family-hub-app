@@ -110,9 +110,20 @@ const EXPORT_PAYLOAD = {
 function installApi(
   callerRole = 'admin',
   appSettings: Partial<typeof APP_SETTINGS> = APP_SETTINGS,
+  // FHS-614: the page reads the family's currency once and passes it to every
+  // tab. Tests that care about the money text set this.
+  currency?: string,
 ) {
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url);
+
+    if (u.includes('/api/reward-config')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => (currency ? { currency } : {}),
+      });
+    }
 
     // AppHeader self-fetches these two on mount.
     // Use exact-path match (/api/me) to avoid catching /api/members.
@@ -295,7 +306,10 @@ describe('<AdminPanelPage />', () => {
     renderAt();
     await waitFor(() => expect(screen.getByTestId('admin-balance-ready')).toBeInTheDocument());
     expect(screen.getByTestId('admin-balance-stickers-display').textContent).toBe('12');
-    expect(screen.getByTestId('admin-balance-cash-display').textContent).toBe('AED 6.00');
+    // FHS-614: formatted through the shared helper. This test mocks no
+    // currency, so it falls back to USD, the same fallback the database and
+    // every other screen use.
+    expect(screen.getByTestId('admin-balance-cash-display').textContent).toBe('$6.00');
   });
 
   // FHS-512: the Balance tab must show the SERVER-computed cashValue
@@ -466,6 +480,8 @@ describe('<AdminPanelPage />', () => {
           status: 200,
           json: async () => ({ members: MEMBERS, callerRole: 'admin' }),
         });
+      if (u.includes('/api/reward-config'))
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ currency: 'GBP' }) });
       if (u.includes('/api/mw/financial/savings'))
         return Promise.resolve({
           ok: true,
@@ -480,7 +496,10 @@ describe('<AdminPanelPage />', () => {
       fireEvent.click(screen.getByTestId('admin-panel-tab-savings'));
     });
     await waitFor(() => expect(screen.getByTestId('admin-savings-ready')).toBeInTheDocument());
-    expect(screen.getByTestId('admin-savings-cash-display').textContent).toContain('GBP');
+    // FHS-614: a British family reads "£3.50", never "GBP 3.50".
+    const shown = screen.getByTestId('admin-savings-cash-display').textContent ?? '';
+    expect(shown).toContain('£');
+    expect(shown).not.toContain('GBP');
     expect(screen.getByTestId('admin-savings-cash-display').textContent).not.toContain('AED');
   });
 
@@ -575,6 +594,25 @@ describe('<AdminPanelPage />', () => {
       expect(body.savedCash).toBe(10);
       expect(body.savedStickers).toBe(8);
     });
+  });
+
+  // FHS-614 review: the History tab renders seven money figures (carried and
+  // retrieved cash, the action log, the editable labels) and not one of them
+  // was asserted, so a wrong conversion there would have shipped in silence.
+  it('History tab writes its cash figures the family way', async () => {
+    installApi('admin', APP_SETTINGS, 'GBP');
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('admin-panel-tab-history')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('admin-panel-tab-history'));
+    });
+    await waitFor(() => expect(screen.getByTestId('admin-history-ready')).toBeInTheDocument());
+    const shown = screen.getByTestId('admin-history-ready').textContent ?? '';
+    // The finalized week carried 1.00 and retrieved 0.50.
+    expect(shown).toContain('£1.00');
+    expect(shown).toContain('£0.50');
+    expect(shown).not.toContain('GBP');
+    expect(shown).not.toContain('AED');
   });
 
   it('History tab shows week list with Active and Finalized rows', async () => {

@@ -1,9 +1,14 @@
 import { Minus, Plus } from 'lucide-react';
+import { currencySymbol } from '@familyhub/shared';
 
 export interface AmountPickerProps {
   /** Current amount in INTEGER MINOR CURRENCY UNITS (e.g. 50 = 0.50). Never a float. */
   valueMinor: number;
-  /** ISO 4217 currency code shown as the prefix (e.g. "AED", "USD"). */
+  /**
+   * ISO 4217 currency code. Rendered as its symbol beside the input ("£", not
+   * "GBP"): FHS-614. The number stays editable, so this is the one money
+   * control that cannot use `formatMoney` for the whole string.
+   */
   currency: string;
   /** How much each ± tap changes the value by, in minor units. Default 25 (a quarter unit). */
   stepMinor?: number;
@@ -69,7 +74,7 @@ export function AmountPicker({
           <Minus size={18} strokeWidth={3} aria-hidden="true" />
         </button>
         <div className="flex flex-1 items-center justify-center gap-1.5 px-2">
-          <span className="text-sm font-black uppercase text-gray-400">{currency}</span>
+          <span className="text-sm font-black text-gray-400">{currencySymbol(currency)}</span>
           <input
             type="number"
             inputMode="decimal"

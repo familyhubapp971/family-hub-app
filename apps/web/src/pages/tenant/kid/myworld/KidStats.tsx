@@ -1,5 +1,6 @@
 import { habitIcon } from './icons';
 import type { KidAnalytics, KidHabitView } from './types';
+import { formatMoney } from '@familyhub/shared';
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const FULL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -59,9 +60,7 @@ export function KidStats({
           </p>
         </div>
         <div className="rounded-xl border-2 border-black bg-green-100 p-5 text-center shadow-neo-sm">
-          <p className="font-heading text-3xl text-black">
-            {currency} {savedCash.toFixed(2)}
-          </p>
+          <p className="font-heading text-3xl text-black">{formatMoney(savedCash, currency)}</p>
           <p className="mt-1 text-xs font-bold uppercase tracking-wider text-gray-600">
             My Savings
           </p>

@@ -12,9 +12,13 @@ describe('AmountPicker', () => {
     expect((screen.getByTestId('ap-input') as HTMLInputElement).value).toBe('1.50');
   });
 
-  it('shows the currency code as a prefix', () => {
+  it('shows the currency SYMBOL as a prefix, not the code', () => {
+    // FHS-614: the stepper's number stays editable, so this is the one money
+    // control that cannot render a whole formatted string. It shows the symbol
+    // beside the input instead, which is what a family expects to read.
     render(<AmountPicker valueMinor={50} currency="GBP" onChange={() => {}} testId="ap" />);
-    expect(screen.getByText('GBP')).toBeInTheDocument();
+    expect(screen.getByText('£')).toBeInTheDocument();
+    expect(screen.queryByText('GBP')).not.toBeInTheDocument();
   });
 
   it('increment adds exactly one step (default 25 minor units), never a float', () => {

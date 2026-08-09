@@ -1,6 +1,7 @@
 import { Wallet } from 'lucide-react';
 import { habitIcon } from './icons';
 import type { KidHabitView } from './types';
+import { formatMoney } from '@familyhub/shared';
 
 // FHS-376: "My Account" sidebar card: what the kid earned THIS WEEK. Big star
 // count, the cash it's worth, then a per-habit breakdown of where the stars
@@ -51,10 +52,10 @@ export function KidWeeklyAccount({
           data-testid="kid-account-cash"
           className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-white px-3 py-1 font-heading text-base text-green-700 shadow-neo-xs"
         >
-          {currency} {weeklyValue}
+          {weeklyValue}
         </span>
         <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-          Each star is worth {currency} {stickerRate.toFixed(2)}
+          Each star is worth {formatMoney(stickerRate, currency)}
         </p>
       </div>
 

@@ -9,6 +9,7 @@ import { KidRewardShop } from './myworld/KidRewardShop';
 import { KidWeeklyAccount } from './myworld/KidWeeklyAccount';
 import { KidStats } from './myworld/KidStats';
 import { KidFinishedWeekRecap } from './myworld/KidFinishedWeekRecap';
+import { formatMoney } from '@familyhub/shared';
 
 // FHS-376: the dedicated kid "My World". A DISTINCT design from the parent's
 // MyWorldTab (which this no longer reuses): a Weekly Habits / Analytics toggle,
@@ -127,7 +128,7 @@ export function KidMyWorld({
 
   // My Account "earned this week" = sum of the live week's habit progress.
   const earnedThisWeek = doneThisView;
-  const weeklyValue = (earnedThisWeek * stickerRate).toFixed(2);
+  const weeklyValue = formatMoney(earnedThisWeek * stickerRate, currency);
 
   const playEnter = !animatedOnce.current;
   animatedOnce.current = true;

@@ -1,4 +1,5 @@
 import { Wallet } from 'lucide-react';
+import { formatMoney } from '@familyhub/shared';
 
 // FHS-376: "Money Skills" explainer card for the kid. Pure presentation: tells
 // the kid what their stars are worth and the three things they can do with them
@@ -43,9 +44,7 @@ export function KidMoneySkills({
         You have{' '}
         <span className="font-heading text-lg text-yellow-500">{stickerBalance} stars</span>! Every
         star is worth{' '}
-        <span className="font-heading text-yellow-600">
-          {currency} {stickerRate.toFixed(2)}
-        </span>{' '}
+        <span className="font-heading text-yellow-600">{formatMoney(stickerRate, currency)}</span>{' '}
         of real money.{' '}
         {isFinalized
           ? 'Here’s what you did with your stars this week.'
@@ -66,7 +65,7 @@ export function KidMoneySkills({
             <div className="flex items-center justify-between border-t-2 border-green-200 pt-2">
               <dt className="text-sm">Worth</dt>
               <dd className="font-heading text-2xl text-green-700">
-                {currency} {savedCash.toFixed(2)}
+                {formatMoney(savedCash, currency)}
               </dd>
             </div>
           </dl>

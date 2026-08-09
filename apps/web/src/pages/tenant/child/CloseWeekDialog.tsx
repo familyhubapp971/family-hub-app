@@ -11,6 +11,7 @@
  */
 import { useEffect, useState } from 'react';
 import { BoostButton, useBodyScrollLock, Spinner } from '@familyhub/ui';
+import { currencySymbol, formatMoney } from '@familyhub/shared';
 import {
   X,
   ShieldCheck,
@@ -300,7 +301,7 @@ function CashOutDialog({
   const cashAmount = mode === 'stickers' ? amount * stickerRate : amount;
   const stickersUsed =
     mode === 'stickers' ? amount : Math.round(stickersFromCash(amount, stickerRate));
-  const cashValue = cashAmount.toFixed(2);
+  const cashValue = formatMoney(cashAmount, currency);
   const remaining = totalStickers - stickersUsed;
 
   const handleModeSwitch = (newMode: 'stickers' | 'cash') => {
@@ -392,7 +393,7 @@ function CashOutDialog({
                         : 'text-gray-500 hover:bg-gray-200'
                     }`}
                   >
-                    {currency}
+                    {currencySymbol(currency)}
                   </button>
                 </div>
 
@@ -411,7 +412,7 @@ function CashOutDialog({
                     className="w-full text-center text-3xl sm:text-5xl font-black border-b-2 sm:border-b-3 border-black py-4 outline-none focus:border-yellow-500 bg-transparent"
                   />
                   <span className="absolute right-0 bottom-4 text-sm font-black text-gray-400">
-                    {mode === 'stickers' ? '⭐' : currency}
+                    {mode === 'stickers' ? '⭐' : currencySymbol(currency)}
                   </span>
                 </div>
 
@@ -419,9 +420,7 @@ function CashOutDialog({
                   <span className="text-green-800 text-xs font-bold uppercase mr-2">
                     You Receive:
                   </span>
-                  <span className="text-2xl font-black text-green-600">
-                    {cashValue} {currency}
-                  </span>
+                  <span className="text-2xl font-black text-green-600">{cashValue}</span>
                 </div>
               </div>
 
@@ -571,7 +570,9 @@ function SaveDialog({
                 <div className="bg-emerald-400 w-10 h-10 rounded-xl border-2 border-black flex items-center justify-center mb-3 shadow-neo-xs">
                   <Banknote className="w-5 h-5 text-white" />
                 </div>
-                <p className="font-black text-gray-900 text-sm uppercase">Cash ({currency})</p>
+                <p className="font-black text-gray-900 text-sm uppercase">
+                  Cash ({currencySymbol(currency)})
+                </p>
                 <p className="text-xs text-gray-500 font-bold mt-1">For money</p>
                 {saveType === 'cash' && (
                   <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-0.5 border-2 border-black">
@@ -689,7 +690,8 @@ function InvestDialog({
   const isOverMax = num > stickers;
   const isBelowMin = num > 0 && num < 10;
   const notEnoughToInvest = stickers < 10;
-  const cashVal = amount ? (num * stickerRate).toFixed(2) : '0.00';
+  const cashValNum = amount ? num * stickerRate : 0;
+  const cashVal = formatMoney(cashValNum, currency);
 
   const investmentByHabitId = new Map(activeInvestments.map((inv) => [inv.habitId, inv]));
   const selectedInvestment = selectedHabit ? investmentByHabitId.get(selectedHabit.id) : undefined;
@@ -940,8 +942,8 @@ function InvestDialog({
             ) : (
               <>
                 <p className="text-xs text-gray-500 font-bold mt-1">
-                  = {currency} {cashVal} invested, worth {currency}{' '}
-                  {(num * stickerRate + num * coefficient * stickerRate).toFixed(2)} at +
+                  = {cashVal} invested, worth{' '}
+                  {formatMoney(num * stickerRate + num * coefficient * stickerRate, currency)} at +
                   {coefficient}/day (7 days)
                 </p>
                 {isBelowMin && (
@@ -1152,11 +1154,7 @@ function InvestDialog({
                   data-testid="close-week-invest-submit-btn"
                   className="bg-yellow-400 border-2 border-black text-black font-black py-3 rounded-xl shadow-neo motion-safe:hover:translate-y-0.5 motion-safe:hover:shadow-neo-xs active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase text-sm"
                 >
-                  {submitting ? (
-                    <Spinner size="sm" className="mx-auto" />
-                  ) : (
-                    `Invest ${currency} ${cashVal}`
-                  )}
+                  {submitting ? <Spinner size="sm" className="mx-auto" /> : `Invest ${cashVal}`}
                 </button>
               )}
             </>
@@ -1307,7 +1305,7 @@ function WithdrawDialog({
               {investments.map((inv) => {
                 const totalStickers = inv.currentValueStickers;
                 const selectedStickers = withdrawAmounts[inv.id] ?? totalStickers;
-                const selectedCash = (selectedStickers * stickerRate).toFixed(2);
+                const selectedCash = formatMoney(selectedStickers * stickerRate, currency);
                 const isFullWithdrawal = selectedStickers >= totalStickers;
 
                 return (
@@ -1323,7 +1321,7 @@ function WithdrawDialog({
                             {inv.habitName ?? `Habit #${inv.habitId.slice(0, 8)}`}
                           </p>
                           <p className="text-xs font-bold text-gray-500 mt-0.5">
-                            {totalStickers} stickers ({currency} {inv.currentValue.toFixed(2)})
+                            {totalStickers} stickers ({formatMoney(inv.currentValue, currency)})
                             available
                           </p>
                         </div>
@@ -1383,9 +1381,7 @@ function WithdrawDialog({
                           </span>
                           <span className="text-xs font-bold text-orange-400">stickers</span>
                         </div>
-                        <span className="text-sm font-black text-orange-600">
-                          {currency} {selectedCash}
-                        </span>
+                        <span className="text-sm font-black text-orange-600">{selectedCash}</span>
                       </div>
                     </div>
 
@@ -1398,7 +1394,7 @@ function WithdrawDialog({
                       {withdrawingId === inv.id ? (
                         <Spinner size="sm" className="mx-auto" />
                       ) : (
-                        `Withdraw ${selectedStickers} sticker${selectedStickers !== 1 ? 's' : ''} (${currency} ${selectedCash})`
+                        `Withdraw ${selectedStickers} sticker${selectedStickers !== 1 ? 's' : ''} (${selectedCash})`
                       )}
                     </button>
                   </div>
@@ -1648,15 +1644,15 @@ export function CloseWeekDialog({
                     <p className="text-white font-black text-lg">
                       {action.type === 'claim' && `${action.rewardName} (${action.stickersUsed}⭐)`}
                       {action.type === 'cashout' &&
-                        `${action.cashAmount?.toFixed(2)} ${currency} (${action.stickersUsed}⭐)`}
+                        `${formatMoney(action.cashAmount ?? 0, currency)} (${action.stickersUsed}⭐)`}
                       {action.type === 'save' &&
                         (action.stickersUsed
                           ? `${action.stickersUsed} stickers`
-                          : `${action.cashAmount?.toFixed(2)} ${currency}`)}
+                          : `${formatMoney(action.cashAmount ?? 0, currency)}`)}
                       {action.type === 'invest' &&
-                        `${action.cashAmount?.toFixed(2)} ${currency} → ${action.habitName}`}
+                        `${formatMoney(action.cashAmount ?? 0, currency)} → ${action.habitName}`}
                       {action.type === 'withdraw' &&
-                        `${action.cashAmount?.toFixed(2)} ${currency} from ${action.habitName ?? 'investment'}`}
+                        `${formatMoney(action.cashAmount ?? 0, currency)} from ${action.habitName ?? 'investment'}`}
                     </p>
                   </div>
                 </div>
@@ -1684,7 +1680,7 @@ export function CloseWeekDialog({
                       Investment Returns
                     </p>
                     <p className="text-white font-black text-lg">
-                      {finalizeSummary.investmentReturns.toFixed(2)} {currency} earned!
+                      {formatMoney(finalizeSummary.investmentReturns, currency)} earned!
                     </p>
                   </div>
                 </div>
@@ -1775,7 +1771,7 @@ export function CloseWeekDialog({
               {done === 'claim' &&
                 `${lastAction?.rewardName ?? 'Reward'} claimed! Enjoy your treat! 🍬`}
               {done === 'cashout' &&
-                `${currency} ${lastAction?.cashAmount?.toFixed(2) ?? '0.00'} cashed out! Ka-ching! 💸`}
+                `${formatMoney(lastAction?.cashAmount ?? 0, currency)} cashed out! Ka-ching! 💸`}
               {done === 'save' && 'Stickers saved! Smart move! 🧠'}
               {done === 'invest' && 'Invested! Good luck next week! 🚀'}
               {done === 'withdraw' && 'Investment withdrawn! Cash returned to savings! 💰'}
@@ -1955,15 +1951,15 @@ export function CloseWeekDialog({
                         {action.type === 'claim' &&
                           `Claimed: ${action.rewardName} (${action.stickersUsed}⭐)`}
                         {action.type === 'cashout' &&
-                          `Cashed Out: ${action.cashAmount?.toFixed(2)} ${currency} (${action.stickersUsed}⭐)`}
+                          `Cashed Out: ${formatMoney(action.cashAmount ?? 0, currency)} (${action.stickersUsed}⭐)`}
                         {action.type === 'save' &&
                           (action.stickersUsed
                             ? `Saved: ${action.stickersUsed} stickers`
-                            : `Saved: ${action.cashAmount?.toFixed(2)} ${currency}`)}
+                            : `Saved: ${formatMoney(action.cashAmount ?? 0, currency)}`)}
                         {action.type === 'invest' &&
-                          `Invested: ${action.cashAmount?.toFixed(2)} ${currency} → ${action.habitName}`}
+                          `Invested: ${formatMoney(action.cashAmount ?? 0, currency)} → ${action.habitName}`}
                         {action.type === 'withdraw' &&
-                          `Withdrawn: ${action.cashAmount?.toFixed(2)} ${currency} from ${action.habitName ?? 'investment'}`}
+                          `Withdrawn: ${formatMoney(action.cashAmount ?? 0, currency)} from ${action.habitName ?? 'investment'}`}
                       </p>
                     </div>
                   ))}
