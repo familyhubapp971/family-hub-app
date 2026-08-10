@@ -394,9 +394,16 @@ helper. Covered by
   2 decimals everywhere. [FHS-515](https://qualicion2.atlassian.net/browse/FHS-515)
   handled this by **constraining the onboarding currency picker to 2-decimal
   currencies** (via `currencyDecimals()`), so no family can land on a currency
-  the sticker economy would render wrong. Full multi-decimal support (native
-  minor units + currency-aware display everywhere) is a follow-up if a
-  0/3-decimal market is needed.
+  the sticker economy would render wrong.
+  [FHS-636](https://qualicion2.atlassian.net/browse/FHS-636) closed the other
+  half: the picker refused these, but the API's own validation was only
+  `/^[A-Z]{3}$/`, so `POST /api/onboarding/complete` and
+  `PUT /api/admin/settings/currency` would both have stored JPY happily, and
+  every screen would then have read a hundred times too small. Both now share
+  the picker's rule via `isSupportedCurrency()` in `packages/shared/src/money.ts`,
+  which is the single copy of it. Full multi-decimal support (native minor units and
+  currency-aware display everywhere) is still the follow-up if a 0/3-decimal
+  market is needed; remove the fence then, not before.
 - **The rewards shop / redemption flow itself**: a separate feature; this
   doc only covers what a sticker is _worth_, not spending it.
 

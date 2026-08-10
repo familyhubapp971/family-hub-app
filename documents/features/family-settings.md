@@ -56,6 +56,19 @@ redirected to the dashboard.
 - **And** the page says plainly that changing it does not convert amounts
   already recorded
 
+**Scenario: A currency the app cannot show is refused**
+
+- **Given** a parent whose request asks for a currency with no small change,
+  like the yen
+- **When** they save
+- **Then** the save is refused with a plain reason, and the currency does not
+  change
+
+The picker never offers one of these, so nobody reaches this by clicking
+(FHS-515 filtered the list to currencies the sticker economy can render).
+FHS-636 made the server say the same thing, because its own check was three
+uppercase letters and nothing more.
+
 ### Story 3: Find the everyday controls without hunting
 
 **As a** parent looking for the sticker rate or skip-day rule
