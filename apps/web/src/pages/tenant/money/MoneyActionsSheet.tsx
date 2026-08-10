@@ -53,7 +53,12 @@ export interface MoneyActionsSheetProps {
 const ACTION_META: Record<MoneySheetAction, { title: string; tone: string }> = {
   // The chooser wears the kingdom purple header from the design, so closing
   // the week reads as the bigger moment that contains the other five.
-  chooser: { title: 'Close the week', tone: 'bg-kingdom text-white' },
+  //
+  // FHS-639: `bg-kingdom` was the design's own token name and does not exist
+  // here, where kingdom is a SCALE. Tailwind produced no background, the white
+  // text stayed white, and the title and the close button vanished into the
+  // white card. kingdom-900 is #3d1065, the exact purple the design uses.
+  chooser: { title: 'Close the week', tone: 'bg-kingdom-900 text-white' },
   claim: { title: 'Claim a reward', tone: 'bg-pink-300' },
   cash: { title: 'Cash out', tone: 'bg-lime-300' },
   save: {
@@ -154,6 +159,7 @@ export function MoneyActionsSheet({
         <div className="absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-t-3xl bg-black sm:rounded-3xl" />
         <div className="relative max-h-[85vh] overflow-y-auto rounded-t-3xl border-2 border-black bg-white shadow-neo sm:rounded-3xl sm:border-3">
           <div
+            data-testid="money-actions-sheet-header"
             className={`flex items-start gap-3 border-b-2 border-black p-5 sm:border-b-3 ${meta.tone}`}
           >
             {cameFromChooser && (

@@ -22,6 +22,14 @@ Feature: Closing the week from the My World board
     And every choice is there, each with a line of explanation
 
   @critical @authed-local
+  Scenario: The header is readable
+
+    Given I am signed in as the admin of a family whose week ends today
+    When I open my child's board and tap Close Week
+    Then the header is the deep purple from the design
+    And nothing in the header is the same colour as what it sits on
+
+  @critical @authed-local
   Scenario: The chooser is usable on a phone
 
     Given I am signed in as the admin of a family whose week ends today

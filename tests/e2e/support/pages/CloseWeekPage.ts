@@ -49,6 +49,24 @@ export class CloseWeekPage {
     return { width: box.width, height: box.height };
   }
 
+  /**
+   * FHS-639: the colours the header actually paints with.
+   *
+   * A class name that does not exist in this app's Tailwind produces no rule
+   * and no error, so the title kept its white colour on a background that
+   * never turned purple and simply disappeared. Only a real browser can see
+   * that, which is why this reads computed styles rather than class names.
+   */
+  async headerColours(): Promise<{ background: string; title: string; closeIcon: string }> {
+    const header = this.page.getByTestId('money-actions-sheet-header');
+    const background = await header.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const title = await header.locator('h2').evaluate((el) => getComputedStyle(el).color);
+    const closeIcon = await this.page
+      .getByTestId('money-actions-sheet-close')
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    return { background, title, closeIcon };
+  }
+
   /** How far the page can scroll sideways: anything over a pixel is a bug. */
   horizontalOverflow(): Promise<number> {
     return this.page.evaluate(
