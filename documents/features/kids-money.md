@@ -321,6 +321,15 @@ a browser test now reads the header's computed colours and fails if any of them
 matches its own background. Class names that do not exist fail silently, so only
 a real browser can see this.
 
+**FHS-640: the close button was still invisible after that.** The round back and
+close buttons are white discs, and a lucide icon paints with `currentColor`, so
+on the now-white-on-purple header they inherited white and disappeared into
+their own disc. They carry `text-black` themselves now, so the header's ink
+cannot blank them again. The FHS-639 guard had compared the button's
+_background_ with the header's background, which are obviously different, so it
+passed while the cross inside was white on white; it now compares each icon with
+the button it actually sits on.
+
 Deliberate deviations, founder decision (2026-08-09) to follow the design
 exactly:
 

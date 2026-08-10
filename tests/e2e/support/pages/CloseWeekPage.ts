@@ -57,14 +57,25 @@ export class CloseWeekPage {
    * never turned purple and simply disappeared. Only a real browser can see
    * that, which is why this reads computed styles rather than class names.
    */
-  async headerColours(): Promise<{ background: string; title: string; closeIcon: string }> {
+  async headerColours(): Promise<{
+    background: string;
+    title: string;
+    closeIcon: string;
+    closeButton: string;
+  }> {
     const header = this.page.getByTestId('money-actions-sheet-header');
-    const background = await header.evaluate((el) => getComputedStyle(el).backgroundColor);
-    const title = await header.locator('h2').evaluate((el) => getComputedStyle(el).color);
-    const closeIcon = await this.page
-      .getByTestId('money-actions-sheet-close')
-      .evaluate((el) => getComputedStyle(el).backgroundColor);
-    return { background, title, closeIcon };
+    const close = this.page.getByTestId('money-actions-sheet-close');
+    return {
+      background: await header.evaluate((el) => getComputedStyle(el).backgroundColor),
+      title: await header.locator('h2').evaluate((el) => getComputedStyle(el).color),
+      // FHS-640: the ICON's own colour, and the disc it sits on. The first cut
+      // of this compared the button's BACKGROUND with the header's background,
+      // which are of course different, so it passed while the cross inside the
+      // button was white on white. An icon is only visible against its own
+      // parent, so that is the pair to compare.
+      closeIcon: await close.evaluate((el) => getComputedStyle(el).color),
+      closeButton: await close.evaluate((el) => getComputedStyle(el).backgroundColor),
+    };
   }
 
   /** How far the page can scroll sideways: anything over a pixel is a bug. */
