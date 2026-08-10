@@ -211,7 +211,7 @@ function ChildSelector({
   );
 }
 
-// ── Quick Action modal shells (reuse CloseWeekDialog sub-dialogs via inline forms) ──
+// ── Quick Action modal shells (inline forms; the panel's own quick actions) ──
 
 /**
  * Inline Claim-reward quick action.

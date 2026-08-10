@@ -4,8 +4,8 @@
  * Typed fetch calls for the five Kids money actions, against the exact
  * endpoints documented in FHS-627 (apps/api/openapi.json). Every call takes
  * the same `headers` shape KidsMoneyPage already builds (Authorization +
- * x-tenant-slug), matching the pattern CloseWeekDialog.tsx uses rather than
- * the app-wide `apiFetch` helper, which doesn't stamp x-tenant-slug.
+ * x-tenant-slug) rather than the app-wide `apiFetch` helper, which doesn't
+ * stamp x-tenant-slug.
  */
 import { API_BASE } from '../../../lib/api';
 
@@ -160,6 +160,37 @@ export async function withdrawInvestment(
   return postJson(
     `/api/mw/financial/investments/${investmentId}/withdraw`,
     { memberId, stickers },
+    headers,
+  );
+}
+
+// ── Close the week ──────────────────────────────────────────────────────────
+
+export interface FinalizeWeekResult {
+  stickersAutoSaved?: number;
+  investmentReturns?: number;
+  continuedInvestments?: number;
+  nextWeekId?: string;
+}
+
+/**
+ * FHS-637: finish the week and open the next one.
+ *
+ * Every investment still running is carried into the new week, which is what
+ * the old dialog did and what the design's "anything still here is carried
+ * over" line promises. The ids are read fresh rather than from a snapshot the
+ * sheet loaded minutes ago, so a withdrawal made in the same sitting is not
+ * silently re-continued.
+ */
+export async function finalizeWeek(
+  weekId: string,
+  memberId: string,
+  headers: MoneyHeaders,
+): Promise<FinalizeWeekResult> {
+  const running = await fetchInvestments(memberId, headers).catch(() => ({ investments: [] }));
+  return postJson<FinalizeWeekResult>(
+    `/api/mw/weeks/${weekId}/finalize`,
+    { memberId, continueInvestmentIds: running.investments.map((inv) => inv.id) },
     headers,
   );
 }
