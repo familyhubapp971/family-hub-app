@@ -321,9 +321,10 @@ exactly:
   screen are gone.** The design ends each action on its own "all done" screen
   instead.
 
-Known gap: there is no browser test opening the chooser from My World, because
-that button only appears on the week's last day, so a naive test would pass on
-Sundays and fail the rest of the week. The QA review pointed out the e2e seed
-already back-dates a week on purpose to dodge exactly this, so the test is
-worth writing rather than blocked: FHS-638. Tap-target floors are pinned in the
-unit tier meanwhile.
+That gap is closed. FHS-638 added `seedFamily({ weekEndsToday: true })`, which
+anchors the live week so today is its last day whatever day that is, and the
+`authedFamilyClosableWeek` fixture that uses it. `tests/e2e/features/close-week.feature`
+now opens the chooser from the My World board for real and checks it at 375px
+and 768px. The date rule itself is unit-tested across all seven weekdays and
+over a month and a year boundary, because the browser spec can only ever run on
+the day it runs.
