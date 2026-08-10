@@ -54,6 +54,10 @@ const ACTION_META: Record<MoneySheetAction, { title: string; tone: string }> = {
   // The chooser wears the kingdom purple header from the design, so closing
   // the week reads as the bigger moment that contains the other five.
   //
+  // FHS-640: the round back/close buttons set their own `text-black`. A lucide
+  // icon paints with currentColor, so with `text-white` here they inherited
+  // white and disappeared into their own white disc.
+  //
   // FHS-639: `bg-kingdom` was the design's own token name and does not exist
   // here, where kingdom is a SCALE. Tailwind produced no background, the white
   // text stayed white, and the title and the close button vanished into the
@@ -171,7 +175,7 @@ export function MoneyActionsSheet({
                 }}
                 aria-label="Back to the list"
                 data-testid="money-actions-sheet-back"
-                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border-2 border-black bg-white transition-transform motion-safe:hover:-translate-y-0.5"
+                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border-2 border-black bg-white text-black transition-transform motion-safe:hover:-translate-y-0.5"
               >
                 <ArrowLeft size={18} strokeWidth={3} aria-hidden="true" />
               </button>
@@ -193,7 +197,7 @@ export function MoneyActionsSheet({
               onClick={onClose}
               aria-label="Close"
               data-testid="money-actions-sheet-close"
-              className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border-2 border-black bg-white transition-transform motion-safe:hover:-translate-y-0.5"
+              className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border-2 border-black bg-white text-black transition-transform motion-safe:hover:-translate-y-0.5"
             >
               <X size={18} strokeWidth={3} aria-hidden="true" />
             </button>

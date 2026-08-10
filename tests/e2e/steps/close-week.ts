@@ -82,7 +82,12 @@ Then('the header is the deep purple from the design', async ({ page }) => {
 });
 
 Then('nothing in the header is the same colour as what it sits on', async ({ page }) => {
-  const { background, title, closeIcon } = await new CloseWeekPage(page).headerColours();
+  const { background, title, closeIcon, closeButton } = await new CloseWeekPage(
+    page,
+  ).headerColours();
+  // The title sits on the header.
   expect(title).not.toBe(background);
-  expect(closeIcon).not.toBe(background);
+  // FHS-640: the cross sits on its own white disc, NOT on the header, and that
+  // is the comparison the first version of this check got wrong.
+  expect(closeIcon).not.toBe(closeButton);
 });
