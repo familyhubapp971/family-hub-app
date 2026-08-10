@@ -159,7 +159,15 @@ export function MoneyActionsSheet({
       ariaLabelledBy={titleId}
       testId="money-actions-sheet"
     >
-      <div className="relative w-full max-w-lg">
+      {/* FHS-641: a DEFINITE width from `sm` up, not just a maximum.
+          Dialog's bottom-sheet wrapper is `sm:w-auto`, so a `w-full max-w-*`
+          child sits in a shrink-to-fit parent and ends up as wide as its own
+          content: claim rendered at 478px, cash out wider, and the two never
+          matched. This pins every action to the same 672px, which is also the
+          founder's call (2026-08-10) that the design's 512px reads slim. A
+          deliberate departure, recorded in documents/features/kids-money.md.
+          Below `sm` the sheet stays full-bleed, as it was. */}
+      <div className="relative w-full sm:w-[42rem] sm:max-w-[calc(100vw-2rem)]">
         <div className="absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-t-3xl bg-black sm:rounded-3xl" />
         <div className="relative max-h-[85vh] overflow-y-auto rounded-t-3xl border-2 border-black bg-white shadow-neo sm:rounded-3xl sm:border-3">
           <div

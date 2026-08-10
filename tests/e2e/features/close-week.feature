@@ -30,6 +30,13 @@ Feature: Closing the week from the My World board
     And nothing in the header is the same colour as what it sits on
 
   @critical @authed-local
+  Scenario: The sheet is roomy on a computer
+
+    Given I am signed in as the admin of a family whose week ends today
+    When I open my child's board and tap Close Week
+    Then the sheet is at least 600 pixels wide
+
+  @critical @authed-local
   Scenario: The chooser is usable on a phone
 
     Given I am signed in as the admin of a family whose week ends today

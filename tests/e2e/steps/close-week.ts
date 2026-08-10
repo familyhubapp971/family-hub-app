@@ -91,3 +91,11 @@ Then('nothing in the header is the same colour as what it sits on', async ({ pag
   // is the comparison the first version of this check got wrong.
   expect(closeIcon).not.toBe(closeButton);
 });
+
+// FHS-641: the design specifies a 512px sheet; the founder asked for roomier on
+// a computer. Pinned as a number so a future tidy-up cannot quietly narrow it
+// back, and so the phone case below still proves it stays full-bleed there.
+
+Then('the sheet is at least {int} pixels wide', async ({ page }, minimum: number) => {
+  expect(await new CloseWeekPage(page).sheetWidth()).toBeGreaterThanOrEqual(minimum);
+});

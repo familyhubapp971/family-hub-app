@@ -330,6 +330,16 @@ _background_ with the header's background, which are obviously different, so it
 passed while the cross inside was white on white; it now compares each icon with
 the button it actually sits on.
 
+**FHS-641: the sheets are 672px on a computer, and all the same width.** Two
+things were wrong. The design specifies `max-w-lg` (512px), which the founder
+found slim against the rest of the page. More importantly, `Dialog`'s
+bottom-sheet wrapper is `sm:w-auto`, so a `w-full max-w-*` child sat inside a
+shrink-to-fit parent and every sheet ended up as wide as its own content:
+measured, "Claim a reward" rendered at 478px and "Cash out" wider, so no two
+actions matched. The sheet now takes a definite `sm:w-[42rem]`, capped to the
+viewport, and a browser test pins the number. Below `sm` it is full-bleed as
+before. A deliberate departure from the design's width, founder call 2026-08-10.
+
 Deliberate deviations, founder decision (2026-08-09) to follow the design
 exactly:
 
