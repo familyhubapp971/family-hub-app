@@ -45,7 +45,7 @@ pnpm install
 # Tests
 pnpm test            # unit
 pnpm test:integration # integration (separate :5433 Postgres, auto-managed)
-pnpm test:e2e        # Playwright E2E
+pnpm test:e2e        # Playwright E2E (see "Browser tests on a new machine" below)
 
 # DB lifecycle
 pnpm dev:up          # just start Postgres
@@ -57,6 +57,32 @@ pnpm dev:reset       # stop AND drop the volume (fresh DB)
 > until Sprint 1: `tenants` and `users` land with `tenant_id` + RLS
 > per [ADR 0001](documents/decisions/0001-multi-tenancy.md). Until then,
 > `./scripts/seed` runs as a no-op that warns the schema isn't ready.
+
+## Browser tests on a new machine
+
+The signed-in Playwright specs drive the real web app, which builds its
+Supabase client from `VITE_` variables. Vite reads those from `apps/web`, not
+from the repo root, so on a machine that has only ever had a root `.env.local`
+every authed spec fails at once with no obvious reason: the app cannot restore
+the injected session, so no `/t/:slug` page ever renders.
+
+One file fixes it (gitignored, values copied from your root `.env.local`):
+
+```bash
+cat > apps/web/.env.development.local <<'ENV'
+VITE_API_URL=http://localhost:3001
+VITE_SUPABASE_URL=<same as SUPABASE_URL in .env.local>
+VITE_SUPABASE_ANON_KEY=<same as SUPABASE_ANON_KEY in .env.local>
+ENV
+```
+
+FHS-635 also turned the api's per-IP rate limit off for e2e runs
+(`RATE_LIMIT_PER_MINUTE=0`, set in the Playwright configs). Every worker drives
+the browser from the same machine, so they share one bucket of 100 requests a
+minute; several specs at once used to sail past it and the api answered 429,
+which the app shows as "Couldn't load your dashboard (server 429)". That is
+what made a handful of specs fail at random, and fail every time on a developer
+machine, which runs more workers than CI.
 
 ## Environment
 

@@ -55,7 +55,16 @@ export default defineConfig({
   // another terminal masks E2E_TEST_JWKS and breaks only the authed spec).
   webServer: [
     {
-      command: `NODE_ENV=test PORT=3001 LOG_LEVEL=error DATABASE_URL=${apiDatabaseUrl} pnpm --filter @familyhub/api dev`,
+      // FHS-635: RATE_LIMIT_PER_MINUTE=0 disables the api's per-IP token bucket
+      // for this run, which .env.example documents as the setting for test runs.
+      // Every Playwright worker drives the browser from the same machine, so
+      // they all share ONE bucket of 100 requests a minute. Alone a spec is
+      // nowhere near it; several in parallel sail past it and the api starts
+      // answering 429, which the app renders as "Couldn't load your dashboard
+      // (server 429)". That is what made role-permissions and the money-row
+      // recap fail at random, always fail on a developer machine (more workers
+      // than CI runs), and pass the moment they were run on their own.
+      command: `NODE_ENV=test PORT=3001 LOG_LEVEL=error RATE_LIMIT_PER_MINUTE=0 DATABASE_URL=${apiDatabaseUrl} pnpm --filter @familyhub/api dev`,
       url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
