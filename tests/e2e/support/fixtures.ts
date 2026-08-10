@@ -49,7 +49,15 @@ export interface AuthedFamily extends SeededFamily {
   sessionEntry: { key: string; value: string };
 }
 
-export const test = base.extend<{ authedFamily: AuthedFamily }>({
+/**
+ * FHS-638: the same authed family, but with its week anchored so today is the
+ * last day. Depend on this instead of `authedFamily` when the spec needs the
+ * My World board's "Close Week" banner, which only appears from that day on.
+ */
+export const test = base.extend<{
+  authedFamily: AuthedFamily;
+  authedFamilyClosableWeek: AuthedFamily;
+}>({
   authedFamily: async ({ context }, use) => {
     const family = await seedFamily();
     const accessToken = await mintE2eAccessToken({ sub: family.userId, email: family.email });
@@ -57,6 +65,33 @@ export const test = base.extend<{ authedFamily: AuthedFamily }>({
     // The token's own `exp` claim (seconds), decode it back out so the
     // injected session's expires_at matches exactly rather than
     // re-deriving it and risking clock-skew drift between the two.
+    const payload = JSON.parse(
+      Buffer.from(accessToken.split('.')[1] ?? '', 'base64url').toString('utf8'),
+    ) as { exp: number };
+    const entry = buildSupabaseLocalStorageEntry({
+      supabaseUrl,
+      accessToken,
+      userId: family.userId,
+      email: family.email,
+      expiresAt: payload.exp,
+    });
+
+    await context.addInitScript(
+      ({ key, value }) => {
+        window.localStorage.setItem(key, value);
+      },
+      { key: entry.key, value: entry.value },
+    );
+
+    await use({ ...family, accessToken, sessionEntry: entry });
+
+    await cleanupFamily(family);
+  },
+
+  authedFamilyClosableWeek: async ({ context }, use) => {
+    const family = await seedFamily({ weekEndsToday: true });
+    const accessToken = await mintE2eAccessToken({ sub: family.userId, email: family.email });
+    const supabaseUrl = resolveSupabaseUrl();
     const payload = JSON.parse(
       Buffer.from(accessToken.split('.')[1] ?? '', 'base64url').toString('utf8'),
     ) as { exp: number };

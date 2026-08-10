@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { ensureReaderFunctions, getE2eDb, schema } from './db.js';
+import { liveWeekStart, previousWeekStart } from './seed-week-anchor.js';
 
 // FHS-516: seed one small, fully-isolated family per test. Every test that
 // uses the `authedFamily` fixture gets its own tenant + admin user + child
@@ -18,6 +19,8 @@ export interface SeededFamily {
   email: string;
   adminMemberId: string;
   childMemberId: string;
+  /** FHS-638: the child's display name, for screens that greet them by name. */
+  childMemberName: string;
   habitId: string;
 }
 
@@ -25,7 +28,25 @@ function shortId(): string {
   return randomUUID().slice(0, 8);
 }
 
-export async function seedFamily(): Promise<SeededFamily> {
+export interface SeedFamilyOptions {
+  /**
+   * FHS-638: anchor the live week so that TODAY is its last day, whatever day
+   * that is.
+   *
+   * The My World board only offers "Close Week" from the week's last day
+   * onward, so a spec that taps it against the default seed passes on Sundays
+   * and fails the rest of the week. Anchoring the week to today removes the
+   * calendar from the test, the same trick FHS-608 already uses to date its
+   * finished week.
+   *
+   * Dates are computed in LOCAL time on purpose: the board compares local
+   * dates, and the browser and this process share a machine, so local-to-local
+   * is the comparison that cannot drift by a day near midnight.
+   */
+  weekEndsToday?: boolean;
+}
+
+export async function seedFamily(options: SeedFamilyOptions = {}): Promise<SeededFamily> {
   // The api pushes schema on boot but never creates the SECURITY DEFINER
   // reader functions GET /api/me needs, apply them once before seeding so
   // authed pages resolve the family name (not the "Your family" fallback).
@@ -78,13 +99,8 @@ export async function seedFamily(): Promise<SeededFamily> {
   // check. The board opens on the current week, so the week's start date is
   // this week's Monday in UTC.
   const now = new Date();
-  const monday = new Date(
-    Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate() - ((now.getUTCDay() + 6) % 7),
-    ),
-  );
+  const live = liveWeekStart(now, options.weekEndsToday === true);
+  const monday = new Date(`${live.startDate}T00:00:00Z`);
   // FHS-608 seeds a finished week dated LAST week; FHS-616 scopes a finished
   // week's habits to ones that existed before it closed, so the habit must
   // actually predate that week (not just be inserted before it in this
@@ -112,8 +128,8 @@ export async function seedFamily(): Promise<SeededFamily> {
       // The unique index is (tenant, member, year, weekNumber), so the live
       // week and the finished one before it must carry different numbers.
       weekNumber: 2,
-      year: monday.getUTCFullYear(),
-      startDate: monday.toISOString().slice(0, 10),
+      year: live.year,
+      startDate: live.startDate,
     })
     .returning({ id: schema.mwWeeks.id });
   if (!week) throw new Error('seedFamily: week insert returned no row');
@@ -132,8 +148,8 @@ export async function seedFamily(): Promise<SeededFamily> {
       // Deliberately the live week's year, not lastMonday's: across a new-year
       // boundary the two would otherwise land in different years and the
       // board would order them apart.
-      year: monday.getUTCFullYear(),
-      startDate: lastMonday.toISOString().slice(0, 10),
+      year: live.year,
+      startDate: previousWeekStart(live.startDate),
       isFinalized: true,
       carriedOverStickers: 3,
       closureSnapshot: {
@@ -176,6 +192,7 @@ export async function seedFamily(): Promise<SeededFamily> {
     email,
     adminMemberId: adminMember.id,
     childMemberId: childMember.id,
+    childMemberName: `E2E Kid ${suffix}`,
     habitId: habit.id,
   };
 }
