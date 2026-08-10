@@ -312,6 +312,15 @@ What shipped:
 | Closing the week | `POST /api/mw/weeks/{id}/finalize`, carrying every still-running investment into the new week. The ids are read fresh, so a withdrawal made in the same sitting is not re-continued.                         |
 | The old dialog   | Deleted, about 2,000 lines, along with its own copies of all five flows. Two copies of a money flow is how they drift.                                                                                       |
 
+**FHS-639: the header shipped white on white.** The chooser's purple header was
+written as `bg-kingdom`, which is the token name in the design's own Tailwind
+config. Here `kingdom` is a scale, so that class produced no rule at all: no
+error, no background, and the white title and white close icon disappeared into
+the white card. It is `bg-kingdom-900` (#3d1065, the design's exact purple), and
+a browser test now reads the header's computed colours and fails if any of them
+matches its own background. Class names that do not exist fail silently, so only
+a real browser can see this.
+
 Deliberate deviations, founder decision (2026-08-09) to follow the design
 exactly:
 

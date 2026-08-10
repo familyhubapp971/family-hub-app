@@ -70,3 +70,19 @@ Then('every choice is big enough to tap', async ({ page }) => {
   const finish = await board.finishBox();
   expect(finish.height).toBeGreaterThanOrEqual(44);
 });
+
+// FHS-639: the header shipped white on white, because a colour name from the
+// design's own Tailwind config does not exist in this app's. Nothing errored:
+// the class simply produced no rule, and the white title stayed white.
+
+Then('the header is the deep purple from the design', async ({ page }) => {
+  const { background } = await new CloseWeekPage(page).headerColours();
+  // kingdom-900, #3d1065, the exact purple the design uses.
+  expect(background).toBe('rgb(61, 16, 101)');
+});
+
+Then('nothing in the header is the same colour as what it sits on', async ({ page }) => {
+  const { background, title, closeIcon } = await new CloseWeekPage(page).headerColours();
+  expect(title).not.toBe(background);
+  expect(closeIcon).not.toBe(background);
+});
