@@ -203,6 +203,12 @@ describe('detectBrowserCurrency()', () => {
       ['Europe/London', 'GBP'],
       ['America/New_York', 'USD'],
       ['Europe/Paris', 'EUR'],
+      // FHS-636 review: a family in Tokyo or Seoul is quietly handed dollars,
+      // because the yen and the won are currencies the sticker economy cannot
+      // show correctly yet (FHS-515). Pinned so the substitution stays a
+      // decision rather than an accident.
+      ['Asia/Tokyo', 'USD'],
+      ['Asia/Seoul', 'USD'],
     ])('%s resolves to %s', (tz, expected) => {
       stubTimezone(tz);
       expect(detectBrowserCurrency()).toBe(expected);

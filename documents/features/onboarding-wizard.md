@@ -24,6 +24,10 @@ the wizard renders.
    that creates every member row, renames the founder's own row, saves
    timezone/currency, seeds starter habits/rewards, emails any adult
    invites, and marks the tenant onboarded.
+   FHS-636: the wizard refuses a currency the app cannot show correctly (one
+   with no small change, like the yen, or three decimals, like the dinar).
+   The picker never offers one, and a family whose device suggests one is
+   handed dollars instead, so this only bites a crafted request.
 
 ## User stories
 

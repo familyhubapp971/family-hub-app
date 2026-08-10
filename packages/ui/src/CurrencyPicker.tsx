@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { SearchableSelect } from './SearchableSelect';
+import { isSupportedCurrency } from '@familyhub/shared';
 
 // FHS-39: Currency picker. 30 curated currencies (ISO 4217 code +
 // symbol + name). Default inferred from navigator.language via the
@@ -25,16 +26,9 @@ interface CurrencyEntry {
  * 2 on any bad/unknown code. Node + browsers ship full ICU, so this is
  * reliable in tests too.
  */
-export function currencyDecimals(code: string): number {
-  try {
-    return (
-      new Intl.NumberFormat('en', { style: 'currency', currency: code }).resolvedOptions()
-        .maximumFractionDigits ?? 2
-    );
-  } catch {
-    return 2;
-  }
-}
+// FHS-636: re-exported from the shared money module so the app and the api
+// answer "can we show this currency?" with the same function, not two copies.
+export { currencyDecimals } from '@familyhub/shared';
 
 // Curated list: covers the ticket's named examples (GBP, USD, EUR, NGN,
 // AED) plus the rest of the top-30 by global GDP. Order keeps frequent
@@ -77,8 +71,8 @@ const ALL_CURRENCIES: readonly CurrencyEntry[] = [
 // 3-decimal (KWD) currency would show wrong figures and a wrong stepper, so
 // until full multi-decimal support lands we only OFFER 2-decimal currencies:
 // no family can end up on a currency the money math can't render correctly.
-const CURRENCIES: readonly CurrencyEntry[] = ALL_CURRENCIES.filter(
-  (c) => currencyDecimals(c.code) === 2,
+const CURRENCIES: readonly CurrencyEntry[] = ALL_CURRENCIES.filter((c) =>
+  isSupportedCurrency(c.code),
 );
 
 /**
