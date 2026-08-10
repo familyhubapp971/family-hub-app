@@ -78,6 +78,13 @@ export class CloseWeekPage {
     };
   }
 
+  /** FHS-641: the sheet's rendered width, so "wider" is a measurement. */
+  async sheetWidth(): Promise<number> {
+    const box = await this.page.getByTestId('money-actions-sheet-header').boundingBox();
+    if (!box) throw new Error('the sheet header has no bounding box');
+    return box.width;
+  }
+
   /** How far the page can scroll sideways: anything over a pixel is a bug. */
   horizontalOverflow(): Promise<number> {
     return this.page.evaluate(
