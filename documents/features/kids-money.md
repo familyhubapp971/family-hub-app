@@ -117,6 +117,13 @@ after the page reloads, not something the design only pretended to do
 - **When** it fails
 - **Then** the sheet says nothing changed and the figures are untouched
 
+**Scenario: Finishing the week says so and stays said**
+
+- **Given** a parent on their child's board on the last day of the week
+- **When** they open Close Week and finish the week
+- **Then** the sheet says "All done" and a new week has started
+- **And** it stays on that screen instead of returning to the list of choices
+
 ## Where the figures come from
 
 Every number on this page is a real API response; nothing is computed from
@@ -356,3 +363,34 @@ now opens the chooser from the My World board for real and checks it at 375px
 and 768px. The date rule itself is unit-tested across all seven weekdays and
 over a month and a year boundary, because the browser spec can only ever run on
 the day it runs.
+
+## The all done screen never survived closing the week (FHS-642)
+
+Closing the week worked, but the parent never saw it. A beat after the "All
+done" message appeared the sheet came back on the list of choices, now reading
+"0 stickers ready to spend" because it was describing the brand new week. It
+looked like the dialog had reloaded and nothing had happened.
+
+Two faults met:
+
+| Fault                                                                                                                                                                   | What shipped                                                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The board refreshed loudly. `fetchData()` sets `loading`, and the full-page loading screen is an early return, so the whole board unmounted and took the sheet with it. | `fetchData({ silent: true })` for refreshes that follow a mutation: the figures update underneath while the screen stays put. A silent refresh that fails also keeps what is on screen.                                                                      |
+| The done screen was missing half the design.                                                                                                                            | The design's "All done" heading, "Do something else" after closing the week and not only after the five actions, and "See their money". The result sits in a live region so it is announced, and takes focus so the keyboard does not fall out of the sheet. |
+
+"See their money" goes to Kids money for that child, and is only offered to an
+admin, because that is an admin screen. Kids money opens the same sheet without
+it, since it is already the page underneath; there the plain "Done" keeps the
+yellow so the screen still has one obvious way on.
+
+One thing the design does not get followed on: after closing the week, "Do
+something else" returns to the list of choices for the NEW week, but the button
+that finishes a week is replaced with a line saying the week is closed.
+Otherwise a parent could close the brand new empty week one tap after closing
+the last one, and the server only refuses a week dated in the future.
+
+The guard for the reload itself lives in `tests/unit/web/tenant/child/MyWorldTab.test.tsx`,
+not in the sheet's own tests: the sheet was never the broken part, so a test that
+renders it alone passes on the broken code too. It holds the post-close refresh
+open and fails if the board swaps itself for the loading screen. `close-week.feature`
+covers the same journey end to end, and checks the done screen at 375px.
