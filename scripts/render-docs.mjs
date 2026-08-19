@@ -1,13 +1,21 @@
-// Renders every business-doc source in scripts/doc-src/ to its PDF in
-// documents/business/ (docs folders are PDF-only, FHS-552), plus the
-// commercial case into documents/commercial/ and the Hub71 answers into
-// documents/investments/.
+// Renders every doc source in scripts/doc-src/ to its PDF under documents/
+// (docs folders are PDF-only, FHS-552), each one filed by what it is for:
+//
+//   documents/business/     the pitch and the business model
+//   documents/commercial/   the commercial case (tracked in git)
+//   documents/impact/       theory of change and impact measurement
+//   documents/investments/  investor and accelerator applications
+//   documents/qa/           briefs for testers
+//
+// Only commercial/ is committed. The rest are gitignored and land locally
+// for the founder to share, as are their folders.
 //
 // Usage: node scripts/render-docs.mjs
 // The flowing docs (theory-of-change, impact framework) get a printed
 // running footer on every page; the paged docs carry their own footers.
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import path from 'path';
 
 /* global document */
@@ -25,25 +33,34 @@ const foot = (title) => `
   </div>`;
 
 const DOCS = [
-  { src: 'fh-beta-tester-brief.html', out: 'fh-beta-tester-brief.pdf' },
-  { src: 'fh-qa-brief-overview.html', out: 'fh-qa-brief-overview.pdf' },
-  { src: 'fh-qa-brief-feature-tour.html', out: 'fh-qa-brief-feature-tour.pdf' },
+  // Briefs for testers.
+  { src: 'fh-beta-tester-brief.html', out: 'beta-tester-brief.pdf', outDir: 'documents/qa' },
+  { src: 'fh-qa-brief-overview.html', out: 'qa-brief-overview.pdf', outDir: 'documents/qa' },
+  {
+    src: 'fh-qa-brief-feature-tour.html',
+    out: 'qa-brief-feature-tour.pdf',
+    outDir: 'documents/qa',
+  },
+  // What good we set out to do, and how we would know.
   {
     src: 'fh-theory-of-change.html',
-    out: 'fh-theory-of-change.pdf',
+    out: 'theory-of-change.pdf',
+    outDir: 'documents/impact',
     margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
     footerTitle: 'Theory of Change',
   },
   {
     src: 'fh-impact-measurement-framework.html',
-    out: 'fh-impact-measurement-framework.pdf',
+    out: 'impact-measurement-framework.pdf',
+    outDir: 'documents/impact',
     margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
     footerTitle: 'Impact Measurement Framework',
   },
-  { src: 'fh-business-model-canvas.html', out: 'fh-business-model-canvas.pdf', landscape: true },
+  // The business itself.
+  { src: 'fh-business-model-canvas.html', out: 'business-model-canvas.pdf', landscape: true },
   {
     src: 'fh-pitch-deck.html',
-    out: 'fh-pitch-deck.pdf',
+    out: 'pitch-deck.pdf',
     pageSize: { width: '338.66mm', height: '190.5mm' },
   },
   // Commercial case (FHS-620 follow-up): flowing docs, so they take the
@@ -98,8 +115,10 @@ for (const d of DOCS) {
       document.body.style.minHeight = `${pages * perPage - 6}px`;
     });
   }
+  const outDir = path.join(root, d.outDir ?? 'documents/business');
+  fs.mkdirSync(outDir, { recursive: true });
   await page.pdf({
-    path: path.join(root, d.outDir ?? 'documents/business', d.out),
+    path: path.join(outDir, d.out),
     ...(d.pageSize ? d.pageSize : { format: 'A4' }),
     landscape: d.landscape ?? false,
     printBackground: true,
@@ -108,6 +127,6 @@ for (const d of DOCS) {
     headerTemplate: '<span></span>',
     footerTemplate: d.footerTitle ? foot(d.footerTitle) : undefined,
   });
-  console.log('rendered', d.out);
+  console.log('rendered', path.relative(root, path.join(outDir, d.out)));
 }
 await browser.close();
