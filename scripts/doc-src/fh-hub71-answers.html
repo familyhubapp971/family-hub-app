@@ -55,17 +55,6 @@
         color: var(--yellow);
         font-weight: 900;
       }
-      .callout {
-        margin-top: 6mm;
-        background: #fff;
-        border: 2.5px solid #000;
-        border-radius: 4mm;
-        box-shadow: 3px 3px 0 #000;
-        padding: 4mm 5mm;
-        font-weight: 700;
-        font-size: 9.5pt;
-        break-inside: avoid;
-      }
       .card {
         margin-top: 7mm;
         background: #fff;
@@ -73,14 +62,25 @@
         border-radius: 5mm;
         box-shadow: 4px 4px 0 #000;
         padding: 5mm 6mm 5mm;
-        break-inside: avoid;
-        page-break-inside: avoid;
+        break-inside: auto;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
       }
       .qhead {
         display: flex;
         align-items: center;
         gap: 5mm;
         margin-bottom: 3.5mm;
+        break-inside: avoid;
+        break-after: avoid;
+      }
+      .a p {
+        orphans: 3;
+        widows: 3;
+      }
+      /* a bold lead line is never stranded at the foot of a page */
+      .a .lead {
+        break-after: avoid;
       }
       .qnum {
         flex: 0 0 auto;
@@ -133,19 +133,6 @@
         padding: 0.4mm 1.8mm;
         font-weight: 900;
       }
-      .note {
-        margin-top: 3.5mm;
-        background: #ede5f5;
-        border-radius: 3mm;
-        padding: 2.6mm 4mm;
-        font-size: 8.5pt;
-        font-weight: 700;
-        color: #4a4a4a;
-      }
-      .note b {
-        font-weight: 900;
-        color: #191919;
-      }
       .count {
         font-size: 8pt;
         font-weight: 900;
@@ -161,28 +148,9 @@
       <div class="hero-panel">
         <h1>Hub71 Application · Draft Answers</h1>
         <p>
-          Family Hub · revised August 2026 after the advisory review · every answer fits the form's
-          word limits · <span class="hl">yellow chips are facts only the founders can fill in</span>
+          Family Hub · August 2026 · every answer fits the form's word limits ·
+          <span class="hl">yellow chips are facts only the founders can fill in</span>
         </p>
-      </div>
-
-      <div class="callout">
-        Honest position throughout: pre-revenue, private beta live on the web, bootstrapped,
-        Gulf-first by design. Hub71 backs exactly this profile, so the answers lead with momentum
-        and why Abu Dhabi. Nothing here is invented. Do not submit anything you cannot defend in an
-        interview.
-      </div>
-
-      <div class="callout">
-        <b>What changed in this revision.</b> An advisor who has been through this form gave four
-        steers, and they are now built into the answers below. One: "interest in the product" is
-        worthless as a metric, because everyone claims it. Families actually onboarded and in
-        testing is the strongest asset we have, so it leads. Two: leaving "raised to date" blank
-        routes the application to the Initiate track rather than the main programme, so it carries a
-        real number. Three: runway may simply not apply to bootstrapped founders in paid work, and
-        saying so is a better answer than a stretched figure. Four: the team answer only has to make
-        the reader believe every major skill is covered, and a personal founding story is a
-        legitimate way to do it.
       </div>
 
       <!-- Q1 ------------------------------------------------------------- -->
@@ -192,26 +160,15 @@
           <span class="qtext">Describe in 280 characters what problem you are solving and how</span>
         </div>
         <div class="a">
+          <p></p>
           <p>
-            Every family carries a mental load, and the children are at the heart of it: the
-            schedules, the chores, the pocket money, the learning. Family Hub gives that load a
-            home, so parents can raise capable children with confidence, not guesswork.
+            Every family carries a mental load, and the children are at the heart of it: schedules,
+            chores, pocket money, learning. That is four apps today. Family Hub makes it one private
+            space for the whole family, so parents raise capable children with confidence, not
+            guesswork.
           </p>
         </div>
-        <div class="count">240 characters</div>
-        <div class="note">
-          <b>Note:</b> counted, fits the 280 limit. This is written to sell, not to describe. The
-          mental load is named as the central problem, because it is the one every parent already
-          has a word for and nobody has built a product around. It is framed as the family's load,
-          not one person's, so the answer never sounds like it is taking sides inside the house. The
-          children are placed at the heart of that load deliberately, as the reason the work exists
-          rather than as the thing going wrong: the four items after the colon are what parents are
-          already carrying on their behalf. "Gives that load a home" is the positive turn, since the
-          load is normal and permanent and simply has nowhere to live today. The close names what
-          parents actually want, which is to raise capable children and to do it with confidence
-          rather than guesswork. The sticker economy is held back for Q2, where it lands as proof
-          rather than as a feature claim.
-        </div>
+        <div class="count">270 characters</div>
       </div>
 
       <!-- Q2 ------------------------------------------------------------- -->
@@ -225,9 +182,10 @@
         <div class="a">
           <p class="lead">One private space for the whole family, not one app per problem.</p>
           <p>
-            Family Hub gives each household a single space. Calendar, meals, tasks and notices for
-            the grown-ups. A PIN login and a world of their own for every child, from age four, with
-            no email address and no phone needed.
+            Most families run this on four apps that never talk to each other: a calendar, a chore
+            chart, a pocket money app and a learning app. Family Hub is all four in one space.
+            Calendar, meals, tasks and notices for the grown-ups; a PIN login and a world of their
+            own for every child, from age four, with no email address and no phone needed.
           </p>
           <p class="lead">Everything connects, and that is the point.</p>
           <p>
@@ -268,8 +226,8 @@
           <p class="lead">Every family stays private, and that gives us a second business.</p>
           <p>
             Every family gets their own private space. Nothing crosses between homes. That same wall
-            lets a school, nursery or club run Family Hub under its own name. So we grow two ways:
-            one family at a time, or a hundred when a school signs up.
+            lets a school or club run Family Hub under its own name. So we grow two ways: one family
+            at a time, or a hundred when a school signs up.
           </p>
           <p>
             The difference is not a longer list of features. It is that one small moment does four
@@ -318,9 +276,9 @@
             2026 is the UAE's Year of the Family, declared alongside the National Family Growth
             Agenda 2031 and a new Ministry of Family. Family life is not a side topic here, it is
             government policy with attention behind it. Abu Dhabi is already built around families:
-            households are larger, several generations live close, and schools, nurseries and clubs
-            sit at the centre of daily life. Those are exactly the doors our second business walks
-            through.
+            households are larger, several generations live close, and schools, clubs and community
+            groups sit at the centre of daily life. Those are exactly the doors our second business
+            walks through.
           </p>
           <p class="lead">And it is personal.</p>
           <p>
@@ -345,7 +303,7 @@
             We incorporate in ADGM, hire our first community and growth lead here, and run the
             product from Abu Dhabi. Hub71 is strong in AI, climate tech, digital assets and life
             sciences. Consumer software for families sits outside all four, and that is what we add:
-            a company whose customers are households, built and grown in the emirate.
+            a company whose customers are households.
           </p>
           <p class="lead">We turn the Year of the Family into something families actually use.</p>
           <p>
@@ -353,14 +311,19 @@
             empower family life, with early themes around family and work balance and positive
             everyday habits. That is not a campaign for us, it is our product working in a home on a
             Tuesday night. Abu Dhabi gets a live, measurable example of that agenda in a parent's
-            hand, and we can report exactly how many families use it and what changed in their week.
+            hand, and we can report how many families use it and what changed in their week. We want
+            to be what a government programme hands to a family, not a company that quotes the
+            agenda back at it.
           </p>
-          <p class="lead">We give Abu Dhabi schools, nurseries and clubs their own version.</p>
+          <p class="lead">Government is the door we cannot open on our own.</p>
           <p>
-            Any of them can run Family Hub under their own name for the families they already look
-            after. We want the first white-label pilots to be Abu Dhabi nurseries, homeschool co-ops
-            and weekend schools, so local institutions get a real tool and we grow through them.
-            Hub71's network is how we get those introductions warm instead of cold.
+            The bodies that set family and early-years policy here already hold the reach we would
+            spend years building. ADEK, the Abu Dhabi Early Childhood Authority and the Family Care
+            Authority run programmes that touch households right across the emirate. Any one of them
+            can put Family Hub in front of those families under its own name, and a single adoption
+            at that level does more than a year of selling. The larger school groups, homeschool
+            co-ops, weekend schools and sports academies follow the same route, and they open far
+            more easily once a government body has already said yes.
           </p>
           <p class="lead">We teach children about money years before a bank can.</p>
           <p>
@@ -371,11 +334,15 @@
           </p>
           <p class="lead">What we are asking Hub71 for.</p>
           <p>
-            Warm introductions to school and nursery groups and to bank innovation teams, the
-            investor network to anchor a pre-seed, and the ADGM licence and soft landing that let a
-            small team move fast. In return, by the end of the programme Abu Dhabi has a consumer
-            SaaS company grown here, with 100 or more active UAE families, signed community pilots,
-            and retention numbers we can show rather than claim.
+            Government introductions, ahead of everything else. Hub71 sits inside the Abu Dhabi
+            government ecosystem and we do not, and that one door is worth more to us than any other
+            part of the programme: ADEK, the Abu Dhabi Early Childhood Authority and the Family Care
+            Authority, and the institutions they license and fund. After that, the innovation teams
+            at ADCB, FAB and Wio, the investor network to anchor a pre-seed, and the ADGM licence
+            and soft landing that let a small team move fast. In return, by the end of the programme
+            Abu Dhabi has a consumer SaaS company grown here, with 100 or more active UAE families,
+            a signed pilot with an Abu Dhabi institution, and retention numbers we can show rather
+            than claim.
           </p>
         </div>
       </div>
@@ -569,10 +536,10 @@
             Most consumer apps hire that person after something goes wrong. Ours is a founder.
           </p>
           <p>
-            <b>It never reaches anyone.</b> Selling to families one at a time is slow, so schools,
-            nurseries and clubs are our route to hundreds at once. Jumi runs how complex, high-value
-            work gets delivered across a global law firm from Abu Dhabi, which is exactly the
-            discipline those deals and contracts need.
+            <b>It never reaches anyone.</b> Selling to families one at a time is slow, so family
+            authorities, school groups and clubs are our route to hundreds at once. Jumi runs how
+            complex, high-value work gets delivered across a global law firm from Abu Dhabi, which
+            is exactly the discipline those deals and contracts need.
           </p>
           <p class="lead">
             And all three of us are raising children right now. We are not researching this
