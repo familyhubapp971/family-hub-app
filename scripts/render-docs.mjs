@@ -57,34 +57,45 @@ const DOCS = [
     footerTitle: 'Impact Measurement Framework',
   },
   // The business itself.
-  { src: 'fh-business-model-canvas.html', out: 'business-model-canvas.pdf', landscape: true },
+  {
+    src: 'fh-business-model-canvas.html',
+    out: 'business-model-canvas.pdf',
+    outDir: 'documents/business/model-canvases',
+    landscape: true,
+  },
+  {
+    src: 'fh-business-model-canvas-hub71.html',
+    out: 'business-model-canvas-hub71.pdf',
+    outDir: 'documents/business/model-canvases',
+    landscape: true,
+  },
   {
     src: 'fh-pitch-deck.html',
     out: 'pitch-deck.pdf',
+    outDir: 'documents/business/pitch-decks',
     pageSize: { width: '338.66mm', height: '190.5mm' },
   },
-  // Commercial case (FHS-620 follow-up): flowing docs, so they take the
-  // printed running footer and real top/bottom page margins.
+  {
+    src: 'fh-pitch-deck-hub71.html',
+    out: 'pitch-deck-hub71.pdf',
+    outDir: 'documents/business/pitch-decks',
+    pageSize: { width: '338.66mm', height: '190.5mm' },
+  },
+  // Commercial case: concise one-page briefs with their own footers.
   {
     src: 'fh-commercial-where-we-fit.html',
     out: 'where-we-fit.pdf',
     outDir: 'documents/commercial',
-    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
-    footerTitle: 'Where we fit',
   },
   {
     src: 'fh-commercial-product-market-fit.html',
     out: 'product-market-fit.pdf',
     outDir: 'documents/commercial',
-    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
-    footerTitle: 'Product-market fit',
   },
   {
     src: 'fh-commercial-go-to-market.html',
     out: 'go-to-market.pdf',
     outDir: 'documents/commercial',
-    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
-    footerTitle: 'Go to market',
   },
   {
     src: 'fh-hub71-answers.html',

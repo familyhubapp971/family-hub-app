@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Family Hub · Hub71 Investor Deck</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
+
+      @page {
+        size: 338.6mm 190.5mm;
+        margin: 0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #dcdcdc;
+        font-family: 'Nunito', sans-serif;
+        color: #14101c;
+      }
+      :root {
+        --cream: #faf5ea;
+        --purple: #3d1065;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow: #ffd21e;
+        --lavender: #b9a1ee;
+        --ink: #14101c;
+        --muted: #665f6d;
+      }
+      .slide {
+        width: 338.6mm;
+        height: 190.5mm;
+        position: relative;
+        overflow: hidden;
+        padding: 12mm 15mm 15mm;
+        background: var(--cream);
+        page-break-after: always;
+        break-inside: avoid;
+      }
+      .slide:last-of-type {
+        page-break-after: auto;
+      }
+      .purple {
+        background: var(--purple);
+        color: var(--cream);
+      }
+      .pill {
+        display: inline-flex;
+        padding: 8px 19px;
+        border: 3px solid #000;
+        border-radius: 999px;
+        box-shadow: 5px 5px 0 #000;
+        background: var(--pink);
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .pill.green {
+        background: var(--green);
+      }
+      .pill.cyan {
+        background: var(--cyan);
+      }
+      .pill.yellow {
+        background: var(--yellow);
+      }
+      .pill.coral {
+        background: var(--coral);
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+      }
+      h1 {
+        margin: 18px 0 12px;
+        font-size: 42px;
+        line-height: 1.08;
+      }
+      h2 {
+        margin: 18px 0 8px;
+        font-size: 31px;
+        line-height: 1.12;
+      }
+      h3 {
+        margin: 0 0 8px;
+        font-size: 21px;
+      }
+      .lede {
+        max-width: 1000px;
+        margin: 0;
+        font-size: 17px;
+        line-height: 1.45;
+        font-weight: 700;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .purple .muted {
+        color: #d9cbea;
+      }
+      .footer {
+        position: absolute;
+        left: 15mm;
+        right: 15mm;
+        bottom: 8mm;
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .grid2,
+      .grid3,
+      .grid4 {
+        display: grid;
+        gap: 18px;
+        margin-top: 24px;
+      }
+      .grid2 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .grid3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .grid4 {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .card {
+        border: 3px solid #000;
+        border-radius: 18px;
+        box-shadow: 6px 6px 0 #000;
+        padding: 19px 20px;
+        background: #fff;
+        color: var(--ink);
+      }
+      .card p,
+      .card li {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.42;
+        font-weight: 700;
+      }
+      .card ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+      }
+      .card li + li {
+        margin-top: 6px;
+      }
+      .card .role {
+        display: inline-block;
+        margin: 0 0 10px;
+        padding: 4px 9px;
+        border: 2px solid #000;
+        border-radius: 999px;
+        background: var(--cream);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .metric {
+        font-family: 'Fredoka One', cursive;
+        font-size: 42px;
+        line-height: 1;
+        margin-bottom: 8px;
+      }
+      .label {
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 22px;
+        margin-top: 32px;
+      }
+      .step {
+        position: relative;
+        border: 3px solid #000;
+        border-radius: 18px;
+        box-shadow: 6px 6px 0 #000;
+        padding: 22px 18px 18px;
+        background: #fff;
+      }
+      .step:not(:last-child)::after {
+        content: '→';
+        position: absolute;
+        right: -26px;
+        top: 42%;
+        font-size: 24px;
+        font-weight: 900;
+      }
+      .step p {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.4;
+        font-weight: 700;
+      }
+      .band {
+        margin-top: 24px;
+        border: 3px solid #000;
+        border-radius: 18px;
+        box-shadow: 6px 6px 0 #000;
+        padding: 16px 20px;
+        background: var(--yellow);
+        font-size: 16px;
+        line-height: 1.4;
+        font-weight: 900;
+        text-align: center;
+      }
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 22px;
+        border: 3px solid #000;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #fff;
+      }
+      th,
+      td {
+        padding: 11px 14px;
+        border-right: 2px solid #000;
+        border-bottom: 2px solid #000;
+        text-align: left;
+        font-size: 12px;
+        line-height: 1.3;
+      }
+      th {
+        background: var(--yellow);
+        font-weight: 900;
+      }
+      td {
+        font-weight: 700;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      th:last-child,
+      td:last-child {
+        border-right: 0;
+      }
+      .hero {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding-bottom: 14mm;
+      }
+      .hero h1 {
+        max-width: 920px;
+        font-size: 52px;
+      }
+      .hero .lede {
+        max-width: 760px;
+      }
+      .ask {
+        font-size: 19px;
+        line-height: 1.45;
+        font-weight: 800;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="slide purple">
+      <div class="hero">
+        <span class="pill green">Hub71 Access · Cohort 20</span>
+        <h1>Family Hub</h1>
+        <p class="lede">
+          Share the mental load. Build family structure. Stay in each other's worlds.
+        </p>
+        <p class="lede muted" style="margin-top: 24px">
+          Built in Abu Dhabi by three founders who are also parents.
+        </p>
+      </div>
+      <div class="footer"><span>Family Hub · Investor deck</span><span>1 / 12</span></div>
+    </section>
+
+    <section class="slide">
+      <span class="pill">The problem</span>
+      <h2>Family life is fragmented across apps, messages and memory.</h2>
+      <div class="grid3">
+        <div class="card" style="background: var(--pink)">
+          <h3>Mental load</h3>
+          <p>
+            Meals, calendars, school notices and plans live in different places, making coordination
+            harder for everyone.
+          </p>
+        </div>
+        <div class="card" style="background: var(--yellow)">
+          <h3>Structure</h3>
+          <p>
+            Parents repeat reminders. Children struggle to own routines, responsibility and money
+            habits.
+          </p>
+        </div>
+        <div class="card" style="background: var(--cyan)">
+          <h3>Connection</h3>
+          <p>
+            Families can be present in the same room while missing what matters in each other's day.
+          </p>
+        </div>
+      </div>
+      <div class="band">
+        The cost is more nagging, more coordination and less meaningful time together.
+      </div>
+      <div class="footer"><span>Problem</span><span>2 / 12</span></div>
+    </section>
+
+    <section class="slide purple">
+      <span class="pill yellow">The big idea</span>
+      <div class="hero">
+        <h1>What if your family ran on rituals, not reminders?</h1>
+        <p class="lede">
+          Family Hub is one private digital home for shared plans, positive habits, early money
+          learning and daily connection.
+        </p>
+      </div>
+      <div class="footer"><span>Solution and value proposition</span><span>3 / 12</span></div>
+    </section>
+
+    <section class="slide">
+      <span class="pill cyan">How it works</span>
+      <h2>One weekly rhythm connects the whole product.</h2>
+      <div class="flow">
+        <div class="step" style="background: var(--pink)">
+          <h3>Plan</h3>
+          <p>Families share meals, calendars, notices and tasks.</p>
+        </div>
+        <div class="step" style="background: var(--green)">
+          <h3>Do</h3>
+          <p>Children complete habits, build streaks and earn stickers.</p>
+        </div>
+        <div class="step" style="background: var(--yellow)">
+          <h3>Learn</h3>
+          <p>Stickers become pocket money, saving choices and rewards.</p>
+        </div>
+        <div class="step" style="background: var(--cyan)">
+          <h3>Connect</h3>
+          <p>Journals, gratitude and learning open better conversations.</p>
+        </div>
+      </div>
+      <div class="band">
+        No child email. No child phone. No debit card required. Built for families from age four.
+      </div>
+      <div class="footer"><span>Product</span><span>4 / 12</span></div>
+    </section>
+
+    <section class="slide">
+      <span class="pill green">Why now</span>
+      <h2>The need, technology and market have converged.</h2>
+      <div class="grid3">
+        <div class="card" style="background: var(--pink)">
+          <h3>Parents feel it</h3>
+          <p>
+            Mental load and screen-time guilt are mainstream concerns. Families want shared
+            structure and useful screen time.
+          </p>
+        </div>
+        <div class="card" style="background: var(--cyan)">
+          <h3>Small teams can build it</h3>
+          <p>
+            AI-assisted development makes secure, multi-tenant consumer software viable at
+            family-friendly pricing.
+          </p>
+        </div>
+        <div class="card" style="background: var(--yellow)">
+          <h3>Abu Dhabi backs families</h3>
+          <p>
+            The UAE's Year of the Family, National Family Growth Agenda 2031 and Hub71's ECA pathway
+            create a timely launch environment.
+          </p>
+        </div>
+      </div>
+      <div class="band">
+        All three founders are parents based in Abu Dhabi, and the product is already live.
+      </div>
+      <div class="footer"><span>Why now</span><span>5 / 12</span></div>
+    </section>
+
+    <section class="slide">
+      <span class="pill coral">Market and model</span>
+      <h2>Two routes to revenue from one platform.</h2>
+      <div class="grid2">
+        <div class="card" style="background: var(--pink)">
+          <div class="label">B2C subscriptions</div>
+          <h3 style="margin-top: 8px">Families</h3>
+          <p><b>AED 29 to AED 49 per month</b></p>
+          <p style="margin-top: 8px">
+            Self-serve acquisition for households seeking structure, money learning and connection.
+          </p>
+        </div>
+        <div class="card" style="background: var(--green)">
+          <div class="label">B2B2C annual plans</div>
+          <h3 style="margin-top: 8px">Schools, clubs and family organisations</h3>
+          <p><b>AED 1,099 to AED 12,849 per year</b></p>
+          <p style="margin-top: 8px">
+            White-label distribution places Family Hub in front of many households through one
+            partner.
+          </p>
+        </div>
+      </div>
+      <div class="band">
+        Launch in the UAE, expand across the GCC, then take a culturally adaptable family platform
+        global.
+      </div>
+      <div class="footer"><span>Business model and market</span><span>6 / 12</span></div>
+    </section>
+
+    <section class="slide">
+      <span class="pill yellow">Competition</span>
+      <h2>Others solve one task. Family Hub connects the household.</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>What it solves</th>
+            <th>What remains disconnected</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Family organisers</td>
+            <td>Calendars and lists</td>
+            <td>Habits, rewards, money learning and child engagement</td>
+          </tr>
+          <tr>
+            <td>Chore and pocket-money apps</td>
+            <td>Tasks and payments</td>
+            <td>Shared planning, learning, journals and younger children without cards</td>
+          </tr>
+          <tr>
+            <td>Learning apps</td>
+            <td>Practice and screen time</td>
+            <td>The family's routines, rewards and daily life</td>
+          </tr>
+          <tr>
+            <td>Youth banking</td>
+            <td>Cards and accounts</td>
+            <td>Children below card age and the habits behind earning</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="band">
+        Our advantage: a private, culturally flexible, multi-tenant platform where one action can
+        build a habit, earn a reward, teach money and open a conversation.
+      </div>
+      <div class="footer"><span>Competitive positioning</span><span>7 / 12</span></div>
+    </section>
+
+    <section class="slide">
+      <span class="pill green">Traction</span>
+      <h2>A live product in real homes, not a concept waiting to be built.</h2>
+      <div class="grid4">
+        <div class="card" style="background: var(--pink)">
+          <div class="metric">24</div>
+          <p>parents interviewed</p>
+        </div>
+        <div class="card" style="background: var(--cyan)">
+          <div class="metric">10</div>
+          <p>families onboarded to private beta</p>
+        </div>
+        <div class="card" style="background: var(--yellow)">
+          <div class="metric">Live beta</div>
+          <p>available on web and mobile, with families using it on their own devices</p>
+        </div>
+        <div class="card" style="background: var(--green)">
+          <div class="metric">Full</div>
+          <p>journey from signup to habits, rewards and learning</p>
+        </div>
+      </div>
+      <div class="band">
+        North-star metric: four consecutive kept weeks, showing Family Hub has become part of the
+        household rhythm.
+      </div>
+      <div class="footer"><span>Traction and proof</span><span>8 / 12</span></div>
+    </section>
+
+    <section class="slide">
+      <span class="pill cyan">Go to market</span>
+      <h2>Grow household by household, then multiply through institutions.</h2>
+      <div class="grid2">
+        <div class="card" style="background: var(--pink)">
+          <h3>Direct</h3>
+          <ul>
+            <li>Free private beta into paid launch</li>
+            <li>Parent referrals and community-led acquisition</li>
+            <li>Measure conversion, month-3 retention and revenue per family</li>
+          </ul>
+        </div>
+        <div class="card" style="background: var(--cyan)">
+          <h3>Partners</h3>
+          <ul>
+            <li>ECA, ADEK and Family Care Authority pathways</li>
+            <li>School groups, clubs and family organisations</li>
+            <li>One pilot can reach hundreds of households</li>
+          </ul>
+        </div>
+      </div>
+      <div class="grid3" style="margin-top: 20px">
+        <div class="card">
+          <div class="metric">100</div>
+          <p>active UAE families by day 90</p>
+        </div>
+        <div class="card">
+          <div class="metric">500</div>
+          <p>active UAE families in 12 months</p>
+        </div>
+        <div class="card">
+          <div class="metric">100</div>
+          <p>paying families plus one institutional pilot</p>
+        </div>
+      </div>
+      <div class="footer"><span>Growth plan</span><span>9 / 12</span></div>
+    </section>
+
+    <section class="slide">
+      <span class="pill">Founding team</span>
+      <h2>Three parents who can build, safeguard and scale Family Hub.</h2>
+      <div class="grid3">
+        <div class="card" style="background: var(--pink)">
+          <h3>Babatunde Oduniyi</h3>
+          <p class="role">Product and engineering</p>
+          <p>
+            15 years delivering software across retail, media, travel and finance. Most recently on
+            ADCB's Open Finance programme.
+          </p>
+        </div>
+        <div class="card" style="background: var(--green)">
+          <h3>Sandra Mottoh</h3>
+          <p class="role">Regulation and governance</p>
+          <p>
+            20+ years in financial-services regulatory policy, AML certified, with AI-governance
+            expertise.
+          </p>
+        </div>
+        <div class="card" style="background: var(--cyan)">
+          <h3>Jumi Shonubi</h3>
+          <p class="role">Commercial and operations</p>
+          <p>Leads complex, high-value delivery across a global law firm from Abu Dhabi.</p>
+        </div>
+      </div>
+      <div class="band">
+        All three founders live in Abu Dhabi. We combine lived insight, technical execution,
+        governance and partnership delivery.
+      </div>
+      <div class="footer"><span>Team</span><span>10 / 12</span></div>
+    </section>
+
+    <section class="slide">
+      <span class="pill coral">Funding</span>
+      <h2>Capital-efficient by design. Ready to fund commercial growth.</h2>
+      <div class="grid3">
+        <div class="card" style="background: var(--yellow)">
+          <div class="metric">AED 3.7k–5.5k</div>
+          <p>family-and-friends backing</p>
+        </div>
+        <div class="card" style="background: var(--pink)">
+          <div class="metric">325</div>
+          <p>hands-on founder development hours over three months</p>
+        </div>
+        <div class="card" style="background: var(--green)">
+          <div class="metric">0</div>
+          <p>institutional investors currently on the cap table</p>
+        </div>
+      </div>
+      <div class="band">
+        Our first institutional round will fund paid launch, customer acquisition, institutional
+        pilots and continued product development.
+      </div>
+      <div class="footer"><span>Previous and next fundraising</span><span>11 / 12</span></div>
+    </section>
+
+    <section class="slide purple">
+      <span class="pill green">Why Hub71</span>
+      <h2 style="font-size: 38px; max-width: 980px">
+        An Abu Dhabi product for families, built to scale from Abu Dhabi.
+      </h2>
+      <div class="grid2">
+        <div class="card" style="background: var(--yellow)">
+          <h3>First 90 days</h3>
+          <ul>
+            <li>Establish Family Hub in ADGM</li>
+            <li>Activate paid plans and reach 100 active UAE families</li>
+            <li>Build retention and paid-conversion baselines</li>
+            <li>Agree an Abu Dhabi institutional pilot</li>
+          </ul>
+        </div>
+        <div class="card" style="background: var(--cyan)">
+          <h3>What Hub71 unlocks</h3>
+          <ul>
+            <li>ECA, ADEK, Family Care Authority and school-group access</li>
+            <li>Investor and corporate introductions</li>
+            <li>ADGM setup and commercial-growth support</li>
+            <li>A launchpad from the UAE into the GCC</li>
+          </ul>
+        </div>
+      </div>
+      <p class="ask" style="text-align: center; margin-top: 24px">
+        Hub71 would help a local founding team turn a working product into a regional family
+        platform.
+      </p>
+      <div class="footer"><span>Family Hub · Abu Dhabi</span><span>12 / 12</span></div>
+    </section>
+  </body>
+</html>
