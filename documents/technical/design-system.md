@@ -39,6 +39,50 @@ Button, Card, Badge, TopNav, Input, Label, Select, SearchableSelect, Dropdown,
 Dialog, ConfirmDialog, Toast, AvatarGrid, PinInput, StepperHeader, FeatureCard,
 PricingCard, CurrencyPicker, TimezonePicker, DynamicCalendar, FloatingDecorations.
 
+## Storybook: the component catalogue
+
+**Jira:** [FHS-643](https://qualicion2.atlassian.net/browse/FHS-643)
+
+Every component gets a page showing its real states, so design and build argue
+about the same artefact instead of about screenshots.
+
+```bash
+pnpm storybook          # opens the catalogue on localhost:6006
+pnpm build-storybook    # what CI compiles; output is gitignored
+```
+
+| Thing          | Where                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| Config         | [`packages/ui/.storybook/`](../../packages/ui/.storybook/)                                       |
+| Stories        | Beside the component: `packages/ui/src/<Name>.stories.tsx`                                       |
+| Coverage guard | [`tests/unit/web/ui/stories-coverage.test.ts`](../../tests/unit/web/ui/stories-coverage.test.ts) |
+
+**A new component ships with a story.** The guard test fails the build otherwise,
+and names the component. If a story genuinely has to wait, add the name to
+`AWAITING_STORIES` in that test so the debt is visible rather than silent.
+
+Three things about the setup are deliberate:
+
+- **Stories sit next to the component**, not under `tests/`. The repo's
+  no-colocation rule is about tests; stories are documentation, and Storybook's
+  own tooling assumes they live beside the source.
+- **The canvas is kingdom purple by default.** These components are drawn for a
+  purple page, so a white canvas would make correct components look broken.
+  White and the deeper purple are both available from the backgrounds toolbar.
+- **Storybook serves `apps/web/public`** via `staticDirs`. The brand fonts are
+  self-hosted (FHS-566), so without it every heading in the catalogue would fall
+  back to a system face and misrepresent the design.
+
+Stories are typechecked, but by `packages/ui/tsconfig.stories.json` rather than
+the main config: they are not part of the package's public surface, so they stay
+out of the declaration build.
+
+**Not yet done:** 23 of the 36 components are still uncovered, all composites
+that need providers or fixture data. Restructuring the package into Atomic
+Design layers (atoms / molecules / organisms) was considered and deferred; every
+consumer imports through the barrel `packages/ui/src/index.ts` with no deep
+imports, so that regrouping stays a cheap file move whenever it is wanted.
+
 ## Deliberate divergences from the MP component prototypes
 
 The MP `components/*` files are prototype scaffolding; ours are the production
