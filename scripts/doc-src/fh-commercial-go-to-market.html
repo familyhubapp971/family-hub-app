@@ -365,10 +365,297 @@
       h1 * {
         color: #fff !important;
       }
+      .legacy {
+        display: none;
+      }
+      .page.compact {
+        padding: 6mm 14mm;
+      }
+      .compact .mast {
+        margin-bottom: 4mm;
+        padding-bottom: 6px;
+      }
+      .compact .kicker {
+        margin-bottom: 6px;
+        padding-bottom: 3px;
+      }
+      .compact h1 {
+        font-size: 28px;
+        padding: 3mm 5mm;
+        margin-bottom: 8px;
+      }
+      .compact .lede {
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .compact .pullout {
+        margin: 12px 0 6px;
+        padding: 10px 14px;
+        font-size: 10.5px;
+        line-height: 1.4;
+      }
+      .compact .pullout .pin-label {
+        display: block;
+        margin-bottom: 9px;
+        padding: 2px 9px;
+      }
+      .compact h2 {
+        margin: 12px 0 4px;
+        font-size: 17px;
+      }
+      .compact h2 .num {
+        margin-bottom: 4px;
+        padding-bottom: 3px;
+      }
+      .compact p {
+        font-size: 10.5px;
+        line-height: 1.4;
+        margin: 5px 0;
+      }
+      .compact table {
+        margin: 6px 0 2px;
+        font-size: 10px;
+      }
+      .compact th,
+      .compact td {
+        padding: 4px 6px 4px 0;
+        line-height: 1.3;
+      }
+      .compact ul.clean li {
+        padding-top: 4px;
+        padding-bottom: 4px;
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+      .compact .chain {
+        margin: 10px 0 12px;
+      }
+      .compact .chain li {
+        padding: 6px 4px;
+        gap: 10px;
+      }
+      .compact .chain .body {
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+      .compact footer {
+        margin-top: 8px;
+        padding-top: 6px;
+      }
+      .visual-grid {
+        display: grid;
+        gap: 10px;
+        margin-top: 9px;
+      }
+      .visual-grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .visual-grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .visual-grid.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .visual-card {
+        min-width: 0;
+        padding: 11px 13px;
+        border: 2px solid #000;
+        border-radius: 13px;
+        box-shadow: 3px 3px 0 #000;
+      }
+      .visual-card h3 {
+        margin: 0 0 5px;
+        font-size: 15px;
+      }
+      .visual-card p {
+        margin: 0;
+        font-size: 9.6px;
+        line-height: 1.3;
+      }
+      .pink {
+        background: var(--pink);
+      }
+      .green {
+        background: var(--green);
+      }
+      .cyan {
+        background: var(--cyan);
+      }
+      .yellow {
+        background: var(--yellow);
+      }
+      .coral {
+        background: var(--coral);
+      }
+      .cream {
+        background: var(--yellow-tint);
+      }
+      .visual-label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 8.3px;
+        font-weight: 900;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+      .big-number {
+        display: block;
+        margin-bottom: 4px;
+        font-family: 'Fredoka One', cursive;
+        font-size: 27px;
+        line-height: 1;
+      }
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 7px;
+        align-items: stretch;
+        margin-top: 9px;
+      }
+      .flow.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .flow.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .flow-step {
+        position: relative;
+        padding: 9px 7px;
+        border: 2px solid #000;
+        border-radius: 11px;
+        text-align: center;
+        font-size: 9px;
+        font-weight: 900;
+        line-height: 1.2;
+      }
+      .flow-step:not(:last-child)::after {
+        content: '›';
+        position: absolute;
+        z-index: 2;
+        top: 50%;
+        right: -10px;
+        width: 12px;
+        transform: translateY(-54%);
+        font-family: 'Fredoka One', cursive;
+        font-size: 18px;
+      }
+      .strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .chip {
+        padding: 5px 9px;
+        border: 1.5px solid #000;
+        border-radius: 999px;
+        background: #fff;
+        font-size: 8.7px;
+        font-weight: 900;
+      }
+      .visual-banner {
+        margin-top: 10px;
+        padding: 9px 12px;
+        border: 2px solid #000;
+        border-radius: 11px;
+        box-shadow: 3px 3px 0 #000;
+        background: var(--yellow);
+        text-align: center;
+        font-size: 10px;
+        font-weight: 900;
+      }
+      .visual-banner.purple {
+        background: #3d1065;
+        color: #fff;
+      }
+      .visual-card .price {
+        display: block;
+        margin: 2px 0 5px;
+        font-family: 'Fredoka One', cursive;
+        font-size: 19px;
+        line-height: 1.05;
+      }
     </style>
   </head>
   <body>
-    <div class="page">
+    <div class="page compact">
+      <div class="mast">
+        <div class="brand"><span class="star">★</span> Family Hub</div>
+        <div class="meta"><strong>Go to market</strong><br />21 August 2026 · Commercial</div>
+      </div>
+
+      <p class="kicker">Commercial · Growth</p>
+      <h1>Win families directly. Scale through trusted partners.</h1>
+      <p class="lede">
+        Launch in Abu Dhabi, prove retention and paid conversion, then expand across the UAE and
+        GCC.
+      </p>
+
+      <h2><span class="num">01 · Routes</span>Two connected growth engines</h2>
+      <div class="visual-grid two">
+        <div class="visual-card pink">
+          <span class="big-number">1:1</span>
+          <h3>Direct to family</h3>
+          <p>Founders, referrals, communities and creators. Learn fast and build word of mouth.</p>
+        </div>
+        <div class="visual-card cyan">
+          <span class="big-number">1:many</span>
+          <h3>Partner to family</h3>
+          <p>Schools, clubs, employers and family organisations. Reach households through trust.</p>
+        </div>
+      </div>
+
+      <h2><span class="num">02 · First 90 days</span>Prove the local model</h2>
+      <div class="visual-grid three">
+        <div class="visual-card yellow">
+          <span class="visual-label">Days 1–30</span>
+          <h3>Instrument</h3>
+          <p>ADGM, onboarding and kept-week baseline</p>
+        </div>
+        <div class="visual-card green">
+          <span class="visual-label">Days 31–60</span>
+          <h3>Monetise</h3>
+          <p>AED 29/49, referrals and two partner tests</p>
+        </div>
+        <div class="visual-card coral">
+          <span class="visual-label">Days 61–90</span>
+          <h3>Distribute</h3>
+          <p>100-family target and one Abu Dhabi pilot</p>
+        </div>
+      </div>
+
+      <h2><span class="num">03 · Ownership</span>A three-founder motion</h2>
+      <div class="visual-grid three">
+        <div class="visual-card pink">
+          <h3>Babatunde</h3>
+          <p>Product and measurement</p>
+        </div>
+        <div class="visual-card green">
+          <h3>Sandra</h3>
+          <p>Trust and governance</p>
+        </div>
+        <div class="visual-card cyan">
+          <h3>Jumi</h3>
+          <p>Partnerships and rollout</p>
+        </div>
+      </div>
+
+      <h2><span class="num">04 · Channel scorecard</span>Scale what acquires efficiently</h2>
+      <div class="strip">
+        <span class="chip">Activated-family CAC</span><span class="chip">Referral rate</span
+        ><span class="chip">Channel activation</span><span class="chip">Partner yield</span
+        ><span class="chip">Sales cycle</span>
+      </div>
+      <div class="visual-banner purple">
+        Scale channels that deliver activated families at a sustainable cost.
+      </div>
+
+      <footer>
+        <strong>Family Hub</strong> · Go to market · Abu Dhabi first · UAE and GCC next
+      </footer>
+    </div>
+
+    <div class="legacy">
       <div class="mast">
         <div class="brand"><span class="star">★</span> Family Hub</div>
         <div class="meta">

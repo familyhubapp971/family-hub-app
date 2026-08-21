@@ -2016,3 +2016,108 @@ describe('<MyWorldTab /> money row (FHS-606)', () => {
     expect(screen.getByTestId('reward-requests-count').textContent).toContain('Pending');
   });
 });
+
+// FHS-642: closing the week never showed the "all done" screen. The sheet
+// itself was innocent: it set its done phase and kept it. The board ABOVE it
+// reloaded loudly, and the loading screen is an early return, so the whole
+// board unmounted and took the sheet with it; it came back mounted fresh, on
+// the chooser. So the guard has to live here, where both the loading screen
+// and the sheet are, and not in MoneyActionsSheet.test.tsx: a test that renders
+// the sheet on its own passes just as happily on the broken code.
+describe('<MyWorldTab /> closing the week (FHS-642)', () => {
+  const NEXT_WEEK = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+
+  it('keeps the all done screen up while the board refreshes behind it', async () => {
+    // The Close Week banner only appears from the week's last day. The default
+    // fixture week starts Mon 2026-02-23, so its Sunday is 2026-03-01. Fake
+    // only Date so the fetches still run on real timers.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-03-01T10:00:00'));
+    installApi({ unallocated: 5 });
+    const base = fetchMock.getMockImplementation()!;
+
+    let finalized = false;
+    // Holds the post-finalize weeks read open, so the refresh is observably
+    // still in flight when we look. That window is the whole bug: it is when
+    // the loading screen used to take the board (and the sheet) off screen.
+    let releaseWeeks: (() => void) | null = null;
+
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (init?.method === 'POST' && u.includes('/finalize')) {
+        finalized = true;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ nextWeekId: NEXT_WEEK }),
+        });
+      }
+      // finalizeWeek reads the running investments first, to carry them over.
+      if (u.includes('/api/mw/financial/investments')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ investments: [] }) });
+      }
+      if (u.includes('/api/mw/weeks') && !u.includes('/stats') && !u.includes('/actions')) {
+        if (!finalized) return base(url, init);
+        const weeks = [
+          {
+            id: WEEK,
+            weekNumber: 9,
+            year: 2026,
+            startDate: '2026-02-23',
+            isFinalized: true,
+            carriedOverStickers: 0,
+            carriedOverCash: 0,
+            retrievedStickers: 0,
+            retrievedCash: 0,
+          },
+          {
+            id: NEXT_WEEK,
+            weekNumber: 10,
+            year: 2026,
+            startDate: '2026-03-02',
+            isFinalized: false,
+            carriedOverStickers: 0,
+            carriedOverCash: 0,
+            retrievedStickers: 0,
+            retrievedCash: 0,
+          },
+        ];
+        if (releaseWeeks === null) {
+          return new Promise((resolve) => {
+            releaseWeeks = () => resolve({ ok: true, status: 200, json: async () => ({ weeks }) });
+          });
+        }
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ weeks }) });
+      }
+      return base(url, init);
+    });
+
+    renderTab(true);
+    await waitFor(() =>
+      expect(screen.getByTestId('my-world-close-week-banner')).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId('my-world-close-week-banner-btn'));
+    await waitFor(() => expect(screen.getByTestId('close-week-chooser')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('close-week-chooser-finish'));
+    await waitFor(() =>
+      expect(screen.getByTestId('money-actions-done-message')).toBeInTheDocument(),
+    );
+
+    // Mid-refresh: the board must not have swapped itself for the loading
+    // screen, because that early return is what unmounted the sheet.
+    await waitFor(() => expect(releaseWeeks).not.toBeNull());
+    expect(screen.queryByTestId('habit-tracker-loading')).not.toBeInTheDocument();
+    expect(screen.getByTestId('money-actions-done-message')).toBeInTheDocument();
+
+    // And after it: still the all done screen, not the list of choices again.
+    await act(async () => {
+      releaseWeeks!();
+    });
+    await waitFor(() => expect(screen.getByTestId('my-world')).toBeInTheDocument());
+    expect(screen.getByTestId('money-actions-done-message')).toHaveTextContent(
+      'The week is closed and a new one has started',
+    );
+    expect(screen.queryByTestId('close-week-chooser')).not.toBeInTheDocument();
+  });
+});

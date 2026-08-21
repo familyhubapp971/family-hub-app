@@ -12,6 +12,24 @@ Source of truth for what the product does, why, and how it's built.
 | [strategy/](strategy/)   | Long-form strategy docs: product vision, market positioning, multi-year roadmap, transformation plans                  |
 | [design/](design/)       | Visual review artefacts: user journeys, flow diagrams, IA maps: render in a browser using the Family Hub design tokens |
 | [demo/](demo/)           | Living "what's shipped" artefacts for stakeholder demos and sprint reviews: cumulative, updated every sprint close     |
+| [legal/](legal/)         | Published legal text: privacy policy, terms                                                                            |
+
+### Rendered PDFs
+
+These hold no Markdown. Each is built from an HTML source in
+[`scripts/doc-src/`](../scripts/doc-src/) by `node scripts/render-docs.mjs`,
+which is where you edit them.
+
+| Folder                     | Holds                                                               | In git |
+| -------------------------- | ------------------------------------------------------------------- | ------ |
+| [commercial/](commercial/) | The commercial case: where we fit, product-market fit, go to market | yes    |
+| business/                  | The pitch deck and the business model canvas                        | no     |
+| impact/                    | Theory of change, impact measurement framework                      | no     |
+| investments/               | Investor and accelerator applications (Hub71)                       | no     |
+| qa/                        | Briefs handed to testers: beta tester, QA overview, feature tour    | no     |
+
+"In git: no" means the PDF lands on your machine when you run the renderer and
+is shared from there. The source is always tracked, so anyone can rebuild it.
 
 ## How docs flow
 

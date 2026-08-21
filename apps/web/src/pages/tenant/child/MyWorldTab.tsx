@@ -22,6 +22,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { Button, InvestmentTag, investmentRule, useBodyScrollLock } from '@familyhub/ui';
+import { useNavigate } from 'react-router-dom';
 import { formatMoney, summariseWeekActions } from '@familyhub/shared';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
@@ -298,6 +299,7 @@ export function MyWorldTab(
   const isAdmin = props.isAdmin ?? false;
   const memberName = 'memberName' in props ? (props.memberName ?? '') : '';
   const slug = useTenantSlug();
+  const navigate = useNavigate();
   const { session } = useAuth();
 
   // Key on the token STRING, not the session object. Supabase re-fires
@@ -433,63 +435,73 @@ export function MyWorldTab(
     return data;
   }, []);
 
-  const fetchData = useCallback(async () => {
-    if (!api) return;
-    setLoading(true);
-    habitsCache.current.clear();
-    try {
-      // Fetch weeks list + rewards in parallel
-      const [wRes, rRes] = await Promise.all([
-        fetch(api.weeks(), { headers: api.headers }),
-        fetch(api.rewards(), { headers: api.headers }),
-      ]);
-      if (!wRes.ok) throw new Error(`weeks fetch failed: ${wRes.status}`);
+  // FHS-642: `silent` refreshes the board WITHOUT the full-page loading screen.
+  // That screen is an early return, so a refresh after a mutation unmounted the
+  // whole board, and with it the money sheet that had just said "All done": the
+  // sheet came back on its opening step, which read as the dialog reloading.
+  const fetchData = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      if (!api) return;
+      if (!silent) setLoading(true);
+      habitsCache.current.clear();
+      try {
+        // Fetch weeks list + rewards in parallel
+        const [wRes, rRes] = await Promise.all([
+          fetch(api.weeks(), { headers: api.headers }),
+          fetch(api.rewards(), { headers: api.headers }),
+        ]);
+        if (!wRes.ok) throw new Error(`weeks fetch failed: ${wRes.status}`);
 
-      const wBody = (await wRes.json()) as { weeks: ApiWeek[] };
-      const apiWeeks = [...(wBody.weeks ?? [])].sort((a, b) => {
-        if (a.year !== b.year) return a.year - b.year;
-        return a.weekNumber - b.weekNumber;
-      });
+        const wBody = (await wRes.json()) as { weeks: ApiWeek[] };
+        const apiWeeks = [...(wBody.weeks ?? [])].sort((a, b) => {
+          if (a.year !== b.year) return a.year - b.year;
+          return a.weekNumber - b.weekNumber;
+        });
 
-      if (rRes.ok) {
-        const rBody = (await rRes.json()) as { rewards: Reward[]; stickerBalance?: number };
-        setRewards(rBody.rewards ?? []);
-        if (rBody.stickerBalance !== null && rBody.stickerBalance !== undefined)
-          setBalance(rBody.stickerBalance);
+        if (rRes.ok) {
+          const rBody = (await rRes.json()) as { rewards: Reward[]; stickerBalance?: number };
+          setRewards(rBody.rewards ?? []);
+          if (rBody.stickerBalance !== null && rBody.stickerBalance !== undefined)
+            setBalance(rBody.stickerBalance);
+        }
+
+        if (apiWeeks.length === 0) {
+          // Same reasoning as the catch below: a silent top-up never empties
+          // a board that is already showing something.
+          if (!silent) setWeeks([]);
+          return;
+        }
+
+        // Find current (non-finalized) week, fall back to last
+        const currentIdx = apiWeeks.findIndex((w) => !w.isFinalized);
+        const idx = currentIdx >= 0 ? currentIdx : apiWeeks.length - 1;
+
+        // Fetch habits only for the active week up front; lazy-load the rest
+        const activeWeek = apiWeeks[idx];
+        if (!activeWeek) {
+          if (!silent) setWeeks([]);
+          return;
+        }
+        const currentHabits = await fetchWeekHabits(activeWeek.id);
+
+        const weekDataList = apiWeeks.map((apiWeek, i) =>
+          buildWeekData(apiWeek, i === idx ? currentHabits : []),
+        );
+
+        setWeeks(weekDataList);
+        setWeekIndex(idx);
+      } catch (err) {
+        console.error('Failed to fetch My World data:', err);
+        // A silent refresh that fails keeps whatever is already on screen: it
+        // is a background top-up, not the first load, so emptying the board
+        // would replace a working screen with "No weeks found".
+        if (!silent) setWeeks([]);
+      } finally {
+        if (!silent) setLoading(false);
       }
-
-      if (apiWeeks.length === 0) {
-        setWeeks([]);
-        setLoading(false);
-        return;
-      }
-
-      // Find current (non-finalized) week, fall back to last
-      const currentIdx = apiWeeks.findIndex((w) => !w.isFinalized);
-      const idx = currentIdx >= 0 ? currentIdx : apiWeeks.length - 1;
-
-      // Fetch habits only for the active week up front; lazy-load the rest
-      const activeWeek = apiWeeks[idx];
-      if (!activeWeek) {
-        setWeeks([]);
-        setLoading(false);
-        return;
-      }
-      const currentHabits = await fetchWeekHabits(activeWeek.id);
-
-      const weekDataList = apiWeeks.map((apiWeek, i) =>
-        buildWeekData(apiWeek, i === idx ? currentHabits : []),
-      );
-
-      setWeeks(weekDataList);
-      setWeekIndex(idx);
-    } catch (err) {
-      console.error('Failed to fetch My World data:', err);
-      setWeeks([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, fetchWeekHabits, buildWeekData]);
+    },
+    [api, fetchWeekHabits, buildWeekData],
+  );
 
   useEffect(() => {
     void fetchData();
@@ -2834,13 +2846,27 @@ export function MyWorldTab(
             // a second action in the same sitting is offered a stale total.
             if (week) void fetchWeekStats(week.weekId);
           }}
+          // Kids money is an admin screen, so the button is only offered to one.
+          onSeeMoney={
+            isAdmin
+              ? () => {
+                  // Kids money opens on whichever child the link names, so it
+                  // lands on THIS child rather than the family's first one.
+                  navigate(`/t/${slug}/money?child=${memberId}`);
+                }
+              : undefined
+          }
           onWeekFinalized={(nextWeekId) => {
             // Deliberately does NOT close the sheet: it is showing the "week
             // closed" message, and the parent dismisses it themselves. Closing
             // it here unmounted the sheet in the same render that message
             // appeared, so nobody ever saw it.
+            //
+            // FHS-642: and deliberately SILENT. A loud refresh flips the board
+            // to its loading screen, which is an early return, so the sheet
+            // unmounted anyway and came back on the chooser.
             // Refresh all data and jump to the newly-created week
-            void fetchData().then(() => {
+            void fetchData({ silent: true }).then(() => {
               setWeeks((prev) => {
                 const nextIdx = prev.findIndex((w) => w.weekId === nextWeekId);
                 if (nextIdx >= 0) setWeekIndex(nextIdx);

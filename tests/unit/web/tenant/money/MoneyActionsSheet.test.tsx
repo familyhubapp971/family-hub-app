@@ -498,3 +498,132 @@ describe('MoneyActionsSheet: a habit icon is never raw text (FHS-631)', () => {
     expect(row.textContent).toBe('I was polite');
   });
 });
+
+// FHS-642: closing the week never showed the "all done" screen. Two separate
+// faults met: the board behind reloaded loudly and unmounted the sheet
+// (fixed in MyWorldTab, covered by the browser test), and the done screen
+// itself was missing the design's heading and its two ways onward.
+describe('MoneyActionsSheet: the done screen after closing the week (FHS-642)', () => {
+  function finalizeApi() {
+    return vi.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/finalize') && init?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ nextWeekId: 'week-2' }) });
+      }
+      if (u.includes('/api/mw/financial/investments')) {
+        return Promise.resolve({ ok: true, json: async () => ({ investments: [] }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+  }
+
+  function renderChooser(opts: { onSeeMoney?: () => void } = {}) {
+    const onClose = vi.fn();
+    const onWeekFinalized = vi.fn();
+    render(
+      <MoneyActionsSheet
+        isOpen
+        action="chooser"
+        child={CHILD}
+        snapshot={snapshot({ available: 87 })}
+        weekId="week-1"
+        memberId={CHILD.id}
+        headers={HEADERS}
+        onClose={onClose}
+        onSaved={vi.fn()}
+        onWeekFinalized={onWeekFinalized}
+        onSeeMoney={opts.onSeeMoney}
+      />,
+    );
+    return { onClose, onWeekFinalized };
+  }
+
+  it('says "All done" and stays there, instead of dropping back to the choices', async () => {
+    vi.stubGlobal('fetch', finalizeApi());
+    const { onWeekFinalized } = renderChooser();
+
+    fireEvent.click(screen.getByTestId('close-week-chooser-finish'));
+
+    await waitFor(() => expect(screen.getByTestId('money-actions-done-message')).toBeVisible());
+    expect(screen.getByRole('status')).toHaveTextContent('All done');
+    expect(screen.getByTestId('money-actions-done-message')).toHaveTextContent(
+      'The week is closed and a new one has started for Amina.',
+    );
+    // The list of choices is gone: coming back to it is what the bug was.
+    expect(screen.queryByTestId('close-week-chooser')).not.toBeInTheDocument();
+    expect(onWeekFinalized).toHaveBeenCalledWith('week-2');
+  });
+
+  it('offers "Do something else", which goes back to the choices only when asked', async () => {
+    vi.stubGlobal('fetch', finalizeApi());
+    renderChooser();
+
+    fireEvent.click(screen.getByTestId('close-week-chooser-finish'));
+    await waitFor(() => expect(screen.getByTestId('money-actions-done-more')).toBeVisible());
+
+    fireEvent.click(screen.getByTestId('money-actions-done-more'));
+    expect(screen.getByTestId('close-week-chooser')).toBeInTheDocument();
+  });
+
+  it('does not offer to close the brand new week one tap after closing the last one', async () => {
+    vi.stubGlobal('fetch', finalizeApi());
+    renderChooser();
+
+    fireEvent.click(screen.getByTestId('close-week-chooser-finish'));
+    await waitFor(() => expect(screen.getByTestId('money-actions-done-more')).toBeVisible());
+    fireEvent.click(screen.getByTestId('money-actions-done-more'));
+
+    // The five choices still apply to the new week; finishing it does not.
+    expect(screen.getByTestId('close-week-chooser-claim')).toBeInTheDocument();
+    expect(screen.queryByTestId('close-week-chooser-finish')).not.toBeInTheDocument();
+    expect(screen.getByTestId('close-week-chooser-closed')).toHaveTextContent(
+      'The week is closed.',
+    );
+  });
+
+  it('moves focus onto the result, so the keyboard does not fall out of the sheet', async () => {
+    vi.stubGlobal('fetch', finalizeApi());
+    renderChooser();
+
+    fireEvent.click(screen.getByTestId('close-week-chooser-finish'));
+    await waitFor(() => expect(screen.getByTestId('money-actions-done-panel')).toBeVisible());
+    expect(document.activeElement).toBe(screen.getByTestId('money-actions-done-panel'));
+  });
+
+  it('announces the whole result, not just the words "All done"', async () => {
+    vi.stubGlobal('fetch', finalizeApi());
+    renderChooser();
+
+    fireEvent.click(screen.getByTestId('close-week-chooser-finish'));
+    await waitFor(() => expect(screen.getByRole('status')).toBeVisible());
+    // The sentence carrying the outcome is INSIDE the live region, or a screen
+    // reader announces two words and nothing about what happened.
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The week is closed and a new one has started for Amina.',
+    );
+    // "All done" is still a heading, not only a live-region label.
+    expect(screen.getByRole('heading', { name: 'All done' })).toBeInTheDocument();
+  });
+
+  it('offers "See their money" when the caller has somewhere to send them', async () => {
+    vi.stubGlobal('fetch', finalizeApi());
+    const onSeeMoney = vi.fn();
+    const { onClose } = renderChooser({ onSeeMoney });
+
+    fireEvent.click(screen.getByTestId('close-week-chooser-finish'));
+    await waitFor(() => expect(screen.getByTestId('money-actions-done-see-money')).toBeVisible());
+
+    fireEvent.click(screen.getByTestId('money-actions-done-see-money'));
+    expect(onSeeMoney).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('leaves "See their money" off where the caller gave nowhere to go', async () => {
+    vi.stubGlobal('fetch', finalizeApi());
+    renderChooser();
+
+    fireEvent.click(screen.getByTestId('close-week-chooser-finish'));
+    await waitFor(() => expect(screen.getByTestId('money-actions-done-close')).toBeVisible());
+    expect(screen.queryByTestId('money-actions-done-see-money')).not.toBeInTheDocument();
+  });
+});

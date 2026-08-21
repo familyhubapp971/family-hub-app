@@ -365,10 +365,302 @@
       h1 * {
         color: #fff !important;
       }
+      .legacy {
+        display: none;
+      }
+      .page.compact {
+        padding: 10mm 14mm 12mm;
+      }
+      .compact .mast {
+        margin-bottom: 5mm;
+        padding-bottom: 7px;
+      }
+      .compact .kicker {
+        margin-bottom: 6px;
+        padding-bottom: 3px;
+      }
+      .compact h1 {
+        font-size: 28px;
+        padding: 3mm 5mm;
+        margin-bottom: 8px;
+      }
+      .compact .lede {
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .compact .pullout {
+        margin: 12px 0 6px;
+        padding: 10px 14px;
+        font-size: 10.5px;
+        line-height: 1.4;
+      }
+      .compact .pullout .pin-label {
+        display: block;
+        margin-bottom: 9px;
+        padding: 2px 9px;
+      }
+      .compact h2 {
+        margin: 18px 0 5px;
+        font-size: 17px;
+      }
+      .compact h2 .num {
+        margin-bottom: 4px;
+        padding-bottom: 3px;
+      }
+      .compact p {
+        font-size: 10.5px;
+        line-height: 1.4;
+        margin: 5px 0;
+      }
+      .compact table {
+        margin: 6px 0 2px;
+        font-size: 10px;
+      }
+      .compact th,
+      .compact td {
+        padding: 4px 6px 4px 0;
+        line-height: 1.3;
+      }
+      .compact ul.clean li {
+        padding-top: 4px;
+        padding-bottom: 4px;
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+      .compact .chain {
+        margin: 10px 0 12px;
+      }
+      .compact .chain li {
+        padding: 6px 4px;
+        gap: 10px;
+      }
+      .compact .chain .body {
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+      .compact footer {
+        margin-top: 14px;
+        padding-top: 7px;
+      }
+      .visual-grid {
+        display: grid;
+        gap: 10px;
+        margin-top: 9px;
+      }
+      .visual-grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .visual-grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .visual-grid.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .visual-card {
+        min-width: 0;
+        padding: 11px 13px;
+        border: 2px solid #000;
+        border-radius: 13px;
+        box-shadow: 3px 3px 0 #000;
+      }
+      .visual-card h3 {
+        margin: 0 0 5px;
+        font-size: 15px;
+      }
+      .visual-card p {
+        margin: 0;
+        font-size: 9.6px;
+        line-height: 1.3;
+      }
+      .pink {
+        background: var(--pink);
+      }
+      .green {
+        background: var(--green);
+      }
+      .cyan {
+        background: var(--cyan);
+      }
+      .yellow {
+        background: var(--yellow);
+      }
+      .coral {
+        background: var(--coral);
+      }
+      .cream {
+        background: var(--yellow-tint);
+      }
+      .visual-label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 8.3px;
+        font-weight: 900;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+      .big-number {
+        display: block;
+        margin-bottom: 4px;
+        font-family: 'Fredoka One', cursive;
+        font-size: 27px;
+        line-height: 1;
+      }
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 7px;
+        align-items: stretch;
+        margin-top: 9px;
+      }
+      .flow.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .flow.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .flow-step {
+        position: relative;
+        padding: 9px 7px;
+        border: 2px solid #000;
+        border-radius: 11px;
+        text-align: center;
+        font-size: 9px;
+        font-weight: 900;
+        line-height: 1.2;
+      }
+      .flow-step:not(:last-child)::after {
+        content: '›';
+        position: absolute;
+        z-index: 2;
+        top: 50%;
+        right: -10px;
+        width: 12px;
+        transform: translateY(-54%);
+        font-family: 'Fredoka One', cursive;
+        font-size: 18px;
+      }
+      .strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .chip {
+        padding: 5px 9px;
+        border: 1.5px solid #000;
+        border-radius: 999px;
+        background: #fff;
+        font-size: 8.7px;
+        font-weight: 900;
+      }
+      .visual-banner {
+        margin-top: 10px;
+        padding: 9px 12px;
+        border: 2px solid #000;
+        border-radius: 11px;
+        box-shadow: 3px 3px 0 #000;
+        background: var(--yellow);
+        text-align: center;
+        font-size: 10px;
+        font-weight: 900;
+      }
+      .visual-banner.purple {
+        background: #3d1065;
+        color: #fff;
+      }
+      .visual-card .price {
+        display: block;
+        margin: 2px 0 5px;
+        font-family: 'Fredoka One', cursive;
+        font-size: 19px;
+        line-height: 1.05;
+      }
     </style>
   </head>
   <body>
-    <div class="page">
+    <div class="page compact">
+      <div class="mast">
+        <div class="brand"><span class="star">★</span> Family Hub</div>
+        <div class="meta"><strong>Where we fit</strong><br />21 August 2026 · Commercial</div>
+      </div>
+
+      <p class="kicker">Commercial · Positioning</p>
+      <h1>One private home for how a family runs</h1>
+      <p class="lede">
+        Family Hub brings shared plans, positive habits, early money learning and daily connection
+        into one place.
+      </p>
+
+      <div class="visual-banner">
+        Share the mental load · Build family structure · Stay connected
+      </div>
+
+      <h2><span class="num">01 · Customer</span>Who it is for</h2>
+      <div class="visual-grid two">
+        <div class="visual-card pink">
+          <span class="visual-label">Direct · B2C</span>
+          <h3>Families</h3>
+          <p>
+            One shared household view. Fewer reminders, clearer routines and more meaningful time
+            together.
+          </p>
+        </div>
+        <div class="visual-card cyan">
+          <span class="visual-label">Partner · B2B2C</span>
+          <h3>Trusted organisations</h3>
+          <p>
+            Support many families through one platform delivered by a school, club or family
+            organisation.
+          </p>
+        </div>
+      </div>
+
+      <h2><span class="num">02 · Category</span>Where we compete</h2>
+      <div class="flow four">
+        <div class="flow-step pink">Shared plans</div>
+        <div class="flow-step cyan">Positive habits</div>
+        <div class="flow-step green">Rewards</div>
+        <div class="flow-step yellow">Money conversations</div>
+      </div>
+      <div class="visual-banner purple">
+        Other tools stop at one task. Family Hub connects the household loop.
+      </div>
+
+      <h2><span class="num">03 · Model</span>Two routes to revenue</h2>
+      <div class="visual-grid two">
+        <div class="visual-card green">
+          <span class="visual-label">Family subscription</span><span class="price">AED 29–49</span>
+          <p>per month · direct adoption and recurring revenue</p>
+        </div>
+        <div class="visual-card yellow">
+          <span class="visual-label">Partner plan</span><span class="price">AED 1,099–12,849</span>
+          <p>per year · reach many households through one relationship</p>
+        </div>
+      </div>
+
+      <h2><span class="num">04 · Advantage</span>The household rhythm compounds</h2>
+      <div class="visual-grid three">
+        <div class="visual-card coral">
+          <h3>Shared history</h3>
+          <p>Plans and kept weeks build one family record.</p>
+        </div>
+        <div class="visual-card cyan">
+          <h3>Personal routines</h3>
+          <p>Each child develops their own rhythm over time.</p>
+        </div>
+        <div class="visual-card green">
+          <h3>Family rules</h3>
+          <p>Rewards and money learning reflect each home.</p>
+        </div>
+      </div>
+      <div class="visual-banner purple">
+        The more a family uses the connected loop, the harder it is to replace with isolated tools.
+      </div>
+
+      <footer><strong>Family Hub</strong> · Positioning · Live private beta · Abu Dhabi</footer>
+    </div>
+
+    <div class="legacy">
       <div class="mast">
         <div class="brand"><span class="star">★</span> Family Hub</div>
         <div class="meta">

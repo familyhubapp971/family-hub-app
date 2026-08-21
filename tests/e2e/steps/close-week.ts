@@ -71,6 +71,48 @@ Then('every choice is big enough to tap', async ({ page }) => {
   expect(finish.height).toBeGreaterThanOrEqual(44);
 });
 
+// FHS-642: closing the week showed the loading screen and then the chooser
+// again, so the parent never saw that it had worked.
+
+When('I finish the week', async ({ page }) => {
+  const board = new CloseWeekPage(page);
+  await board.expectChooserVisible();
+  await board.tapFinish();
+});
+
+Then(
+  'I see the all done screen, and it stays there',
+  async ({ page, authedFamilyClosableWeek }) => {
+    const board = new CloseWeekPage(page);
+    await board.expectDoneVisible();
+    // The board behind refreshes itself here. Before FHS-642 that refresh
+    // unmounted the sheet, so the message vanished a beat after it appeared.
+    await board.expectDoneStillVisible();
+    const done = await board.doneText();
+    expect(done).toContain('All done');
+    expect(done).toContain(authedFamilyClosableWeek.childMemberName);
+    expect(done).toContain('a new one has started');
+  },
+);
+
+Then('the list of choices is not back on screen', async ({ page }) => {
+  await new CloseWeekPage(page).expectChooserGone();
+});
+
+Then('the all done screen fits the screen with no sideways scrolling', async ({ page }) => {
+  const board = new CloseWeekPage(page);
+  await board.expectDoneVisible();
+  expect(await board.horizontalOverflow()).toBeLessThanOrEqual(1);
+});
+
+Then('every way on from it is big enough to tap', async ({ page }) => {
+  const board = new CloseWeekPage(page);
+  for (const box of await board.doneButtonBoxes()) {
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.width).toBeGreaterThanOrEqual(44);
+  }
+});
+
 // FHS-639: the header shipped white on white, because a colour name from the
 // design's own Tailwind config does not exist in this app's. Nothing errored:
 // the class simply produced no rule, and the white title stayed white.

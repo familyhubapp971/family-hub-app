@@ -46,6 +46,9 @@ export interface MoneyActionsSheetProps {
    *  is. Only needed when the sheet can open on the chooser. */
   memberId?: string;
   onWeekFinalized?: (nextWeekId: string) => void;
+  /** FHS-642: the design's "See their money" button on the done screen. Left
+   *  off where the money page is already the screen underneath. */
+  onSeeMoney?: (() => void) | undefined;
 }
 
 // FHS-631: no icon here any more. The design's sheet header carries the title
@@ -90,6 +93,7 @@ export function MoneyActionsSheet({
   onSaved,
   memberId,
   onWeekFinalized,
+  onSeeMoney,
 }: MoneyActionsSheetProps) {
   const titleId = useId();
   const [phase, setPhase] = useState<'form' | 'done'>('form');
@@ -102,6 +106,11 @@ export function MoneyActionsSheet({
   // stale `closing` and both fire, which is exactly what a double tap is.
   const closingRef = useRef(false);
   const [closeError, setCloseError] = useState<string | null>(null);
+  // FHS-642: the week was closed in this sitting. The sheet stays open
+  // afterwards, so it has to remember, or "Do something else" walks back to a
+  // chooser offering to close the brand new week one tap later.
+  const [weekClosed, setWeekClosed] = useState(false);
+  const donePanel = useRef<HTMLDivElement>(null);
 
   const ready = isOpen && action !== null && child !== null && snapshot !== null;
 
@@ -113,7 +122,15 @@ export function MoneyActionsSheet({
     setStep(action);
     setClosing(false);
     setCloseError(null);
+    setWeekClosed(false);
   }, [ready, action, child?.id]);
+
+  // FHS-642: the button that was under the finger unmounts when the result
+  // appears, which drops focus onto <body> and lets Tab escape the dialog.
+  // Dialog only manages focus when it opens, and the sheet never closes here.
+  useEffect(() => {
+    if (phase === 'done') donePanel.current?.focus();
+  }, [phase]);
 
   if (!ready || step === null) return null;
 
@@ -133,6 +150,7 @@ export function MoneyActionsSheet({
       const result = await finalizeWeek(weekId, memberId, headers);
       onSaved();
       setDoneMessage(`The week is closed and a new one has started for ${child.name}.`);
+      setWeekClosed(true);
       setPhase('done');
       if (result.nextWeekId) onWeekFinalized?.(result.nextWeekId);
     } catch (err) {
@@ -213,14 +231,28 @@ export function MoneyActionsSheet({
 
           <div className="p-5">
             {phase === 'done' ? (
-              <div className="space-y-4 text-center">
+              // FHS-642: the live region wraps the heading AND the sentence, so
+              // what is announced is the whole result and not the words "All
+              // done" on their own. tabIndex={-1} is only there to receive
+              // focus from the effect above; it is not a tab stop.
+              <div
+                ref={donePanel}
+                role="status"
+                tabIndex={-1}
+                data-testid="money-actions-done-panel"
+                className="space-y-4 text-center focus:outline-none"
+              >
                 <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-black bg-lime-300">
                   <Check size={28} strokeWidth={3} aria-hidden="true" />
                 </span>
-                <p className="font-bold text-gray-900" data-testid="money-actions-done-message">
+                <h3 className="font-heading text-xl">All done</h3>
+                <p className="font-bold text-gray-600" data-testid="money-actions-done-message">
                   {doneMessage}
                 </p>
-                {action === 'chooser' && step !== 'chooser' && (
+                {/* FHS-642: offered after closing the week too, not only after
+                    one of the five actions. The design's Done screen keys off
+                    the journey that opened the sheet, not the step it ended on. */}
+                {action === 'chooser' && (
                   <Button
                     variant="secondary"
                     fullWidth
@@ -234,8 +266,22 @@ export function MoneyActionsSheet({
                     Do something else
                   </Button>
                 )}
+                {onSeeMoney && (
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    onClick={onSeeMoney}
+                    testId="money-actions-done-see-money"
+                  >
+                    See their money
+                  </Button>
+                )}
+                {/* The design gives the yellow to "See their money" and leaves
+                    Done white. Without that button Done is the only way on, so
+                    it keeps the yellow rather than leaving the screen with no
+                    obvious action. */}
                 <Button
-                  variant="primary"
+                  variant={onSeeMoney ? 'secondary' : 'primary'}
                   fullWidth
                   onClick={onClose}
                   testId="money-actions-done-close"
@@ -251,6 +297,7 @@ export function MoneyActionsSheet({
                 error={closeError}
                 onPick={setStep}
                 onCloseWeek={() => void handleCloseWeek()}
+                weekClosed={weekClosed}
               />
             ) : step === 'claim' ? (
               <ClaimRewardFlow

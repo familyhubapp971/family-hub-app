@@ -22,6 +22,25 @@ Feature: Closing the week from the My World board
     And every choice is there, each with a line of explanation
 
   @critical @authed-local
+  Scenario: Finishing the week says so and stays said
+
+    Given I am signed in as the admin of a family whose week ends today
+    When I open my child's board and tap Close Week
+    And I finish the week
+    Then I see the all done screen, and it stays there
+    And the list of choices is not back on screen
+
+  @critical @authed-local
+  Scenario: The all done screen is usable on a phone
+
+    Given I am signed in as the admin of a family whose week ends today
+    And I am on a phone-sized screen for closing the week
+    When I open my child's board and tap Close Week
+    And I finish the week
+    Then the all done screen fits the screen with no sideways scrolling
+    And every way on from it is big enough to tap
+
+  @critical @authed-local
   Scenario: The header is readable
 
     Given I am signed in as the admin of a family whose week ends today

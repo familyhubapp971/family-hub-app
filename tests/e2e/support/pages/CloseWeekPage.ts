@@ -78,6 +78,62 @@ export class CloseWeekPage {
     };
   }
 
+  // FHS-642: finishing the week for real. The board behind refreshes itself
+  // when the week closes, and it used to do that loudly: the full-page loading
+  // screen is an early return, so the sheet unmounted mid-message and came back
+  // on the chooser. Only a browser sees that, because it is the parent page
+  // remounting the child, not anything the sheet itself does.
+
+  /** Finishes the week and waits for the refresh it sets off behind the sheet,
+   *  which is the thing that used to unmount the sheet. Waiting on the response
+   *  rather than a fixed sleep means the assertion after it cannot pass by
+   *  arriving early. */
+  async tapFinish(): Promise<void> {
+    const weeksRefetched = this.page.waitForResponse(
+      (res) => /\/api\/mw\/weeks(\?|$)/.test(res.url()) && res.request().method() === 'GET',
+      { timeout: 20000 },
+    );
+    await this.page.getByTestId('close-week-chooser-finish').click();
+    await weeksRefetched;
+  }
+
+  async expectDoneVisible(): Promise<void> {
+    await expect(this.page.getByTestId('money-actions-done-message')).toBeVisible({
+      timeout: 20000,
+    });
+  }
+
+  /** Still there once the board behind has re-rendered on the new week. */
+  async expectDoneStillVisible(): Promise<void> {
+    await this.page.waitForTimeout(1000);
+    await expect(this.page.getByTestId('money-actions-done-message')).toBeVisible();
+  }
+
+  async expectChooserGone(): Promise<void> {
+    await expect(this.page.getByTestId('close-week-chooser')).toHaveCount(0);
+  }
+
+  /** The done screen ONLY: the sheet's header repeats the child's name, so a
+   *  whole-sheet read would make a name assertion unfailable. */
+  doneText(): Promise<string> {
+    return this.page.getByTestId('money-actions-done-panel').innerText();
+  }
+
+  async doneButtonBoxes(): Promise<Array<{ width: number; height: number }>> {
+    const ids = [
+      'money-actions-done-more',
+      'money-actions-done-see-money',
+      'money-actions-done-close',
+    ];
+    const boxes: Array<{ width: number; height: number }> = [];
+    for (const id of ids) {
+      const box = await this.page.getByTestId(id).boundingBox();
+      if (!box) throw new Error(`${id} has no bounding box`);
+      boxes.push({ width: box.width, height: box.height });
+    }
+    return boxes;
+  }
+
   /** FHS-641: the sheet's rendered width, so "wider" is a measurement. */
   async sheetWidth(): Promise<number> {
     const box = await this.page.getByTestId('money-actions-sheet-header').boundingBox();

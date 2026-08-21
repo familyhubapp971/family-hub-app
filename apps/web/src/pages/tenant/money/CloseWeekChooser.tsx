@@ -32,6 +32,10 @@ export interface CloseWeekChooserProps {
   error: string | null;
   onPick: (action: MoneyAction) => void;
   onCloseWeek: () => void;
+  /** FHS-642: the week was already closed in this sitting, and the list is
+   *  now describing the new one. The five choices still apply to it; closing
+   *  it as well, one tap after closing the last one, does not. */
+  weekClosed?: boolean;
 }
 
 const ROWS: Array<{
@@ -85,6 +89,7 @@ export function CloseWeekChooser({
   error,
   onPick,
   onCloseWeek,
+  weekClosed = false,
 }: CloseWeekChooserProps) {
   const worth = formatMoney(snapshot.available * snapshot.stickerRate, snapshot.currency);
   // Nothing invested means nothing to take out, so the row would lead to an
@@ -132,18 +137,26 @@ export function CloseWeekChooser({
             {error}
           </p>
         )}
-        <button
-          type="button"
-          onClick={onCloseWeek}
-          disabled={busy}
-          data-testid="close-week-chooser-finish"
-          className="min-h-[52px] w-full rounded-xl border-2 border-black bg-lime-400 font-heading text-lg shadow-neo-sm transition-transform disabled:opacity-50 motion-safe:enabled:hover:-translate-y-0.5"
-        >
-          {busy ? 'Closing the week…' : 'Close the week and start the new one'}
-        </button>
-        <p className="mt-2 text-sm font-bold text-gray-600">
-          Anything still here is carried over. You can look back at this week any time.
-        </p>
+        {weekClosed ? (
+          <p data-testid="close-week-chooser-closed" className="text-sm font-bold text-gray-600">
+            The week is closed. Anything you do now counts towards the new one.
+          </p>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={onCloseWeek}
+              disabled={busy}
+              data-testid="close-week-chooser-finish"
+              className="min-h-[52px] w-full rounded-xl border-2 border-black bg-lime-400 font-heading text-lg shadow-neo-sm transition-transform disabled:opacity-50 motion-safe:enabled:hover:-translate-y-0.5"
+            >
+              {busy ? 'Closing the week…' : 'Close the week and start the new one'}
+            </button>
+            <p className="mt-2 text-sm font-bold text-gray-600">
+              Anything still here is carried over. You can look back at this week any time.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

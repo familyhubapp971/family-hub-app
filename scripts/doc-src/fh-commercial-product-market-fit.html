@@ -365,10 +365,305 @@
       h1 * {
         color: #fff !important;
       }
+      .legacy {
+        display: none;
+      }
+      .page.compact {
+        padding: 8mm 14mm;
+      }
+      .compact .mast {
+        margin-bottom: 5mm;
+        padding-bottom: 7px;
+      }
+      .compact .kicker {
+        margin-bottom: 6px;
+        padding-bottom: 3px;
+      }
+      .compact h1 {
+        font-size: 28px;
+        padding: 3mm 5mm;
+        margin-bottom: 8px;
+      }
+      .compact .lede {
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .compact .pullout {
+        margin: 12px 0 6px;
+        padding: 10px 14px;
+        font-size: 10.5px;
+        line-height: 1.4;
+      }
+      .compact .pullout .pin-label {
+        display: block;
+        margin-bottom: 9px;
+        padding: 2px 9px;
+      }
+      .compact h2 {
+        margin: 14px 0 4px;
+        font-size: 17px;
+      }
+      .compact h2 .num {
+        margin-bottom: 4px;
+        padding-bottom: 3px;
+      }
+      .compact p {
+        font-size: 10.5px;
+        line-height: 1.4;
+        margin: 5px 0;
+      }
+      .compact table {
+        margin: 6px 0 2px;
+        font-size: 10px;
+      }
+      .compact th,
+      .compact td {
+        padding: 4px 6px 4px 0;
+        line-height: 1.3;
+      }
+      .compact ul.clean li {
+        padding-top: 4px;
+        padding-bottom: 4px;
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+      .compact .chain {
+        margin: 10px 0 12px;
+      }
+      .compact .chain li {
+        padding: 6px 4px;
+        gap: 10px;
+      }
+      .compact .chain .body {
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+      .compact footer {
+        margin-top: 8px;
+        padding-top: 6px;
+      }
+      .visual-grid {
+        display: grid;
+        gap: 10px;
+        margin-top: 9px;
+      }
+      .visual-grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .visual-grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .visual-grid.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .visual-card {
+        min-width: 0;
+        padding: 11px 13px;
+        border: 2px solid #000;
+        border-radius: 13px;
+        box-shadow: 3px 3px 0 #000;
+      }
+      .visual-card h3 {
+        margin: 0 0 5px;
+        font-size: 15px;
+      }
+      .visual-card p {
+        margin: 0;
+        font-size: 9.6px;
+        line-height: 1.3;
+      }
+      .pink {
+        background: var(--pink);
+      }
+      .green {
+        background: var(--green);
+      }
+      .cyan {
+        background: var(--cyan);
+      }
+      .yellow {
+        background: var(--yellow);
+      }
+      .coral {
+        background: var(--coral);
+      }
+      .cream {
+        background: var(--yellow-tint);
+      }
+      .visual-label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 8.3px;
+        font-weight: 900;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+      .big-number {
+        display: block;
+        margin-bottom: 4px;
+        font-family: 'Fredoka One', cursive;
+        font-size: 27px;
+        line-height: 1;
+      }
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 7px;
+        align-items: stretch;
+        margin-top: 9px;
+      }
+      .flow.four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .flow.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .flow-step {
+        position: relative;
+        padding: 9px 7px;
+        border: 2px solid #000;
+        border-radius: 11px;
+        text-align: center;
+        font-size: 9px;
+        font-weight: 900;
+        line-height: 1.2;
+      }
+      .flow-step:not(:last-child)::after {
+        content: '›';
+        position: absolute;
+        z-index: 2;
+        top: 50%;
+        right: -10px;
+        width: 12px;
+        transform: translateY(-54%);
+        font-family: 'Fredoka One', cursive;
+        font-size: 18px;
+      }
+      .strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .chip {
+        padding: 5px 9px;
+        border: 1.5px solid #000;
+        border-radius: 999px;
+        background: #fff;
+        font-size: 8.7px;
+        font-weight: 900;
+      }
+      .visual-banner {
+        margin-top: 10px;
+        padding: 9px 12px;
+        border: 2px solid #000;
+        border-radius: 11px;
+        box-shadow: 3px 3px 0 #000;
+        background: var(--yellow);
+        text-align: center;
+        font-size: 10px;
+        font-weight: 900;
+      }
+      .visual-banner.purple {
+        background: #3d1065;
+        color: #fff;
+      }
+      .visual-card .price {
+        display: block;
+        margin: 2px 0 5px;
+        font-family: 'Fredoka One', cursive;
+        font-size: 19px;
+        line-height: 1.05;
+      }
     </style>
   </head>
   <body>
-    <div class="page">
+    <div class="page compact">
+      <div class="mast">
+        <div class="brand"><span class="star">★</span> Family Hub</div>
+        <div class="meta"><strong>Product-market fit</strong><br />21 August 2026 · Commercial</div>
+      </div>
+
+      <p class="kicker">Commercial · Evidence</p>
+      <h1>From useful product to repeat family habit</h1>
+      <p class="lede">
+        Family Hub is live in private beta. The next question is not whether families like the idea,
+        but whether it earns a lasting place in their week.
+      </p>
+
+      <div class="visual-grid three">
+        <div class="visual-card pink">
+          <span class="big-number">24</span>
+          <p>parents interviewed</p>
+        </div>
+        <div class="visual-card cyan">
+          <span class="big-number">10</span>
+          <p>families in private beta</p>
+        </div>
+        <div class="visual-card yellow">
+          <span class="big-number" style="font-size: 21px">Web + mobile</span>
+          <p>live end-to-end product</p>
+        </div>
+      </div>
+
+      <h2><span class="num">01 · Job</span>What families hire it to do</h2>
+      <div class="flow four">
+        <div class="flow-step pink">Plan together</div>
+        <div class="flow-step cyan">Complete habits</div>
+        <div class="flow-step green">Close the week</div>
+        <div class="flow-step yellow">Reward and learn</div>
+      </div>
+
+      <h2><span class="num">02 · North star</span>Kept weeks</h2>
+      <div class="visual-grid two">
+        <div class="visual-card green">
+          <span class="big-number">1 kept week</span>
+          <p>Habits completed + week closed + reward paid</p>
+        </div>
+        <div class="visual-card coral">
+          <span class="big-number">4×</span>
+          <p>Consecutive kept weeks show a repeat household habit</p>
+        </div>
+      </div>
+
+      <h2><span class="num">03 · Scorecard</span>What we measure now</h2>
+      <div class="visual-grid four">
+        <div class="visual-card pink">
+          <h3>Activation</h3>
+          <p>Setup, child and first habit</p>
+        </div>
+        <div class="visual-card cyan">
+          <h3>Weekly use</h3>
+          <p>Returns during a real week</p>
+        </div>
+        <div class="visual-card green">
+          <h3>Kept weeks</h3>
+          <p>Full family loop completed</p>
+        </div>
+        <div class="visual-card yellow">
+          <h3>Week 4</h3>
+          <p>Use outlasts curiosity</p>
+        </div>
+      </div>
+
+      <h2><span class="num">04 · Next proof</span>What must be true after paid launch</h2>
+      <div class="strip">
+        <span class="chip">Activation baseline</span><span class="chip">4-week retention</span
+        ><span class="chip">AED 29/49 conversion</span
+        ><span class="chip">Money-learning clarity</span>
+      </div>
+
+      <div class="visual-banner purple">
+        Learn → Repeat → Scale · Scale acquisition only when retention and conversion are
+        measurable.
+      </div>
+
+      <footer>
+        <strong>Family Hub</strong> · Product-market fit · Live private beta · 10 families
+      </footer>
+    </div>
+
+    <div class="legacy">
       <div class="mast">
         <div class="brand"><span class="star">★</span> Family Hub</div>
         <div class="meta">
