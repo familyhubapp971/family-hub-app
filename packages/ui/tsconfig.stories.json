@@ -1,0 +1,12 @@
+{
+  // Typechecks the Storybook stories, which tsconfig.json deliberately leaves
+  // out of the declaration build. Same strictness, no emit (FHS-643).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["src/**/*"],
+  "exclude": []
+}

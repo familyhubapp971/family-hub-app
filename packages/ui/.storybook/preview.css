@@ -1,0 +1,5 @@
+/* The catalogue needs exactly the CSS the app builds. globals.css already
+   pulls in the brand @font-face rules, the base layer and the three @tailwind
+   directives, so importing it is the whole job: repeating the directives here
+   would compile Tailwind twice. */
+@import '../src/styles/globals.css';
