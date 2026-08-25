@@ -3,6 +3,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 interface PinInputProps {
   /** Number of cells. Defaults to 4 (kid PIN length per FHS-235 spec). */
   length?: number;
+  /**
+   * Which characters a cell accepts. 'numeric' (the default) is the kid PIN.
+   * 'alphanumeric' also takes letters and folds them to upper case, so a code
+   * like `2FH3` can be typed in either case (FHS-644).
+   */
+  mode?: 'numeric' | 'alphanumeric';
   /** Fires on every keystroke with the current concatenated PIN. */
   onChange?: (pin: string) => void;
   /** Fires once the PIN is fully filled. */
@@ -25,13 +31,13 @@ interface PinInputProps {
  * where children tap their avatar then type their 4-digit PIN.
  *
  * Behaviour:
- *   - Each cell accepts exactly one digit; non-digit input is dropped.
+ *   - Each cell accepts exactly one character; anything the mode does not
+ *     allow is dropped.
  *   - Typing in a cell auto-advances focus to the next cell.
  *   - Backspace on an empty cell retreats focus to the previous cell.
  *   - Arrow Left/Right move focus without changing values.
- *   - Pasting a digit string fills cells left-to-right from the active
- *     cell.
- *   - When the last cell receives a digit, onComplete fires with the
+ *   - Pasting fills cells left-to-right from the active cell.
+ *   - When the last cell is filled, onComplete fires with the
  *     full PIN string.
  *
  * Keyboard a11y: each cell is a real <input>; the group has an
@@ -39,6 +45,7 @@ interface PinInputProps {
  */
 export function PinInput({
   length = 4,
+  mode = 'numeric',
   onChange,
   onComplete,
   autoFocus = true,
@@ -49,24 +56,42 @@ export function PinInput({
   testId,
 }: PinInputProps) {
   const [values, setValues] = useState<string[]>(() => Array(length).fill(''));
+  // onChange and onComplete used to be called from inside the setValues
+  // updater, which React runs during render: any setState a caller did in
+  // response landed mid-render and React warned about it. The cells are
+  // mirrored here so the next value can be worked out before setValues is
+  // called, leaving the updater pure and the callbacks in event-handler time.
+  const valuesRef = useRef(values);
   const refs = useRef<Array<HTMLInputElement | null>>([]);
+  const alpha = mode === 'alphanumeric';
+
+  // Every route into a cell (typing, pasting) goes through this, so a mode can
+  // never be bypassed by the paste path.
+  const keep = (raw: string) =>
+    alpha ? raw.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() : raw.replace(/\D/g, '');
 
   useEffect(() => {
     if (autoFocus) refs.current[0]?.focus();
   }, [autoFocus]);
 
-  const setAt = useCallback(
-    (idx: number, val: string) => {
-      setValues((prev) => {
-        const next = [...prev];
-        next[idx] = val;
-        const joined = next.join('');
-        onChange?.(joined);
-        if (joined.length === length && !next.includes('')) onComplete?.(joined);
-        return next;
-      });
+  const commit = useCallback(
+    (next: string[]) => {
+      valuesRef.current = next;
+      setValues(next);
+      const joined = next.join('');
+      onChange?.(joined);
+      if (joined.length === length && !next.includes('')) onComplete?.(joined);
     },
     [length, onChange, onComplete],
+  );
+
+  const setAt = useCallback(
+    (idx: number, val: string) => {
+      const next = [...valuesRef.current];
+      next[idx] = val;
+      commit(next);
+    },
+    [commit],
   );
 
   const focusCell = (idx: number) => {
@@ -77,22 +102,17 @@ export function PinInput({
     const raw = e.target.value;
     // Pasting multiple digits at once: distribute left-to-right from idx.
     if (raw.length > 1) {
-      const digits = raw.replace(/\D/g, '').slice(0, length - idx);
+      const digits = keep(raw).slice(0, length - idx);
       if (!digits) return;
-      setValues((prev) => {
-        const next = [...prev];
-        for (let i = 0; i < digits.length; i++) next[idx + i] = digits[i]!;
-        const joined = next.join('');
-        onChange?.(joined);
-        if (joined.length === length && !next.includes('')) onComplete?.(joined);
-        return next;
-      });
+      const next = [...valuesRef.current];
+      for (let i = 0; i < digits.length; i++) next[idx + i] = digits[i]!;
+      commit(next);
       focusCell(Math.min(idx + digits.length, length - 1));
       return;
     }
-    const digit = raw.replace(/\D/g, '');
-    setAt(idx, digit);
-    if (digit) focusCell(idx + 1);
+    const char = keep(raw);
+    setAt(idx, char);
+    if (char) focusCell(idx + 1);
   };
 
   const handleKeyDown = (idx: number) => (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -126,12 +146,15 @@ export function PinInput({
             refs.current[idx] = el;
           }}
           type={mask ? 'password' : 'text'}
-          inputMode="numeric"
-          autoComplete="one-time-code"
+          inputMode={alpha ? 'text' : 'numeric'}
+          autoComplete={alpha ? 'off' : 'one-time-code'}
+          autoCapitalize={alpha ? 'characters' : 'off'}
+          autoCorrect="off"
+          spellCheck={false}
           maxLength={length}
           value={val}
           disabled={disabled}
-          aria-label={`${label} digit ${idx + 1} of ${length}`}
+          aria-label={`${label} ${alpha ? 'character' : 'digit'} ${idx + 1} of ${length}`}
           onChange={handleChange(idx)}
           onKeyDown={handleKeyDown(idx)}
           onFocus={(e) => e.target.select()}
