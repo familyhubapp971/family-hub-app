@@ -86,6 +86,7 @@ export const test = base.extend<{
   authedFamily: AuthedFamily;
   authedFamilyClosableWeek: AuthedFamily;
   populatedFamily: AuthedFamily;
+  savingsFamily: AuthedFamily;
   adultFamily: AuthedFamily;
   kidFamily: SeededFamily;
 }>({
@@ -111,6 +112,16 @@ export const test = base.extend<{
   // tab, so a spec can tell a loaded tab from an empty one.
   populatedFamily: async ({ context }, use) => {
     const family = await seedFamily({ withContent: true });
+    const session = await createSessionEntry(family.userId, family.email);
+    await installSession(context, session.sessionEntry);
+    await use({ ...family, ...session });
+    await cleanupFamily(family);
+  },
+
+  // FHS-646: a child with 20 spendable stickers in a week that ends today, so
+  // the Close Week chooser is offered and the save flow has something to move.
+  savingsFamily: async ({ context }, use) => {
+    const family = await seedFamily({ weekEndsToday: true, earnedStickers: 7 });
     const session = await createSessionEntry(family.userId, family.email);
     await installSession(context, session.sessionEntry);
     await use({ ...family, ...session });

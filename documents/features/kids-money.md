@@ -1,6 +1,6 @@
 # Feature: Kids money
 
-**Jira:** [FHS-620](https://qualicion2.atlassian.net/browse/FHS-620) (epic), [FHS-621](https://qualicion2.atlassian.net/browse/FHS-621) (route split), [FHS-622](https://qualicion2.atlassian.net/browse/FHS-622) (this page's body), [FHS-623](https://qualicion2.atlassian.net/browse/FHS-623) (the action sheet), [FHS-627](https://qualicion2.atlassian.net/browse/FHS-627) (documents the endpoints this page reads)
+**Jira:** [FHS-620](https://qualicion2.atlassian.net/browse/FHS-620) (epic), [FHS-621](https://qualicion2.atlassian.net/browse/FHS-621) (route split), [FHS-622](https://qualicion2.atlassian.net/browse/FHS-622) (this page's body), [FHS-623](https://qualicion2.atlassian.net/browse/FHS-623) (the action sheet), [FHS-627](https://qualicion2.atlassian.net/browse/FHS-627) (documents the endpoints this page reads), [FHS-646](https://qualicion2.atlassian.net/browse/FHS-646) (browser proof of the savings maths)
 **Status:** shipped
 **Owner:** product-manager
 **Design:** Magic Patterns editor `kudjspxd3xxroueg5jw11o`, `pages/KidsMoney.tsx` + `components/MoneyActions.tsx`
@@ -123,6 +123,40 @@ after the page reloads, not something the design only pretended to do
 - **When** they open Close Week and finish the week
 - **Then** the sheet says "All done" and a new week has started
 - **And** it stays on that screen instead of returning to the list of choices
+
+### Story 4: The savings maths adds up in a real browser (FHS-646)
+
+**As a** parent moving my child's stickers into savings
+**I want** the figures to move by exactly what I moved, once
+**so that** I can trust the money side of the app on a real phone, not just
+in an API test
+
+#### Acceptance criteria
+
+**Scenario: Moving stickers to savings adds up**
+
+- **Given** a child with 7 stickers ready to spend
+- **When** a grown-up moves 5 of them into savings and confirms once
+- **Then** the sheet says 5 moved and 2 are still ready to spend
+- **And** exactly one save of 5 stickers is recorded against that week
+
+**Scenario: Confirming twice still only saves once**
+
+- **Given** a child with 7 stickers ready to spend
+- **When** a grown-up taps confirm twice in a row
+- **Then** exactly one save of 5 stickers is recorded against that week
+
+**Scenario: A child cannot save more than they have**
+
+- **Given** a child with 7 stickers ready to spend
+- **When** a grown-up types a larger amount into the picker
+- **Then** the amount is held at 7
+
+These three run in the browser (`tests/e2e/features/savings-maths.feature`)
+and check the screen and the recorded actions together: the message alone
+would pass on a screen that lies, and the rows alone would pass on a screen
+that never updates. The recorded-action count is scoped to the child's open
+week, because a closed week carries its own actions.
 
 ## Where the figures come from
 
