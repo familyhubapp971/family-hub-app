@@ -23,6 +23,10 @@ export interface SeededFamily {
   personaNames: PersonaNames;
   childMemberName: string;
   habitId: string;
+  /** The child's OPEN week. The seed also creates a finished week before it,
+   *  which already carries its own recorded action, so anything counting
+   *  actions must scope to this id. */
+  liveWeekId: string;
   /** Only present when seeded with `withPersonas`. */
   personas?: SeededPersonas;
 }
@@ -92,6 +96,15 @@ export interface SeedFamilyOptions {
    * reward request) so a spec can tell a loaded tab from an empty one.
    */
   withContent?: boolean;
+  /**
+   * FHS-646: give the child this many unallocated stickers in the LIVE week,
+   * which is what "ready to spend" counts. Off by default: the money row and
+   * close-week specs assert against a child with nothing spendable.
+   *
+   * Max 7. `habit_stickers_unique` is (tenant, member, habit, week, day), so
+   * one habit can hold one sticker per day and no more.
+   */
+  earnedStickers?: number;
 }
 
 export async function seedFamily(options: SeedFamilyOptions = {}): Promise<SeededFamily> {
@@ -297,6 +310,30 @@ export async function seedFamily(options: SeedFamilyOptions = {}): Promise<Seede
     .returning({ id: schema.mwWeeks.id });
   if (!week) throw new Error('seedFamily: week insert returned no row');
 
+  // One sticker per day, worth 1 each, unallocated: exactly what the save,
+  // cash-out and invest routes draw from (habit_stickers where is_allocated
+  // is false, see apps/api/src/routes/mw-financial.ts).
+  const earned = options.earnedStickers ?? 0;
+  if (earned > 7) {
+    throw new Error(
+      `seedFamily: earnedStickers is capped at 7 (one per day for the seeded habit), got ${earned}`,
+    );
+  }
+  if (earned > 0) {
+    await db.insert(schema.habitStickers).values(
+      Array.from({ length: earned }, (_, i) => ({
+        tenantId: tenant.id,
+        memberId: childMember.id,
+        habitId: habit.id,
+        weekId: week.id,
+        day: i,
+        sticker: 'gold-star' as const,
+        stickerValue: 1,
+        isAllocated: false,
+      })),
+    );
+  }
+
   // FHS-608: a finished week before this one, with one banked action, so the
   // recap has a real record to render in the responsive check. `closureSnapshot`
   // mirrors what a real POST /finalize call stamps (FHS-616 reads
@@ -358,6 +395,7 @@ export async function seedFamily(options: SeedFamilyOptions = {}): Promise<Seede
     personaNames,
     childMemberName: personaNames.child,
     habitId: habit.id,
+    liveWeekId: week.id,
     ...(personas ? { personas } : {}),
   };
 }

@@ -141,6 +141,40 @@ export class CloseWeekPage {
     return box.width;
   }
 
+  // FHS-646: the save flow the chooser opens, and the numbers it moves.
+
+  /** Walks from the chooser into one of the five money flows. */
+  async chooseAction(row: ChooserRow): Promise<void> {
+    await this.page.getByTestId(`close-week-chooser-${row}`).click();
+  }
+
+  saveAmountInput() {
+    return this.page.getByTestId('money-save-amount-input');
+  }
+
+  /** The picker clamps whatever is typed to the child's spendable ceiling. */
+  async setSaveAmount(stickers: number): Promise<void> {
+    await this.saveAmountInput().fill(String(stickers));
+  }
+
+  async saveAmountShown(): Promise<number> {
+    return Number(await this.saveAmountInput().inputValue());
+  }
+
+  async confirmSave(): Promise<void> {
+    await this.page.getByTestId('money-save-confirm').click();
+  }
+
+  /**
+   * Both taps fired together, as a parent double-tapping on a slow phone does.
+   * The second is allowed to fail: the button disabling itself IS one of the
+   * protections under test, and the recorded actions are what prove the point.
+   */
+  async confirmSaveTwice(): Promise<void> {
+    const confirm = this.page.getByTestId('money-save-confirm');
+    await Promise.all([confirm.click(), confirm.click({ timeout: 3000 }).catch(() => undefined)]);
+  }
+
   /** How far the page can scroll sideways: anything over a pixel is a bug. */
   horizontalOverflow(): Promise<number> {
     return this.page.evaluate(
