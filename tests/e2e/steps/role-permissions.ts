@@ -69,3 +69,16 @@ Then(
     await expect(page.getByTestId('kids-money-total')).toHaveCount(0);
   },
 );
+
+// FHS-645: driven by the `adultFamily` fixture, which seeds a second adult
+// with their own user and signs in as them, so the admin is untouched.
+Given("I am signed in as the family's second grown-up", async ({ adultFamily }) => {
+  if (!adultFamily.personas) throw new Error('adultFamily seeded without personas');
+});
+
+When('I open the profile menu as the second grown-up', async ({ page, adultFamily }) => {
+  await page.goto(`/t/${adultFamily.slug}/dashboard`);
+  await expect(page.getByTestId('dashboard-family-name')).toBeVisible({ timeout: 15000 });
+  await page.getByTestId('dashboard-profile-pill').click();
+  await expect(page.getByTestId('dashboard-profile-menu')).toBeVisible();
+});

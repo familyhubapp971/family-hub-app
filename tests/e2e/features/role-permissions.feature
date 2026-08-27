@@ -30,3 +30,13 @@ Feature: Who sees each money and settings door
     Given I am signed in as a teen
     When I go to the Kids money address
     Then I land on the dashboard without ever seeing a child's money
+
+  # FHS-645: the scenarios above demote the family's only admin, which leaves a
+  # family with no admin at all. This one adds a REAL second adult alongside a
+  # real admin, which is the arrangement an actual family is in.
+  @critical @authed-local
+  Scenario: The family's second grown-up still sees no Family settings door
+    Given I am signed in as the family's second grown-up
+    When I open the profile menu as the second grown-up
+    Then I see the Kids money, Earning rules and Manage family doors
+    And I do not see the Family settings door

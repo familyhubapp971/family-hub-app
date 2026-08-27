@@ -1,5 +1,18 @@
 # Comprehensive QA Implementation Plan
 
+> **What actually shipped (2026-08-27).** Task 1 was dropped on the founder's
+> call: the `qa-safeguards` integration feature repeated cross-family and
+> closed-week checks the 64-file integration tier already covers, so it was
+> removed rather than committed. Task 7's QA report runner was dropped with it.
+> Tasks 2 to 5 landed in a reduced form aimed at the areas with NO browser
+> coverage at all: the six parent dashboard tabs
+> (`dashboard-daily-use.feature`), child and teen PIN sign-in
+> (`kid-pin-login.feature`), and a real second adult in
+> `role-permissions.feature`. The seeded personas and per-tab content are
+> OPT-IN (`seedFamily({ withPersonas, withContent })`) because seeding them by
+> default broke six existing specs. Tasks 6 and 8 (full browser matrix, CI
+> artefacts) are not done.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add high-risk integration and browser journeys from the approved QA plan and generate one plain-English test report.
