@@ -3,6 +3,7 @@
 // extending `@playwright/test`'s bare `test` throws
 // "createBdd() should use 'test' extended from playwright-bdd" at runtime.
 import { test as base } from 'playwright-bdd';
+import type { BrowserContext } from '@playwright/test';
 import { mintE2eAccessToken } from './auth/jwt.js';
 import { resolveSupabaseUrl } from './auth/env.js';
 import { buildSupabaseLocalStorageEntry } from './auth/session.js';
@@ -49,6 +50,33 @@ export interface AuthedFamily extends SeededFamily {
   sessionEntry: { key: string; value: string };
 }
 
+async function createSessionEntry(
+  userId: string,
+  email: string,
+): Promise<Pick<AuthedFamily, 'accessToken' | 'sessionEntry'>> {
+  const accessToken = await mintE2eAccessToken({ sub: userId, email });
+  const payload = JSON.parse(
+    Buffer.from(accessToken.split('.')[1] ?? '', 'base64url').toString('utf8'),
+  ) as { exp: number };
+  const sessionEntry = buildSupabaseLocalStorageEntry({
+    supabaseUrl: resolveSupabaseUrl(),
+    accessToken,
+    userId,
+    email,
+    expiresAt: payload.exp,
+  });
+  return { accessToken, sessionEntry };
+}
+
+async function installSession(
+  context: BrowserContext,
+  entry: AuthedFamily['sessionEntry'],
+): Promise<void> {
+  await context.addInitScript(({ key, value }) => {
+    window.localStorage.setItem(key, value);
+  }, entry);
+}
+
 /**
  * FHS-638: the same authed family, but with its week anchored so today is the
  * last day. Depend on this instead of `authedFamily` when the spec needs the
@@ -57,61 +85,61 @@ export interface AuthedFamily extends SeededFamily {
 export const test = base.extend<{
   authedFamily: AuthedFamily;
   authedFamilyClosableWeek: AuthedFamily;
+  populatedFamily: AuthedFamily;
+  adultFamily: AuthedFamily;
+  kidFamily: SeededFamily;
 }>({
   authedFamily: async ({ context }, use) => {
     const family = await seedFamily();
-    const accessToken = await mintE2eAccessToken({ sub: family.userId, email: family.email });
-    const supabaseUrl = resolveSupabaseUrl();
-    // The token's own `exp` claim (seconds), decode it back out so the
-    // injected session's expires_at matches exactly rather than
-    // re-deriving it and risking clock-skew drift between the two.
-    const payload = JSON.parse(
-      Buffer.from(accessToken.split('.')[1] ?? '', 'base64url').toString('utf8'),
-    ) as { exp: number };
-    const entry = buildSupabaseLocalStorageEntry({
-      supabaseUrl,
-      accessToken,
-      userId: family.userId,
-      email: family.email,
-      expiresAt: payload.exp,
-    });
-
-    await context.addInitScript(
-      ({ key, value }) => {
-        window.localStorage.setItem(key, value);
-      },
-      { key: entry.key, value: entry.value },
-    );
-
-    await use({ ...family, accessToken, sessionEntry: entry });
+    const session = await createSessionEntry(family.userId, family.email);
+    await installSession(context, session.sessionEntry);
+    await use({ ...family, ...session });
 
     await cleanupFamily(family);
   },
 
   authedFamilyClosableWeek: async ({ context }, use) => {
     const family = await seedFamily({ weekEndsToday: true });
-    const accessToken = await mintE2eAccessToken({ sub: family.userId, email: family.email });
-    const supabaseUrl = resolveSupabaseUrl();
-    const payload = JSON.parse(
-      Buffer.from(accessToken.split('.')[1] ?? '', 'base64url').toString('utf8'),
-    ) as { exp: number };
-    const entry = buildSupabaseLocalStorageEntry({
-      supabaseUrl,
-      accessToken,
-      userId: family.userId,
-      email: family.email,
-      expiresAt: payload.exp,
-    });
+    const session = await createSessionEntry(family.userId, family.email);
+    await installSession(context, session.sessionEntry);
+    await use({ ...family, ...session });
 
-    await context.addInitScript(
-      ({ key, value }) => {
-        window.localStorage.setItem(key, value);
-      },
-      { key: entry.key, value: entry.value },
+    await cleanupFamily(family);
+  },
+
+  // FHS-645: the admin of a family with one real row behind every dashboard
+  // tab, so a spec can tell a loaded tab from an empty one.
+  populatedFamily: async ({ context }, use) => {
+    const family = await seedFamily({ withContent: true });
+    const session = await createSessionEntry(family.userId, family.email);
+    await installSession(context, session.sessionEntry);
+    await use({ ...family, ...session });
+    await cleanupFamily(family);
+  },
+
+  // FHS-645: signed in as the family's SECOND adult, a real `adult` member
+  // with their own user, not the admin demoted in place. That is the only way
+  // to prove admin-only doors stay shut while the admin still exists.
+  adultFamily: async ({ context }, use) => {
+    const family = await seedFamily({ withPersonas: true });
+    if (!family.personas) throw new Error('adultFamily: seed returned no personas');
+    const session = await createSessionEntry(
+      family.personas.adultUserId,
+      family.personas.adultEmail,
     );
+    await installSession(context, session.sessionEntry);
+    await use({ ...family, ...session });
+    await cleanupFamily(family);
+  },
 
-    await use({ ...family, accessToken, sessionEntry: entry });
-
+  // FHS-645: no injected grown-up session on purpose. A child signs in
+  // through the PIN screen, which is the thing under test.
+  // Playwright requires the first argument to be an object destructuring
+  // pattern, even for a fixture that needs nothing out of it.
+  // eslint-disable-next-line no-empty-pattern
+  kidFamily: async ({}, use) => {
+    const family = await seedFamily({ withPersonas: true });
+    await use(family);
     await cleanupFamily(family);
   },
 });

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { ensureReaderFunctions, getE2eDb, schema } from './db.js';
 import { liveWeekStart, previousWeekStart } from './seed-week-anchor.js';
@@ -19,10 +20,45 @@ export interface SeededFamily {
   email: string;
   adminMemberId: string;
   childMemberId: string;
-  /** FHS-638: the child's display name, for screens that greet them by name. */
+  personaNames: PersonaNames;
   childMemberName: string;
   habitId: string;
+  /** Only present when seeded with `withPersonas`. */
+  personas?: SeededPersonas;
 }
+
+/**
+ * FHS-645: the extra people a role journey needs. Kept off the default seed
+ * because a second adult and a teen change the member count and the number of
+ * children, which the specs written against the minimal family assert on.
+ */
+export interface SeededPersonas {
+  adultMemberId: string;
+  adultUserId: string;
+  adultEmail: string;
+  teenMemberId: string;
+  /** The 4-digit PIN seeded on BOTH the child and the teen. */
+  pin: string;
+}
+
+export interface PersonaNames {
+  admin: string;
+  adult: string;
+  child: string;
+  teen: string;
+}
+
+function buildPersonaNames(suffix: string): PersonaNames {
+  return {
+    admin: `E2E Admin ${suffix}`,
+    adult: `E2E Adult ${suffix}`,
+    child: `E2E Kid ${suffix}`,
+    teen: `E2E Teen ${suffix}`,
+  };
+}
+
+/** The 4-digit PIN seeded on the child and the teen under `withPersonas`. */
+const SEEDED_PIN = '1234';
 
 function shortId(): string {
   return randomUUID().slice(0, 8);
@@ -44,6 +80,18 @@ export interface SeedFamilyOptions {
    * is the comparison that cannot drift by a day near midnight.
    */
   weekEndsToday?: boolean;
+  /**
+   * FHS-645: also seed a second adult (own user + `adult` member) and a
+   * PIN-enabled teen, and give the child the same PIN. Needed by any spec
+   * that drives the app as somebody other than the admin.
+   */
+  withPersonas?: boolean;
+  /**
+   * FHS-645: put one real row behind every parent dashboard tab (meal, event,
+   * assignment, notice, task, journal entry, learning progress and a waiting
+   * reward request) so a spec can tell a loaded tab from an empty one.
+   */
+  withContent?: boolean;
 }
 
 export async function seedFamily(options: SeedFamilyOptions = {}): Promise<SeededFamily> {
@@ -57,6 +105,9 @@ export async function seedFamily(options: SeedFamilyOptions = {}): Promise<Seede
   const tenantName = `E2E Test Family ${suffix}`;
   const userId = randomUUID();
   const email = `e2e-${suffix}@example.invalid`;
+  const adultUserId = randomUUID();
+  const adultEmail = `e2e-adult-${suffix}@example.invalid`;
+  const personaNames = buildPersonaNames(suffix);
 
   const [tenant] = await db
     .insert(schema.tenants)
@@ -68,31 +119,143 @@ export async function seedFamily(options: SeedFamilyOptions = {}): Promise<Seede
   // request, pre-inserting it here lets `members.user_id` FK to it
   // immediately. The middleware's own upsert on the first authenticated
   // request is a no-op refresh against this same row (idempotent).
-  await db.insert(schema.users).values({ id: userId, email });
+  await db.insert(schema.users).values(
+    options.withPersonas === true
+      ? [
+          { id: userId, email },
+          { id: adultUserId, email: adultEmail },
+        ]
+      : [{ id: userId, email }],
+  );
 
   const [adminMember] = await db
     .insert(schema.members)
     .values({
       tenantId: tenant.id,
       userId,
-      displayName: `E2E Admin ${suffix}`,
+      displayName: personaNames.admin,
       role: 'admin',
       isChild: false,
     })
     .returning({ id: schema.members.id });
   if (!adminMember) throw new Error('seedFamily: admin member insert returned no row');
 
+  let adultMemberId: string | undefined;
+  if (options.withPersonas === true) {
+    const [adultMember] = await db
+      .insert(schema.members)
+      .values({
+        tenantId: tenant.id,
+        userId: adultUserId,
+        displayName: personaNames.adult,
+        role: 'adult',
+        isChild: false,
+      })
+      .returning({ id: schema.members.id });
+    if (!adultMember) throw new Error('seedFamily: adult member insert returned no row');
+    adultMemberId = adultMember.id;
+  }
+
   const [childMember] = await db
     .insert(schema.members)
     .values({
       tenantId: tenant.id,
-      displayName: `E2E Kid ${suffix}`,
+      displayName: personaNames.child,
       role: 'child',
       isChild: true,
       age: 8,
     })
     .returning({ id: schema.members.id });
   if (!childMember) throw new Error('seedFamily: child member insert returned no row');
+
+  let personas: SeededPersonas | undefined;
+  if (options.withPersonas === true) {
+    // Cost 4: the api verifies with bcryptjs `compare`, which reads the cost
+    // out of the hash itself, so a cheap hash still logs in and keeps the
+    // per-scenario seed fast.
+    const pinHash = await bcrypt.hash(SEEDED_PIN, 4);
+    const [teenMember] = await db
+      .insert(schema.members)
+      .values({
+        tenantId: tenant.id,
+        displayName: personaNames.teen,
+        role: 'teen',
+        isChild: true,
+        age: 14,
+        pinHash,
+      })
+      .returning({ id: schema.members.id });
+    if (!teenMember) throw new Error('seedFamily: teen member insert returned no row');
+
+    await db.update(schema.members).set({ pinHash }).where(eq(schema.members.id, childMember.id));
+
+    if (!adultMemberId) throw new Error('seedFamily: adult member missing for personas');
+    personas = {
+      adultMemberId,
+      adultUserId,
+      adultEmail,
+      teenMemberId: teenMember.id,
+      pin: SEEDED_PIN,
+    };
+  }
+
+  if (options.withContent === true) {
+    const today = new Date().toISOString().slice(0, 10);
+    await db.insert(schema.mealTemplates).values({
+      tenantId: tenant.id,
+      dayOfWeek: 'mon',
+      slot: 'dinner',
+      name: 'Family pasta',
+    });
+    await db.insert(schema.events).values({
+      tenantId: tenant.id,
+      date: today,
+      title: 'Family catch-up',
+      memberId: childMember.id,
+    });
+    await db.insert(schema.assignments).values({
+      tenantId: tenant.id,
+      title: 'Finish reading',
+      dueDate: today,
+      memberId: childMember.id,
+    });
+    await db.insert(schema.notices).values({
+      tenantId: tenant.id,
+      body: 'Welcome to the family board',
+      authorMemberId: adminMember.id,
+    });
+    await db.insert(schema.tasks).values({
+      tenantId: tenant.id,
+      memberId: adminMember.id,
+      title: 'Book the dentist',
+      dueDate: today,
+    });
+    await db.insert(schema.journalEntries).values({
+      tenantId: tenant.id,
+      memberId: childMember.id,
+      entryDate: today,
+      mood: 'happy',
+      gratitude1: 'My family',
+    });
+    await db.insert(schema.learnProgress).values({
+      tenantId: tenant.id,
+      memberId: childMember.id,
+      subject: 'world-flags',
+      progress: 20,
+    });
+
+    const [reward] = await db
+      .insert(schema.rewards)
+      .values({ tenantId: tenant.id, name: 'Choose a film', stickerCost: 5 })
+      .returning({ id: schema.rewards.id });
+    if (!reward) throw new Error('seedFamily: reward insert returned no row');
+    await db.insert(schema.redemptionRequests).values({
+      tenantId: tenant.id,
+      memberId: childMember.id,
+      rewardId: reward.id,
+      starCost: 5,
+    });
+  }
 
   // FHS-607: a live week + one active investment, so the Active Investments
   // card renders a real row (not just its empty state) in the responsive
@@ -192,8 +355,10 @@ export async function seedFamily(options: SeedFamilyOptions = {}): Promise<Seede
     email,
     adminMemberId: adminMember.id,
     childMemberId: childMember.id,
-    childMemberName: `E2E Kid ${suffix}`,
+    personaNames,
+    childMemberName: personaNames.child,
     habitId: habit.id,
+    ...(personas ? { personas } : {}),
   };
 }
 
@@ -205,9 +370,12 @@ export async function seedFamily(options: SeedFamilyOptions = {}): Promise<Seede
  * `e2e-*@example.invalid` fixture rows.
  */
 export async function cleanupFamily(
-  family: Pick<SeededFamily, 'tenantId' | 'userId'>,
+  family: Pick<SeededFamily, 'tenantId' | 'userId' | 'personas'>,
 ): Promise<void> {
   const db = getE2eDb();
   await db.delete(schema.tenants).where(eq(schema.tenants.id, family.tenantId));
   await db.delete(schema.users).where(eq(schema.users.id, family.userId));
+  if (family.personas) {
+    await db.delete(schema.users).where(eq(schema.users.id, family.personas.adultUserId));
+  }
 }
