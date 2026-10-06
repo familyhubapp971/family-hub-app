@@ -15,10 +15,13 @@
 // running footer on every page; the paged docs carry their own footers.
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
+import { PDFDocument } from 'pdf-lib';
 
-/* global document */
+/* global document, getComputedStyle */
 
 const root = path.dirname(fileURLToPath(new URL('.', import.meta.url)));
 const requireE2e = createRequire(path.join(root, 'tests/e2e/package.json'));
@@ -40,6 +43,26 @@ const DOCS = [
     src: 'fh-qa-brief-feature-tour.html',
     out: 'qa-brief-feature-tour.pdf',
     outDir: 'documents/qa',
+  },
+  {
+    src: 'fh-qa-contractor-agreement.html',
+    out: 'qa-contractor-agreement.pdf',
+    outDir: 'documents/qa',
+    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
+    footerTitle: 'QA Contractor Agreement',
+    // It forces the schedules onto a new page, which the stretch below
+    // cannot see, so it would add a blank last page.
+    noStretch: true,
+    fillable: true,
+  },
+  {
+    src: 'fh-qa-contractor-notice-to-end.html',
+    out: 'qa-contractor-notice-to-end.pdf',
+    outDir: 'documents/qa',
+    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
+    footerTitle: 'Notice to End',
+    noStretch: true,
+    fillable: true,
   },
   // What good we set out to do, and how we would know.
   {
@@ -109,10 +132,16 @@ const DOCS = [
 const browser = await chromium.launch();
 const page = await browser.newPage();
 for (const d of DOCS) {
+  // Contract sources are gitignored (they hold personal details), so a fresh
+  // clone will not have them.
+  if (!fs.existsSync(path.join(root, 'scripts/doc-src', d.src))) {
+    console.warn('skipped', d.src, '(local-only source not found)');
+    continue;
+  }
   await page.goto('file://' + path.join(root, 'scripts/doc-src', d.src), {
     waitUntil: 'networkidle',
   });
-  if (d.footerTitle) {
+  if (d.footerTitle && !d.noStretch) {
     // Flowing docs: stretch the body to a whole number of printed pages
     // and push the in-document <footer> endnote to the last page bottom.
     await page.evaluate(() => {
@@ -128,8 +157,8 @@ for (const d of DOCS) {
   }
   const outDir = path.join(root, d.outDir ?? 'documents/business');
   fs.mkdirSync(outDir, { recursive: true });
-  await page.pdf({
-    path: path.join(outDir, d.out),
+  const out = path.join(outDir, d.out);
+  const pdfOptions = {
     ...(d.pageSize ? d.pageSize : { format: 'A4' }),
     landscape: d.landscape ?? false,
     printBackground: true,
@@ -137,7 +166,111 @@ for (const d of DOCS) {
     displayHeaderFooter: Boolean(d.footerTitle),
     headerTemplate: '<span></span>',
     footerTemplate: d.footerTitle ? foot(d.footerTitle) : undefined,
-  });
+  };
+  if (d.fillable) {
+    const fields = await markFields(page);
+    const spots = await locateMarkers(await page.pdf(pdfOptions));
+    // The markers sit outside the layout, so removing them moves nothing,
+    // and the final PDF carries no stray marker text.
+    await page.evaluate(() =>
+      document.querySelectorAll('[data-marker]').forEach((m) => m.remove()),
+    );
+    await page.pdf({ ...pdfOptions, path: out });
+    await addFormFields(out, fields, spots);
+  } else {
+    await page.pdf({ ...pdfOptions, path: out });
+  }
   console.log('rendered', path.relative(root, path.join(outDir, d.out)));
 }
 await browser.close();
+
+// Chrome prints form blanks as plain lines. To make them typeable, each
+// [data-field] element gets an invisible marker word at its bottom-left
+// corner; after printing we find where the markers landed on the page and
+// lay a real form field over each blank. Needs poppler's pdftotext.
+async function markFields(page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('[data-field]')].map((el, i) => {
+      const r = el.getBoundingClientRect();
+      if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+      const m = document.createElement('span');
+      m.dataset.marker = '';
+      m.textContent = `FHFIELD${i}X`;
+      m.style.cssText =
+        'position:absolute;left:0;bottom:0;font:4px/1 Arial;color:rgba(0,0,0,0.01);white-space:nowrap';
+      el.appendChild(m);
+      return {
+        name: el.dataset.field,
+        type: el.dataset.type,
+        value: el.dataset.value,
+        width: r.width,
+        height: r.height,
+      };
+    }),
+  );
+}
+
+async function locateMarkers(pdfBytes) {
+  const tmp = path.join(os.tmpdir(), `render-docs-${process.pid}.pdf`);
+  fs.writeFileSync(tmp, pdfBytes);
+  let html;
+  try {
+    html = execFileSync('pdftotext', ['-bbox', tmp, '-'], { encoding: 'utf8' });
+  } catch (err) {
+    if (err.code === 'ENOENT') throw new Error('pdftotext not found: brew install poppler');
+    throw err;
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
+  const spots = new Map();
+  html
+    .split('<page ')
+    .slice(1)
+    .forEach((chunk, pageIndex) => {
+      for (const w of chunk.matchAll(
+        /xMin="([\d.]+)" yMin="[\d.]+" xMax="[\d.]+" yMax="([\d.]+)">FHFIELD(\d+)X</g,
+      )) {
+        spots.set(Number(w[3]), { pageIndex, x: Number(w[1]), yBottom: Number(w[2]) });
+      }
+    });
+  return spots;
+}
+
+async function addFormFields(file, fields, spots) {
+  const pdf = await PDFDocument.load(fs.readFileSync(file));
+  const form = pdf.getForm();
+  const pt = 0.75; // css px to pdf points
+  fields.forEach((f, i) => {
+    const spot = spots.get(i);
+    if (!spot) throw new Error(`form field ${f.name} not found in ${file}`);
+    const page = pdf.getPage(spot.pageIndex);
+    const y = page.getHeight() - spot.yBottom;
+    if (f.type === 'checkbox') {
+      const box = form.createCheckBox(f.name);
+      box.addToPage(page, { x: spot.x, y, width: f.width * pt, height: f.height * pt });
+      if (f.value) {
+        box.check();
+        box.enableReadOnly();
+      }
+      return;
+    }
+    const height = Math.max(f.height * pt, 14);
+    const field = form.createTextField(f.name);
+    if (f.height > 40) field.enableMultiline();
+    field.addToPage(page, {
+      x: spot.x,
+      y,
+      width: f.width * pt,
+      height,
+      borderWidth: 0,
+      backgroundColor: undefined,
+    });
+    field.setFontSize(9);
+    // A pre-filled value is part of the agreed terms, so it is locked.
+    if (f.value) {
+      field.setText(f.value);
+      field.enableReadOnly();
+    }
+  });
+  fs.writeFileSync(file, await pdf.save());
+}
