@@ -211,7 +211,8 @@ async function markFields(page) {
 }
 
 async function locateMarkers(pdfBytes) {
-  const tmp = path.join(os.tmpdir(), `render-docs-${process.pid}.pdf`);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'render-docs-'));
+  const tmp = path.join(dir, 'markers.pdf');
   fs.writeFileSync(tmp, pdfBytes);
   let html;
   try {
@@ -220,7 +221,7 @@ async function locateMarkers(pdfBytes) {
     if (err.code === 'ENOENT') throw new Error('pdftotext not found: brew install poppler');
     throw err;
   } finally {
-    fs.rmSync(tmp, { force: true });
+    fs.rmSync(dir, { recursive: true, force: true });
   }
   const spots = new Map();
   html
