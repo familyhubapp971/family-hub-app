@@ -55,9 +55,12 @@ _Initial seed, populate as docs are added:_
   collection plus `local` and `staging` environments, built from the spec.
   The same command keeps a local, gitignored copy in `documents/postman/` for
   sharing with testers.
-- **To test:** import the collection and an environment into Postman. Set
-  `userToken` (sign in to the web app, then copy `access_token` from the
-  `sb-...-auth-token` browser storage entry) and `tenantSlug`. For kid
+- **To test:** import the collection and an environment into Postman. Get a
+  parent token with folder 01: set `supabaseAnonKey` and `signInEmail`, send
+  "Send sign-in email", copy the emailed link (do not click it) into
+  `emailLink`, then send "Verify email link"; it saves `userToken`. A new
+  parent uses "Send sign-up email", then POST /api/public/tenant to create the
+  family. Set `tenantSlug` too. For kid
   endpoints, set `kidMemberId` and `kidPin`, then send "Exchange a kid PIN";
   it saves `kidToken` for you. Every request checks its documented status code.
 - **After any API change:** run `pnpm -F api openapi:generate` and commit both.
