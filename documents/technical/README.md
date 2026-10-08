@@ -8,7 +8,7 @@ the system is built; the _what_ and _why_ live in
 
 - Architecture overviews when a major system component is introduced.
 - API contracts when a new public surface stabilises (the OpenAPI spec
-  itself lives in `apps/api/openapi.yaml`: link from here, don't duplicate).
+  itself lives in `apps/api/openapi.json`: link from here, don't duplicate).
 - Data model docs (ERDs, schema rationale) when tables are added or
   reshaped beyond a routine migration.
 - Sequence diagrams or runbooks when a flow spans multiple services or
@@ -46,3 +46,17 @@ _Initial seed, populate as docs are added:_
 - `slos.md`: TBD (SLI/SLO definitions per service)
 - `api/`: TBD (conventions, error envelope, pagination, auth)
 - `data-model/`: TBD (per-domain ERDs and schema rationale)
+
+## API docs and test collection
+
+- **Spec:** [`apps/api/openapi.json`](../../apps/api/openapi.json), generated
+  from the live routes. Browse it at `/docs` on any non-production API.
+- **Postman:** [`apps/api/postman/`](../../apps/api/postman/) holds the test
+  collection plus `local` and `staging` environments, built from the spec.
+- **To test:** import the collection and an environment into Postman. Set
+  `userToken` (sign in to the web app, then copy `access_token` from the
+  `sb-...-auth-token` browser storage entry) and `tenantSlug`. For kid
+  endpoints, set `kidMemberId` and `kidPin`, then send "Exchange a kid PIN";
+  it saves `kidToken` for you. Every request checks its documented status code.
+- **After any API change:** run `pnpm -F api openapi:generate` and commit both.
+  CI's `openapi:check` fails if either is stale or an endpoint lacks full docs.
