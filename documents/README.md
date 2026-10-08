@@ -20,13 +20,13 @@ These hold no Markdown. Each is built from an HTML source in
 [`scripts/doc-src/`](../scripts/doc-src/) by `node scripts/render-docs.mjs`,
 which is where you edit them.
 
-| Folder                     | Holds                                                               | In git |
-| -------------------------- | ------------------------------------------------------------------- | ------ |
-| [commercial/](commercial/) | The commercial case: where we fit, product-market fit, go to market | yes    |
-| business/                  | The pitch deck and the business model canvas                        | no     |
-| impact/                    | Theory of change, impact measurement framework                      | no     |
-| investments/               | Investor and accelerator applications (Hub71)                       | no     |
-| qa/                        | Briefs handed to testers: beta tester, QA overview, feature tour    | no     |
+| Folder       | Holds                                                               | In git |
+| ------------ | ------------------------------------------------------------------- | ------ |
+| commercial/  | The commercial case: where we fit, product-market fit, go to market | no     |
+| business/    | The pitch deck and the business model canvas                        | no     |
+| impact/      | Theory of change, impact measurement framework                      | no     |
+| investments/ | Investor and accelerator applications (Hub71)                       | no     |
+| qa/          | Briefs handed to testers: beta tester, QA overview, feature tour    | no     |
 
 "In git: no" means the PDF lands on your machine when you run the renderer and
 is shared from there. The source is always tracked, so anyone can rebuild it.

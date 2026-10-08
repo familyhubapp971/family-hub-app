@@ -2,12 +2,12 @@
 // (docs folders are PDF-only, FHS-552), each one filed by what it is for:
 //
 //   documents/business/     the pitch and the business model
-//   documents/commercial/   the commercial case (tracked in git)
+//   documents/commercial/   the commercial case
 //   documents/impact/       theory of change and impact measurement
 //   documents/investments/  investor and accelerator applications
 //   documents/qa/           briefs for testers
 //
-// Only commercial/ is committed. The rest are gitignored and land locally
+// All of these are gitignored and land locally
 // for the founder to share, as are their folders.
 //
 // Usage: node scripts/render-docs.mjs
