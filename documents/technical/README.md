@@ -53,6 +53,8 @@ _Initial seed, populate as docs are added:_
   from the live routes. Browse it at `/docs` on any non-production API.
 - **Postman:** [`apps/api/postman/`](../../apps/api/postman/) holds the test
   collection plus `local` and `staging` environments, built from the spec.
+  The same command keeps a local, gitignored copy in `documents/postman/` for
+  sharing with testers.
 - **To test:** import the collection and an environment into Postman. Set
   `userToken` (sign in to the web app, then copy `access_token` from the
   `sb-...-auth-token` browser storage entry) and `tenantSlug`. For kid
