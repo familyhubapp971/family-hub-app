@@ -99,6 +99,12 @@ const DOCS = [
     pageSize: { width: '338.66mm', height: '190.5mm' },
   },
   {
+    src: 'fh-pitch-deck-general.html',
+    out: 'pitch-deck-general.pdf',
+    outDir: 'documents/business/pitch-decks',
+    pageSize: { width: '338.66mm', height: '190.5mm' },
+  },
+  {
     src: 'fh-pitch-deck-hub71.html',
     out: 'pitch-deck-hub71.pdf',
     outDir: 'documents/business/pitch-decks',
