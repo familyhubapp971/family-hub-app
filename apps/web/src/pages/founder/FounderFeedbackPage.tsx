@@ -80,8 +80,8 @@ export function FounderFeedbackPage() {
   }, [token, signOut]);
 
   return (
-    <div className="min-h-screen bg-kingdom-bg px-4 py-6 text-white sm:px-6">
-      <div className="mx-auto w-full max-w-5xl">
+    <div className="flex min-h-screen flex-col bg-kingdom-bg px-4 py-6 text-white sm:px-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-heading text-2xl uppercase tracking-wide sm:text-3xl">
             Family Hub feedback
@@ -94,12 +94,15 @@ export function FounderFeedbackPage() {
         </header>
 
         {!token ? (
-          <PasscodeForm
-            onUnlocked={(t) => {
-              writeToken(t);
-              setToken(t);
-            }}
-          />
+          // FHS-674: the passcode box sits in the middle of the space below the title.
+          <div className="flex flex-1 items-center justify-center pb-16" data-testid="founder-lock">
+            <PasscodeForm
+              onUnlocked={(t) => {
+                writeToken(t);
+                setToken(t);
+              }}
+            />
+          </div>
         ) : loadError ? (
           <p role="alert" className="rounded-xl border-2 border-black bg-red-50 p-4 text-red-700">
             {loadError}

@@ -76,6 +76,15 @@ describe('<FounderFeedbackPage />', () => {
     expect(screen.getByTestId('founder-open')).toBeDisabled();
   });
 
+  it('centres the passcode box below the title', () => {
+    render(<FounderFeedbackPage />);
+    expect(screen.getByTestId('founder-lock')).toHaveClass(
+      'flex-1',
+      'items-center',
+      'justify-center',
+    );
+  });
+
   it('asks for the passcode first', () => {
     render(<FounderFeedbackPage />);
     expect(screen.getByText('Enter the passcode')).toBeInTheDocument();
