@@ -144,3 +144,72 @@ export function toCsv(rows: FeedbackRow[]): string {
   for (const r of rows) lines.push(CSV_COLUMNS.map(([, get]) => cell(get(r))).join(','));
   return lines.join('\n') + '\n';
 }
+
+// ─── FHS-675: the visual view ─────────────────────────────────────────────────
+
+export interface RatingSummary {
+  average: number | null;
+  count: number;
+}
+
+export interface Overview {
+  answers: number;
+  people: number;
+  families: number;
+  recommend: RatingSummary;
+  solvesProblem: RatingSummary;
+  easeOfUse: RatingSummary;
+  keepUsing: RatingSummary;
+  /** "How would you feel without it?" counts. */
+  missIt: { very: number; somewhat: number; not: number };
+}
+
+function rating(rows: FeedbackRow[], pick: (r: FeedbackRow) => number | null): RatingSummary {
+  const xs = rows.map(pick).filter((v): v is number => v !== null);
+  return { average: average(xs), count: xs.length };
+}
+
+export function overview(rows: FeedbackRow[]): Overview {
+  const missIt = { very: 0, somewhat: 0, not: 0 };
+  for (const r of rows) {
+    if (r.pmfDisappointment === 'very') missIt.very++;
+    else if (r.pmfDisappointment === 'somewhat') missIt.somewhat++;
+    else if (r.pmfDisappointment === 'not') missIt.not++;
+  }
+  return {
+    answers: rows.length,
+    people: new Set(rows.map((r) => r.email ?? r.name ?? 'Anonymous')).size,
+    families: new Set(rows.map((r) => r.familySlug).filter(Boolean)).size,
+    recommend: rating(rows, (r) => r.recommendScore),
+    solvesProblem: rating(rows, (r) => r.solvesProblem),
+    easeOfUse: rating(rows, (r) => r.easeOfUse),
+    keepUsing: rating(rows, (r) => r.keepUsing),
+    missIt,
+  };
+}
+
+export type QuoteKind = 'wish' | 'pain' | 'other';
+
+export interface Quote {
+  kind: QuoteKind;
+  text: string;
+  who: string;
+  where: string;
+  createdAt: string;
+}
+
+/** Every written answer, newest first, with who said it and where. */
+export function quotes(rows: FeedbackRow[]): Quote[] {
+  const out: Quote[] = [];
+  for (const r of rows) {
+    const who = r.email ?? r.name ?? 'Anonymous';
+    const where = r.screen ? screenLabel(r.screen) : SOURCE_LABEL[r.source];
+    const add = (kind: QuoteKind, text: string | null) => {
+      if (text?.trim()) out.push({ kind, text: text.trim(), who, where, createdAt: r.createdAt });
+    };
+    add('wish', r.featureRequest);
+    add('pain', r.painPoint);
+    add('other', r.otherFeedback);
+  }
+  return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}

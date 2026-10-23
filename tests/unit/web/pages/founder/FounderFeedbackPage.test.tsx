@@ -101,7 +101,7 @@ describe('<FounderFeedbackPage />', () => {
     await waitFor(() => expect(screen.getByTestId('founder-summary')).toBeInTheDocument());
     expect(screen.getByTestId('founder-summary')).toHaveTextContent('Weekly Meals');
     expect(screen.getByTestId('founder-count')).toHaveTextContent('2 answers from 2 people');
-    expect(screen.getByText('“A shopping list”')).toBeInTheDocument();
+    expect(screen.getAllByText('“A shopping list”')).toHaveLength(2);
     expect(fetchMock.mock.calls[1]![1].headers['x-founder-token']).toBe('tok');
   });
 
@@ -181,5 +181,55 @@ describe('<FounderFeedbackPage />', () => {
     render(<FounderFeedbackPage />);
     await waitFor(() => expect(screen.getByTestId('founder-summary')).toBeInTheDocument());
     expect(screen.queryByText('Enter the passcode')).toBeNull();
+  });
+
+  // FHS-675: the visual view.
+  describe('the visual view', () => {
+    async function openWithRows() {
+      sessionStorage.setItem('fh-founder-token', 'tok');
+      fetchMock.mockResolvedValueOnce(json({ rows: ROWS }));
+      render(<FounderFeedbackPage />);
+      await waitFor(() => expect(screen.getByTestId('founder-tile-answers')).toBeInTheDocument());
+    }
+
+    it('leads with the headline numbers', async () => {
+      await openWithRows();
+      expect(screen.getByTestId('founder-tile-answers')).toHaveTextContent('2');
+      expect(screen.getByTestId('founder-tile-people')).toHaveTextContent('2');
+      expect(screen.getByTestId('founder-tile-families')).toHaveTextContent('1');
+      expect(screen.getByTestId('founder-tile-recommend')).toHaveTextContent('9/10');
+    });
+
+    it('shows how many would miss it', async () => {
+      await openWithRows();
+      expect(screen.getByTestId('founder-miss-it')).toHaveTextContent('Very disappointed100% (1)');
+      expect(
+        screen.getByRole('img', {
+          name: 'Very disappointed 100%, Somewhat 0%, Not disappointed 0%',
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it('sorts written answers into wishes and other comments', async () => {
+      await openWithRows();
+      expect(screen.getByTestId('founder-quotes-wish')).toHaveTextContent('A shopping list');
+      expect(screen.getByTestId('founder-quotes-other')).toHaveTextContent('Looks great');
+      expect(screen.getByTestId('founder-quotes-pain')).toHaveTextContent('Nothing yet.');
+    });
+
+    it('gives each screen its own card', async () => {
+      await openWithRows();
+      expect(screen.getAllByTestId('founder-screen-card')).toHaveLength(1);
+      expect(screen.getByTestId('founder-screen-card')).toHaveTextContent('Add meal · 1');
+    });
+
+    it('updates the numbers when filtered', async () => {
+      await openWithRows();
+      fireEvent.change(screen.getByTestId('founder-filter-source'), {
+        target: { value: 'public' },
+      });
+      expect(screen.getByTestId('founder-tile-answers')).toHaveTextContent('1');
+      expect(screen.getByTestId('founder-tile-families')).toHaveTextContent('0');
+    });
   });
 });
