@@ -58,10 +58,11 @@ function passcodeMatches(f: FounderSecrets, attempt: string): boolean {
   return timingSafeEqual(scryptSync(attempt, f.secret, 32), passcodeKey(f));
 }
 
+// The signing key is the server secret joined to the scrypt result, so a
+// new passcode or a new secret both sign everyone out.
 function sign(f: FounderSecrets, expiresAt: number): string {
-  return createHmac('sha256', f.secret)
-    .update(`founder:${passcodeKey(f).toString('hex')}:${expiresAt}`)
-    .digest('base64url');
+  const key = Buffer.concat([Buffer.from(f.secret), passcodeKey(f)]);
+  return createHmac('sha256', key).update(`founder:${expiresAt}`).digest('base64url');
 }
 
 function sameSignature(a: string, b: string): boolean {
