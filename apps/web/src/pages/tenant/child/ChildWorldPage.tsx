@@ -7,6 +7,7 @@ import { useAuth, signOutAll } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
 import { ProfilePill } from '../AppHeader';
+import { ScreenFeedback } from '../../../components/ScreenFeedback';
 import { MyWorldTab } from './MyWorldTab';
 import { MealsTab } from './MealsTab';
 import { CalendarTab } from './CalendarTab';
@@ -210,20 +211,24 @@ export function ChildWorldPage() {
           // "View World" links switch between children (replacing the old
           // switcher) and its menu holds Manage family / Reward settings / Log
           // out (replacing the old Back + Logout buttons).
-          <ProfilePill
-            parentName={parentName}
-            role={callerRole}
-            childMembers={childMembers}
-            onManageMembers={onManageMembers}
-            onRewardSettings={onRewardSettings}
-            onKidsMoney={onKidsMoney}
-            onFamilySettings={onFamilySettings}
-            onLogout={() => void onLogout()}
-            onSelectChild={(id) => navigate(`/t/${slug}/child/${id}`)}
-            activeChildId={memberId}
-            signingOut={signingOut}
-            slug={slug}
-          />
+          <div className="flex items-center gap-2">
+            {/* FHS-670: the tab is not in the URL, so pass it; it hides itself for kids. */}
+            <ScreenFeedback role={callerRole} screenKey={`child-${active.id}`} />
+            <ProfilePill
+              parentName={parentName}
+              role={callerRole}
+              childMembers={childMembers}
+              onManageMembers={onManageMembers}
+              onRewardSettings={onRewardSettings}
+              onKidsMoney={onKidsMoney}
+              onFamilySettings={onFamilySettings}
+              onLogout={() => void onLogout()}
+              onSelectChild={(id) => navigate(`/t/${slug}/child/${id}`)}
+              activeChildId={memberId}
+              signingOut={signingOut}
+              slug={slug}
+            />
+          </div>
         }
         testId="child-world-nav"
       />

@@ -27,6 +27,7 @@ import { API_BASE } from '../../lib/api';
 import { useDashboardStaleSignal } from '../../lib/dashboard-refresh';
 import { TABS, DEFAULT_TAB } from './dashboard-tabs';
 import { isKidRole, isGrownUpRole, isFamilyAdminRole } from '@familyhub/shared';
+import { ScreenFeedback } from '../../components/ScreenFeedback';
 
 // FHS-621: one menu door. The note under the label is what stops a parent
 // having to open a page to find out whether it is the one they wanted.
@@ -620,18 +621,22 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
       activeTab={activeTab ?? ''}
       onTabChange={onTabChange}
       rightSlot={
-        <ProfilePill
-          parentName={parentName}
-          role={callerRole}
-          childMembers={childMembers}
-          onManageMembers={onManageMembers}
-          onRewardSettings={onRewardSettings}
-          onKidsMoney={onKidsMoney}
-          onFamilySettings={onFamilySettings}
-          onLogout={() => void onLogout()}
-          signingOut={signingOut}
-          slug={slug}
-        />
+        <div className="flex items-center gap-2">
+          {/* FHS-670: the screen comes from the URL; it hides itself for kids. */}
+          <ScreenFeedback role={callerRole} />
+          <ProfilePill
+            parentName={parentName}
+            role={callerRole}
+            childMembers={childMembers}
+            onManageMembers={onManageMembers}
+            onRewardSettings={onRewardSettings}
+            onKidsMoney={onKidsMoney}
+            onFamilySettings={onFamilySettings}
+            onLogout={() => void onLogout()}
+            signingOut={signingOut}
+            slug={slug}
+          />
+        </div>
       }
       testId="dashboard-nav"
     />

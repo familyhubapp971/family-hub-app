@@ -532,4 +532,26 @@ describe('<BetaFeedbackWidget />: session present, no tenant slug', () => {
     render(<Widget />);
     expect(screen.queryByTestId('beta-feedback-button')).not.toBeInTheDocument();
   });
+
+  // FHS-670: the per-screen form is separate; the homepage survey must not change.
+  it('Homepage form is unchanged', () => {
+    render(<BetaFeedbackWidget variant="public" />);
+    fireEvent.click(screen.getByTestId('beta-feedback-button'));
+    fireEvent.click(screen.getByTestId('beta-feedback-more-toggle'));
+    const questions = screen
+      .getAllByText((_, el) => el?.tagName === 'LEGEND' || el?.tagName === 'LABEL')
+      .map((el) => el.textContent?.replace('(optional)', '').trim());
+    expect(questions).toEqual([
+      'Name',
+      'Email',
+      'How would you feel if you could no longer use Family Hub?',
+      'How likely are you to recommend it to another family?',
+      'How well does it solve a real problem for your family?',
+      'How easy is it to use?',
+      'After the beta, how likely are you to keep using it?',
+      "What's the biggest problem you're hoping Family Hub solves?",
+      "What's one feature you wish it had?",
+      'Anything else?',
+    ]);
+  });
 });
