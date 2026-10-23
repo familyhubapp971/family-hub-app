@@ -3,7 +3,7 @@
  * the top bar of signed-in parent screens.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 const mockLocation = { pathname: '/t/test-family/dashboard', search: '?tab=meals' };
 let mockSession: { access_token: string } | null = { access_token: 'parent.jwt.tok' };
@@ -152,5 +152,81 @@ describe('<ScreenFeedback />', () => {
       const { container } = render(<ScreenFeedback role={role} />);
       expect(container).toBeEmptyDOMElement();
     });
+  });
+
+  // FHS-671: the button floats at the bottom and a bubble says feedback is possible.
+  describe('the reminder bubble', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('says feedback is possible on the screen the parent lands on', () => {
+      render(<ScreenFeedback role="admin" />);
+      expect(screen.getByTestId('screen-feedback-hint')).toHaveTextContent(
+        'You can give feedback on Weekly Meals here.',
+      );
+    });
+
+    it('goes away after five seconds', () => {
+      vi.useFakeTimers();
+      render(<ScreenFeedback role="admin" />);
+      act(() => vi.advanceTimersByTime(5000));
+      expect(screen.queryByTestId('screen-feedback-hint')).toBeNull();
+    });
+
+    it('comes back when the parent changes screen', () => {
+      vi.useFakeTimers();
+      const { rerender } = render(<ScreenFeedback role="admin" />);
+      act(() => vi.advanceTimersByTime(5000));
+      mockLocation.search = '?tab=calendar';
+      rerender(<ScreenFeedback role="admin" />);
+      expect(screen.getByTestId('screen-feedback-hint')).toHaveTextContent('the Calendar');
+    });
+
+    it('reads the same sentence to screen readers', () => {
+      render(<ScreenFeedback role="admin" />);
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'You can give feedback on Weekly Meals here.',
+      );
+    });
+
+    it('comes back when the parent changes Child World tab', () => {
+      vi.useFakeTimers();
+      const { rerender } = render(<ScreenFeedback role="admin" screenKey="child-world" />);
+      act(() => vi.advanceTimersByTime(5000));
+      expect(screen.queryByTestId('screen-feedback-hint')).toBeNull();
+      rerender(<ScreenFeedback role="admin" screenKey="child-journal" />);
+      expect(screen.getByTestId('screen-feedback-hint')).toHaveTextContent('the Journal');
+    });
+
+    it('only keeps the latest bubble when tabs change quickly', () => {
+      vi.useFakeTimers();
+      const { rerender } = render(<ScreenFeedback role="admin" />);
+      act(() => vi.advanceTimersByTime(3000));
+      mockLocation.search = '?tab=calendar';
+      rerender(<ScreenFeedback role="admin" />);
+      act(() => vi.advanceTimersByTime(3000));
+      expect(screen.getByTestId('screen-feedback-hint')).toHaveTextContent('the Calendar');
+      act(() => vi.advanceTimersByTime(2000));
+      expect(screen.queryByTestId('screen-feedback-hint')).toBeNull();
+    });
+
+    it('hides while the form is open', () => {
+      render(<ScreenFeedback role="admin" />);
+      open();
+      expect(screen.queryByTestId('screen-feedback-hint')).toBeNull();
+    });
+  });
+
+  it('makes room at the end of the page while it shows', () => {
+    const { unmount } = render(<ScreenFeedback role="admin" />);
+    expect(document.body).toHaveClass('fh-feedback-fab');
+    unmount();
+    expect(document.body).not.toHaveClass('fh-feedback-fab');
+  });
+
+  it('sits above the Reward settings save bar', () => {
+    mockLocation.pathname = '/t/test-family/reward-settings';
+    mockLocation.search = '';
+    render(<ScreenFeedback role="admin" />);
+    expect(screen.getByTestId('screen-feedback-button').parentElement).toHaveClass('bottom-24');
   });
 });

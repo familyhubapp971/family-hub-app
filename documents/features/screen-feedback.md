@@ -1,12 +1,14 @@
 # Feature: Feedback on each screen
 
-**Jira:** [FHS-670](https://qualicion2.atlassian.net/browse/FHS-670) (epic FHS-417, Beta program and feedback)
+**Jira:** [FHS-670](https://qualicion2.atlassian.net/browse/FHS-670), [FHS-671](https://qualicion2.atlassian.net/browse/FHS-671) (epic FHS-417, Beta program and feedback)
 **Status:** shipped
 **Related:** FHS-418 (in-app survey), FHS-429 (homepage survey), FHS-434 (floating button removed from in-app screens)
 
-Every signed-in parent screen has a pink **Feedback** button in its top bar,
-next to the account menu. It opens a short form about that screen only. The
-homepage survey is a separate form and did not change.
+Every signed-in parent screen has a pink **Feedback** button floating in its
+bottom-right corner. Each time a parent lands on a screen or switches tab, a
+speech bubble pops up above it for five seconds: "You can give feedback on
+Weekly Meals here." Tapping the button or the bubble opens a short form about
+that screen only. The homepage survey is a separate form and did not change.
 
 ## What the form asks
 
@@ -79,12 +81,20 @@ browser tab closes, so one person's answers from one visit group together.
 **Scenario: The feedback button works on a phone**
 
 - **Given** a 375px wide screen
-- **Then** the button shows as an icon at least 44px square, the page does not scroll sideways, and the form fits the screen
+- **Then** the button is at least 44px square, the page does not scroll sideways, the button does not cover the end of the page, and the form fits the screen
 
 **Scenario: The feedback button works on a tablet**
 
 - **Given** a 768px wide screen
 - **Then** the button is at least 44px square, the page does not scroll sideways, and the form fits the screen
+
+**Scenario: A bubble reminds parents they can give feedback on each screen**
+
+- **Given** I am signed in as the admin of a family
+- **When** I open the Meals screen
+- **Then** a bubble says I can give feedback on "Weekly Meals"
+- **When** I switch to the Calendar tab
+- **Then** a bubble says I can give feedback on "the Calendar"
 
 **Scenario: Children never see the button**
 
@@ -99,13 +109,14 @@ browser tab closes, so one person's answers from one visit group together.
 
 ## Decisions
 
-- **In the top bar, not floating.** FHS-434 removed the floating button from in-app screens because it covered content.
+- **Floating at the bottom, with room made for it.** The founder asked for it at the bottom of the screen (FHS-671). FHS-434 once removed a floating button because it covered content, so while it shows every page gets 6rem of extra room at its end, and on Reward settings it sits above the fixed Save bar.
+- **The bubble shows on every screen or tab change, not every tap.** A bubble on every tap would get in the way of using the screen. It hides after five seconds and while the form is open. Screen readers hear the same sentence, and keyboard users reach the Feedback button itself.
 - **Grown-ups only.** We do not collect children's opinions.
 - **One table, not a new one.** Answers go in `beta_feedback` with three new columns. Rows from the general survey leave them empty.
 - **The visit ID lives in the browser tab.** It only groups answers. It is not saved state, so keeping it on the device fits the rule that family data lives on the server.
 
 ## Out of scope
 
-- The Me page and the onboarding wizard have no top bar, so no button.
+- The Me page and the onboarding wizard do not show the button.
 - An admin page to read feedback. The export is the only view for now.
 - Child World Meals and Calendar have no feature list yet.

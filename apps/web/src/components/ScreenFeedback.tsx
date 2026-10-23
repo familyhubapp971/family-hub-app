@@ -1,17 +1,21 @@
 /**
  * ScreenFeedback: FHS-670
  *
- * A "Feedback" button in the top bar of every signed-in parent screen. It asks
+ * A floating "Feedback" button at the bottom of every signed-in parent screen. It asks
  * the homepage survey's questions about the screen the parent is on, lets them
  * tap which of that screen's features they mean, and saves the answer with the
  * screen and a per-visit ID so the export can group one person's visit.
  *
- * It sits in the header rather than floating: FHS-434 took the floating button
- * off in-app screens because it covered content. The homepage survey
- * (BetaFeedbackWidget) is separate and unchanged.
+ * FHS-671: the founder asked for it at the bottom of the screen, with a speech
+ * bubble that pops up on every screen or tab change to say feedback is
+ * possible here. FHS-434 once removed a floating button because it covered
+ * content, so while it shows, every page gets extra room at the end
+ * (`fh-feedback-fab` in index.css), and it sits above Reward settings' save
+ * bar. The homepage survey (BetaFeedbackWidget) is separate and unchanged.
  */
 
-import { useCallback, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useParams } from 'react-router-dom';
 import { MessageSquare } from 'lucide-react';
 import { Button, Dialog } from '@familyhub/ui';
@@ -25,6 +29,8 @@ import {
   type ScreenFeedbackConfig,
 } from '../lib/screen-feedback';
 import { CountedTextarea, RatingRow } from './BetaFeedbackWidget';
+
+const HINT_MS = 5000;
 
 interface ScreenFeedbackProps {
   /** The caller's role in this family; null while it loads. Grown-ups only. */
@@ -51,6 +57,26 @@ export function ScreenFeedback({ role, screenKey }: ScreenFeedbackProps) {
   const [wish, setWish] = useState('');
   const [other, setOther] = useState('');
 
+  const visible = Boolean(session && slug && isGrownUpRole(role));
+  const current = screenKey
+    ? screenFeedbackByKey(screenKey)
+    : screenFeedbackFor(location.pathname, location.search);
+
+  // The bubble pops up each time the parent lands on a screen or tab.
+  const [hint, setHint] = useState(false);
+  useEffect(() => {
+    if (!visible) return;
+    setHint(true);
+    const timer = window.setTimeout(() => setHint(false), HINT_MS);
+    return () => window.clearTimeout(timer);
+  }, [visible, current.key, location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!visible) return;
+    document.body.classList.add('fh-feedback-fab');
+    return () => document.body.classList.remove('fh-feedback-fab');
+  }, [visible]);
+
   const hasAnswer =
     solves !== undefined ||
     ease !== undefined ||
@@ -59,11 +85,8 @@ export function ScreenFeedback({ role, screenKey }: ScreenFeedbackProps) {
     other.trim() !== '';
 
   const handleOpen = useCallback(() => {
-    setScreen(
-      screenKey
-        ? screenFeedbackByKey(screenKey)
-        : screenFeedbackFor(location.pathname, location.search),
-    );
+    setHint(false);
+    setScreen(current);
     setFeatures([]);
     setSolves(undefined);
     setEase(undefined);
@@ -73,7 +96,7 @@ export function ScreenFeedback({ role, screenKey }: ScreenFeedbackProps) {
     setState('idle');
     setErrorMsg('');
     setOpen(true);
-  }, [screenKey, location.pathname, location.search]);
+  }, [current]);
 
   const handleClose = useCallback(() => setOpen(false), []);
 
@@ -131,25 +154,61 @@ export function ScreenFeedback({ role, screenKey }: ScreenFeedbackProps) {
 
   // Grown-ups only. A child signs in with a kid token, never a parent session,
   // and a teen with an account has a kid role. Hidden while the role loads.
-  if (!session || !slug || !isGrownUpRole(role)) return null;
+  if (!visible) return null;
 
-  return (
-    <>
+  // Rendered into <body> so no header styling can pin the fixed button.
+  const corner = createPortal(
+    <div
+      className={[
+        'fixed right-4 z-40 flex flex-col items-end gap-2 sm:right-6',
+        current.raised ? 'bottom-24' : 'bottom-4 sm:bottom-6',
+      ].join(' ')}
+    >
+      {/* The bubble below is for sighted mouse and touch users; this reads the
+          same sentence to screen readers, and the Feedback button is the
+          keyboard route in. */}
+      <p role="status" className="sr-only" data-testid="screen-feedback-announce">
+        {hint && !open ? `You can give feedback on ${current.area} here.` : ''}
+      </p>
+      {hint && !open && (
+        <button
+          type="button"
+          onClick={handleOpen}
+          aria-hidden="true"
+          tabIndex={-1}
+          data-testid="screen-feedback-hint"
+          className="relative max-w-[240px] rounded-2xl border-2 border-black bg-white px-4 py-2.5 text-left text-sm font-bold text-black shadow-neo-sm motion-safe:animate-menu-drop"
+        >
+          You can give feedback on {current.area} here.
+          <span
+            aria-hidden="true"
+            className="absolute -bottom-2 right-6 h-3.5 w-3.5 rotate-45 border-b-2 border-r-2 border-black bg-white"
+          />
+        </button>
+      )}
       <button
         type="button"
         aria-label="Feedback on this screen"
         onClick={handleOpen}
         data-testid="screen-feedback-button"
         className={[
-          'flex h-11 min-w-[44px] shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-black bg-pink-400 px-3',
-          'text-sm font-black text-black shadow-neo-sm transition-all',
-          'motion-safe:hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none',
-          'focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400',
+          'flex min-h-[48px] items-center gap-2 rounded-2xl border-2 border-black bg-pink-400 px-4 py-3',
+          'text-sm font-black text-black shadow-neo transition-all duration-150',
+          'motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-neo-md',
+          'active:translate-y-1 active:shadow-none',
+          'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-600 focus-visible:ring-offset-2',
         ].join(' ')}
       >
         <MessageSquare className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span className="hidden md:inline">Feedback</span>
+        <span>Feedback</span>
       </button>
+    </div>,
+    document.body,
+  );
+
+  return (
+    <>
+      {corner}
 
       <Dialog
         isOpen={open}

@@ -45,3 +45,15 @@ Then('the page has no sideways scrolling', async ({ page }) => {
 Then('the feedback form fits the screen', async ({ page }) => {
   await new ScreenFeedbackPage(page).expectDialogFits();
 });
+
+When('I switch to the Calendar tab', async ({ page, authedFamily }) => {
+  await page.goto(`/t/${authedFamily.slug}/dashboard?tab=calendar`);
+});
+
+Then('a bubble says I can give feedback on {string}', async ({ page }, area: string) => {
+  await new ScreenFeedbackPage(page).expectReminder(area);
+});
+
+Then('the feedback button does not cover the end of the page', async ({ page }) => {
+  await new ScreenFeedbackPage(page).expectBottomClear();
+});
