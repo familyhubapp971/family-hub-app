@@ -67,7 +67,7 @@ function CharCount({ value }: { value: string }) {
 
 // ── Rating row (1..N tappable numbers) ───────────────────────────────────────
 
-function RatingRow({
+export function RatingRow({
   max,
   value,
   onChange,
@@ -166,7 +166,7 @@ function RecommendRow({
 
 // ── Textarea with counter ─────────────────────────────────────────────────────
 
-function CountedTextarea({
+export function CountedTextarea({
   id,
   testId,
   rows,
