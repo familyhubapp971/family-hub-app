@@ -2,6 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   groupByPersonAndVisit,
+  overview,
+  quotes,
   screenLabel,
   summariseByScreen,
   toCsv,
@@ -109,5 +111,37 @@ describe('toCsv', () => {
     expect(toCsv([row({ features: ['Add meal', 'Add snack'] })])).toContain(
       'Weekly Meals,Add meal; Add snack',
     );
+  });
+});
+
+describe('overview', () => {
+  it('counts answers, people, families and averages each rating', () => {
+    const o = overview([
+      row({ solvesProblem: 4, recommendScore: 8, pmfDisappointment: 'very' }),
+      row({
+        solvesProblem: 2,
+        email: 'jo@example.com',
+        familySlug: 'jones',
+        pmfDisappointment: 'not',
+      }),
+    ]);
+    expect(o).toMatchObject({ answers: 2, people: 2, families: 2 });
+    expect(o.solvesProblem).toEqual({ average: 3, count: 2 });
+    expect(o.recommend).toEqual({ average: 8, count: 1 });
+    expect(o.missIt).toEqual({ very: 1, somewhat: 0, not: 1 });
+  });
+});
+
+describe('quotes', () => {
+  it('pulls every written answer, newest first, with who and where', () => {
+    const out = quotes([
+      row({ featureRequest: 'Old wish', createdAt: '2026-10-01T00:00:00.000Z' }),
+      row({ painPoint: 'Hard bit', otherFeedback: '  ', createdAt: '2026-10-02T00:00:00.000Z' }),
+    ]);
+    expect(out.map((q) => [q.kind, q.text])).toEqual([
+      ['pain', 'Hard bit'],
+      ['wish', 'Old wish'],
+    ]);
+    expect(out[0]).toMatchObject({ who: 'sam@example.com', where: 'Weekly Meals' });
   });
 });

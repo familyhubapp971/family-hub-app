@@ -1,6 +1,6 @@
 # Feature: Founder feedback page
 
-**Jira:** [FHS-672](https://qualicion2.atlassian.net/browse/FHS-672) (epic FHS-417, Beta program and feedback)
+**Jira:** [FHS-672](https://qualicion2.atlassian.net/browse/FHS-672), [FHS-674](https://qualicion2.atlassian.net/browse/FHS-674), [FHS-675](https://qualicion2.atlassian.net/browse/FHS-675) (epic FHS-417, Beta program and feedback)
 **Status:** shipped
 **Related:** [Feedback on each screen](screen-feedback.md) (FHS-670, FHS-671)
 
@@ -9,17 +9,37 @@ It covers the per-screen form, the in-app survey and the homepage survey.
 
 ## How it works
 
-| Part       | What it does                                                                                          |
-| ---------- | ----------------------------------------------------------------------------------------------------- |
-| Passcode   | One box and an Open button. The passcode is a server setting (`FOUNDER_PASSCODE`), never in the code. |
-| Lockout    | Five wrong tries lock the page for 15 minutes for everyone, whatever address they come from.          |
-| Staying in | The page keeps an 8-hour pass in this browser tab. Lock ends it.                                      |
-| Filters    | Where from, family and screen.                                                                        |
-| By screen  | One row per screen: answers, people, average ratings, and the parts mentioned most.                   |
-| Answers    | Grouped by person, then by visit, newest first.                                                       |
-| Download   | The filtered answers as a spreadsheet. Text that looks like a formula is made safe.                   |
+| Part            | What it does                                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Passcode        | One box and an Open button, centred on the screen. The passcode is a server setting (`FOUNDER_PASSCODE`), never in the code.                                                         |
+| Server secret   | `FOUNDER_TOKEN_SECRET`, a long random value, signs the 8-hour pass. Without it on a deployed server the page stays off.                                                              |
+| Lockout         | Five wrong tries lock the page for 15 minutes for everyone, whatever address they come from.                                                                                         |
+| Staying in      | The page keeps an 8-hour pass in this browser tab. Lock ends it.                                                                                                                     |
+| Filters         | Where from, family and screen. Every section below follows them.                                                                                                                     |
+| At a glance     | Tiles: answers, people, families, and the average "would recommend" score out of 10.                                                                                                 |
+| How it is going | Bars for solves a real problem, easy to use and will keep using it (out of 5: green 4+, yellow 3+, red below). A split bar of very, somewhat or not disappointed without Family Hub. |
+| By screen       | One card per screen: answers, people, three mini bars, and the parts mentioned with counts.                                                                                          |
+| In their words  | Every written answer as a quote card, sorted into Wishes, What is hard and Other comments, with who, where and when.                                                                 |
+| Each person     | A folding card per person (first three open), grouped by visit, with rating dots and labelled quotes.                                                                                |
+| Download        | The filtered answers as a spreadsheet. Text that looks like a formula is made safe.                                                                                                  |
 
 ## Acceptance criteria
+
+**Scenario: Founder sees the headline numbers first**
+
+- **Given** feedback from two people
+- **When** the founder opens /admin
+- **Then** tiles show answers, people, families and the average recommend score
+
+**Scenario: Wishes are easy to scan**
+
+- **Given** answers with a wished-for feature
+- **Then** each wish shows as a quote card with who said it
+
+**Scenario: Filters still apply**
+
+- **Given** the founder filters to one source
+- **Then** every tile, bar and list reflects only that source
 
 **Scenario: Founder opens the feedback page**
 

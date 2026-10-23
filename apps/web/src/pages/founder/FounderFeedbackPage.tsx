@@ -9,15 +9,23 @@
  */
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Button, Input, Select } from '@familyhub/ui';
+import { Button, CollapsibleSection, Input, Select } from '@familyhub/ui';
 import { API_BASE } from '../../lib/api';
 import {
   SOURCE_LABEL,
   groupByPersonAndVisit,
+  overview,
+  quotes,
   screenLabel,
   summariseByScreen,
   toCsv,
   type FeedbackRow,
+  type Overview,
+  type PersonGroup,
+  type Quote,
+  type QuoteKind,
+  type RatingSummary,
+  type ScreenSummary,
 } from '../../lib/founder-feedback';
 
 const TOKEN_KEY = 'fh-founder-token';
@@ -204,15 +212,6 @@ function PasscodeForm({ onUnlocked }: { onUnlocked: (token: string) => void }) {
   );
 }
 
-function Rating({ label, value }: { label: string; value: number | null }) {
-  if (value === null) return null;
-  return (
-    <span className="rounded-full border-2 border-black bg-yellow-100 px-2.5 py-0.5 text-xs font-bold">
-      {label} {value}/5
-    </span>
-  );
-}
-
 function FeedbackView({ rows }: { rows: FeedbackRow[] }) {
   const [source, setSource] = useState<'all' | FeedbackRow['source']>('all');
   const [family, setFamily] = useState('all');
@@ -240,7 +239,10 @@ function FeedbackView({ rows }: { rows: FeedbackRow[] }) {
       ),
     [rows, source, family, screen],
   );
-  const summary = useMemo(() => summariseByScreen(shown), [shown]);
+  const summary = useMemo(
+    () => ({ overview: overview(shown), screens: summariseByScreen(shown), quotes: quotes(shown) }),
+    [shown],
+  );
   const people = useMemo(() => groupByPersonAndVisit(shown), [shown]);
 
   const download = useCallback(() => {
@@ -313,124 +315,427 @@ function FeedbackView({ rows }: { rows: FeedbackRow[] }) {
         {people.length === 1 ? 'person' : 'people'}
       </p>
 
-      <section>
-        <h2 className="mb-3 font-heading text-xl">By screen</h2>
-        {summary.length === 0 ? (
-          <p className="text-purple-200">No per-screen answers yet.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-2xl border-2 border-black bg-white text-black shadow-neo">
-            <table className="w-full min-w-[640px] text-left text-sm" data-testid="founder-summary">
-              <thead className="bg-pink-100">
-                <tr>
-                  <th className="p-3">Screen</th>
-                  <th className="p-3">Answers</th>
-                  <th className="p-3">People</th>
-                  <th className="p-3">Solves a problem</th>
-                  <th className="p-3">Easy to use</th>
-                  <th className="p-3">Keep using</th>
-                  <th className="p-3">Parts mentioned</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.map((s) => (
-                  <tr key={s.screen} className="border-t-2 border-black/10">
-                    <td className="p-3 font-bold">{screenLabel(s.screen)}</td>
-                    <td className="p-3">{s.answers}</td>
-                    <td className="p-3">{s.people}</td>
-                    <td className="p-3">{s.solvesProblem ?? '-'}</td>
-                    <td className="p-3">{s.easeOfUse ?? '-'}</td>
-                    <td className="p-3">{s.keepUsing ?? '-'}</td>
-                    <td className="p-3">
-                      {s.features.map((f) => `${f.name} (${f.count})`).join(', ') || '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <AtAGlance o={summary.overview} />
+      <HowItsGoing o={summary.overview} />
+      <ByScreen screens={summary.screens} />
+      <InTheirWords quotes={summary.quotes} />
+      <People people={people} />
+    </div>
+  );
+}
 
-      <section>
-        <h2 className="mb-3 font-heading text-xl">Answers by person and visit</h2>
-        {people.length === 0 ? (
-          <p className="text-purple-200">No feedback matches these filters.</p>
-        ) : (
-          <div className="space-y-4">
-            {people.map((p) => (
-              <article
-                key={p.key}
-                className="rounded-2xl border-2 border-black bg-white p-4 text-black shadow-neo"
-                data-testid="founder-person"
+// ─── FHS-675: the visual pieces ───────────────────────────────────────────────
+
+function SectionTitle({ emoji, children }: { emoji: string; children: React.ReactNode }) {
+  return (
+    <h2 className="mb-3 flex items-center gap-2 font-heading text-xl">
+      <span aria-hidden="true">{emoji}</span>
+      {children}
+    </h2>
+  );
+}
+
+function StatTile({
+  label,
+  value,
+  note,
+  tone,
+  testId,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  tone: string;
+  testId: string;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border-2 border-black p-4 text-black shadow-neo ${tone}`}
+      data-testid={testId}
+    >
+      <p className="text-xs font-black uppercase tracking-wide">{label}</p>
+      <p className="mt-1 font-heading text-3xl sm:text-4xl">{value}</p>
+      {note && <p className="mt-1 text-xs font-bold text-black/70">{note}</p>}
+    </div>
+  );
+}
+
+function AtAGlance({ o }: { o: Overview }) {
+  return (
+    <section>
+      <SectionTitle emoji="✨">At a glance</SectionTitle>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile
+          label="Answers"
+          value={String(o.answers)}
+          tone="bg-yellow-300"
+          testId="founder-tile-answers"
+        />
+        <StatTile
+          label="People"
+          value={String(o.people)}
+          tone="bg-pink-300"
+          testId="founder-tile-people"
+        />
+        <StatTile
+          label="Families"
+          value={String(o.families)}
+          tone="bg-cyan-300"
+          testId="founder-tile-families"
+        />
+        <StatTile
+          label="Would recommend"
+          value={o.recommend.average === null ? '-' : `${o.recommend.average}/10`}
+          note={
+            o.recommend.count
+              ? `from ${o.recommend.count} answer${o.recommend.count === 1 ? '' : 's'}`
+              : 'no scores yet'
+          }
+          tone="bg-green-300"
+          testId="founder-tile-recommend"
+        />
+      </div>
+    </section>
+  );
+}
+
+/** A 0 to 5 bar with the number beside it. */
+function MeterBar({
+  label,
+  r,
+  compact = false,
+}: {
+  label: string;
+  r: RatingSummary;
+  compact?: boolean;
+}) {
+  const pct = r.average === null ? 0 : (r.average / 5) * 100;
+  const tone =
+    r.average === null
+      ? 'bg-gray-300'
+      : r.average >= 4
+        ? 'bg-green-400'
+        : r.average >= 3
+          ? 'bg-yellow-400'
+          : 'bg-red-400';
+  return (
+    <div>
+      <div
+        className={`flex items-baseline justify-between gap-2 ${compact ? 'text-xs' : 'text-sm'} font-bold`}
+      >
+        <span>{label}</span>
+        <span className="tabular-nums">
+          {r.average === null ? 'no ratings' : `${r.average} / 5`}
+          {!compact && r.count > 0 && (
+            <span className="ml-1 font-normal text-gray-500">({r.count})</span>
+          )}
+        </span>
+      </div>
+      <div
+        className={`mt-1 overflow-hidden rounded-full border-2 border-black bg-white ${compact ? 'h-2.5' : 'h-4'}`}
+        role="img"
+        aria-label={`${label}: ${r.average === null ? 'no ratings' : `${r.average} out of 5`}`}
+      >
+        <div className={`h-full ${tone}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function HowItsGoing({ o }: { o: Overview }) {
+  const total = o.missIt.very + o.missIt.somewhat + o.missIt.not;
+  const parts = [
+    { key: 'very', label: 'Very disappointed', n: o.missIt.very, tone: 'bg-green-400' },
+    { key: 'somewhat', label: 'Somewhat', n: o.missIt.somewhat, tone: 'bg-yellow-300' },
+    { key: 'not', label: 'Not disappointed', n: o.missIt.not, tone: 'bg-red-300' },
+  ];
+  return (
+    <section>
+      <SectionTitle emoji="📊">How it is going</SectionTitle>
+      <div className="grid gap-4 rounded-2xl border-2 border-black bg-white p-4 text-black shadow-neo sm:p-5 md:grid-cols-2">
+        <div className="space-y-4">
+          <MeterBar label="Solves a real problem" r={o.solvesProblem} />
+          <MeterBar label="Easy to use" r={o.easeOfUse} />
+          <MeterBar label="Will keep using it" r={o.keepUsing} />
+        </div>
+        <div data-testid="founder-miss-it">
+          <p className="text-sm font-bold">How they would feel without Family Hub</p>
+          {total === 0 ? (
+            <p className="mt-2 text-sm text-gray-500">No answers yet.</p>
+          ) : (
+            <>
+              <div
+                className="mt-2 flex h-6 overflow-hidden rounded-full border-2 border-black"
+                role="img"
+                aria-label={parts
+                  .map((pt) => `${pt.label} ${Math.round((pt.n / total) * 100)}%`)
+                  .join(', ')}
               >
-                <h3 className="break-words font-heading text-lg">{p.person}</h3>
-                {p.family && <p className="text-sm text-gray-600">{p.family}</p>}
-                <div className="mt-3 space-y-3">
-                  {p.visits.map((v, i) => (
+                {parts
+                  .filter((pt) => pt.n > 0)
+                  .map((pt) => (
                     <div
-                      key={v.visitId ?? `${p.key}-${i}`}
-                      className="rounded-xl border-2 border-dashed border-gray-300 p-3"
-                      data-testid="founder-visit"
+                      key={pt.key}
+                      className={pt.tone}
+                      style={{ width: `${(pt.n / total) * 100}%` }}
+                    />
+                  ))}
+              </div>
+              <ul className="mt-3 space-y-1.5 text-sm">
+                {parts.map((pt) => (
+                  <li key={pt.key} className="flex items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className={`h-3 w-3 rounded-full border border-black ${pt.tone}`}
+                    />
+                    <span className="flex-1">{pt.label}</span>
+                    <span className="font-bold tabular-nums">
+                      {Math.round((pt.n / total) * 100)}% ({pt.n})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-gray-500">
+                40% or more “very disappointed” is the usual sign a product is a must-have.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ByScreen({ screens }: { screens: ScreenSummary[] }) {
+  return (
+    <section>
+      <SectionTitle emoji="🧭">By screen</SectionTitle>
+      {screens.length === 0 ? (
+        <p className="text-purple-200">No per-screen answers yet.</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="founder-summary">
+          {screens.map((sc) => (
+            <article
+              key={sc.screen}
+              className="rounded-2xl border-2 border-black bg-white p-4 text-black shadow-neo"
+              data-testid="founder-screen-card"
+            >
+              <h3 className="font-heading text-lg">{screenLabel(sc.screen)}</h3>
+              <p className="text-xs font-bold text-gray-500">
+                {sc.answers} answer{sc.answers === 1 ? '' : 's'} · {sc.people}{' '}
+                {sc.people === 1 ? 'person' : 'people'}
+              </p>
+              <div className="mt-3 space-y-2">
+                <MeterBar
+                  compact
+                  label="Solves a problem"
+                  r={{ average: sc.solvesProblem, count: 0 }}
+                />
+                <MeterBar compact label="Easy to use" r={{ average: sc.easeOfUse, count: 0 }} />
+                <MeterBar compact label="Keep using" r={{ average: sc.keepUsing, count: 0 }} />
+              </div>
+              {sc.features.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {sc.features.map((f) => (
+                    <span
+                      key={f.name}
+                      className="rounded-full border-2 border-black bg-pink-200 px-2.5 py-0.5 text-xs font-bold"
                     >
-                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-                        {v.visitId
-                          ? `Visit · ${v.rows.length} answer${v.rows.length === 1 ? '' : 's'}`
-                          : SOURCE_LABEL[v.rows[0]!.source]}
-                      </p>
-                      <ul className="space-y-3">
-                        {v.rows.map((r, j) => (
-                          <li key={`${r.createdAt}-${j}`} className="space-y-1.5">
-                            <p className="text-sm font-bold">
-                              {r.screen ? screenLabel(r.screen) : SOURCE_LABEL[r.source]}
-                              <span className="ml-2 font-normal text-gray-500">
-                                {formatWhen(r.createdAt)}
-                              </span>
-                            </p>
-                            {r.features.length > 0 && (
-                              <p className="flex flex-wrap gap-1.5">
-                                {r.features.map((f) => (
-                                  <span
-                                    key={f}
-                                    className="rounded-full border-2 border-black bg-pink-200 px-2.5 py-0.5 text-xs font-bold"
-                                  >
-                                    {f}
-                                  </span>
-                                ))}
-                              </p>
-                            )}
-                            <p className="flex flex-wrap gap-1.5">
-                              <Rating label="Solves" value={r.solvesProblem} />
-                              <Rating label="Easy" value={r.easeOfUse} />
-                              <Rating label="Keep" value={r.keepUsing} />
-                              {r.recommendScore !== null && (
-                                <span className="rounded-full border-2 border-black bg-cyan-100 px-2.5 py-0.5 text-xs font-bold">
-                                  Recommend {r.recommendScore}/10
-                                </span>
-                              )}
-                              {r.pmfDisappointment && (
-                                <span className="rounded-full border-2 border-black bg-green-100 px-2.5 py-0.5 text-xs font-bold">
-                                  Without it: {r.pmfDisappointment} disappointed
-                                </span>
-                              )}
-                            </p>
-                            {[r.painPoint, r.featureRequest, r.otherFeedback]
-                              .filter(Boolean)
-                              .map((t, k) => (
-                                <p key={k} className="whitespace-pre-wrap break-words text-sm">
-                                  “{t}”
-                                </p>
-                              ))}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                      {f.name} · {f.count}
+                    </span>
                   ))}
                 </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+const QUOTE_GROUPS: Array<{ kind: QuoteKind; emoji: string; title: string; tone: string }> = [
+  { kind: 'wish', emoji: '💡', title: 'Wishes', tone: 'bg-yellow-100' },
+  { kind: 'pain', emoji: '😣', title: 'What is hard', tone: 'bg-red-100' },
+  { kind: 'other', emoji: '💬', title: 'Other comments', tone: 'bg-cyan-100' },
+];
+
+function InTheirWords({ quotes }: { quotes: Quote[] }) {
+  return (
+    <section>
+      <SectionTitle emoji="🗣️">In their words</SectionTitle>
+      <div className="grid gap-4 lg:grid-cols-3">
+        {QUOTE_GROUPS.map((g) => {
+          const list = quotes.filter((q) => q.kind === g.kind);
+          return (
+            <div key={g.kind} data-testid={`founder-quotes-${g.kind}`}>
+              <h3 className="mb-2 flex items-center gap-2 font-heading text-lg">
+                <span aria-hidden="true">{g.emoji}</span>
+                {g.title}
+                <span className="rounded-full bg-white/20 px-2 text-sm">{list.length}</span>
+              </h3>
+              {list.length === 0 ? (
+                <p className="text-sm text-purple-200">Nothing yet.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {list.map((q, i) => (
+                    <li
+                      key={`${q.createdAt}-${i}`}
+                      className={`rounded-2xl border-2 border-black p-3 text-black shadow-neo-sm ${g.tone}`}
+                    >
+                      <p className="whitespace-pre-wrap break-words text-sm font-medium">
+                        “{q.text}”
+                      </p>
+                      <p className="mt-2 text-xs font-bold text-black/60">
+                        {q.who} · {q.where} · {formatWhen(q.createdAt)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/** Five dots, filled up to the score. */
+function Dots({ label, value }: { label: string; value: number | null }) {
+  if (value === null) return null;
+  return (
+    <span
+      className="flex items-center gap-1.5 text-xs font-bold"
+      aria-label={`${label} ${value} out of 5`}
+    >
+      <span className="w-24 shrink-0 text-gray-600">{label}</span>
+      <span aria-hidden="true" className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <span
+            key={n}
+            className={`h-3 w-3 rounded-full border border-black ${n <= value ? 'bg-pink-400' : 'bg-white'}`}
+          />
+        ))}
+      </span>
+    </span>
+  );
+}
+
+const MISS_IT_LABEL: Record<string, string> = {
+  very: 'Would be very disappointed without it',
+  somewhat: 'Would be somewhat disappointed without it',
+  not: 'Would not be disappointed without it',
+};
+
+function People({ people }: { people: PersonGroup[] }) {
+  return (
+    <section>
+      <SectionTitle emoji="👪">Each person</SectionTitle>
+      {people.length === 0 ? (
+        <p className="text-purple-200">No feedback matches these filters.</p>
+      ) : (
+        <div className="space-y-3">
+          {people.map((p, i) => {
+            const count = p.visits.reduce((n, v) => n + v.rows.length, 0);
+            return (
+              <div key={p.key} data-testid="founder-person">
+                <CollapsibleSection
+                  emoji={
+                    <span className="font-heading text-lg text-black">
+                      {[...p.person][0]?.toUpperCase() ?? '?'}
+                    </span>
+                  }
+                  title={p.person}
+                  {...(p.family ? { subtitle: p.family } : {})}
+                  count={count}
+                  defaultOpen={i < 3}
+                >
+                  <div className="space-y-3 text-black">
+                    {p.visits.map((v, vi) => (
+                      <div
+                        key={v.visitId ?? `${p.key}-${vi}`}
+                        className="rounded-xl border-2 border-dashed border-gray-300 p-3"
+                        data-testid="founder-visit"
+                      >
+                        <p className="mb-2 text-xs font-black uppercase tracking-wide text-gray-500">
+                          {v.visitId
+                            ? `One visit · ${v.rows.length} answer${v.rows.length === 1 ? '' : 's'}`
+                            : SOURCE_LABEL[v.rows[0]!.source]}
+                        </p>
+                        <ul className="space-y-4">
+                          {v.rows.map((r, j) => (
+                            <li key={`${r.createdAt}-${j}`} className="space-y-2">
+                              <p className="text-sm font-bold">
+                                {r.screen ? screenLabel(r.screen) : SOURCE_LABEL[r.source]}
+                                <span className="ml-2 font-normal text-gray-500">
+                                  {formatWhen(r.createdAt)}
+                                </span>
+                              </p>
+                              {r.features.length > 0 && (
+                                <p className="flex flex-wrap gap-1.5">
+                                  {r.features.map((f) => (
+                                    <span
+                                      key={f}
+                                      className="rounded-full border-2 border-black bg-pink-200 px-2.5 py-0.5 text-xs font-bold"
+                                    >
+                                      {f}
+                                    </span>
+                                  ))}
+                                </p>
+                              )}
+                              <div className="space-y-1">
+                                <Dots label="Solves" value={r.solvesProblem} />
+                                <Dots label="Easy to use" value={r.easeOfUse} />
+                                <Dots label="Keep using" value={r.keepUsing} />
+                              </div>
+                              {(r.recommendScore !== null || r.pmfDisappointment) && (
+                                <p className="flex flex-wrap gap-1.5">
+                                  {r.recommendScore !== null && (
+                                    <span className="rounded-full border-2 border-black bg-cyan-100 px-2.5 py-0.5 text-xs font-bold">
+                                      Recommend {r.recommendScore}/10
+                                    </span>
+                                  )}
+                                  {r.pmfDisappointment && (
+                                    <span className="rounded-full border-2 border-black bg-green-100 px-2.5 py-0.5 text-xs font-bold">
+                                      {MISS_IT_LABEL[r.pmfDisappointment] ?? r.pmfDisappointment}
+                                    </span>
+                                  )}
+                                </p>
+                              )}
+                              {(
+                                [
+                                  ['💡 Wish', r.featureRequest, 'bg-yellow-100'],
+                                  ['😣 Hard', r.painPoint, 'bg-red-100'],
+                                  ['💬 Other', r.otherFeedback, 'bg-cyan-100'],
+                                ] as const
+                              )
+                                .filter(([, t]) => Boolean(t?.trim()))
+                                .map(([label, t, tone]) => (
+                                  <div
+                                    key={label}
+                                    className={`rounded-xl border-2 border-black p-2.5 ${tone}`}
+                                  >
+                                    <p className="text-xs font-black uppercase tracking-wide">
+                                      {label}
+                                    </p>
+                                    <p className="mt-0.5 whitespace-pre-wrap break-words text-sm">
+                                      “{t}”
+                                    </p>
+                                  </div>
+                                ))}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleSection>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
