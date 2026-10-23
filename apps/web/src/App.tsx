@@ -33,6 +33,10 @@ const TermsOfServicePage = lazy(() =>
 const CookiesPage = lazy(() =>
   import('./pages/legal/CookiesPage').then((m) => ({ default: m.CookiesPage })),
 );
+// FHS-672: the founder's feedback page, behind a passcode.
+const FounderFeedbackPage = lazy(() =>
+  import('./pages/founder/FounderFeedbackPage').then((m) => ({ default: m.FounderFeedbackPage })),
+);
 const DashboardPage = lazy(() =>
   import('./pages/tenant/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 );
@@ -91,6 +95,8 @@ export function App() {
             {/* Marketing + auth: no tenant context. */}
             <Route path="/" element={<WelcomePage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            {/* FHS-672: founder feedback page; the passcode is checked by the api. */}
+            <Route path="/admin" element={<FounderFeedbackPage />} />
             {/* FHS-436: public "what is Family Hub" page for beta reviewers
               and first-time visitors. */}
             <Route path="/about" element={<AboutPage />} />
