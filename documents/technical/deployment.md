@@ -258,7 +258,7 @@ that landed alongside FHS-197):
 7. `mcp__railway__service_restart` the api so its connection pool picks
    up the new URL. The auto-migrate-on-start (FHS-197) creates the
    schema on first connect.
-8. Verify: `curl https://api-staging-5500.up.railway.app/health` returns 200,
+8. Verify: `curl https://api-fhapp.up.railway.app/health` returns 200,
    then a JWT-authenticated `GET /api/me` returns the mirror row.
 
 ## Deploy flow
@@ -400,7 +400,7 @@ consumed by image pulls and the Postgres staging instance running.
 - **Live logs (per service):** dashboard → service → **Deployments**
   → click latest → **View Logs**. Streams stdout/stderr in real time.
 - **Historical logs (scripted):** `mcp__railway__deployment_logs --deploymentId <id>`.
-- **api healthcheck:** `GET https://api-staging-5500.up.railway.app/health`
+- **api healthcheck:** `GET https://api-fhapp.up.railway.app/health`
   returns `{ "status": "ok" }`. Use as an uptime probe target.
 - **frontend healthcheck:** none beyond TCP, fetch the root URL
   ([frontend-staging-409d.up.railway.app](https://frontend-staging-409d.up.railway.app))
@@ -411,7 +411,7 @@ consumed by image pulls and the Postgres staging instance running.
 - **Uptime alerts (FHS-167):** Better Stack / UptimeRobot pings every
   60s on:
 
-  - `https://api-staging-5500.up.railway.app/health` (staging)
+  - `https://api-fhapp.up.railway.app/health` (staging)
   - `https://<api-prod-domain>/health` (production, wires once FHS-202 lands)
 
   Alert channels: Slack `#family-hub-alerts` + email `oduniyi@gmail.com`.
@@ -425,7 +425,7 @@ The Sprint 0 vertical slice (Supabase login → mirror sync → protected
 `GET /api/me` → frontend `/me` greeting) is live on staging. Public URLs:
 
 - **Frontend:** [frontend-staging-409d.up.railway.app](https://frontend-staging-409d.up.railway.app)
-- **API:** [api-staging-5500.up.railway.app](https://api-staging-5500.up.railway.app)
+- **API:** [api-fhapp.up.railway.app](https://api-fhapp.up.railway.app)
 - **Auth:** Supabase Staging (`maolytpqazmykjzdybtj`)
 
 End-to-end check, last verified 2026-04-30:
@@ -458,7 +458,7 @@ diagnose with [`mcp__railway__deployment_logs`](#logs--monitoring).
 
 - **Dashboard:** [railway.com/project/bc7e539b-...](https://railway.com/project/bc7e539b-fc8b-4f56-99e2-daffee70138f)
 - **Frontend staging:** [frontend-staging-409d.up.railway.app](https://frontend-staging-409d.up.railway.app)
-- **api staging:** [api-staging-5500.up.railway.app](https://api-staging-5500.up.railway.app)
+- **api staging:** [api-fhapp.up.railway.app](https://api-fhapp.up.railway.app)
 - **Railway MCP:** configured in `.mcp.json` (gitignored). Set `RAILWAY_API_TOKEN` in `.env.local`, then `claude mcp add railway --scope local --env RAILWAY_API_TOKEN=$RAILWAY_API_TOKEN -- npx -y @jasontanswe/railway-mcp`. Verify with `claude mcp list` (expect `railway: connected`).
 - **Direct GraphQL:** `https://backboard.railway.com/graphql/v2` with `Authorization: Bearer $RAILWAY_API_TOKEN`. Use for anything the MCP doesn't expose (e.g., `deploymentTriggerCreate`, `serviceInstanceUpdate.region`).
 
