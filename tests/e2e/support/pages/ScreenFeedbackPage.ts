@@ -60,4 +60,21 @@ export class ScreenFeedbackPage {
     expect(box!.x).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(width);
   }
+
+  async expectReminder(area: string): Promise<void> {
+    await expect(this.page.getByTestId('screen-feedback-hint')).toContainText(
+      `You can give feedback on ${area} here.`,
+    );
+  }
+
+  /** At the very bottom of the page, the button sits below the page's content. */
+  async expectBottomClear(): Promise<void> {
+    await this.page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const button = await this.button.boundingBox();
+    const pageBottom = await this.page.evaluate(
+      () => document.querySelector('#root > *')?.getBoundingClientRect().bottom ?? 0,
+    );
+    expect(button).not.toBeNull();
+    expect(button!.y).toBeGreaterThanOrEqual(pageBottom - 1);
+  }
 }

@@ -27,6 +27,7 @@ Feature: Feedback on each screen
     When I open the Meals screen
     Then the feedback button is big enough to tap
     And the page has no sideways scrolling
+    And the feedback button does not cover the end of the page
     When I open Feedback on this screen
     Then the feedback form fits the screen
 
@@ -40,3 +41,12 @@ Feature: Feedback on each screen
     And the page has no sideways scrolling
     When I open Feedback on this screen
     Then the feedback form fits the screen
+
+  @critical @authed-local
+  Scenario: A bubble reminds parents they can give feedback on each screen
+
+    Given I am signed in as the admin of a freshly seeded family
+    When I open the Meals screen
+    Then a bubble says I can give feedback on "Weekly Meals"
+    When I switch to the Calendar tab
+    Then a bubble says I can give feedback on "the Calendar"

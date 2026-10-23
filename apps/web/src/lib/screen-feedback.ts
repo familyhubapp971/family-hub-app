@@ -10,6 +10,8 @@ export interface ScreenFeedbackConfig {
   area: string;
   features: string[];
   wishExample: string;
+  /** The screen has its own bar fixed to the bottom, so the button sits above it. */
+  raised?: boolean;
 }
 
 const SCREENS: Record<string, ScreenFeedbackConfig> = {
@@ -89,6 +91,7 @@ const SCREENS: Record<string, ScreenFeedbackConfig> = {
       'Missed days',
     ],
     wishExample: 'Rewards that are not money, like screen time…',
+    raised: true,
   },
   admin: {
     key: 'admin',
