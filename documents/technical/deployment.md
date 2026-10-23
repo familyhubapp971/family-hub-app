@@ -193,6 +193,8 @@ Trade-offs we accepted:
 | `SUPABASE_SERVICE_ROLE_KEY` | MCP (FHS-189)                    | legacy HS256 admin JWT: server-side only, bypasses RLS; **never** mirror onto the frontend service                                                                                                         |
 | `SUPABASE_PUBLISHABLE_KEY`  | MCP (FHS-189)                    | modern asymmetric `sb_publishable_…`: client-safe, complement to anon key                                                                                                                                  |
 | `SUPABASE_SECRET_KEY`       | MCP (FHS-189)                    | modern asymmetric `sb_secret_…`: server-side only                                                                                                                                                          |
+| `FOUNDER_PASSCODE`          | Railway API (FHS-672)            | 6 to 12 digits for the founder's `/admin` feedback page; unset switches the page off. Never in the repo.                                                                                                   |
+| `FOUNDER_TOKEN_SECRET`      | Railway dashboard (FHS-672)      | 48+ random characters (`openssl rand -base64 48`) that sign the `/admin` pass. Without it the page stays off on deployed servers.                                                                          |
 
 JWT verification is via Supabase's JWKS endpoint at
 `$SUPABASE_URL/auth/v1/.well-known/jwks.json` (ES256), not a shared HMAC
