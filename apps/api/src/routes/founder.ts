@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
 import { Hono } from 'hono';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -24,7 +24,7 @@ import { createLogger } from '../logger.js';
 // guesses cannot all slip past the check before the first failure counts.
 //
 // The token is "<expiry>.<HMAC>", signed with FOUNDER_TOKEN_SECRET (a long
-// random server secret) over a hash of the passcode and the expiry. A leaked
+// random server secret) over a scrypt hash of the passcode and the expiry. A leaked
 // token therefore cannot be brute-forced offline to recover the passcode, and
 // changing the passcode still signs everyone out.
 
@@ -43,17 +43,31 @@ export function _resetFounderLockoutForTests(): void {
   lockout.lockedUntil = 0;
 }
 
+// The passcode is only ever handled through scrypt (a deliberately slow
+// password hash), salted with the server secret. The real passcode's value is
+// worked out once and kept; each guess costs one scrypt run.
+let cachedKey: { for: string; key: Buffer } | null = null;
+
+function passcodeKey(f: FounderSecrets): Buffer {
+  const id = `${f.secret}\0${f.passcode}`;
+  if (cachedKey?.for !== id) cachedKey = { for: id, key: scryptSync(f.passcode, f.secret, 32) };
+  return cachedKey.key;
+}
+
+function passcodeMatches(f: FounderSecrets, attempt: string): boolean {
+  return timingSafeEqual(scryptSync(attempt, f.secret, 32), passcodeKey(f));
+}
+
 function sign(f: FounderSecrets, expiresAt: number): string {
-  const passcodeHash = createHash('sha256').update(f.passcode).digest('hex');
   return createHmac('sha256', f.secret)
-    .update(`founder:${passcodeHash}:${expiresAt}`)
+    .update(`founder:${passcodeKey(f).toString('hex')}:${expiresAt}`)
     .digest('base64url');
 }
 
-function sameText(a: string, b: string): boolean {
-  const ha = createHash('sha256').update(a).digest();
-  const hb = createHash('sha256').update(b).digest();
-  return timingSafeEqual(ha, hb);
+function sameSignature(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ba.length === bb.length && timingSafeEqual(ba, bb);
 }
 
 export interface FounderSecrets {
@@ -70,7 +84,7 @@ export function verifyFounderToken(f: FounderSecrets, token: string, now = Date.
   const [exp, sig] = token.split('.');
   const expiresAt = Number(exp);
   if (!sig || !Number.isSafeInteger(expiresAt) || expiresAt <= now) return false;
-  return sameText(sig, sign(f, expiresAt));
+  return sameSignature(sig, sign(f, expiresAt));
 }
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -151,7 +165,7 @@ export function createFounderRouter(getSecrets: () => FounderSecrets | null) {
         const parsed = founderSessionRequestSchema.safeParse(raw);
         if (!parsed.success) return c.json({ error: 'invalid request' }, 400);
 
-        if (!sameText(parsed.data.passcode, f.passcode)) {
+        if (!passcodeMatches(f, parsed.data.passcode)) {
           lockout.failures += 1;
           if (lockout.failures >= MAX_ATTEMPTS) {
             lockout.failures = 0;
