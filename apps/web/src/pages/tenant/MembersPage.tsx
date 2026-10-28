@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -95,6 +95,10 @@ function familyTitle(name: string | null): string {
   const titled = n.replace(/\b\w/g, (ch) => ch.toUpperCase());
   return `The ${titled} Family`;
 }
+
+// FHR-31: action buttons on member cards share a row on phones.
+const MEMBER_ACTION_BTN =
+  'flex min-h-[48px] min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-black bg-white px-3 text-sm font-bold text-black transition-colors hover:bg-gray-50 sm:flex-none sm:px-4';
 
 export function MembersPage() {
   const slug = useTenantSlug();
@@ -223,7 +227,7 @@ export function MembersPage() {
   return (
     <div className="flex min-h-screen flex-col bg-kingdom-bg font-body text-gray-900">
       <AppHeader activeTab={null} onTabChange={onHeaderTabChange} />
-      <div className="mx-auto w-full max-w-7xl p-6">
+      <div className="mx-auto w-full max-w-7xl p-4 sm:p-6">
         <div className="mb-2">
           <Link
             to={`/t/${slug}/dashboard`}
@@ -542,13 +546,15 @@ function GrownUpCard({
       footer={
         callerIsAdmin || isOwnCard ? (
           <>
-            <div className="flex flex-wrap items-center gap-2">
-              {callerIsAdmin && (
+            {/* FHR-31: on phones the main buttons share one row, delete sits below. */}
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              {/* FHR-30: the edit box has its own Save and Cancel, so hide this. */}
+              {callerIsAdmin && editingFor !== m.id && (
                 <button
                   type="button"
                   data-testid={`${testId}-edit-name`}
-                  onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
-                  className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-black transition-colors hover:bg-gray-50"
+                  onClick={() => setEditingFor(m.id)}
+                  className={MEMBER_ACTION_BTN}
                 >
                   <Edit2 size={14} aria-hidden="true" /> Edit name
                 </button>
@@ -567,7 +573,7 @@ function GrownUpCard({
                         : undefined
                   }
                   onClick={() => setEmailChangeFor(emailChangeFor === m.id ? null : m.id)}
-                  className={`flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black px-4 text-sm font-bold transition-colors ${
+                  className={`flex min-h-[48px] min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-black px-3 text-sm font-bold transition-colors sm:flex-none sm:px-4 ${
                     !m.email || m.pendingEmail
                       ? 'bg-white text-gray-300'
                       : 'bg-white text-black hover:bg-gray-50'
@@ -837,21 +843,24 @@ function KidCard({
       footer={
         callerIsAdmin ? (
           <>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                data-testid={`${testId}-edit-name`}
-                onClick={() => setEditingFor(editingFor === m.id ? null : m.id)}
-                className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-black transition-colors hover:bg-gray-50"
-              >
-                <Edit2 size={14} aria-hidden="true" /> Edit name
-              </button>
+            {/* FHR-31: on phones the main buttons share one row, delete sits below. */}
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              {editingFor !== m.id && (
+                <button
+                  type="button"
+                  data-testid={`${testId}-edit-name`}
+                  onClick={() => setEditingFor(m.id)}
+                  className={MEMBER_ACTION_BTN}
+                >
+                  <Edit2 size={14} aria-hidden="true" /> Edit name
+                </button>
+              )}
               {callerCanManagePin && (
                 <button
                   type="button"
                   data-testid={`${testId}-pin-toggle`}
                   onClick={() => setOpenPinFor(openPinFor === m.id ? null : m.id)}
-                  className="flex min-h-[48px] items-center gap-1.5 rounded-xl border-2 border-black bg-white px-4 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-50"
+                  className="flex min-h-[48px] min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border-2 border-black bg-white px-3 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-50 sm:flex-none sm:px-4"
                 >
                   <Key size={14} aria-hidden="true" />
                   {openPinFor === m.id ? 'Cancel' : m.hasPin ? 'Reset PIN' : 'Set PIN'}
@@ -1433,6 +1442,12 @@ function EditNameForm({
 }) {
   const [name, setName] = useState(current);
   const [submitting, setSubmitting] = useState(false);
+  // FHR-30: the "Edit name" button hides when this opens, so move focus here
+  // rather than leave keyboard and screen-reader users at the top of the page.
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
   return (
     <form
       className="mb-4 flex items-end gap-2"
@@ -1450,6 +1465,7 @@ function EditNameForm({
           id={`edit-name-${testId}`}
           value={name}
           onChange={(e) => setName(e.target.value)}
+          ref={inputRef}
           testId={`${testId}-edit-input`}
         />
       </div>
@@ -1485,13 +1501,14 @@ function RemoveButton({
   const [armed, setArmed] = useState(false);
   if (armed) {
     return (
-      <span className="flex items-center gap-2">
+      // FHR-29: the question wraps inside the card instead of running off it.
+      <span className="flex w-full min-w-0 items-center gap-2">
         <button
           type="button"
           data-testid={`${testId}-remove-confirm`}
           onClick={onConfirm}
           title="Their personal tasks and meals are removed too"
-          className="max-w-full truncate rounded border-2 border-black bg-red-100 px-2 py-1 text-xs font-bold text-red-700 min-h-[44px]"
+          className="min-h-[44px] min-w-0 flex-1 whitespace-normal break-words rounded border-2 border-black bg-red-100 px-2 py-1 text-left text-xs font-bold text-red-700"
         >
           Remove {name}? (their tasks &amp; meals go too)
         </button>
