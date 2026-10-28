@@ -123,11 +123,18 @@ function FamilyHero({
     );
   }
   return (
-    <div className="flex items-center gap-4" data-testid="dashboard-family-hero">
+    <div className="flex min-w-0 items-center gap-4" data-testid="dashboard-family-hero">
       <FamilyInitialDisc name={familyName ?? 'Family'} />
-      <div className="flex flex-col">
-        <h1 className="flex items-center gap-1.5 font-heading text-2xl uppercase leading-tight tracking-wide text-white drop-shadow-md md:text-3xl">
-          <span data-testid="dashboard-family-name">{buildHeroTitle(familyName)}</span>
+      <div className="flex min-w-0 flex-col">
+        {/* FHR-24: a long name wraps to two lines at most, then ends in "...". */}
+        <h1 className="flex min-w-0 items-center gap-1.5 font-heading text-2xl uppercase leading-tight tracking-wide text-white drop-shadow-md md:text-3xl">
+          <span
+            className="line-clamp-2 min-w-0 [overflow-wrap:anywhere]"
+            title={buildHeroTitle(familyName)}
+            data-testid="dashboard-family-name"
+          >
+            {buildHeroTitle(familyName)}
+          </span>
           <span aria-hidden="true" className="text-yellow-300">
             ✨
           </span>
@@ -581,9 +588,11 @@ export function AppHeader({ activeTab, onTabChange }: AppHeaderProps) {
   // member card) over the auth email. Magic-link signups often carry no
   // full_name, so the email used to leak into the account menu.
   const parentName =
+    // FHR-27: the name saved in the family comes first; the Google name is
+    // only a fallback, so signing in again cannot replace a name you chose.
+    callerName ??
     (user?.user_metadata?.full_name as string | undefined) ??
     (user?.user_metadata?.name as string | undefined) ??
-    callerName ??
     user?.email ??
     'You';
 

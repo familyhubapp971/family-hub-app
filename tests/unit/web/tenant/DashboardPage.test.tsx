@@ -490,6 +490,30 @@ describe('<DashboardPage />: FHS-261 header', () => {
     await waitFor(() => expect(screen.getByTestId('members-route')).toBeInTheDocument());
   });
 
+  // FHR-24: a very long family name wraps to two lines, then ends in "...".
+  it('keeps a long family name inside the header', async () => {
+    renderAt('/t/khans/dashboard');
+    await waitFor(() =>
+      expect(screen.getByTestId('dashboard-family-name')).toHaveTextContent(/Khans/),
+    );
+    expect(screen.getByTestId('dashboard-family-name')).toHaveClass('line-clamp-2', 'min-w-0');
+  });
+
+  // FHR-27: signing in with Google again must not replace the name you chose.
+  it('shows your saved family name in the account menu, not your Google name', async () => {
+    authState.user = {
+      email: 'sarah@example.com',
+      id: 'u-1',
+      user_metadata: { full_name: 'Tanvi Google' },
+    };
+    renderAt('/t/khans/dashboard');
+    fireEvent.click(screen.getByTestId('dashboard-profile-pill'));
+    await waitFor(() =>
+      expect(screen.getByTestId('dashboard-profile-parent-name')).toHaveTextContent('Sarah'),
+    );
+    expect(screen.getByTestId('dashboard-profile-parent-name')).not.toHaveTextContent('Tanvi');
+  });
+
   it('Log out lives at the bottom of the profile menu and calls signOutAll()', async () => {
     renderAt('/t/khans/dashboard');
     // FHS-520 (design-fidelity): Log out is no longer a standalone nav

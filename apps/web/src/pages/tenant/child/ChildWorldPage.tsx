@@ -101,9 +101,11 @@ export function ChildWorldPage() {
   // FHS-506/FHS-523: prefer a real name over the login email: the auth
   // full_name, else the caller's roster display name, else email as last resort.
   const parentName =
+    // FHR-27: the name saved in the family comes first; the Google name is
+    // only a fallback, so signing in again cannot replace a name you chose.
+    callerMember?.displayName ??
     (user?.user_metadata?.full_name as string | undefined) ??
     (user?.user_metadata?.name as string | undefined) ??
-    callerMember?.displayName ??
     user?.email ??
     'You';
 

@@ -44,6 +44,13 @@ describe('<SignupPage />', () => {
     expect(screen.getByTestId('signup-google')).toBeInTheDocument();
   });
 
+  // FHR-22: the Terms link opened a blank page because /terms never existed.
+  it('links Terms and Privacy to the real legal pages', () => {
+    renderPage();
+    expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/legal/terms');
+    expect(screen.getByRole('link', { name: /Privacy/ })).toHaveAttribute('href', '/legal/privacy');
+  });
+
   it('does not render the legacy family-name / slug / display-name fields', () => {
     renderPage();
     expect(screen.queryByTestId('signup-family-name')).toBeNull();

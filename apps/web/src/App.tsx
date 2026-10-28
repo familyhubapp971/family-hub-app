@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react';
+import { LEGACY_REDIRECTS } from './legacy-redirects';
 import { BrowserRouter, Navigate, Routes, Route, useParams } from 'react-router-dom';
 import { AuthProvider } from './lib/auth-context';
 import { TenantProvider } from './lib/tenant-context';
@@ -111,7 +112,9 @@ export function App() {
               (FHS-509). Redirect so the signup consent link + the other
               pages still linking to /privacy (AdminPanelPage, SignupPage,
               AboutPage, PricingPage, WelcomePage) keep working. */}
-            <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
+            {LEGACY_REDIRECTS.map(([from, to]) => (
+              <Route key={from} path={from} element={<Navigate to={to} replace />} />
+            ))}
             {/* Legacy /api/hello debug card preserved at /_health so the
               FHS-198 staging-deploy spec keeps validating end-to-end. */}
             <Route path="/_health" element={<LandingPage />} />

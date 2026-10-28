@@ -189,7 +189,8 @@ export function WelcomePage() {
   const loggedIn = loggedInAdult || loggedInKid;
 
   // Adult home data (family + children) for the logged-in landing.
-  const [home, setHome] = useState<AdultHome | null>(null);
+  // undefined while loading; null if it could not load.
+  const [home, setHome] = useState<AdultHome | null | undefined>(undefined);
   useEffect(() => {
     if (!loggedInAdult || !session) return;
     let cancelled = false;
@@ -265,7 +266,7 @@ export function WelcomePage() {
   const dadName = dadNames[dadIdx]!;
 
   // Logged-in landing/header values (adult or kid).
-  const homeSlug = loggedInAdult ? home?.slug : kidFamily?.slug;
+  const homeSlug = loggedInAdult ? home?.slug || undefined : kidFamily?.slug;
   const homeDashboardPath = homeSlug ? `/t/${homeSlug}/dashboard` : '/dashboard';
   const homeLabel = (loggedInAdult ? home?.familyName : kidFamily?.name) ?? 'My family';
   const homeInitial = homeLabel.charAt(0).toUpperCase();
@@ -350,6 +351,8 @@ export function WelcomePage() {
           slug={homeSlug}
           kids={loggedInAdult ? (home?.children ?? []) : []}
           isKid={loggedInKid}
+          loading={loggedInAdult && home === undefined}
+          setupPath={loggedInAdult ? (home?.setupPath ?? null) : null}
           reduceMotion={!!reduceMotion}
         />
       )}
@@ -516,19 +519,36 @@ interface AdultHome {
   slug: string;
   familyName: string;
   children: { id: string; displayName: string; avatarEmoji: string | null }[];
+  /** FHR-32: where to finish setting up, or null when the hub is ready. */
+  setupPath: string | null;
 }
 
 async function loadAdultHome(accessToken: string): Promise<AdultHome | null> {
   try {
     const headers = { Authorization: `Bearer ${accessToken}` };
-    const meRes = await fetch(`${API_BASE}/api/me`, { headers });
+    // FHR-32: a stalled request must not leave the homepage loading forever.
+    const signal = AbortSignal.timeout(10_000);
+    const meRes = await fetch(`${API_BASE}/api/me`, { headers, signal });
     if (!meRes.ok) return null;
-    const me = (await meRes.json()) as { tenants?: { slug: string; name: string }[] };
-    const t = me.tenants?.[0];
-    if (!t) return null;
+    const me = (await meRes.json()) as {
+      tenants?: { slug: string; name: string; onboardingCompleted?: boolean }[];
+    };
+    // A finished family wins, so a second, half-made family never hides it.
+    const t = me.tenants?.find((x) => x.onboardingCompleted !== false) ?? me.tenants?.[0];
+    // FHR-32: signed in but no family yet: the create screen lives at /dashboard.
+    if (!t) return { slug: '', familyName: '', children: [], setupPath: '/dashboard' };
+    if (t.onboardingCompleted === false) {
+      return {
+        slug: t.slug,
+        familyName: t.name,
+        children: [],
+        setupPath: `/t/${t.slug}/onboarding`,
+      };
+    }
     let children: AdultHome['children'] = [];
     const memRes = await fetch(`${API_BASE}/api/members`, {
       headers: { ...headers, 'x-tenant-slug': t.slug },
+      signal,
     });
     if (memRes.ok) {
       const body = (await memRes.json()) as {
@@ -543,7 +563,7 @@ async function loadAdultHome(accessToken: string): Promise<AdultHome | null> {
         .filter((m) => m.isChild)
         .map((m) => ({ id: m.id, displayName: m.displayName, avatarEmoji: m.avatarEmoji }));
     }
-    return { slug: t.slug, familyName: t.name, children };
+    return { slug: t.slug, familyName: t.name, children, setupPath: null };
   } catch {
     return null;
   }
@@ -568,6 +588,8 @@ function LoggedInLanding({
   kids,
   isKid,
   reduceMotion,
+  loading,
+  setupPath,
 }: {
   navigate: ReturnType<typeof useNavigate>;
   dashboardPath: string;
@@ -576,7 +598,43 @@ function LoggedInLanding({
   kids: { id: string; displayName: string; avatarEmoji: string | null }[];
   isKid: boolean;
   reduceMotion: boolean;
+  loading: boolean;
+  setupPath: string | null;
 }) {
+  // FHR-32: never claim the hub is ready before we know it is.
+  if (loading || setupPath) {
+    return (
+      <main
+        id={MAIN_CONTENT_ID}
+        className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-8 px-6 pb-10 pt-8 text-center md:pt-4"
+        data-testid={loading ? 'welcome-loggedin-loading' : 'welcome-loggedin-setup'}
+      >
+        <div>
+          <h1 className="mb-3 font-heading text-3xl leading-tight text-yellow-300 md:text-5xl">
+            Welcome back 👋
+          </h1>
+          {setupPath && (
+            <p className="mx-auto max-w-2xl text-base font-bold text-purple-100 md:text-lg">
+              Your family hub is not set up yet. Pick up where you left off.
+            </p>
+          )}
+        </div>
+        {setupPath && (
+          <Button
+            onClick={() => navigate(setupPath)}
+            variant="primary"
+            size="lg"
+            className="flex items-center gap-2 px-6 py-3 text-base md:text-lg"
+            testId="welcome-finish-setup"
+          >
+            Finish setting up
+            <ArrowRight size={18} strokeWidth={3} aria-hidden="true" />
+          </Button>
+        )}
+      </main>
+    );
+  }
+
   const quickLinks = [
     {
       title: isKid ? 'Go to my hub' : 'Go to your dashboard',
