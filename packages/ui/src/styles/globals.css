@@ -62,8 +62,20 @@
   #root {
     height: 100%;
   }
+  /* FHS-677: on phones, two quick taps zoomed the page. "manipulation" turns
+     off double-tap zoom but keeps two-finger zoom for people who need larger
+     text. iPhones also stop resizing text on their own. */
+  html {
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
     @apply font-body bg-kingdom-bg text-slate-800 antialiased;
+    /* FHS-677: nothing may push the page wider than the screen. "clip" keeps
+       sticky headers working; "hidden" is the fallback for older browsers. */
+    overflow-x: hidden;
+    overflow-x: clip;
   }
   h1,
   h2,
