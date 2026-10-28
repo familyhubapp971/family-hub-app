@@ -15,6 +15,10 @@ interface DialogProps {
    * 'bottom-sheet' (FHS-623): pinned to the bottom edge with no side gap on
    * a phone, becoming a centred panel from the `sm:` breakpoint up. The
    * child content still owns its own rounded corners / max-width.
+   *
+   * Either way the content box is a flex column no taller than the screen.
+   * A child with `min-h-0` shrinks to fit it, so a long form can put its
+   * header in a `shrink-0` row and scroll only its body (FHS-678).
    */
   align?: 'center' | 'bottom-sheet';
 }
@@ -99,10 +103,13 @@ export function Dialog({
       aria-labelledby={ariaLabelledBy}
       // Tailwind utilities for backdrop so strict CSP (no 'unsafe-inline'
       // style-src) still works (FHS-170 will add CSP).
+      // FHS-678: the overlay is exactly the visible screen, so the content box
+      // is capped at its height (max-h-full). A tall dialog can then never be
+      // centred past the top edge, and the overlay itself scrolls as a backstop.
       className={
         align === 'bottom-sheet'
-          ? 'fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center sm:p-4'
-          : 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm'
+          ? 'fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/80 backdrop-blur-sm sm:items-center sm:p-4'
+          : 'fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain p-4 bg-black/80 backdrop-blur-sm'
       }
       onClick={closeOnBackdrop ? onClose : undefined}
       data-testid={testId}
@@ -112,7 +119,11 @@ export function Dialog({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         data-testid={testId ? `${testId}-content` : undefined}
-        className={align === 'bottom-sheet' ? 'w-full outline-none sm:w-auto' : 'outline-none'}
+        className={
+          align === 'bottom-sheet'
+            ? 'flex max-h-full w-full flex-col outline-none sm:w-auto'
+            : 'flex max-h-full min-w-0 max-w-full flex-col outline-none'
+        }
       >
         {children}
       </div>

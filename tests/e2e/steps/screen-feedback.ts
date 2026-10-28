@@ -6,7 +6,7 @@ import { ScreenFeedbackPage } from '../support/pages/ScreenFeedbackPage.js';
 // screen-size steps are shared, defined in authed-smoke.ts and
 // getting-started.ts.
 
-const { When, Then } = createBdd(test);
+const { Given, When, Then } = createBdd(test);
 
 When('I open the Meals screen', async ({ page, authedFamily }) => {
   await page.goto(`/t/${authedFamily.slug}/dashboard?tab=meals`);
@@ -56,4 +56,16 @@ Then('a bubble says I can give feedback on {string}', async ({ page }, area: str
 
 Then('the feedback button does not cover the end of the page', async ({ page }) => {
   await new ScreenFeedbackPage(page).expectBottomClear();
+});
+
+Given('my screen is {int} by {int}', async ({ page }, width: number, height: number) => {
+  await page.setViewportSize({ width, height });
+});
+
+Then('the header and close button of the feedback form are on screen', async ({ page }) => {
+  await new ScreenFeedbackPage(page).expectHeaderVisible();
+});
+
+When('I scroll to Send inside the feedback form', async ({ page }) => {
+  await new ScreenFeedbackPage(page).scrollToSend();
 });

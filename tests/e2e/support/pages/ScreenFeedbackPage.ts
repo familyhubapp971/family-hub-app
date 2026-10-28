@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 // FHS-670: the per-screen feedback button and its form.
@@ -53,12 +53,45 @@ export class ScreenFeedbackPage {
     expect(overflow).toBeLessThanOrEqual(0);
   }
 
+  private get card() {
+    return this.page.getByTestId('screen-feedback-card');
+  }
+
+  private get closeButton() {
+    return this.dialog.getByRole('button', { name: 'Close feedback dialog' });
+  }
+
+  /** FHS-678: the whole form box sits inside the screen on every side. */
   async expectDialogFits(): Promise<void> {
-    const box = await this.dialog.locator('> div').first().boundingBox();
-    const width = this.page.viewportSize()?.width ?? 0;
+    await this.expectInsideViewport(this.card);
+  }
+
+  /** FHS-678: the pink header and the close button are on screen and tappable. */
+  async expectHeaderVisible(): Promise<void> {
+    await this.expectInsideViewport(this.page.getByTestId('screen-feedback-header'));
+    await this.expectInsideViewport(this.closeButton);
+    const box = await this.closeButton.boundingBox();
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  }
+
+  /** FHS-678: the form scrolls inside its own box, and the header stays put. */
+  async scrollToSend(): Promise<void> {
+    const submit = this.page.getByTestId('screen-feedback-submit');
+    await submit.scrollIntoViewIfNeeded();
+    await this.expectInsideViewport(submit);
+    await this.expectHeaderVisible();
+  }
+
+  private async expectInsideViewport(target: Locator): Promise<void> {
+    const box = await target.boundingBox();
+    const size = this.page.viewportSize();
     expect(box).not.toBeNull();
+    expect(size).not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(0);
-    expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(size!.width);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(size!.height);
   }
 
   async expectReminder(area: string): Promise<void> {
