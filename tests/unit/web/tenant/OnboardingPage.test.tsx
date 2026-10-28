@@ -68,9 +68,18 @@ function mockNotOnboarded() {
   });
 }
 
+// FHR-25: the wizard looks up the founder's saved name separately. Answer that
+// call here so the queued replies in each test still line up with their calls.
+let todayReply: { ok: boolean; json?: () => Promise<unknown> } = { ok: false };
+
 beforeEach(() => {
   fetchMock.mockReset();
-  vi.stubGlobal('fetch', fetchMock);
+  todayReply = { ok: false };
+  vi.stubGlobal('fetch', (url: string, init?: RequestInit) =>
+    String(url).includes('/api/dashboard/today')
+      ? Promise.resolve(todayReply)
+      : fetchMock(url, init),
+  );
   authState.session = { access_token: 'fake-jwt' };
   // Reset to valid defaults.
   detectionMocks.timezone = 'Europe/London';
@@ -139,25 +148,106 @@ describe('<OnboardingPage />', () => {
     expect((screen.getByTestId('onboarding-member-name-0') as HTMLInputElement).value).toBe('Iman');
   });
 
-  it('disables Next on the members step until your name is filled (FHS-274)', async () => {
+  // FHR-26 replaced FHS-274's greyed-out Next: Next now says what is missing.
+  it('says your name is missing when Next is pressed with it blank', async () => {
     mockNotOnboarded();
     renderAt('/t/khans/onboarding');
     await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
 
     fireEvent.click(screen.getByTestId('onboarding-next'));
-    const next = screen.getByTestId('onboarding-next') as HTMLButtonElement;
-    expect(next.disabled).toBe(true);
-    fireEvent.change(screen.getByTestId('onboarding-your-name'), {
-      target: { value: 'Sarah' },
-    });
-    expect(next.disabled).toBe(false);
-    // An added (other) member with an empty name re-blocks Next.
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), { target: { value: '' } });
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+
+    expect(screen.getByTestId('onboarding-step-members')).toBeInTheDocument();
+    expect(screen.getByTestId('onboarding-your-name-error')).toHaveTextContent('Enter your name.');
+    expect(screen.getByTestId('onboarding-step-error')).toHaveTextContent(
+      'Fill in every name to continue.',
+    );
+    expect(screen.getByTestId('onboarding-your-name')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('says an added person needs a name when Next is pressed', async () => {
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), { target: { value: 'Sarah' } });
     fireEvent.click(screen.getByTestId('onboarding-add-member'));
-    expect(next.disabled).toBe(true);
-    fireEvent.change(screen.getByTestId('onboarding-member-name-0'), {
-      target: { value: 'Iman' },
-    });
-    expect(next.disabled).toBe(false);
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+
+    expect(screen.getByTestId('onboarding-member-name-error-0')).toHaveTextContent(
+      'Enter a name, or remove this person.',
+    );
+    fireEvent.change(screen.getByTestId('onboarding-member-name-0'), { target: { value: 'Iman' } });
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    expect(screen.getByTestId('onboarding-step-location')).toBeInTheDocument();
+  });
+
+  it('a saved name that arrives late does not overwrite what you typed', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    todayReply = {
+      ok: true,
+      json: async () => {
+        await gate;
+        return { callerMemberId: 'm1', members: [{ id: 'm1', displayName: 'Saved Name' }] };
+      },
+    };
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), { target: { value: 'Typed' } });
+    release();
+    await new Promise((r) => setTimeout(r, 20));
+    expect((screen.getByTestId('onboarding-your-name') as HTMLInputElement).value).toBe('Typed');
+  });
+
+  it('moves focus to the first empty name when Next is pressed', async () => {
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.change(screen.getByTestId('onboarding-your-name'), { target: { value: '' } });
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByTestId('onboarding-your-name')),
+    );
+  });
+
+  it('hides Back on the first step (FHR-28)', async () => {
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+    expect(screen.queryByTestId('onboarding-back')).toBeNull();
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    expect(screen.getByTestId('onboarding-back')).toBeInTheDocument();
+  });
+
+  it('caps names at 40 characters (FHR-24)', async () => {
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    expect(screen.getByTestId('onboarding-your-name')).toHaveAttribute('maxLength', '40');
+  });
+
+  it('fills your name from the name you typed when creating the family (FHR-25)', async () => {
+    todayReply = {
+      ok: true,
+      json: async () => ({
+        callerMemberId: 'm1',
+        members: [{ id: 'm1', displayName: 'Sarah' }],
+      }),
+    };
+    mockNotOnboarded();
+    renderAt('/t/khans/onboarding');
+    await waitFor(() => screen.getByTestId('onboarding-step-welcome'));
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    await waitFor(() =>
+      expect((screen.getByTestId('onboarding-your-name') as HTMLInputElement).value).toBe('Sarah'),
+    );
   });
 
   it('FHS-432: auto-detected timezone + currency shown on Location step without picker', async () => {
@@ -228,7 +318,12 @@ describe('<OnboardingPage />', () => {
     // Currency picker NOT shown (detection succeeded).
     expect(screen.queryByTestId('onboarding-currency')).not.toBeInTheDocument();
     // Next blocked until user fills timezone.
-    expect((screen.getByTestId('onboarding-next') as HTMLButtonElement).disabled).toBe(true);
+    // FHR-26: Next stays clickable and explains what is missing instead.
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    expect(screen.getByTestId('onboarding-step-location')).toBeInTheDocument();
+    expect(screen.getByTestId('onboarding-step-error')).toHaveTextContent(
+      'Check the highlighted details to continue.',
+    );
   });
 
   it('FHS-432: fallback: shows currency picker immediately when detection returns invalid code', async () => {
@@ -247,7 +342,12 @@ describe('<OnboardingPage />', () => {
     // Timezone picker NOT shown.
     expect(screen.queryByTestId('onboarding-timezone')).not.toBeInTheDocument();
     // Next blocked until user selects a valid currency.
-    expect((screen.getByTestId('onboarding-next') as HTMLButtonElement).disabled).toBe(true);
+    // FHR-26: Next stays clickable and explains what is missing instead.
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    expect(screen.getByTestId('onboarding-step-location')).toBeInTheDocument();
+    expect(screen.getByTestId('onboarding-step-error')).toHaveTextContent(
+      'Check the highlighted details to continue.',
+    );
   });
 
   it('FHS-487: shows an age input for kid rows (child + teen) and includes it in the submit payload', async () => {

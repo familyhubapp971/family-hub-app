@@ -125,3 +125,18 @@
   background: rgba(0, 0, 0, 0.5);
   background-clip: padding-box;
 }
+
+/* FHR-20: iPhones zoom the page when a text box under 16px gets focus, which
+   then forces sideways scrolling. On touch screens, small-text boxes use 16px.
+   Larger ones (the PIN boxes, amount picker) keep their own size. This also
+   covers the searchable dropdown's text box. */
+@media (pointer: coarse) {
+  input.text-xs,
+  input.text-sm,
+  select.text-xs,
+  select.text-sm,
+  textarea.text-xs,
+  textarea.text-sm {
+    font-size: 16px;
+  }
+}

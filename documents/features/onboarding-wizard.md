@@ -1,6 +1,6 @@
 # Feature: Onboarding wizard
 
-**Jira:** [FHS-36](https://qualicion2.atlassian.net/browse/FHS-36)/[FHS-37](https://qualicion2.atlassian.net/browse/FHS-37)/[FHS-38](https://qualicion2.atlassian.net/browse/FHS-38)/[FHS-39](https://qualicion2.atlassian.net/browse/FHS-39) (wizard core) · [FHS-274](https://qualicion2.atlassian.net/browse/FHS-274)/[FHS-275](https://qualicion2.atlassian.net/browse/FHS-275) (founder rename + adult invite) · [FHS-432](https://qualicion2.atlassian.net/browse/FHS-432) (auto timezone/currency) · [FHS-487](https://qualicion2.atlassian.net/browse/FHS-487) (child age)
+**Jira:** [FHS-36](https://qualicion2.atlassian.net/browse/FHS-36)/[FHS-37](https://qualicion2.atlassian.net/browse/FHS-37)/[FHS-38](https://qualicion2.atlassian.net/browse/FHS-38)/[FHS-39](https://qualicion2.atlassian.net/browse/FHS-39) (wizard core) · [FHS-274](https://qualicion2.atlassian.net/browse/FHS-274)/[FHS-275](https://qualicion2.atlassian.net/browse/FHS-275) (founder rename + adult invite) · [FHS-432](https://qualicion2.atlassian.net/browse/FHS-432) (auto timezone/currency) · [FHS-487](https://qualicion2.atlassian.net/browse/FHS-487) (child age) · FHR-20, FHR-22, FHR-24 to FHR-28, FHR-32 (QA fixes, 2026-10-28)
 **Status:** shipped
 **Owner:** product-manager
 
@@ -84,6 +84,58 @@ the wizard renders.
 - **Then** no age field appears for that row
 - **When** I switch that row's role to "Child" or "Teen"
 - **Then** an age field appears for that row
+
+### Story 3: Clear, forgiving setup (QA fixes, FHR)
+
+**As a** parent setting up a new family
+**I want** setup to keep what I typed and tell me what is missing
+**so that** I never get stuck or see the wrong name.
+
+#### Acceptance criteria
+
+**Scenario: The name I typed carries into the wizard (FHR-25)**
+
+- **Given** I typed "Sarah" as my name on the "Create your family hub" screen
+- **And** my Google account is called something else
+- **When** I reach step 2, "Who's in the family?"
+- **Then** "Your name" shows "Sarah"
+
+**Scenario: Next says what is missing (FHR-26)**
+
+- **Given** I am on step 2 with my name blank, or an added person with no name
+- **When** I press Next
+- **Then** I stay on step 2
+- **And** each blank box says "Enter your name." or "Enter a name, or remove this person."
+
+**Scenario: No dead Back button on step 1 (FHR-28)**
+
+- **Given** I am on step 1, Welcome
+- **Then** there is no Back button
+
+**Scenario: Long names stay inside the screen (FHR-24)**
+
+- **Given** the name boxes on the create screen and in step 2
+- **Then** each takes at most 40 characters
+- **And** a long family name in the dashboard header wraps to two lines, then ends in "..."
+
+**Scenario: My chosen name stays in the account menu (FHR-27)**
+
+- **Given** I renamed myself during setup
+- **When** I sign in again with Google
+- **Then** the account menu still shows my chosen name, not my Google name
+
+**Scenario: The homepage never claims a hub that is not ready (FHR-32)**
+
+- **Given** I signed in but stopped before finishing setup
+- **When** I open the homepage
+- **Then** it says my family hub is not set up yet, with a "Finish setting up" button
+- **And** it does not say "hub is ready"
+
+**Scenario: Sign-up links work and phones do not zoom (FHR-22, FHR-20)**
+
+- **Given** the sign-up screen
+- **Then** "Terms" opens the Terms of Service, and /terms forwards there too
+- **And** on a phone, tapping any text box does not zoom the page
 
 ## Out of scope
 

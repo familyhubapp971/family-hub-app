@@ -199,7 +199,7 @@ function CreateFamilyPanel({ session }: CreateFamilyPanelProps) {
               onChange={(e) => setYourName(e.target.value)}
               required
               minLength={2}
-              maxLength={80}
+              maxLength={40}
               className="w-full rounded-md border-2 border-black px-3 py-2 font-body"
               placeholder="e.g. Sarah"
               data-testid="no-tenant-your-name"
@@ -219,7 +219,7 @@ function CreateFamilyPanel({ session }: CreateFamilyPanelProps) {
               onChange={(e) => setFamilyName(e.target.value)}
               required
               minLength={2}
-              maxLength={60}
+              maxLength={40}
               className="w-full rounded-md border-2 border-black px-3 py-2 font-body"
               placeholder="The Khan family"
               data-testid="no-tenant-family-name"

@@ -75,6 +75,14 @@ interface MeResponse {
   tenants: Array<{ slug: string; onboardingCompleted: boolean }>;
 }
 
+interface TodayNames {
+  callerMemberId?: string;
+  members?: Array<{ id: string; displayName?: string | null }>;
+}
+
+// FHR-24: names longer than this broke the dashboard header.
+const NAME_MAX = 40;
+
 // Detection is considered "failed" for timezone if the value is empty,
 // and for currency if it isn't a valid 3-letter ISO 4217 code.
 function isValidTimezone(tz: string): boolean {
@@ -109,16 +117,43 @@ export function OnboardingPage() {
   const [showTimezonePicker, setShowTimezonePicker] = useState(!isValidTimezone(detectedTimezone));
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(!isValidCurrency(detectedCurrency));
 
-  // Suggest (never silently submit) a name from auth metadata; the
-  // founder sees and can change it before anything is saved.
+  // FHR-25: fill "Your name" with the name the founder typed on the create
+  // screen (their saved member row). Only when that is missing, suggest the
+  // Google name. Either way it is a suggestion they can change before saving.
   const { user } = useAuth();
+  const [savedName, setSavedName] = useState<string | null>(null);
+  const [nameTouched, setNameTouched] = useState(false);
   useEffect(() => {
-    if (yourName) return;
+    if (!session) return;
+    let cancelled = false;
+    fetch(`${API_BASE}/api/dashboard/today`, {
+      headers: { Authorization: `Bearer ${session.access_token}`, 'x-tenant-slug': slug },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((today: TodayNames | null) => {
+        if (cancelled || !today) return;
+        const me = today.members?.find((m) => m.id === today.callerMemberId);
+        const name = me?.displayName?.trim();
+        if (name) setSavedName(name);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [session, slug]);
+  useEffect(() => {
+    if (nameTouched) return;
+    if (savedName) {
+      setYourName(savedName);
+      return;
+    }
     const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
     const guess = (meta.full_name ?? meta.name ?? '').trim();
-    if (guess.length >= 2) setYourName(guess);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- prefill once
-  }, [user]);
+    if (guess.length >= 2) setYourName(guess.slice(0, NAME_MAX));
+  }, [savedName, user, nameTouched]);
+
+  // FHR-26: once Next is pressed with a gap, say what is missing.
+  const [showErrors, setShowErrors] = useState(false);
 
   // Gate check on mount: hit /api/me, find this slug in tenants[],
   // bounce to /dashboard if onboarding_completed=true. Renders the
@@ -311,10 +346,30 @@ export function OnboardingPage() {
                     <Input
                       id="onboarding-your-name"
                       value={yourName}
-                      onChange={(e) => setYourName(e.target.value)}
+                      onChange={(e) => {
+                        setNameTouched(true);
+                        setYourName(e.target.value);
+                      }}
+                      maxLength={NAME_MAX}
                       placeholder="e.g. Sarah"
+                      error={showErrors && yourName.trim().length === 0}
+                      aria-invalid={showErrors && yourName.trim().length === 0 ? true : undefined}
+                      aria-describedby={
+                        showErrors && yourName.trim().length === 0
+                          ? 'onboarding-your-name-error'
+                          : undefined
+                      }
                       testId="onboarding-your-name"
                     />
+                    {showErrors && yourName.trim().length === 0 && (
+                      <p
+                        id="onboarding-your-name-error"
+                        className="mt-1 text-sm font-bold text-red-600"
+                        data-testid="onboarding-your-name-error"
+                      >
+                        Enter your name.
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-end pb-1">
                     <span className="rounded-full border-2 border-black bg-pink-200 px-3 py-1 text-xs font-bold">
@@ -338,9 +393,28 @@ export function OnboardingPage() {
                           id={`member-name-${m.uiId}`}
                           value={m.displayName}
                           onChange={(e) => patchMember(m.uiId, { displayName: e.target.value })}
+                          maxLength={NAME_MAX}
                           placeholder="e.g. Iman"
+                          error={showErrors && m.displayName.trim().length === 0}
+                          aria-invalid={
+                            showErrors && m.displayName.trim().length === 0 ? true : undefined
+                          }
+                          aria-describedby={
+                            showErrors && m.displayName.trim().length === 0
+                              ? `member-name-error-${m.uiId}`
+                              : undefined
+                          }
                           testId={`onboarding-member-name-${idx}`}
                         />
+                        {showErrors && m.displayName.trim().length === 0 && (
+                          <p
+                            id={`member-name-error-${m.uiId}`}
+                            className="mt-1 text-sm font-bold text-red-600"
+                            data-testid={`onboarding-member-name-error-${idx}`}
+                          >
+                            Enter a name, or remove this person.
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor={`member-role-${m.uiId}`}>Role</Label>
@@ -577,17 +651,37 @@ export function OnboardingPage() {
             </p>
           )}
 
-          <div className="mt-6 flex items-center justify-between">
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              onClick={() => setStep((s) => Math.max(1, s - 1))}
-              disabled={step === 1 || status.kind === 'submitting'}
-              testId="onboarding-back"
+          {showErrors && !canAdvance && (
+            <p
+              role="alert"
+              className="mt-4 text-sm font-bold text-red-600"
+              data-testid="onboarding-step-error"
             >
-              Back
-            </Button>
+              {step === 2
+                ? 'Fill in every name to continue.'
+                : 'Check the highlighted details to continue.'}
+            </p>
+          )}
+
+          <div className="mt-6 flex items-center justify-between">
+            {/* FHR-28: step 1 has nowhere to go back to, so no Back button. */}
+            {step > 1 ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
+                onClick={() => {
+                  setShowErrors(false);
+                  setStep((s) => Math.max(1, s - 1));
+                }}
+                disabled={status.kind === 'submitting'}
+                testId="onboarding-back"
+              >
+                Back
+              </Button>
+            ) : (
+              <span />
+            )}
             {isFinalStep ? (
               <Button
                 type="button"
@@ -604,8 +698,26 @@ export function OnboardingPage() {
                 type="button"
                 variant="primary"
                 size="md"
-                onClick={() => setStep((s) => Math.min(STEPS.length, s + 1))}
-                disabled={!canAdvance}
+                onClick={() => {
+                  if (!canAdvance) {
+                    setShowErrors(true);
+                    // Move to the first empty box so its message is read out.
+                    if (step === 2) {
+                      const firstBlank =
+                        yourName.trim().length === 0
+                          ? 'onboarding-your-name'
+                          : members.find((m) => m.displayName.trim().length === 0)
+                            ? `member-name-${members.find((m) => m.displayName.trim().length === 0)!.uiId}`
+                            : null;
+                      if (firstBlank) {
+                        requestAnimationFrame(() => document.getElementById(firstBlank)?.focus());
+                      }
+                    }
+                    return;
+                  }
+                  setShowErrors(false);
+                  setStep((s) => Math.min(STEPS.length, s + 1));
+                }}
                 testId="onboarding-next"
               >
                 Next →

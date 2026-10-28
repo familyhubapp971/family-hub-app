@@ -123,6 +123,75 @@ describe('<WelcomePage />: logged-in state (FHS-358)', () => {
     expect(screen.getAllByText('Go to your dashboard').length).toBeGreaterThan(0);
   });
 
+  // FHR-32: never say the hub is ready when it is not.
+  it('adult signed in with no family yet: asks them to finish setting up', async () => {
+    authState.session = { access_token: 'tok', user: {} };
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ tenants: [] }) });
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('welcome-loggedin-setup')).toBeInTheDocument());
+    expect(screen.getByText(/not set up yet/)).toBeInTheDocument();
+    expect(screen.getByTestId('welcome-finish-setup')).toBeInTheDocument();
+    expect(screen.queryByText(/hub is ready/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Go to your dashboard')).not.toBeInTheDocument();
+  });
+
+  it('adult whose setup is unfinished: asks them to finish setting up', async () => {
+    authState.session = { access_token: 'tok', user: {} };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        tenants: [{ slug: 'khans', name: 'Khan Family', onboardingCompleted: false }],
+      }),
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('welcome-loggedin-setup')).toBeInTheDocument());
+    expect(screen.queryByText(/hub is ready/)).not.toBeInTheDocument();
+  });
+
+  it('adult in two families: a half-made second family does not hide the ready one', async () => {
+    authState.session = { access_token: 'tok', user: {} };
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes('/api/members')
+          ? { ok: true, status: 200, json: async () => ({ members: [] }) }
+          : {
+              ok: true,
+              status: 200,
+              json: async () => ({
+                tenants: [
+                  { slug: 'draft', name: 'Draft Family', onboardingCompleted: false },
+                  { slug: 'khans', name: 'Khan Family', onboardingCompleted: true },
+                ],
+              }),
+            },
+      ),
+    );
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('welcome-loggedin')).toBeInTheDocument());
+    expect(screen.getByText(/Khan Family hub is ready/)).toBeInTheDocument();
+  });
+
+  it('invited adult joining a finished family sees it as ready', async () => {
+    authState.session = { access_token: 'tok', user: {} };
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes('/api/members')
+          ? { ok: true, status: 200, json: async () => ({ members: [] }) }
+          : {
+              ok: true,
+              status: 200,
+              json: async () => ({
+                tenants: [{ slug: 'khans', name: 'Khan Family', onboardingCompleted: true }],
+              }),
+            },
+      ),
+    );
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('welcome-loggedin')).toBeInTheDocument());
+    expect(screen.queryByTestId('welcome-loggedin-setup')).not.toBeInTheDocument();
+  });
+
   it('adult logged in but /api/me fails: degrades to welcome-back + dashboard CTA, no crash', async () => {
     authState.session = { access_token: 'tok', user: {} };
     fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
