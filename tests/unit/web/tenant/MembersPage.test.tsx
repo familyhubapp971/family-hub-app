@@ -568,6 +568,45 @@ describe('<MembersPage />', () => {
       expect(screen.queryByTestId('members-grownup-0-name')).not.toBeInTheDocument();
     });
 
+    // FHR-30: the edit box has its own Save and Cancel, so "Edit name" hides.
+    it('hides "Edit name" while the name is being edited, and brings it back on Cancel', async () => {
+      membersResponse = fullFamilyList();
+      renderAt('/t/khans/members');
+      await expandGrownups();
+      await waitFor(() => screen.getByTestId('members-grownup-0-edit-name'));
+      fireEvent.click(screen.getByTestId('members-grownup-0-edit-name'));
+      expect(screen.getByTestId('members-grownup-0-edit-form')).toBeInTheDocument();
+      expect(screen.queryByTestId('members-grownup-0-edit-name')).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(screen.getByTestId('members-grownup-0-edit-input'));
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(screen.getByTestId('members-grownup-0-edit-name')).toBeInTheDocument();
+    });
+
+    // FHR-31: on phones the main buttons share one row on both card types.
+    it('lets the main card buttons share a row on phones', async () => {
+      membersResponse = fullFamilyList();
+      renderAt('/t/khans/members');
+      await expandGrownups();
+      await expandKids();
+      await waitFor(() => screen.getByTestId('members-kid-0-edit-name'));
+      for (const id of ['members-grownup-0-edit-name', 'members-kid-0-edit-name']) {
+        expect(screen.getByTestId(id)).toHaveClass('flex-1', 'min-w-0', 'sm:flex-none');
+        expect(screen.getByTestId(id).parentElement).toHaveClass('w-full', 'sm:w-auto');
+      }
+    });
+
+    // FHR-29: the remove question wraps inside the card instead of running off it.
+    it('wraps the remove question inside the card', async () => {
+      membersResponse = fullFamilyList();
+      renderAt('/t/khans/members');
+      await expandKids();
+      await waitFor(() => screen.getByTestId('members-kid-0-remove'));
+      fireEvent.click(screen.getByTestId('members-kid-0-remove'));
+      const confirm = screen.getByTestId('members-kid-0-remove-confirm');
+      expect(confirm).toHaveClass('whitespace-normal', 'break-words', 'min-w-0');
+      expect(confirm).not.toHaveClass('truncate');
+    });
+
     it('shows the child/teen "signs in with a PIN, cannot be given admin" panel on a kid card', async () => {
       membersResponse = fullFamilyList();
       renderAt('/t/khans/members');

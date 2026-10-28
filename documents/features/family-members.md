@@ -1,6 +1,6 @@
 # Feature: Family members
 
-**Jira:** [FHS-1](https://qualicion2.atlassian.net/browse/FHS-1) (schema) · [FHS-513](https://qualicion2.atlassian.net/browse/FHS-513)/[FHS-485](https://qualicion2.atlassian.net/browse/FHS-485)/[FHS-486](https://qualicion2.atlassian.net/browse/FHS-486)/[FHS-514](https://qualicion2.atlassian.net/browse/FHS-514)/[FHS-520](https://qualicion2.atlassian.net/browse/FHS-520)/[FHS-521](https://qualicion2.atlassian.net/browse/FHS-521) (Manage Family redesign) · [FHS-519](https://qualicion2.atlassian.net/browse/FHS-519) (Manage Family follow-up cleanups)
+**Jira:** [FHS-1](https://qualicion2.atlassian.net/browse/FHS-1) (schema) · [FHS-513](https://qualicion2.atlassian.net/browse/FHS-513)/[FHS-485](https://qualicion2.atlassian.net/browse/FHS-485)/[FHS-486](https://qualicion2.atlassian.net/browse/FHS-486)/[FHS-514](https://qualicion2.atlassian.net/browse/FHS-514)/[FHS-520](https://qualicion2.atlassian.net/browse/FHS-520)/[FHS-521](https://qualicion2.atlassian.net/browse/FHS-521) (Manage Family redesign) · [FHS-519](https://qualicion2.atlassian.net/browse/FHS-519) (Manage Family follow-up cleanups) · FHR-29/FHR-30/FHR-31 (phone layout fixes, 2026-10-28)
 **Status:** shipped, member data model + the Manage Family page
 **Owner:** product-manager
 **ADR:** [0015](../decisions/0015-role-model-owner-flag.md), [0019](../decisions/0019-role-privilege-matrix.md)
@@ -278,6 +278,27 @@ or remove someone **so that** the roster stays accurate.
 - **Then** I see each child with a "View World →" link into their world
 - **And** "Manage family" and "Reward settings" (edits admin-only server-side,
   see [reward-economy.md](reward-economy.md)), with "Log out" at the bottom
+
+### Phone layout fixes (FHR-29, FHR-30, FHR-31)
+
+**Scenario: The remove question fits the card on a phone (FHR-29)**
+
+- **Given** an admin on a 320px or 375px phone
+- **When** they tap the bin on a child's card
+- **Then** "Remove [name]? (their tasks & meals go too)" wraps inside the card, with Keep beside it
+
+**Scenario: Editing a name shows one set of buttons (FHR-30)**
+
+- **Given** an admin taps "Edit name" on any card
+- **Then** "Edit name" hides while the New name box with Save and Cancel is open
+- **And** it comes back after Save or Cancel
+
+**Scenario: Card buttons share a row on phones (FHR-31)**
+
+- **Given** a grown-up card ("Edit name", "Change email") or a kid card ("Edit name", "Set PIN" or "Reset PIN")
+- **When** viewed on a phone
+- **Then** the two main buttons sit side by side in equal halves, with the bin below
+- **And** the page uses narrower side margins on phones so cards get more room
 
 ## Out of scope
 
