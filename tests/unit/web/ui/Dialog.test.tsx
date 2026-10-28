@@ -104,4 +104,25 @@ describe('Dialog a11y', () => {
     expect(screen.getByTestId('sheet').className).toContain('items-end');
     expect(screen.getByTestId('sheet').className).toContain('sm:items-center');
   });
+
+  // FHS-678: a tall dialog was centred past the top of a phone screen.
+  it('never lets its content grow taller than the screen', () => {
+    render(
+      <Dialog isOpen onClose={() => {}} ariaLabel="Tall" testId="tall">
+        <div>content</div>
+      </Dialog>,
+    );
+    expect(screen.getByTestId('tall-content')).toHaveClass('max-h-full', 'flex-col', 'max-w-full');
+    expect(screen.getByTestId('tall')).toHaveClass('overflow-y-auto');
+  });
+
+  it('caps the bottom sheet at the screen height too', () => {
+    render(
+      <Dialog isOpen onClose={() => {}} align="bottom-sheet" ariaLabel="Sheet" testId="sheet">
+        <div>content</div>
+      </Dialog>,
+    );
+    expect(screen.getByTestId('sheet-content')).toHaveClass('max-h-full', 'w-full', 'sm:w-auto');
+    expect(screen.getByTestId('sheet')).toHaveClass('overflow-y-auto');
+  });
 });

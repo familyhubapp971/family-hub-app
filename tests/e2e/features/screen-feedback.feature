@@ -30,6 +30,7 @@ Feature: Feedback on each screen
     And the feedback button does not cover the end of the page
     When I open Feedback on this screen
     Then the feedback form fits the screen
+    And the header and close button of the feedback form are on screen
 
   @critical @authed-local
   Scenario: The feedback button works on a tablet
@@ -50,3 +51,28 @@ Feature: Feedback on each screen
     Then a bubble says I can give feedback on "Weekly Meals"
     When I switch to the Calendar tab
     Then a bubble says I can give feedback on "the Calendar"
+
+  # FHS-678: on an iPhone the header and close button hid under the browser bar.
+  @critical @authed-local
+  Scenario Outline: The feedback form fits every screen size
+
+    Given I am signed in as the admin of a freshly seeded family
+    And my screen is <width> by <height>
+    When I open the Meals screen
+    And I open Feedback on this screen
+    Then the feedback form fits the screen
+    And the header and close button of the feedback form are on screen
+    And the page has no sideways scrolling
+    When I scroll to Send inside the feedback form
+    Then the feedback form fits the screen
+
+    Examples:
+      | width | height |
+      | 320   | 568    |
+      | 375   | 667    |
+      | 390   | 844    |
+      | 430   | 932    |
+      | 667   | 375    |
+      | 768   | 1024   |
+      | 1024  | 768    |
+      | 1440  | 900    |

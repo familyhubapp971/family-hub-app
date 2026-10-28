@@ -419,9 +419,17 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
         testId="beta-feedback-dialog"
         ariaLabelledBy={titleId}
       >
-        <div className="relative w-full max-w-lg rounded-2xl border-2 border-black bg-white shadow-neo-lg max-h-[90vh] overflow-y-auto">
+        {/* FHS-678: the card fits the visible screen. The header stays put and
+            only the body scrolls, so the close button is always in reach. */}
+        <div
+          className="relative flex max-h-[calc(100vh-2rem)] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-2xl border-2 border-black bg-white shadow-neo-lg supports-[height:100dvh]:max-h-[calc(100dvh-2rem)]"
+          data-testid="beta-feedback-card"
+        >
           {/* Header */}
-          <div className="sticky top-0 z-10 rounded-t-2xl border-b-2 border-black bg-pink-400 px-5 py-4">
+          <div
+            className="relative shrink-0 border-b-2 border-black bg-pink-400 px-5 py-4 pr-16"
+            data-testid="beta-feedback-header"
+          >
             <h2 id={titleId} className="font-display text-xl font-black text-black">
               Help shape Family Hub
             </h2>
@@ -432,7 +440,7 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
               type="button"
               aria-label="Close feedback dialog"
               onClick={handleClose}
-              className="absolute right-4 top-4 rounded-lg border-2 border-black bg-white p-1 text-black hover:bg-yellow-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-600"
+              className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black bg-white text-black hover:bg-yellow-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-600"
             >
               <span aria-hidden="true" className="block h-5 w-5 text-center font-black leading-5">
                 ✕
@@ -440,285 +448,290 @@ export function BetaFeedbackWidget({ variant = 'in-app' }: BetaFeedbackWidgetPro
             </button>
           </div>
 
-          {/* Body */}
-          {state === 'success' ? (
-            <div
-              className="flex flex-col items-center gap-4 px-5 py-10 text-center"
-              data-testid="beta-feedback-thanks"
-            >
-              <span className="text-5xl" aria-hidden="true">
-                🎉
-              </span>
-              <h3 className="font-display text-2xl font-black">Thank you!</h3>
-              <p className="text-gray-700">
-                Your feedback helps us build a better Family Hub for every family. We really
-                appreciate you taking the time.
-              </p>
-              <Button onClick={handleClose} variant="primary">
-                Close
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-6 px-5 py-5">
-              {/* Public-only: optional name + email */}
-              {variant === 'public' && (
-                <div className="space-y-4 rounded-xl border-2 border-black bg-yellow-50 p-4">
-                  <p className="text-xs font-medium text-gray-600">
-                    Optional: leave your email if you&apos;re happy to be contacted.
-                  </p>
-                  <div>
-                    <label
-                      htmlFor="beta-feedback-name"
-                      className="mb-1 block font-black text-sm text-black"
-                    >
-                      Name
-                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                    </label>
-                    <input
-                      id="beta-feedback-name"
-                      data-testid="beta-feedback-name"
-                      type="text"
-                      value={name}
-                      maxLength={120}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Sarah"
-                      className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="beta-feedback-email"
-                      className="mb-1 block font-black text-sm text-black"
-                    >
-                      Email
-                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                    </label>
-                    <input
-                      id="beta-feedback-email"
-                      data-testid="beta-feedback-email"
-                      type="email"
-                      value={email}
-                      maxLength={200}
-                      onChange={(e) => handleEmailChange(e.target.value)}
-                      onBlur={handleEmailBlur}
-                      placeholder="e.g. sarah@example.com"
-                      aria-invalid={emailError ? true : undefined}
-                      aria-describedby={emailError ? 'beta-feedback-email-error' : undefined}
-                      className={[
-                        'w-full rounded-xl border-2 p-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400',
-                        emailError ? 'border-red-400' : 'border-black',
-                      ].join(' ')}
-                    />
-                    {emailError && (
-                      <p
-                        id="beta-feedback-email-error"
-                        data-testid="beta-feedback-email-error"
-                        role="alert"
-                        className="mt-1 text-xs font-medium text-red-600"
-                      >
-                        {emailError}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Q1: PMF */}
-              <fieldset>
-                <legend className="mb-2 font-black text-sm text-black">
-                  How would you feel if you could no longer use Family Hub?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </legend>
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  {PMF_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      aria-pressed={pmf === opt.value}
-                      onClick={() => setPmf(pmf === opt.value ? undefined : opt.value)}
-                      data-testid={opt.testId}
-                      className={[
-                        'flex min-h-[44px] items-center justify-center rounded-xl border-2 border-black px-4 py-2 text-sm font-black transition-all',
-                        'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
-                        pmf === opt.value
-                          ? 'bg-pink-400 text-black shadow-neo-sm'
-                          : 'bg-white text-black hover:bg-yellow-100',
-                      ].join(' ')}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
-              {/* Q2: Recommend (0..10) */}
-              <fieldset>
-                <legend className="mb-2 font-black text-sm text-black">
-                  How likely are you to recommend it to another family?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </legend>
-                <RecommendRow value={recommend} onChange={setRecommend} />
-              </fieldset>
-
-              {/* FHS-449: everything past the two quick questions above sits
-                  behind this expander so the dialog opens short, not long. */}
-              <button
-                type="button"
-                onClick={() => setShowMore((v) => !v)}
-                aria-expanded={showMore}
-                aria-controls={moreId}
-                data-testid="beta-feedback-more-toggle"
-                className={[
-                  'flex min-h-[44px] w-full items-center justify-between rounded-xl border-2 border-black bg-white px-4 py-3 text-left text-sm font-black text-black transition-all',
-                  'hover:bg-yellow-100',
-                  'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
-                ].join(' ')}
+          <div
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+            data-testid="beta-feedback-body"
+          >
+            {/* Body */}
+            {state === 'success' ? (
+              <div
+                className="flex flex-col items-center gap-4 px-5 py-10 text-center"
+                data-testid="beta-feedback-thanks"
               >
-                <span>A few more (optional)</span>
-                <ChevronDown
-                  className={`h-4 w-4 shrink-0 transition-transform ${showMore ? 'rotate-180' : ''}`}
-                  aria-hidden="true"
-                />
-              </button>
-
-              {showMore && (
-                <div
-                  id={moreId}
-                  data-testid="beta-feedback-more-content"
-                  className="space-y-6 rounded-xl border-2 border-dashed border-gray-200 p-4"
-                >
-                  {/* Q3: Solves a problem (1..5) */}
-                  <fieldset>
-                    <legend className="mb-2 font-black text-sm text-black">
-                      How well does it solve a real problem for your family?
-                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                    </legend>
-                    <RatingRow
-                      max={5}
-                      value={solves}
-                      onChange={(n) => setSolves(solves === n ? undefined : n)}
-                      lowLabel="Not at all"
-                      highLabel="Extremely well"
-                      testIdPrefix="beta-feedback-solves"
-                    />
-                  </fieldset>
-
-                  {/* Q4: Ease of use (1..5) */}
-                  <fieldset>
-                    <legend className="mb-2 font-black text-sm text-black">
-                      How easy is it to use?
-                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                    </legend>
-                    <RatingRow
-                      max={5}
-                      value={ease}
-                      onChange={(n) => setEase(ease === n ? undefined : n)}
-                      lowLabel="Very hard"
-                      highLabel="Very easy"
-                      testIdPrefix="beta-feedback-ease"
-                    />
-                  </fieldset>
-
-                  {/* Q5: Keep using (1..5) */}
-                  <fieldset>
-                    <legend className="mb-2 font-black text-sm text-black">
-                      After the beta, how likely are you to keep using it?
-                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                    </legend>
-                    <RatingRow
-                      max={5}
-                      value={keep}
-                      onChange={(n) => setKeep(keep === n ? undefined : n)}
-                      lowLabel="Not likely"
-                      highLabel="Definitely"
-                      testIdPrefix="beta-feedback-keep"
-                    />
-                  </fieldset>
-
-                  {/* Q6: Pain point */}
-                  <div>
-                    <label
-                      htmlFor="beta-feedback-pain"
-                      className="mb-1 block font-black text-sm text-black"
-                    >
-                      What&apos;s the biggest problem you&apos;re hoping Family Hub solves?
-                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                    </label>
-                    <CountedTextarea
-                      id="beta-feedback-pain"
-                      testId="beta-feedback-pain"
-                      rows={3}
-                      value={pain}
-                      onChange={setPain}
-                      placeholder="e.g. Keeping everyone in sync on chores and activities…"
-                    />
-                  </div>
-
-                  {/* Q7: Feature request */}
-                  <div>
-                    <label
-                      htmlFor="beta-feedback-feature"
-                      className="mb-1 block font-black text-sm text-black"
-                    >
-                      What&apos;s one feature you wish it had?
-                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                    </label>
-                    <CountedTextarea
-                      id="beta-feedback-feature"
-                      testId="beta-feedback-feature"
-                      rows={3}
-                      value={feature}
-                      onChange={setFeature}
-                      placeholder="e.g. A shared shopping list that everyone can add to…"
-                    />
-                  </div>
-
-                  {/* Q8: Anything else */}
-                  <div>
-                    <label
-                      htmlFor="beta-feedback-other"
-                      className="mb-1 block font-black text-sm text-black"
-                    >
-                      Anything else?
-                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                    </label>
-                    <CountedTextarea
-                      id="beta-feedback-other"
-                      testId="beta-feedback-other"
-                      rows={3}
-                      value={other}
-                      onChange={setOther}
-                      placeholder="Anything else on your mind…"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Error message */}
-              {state === 'error' && (
-                <p
-                  role="alert"
-                  data-testid="beta-feedback-error"
-                  className="rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
-                >
-                  {errorMsg}
+                <span className="text-5xl" aria-hidden="true">
+                  🎉
+                </span>
+                <h3 className="font-display text-2xl font-black">Thank you!</h3>
+                <p className="text-gray-700">
+                  Your feedback helps us build a better Family Hub for every family. We really
+                  appreciate you taking the time.
                 </p>
-              )}
-
-              {/* Footer */}
-              <div className="flex items-center justify-between gap-3 border-t-2 border-black pt-4">
-                <p className="text-xs text-gray-500">Answer at least one question to submit.</p>
-                <Button
-                  variant="primary"
-                  disabled={!hasAnswer || state === 'submitting'}
-                  onClick={handleSubmit}
-                  testId="beta-feedback-submit"
-                >
-                  {state === 'submitting' ? 'Sending…' : 'Send feedback'}
+                <Button onClick={handleClose} variant="primary">
+                  Close
                 </Button>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="space-y-6 px-5 py-5">
+                {/* Public-only: optional name + email */}
+                {variant === 'public' && (
+                  <div className="space-y-4 rounded-xl border-2 border-black bg-yellow-50 p-4">
+                    <p className="text-xs font-medium text-gray-600">
+                      Optional: leave your email if you&apos;re happy to be contacted.
+                    </p>
+                    <div>
+                      <label
+                        htmlFor="beta-feedback-name"
+                        className="mb-1 block font-black text-sm text-black"
+                      >
+                        Name
+                        <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                      </label>
+                      <input
+                        id="beta-feedback-name"
+                        data-testid="beta-feedback-name"
+                        type="text"
+                        value={name}
+                        maxLength={120}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Sarah"
+                        className="w-full rounded-xl border-2 border-black p-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="beta-feedback-email"
+                        className="mb-1 block font-black text-sm text-black"
+                      >
+                        Email
+                        <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                      </label>
+                      <input
+                        id="beta-feedback-email"
+                        data-testid="beta-feedback-email"
+                        type="email"
+                        value={email}
+                        maxLength={200}
+                        onChange={(e) => handleEmailChange(e.target.value)}
+                        onBlur={handleEmailBlur}
+                        placeholder="e.g. sarah@example.com"
+                        aria-invalid={emailError ? true : undefined}
+                        aria-describedby={emailError ? 'beta-feedback-email-error' : undefined}
+                        className={[
+                          'w-full rounded-xl border-2 p-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400',
+                          emailError ? 'border-red-400' : 'border-black',
+                        ].join(' ')}
+                      />
+                      {emailError && (
+                        <p
+                          id="beta-feedback-email-error"
+                          data-testid="beta-feedback-email-error"
+                          role="alert"
+                          className="mt-1 text-xs font-medium text-red-600"
+                        >
+                          {emailError}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Q1: PMF */}
+                <fieldset>
+                  <legend className="mb-2 font-black text-sm text-black">
+                    How would you feel if you could no longer use Family Hub?
+                    <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                  </legend>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    {PMF_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        aria-pressed={pmf === opt.value}
+                        onClick={() => setPmf(pmf === opt.value ? undefined : opt.value)}
+                        data-testid={opt.testId}
+                        className={[
+                          'flex min-h-[44px] items-center justify-center rounded-xl border-2 border-black px-4 py-2 text-sm font-black transition-all',
+                          'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
+                          pmf === opt.value
+                            ? 'bg-pink-400 text-black shadow-neo-sm'
+                            : 'bg-white text-black hover:bg-yellow-100',
+                        ].join(' ')}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {/* Q2: Recommend (0..10) */}
+                <fieldset>
+                  <legend className="mb-2 font-black text-sm text-black">
+                    How likely are you to recommend it to another family?
+                    <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                  </legend>
+                  <RecommendRow value={recommend} onChange={setRecommend} />
+                </fieldset>
+
+                {/* FHS-449: everything past the two quick questions above sits
+                    behind this expander so the dialog opens short, not long. */}
+                <button
+                  type="button"
+                  onClick={() => setShowMore((v) => !v)}
+                  aria-expanded={showMore}
+                  aria-controls={moreId}
+                  data-testid="beta-feedback-more-toggle"
+                  className={[
+                    'flex min-h-[44px] w-full items-center justify-between rounded-xl border-2 border-black bg-white px-4 py-3 text-left text-sm font-black text-black transition-all',
+                    'hover:bg-yellow-100',
+                    'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
+                  ].join(' ')}
+                >
+                  <span>A few more (optional)</span>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 transition-transform ${showMore ? 'rotate-180' : ''}`}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                {showMore && (
+                  <div
+                    id={moreId}
+                    data-testid="beta-feedback-more-content"
+                    className="space-y-6 rounded-xl border-2 border-dashed border-gray-200 p-4"
+                  >
+                    {/* Q3: Solves a problem (1..5) */}
+                    <fieldset>
+                      <legend className="mb-2 font-black text-sm text-black">
+                        How well does it solve a real problem for your family?
+                        <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                      </legend>
+                      <RatingRow
+                        max={5}
+                        value={solves}
+                        onChange={(n) => setSolves(solves === n ? undefined : n)}
+                        lowLabel="Not at all"
+                        highLabel="Extremely well"
+                        testIdPrefix="beta-feedback-solves"
+                      />
+                    </fieldset>
+
+                    {/* Q4: Ease of use (1..5) */}
+                    <fieldset>
+                      <legend className="mb-2 font-black text-sm text-black">
+                        How easy is it to use?
+                        <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                      </legend>
+                      <RatingRow
+                        max={5}
+                        value={ease}
+                        onChange={(n) => setEase(ease === n ? undefined : n)}
+                        lowLabel="Very hard"
+                        highLabel="Very easy"
+                        testIdPrefix="beta-feedback-ease"
+                      />
+                    </fieldset>
+
+                    {/* Q5: Keep using (1..5) */}
+                    <fieldset>
+                      <legend className="mb-2 font-black text-sm text-black">
+                        After the beta, how likely are you to keep using it?
+                        <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                      </legend>
+                      <RatingRow
+                        max={5}
+                        value={keep}
+                        onChange={(n) => setKeep(keep === n ? undefined : n)}
+                        lowLabel="Not likely"
+                        highLabel="Definitely"
+                        testIdPrefix="beta-feedback-keep"
+                      />
+                    </fieldset>
+
+                    {/* Q6: Pain point */}
+                    <div>
+                      <label
+                        htmlFor="beta-feedback-pain"
+                        className="mb-1 block font-black text-sm text-black"
+                      >
+                        What&apos;s the biggest problem you&apos;re hoping Family Hub solves?
+                        <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                      </label>
+                      <CountedTextarea
+                        id="beta-feedback-pain"
+                        testId="beta-feedback-pain"
+                        rows={3}
+                        value={pain}
+                        onChange={setPain}
+                        placeholder="e.g. Keeping everyone in sync on chores and activities…"
+                      />
+                    </div>
+
+                    {/* Q7: Feature request */}
+                    <div>
+                      <label
+                        htmlFor="beta-feedback-feature"
+                        className="mb-1 block font-black text-sm text-black"
+                      >
+                        What&apos;s one feature you wish it had?
+                        <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                      </label>
+                      <CountedTextarea
+                        id="beta-feedback-feature"
+                        testId="beta-feedback-feature"
+                        rows={3}
+                        value={feature}
+                        onChange={setFeature}
+                        placeholder="e.g. A shared shopping list that everyone can add to…"
+                      />
+                    </div>
+
+                    {/* Q8: Anything else */}
+                    <div>
+                      <label
+                        htmlFor="beta-feedback-other"
+                        className="mb-1 block font-black text-sm text-black"
+                      >
+                        Anything else?
+                        <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                      </label>
+                      <CountedTextarea
+                        id="beta-feedback-other"
+                        testId="beta-feedback-other"
+                        rows={3}
+                        value={other}
+                        onChange={setOther}
+                        placeholder="Anything else on your mind…"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Error message */}
+                {state === 'error' && (
+                  <p
+                    role="alert"
+                    data-testid="beta-feedback-error"
+                    className="rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+                  >
+                    {errorMsg}
+                  </p>
+                )}
+
+                {/* Footer */}
+                <div className="flex items-center justify-between gap-3 border-t-2 border-black pt-4">
+                  <p className="text-xs text-gray-500">Answer at least one question to submit.</p>
+                  <Button
+                    variant="primary"
+                    disabled={!hasAnswer || state === 'submitting'}
+                    onClick={handleSubmit}
+                    testId="beta-feedback-submit"
+                  >
+                    {state === 'submitting' ? 'Sending…' : 'Send feedback'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </Dialog>
     </>

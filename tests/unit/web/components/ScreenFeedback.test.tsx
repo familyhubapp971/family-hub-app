@@ -229,4 +229,38 @@ describe('<ScreenFeedback />', () => {
     render(<ScreenFeedback role="admin" />);
     expect(screen.getByTestId('screen-feedback-button').parentElement).toHaveClass('bottom-24');
   });
+
+  // FHS-678: on a phone the header and close button sat under the browser bar.
+  describe('fits a small screen', () => {
+    it('keeps the header out of the scrolling part, so it never scrolls away', () => {
+      render(<ScreenFeedback role="admin" />);
+      open();
+      const header = screen.getByTestId('screen-feedback-header');
+      const body = screen.getByTestId('screen-feedback-body');
+      expect(header).toHaveClass('shrink-0');
+      expect(body).toHaveClass('overflow-y-auto', 'min-h-0');
+      expect(body).not.toContainElement(header);
+      expect(header).toContainElement(
+        screen.getByRole('button', { name: 'Close feedback dialog' }),
+      );
+    });
+
+    it('caps the card at the visible screen height, not the 90vh that iPhones overshoot', () => {
+      render(<ScreenFeedback role="admin" />);
+      open();
+      const card = screen.getByTestId('screen-feedback-card');
+      expect(card.className).not.toContain('90vh');
+      expect(card.className).toContain('max-h-[calc(100dvh-2rem)]');
+      expect(card).toHaveClass('min-h-0', 'flex-col');
+    });
+
+    it('has a close button at least 44px square', () => {
+      render(<ScreenFeedback role="admin" />);
+      open();
+      expect(screen.getByRole('button', { name: 'Close feedback dialog' })).toHaveClass(
+        'h-11',
+        'w-11',
+      );
+    });
+  });
 });

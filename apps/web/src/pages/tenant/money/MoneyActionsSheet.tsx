@@ -187,7 +187,7 @@ export function MoneyActionsSheet({
           Below `sm` the sheet stays full-bleed, as it was. */}
       <div className="relative w-full sm:w-[42rem] sm:max-w-[calc(100vw-2rem)]">
         <div className="absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-t-3xl bg-black sm:rounded-3xl" />
-        <div className="relative max-h-[85vh] overflow-y-auto rounded-t-3xl border-2 border-black bg-white shadow-neo sm:rounded-3xl sm:border-3">
+        <div className="relative max-h-[85vh] overflow-y-auto supports-[height:100dvh]:max-h-[85dvh] rounded-t-3xl border-2 border-black bg-white shadow-neo sm:rounded-3xl sm:border-3">
           <div
             data-testid="money-actions-sheet-header"
             className={`flex items-start gap-3 border-b-2 border-black p-5 sm:border-b-3 ${meta.tone}`}

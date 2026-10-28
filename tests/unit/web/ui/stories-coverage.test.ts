@@ -29,7 +29,6 @@ const AWAITING_STORIES = [
   'CollapsibleSection',
   'ConfirmDialog',
   'CurrencyPicker',
-  'Dialog',
   'Dropdown',
   'DynamicCalendar',
   'FeatureCard',

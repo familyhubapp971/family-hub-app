@@ -216,8 +216,16 @@ export function ScreenFeedback({ role, screenKey }: ScreenFeedbackProps) {
         testId="screen-feedback-dialog"
         ariaLabelledBy={titleId}
       >
-        <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-black bg-white shadow-neo-lg">
-          <div className="sticky top-0 z-10 rounded-t-2xl border-b-2 border-black bg-pink-400 px-5 py-4 pr-14">
+        {/* FHS-678: the card fits the visible screen. The header stays put and
+            only the body scrolls, so the close button is always in reach. */}
+        <div
+          className="relative flex max-h-[calc(100vh-2rem)] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-2xl border-2 border-black bg-white shadow-neo-lg supports-[height:100dvh]:max-h-[calc(100dvh-2rem)]"
+          data-testid="screen-feedback-card"
+        >
+          <div
+            className="relative shrink-0 border-b-2 border-black bg-pink-400 px-5 py-4 pr-16"
+            data-testid="screen-feedback-header"
+          >
             <h2 id={titleId} className="font-display text-xl font-black text-black">
               Feedback on this screen
             </h2>
@@ -231,7 +239,7 @@ export function ScreenFeedback({ role, screenKey }: ScreenFeedbackProps) {
               type="button"
               aria-label="Close feedback dialog"
               onClick={handleClose}
-              className="absolute right-4 top-4 rounded-lg border-2 border-black bg-white p-1 text-black hover:bg-yellow-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-600"
+              className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black bg-white text-black hover:bg-yellow-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-600"
             >
               <span aria-hidden="true" className="block h-5 w-5 text-center font-black leading-5">
                 ✕
@@ -239,160 +247,165 @@ export function ScreenFeedback({ role, screenKey }: ScreenFeedbackProps) {
             </button>
           </div>
 
-          {state === 'success' ? (
-            <div
-              className="flex flex-col items-center gap-4 px-5 py-10 text-center"
-              data-testid="screen-feedback-thanks"
-            >
-              <span className="text-5xl" aria-hidden="true">
-                🎉
-              </span>
-              <h3 className="font-display text-2xl font-black">Thank you!</h3>
-              <p className="text-gray-700">
-                Your feedback on {screen?.area} helps us build a better Family Hub.
-              </p>
-              <Button onClick={handleClose} variant="primary">
-                Close
-              </Button>
-            </div>
-          ) : screen ? (
-            <div className="space-y-6 px-5 py-5">
-              {screen.features.length > 0 && (
-                <fieldset>
-                  <legend className="mb-2 font-black text-sm text-black">
-                    Which part are you thinking of?
-                    <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                  </legend>
-                  <div className="flex flex-wrap gap-2">
-                    {screen.features.map((name) => {
-                      const selected = features.includes(name);
-                      return (
-                        <button
-                          key={name}
-                          type="button"
-                          aria-pressed={selected}
-                          onClick={() => toggleFeature(name)}
-                          data-testid="screen-feedback-feature"
-                          className={[
-                            'min-h-[44px] rounded-full border-2 border-black px-4 py-2 text-sm font-bold transition-all',
-                            'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
-                            selected
-                              ? 'bg-pink-400 text-black shadow-neo-sm'
-                              : 'bg-white text-black hover:bg-yellow-100',
-                          ].join(' ')}
-                        >
-                          {name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-              )}
-
-              <fieldset>
-                <legend className="mb-2 font-black text-sm text-black">
-                  How well does {screen.area} solve a real problem for your family?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </legend>
-                <RatingRow
-                  max={5}
-                  value={solves}
-                  onChange={(n) => setSolves(solves === n ? undefined : n)}
-                  lowLabel="Not at all"
-                  highLabel="Extremely well"
-                  testIdPrefix="screen-feedback-solves"
-                />
-              </fieldset>
-
-              <fieldset>
-                <legend className="mb-2 font-black text-sm text-black">
-                  How easy is {screen.area} to use?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </legend>
-                <RatingRow
-                  max={5}
-                  value={ease}
-                  onChange={(n) => setEase(ease === n ? undefined : n)}
-                  lowLabel="Very hard"
-                  highLabel="Very easy"
-                  testIdPrefix="screen-feedback-ease"
-                />
-              </fieldset>
-
-              <fieldset>
-                <legend className="mb-2 font-black text-sm text-black">
-                  After the beta, how likely are you to keep using {screen.area}?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </legend>
-                <RatingRow
-                  max={5}
-                  value={keep}
-                  onChange={(n) => setKeep(keep === n ? undefined : n)}
-                  lowLabel="Not likely"
-                  highLabel="Definitely"
-                  testIdPrefix="screen-feedback-keep"
-                />
-              </fieldset>
-
-              <div>
-                <label
-                  htmlFor="screen-feedback-wish"
-                  className="mb-1 block font-black text-sm text-black"
-                >
-                  What&apos;s one thing you wish {screen.area} had?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </label>
-                <CountedTextarea
-                  id="screen-feedback-wish"
-                  testId="screen-feedback-wish"
-                  rows={3}
-                  value={wish}
-                  onChange={setWish}
-                  placeholder={`e.g. ${screen.wishExample}`}
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="screen-feedback-other"
-                  className="mb-1 block font-black text-sm text-black"
-                >
-                  Anything else about {screen.area}?
-                  <span className="ml-1 font-normal text-gray-400">(optional)</span>
-                </label>
-                <CountedTextarea
-                  id="screen-feedback-other"
-                  testId="screen-feedback-other"
-                  rows={3}
-                  value={other}
-                  onChange={setOther}
-                  placeholder="Anything else on your mind…"
-                />
-              </div>
-
-              {state === 'error' && (
-                <p
-                  role="alert"
-                  data-testid="screen-feedback-error"
-                  className="rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
-                >
-                  {errorMsg}
+          <div
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+            data-testid="screen-feedback-body"
+          >
+            {state === 'success' ? (
+              <div
+                className="flex flex-col items-center gap-4 px-5 py-10 text-center"
+                data-testid="screen-feedback-thanks"
+              >
+                <span className="text-5xl" aria-hidden="true">
+                  🎉
+                </span>
+                <h3 className="font-display text-2xl font-black">Thank you!</h3>
+                <p className="text-gray-700">
+                  Your feedback on {screen?.area} helps us build a better Family Hub.
                 </p>
-              )}
-
-              <div className="flex items-center justify-between gap-3 border-t-2 border-black pt-4">
-                <p className="text-xs text-gray-500">Answer at least one question to submit.</p>
-                <Button
-                  variant="primary"
-                  disabled={!hasAnswer || state === 'submitting'}
-                  onClick={handleSubmit}
-                  testId="screen-feedback-submit"
-                >
-                  {state === 'submitting' ? 'Sending…' : 'Send feedback'}
+                <Button onClick={handleClose} variant="primary">
+                  Close
                 </Button>
               </div>
-            </div>
-          ) : null}
+            ) : screen ? (
+              <div className="space-y-6 px-5 py-5">
+                {screen.features.length > 0 && (
+                  <fieldset>
+                    <legend className="mb-2 font-black text-sm text-black">
+                      Which part are you thinking of?
+                      <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                    </legend>
+                    <div className="flex flex-wrap gap-2">
+                      {screen.features.map((name) => {
+                        const selected = features.includes(name);
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => toggleFeature(name)}
+                            data-testid="screen-feedback-feature"
+                            className={[
+                              'min-h-[44px] rounded-full border-2 border-black px-4 py-2 text-sm font-bold transition-all',
+                              'focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-400 focus-visible:ring-offset-2',
+                              selected
+                                ? 'bg-pink-400 text-black shadow-neo-sm'
+                                : 'bg-white text-black hover:bg-yellow-100',
+                            ].join(' ')}
+                          >
+                            {name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                )}
+
+                <fieldset>
+                  <legend className="mb-2 font-black text-sm text-black">
+                    How well does {screen.area} solve a real problem for your family?
+                    <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                  </legend>
+                  <RatingRow
+                    max={5}
+                    value={solves}
+                    onChange={(n) => setSolves(solves === n ? undefined : n)}
+                    lowLabel="Not at all"
+                    highLabel="Extremely well"
+                    testIdPrefix="screen-feedback-solves"
+                  />
+                </fieldset>
+
+                <fieldset>
+                  <legend className="mb-2 font-black text-sm text-black">
+                    How easy is {screen.area} to use?
+                    <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                  </legend>
+                  <RatingRow
+                    max={5}
+                    value={ease}
+                    onChange={(n) => setEase(ease === n ? undefined : n)}
+                    lowLabel="Very hard"
+                    highLabel="Very easy"
+                    testIdPrefix="screen-feedback-ease"
+                  />
+                </fieldset>
+
+                <fieldset>
+                  <legend className="mb-2 font-black text-sm text-black">
+                    After the beta, how likely are you to keep using {screen.area}?
+                    <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                  </legend>
+                  <RatingRow
+                    max={5}
+                    value={keep}
+                    onChange={(n) => setKeep(keep === n ? undefined : n)}
+                    lowLabel="Not likely"
+                    highLabel="Definitely"
+                    testIdPrefix="screen-feedback-keep"
+                  />
+                </fieldset>
+
+                <div>
+                  <label
+                    htmlFor="screen-feedback-wish"
+                    className="mb-1 block font-black text-sm text-black"
+                  >
+                    What&apos;s one thing you wish {screen.area} had?
+                    <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                  </label>
+                  <CountedTextarea
+                    id="screen-feedback-wish"
+                    testId="screen-feedback-wish"
+                    rows={3}
+                    value={wish}
+                    onChange={setWish}
+                    placeholder={`e.g. ${screen.wishExample}`}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="screen-feedback-other"
+                    className="mb-1 block font-black text-sm text-black"
+                  >
+                    Anything else about {screen.area}?
+                    <span className="ml-1 font-normal text-gray-400">(optional)</span>
+                  </label>
+                  <CountedTextarea
+                    id="screen-feedback-other"
+                    testId="screen-feedback-other"
+                    rows={3}
+                    value={other}
+                    onChange={setOther}
+                    placeholder="Anything else on your mind…"
+                  />
+                </div>
+
+                {state === 'error' && (
+                  <p
+                    role="alert"
+                    data-testid="screen-feedback-error"
+                    className="rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+                  >
+                    {errorMsg}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-between gap-3 border-t-2 border-black pt-4">
+                  <p className="text-xs text-gray-500">Answer at least one question to submit.</p>
+                  <Button
+                    variant="primary"
+                    disabled={!hasAnswer || state === 'submitting'}
+                    onClick={handleSubmit}
+                    testId="screen-feedback-submit"
+                  >
+                    {state === 'submitting' ? 'Sending…' : 'Send feedback'}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       </Dialog>
     </>

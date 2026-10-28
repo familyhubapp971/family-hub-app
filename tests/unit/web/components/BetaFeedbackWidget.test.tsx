@@ -554,4 +554,18 @@ describe('<BetaFeedbackWidget />: session present, no tenant slug', () => {
       'Anything else?',
     ]);
   });
+
+  // FHS-678: the same phone fix as the per-screen form, layout only.
+  it('keeps the header and close button out of the scrolling part', () => {
+    renderWidget();
+    openDialog();
+    const header = screen.getByTestId('beta-feedback-header');
+    const body = screen.getByTestId('beta-feedback-body');
+    expect(body).toHaveClass('overflow-y-auto', 'min-h-0');
+    expect(body).not.toContainElement(header);
+    const close = screen.getByRole('button', { name: 'Close feedback dialog' });
+    expect(header).toContainElement(close);
+    expect(close).toHaveClass('h-11', 'w-11');
+    expect(screen.getByTestId('beta-feedback-card').className).not.toContain('90vh');
+  });
 });

@@ -1,6 +1,6 @@
 # Feature: Feedback on each screen
 
-**Jira:** [FHS-670](https://qualicion2.atlassian.net/browse/FHS-670), [FHS-671](https://qualicion2.atlassian.net/browse/FHS-671) (epic FHS-417, Beta program and feedback)
+**Jira:** [FHS-670](https://qualicion2.atlassian.net/browse/FHS-670), [FHS-671](https://qualicion2.atlassian.net/browse/FHS-671), [FHS-678](https://qualicion2.atlassian.net/browse/FHS-678) (epic FHS-417, Beta program and feedback)
 **Status:** shipped
 **Related:** FHS-418 (in-app survey), FHS-429 (homepage survey), FHS-434 (floating button removed from in-app screens)
 
@@ -88,6 +88,13 @@ browser tab closes, so one person's answers from one visit group together.
 - **Given** a 768px wide screen
 - **Then** the button is at least 44px square, the page does not scroll sideways, and the form fits the screen
 
+**Scenario: The feedback form fits every screen size**
+
+- **Given** a screen of 320x568, 375x667, 390x844, 430x932, 667x375, 768x1024, 1024x768 or 1440x900
+- **When** the parent opens the feedback form
+- **Then** the whole form, its pink header and its 44px close button sit inside the screen, with no sideways scrolling
+- **And** after scrolling down to Send, the header and close button are still on screen
+
 **Scenario: A bubble reminds parents they can give feedback on each screen**
 
 - **Given** I am signed in as the admin of a family
@@ -111,6 +118,7 @@ browser tab closes, so one person's answers from one visit group together.
 
 - **Floating at the bottom, with room made for it.** The founder asked for it at the bottom of the screen (FHS-671). FHS-434 once removed a floating button because it covered content, so while it shows every page gets 6rem of extra room at its end, and on Reward settings it sits above the fixed Save bar.
 - **The bubble shows on every screen or tab change, not every tap.** A bubble on every tap would get in the way of using the screen. It hides after five seconds and while the form is open. Screen readers hear the same sentence, and keyboard users reach the Feedback button itself.
+- **The form never grows taller than the screen (FHS-678).** On an iPhone the old form used 90% of the screen height, which counts the area behind the browser bars, so its header and close button hid under the address bar. The form now fits the visible screen, keeps its header fixed and scrolls only the questions. The homepage survey got the same layout fix; its questions and wording did not change.
 - **Grown-ups only.** We do not collect children's opinions.
 - **One table, not a new one.** Answers go in `beta_feedback` with three new columns. Rows from the general survey leave them empty.
 - **The visit ID lives in the browser tab.** It only groups answers. It is not saved state, so keeping it on the device fits the rule that family data lives on the server.
