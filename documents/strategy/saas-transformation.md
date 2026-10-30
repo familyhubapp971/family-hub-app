@@ -18,7 +18,7 @@ the mental load off the people who hold it all together.
 
 The full statement, with what we believe and the change we make, is the
 Vision and Mission document (FHS-679), source
-`scripts/doc-src/fh-vision-mission.html`.
+`scripts/docs/doc-src/fh-vision-mission.html`.
 
 ### What we build to get there
 

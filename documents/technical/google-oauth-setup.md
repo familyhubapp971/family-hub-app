@@ -28,22 +28,22 @@ checklist.
 - Staging Supabase project (`maolytpqazmykjzdybtj`) is configured,
   `external_google_enabled: true`, client_id + secret pasted in.
 - Smoke-test confirms staging redirects to `accounts.google.com` with a
-  valid client_id, see [scripts/smoke-google-oauth.py](../../scripts/smoke-google-oauth.py).
+  valid client_id, see [scripts/auth/smoke-google-oauth.py](../../scripts/auth/smoke-google-oauth.py).
 
 To re-apply or audit drift on staging:
 
 ```bash
 set -a; source .env.local; set +a
-python3 scripts/configure-google-oauth.py --check   # diff-only
-python3 scripts/configure-google-oauth.py           # apply
-python3 scripts/smoke-google-oauth.py               # verify
+python3 scripts/auth/configure-google-oauth.py --check   # diff-only
+python3 scripts/auth/configure-google-oauth.py           # apply
+python3 scripts/auth/smoke-google-oauth.py               # verify
 ```
 
 The configure script is idempotent, re-running with the same env vars
 is a no-op. To rotate the secret after changing it in Google Cloud:
 
 ```bash
-python3 scripts/configure-google-oauth.py --rotate-secret
+python3 scripts/auth/configure-google-oauth.py --rotate-secret
 ```
 
 ---
@@ -72,8 +72,8 @@ When that flips:
 
 ```bash
 set -a; source .env.local; set +a
-python3 scripts/configure-google-oauth.py --project production
-python3 scripts/smoke-google-oauth.py --project production
+python3 scripts/auth/configure-google-oauth.py --project production
+python3 scripts/auth/smoke-google-oauth.py --project production
 ```
 
 The script reuses the same `GOOGLE_OAUTH_CLIENT_ID` /
@@ -128,7 +128,7 @@ Google Cloud Console:
    GOOGLE_OAUTH_CLIENT_ID=...
    GOOGLE_OAUTH_CLIENT_SECRET=...
    ```
-5. Run `python3 scripts/configure-google-oauth.py` for each project that
+5. Run `python3 scripts/auth/configure-google-oauth.py` for each project that
    should pick up the new credentials.
 
 ---
@@ -153,9 +153,9 @@ a recovery exercise.
 
 ## Files
 
-- [`scripts/configure-google-oauth.py`](../../scripts/configure-google-oauth.py): idempotent
+- [`scripts/auth/configure-google-oauth.py`](../../scripts/auth/configure-google-oauth.py): idempotent
   PATCH against `api.supabase.com/v1/projects/{ref}/config/auth`
-- [`scripts/smoke-google-oauth.py`](../../scripts/smoke-google-oauth.py): verifies the provider
+- [`scripts/auth/smoke-google-oauth.py`](../../scripts/auth/smoke-google-oauth.py): verifies the provider
   redirects to Google with a valid client_id
 - `.env.local`: holds `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`,
   and `SUPABASE_ACCESS_TOKEN`

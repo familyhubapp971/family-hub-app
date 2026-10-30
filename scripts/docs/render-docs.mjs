@@ -1,4 +1,4 @@
-// Renders every doc source in scripts/doc-src/ to its PDF under documents/
+// Renders every doc source in scripts/docs/doc-src/ to its PDF under documents/
 // (docs folders are PDF-only, FHS-552), each one filed by what it is for:
 //
 //   documents/business/     the pitch, the business model, the vision, and
@@ -11,7 +11,7 @@
 // All of these are gitignored and land locally
 // for the founder to share, as are their folders.
 //
-// Usage: node scripts/render-docs.mjs
+// Usage: node scripts/docs/render-docs.mjs
 // The flowing docs (theory-of-change, impact framework) get a printed
 // running footer on every page; the paged docs carry their own footers.
 import { createRequire } from 'module';
@@ -25,7 +25,7 @@ import { mdToDocHtml } from './md-to-doc.mjs';
 
 /* global document, getComputedStyle */
 
-const root = path.dirname(fileURLToPath(new URL('.', import.meta.url)));
+const root = fileURLToPath(new URL('../../', import.meta.url));
 const requireE2e = createRequire(path.join(root, 'tests/e2e/package.json'));
 const { chromium } = requireE2e('@playwright/test');
 
@@ -175,11 +175,11 @@ for (const d of DOCS) {
   // clone will not have them.
   if (d.md) {
     await page.setContent(mdToDocHtml(path.join(root, d.md), d.skip), { waitUntil: 'networkidle' });
-  } else if (!fs.existsSync(path.join(root, 'scripts/doc-src', d.src))) {
+  } else if (!fs.existsSync(path.join(root, 'scripts/docs/doc-src', d.src))) {
     console.warn('skipped', d.src, '(local-only source not found)');
     continue;
   } else {
-    await page.goto('file://' + path.join(root, 'scripts/doc-src', d.src), {
+    await page.goto('file://' + path.join(root, 'scripts/docs/doc-src', d.src), {
       waitUntil: 'networkidle',
     });
   }

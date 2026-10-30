@@ -15,8 +15,8 @@ white-label). When a new epic is created, add it to EPIC_PHASE; until then it
 shows under "Unscoped" at the bottom as a reminder.
 
 Usage:
-    python3 scripts/refresh-confluence-epics-page.py
-    python3 scripts/refresh-confluence-epics-page.py --reason "FHS-158 close"
+    python3 scripts/jira/refresh-confluence-epics-page.py
+    python3 scripts/jira/refresh-confluence-epics-page.py --reason "FHS-158 close"
 
 Reads env vars: EMAIL, JIRA_API_TOKEN, URL. Standard library only.
 """
@@ -230,7 +230,7 @@ def render_body(epics: list[dict], epic_children: dict[str, list[dict]]) -> str:
 
     parts: list[str] = [
         "<p>Auto-generated from Jira by "
-        "<code>scripts/refresh-confluence-epics-page.py</code> after every ticket "
+        "<code>scripts/jira/refresh-confluence-epics-page.py</code> after every ticket "
         "close. Epics are grouped by <strong>delivery phase</strong> (the order work "
         "ships), each expandable to its stories so you can see what is done and what "
         "is left.</p>",
