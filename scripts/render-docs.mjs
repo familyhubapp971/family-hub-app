@@ -1,7 +1,8 @@
 // Renders every doc source in scripts/doc-src/ to its PDF under documents/
 // (docs folders are PDF-only, FHS-552), each one filed by what it is for:
 //
-//   documents/business/     the pitch and the business model
+//   documents/business/     the pitch, the business model, the vision, and
+//                           the strategy notes (built from documents/strategy/*.md)
 //   documents/commercial/   the commercial case
 //   documents/impact/       theory of change and impact measurement
 //   documents/investments/  investor and accelerator applications
@@ -20,6 +21,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { PDFDocument } from 'pdf-lib';
+import { mdToDocHtml } from './md-to-doc.mjs';
 
 /* global document, getComputedStyle */
 
@@ -87,6 +89,30 @@ const DOCS = [
     margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
     footerTitle: 'Vision and Mission',
   },
+  // The strategy notes: the Markdown note is the source, not an HTML file.
+  {
+    md: 'documents/strategy/saas-transformation.md',
+    out: 'saas-transformation-strategy.pdf',
+    skip: ['Architecture', 'Sprint-to-milestone mapping', 'Open questions', 'References'],
+    outDir: 'documents/business/strategy',
+    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
+    footerTitle: 'SaaS Transformation Strategy',
+  },
+  {
+    md: 'documents/strategy/positioning.md',
+    out: 'commercial-positioning.pdf',
+    skip: [
+      'Anti-personas (deliberately not for us)',
+      'Geographic ICP order',
+      'Pricing narrative',
+      'Sales objections + answers',
+      'How to use this doc in a conversation',
+      'References',
+    ],
+    outDir: 'documents/business/strategy',
+    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
+    footerTitle: 'Commercial Positioning',
+  },
   {
     src: 'fh-business-model-canvas.html',
     out: 'business-model-canvas.pdf',
@@ -147,13 +173,16 @@ const page = await browser.newPage();
 for (const d of DOCS) {
   // Contract sources are gitignored (they hold personal details), so a fresh
   // clone will not have them.
-  if (!fs.existsSync(path.join(root, 'scripts/doc-src', d.src))) {
+  if (d.md) {
+    await page.setContent(mdToDocHtml(path.join(root, d.md), d.skip), { waitUntil: 'networkidle' });
+  } else if (!fs.existsSync(path.join(root, 'scripts/doc-src', d.src))) {
     console.warn('skipped', d.src, '(local-only source not found)');
     continue;
+  } else {
+    await page.goto('file://' + path.join(root, 'scripts/doc-src', d.src), {
+      waitUntil: 'networkidle',
+    });
   }
-  await page.goto('file://' + path.join(root, 'scripts/doc-src', d.src), {
-    waitUntil: 'networkidle',
-  });
   if (d.footerTitle && !d.noStretch) {
     // Flowing docs: stretch the body to a whole number of printed pages
     // and push the in-document <footer> endnote to the last page bottom.
