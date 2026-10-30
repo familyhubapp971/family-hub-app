@@ -17,9 +17,9 @@ An epic with no children is left alone: there is nothing to infer from.
 
 Usage:
     set -a; source .env.local; set +a
-    python3 scripts/sync-epic-status.py            # report only, changes nothing
-    python3 scripts/sync-epic-status.py --apply    # actually transition
-    python3 scripts/sync-epic-status.py --apply --epic FHS-178
+    python3 scripts/jira/sync-epic-status.py            # report only, changes nothing
+    python3 scripts/jira/sync-epic-status.py --apply    # actually transition
+    python3 scripts/jira/sync-epic-status.py --apply --epic FHS-178
 
 Standard library only, same as the other scripts here.
 """

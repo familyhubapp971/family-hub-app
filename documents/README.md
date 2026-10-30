@@ -17,7 +17,7 @@ Source of truth for what the product does, why, and how it's built.
 ### Rendered PDFs
 
 These hold no Markdown. Each is built from an HTML source in
-[`scripts/doc-src/`](../scripts/doc-src/) by `node scripts/render-docs.mjs`,
+[`scripts/docs/doc-src/`](../scripts/docs/doc-src/) by `node scripts/docs/render-docs.mjs`,
 which is where you edit them.
 
 | Folder       | Holds                                                               | In git |
