@@ -81,6 +81,13 @@ const DOCS = [
   },
   // The business itself.
   {
+    src: 'fh-vision-mission.html',
+    out: 'vision-mission.pdf',
+    outDir: 'documents/business/vision',
+    margin: { top: '15mm', bottom: '16mm', left: 0, right: 0 },
+    footerTitle: 'Vision and Mission',
+  },
+  {
     src: 'fh-business-model-canvas.html',
     out: 'business-model-canvas.pdf',
     outDir: 'documents/business/model-canvases',
