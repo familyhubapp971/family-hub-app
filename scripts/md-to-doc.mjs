@@ -104,15 +104,18 @@ function blocks(md) {
 // `skip` names H2 or H3 sections left out of the PDF (internal detail a
 // reader of the shared PDF does not need); the note itself keeps them.
 export function mdToDocHtml(file, skip = []) {
+  const md = fs.readFileSync(file, 'utf8');
+  const skipped = new Set(skip.map(inline));
   let dropLevel = 0;
-  const html = blocks(fs.readFileSync(file, 'utf8')).filter((b) => {
-    const level = Number(b.match(/^<h([23])>/)?.[1] ?? 0);
+  const html = blocks(md).filter((b) => {
+    const m = b.match(/^<h([23])>(.*)<\/h\1>$/);
+    const level = m ? Number(m[1]) : 0;
     if (level && (!dropLevel || level <= dropLevel)) {
-      dropLevel = skip.includes(b.replace(/<[^>]+>/g, '')) ? level : 0;
+      dropLevel = skipped.has(m[2]) ? level : 0;
     }
     return !dropLevel;
   });
-  const title = html[0].replace(/<[^>]+>/g, '');
+  const title = esc(md.split('\n')[0].replace(/^#+\s*/, ''));
   // The title and meta block form the purple hero panel.
   const heroEnd = html[1]?.startsWith('<p class="meta">') ? 2 : 1;
   const hero = html.slice(0, heroEnd).join('');
