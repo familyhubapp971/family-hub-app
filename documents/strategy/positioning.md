@@ -1,7 +1,7 @@
 # Family Hub: Commercial Positioning
 
 **Status:** living document
-**Updated:** 2026-04-30
+**Updated:** 2026-10-30
 **Owner:** product + GTM
 **Audience:** sales, marketing, partnerships, anyone in a commercial conversation about Family Hub
 
@@ -12,6 +12,14 @@ roadmap) by going one layer deeper into buyer personas, messaging
 hooks, competitive differentiation, and what we deliberately won't do.
 
 ---
+
+## Our mission
+
+> **We bring every kind of family onto the same page, and lift the
+> mental load off the people who hold it all together.**
+
+**Tagline:** Same page. Lighter load. The vision sits in
+[`saas-transformation.md`](saas-transformation.md).
 
 ## One-line positioning
 

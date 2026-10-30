@@ -1,13 +1,26 @@
 # Family Hub: SaaS Transformation Strategy
 
 **Status:** living document
-**Updated:** 2026-04-24
+**Updated:** 2026-10-30
 **Owner:** product + leadership
 **Audience:** internal team, prospective investors / acquirers
 
 ---
 
 ## Vision
+
+> **Every family, one team. No one carrying it alone.**
+
+**Mission:** We bring every kind of family onto the same page, and lift
+the mental load off the people who hold it all together.
+
+**Tagline:** Same page. Lighter load.
+
+The full statement, with what we believe and the change we make, is the
+Vision and Mission document (FHS-679), source
+`scripts/doc-src/fh-vision-mission.html`.
+
+### What we build to get there
 
 Family Hub is **the operating system for family life**: a single
 multi-tenant platform that combines family admin (calendars, meals,
