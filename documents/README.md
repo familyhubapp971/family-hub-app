@@ -1,0 +1,62 @@
+# Documentation
+
+Source of truth for what the product does, why, and how it's built.
+
+## Layout
+
+| Folder                   | Owns                                                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| [features/](features/)   | Product requirements per feature: user stories, Gherkin acceptance criteria, success metrics, scope                    |
+| [technical/](technical/) | Implementation specs: architecture, API contracts, schemas, deployment, sequence diagrams                              |
+| [decisions/](decisions/) | Architecture Decision Records (ADRs): durable choices that future contributors must respect                            |
+| [strategy/](strategy/)   | Long-form strategy docs: product vision, market positioning, multi-year roadmap, transformation plans                  |
+| [design/](design/)       | Visual review artefacts: user journeys, flow diagrams, IA maps: render in a browser using the Family Hub design tokens |
+| [demo/](demo/)           | Living "what's shipped" artefacts for stakeholder demos and sprint reviews: cumulative, updated every sprint close     |
+| [legal/](legal/)         | Published legal text: privacy policy, terms                                                                            |
+
+### Rendered PDFs
+
+These hold no Markdown. Each is built from an HTML source in
+[`scripts/docs/doc-src/`](../scripts/docs/doc-src/) by `node scripts/docs/render-docs.mjs`,
+which is where you edit them.
+
+| Folder       | Holds                                                               | In git |
+| ------------ | ------------------------------------------------------------------- | ------ |
+| commercial/  | The commercial case: where we fit, product-market fit, go to market | no     |
+| business/    | The pitch deck and the business model canvas                        | no     |
+| impact/      | Theory of change, impact measurement framework                      | no     |
+| investments/ | Investor and accelerator applications (Hub71)                       | no     |
+| qa/          | Briefs handed to testers: beta tester, QA overview, feature tour    | no     |
+
+"In git: no" means the PDF lands on your machine when you run the renderer and
+is shared from there. The source is always tracked, so anyone can rebuild it.
+
+## How docs flow
+
+```text
+strategy/  ── informs ──▶  features/  ── implemented as ──▶  technical/
+                                │
+                                └──▶ decisions/ (when a choice deserves an ADR)
+```
+
+1. **Strategy** sets direction (rare changes; long-lived).
+2. **Features** translate strategy into user-visible capabilities (per Jira ticket).
+3. **Technical** docs spell out _how_ a feature is built (created when implementation starts).
+4. **Decisions** capture the _why_ behind non-obvious choices (created at the moment of deciding).
+
+## Conventions
+
+- Every doc is plain Markdown, kebab-case filename, one top-level `# H1`.
+- Reference Jira tickets by key (`FHS-XXX`), they auto-link in the GitHub UI once Jira ↔ GitHub integration is configured.
+- Cross-link between folders rather than duplicating content.
+- See [`/CLAUDE.md`](../CLAUDE.md) for the full doc-authoring rules and the
+  user-story + Gherkin format required in `features/`.
+
+## Index of subfolder READMEs
+
+- [features/README.md](features/README.md): what to put in `features/`
+- [technical/README.md](technical/README.md): what to put in `technical/`
+- [decisions/README.md](decisions/README.md): when to write an ADR
+- [strategy/README.md](strategy/README.md): strategy doc scope and cadence
+- [design/README.md](design/README.md): visual review artefacts (user journeys, flow diagrams)
+- [demo/README.md](demo/README.md): sprint-close shipped-state docs ("what's shipped" swimlane)

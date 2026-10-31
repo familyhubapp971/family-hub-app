@@ -4,38 +4,150 @@ A multi-tenant SaaS platform for families to coordinate schedules, tasks, and sh
 
 ## Stack
 
-- **API:** [Hono](https://hono.dev/) + [Drizzle ORM](https://orm.drizzle.team/) + [Zod](https://zod.dev/)
-- **Frontend:** [React](https://react.dev/) + [Vite](https://vitejs.dev/) + [Tailwind CSS](https://tailwindcss.com/)
-- **Database:** Postgres (with Row-Level Security for tenant isolation)
+- **API:** [Hono](https://hono.dev/) + [Drizzle ORM](https://orm.drizzle.team/) + [Zod](https://zod.dev/) + [pino](https://getpino.io/)
+- **Frontend:** [React 18](https://react.dev/) + [Vite](https://vitejs.dev/) + [Tailwind CSS 3](https://tailwindcss.com/)
+- **Database:** Postgres (with Row-Level Security for tenant isolation, [ADR 0001](documents/decisions/0001-multi-tenancy.md))
 - **Hosting:** Railway (staging + production)
-- **Testing:** Vitest (unit), Playwright (E2E), k6 (perf)
+- **Auth:** Supabase Auth ([ADR 0003](documents/decisions/0003-auth-library.md))
+- **Billing:** Stripe ([ADR 0004](documents/decisions/0004-stripe-billing.md))
+- **Testing:** Vitest (unit + integration), Playwright + playwright-bdd (E2E), k6 (perf)
+- **Package manager:** pnpm 10 workspaces
+
+### Stack Reuse Rationale
+
+This stack is **deliberately reused verbatim** from the legacy
+`family-hub` codebase rather than re-evaluated greenfield. The
+trade-offs and the criteria for revisiting any single library are
+captured in [ADR 0007: Reuse the family-hub stack](documents/decisions/0007-stack-reuse.md).
+
+In short: Sprint 0's job is to ship a tenant vertical slice, not to
+bikeshed library choices. The two surfaces that **do** diverge from
+family-hub get their own ADRs ([0001](documents/decisions/0001-multi-tenancy.md)
+multi-tenancy, [0002](documents/decisions/0002-subdomain-tenant-routing.md)
+subdomain routing). Swap a single library when a specific metric
+forces it; don't re-litigate the whole stack at once.
 
 ## Quick Start
+
+Requires Docker (Compose v2), Node 20+, pnpm 10+.
 
 ```bash
 # Install
 pnpm install
 
-# Configure
-cp .env.example .env.local
-# Fill in DATABASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY, etc.
+# One-command dev: Postgres + migrations + api (:3001) + web (:5173)
+# (creates .env.local from .env.example automatically if missing)
+./scripts/dev
 
-# Develop
-pnpm dev          # runs api + web concurrently
-pnpm test         # run unit tests
-pnpm test:e2e     # run Playwright E2E
+# In another shell: populate the dev DB with fake tenants + users
+./scripts/seed       # or: pnpm seed
+
+# Tests
+pnpm test            # unit
+pnpm test:integration # integration (separate :5433 Postgres, auto-managed)
+pnpm test:e2e        # Playwright E2E (see "Browser tests on a new machine" below)
+
+# DB lifecycle
+pnpm dev:up          # just start Postgres
+pnpm dev:down        # stop Postgres (data persists)
+pnpm dev:reset       # stop AND drop the volume (fresh DB)
 ```
+
+> **Schema status:** `apps/api/src/db/schema.ts` is intentionally empty
+> until Sprint 1: `tenants` and `users` land with `tenant_id` + RLS
+> per [ADR 0001](documents/decisions/0001-multi-tenancy.md). Until then,
+> `./scripts/seed` runs as a no-op that warns the schema isn't ready.
+
+## Browser tests on a new machine
+
+The signed-in Playwright specs drive the real web app, which builds its
+Supabase client from `VITE_` variables. Vite reads those from `apps/web`, not
+from the repo root, so on a machine that has only ever had a root `.env.local`
+every authed spec fails at once with no obvious reason: the app cannot restore
+the injected session, so no `/t/:slug` page ever renders.
+
+One file fixes it (gitignored, values copied from your root `.env.local`):
+
+```bash
+cat > apps/web/.env.development.local <<'ENV'
+VITE_API_URL=http://localhost:3001
+VITE_SUPABASE_URL=<same as SUPABASE_URL in .env.local>
+VITE_SUPABASE_ANON_KEY=<same as SUPABASE_ANON_KEY in .env.local>
+ENV
+```
+
+FHS-635 also turned the api's per-IP rate limit off for e2e runs
+(`RATE_LIMIT_PER_MINUTE=0`, set in the Playwright configs). Every worker drives
+the browser from the same machine, so they share one bucket of 100 requests a
+minute; several specs at once used to sail past it and the api answered 429,
+which the app shows as "Couldn't load your dashboard (server 429)". That is
+what made a handful of specs fail at random, and fail every time on a developer
+machine, which runs more workers than CI.
+
+## Environment
+
+[`.env.example`](.env.example) is the canonical list of every variable
+the api, web, and tooling read. Copy it to `.env.local` (gitignored)
+and fill in the values you need.
+
+Minimum vars needed to boot api + web locally: `DATABASE_URL` (and that
+alone: everything else is optional until the dependent feature is wired).
+
+Source of truth for real values:
+
+| Group                                                                    | Where the value comes from                                                                                            |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Postgres                                                                 | Local: docker-compose (FHS-168) or your own Postgres. Hosted: Railway dashboard injects `DATABASE_URL` automatically. |
+| Runtime (`NODE_ENV`, `PORT`, `LOG_LEVEL`, `BASE_DOMAIN`, `VITE_API_URL`) | No external source: set per environment. Defaults in `.env.example` are dev-safe.                                     |
+| Supabase auth                                                            | Supabase dashboard → Project Settings → API                                                                           |
+| Stripe billing                                                           | Stripe dashboard → Developers → API keys (test mode for dev)                                                          |
+| Sentry                                                                   | Sentry dashboard → Project Settings → Client Keys (DSN), separate projects for api + web                              |
+| Jira tooling                                                             | [id.atlassian.com: API tokens](https://id.atlassian.com/manage-profile/security/api-tokens)                           |
+| Railway MCP                                                              | [railway.com/account/tokens](https://railway.com/account/tokens) (Account Tokens, not Project)                        |
+
+`.env.example` itself **never** holds real secrets. Production /
+staging values live in the Railway dashboard; local dev values live
+only in your `.env.local`. When the team grows past one person we'll
+move to a shared vault, tracked as a follow-up.
+
+## Tooling
+
+[`scripts/jira/refresh-confluence-epics-page.py`](scripts/jira/refresh-confluence-epics-page.py)
+refreshes the Confluence "FHS: Epics & Tickets" page from live Jira.
+Runs after every ticket close per the CLAUDE.md post-merge rule:
+
+```bash
+set -a; source .env.local; set +a
+python3 scripts/jira/refresh-confluence-epics-page.py --reason "FHS-XXX close"
+```
+
+## Working with Claude Code
+
+This repo ships [`.claude/`](.claude/README.md) with a curated set of
+specialist subagents and skills, plus a conservative permission
+allowlist. After cloning, Claude Code picks them up automatically.
+
+Useful slash commands (via `~/.claude/skills/commands/`):
+
+- `/plan` · `/write-plan` · `/execute-plan`: planning lifecycle
+- `/brainstorm`: feature exploration before code
+- `/start`: surface relevant skills at session start
+- `/status`: check progress on the current effort
+
+See [`.claude/README.md`](.claude/README.md) for the full list of
+shipped agents and skills, and [`CLAUDE.md`](CLAUDE.md) for project
+conventions and the skill-routing map.
 
 ## Repository Layout
 
-```
+```text
 apps/
   api/      # Hono API server
   web/      # React + Vite frontend
 packages/
   shared/   # Shared types, schemas, utilities
   test-utils/
-docs/
+documents/
   features/
   technical/
   decisions/  # ADRs
@@ -44,17 +156,26 @@ docs/
 
 ## Branches
 
-- `main` — production
-- `staging` — pre-production / QA
+- `main`: production
+- `staging`: pre-production / QA
 - feature branches → PR into `staging` → promoted to `main`
 
 Both `main` and `staging` require PR reviews and passing CI.
 
 ## Documentation
 
-- [Architecture Decision Records](docs/decisions/)
-- [Technical docs](docs/technical/)
-- [Feature specs](docs/features/)
+- [Documentation index](documents/README.md)
+- [Architecture Decision Records](documents/decisions/): durable choices
+  - [ADR 0001: Multi-tenancy strategy](documents/decisions/0001-multi-tenancy.md)
+  - [ADR 0002: Subdomain tenant routing](documents/decisions/0002-subdomain-tenant-routing.md)
+  - [ADR 0003: Auth library: Supabase Auth](documents/decisions/0003-auth-library.md)
+  - [ADR 0004: Billing provider: Stripe](documents/decisions/0004-stripe-billing.md)
+  - [ADR 0005: Monorepo structure](documents/decisions/0005-monorepo-structure.md)
+  - [ADR 0006: Branching strategy](documents/decisions/0006-branching-strategy.md)
+  - [ADR 0007: Reuse the family-hub stack](documents/decisions/0007-stack-reuse.md)
+- [Technical docs](documents/technical/)
+- [Feature specs](documents/features/)
+- [Strategy docs](documents/strategy/): incl. [SaaS Transformation Strategy](documents/strategy/saas-transformation.md)
 
 ## License
 

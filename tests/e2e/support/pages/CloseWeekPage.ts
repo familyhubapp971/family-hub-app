@@ -1,0 +1,184 @@
+import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+// FHS-638: the My World board's Close Week banner and the chooser it opens
+// (FHS-637). Page object so the steps hold no raw locators.
+
+export type ChooserRow = 'claim' | 'cash' | 'save' | 'invest' | 'withdraw';
+
+export class CloseWeekPage {
+  constructor(private readonly page: Page) {}
+
+  async openBoard(slug: string, memberId: string): Promise<void> {
+    await this.page.goto(`/t/${slug}/child/${memberId}`);
+  }
+
+  /** The banner only shows from the week's last day on, which is why the spec
+   *  uses the seed variant that anchors the week to today. */
+  async expectBannerVisible(): Promise<void> {
+    await expect(this.page.getByTestId('my-world-close-week-banner')).toBeVisible({
+      timeout: 15000,
+    });
+  }
+
+  async tapCloseWeek(): Promise<void> {
+    await this.page.getByTestId('my-world-close-week-banner-btn').click();
+  }
+
+  async expectChooserVisible(): Promise<void> {
+    await expect(this.page.getByTestId('close-week-chooser')).toBeVisible({ timeout: 15000 });
+  }
+
+  chooserText(): Promise<string> {
+    return this.page.getByTestId('close-week-chooser').innerText();
+  }
+
+  async expectRow(row: ChooserRow): Promise<void> {
+    await expect(this.page.getByTestId(`close-week-chooser-${row}`)).toBeVisible();
+  }
+
+  async rowBox(row: ChooserRow): Promise<{ width: number; height: number }> {
+    const box = await this.page.getByTestId(`close-week-chooser-${row}`).boundingBox();
+    if (!box) throw new Error(`close-week-chooser-${row} has no bounding box`);
+    return { width: box.width, height: box.height };
+  }
+
+  async finishBox(): Promise<{ width: number; height: number }> {
+    const box = await this.page.getByTestId('close-week-chooser-finish').boundingBox();
+    if (!box) throw new Error('close-week-chooser-finish has no bounding box');
+    return { width: box.width, height: box.height };
+  }
+
+  /**
+   * FHS-639: the colours the header actually paints with.
+   *
+   * A class name that does not exist in this app's Tailwind produces no rule
+   * and no error, so the title kept its white colour on a background that
+   * never turned purple and simply disappeared. Only a real browser can see
+   * that, which is why this reads computed styles rather than class names.
+   */
+  async headerColours(): Promise<{
+    background: string;
+    title: string;
+    closeIcon: string;
+    closeButton: string;
+  }> {
+    const header = this.page.getByTestId('money-actions-sheet-header');
+    const close = this.page.getByTestId('money-actions-sheet-close');
+    return {
+      background: await header.evaluate((el) => getComputedStyle(el).backgroundColor),
+      title: await header.locator('h2').evaluate((el) => getComputedStyle(el).color),
+      // FHS-640: the ICON's own colour, and the disc it sits on. The first cut
+      // of this compared the button's BACKGROUND with the header's background,
+      // which are of course different, so it passed while the cross inside the
+      // button was white on white. An icon is only visible against its own
+      // parent, so that is the pair to compare.
+      closeIcon: await close.evaluate((el) => getComputedStyle(el).color),
+      closeButton: await close.evaluate((el) => getComputedStyle(el).backgroundColor),
+    };
+  }
+
+  // FHS-642: finishing the week for real. The board behind refreshes itself
+  // when the week closes, and it used to do that loudly: the full-page loading
+  // screen is an early return, so the sheet unmounted mid-message and came back
+  // on the chooser. Only a browser sees that, because it is the parent page
+  // remounting the child, not anything the sheet itself does.
+
+  /** Finishes the week and waits for the refresh it sets off behind the sheet,
+   *  which is the thing that used to unmount the sheet. Waiting on the response
+   *  rather than a fixed sleep means the assertion after it cannot pass by
+   *  arriving early. */
+  async tapFinish(): Promise<void> {
+    const weeksRefetched = this.page.waitForResponse(
+      (res) => /\/api\/mw\/weeks(\?|$)/.test(res.url()) && res.request().method() === 'GET',
+      { timeout: 20000 },
+    );
+    await this.page.getByTestId('close-week-chooser-finish').click();
+    await weeksRefetched;
+  }
+
+  async expectDoneVisible(): Promise<void> {
+    await expect(this.page.getByTestId('money-actions-done-message')).toBeVisible({
+      timeout: 20000,
+    });
+  }
+
+  /** Still there once the board behind has re-rendered on the new week. */
+  async expectDoneStillVisible(): Promise<void> {
+    await this.page.waitForTimeout(1000);
+    await expect(this.page.getByTestId('money-actions-done-message')).toBeVisible();
+  }
+
+  async expectChooserGone(): Promise<void> {
+    await expect(this.page.getByTestId('close-week-chooser')).toHaveCount(0);
+  }
+
+  /** The done screen ONLY: the sheet's header repeats the child's name, so a
+   *  whole-sheet read would make a name assertion unfailable. */
+  doneText(): Promise<string> {
+    return this.page.getByTestId('money-actions-done-panel').innerText();
+  }
+
+  async doneButtonBoxes(): Promise<Array<{ width: number; height: number }>> {
+    const ids = [
+      'money-actions-done-more',
+      'money-actions-done-see-money',
+      'money-actions-done-close',
+    ];
+    const boxes: Array<{ width: number; height: number }> = [];
+    for (const id of ids) {
+      const box = await this.page.getByTestId(id).boundingBox();
+      if (!box) throw new Error(`${id} has no bounding box`);
+      boxes.push({ width: box.width, height: box.height });
+    }
+    return boxes;
+  }
+
+  /** FHS-641: the sheet's rendered width, so "wider" is a measurement. */
+  async sheetWidth(): Promise<number> {
+    const box = await this.page.getByTestId('money-actions-sheet-header').boundingBox();
+    if (!box) throw new Error('the sheet header has no bounding box');
+    return box.width;
+  }
+
+  // FHS-646: the save flow the chooser opens, and the numbers it moves.
+
+  /** Walks from the chooser into one of the five money flows. */
+  async chooseAction(row: ChooserRow): Promise<void> {
+    await this.page.getByTestId(`close-week-chooser-${row}`).click();
+  }
+
+  saveAmountInput() {
+    return this.page.getByTestId('money-save-amount-input');
+  }
+
+  /** The picker clamps whatever is typed to the child's spendable ceiling. */
+  async setSaveAmount(stickers: number): Promise<void> {
+    await this.saveAmountInput().fill(String(stickers));
+  }
+
+  async saveAmountShown(): Promise<number> {
+    return Number(await this.saveAmountInput().inputValue());
+  }
+
+  async confirmSave(): Promise<void> {
+    await this.page.getByTestId('money-save-confirm').click();
+  }
+
+  /**
+   * Both taps fired together, as a parent double-tapping on a slow phone does.
+   * The second is allowed to fail: the button disabling itself IS one of the
+   * protections under test, and the recorded actions are what prove the point.
+   */
+  async confirmSaveTwice(): Promise<void> {
+    const confirm = this.page.getByTestId('money-save-confirm');
+    await Promise.all([confirm.click(), confirm.click({ timeout: 3000 }).catch(() => undefined)]);
+  }
+
+  /** How far the page can scroll sideways: anything over a pixel is a bug. */
+  horizontalOverflow(): Promise<number> {
+    return this.page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+  }
+}

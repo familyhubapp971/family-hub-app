@@ -35,13 +35,6 @@ Closes [FHS-XXX](https://qualicion2.atlassian.net/browse/FHS-XXX)
   - [ ] Given/When/Then validated
 - [ ] **Scenario:** ...
 
-## Test plan
-
-- [ ] Unit tests (Vitest) added/updated
-- [ ] E2E tests (Playwright) added/updated where user-facing
-- [ ] `pnpm test` passes locally
-- [ ] Manual verification done — describe what you exercised
-
 ## Screenshots / recordings
 
 <!-- Required for any UI change. Drag and drop here. -->
@@ -56,5 +49,5 @@ Closes [FHS-XXX](https://qualicion2.atlassian.net/browse/FHS-XXX)
 
 - [ ] PR title contains the FHS-XXX key
 - [ ] Branch name contains the FHS-XXX key
-- [ ] Docs updated (`docs/product/` or `docs/technical/` as appropriate)
+- [ ] Docs updated (`documents/product/` or `documents/technical/` as appropriate)
 - [ ] CODEOWNERS reviewers requested

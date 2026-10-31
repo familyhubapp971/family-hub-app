@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>FamilyHub · Vision and Mission</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;500;600;700;800;900&display=swap"
+    />
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      :root {
+        --bg: #f6f1fa;
+        --ink: #191919;
+        --ink-soft: #4a4a4a;
+        --label: #4a5568;
+        --rule: #d9ccec;
+        --purple: #3d1065;
+        --yellow: #ffd21e;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow-tint: #fff6d9;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+        font-family:
+          'Nunito',
+          -apple-system,
+          sans-serif;
+        font-weight: 500;
+        font-size: 11px;
+        line-height: 1.6;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        margin: 0;
+        break-after: avoid;
+      }
+      .page {
+        padding: 14mm 15mm 10mm;
+      }
+
+      .mast {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #000;
+        margin-bottom: 8mm;
+      }
+      .brand {
+        font-family: 'Fredoka One', cursive;
+        font-size: 24px;
+        line-height: 1;
+      }
+      .brand .star {
+        color: var(--yellow);
+      }
+      .meta {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--ink-soft);
+        text-align: right;
+      }
+
+      /* Hero: the vision and mission, on the deep-purple panel */
+      .hero {
+        background: var(--purple);
+        color: #fff;
+        border: 2px solid #000;
+        border-radius: 18px;
+        box-shadow: 5px 5px 0 #000;
+        padding: 22px 26px 24px;
+        margin-bottom: 9mm;
+        break-inside: avoid;
+      }
+      .pill {
+        display: inline-block;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink);
+        border: 2px solid #000;
+        border-radius: 999px;
+        box-shadow: 2px 2px 0 #000;
+        padding: 3px 12px;
+        margin-bottom: 10px;
+      }
+      .pill.y {
+        background: var(--yellow);
+      }
+      .pill.g {
+        background: var(--green);
+      }
+      .pill.p {
+        background: var(--pink);
+      }
+      .pill.c {
+        background: var(--cyan);
+      }
+      .hero h1 {
+        color: #fff;
+        font-size: 27px;
+        line-height: 1.2;
+        margin-bottom: 20px;
+      }
+      .hero .mission {
+        font-size: 15px;
+        line-height: 1.55;
+        font-weight: 600;
+        margin: 0 0 18px;
+        max-width: 62ch;
+      }
+      .hero .short {
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+        padding-top: 12px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .hero .short span {
+        color: var(--yellow);
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 15px;
+        margin-left: 6px;
+      }
+
+      section {
+        margin-bottom: 8mm;
+        break-inside: avoid;
+      }
+      h2 {
+        font-size: 19px;
+        margin-bottom: 10px;
+      }
+      .sub {
+        color: var(--ink-soft);
+        font-size: 11.5px;
+        margin: -4px 0 12px;
+      }
+
+      /* Two ideas the mission carries */
+      .two {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .card {
+        background: #fff;
+        border: 2px solid #000;
+        border-radius: 14px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 14px 16px;
+        break-inside: avoid;
+      }
+      .card h3 {
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+      .card p {
+        margin: 0;
+        font-size: 11.5px;
+      }
+
+      /* Values */
+      .values {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        border-top: 2px solid #000;
+      }
+      .values li {
+        display: grid;
+        grid-template-columns: 30px 170px 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 10px 2px;
+        border-bottom: 1px solid var(--rule);
+        font-size: 11.5px;
+        break-inside: avoid;
+      }
+      .values li:last-child {
+        border-bottom: 2px solid #000;
+      }
+      .dot {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 2px solid #000;
+        box-shadow: 2px 2px 0 #000;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Fredoka One', cursive;
+        font-size: 11px;
+      }
+      .values strong {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+        font-size: 13.5px;
+      }
+
+      /* Before and after */
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 2px solid #000;
+        border-radius: 14px;
+        box-shadow: 3px 3px 0 #000;
+        overflow: hidden;
+        background: #fff;
+        font-size: 11.5px;
+      }
+      th {
+        text-align: left;
+        font-weight: 900;
+        font-size: 9.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 9px 14px;
+        border-bottom: 2px solid #000;
+      }
+      th.today {
+        background: var(--yellow-tint);
+      }
+      th.with {
+        background: var(--green);
+      }
+      td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: top;
+        width: 50%;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      td + td,
+      th + th {
+        border-left: 2px solid #000;
+      }
+
+      ul.plain {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 11.5px;
+      }
+      ul.plain li {
+        margin-bottom: 5px;
+      }
+
+      .alt {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .alt .card p + p {
+        margin-top: 8px;
+      }
+      .alt .who {
+        font-weight: 800;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--label);
+        margin-bottom: 6px;
+      }
+
+      footer {
+        font-size: 10px;
+        color: var(--ink-soft);
+        border-top: 1px solid var(--rule);
+        padding-top: 8px;
+      }
+      .close {
+        background: var(--yellow);
+        border: 2px solid #000;
+        border-radius: 14px;
+        box-shadow: 3px 3px 0 #000;
+        padding: 14px 18px;
+        text-align: center;
+        font-family: 'Fredoka One', cursive;
+        font-size: 20px;
+        margin-bottom: 6mm;
+        break-inside: avoid;
+      }
+      .from {
+        color: var(--ink-soft);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="mast">
+        <div class="brand"><span class="star">&#9733;</span> FamilyHub</div>
+        <div class="meta"><strong>Vision and Mission</strong><br />October 2026</div>
+      </div>
+
+      <div class="hero">
+        <div class="pill y">Our vision</div>
+        <h1>Every family, one team.<br />No one carrying it alone.</h1>
+        <div class="pill g">Our mission</div>
+        <p class="mission">
+          We bring every kind of family onto the same page, and lift the mental load off the people
+          who hold it all together.
+        </p>
+        <div class="short">Our promise in three words: <span>Same page. Lighter load.</span></div>
+      </div>
+
+      <section>
+        <h2>Two big ideas</h2>
+        <div class="two">
+          <div class="card">
+            <div class="pill c">Same page</div>
+            <h3>Every family fits</h3>
+            <p>
+              Big, blended, multi-generational, twins or triplets. However your family is made,
+              everyone sees the same plan.
+            </p>
+          </div>
+          <div class="card">
+            <div class="pill p">Lighter load</div>
+            <h3>Put it down</h3>
+            <p>
+              Stop keeping the whole week in your head. Family Hub remembers, so you don't have to.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>What we believe</h2>
+        <ul class="values">
+          <li>
+            <span class="dot" style="background: var(--yellow)">1</span
+            ><strong>Every family belongs</strong>
+            <span>There is no "normal" family. Just yours.</span>
+          </li>
+          <li>
+            <span class="dot" style="background: var(--pink)">2</span
+            ><strong>Lighter, never louder</strong>
+            <span>If it adds work, we don't build it.</span>
+          </li>
+          <li>
+            <span class="dot" style="background: var(--green)">3</span
+            ><strong>One shared plan</strong>
+            <span>Everyone knows. Nobody chases.</span>
+          </li>
+          <li>
+            <span class="dot" style="background: var(--cyan)">4</span
+            ><strong>Kids are on the team</strong>
+            <span>Their own jobs. Their own wins.</span>
+          </li>
+          <li>
+            <span class="dot" style="background: var(--coral)">5</span
+            ><strong>Your family, your space</strong>
+            <span>Private by default. No feed, no audience.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>The change we make</h2>
+        <table>
+          <tr>
+            <th class="today">From</th>
+            <th class="with">To</th>
+          </tr>
+          <tr>
+            <td class="from">Holding the whole week in your head</td>
+            <td>One plan the whole family can see</td>
+          </tr>
+          <tr>
+            <td class="from">Apps built for someone else's family</td>
+            <td>Room for step-kids, triplets and Grandma</td>
+          </tr>
+          <tr>
+            <td class="from">"Did anyone feed the dog?"</td>
+            <td>Everyone knows who did what</td>
+          </tr>
+          <tr>
+            <td class="from">Reminding the kids ten times a day</td>
+            <td>Kids who check their own list</td>
+          </tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Built for real families</h2>
+        <p style="margin: 0; font-size: 12px">
+          Big, blended, multi-generational and from every culture. And above all, for the parent who
+          has been carrying it all.
+        </p>
+      </section>
+
+      <section>
+        <h2>We will never</h2>
+        <ul class="plain">
+          <li>Make you manage more than you do today.</li>
+          <li>Tell you what a family should look like.</li>
+          <li>Turn your family into content.</li>
+        </ul>
+      </section>
+
+      <div class="close">Same page. Lighter load. That's Family Hub.</div>
+
+      <footer>Family Hub · Vision and Mission · Draft for founder review, 2026-10-30</footer>
+    </div>
+  </body>
+</html>

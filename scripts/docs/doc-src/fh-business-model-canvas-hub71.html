@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Family Hub · Hub71 Business Model Canvas</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
+      @page {
+        size: A4 landscape;
+        margin: 0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ddd;
+        color: #14101c;
+        font-family: 'Nunito', sans-serif;
+      }
+      :root {
+        --cream: #faf5ea;
+        --purple: #3d1065;
+        --pink: #f06ba8;
+        --green: #2dd4a0;
+        --cyan: #35cdee;
+        --coral: #fb6b6b;
+        --yellow: #ffd21e;
+        --lavender: #b9a1ee;
+        --ink: #14101c;
+        --muted: #665f6d;
+      }
+      .page {
+        position: relative;
+        width: 297mm;
+        height: 210mm;
+        padding: 12mm 13mm 15mm;
+        overflow: hidden;
+        background: var(--cream);
+        page-break-after: always;
+        break-inside: avoid;
+      }
+      .page:last-of-type {
+        page-break-after: auto;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: 'Fredoka One', cursive;
+        font-weight: 400;
+      }
+      h1 {
+        margin: 8px 0 4px;
+        font-size: 31px;
+      }
+      h2 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.15;
+      }
+      h3 {
+        margin: 0 0 7px;
+        font-size: 16px;
+      }
+      p,
+      li,
+      td,
+      th {
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+      .eyebrow {
+        display: inline-flex;
+        padding: 6px 14px;
+        border: 2.5px solid #000;
+        border-radius: 999px;
+        box-shadow: 4px 4px 0 #000;
+        background: var(--green);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+      .intro {
+        margin: 3px 0 0;
+        max-width: 235mm;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+      .grid.two {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .grid.three {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .card {
+        border: 2.5px solid #000;
+        border-radius: 14px;
+        box-shadow: 5px 5px 0 #000;
+        padding: 13px 15px;
+        background: #fff;
+      }
+      .card p {
+        margin: 0;
+        font-weight: 700;
+      }
+      .card ul {
+        margin: 0;
+        padding-left: 16px;
+      }
+      .card li {
+        font-weight: 700;
+      }
+      .card li + li {
+        margin-top: 4px;
+      }
+      .founder-card {
+        background: var(--lavender);
+      }
+      .founder-card .number {
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: var(--ink);
+        color: #fff;
+      }
+      .founder-card h3 {
+        margin-bottom: 8px;
+        font-size: 18px;
+      }
+      .founder-role {
+        display: grid;
+        grid-template-columns: 68px 1fr;
+        gap: 7px;
+        align-items: baseline;
+      }
+      .founder-role + .founder-role {
+        margin-top: 3px;
+      }
+      .founder-role strong {
+        font-weight: 900;
+      }
+      .founder-note {
+        margin-top: 7px !important;
+        padding-top: 6px;
+        border-top: 1.5px solid rgba(20, 16, 28, 0.55);
+      }
+      .number {
+        display: inline-block;
+        margin-bottom: 6px;
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .band {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 13px;
+      }
+      .metric {
+        border: 2.5px solid #000;
+        border-radius: 12px;
+        box-shadow: 4px 4px 0 #000;
+        padding: 10px 12px;
+        background: #fff;
+      }
+      .metric strong {
+        display: block;
+        font-family: 'Fredoka One', cursive;
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 1;
+        margin-bottom: 5px;
+      }
+      .metric span {
+        font-size: 9px;
+        font-weight: 800;
+      }
+      table {
+        width: 100%;
+        margin-top: 8px;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 2px solid #000;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+      }
+      th,
+      td {
+        padding: 7px 9px;
+        border-right: 1.5px solid #000;
+        border-bottom: 1.5px solid #000;
+        text-align: left;
+        font-weight: 700;
+      }
+      th {
+        background: var(--yellow);
+        font-weight: 900;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      th:last-child,
+      td:last-child {
+        border-right: 0;
+      }
+      .footer {
+        position: absolute;
+        left: 13mm;
+        right: 13mm;
+        bottom: 7mm;
+        display: flex;
+        justify-content: space-between;
+        font-size: 8px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .callout {
+        margin-top: 12px;
+        border: 2.5px solid #000;
+        border-radius: 12px;
+        box-shadow: 4px 4px 0 #000;
+        padding: 10px 14px;
+        background: var(--yellow);
+        text-align: center;
+        font-size: 11px;
+        font-weight: 900;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="page">
+      <span class="eyebrow">Hub71 edition · Demand side</span>
+      <h1>Business Model Canvas</h1>
+      <p class="intro">
+        One private family space that shares the mental load, builds structure through rituals and
+        keeps families in each other's worlds.
+      </p>
+
+      <div class="grid two">
+        <div class="card" style="background: var(--pink)">
+          <span class="number">01 · Customer segments</span>
+          <h3>Households and the organisations that serve them</h3>
+          <ul>
+            <li>
+              Core: tech-comfortable parents with children aged four and above who juggle multiple
+              apps.
+            </li>
+            <li>Underserved: blended, multigenerational, multicultural and large households.</li>
+            <li>
+              Institutional: schools, clubs, co-ops and family organisations serving 20 to 500+
+              families.
+            </li>
+            <li>Launch market: UAE first, GCC next, then culturally adaptable global expansion.</li>
+          </ul>
+        </div>
+        <div class="card" style="background: var(--yellow)">
+          <span class="number">02 · Value propositions</span>
+          <h3>Less chaos. More capable children. More family connection.</h3>
+          <ul>
+            <li>Shared structure: meals, calendars, notices and tasks in one private home view.</li>
+            <li>
+              Positive routines: habits become stickers, streaks and rewards children can own.
+            </li>
+            <li>Early money learning: earn, save and invest without requiring a debit card.</li>
+            <li>Daily connection: journals, gratitude and learning open better conversations.</li>
+            <li>Institutional reach: one secure multi-tenant platform that partners can brand.</li>
+          </ul>
+        </div>
+        <div class="card" style="background: var(--cyan)">
+          <span class="number">03 · Channels</span>
+          <h3>Direct acquisition plus institutional distribution</h3>
+          <ul>
+            <li>Parent referrals, community content and targeted search.</li>
+            <li>Schools, clubs and family organisations as trusted distribution partners.</li>
+            <li>Hub71 introductions to ECA, ADEK, Family Care Authority and school groups.</li>
+            <li>Web app at launch; native mobile distribution as adoption grows.</li>
+          </ul>
+        </div>
+        <div class="card" style="background: var(--green)">
+          <span class="number">04 · Customer relationships</span>
+          <h3>Self-serve for families, hands-on for partners</h3>
+          <ul>
+            <li>Fast guided onboarding with no child email, phone or bank card required.</li>
+            <li>Weekly prompts, progress recaps and reward-closing loops drive retention.</li>
+            <li>In-product feedback keeps development close to real family needs.</li>
+            <li>Founder-led onboarding and success support for the first institutional pilots.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="band">
+        <div class="metric" style="background: var(--pink)">
+          <strong>24</strong><span>parents interviewed</span>
+        </div>
+        <div class="metric" style="background: var(--cyan)">
+          <strong>10</strong><span>families using private beta</span>
+        </div>
+        <div class="metric" style="background: var(--green)">
+          <strong>100</strong><span>active UAE families by day 90</span>
+        </div>
+        <div class="metric" style="background: var(--yellow)">
+          <strong>500</strong><span>active UAE families in 12 months</span>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Family Hub · Hub71 Business Model Canvas</span><span>1 / 3</span>
+      </div>
+    </section>
+
+    <section class="page">
+      <span class="eyebrow">Hub71 edition · Supply side</span>
+      <h1>How we build and defend it</h1>
+      <p class="intro">
+        A founder-built platform with governance, partnerships and family insight embedded from day
+        one.
+      </p>
+
+      <div class="grid three">
+        <div class="card" style="background: var(--pink)">
+          <span class="number">08 · Key partners</span>
+          <h3>Infrastructure and market access</h3>
+          <ul>
+            <li>Supabase for identity and family data isolation.</li>
+            <li>Railway for hosting and deployment.</li>
+            <li>Stripe for subscriptions and partner billing.</li>
+            <li>Sentry and PostHog for reliability and product analytics.</li>
+            <li>Target partners: ECA, ADEK, Family Care Authority, schools and clubs.</li>
+          </ul>
+        </div>
+        <div class="card" style="background: var(--cyan)">
+          <span class="number">07 · Key activities</span>
+          <h3>Build, learn, distribute</h3>
+          <ul>
+            <li>Ship product improvements from family feedback and behavioural data.</li>
+            <li>Develop habits, early-money and educational experiences.</li>
+            <li>Measure kept weeks, retention, conversion and revenue per family.</li>
+            <li>Acquire families directly and develop institutional pilots.</li>
+            <li>Operate privacy, compliance, billing and family support.</li>
+          </ul>
+        </div>
+        <div class="card" style="background: var(--yellow)">
+          <span class="number">06 · Key resources</span>
+          <h3>Product, data and founding team</h3>
+          <ul>
+            <li>Live multi-tenant platform with separate private spaces for each family.</li>
+            <li>
+              Per-child routine, learning and reward history that improves relevance over time.
+            </li>
+            <li>Reusable educational and early-financial-literacy content.</li>
+            <li>Brand, design system and culturally flexible household model.</li>
+            <li>Three Abu Dhabi founders spanning engineering, governance and operations.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div class="card" style="background: var(--green)">
+          <span class="number">Defensibility</span>
+          <h3>The family rhythm becomes the moat</h3>
+          <p>
+            Generic apps hold isolated lists or transactions. Family Hub connects plans, habits,
+            rewards, learning and conversations. As each household builds history, the product
+            becomes more useful and harder to replace without losing its shared rhythm.
+          </p>
+        </div>
+        <div class="card founder-card">
+          <span class="number">Founder advantage</span>
+          <h3>Three Abu Dhabi parents. One complementary team.</h3>
+          <p class="founder-role"><strong>Babatunde</strong><span>Product and engineering</span></p>
+          <p class="founder-role">
+            <strong>Sandra</strong><span>Regulation, privacy and governance</span>
+          </p>
+          <p class="founder-role">
+            <strong>Jumi</strong><span>Commercial operations and partnerships</span>
+          </p>
+          <p class="founder-note">We build from a problem we experience in our own homes.</p>
+        </div>
+      </div>
+
+      <div class="callout">
+        Current stage: live private beta, pre-revenue, no institutional capital, with more than one
+        year of founder-supported runway.
+      </div>
+      <div class="footer">
+        <span>Family Hub · Hub71 Business Model Canvas</span><span>2 / 3</span>
+      </div>
+    </section>
+
+    <section class="page">
+      <span class="eyebrow">Hub71 edition · Economics</span>
+      <h1>How the money works</h1>
+      <p class="intro">
+        Two revenue routes share one low-overhead platform: household subscriptions and annual
+        partner plans.
+      </p>
+
+      <div class="grid two">
+        <div class="card" style="background: var(--green)">
+          <span class="number">05 · Revenue streams</span>
+          <h3>Consumer subscriptions</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Plan</th>
+                <th>Price</th>
+                <th>Includes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Household</td>
+                <td>Free</td>
+                <td>Three members, limited features</td>
+              </tr>
+              <tr>
+                <td>Family</td>
+                <td>AED 29/mo or AED 249/yr</td>
+                <td>Unlimited members, core features and Maths</td>
+              </tr>
+              <tr>
+                <td>Family Pro</td>
+                <td>AED 49/mo or AED 399/yr</td>
+                <td>Logic, World Flags and custom subdomain</td>
+              </tr>
+            </tbody>
+          </table>
+          <h3 style="margin-top: 12px">Partner plans</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Organisation size</th>
+                <th>Annual price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Up to 20 families</td>
+                <td>AED 1,099</td>
+              </tr>
+              <tr>
+                <td>21 to 100 families</td>
+                <td>AED 3,669</td>
+              </tr>
+              <tr>
+                <td>101 to 500 families</td>
+                <td>AED 7,339</td>
+              </tr>
+              <tr>
+                <td>501+ families</td>
+                <td>AED 12,849</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" style="background: var(--pink)">
+          <span class="number">09 · Cost structure</span>
+          <h3>Lean fixed costs, variable growth investment</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Cost</th>
+                <th>Type</th>
+                <th>Current approach</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Hosting, identity and analytics</td>
+                <td>Variable</td>
+                <td>Lean managed infrastructure; scales with usage</td>
+              </tr>
+              <tr>
+                <td>Payment processing</td>
+                <td>Variable</td>
+                <td>Transaction-based and reflected in pricing</td>
+              </tr>
+              <tr>
+                <td>Product development</td>
+                <td>Fixed</td>
+                <td>Founder-led today</td>
+              </tr>
+              <tr>
+                <td>Customer acquisition</td>
+                <td>Variable</td>
+                <td>Increase after paid-conversion baseline</td>
+              </tr>
+              <tr>
+                <td>Partner onboarding</td>
+                <td>Variable</td>
+                <td>Founder-led for first institutional pilots</td>
+              </tr>
+              <tr>
+                <td>Compliance and legal</td>
+                <td>Fixed</td>
+                <td>UAE privacy, child-data and commercial readiness</td>
+              </tr>
+            </tbody>
+          </table>
+          <h3 style="margin-top: 12px">Funding position</h3>
+          <ul>
+            <li>AED 3.7k to AED 5.5k raised from family and friends.</li>
+            <li>Approximately 325 hands-on founder-development hours invested.</li>
+            <li>
+              First institutional round will fund launch, acquisition, pilots and product growth.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="band">
+        <div class="metric" style="background: var(--cyan)">
+          <strong>100</strong><span>paying families in 12 months</span>
+        </div>
+        <div class="metric" style="background: var(--yellow)">
+          <strong>1</strong><span>Abu Dhabi institutional pilot</span>
+        </div>
+        <div class="metric" style="background: var(--green)">
+          <strong>5,000+</strong><span>paid families at 24 months, target</span>
+        </div>
+        <div class="metric" style="background: var(--pink)">
+          <strong>AED 2.64m+</strong><span>24-month annual revenue target</span>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Family Hub · Hub71 Business Model Canvas</span><span>3 / 3</span>
+      </div>
+    </section>
+  </body>
+</html>
