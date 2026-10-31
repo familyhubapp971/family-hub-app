@@ -29,6 +29,16 @@ three repos** per [ADR 0021](documents/decisions/0021-three-repo-split.md)
 `family-hub-app`, each grouped by product area. Until each move
 lands, keep working in the current layout.
 
+> **Server changes go to `family-hub-api` only (2026-10-31, FHS-688).**
+> The server, the shared rules and the server tests now live in
+> [`family-hub-api`](https://github.com/familyhubapp971/family-hub-api),
+> and staging's server builds from there. Do not change `apps/api/`,
+> `packages/shared/`, `packages/test-utils/`, `tests/unit/api/`,
+> `tests/integration/` or `tests/performance/` in this repo: the copies
+> here are frozen and are being removed. The one exception is PR #473,
+> which is ported to `family-hub-api` the day it merges. A ticket that
+> needs both server and screen changes opens one PR in each repo.
+
 **Branches:** `main` (production) · `staging` (pre-prod) · feature → PR into
 `staging` → promoted to `main`. Both protected: 1 approval, conversation
 resolution required, no force pushes.
