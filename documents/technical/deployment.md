@@ -5,15 +5,12 @@ the running infrastructure, env-var matrix, deploy flow, and known
 constraints. Update whenever topology changes (add a service, rotate a
 secret format, change a branch tracking rule, upgrade plan).
 
-> **Status as of 2026-04-30:** Sprint 0 bootstrap **complete on
-> staging**. Trial plan ($5 / 28-day cap). Both `api` and `frontend`
-> deploy cleanly from the `staging` branch; the W1 vertical slice
-> (Supabase login → JWT-protected `/api/me` → frontend greeting) is
-> live and verified, see
-> [W1 vertical slice: staging verification](#w1-vertical-slice-staging-verification-fhs-198).
-> Production environment exists but is intentionally unconfigured
-> pending Hobby-plan upgrade, see
-> [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202).
+> **Status as of 2026-10-31:** the live setup is now **production**
+> and builds from `main`. Real users are on it. A new staging setup is
+> still to be created, so merging to `staging` deploys nothing until
+> then. See [Production switch](#production-switch-2026-10-31). Sections
+> below this point describe the earlier staging setup and are partly out
+> of date.
 
 ## Project
 
@@ -31,10 +28,10 @@ for variable names).
 
 ## Environments
 
-| Name         | ID                                     | Purpose                                 | Branch           |
-| ------------ | -------------------------------------- | --------------------------------------- | ---------------- |
-| `staging`    | `3fb76a04-e926-4bdf-ae03-659966366dfb` | Pre-prod, all bootstrap work lands here | `staging`        |
-| `production` | `4d84223a-86d3-49ef-a66c-acefe2100158` | GA target: currently unconfigured       | `main` (planned) |
+| Name         | ID                                     | Purpose                         | Branch           |
+| ------------ | -------------------------------------- | ------------------------------- | ---------------- |
+| `production` | `3fb76a04-e926-4bdf-ae03-659966366dfb` | Live site with real users       | `main`           |
+| `staging`    | not created yet                        | GoTrue work (FHS-676) and tests | `staging` (plan) |
 
 The branching strategy is documented in
 [ADR 0006](../decisions/0006-branching-strategy.md): merges land on
@@ -519,3 +516,28 @@ to neutralize the production instance before it racks up runtime.
 - [FHS-202](https://qualicion2.atlassian.net/browse/FHS-202): Configure Railway production post-upgrade
 - [FHS-155](https://qualicion2.atlassian.net/browse/FHS-155): Railway Infrastructure & DNS (parent epic)
 - [ADR 0006](../decisions/0006-branching-strategy.md): branching strategy
+
+## Production switch (2026-10-31)
+
+[FHS-200](https://qualicion2.atlassian.net/browse/FHS-200). The live
+setup was renamed rather than rebuilt, so users saw no change.
+
+| Step              | What happened                                                                     |
+| ----------------- | --------------------------------------------------------------------------------- |
+| Backup            | Full database copy to the founder's Mac; 41 tables, 719 rows, counts verified     |
+| Promote           | First `staging` → `main` merge (PR 468); both branches identical afterwards       |
+| Old production    | The empty, never-deployed `production` environment was deleted (no volume)        |
+| Rename            | `staging` environment renamed `production`; same services, addresses and database |
+| Branch            | `api` and `frontend` deploy triggers moved from `staging` to `main`               |
+| Checks            | `/health` 200, site 200, Supabase sign-in settings point at the live address      |
+| Post-deploy smoke | `PROD_API_URL` repo variable set; `ci-deploy` passes on `main`                    |
+
+Production keeps Supabase project `maolytpqazmykjzdybtj` (labelled
+"Family Hub Staging" in Supabase). The unused Supabase project
+`bqghmbkoxjompuxixexn` was left alone.
+
+### Before any production change
+
+1. Back up: `railway ssh -i <key> --service postgres --environment production -- 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner | gzip -9 | base64 -w 0'`, decoded locally, kept outside the repo.
+2. Record row counts for every table, and compare them after each step.
+3. Railway's built-in backups need the Pro plan, which this account does not have ([FHS-660](https://qualicion2.atlassian.net/browse/FHS-660)).
