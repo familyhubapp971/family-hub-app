@@ -1,7 +1,14 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vitest/config';
+import { loadEnv } from 'vite';
+import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
 
+const webRoot = fileURLToPath(new URL('.', import.meta.url));
+
+// One config for the web site: dev server, build, styling and unit tests.
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -23,8 +30,36 @@ export default defineConfig(({ mode }) => {
         })
       : null;
 
+  // Unit tests (vitest runs with mode "test") live under <repo>/tests/unit/.
+  // Pin their bare imports to the root node_modules, and alias the design
+  // system at its source so vite's dep optimizer never serves a stale
+  // snapshot of it (any new workspace package used by tests needs an alias
+  // here too).
+  const isTest = mode === 'test';
+
   return {
     plugins: [react(), ...(sentryPlugin ? [sentryPlugin] : [])],
+    css: {
+      postcss: { plugins: [tailwindcss(), autoprefixer()] },
+    },
+    ...(isTest
+      ? {
+          resolve: {
+            alias: [
+              {
+                find: /^react-router-dom$/,
+                replacement: `${webRoot}node_modules/react-router-dom`,
+              },
+              {
+                find: /^@supabase\/supabase-js$/,
+                replacement: `${webRoot}node_modules/@supabase/supabase-js`,
+              },
+              { find: /^@familyhub\/ui$/, replacement: `${webRoot}design-system/src/index.ts` },
+            ],
+          },
+          optimizeDeps: { exclude: ['@familyhub/ui'] },
+        }
+      : {}),
     build: {
       sourcemap: true,
       rollupOptions: {
@@ -59,6 +94,33 @@ export default defineConfig(({ mode }) => {
     preview: {
       port: 5273,
       strictPort: true,
+    },
+    test: {
+      environment: 'jsdom',
+      // setup.ts stays in src/app/test/ so it sits with the web site's code.
+      setupFiles: ['./src/app/test/setup.ts'],
+      include: ['tests/unit/{web,ui}/**/*.{test,spec}.{ts,tsx}'],
+      passWithNoTests: true,
+      globals: true,
+      css: true,
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'html', 'lcov'],
+        reportsDirectory: './coverage',
+        include: ['src/**/*.{ts,tsx}', 'design-system/src/**/*.{ts,tsx}'],
+        exclude: [
+          '**/node_modules/**',
+          '**/dist/**',
+          '**/*.test.{ts,tsx}',
+          '**/*.spec.{ts,tsx}',
+          '**/*.d.ts',
+          'vite.config.ts',
+          'tailwind.config.js',
+          'src/app/main.tsx',
+          'src/app/test/**', // setup files, not logic
+        ],
+        all: true,
+      },
     },
   };
 });
