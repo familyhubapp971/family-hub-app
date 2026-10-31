@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Circle, Clock, Pencil, Plus } from 'lucide-react';
-import { Button, Dropdown } from '@familyhub/ui';
+import { CheckCircle2, Circle, Clock, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Button, ConfirmDialog, Dropdown } from '@familyhub/ui';
 import { useAuth } from '../../../lib/auth-context';
 import { useTenantSlug } from '../../../lib/tenant-context';
 import { API_BASE } from '../../../lib/api';
@@ -12,6 +12,14 @@ import { API_BASE } from '../../../lib/api';
 // subject emoji, and a red due-date. Click the circle to toggle done
 // (the row dims + strikes through). "+ Add Assignment" opens an inline
 // form for title + optional due date.
+//
+// FHR-39: title capped at 50 characters, notes at 300, and long words wrap
+// inside the card. FHR-40: a new due date must be today or later (the
+// device's own date). FHR-41: the edit form carries a Delete button behind
+// a confirm step.
+
+const TITLE_MAX = 50;
+const NOTES_MAX = 300;
 
 interface Assignment {
   id: string;
@@ -53,6 +61,15 @@ function initials(name: string): string {
   return [...name.trim()][0]?.toUpperCase() ?? '?';
 }
 
+// The device's own date as YYYY-MM-DD, so "today" follows the family's
+// time zone rather than the server's.
+export function localToday(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function formatDueDate(iso: string | null): string {
   if (!iso) return 'No due date';
   const [y, m, d] = iso.split('-').map((s) => Number.parseInt(s, 10));
@@ -73,6 +90,11 @@ export function AssignmentsTabPanel() {
   const [filter, setFilter] = useState<string>('all'); // 'all' | memberId
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // FHR-40: the due date the assignment had when editing began. An
+  // already-overdue date may stay; only a newly picked date must be today+.
+  const [originalDue, setOriginalDue] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [draft, setDraft] = useState({ title: '', dueDate: '', memberId: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -94,6 +116,7 @@ export function AssignmentsTabPanel() {
   const onAddCancel = useCallback(() => {
     setAdding(false);
     setEditingId(null);
+    setOriginalDue('');
     setSaveError(null);
     setDraft({ title: '', dueDate: '', memberId: '', notes: '' });
     requestAnimationFrame(() => addButtonRef.current?.focus());
@@ -162,6 +185,10 @@ export function AssignmentsTabPanel() {
         setSaveError('Title is required.');
         return;
       }
+      if (draft.dueDate && draft.dueDate < localToday() && draft.dueDate !== originalDue) {
+        setSaveError('Pick today or a later date.');
+        return;
+      }
       savingRef.current = true;
       setSaving(true);
       setSaveError(null);
@@ -218,7 +245,7 @@ export function AssignmentsTabPanel() {
         setSaving(false);
       }
     },
-    [headers, draft, editingId, load],
+    [headers, draft, editingId, originalDue, load],
   );
 
   const onToggleDone = useCallback(
@@ -275,6 +302,7 @@ export function AssignmentsTabPanel() {
   const onEditClick = useCallback((a: Assignment) => {
     setSaveError(null);
     setEditingId(a.id);
+    setOriginalDue(a.dueDate ?? '');
     setAdding(true);
     setDraft({
       title: a.title,
@@ -283,6 +311,34 @@ export function AssignmentsTabPanel() {
       notes: a.notes ?? '',
     });
   }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!headers || !pendingDelete) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/assignments/${pendingDelete.id}`, {
+        method: 'DELETE',
+        headers,
+      });
+      // 404 means someone else already removed it: the outcome is the same.
+      if (!res.ok && res.status !== 404) {
+        setErrorAnnouncement(`Couldn't delete assignment (server returned ${res.status})`);
+        setSaveError(`Couldn't delete (server returned ${res.status})`);
+        setPendingDelete(null);
+        return;
+      }
+      setStatusAnnouncement(`Deleted "${pendingDelete.title}"`);
+      setErrorAnnouncement('');
+      setPendingDelete(null);
+      onAddCancel();
+      await load();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Network error. Try again.');
+      setPendingDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  }, [headers, pendingDelete, onAddCancel, load]);
 
   if (status.kind === 'loading') {
     return (
@@ -390,7 +446,7 @@ export function AssignmentsTabPanel() {
                 <input
                   type="text"
                   required
-                  maxLength={200}
+                  maxLength={TITLE_MAX}
                   value={draft.title}
                   onChange={(e) => setDraft({ ...draft, title: e.target.value })}
                   data-testid="assignments-add-title"
@@ -415,6 +471,7 @@ export function AssignmentsTabPanel() {
                 Due date (optional)
                 <input
                   type="date"
+                  min={originalDue && originalDue < localToday() ? originalDue : localToday()}
                   value={draft.dueDate}
                   onChange={(e) => setDraft({ ...draft, dueDate: e.target.value })}
                   data-testid="assignments-add-due"
@@ -425,7 +482,7 @@ export function AssignmentsTabPanel() {
                 Notes (optional)
                 <input
                   type="text"
-                  maxLength={500}
+                  maxLength={NOTES_MAX}
                   value={draft.notes}
                   onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
                   data-testid="assignments-add-notes"
@@ -461,6 +518,17 @@ export function AssignmentsTabPanel() {
                 >
                   Cancel
                 </Button>
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={() => setPendingDelete({ id: editingId, title: draft.title })}
+                    disabled={saving}
+                    data-testid="assignments-delete"
+                    className="ml-auto flex min-h-[44px] items-center gap-1 rounded px-2 text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 disabled:opacity-50"
+                  >
+                    <Trash2 size={16} aria-hidden="true" /> Delete
+                  </button>
+                )}
               </div>
             </form>
           ) : (
@@ -471,6 +539,7 @@ export function AssignmentsTabPanel() {
                 // Opening "Add" must clear any leftover edit state so the
                 // form submits a POST, not a PUT (matches Notices/Tasks).
                 setEditingId(null);
+                setOriginalDue('');
                 setDraft({ title: '', dueDate: '', memberId: '', notes: '' });
                 setAdding(true);
                 setSaveError(null);
@@ -482,6 +551,17 @@ export function AssignmentsTabPanel() {
             </button>
           ))}
       </div>
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        title={pendingDelete ? `Delete "${pendingDelete.title}"?` : ''}
+        message="This assignment will be removed for everyone. You can't undo this."
+        confirmLabel="Delete"
+        variant="danger"
+        busy={deleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+        testId="assignments-delete-confirm"
+      />
     </div>
   );
 }
@@ -560,7 +640,7 @@ function AssignmentRow({
         </span>
         <div className="min-w-0 flex-1">
           <p
-            className={`font-heading text-base text-black ${assignment.done ? 'line-through text-gray-500' : ''}`}
+            className={`font-heading text-base text-black [overflow-wrap:anywhere] ${assignment.done ? 'line-through text-gray-500' : ''}`}
             data-testid={`assignment-title-${assignment.id}`}
           >
             <span aria-hidden="true">📚 </span>
