@@ -201,11 +201,12 @@ JWKS-cached middleware that lands once auth wiring begins.
 
 ### frontend vars
 
-| Variable                        | Source        | Value                                                                 |
-| ------------------------------- | ------------- | --------------------------------------------------------------------- |
-| `VITE_SUPABASE_URL`             | MCP (FHS-189) | `https://maolytpqazmykjzdybtj.supabase.co` (staging Supabase project) |
-| `VITE_SUPABASE_ANON_KEY`        | MCP (FHS-189) | legacy HS256 anon JWT: baked into the browser bundle, safe by design  |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | MCP (FHS-189) | modern asymmetric `sb_publishable_…`: baked into the browser bundle   |
+| Variable                        | Source        | Value                                                                                         |
+| ------------------------------- | ------------- | --------------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | MCP (FHS-189) | `https://maolytpqazmykjzdybtj.supabase.co` (staging Supabase project)                         |
+| `VITE_AUTH_URL`                 | FHS-696       | Unset (sign-in via Supabase). Set to the API address to sign in through our own GoTrue server |
+| `VITE_SUPABASE_ANON_KEY`        | MCP (FHS-189) | legacy HS256 anon JWT: baked into the browser bundle, safe by design                          |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | MCP (FHS-189) | modern asymmetric `sb_publishable_…`: baked into the browser bundle                           |
 
 The frontend service deliberately gets **only** publishable / anon
 client-safe variants. `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_SECRET_KEY`
