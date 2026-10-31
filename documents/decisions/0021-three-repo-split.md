@@ -1,7 +1,7 @@
 # 0021: Split into three repos
 
 **Status:** accepted
-**Date:** 2026-10-31
+**Date:** 2026-10-31 (amended 2026-10-31: rules installed by version label, not GitHub Packages)
 **Jira:** [FHS-686](https://qualicion2.atlassian.net/browse/FHS-686) (children FHS-687 to FHS-690)
 **Supersedes:** [0005: Monorepo structure](0005-monorepo-structure.md)
 
@@ -30,9 +30,11 @@ calendar, meals, learn, my-world and so on) rather than by technical
 type.
 
 **Common rules** (`packages/shared`: request and response schemas,
-money and week helpers) move to `family-hub-api/shared-rules/` and are
-published as a private package on GitHub Packages. The web site and
-the app install a fixed version of it.
+money and week helpers) move to `family-hub-api/shared-rules/`. The web
+site and the app install them straight from that repo, pinned to a
+version label (a Git tag such as `shared-rules-v0.1.0`):
+`github:familyhubapp971/family-hub-api#shared-rules-v0.1.0&path:shared-rules`.
+The repo is public, so no key or package registry is needed.
 
 **The look** (colours, fonts, sizes, shadows: the design system's
 Tailwind preset) is published from `family-hub-web/design-system/`. The
@@ -60,7 +62,8 @@ backup first (FHS-690).
 
 - A change to the common rules becomes a new package version, then an
   update in web and mobile. Slower than one pull request, but explicit.
-- Private package installs need a read token in CI and in Railway builds.
+- A rules change needs a new version label in `family-hub-api`, then a
+  one-line update in web and mobile. Never move a label once pushed.
 - Browser tests need access to a second repo in their checks.
 - Each repo needs its own `CLAUDE.md`, checks and branch protection.
 - Shared fixes to test helpers are made twice when both sides need them.
@@ -74,3 +77,9 @@ backup first (FHS-690).
   too many to manage for a small team.
 - **Wrap the web site as an app, or an installable web app:** rejected
   in favour of a real React Native app for the app stores.
+- **GitHub Packages for the common rules:** dropped during the build.
+  It needs a sign-in key even to install public packages, and
+  `family-hub-api` became public (its checks would not start while
+  private), so installing from the repo by version label is simpler.
+- **Private `family-hub-api`:** its push and pull request checks never
+  started on GitHub while private; made public, like `family-hub-web`.
