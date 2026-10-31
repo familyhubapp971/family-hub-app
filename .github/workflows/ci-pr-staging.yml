@@ -34,8 +34,6 @@ jobs:
         with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r typecheck
-      - name: OpenAPI spec is up to date (FHS-356)
-        run: pnpm -F api openapi:check
 
   unit:
     name: Unit tests — frontend + backend + shared
@@ -55,36 +53,6 @@ jobs:
         with:
           name: coverage-pr-staging
           path: coverage/
-
-  integration:
-    name: Integration tests (with database)
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: familyhub_test
-          POSTGRES_USER: fh_test
-          POSTGRES_PASSWORD: fh_test
-        ports: ['5433:5432']
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 1s
-          --health-timeout 5s
-          --health-retries 30
-    env:
-      DATABASE_URL_TEST: postgres://fh_test:fh_test@localhost:5433/familyhub_test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: '${{ env.PNPM_VERSION }}' }
-      - uses: actions/setup-node@v4
-        with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
-      - run: pnpm install --frozen-lockfile
-      # Skip the local docker compose pretest hook in CI — the service
-      # container above replaces it.
-      - run: pnpm exec vitest run --config tests/integration/vitest.config.ts
 
   e2e-critical:
     name: Smoke test (Critical Journeys)

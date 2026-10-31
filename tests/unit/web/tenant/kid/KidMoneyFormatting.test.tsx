@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { KidWeeklyAccount } from '../../../../../apps/web/src/pages/tenant/kid/myworld/KidWeeklyAccount';
 import { KidStats } from '../../../../../apps/web/src/pages/tenant/kid/myworld/KidStats';
 import { KidMoneySkills } from '../../../../../apps/web/src/pages/tenant/kid/myworld/KidMoneySkills';
-import { formatMoney } from '../../../../../packages/shared/src/money';
+import { formatMoney } from '@familyhub/shared';
 
 // FHS-614: the kid panels are the ones a child reads, so they are the ones
 // where "GBP 3.50" does the most damage. Every amount here goes through the

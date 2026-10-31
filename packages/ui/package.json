@@ -19,7 +19,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@familyhub/shared": "workspace:*"
+    "@familyhub/shared": "github:familyhubapp971/family-hub-api#shared-rules-v0.1.0&path:shared-rules"
   },
   "peerDependencies": {
     "framer-motion": "^11.0.0",
