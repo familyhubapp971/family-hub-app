@@ -764,4 +764,63 @@ describe('FHR-41: delete an assignment', () => {
     );
     expect(screen.getByTestId('assignment-row-a-old')).toBeInTheDocument();
   });
+
+  it('the confirm shows the saved title, not unsaved typing', async () => {
+    installApi({ assignments: [OVERDUE] });
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    act(() => {
+      fireEvent.change(screen.getByTestId('assignments-add-title'), {
+        target: { value: 'Half typed' },
+      });
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-delete'));
+    });
+    expect(screen.getByText('Delete "Old Spelling"?')).toBeInTheDocument();
+  });
+
+  it('a double tap on Confirm sends only one delete', async () => {
+    installApi({ assignments: [OVERDUE] });
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-delete'));
+    });
+    await act(async () => {
+      const confirm = screen.getByTestId('assignments-delete-confirm-confirm');
+      fireEvent.click(confirm);
+      fireEvent.click(confirm);
+    });
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE')).toHaveLength(1);
+  });
+
+  it('a delete that loses the network keeps the assignment and says so', async () => {
+    installApi({ assignments: [OVERDUE] });
+    const routed = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      init?.method === 'DELETE' ? Promise.reject(new Error('Network down')) : routed(url, init),
+    );
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-delete'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('assignments-delete-confirm-confirm'));
+    });
+    expect(screen.getByTestId('assignments-add-error')).toHaveTextContent('Network down');
+    expect(screen.getByTestId('assignment-row-a-old')).toBeInTheDocument();
+  });
+});
+
+describe('FHR-39: an old title over the new limit', () => {
+  it('editing one says plainly that it must be shortened', async () => {
+    installApi({ assignments: [{ ...OVERDUE, title: 'y'.repeat(120) }] });
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    expect(screen.getByTestId('assignments-title-too-long')).toHaveTextContent(
+      'This title is over 50 characters. Shorten it to save.',
+    );
+  });
 });

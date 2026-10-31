@@ -83,4 +83,5 @@ because it cannot see the family's time zone.
   part of FHR-40.
 - Undo or a trash bin for deleted assignments.
 - Existing titles longer than 50 characters stay as they are. They must be
-  shortened the next time someone edits them.
+  shortened the next time someone edits them. The edit form says so in plain
+  words: "This title is over 50 characters. Shorten it to save."

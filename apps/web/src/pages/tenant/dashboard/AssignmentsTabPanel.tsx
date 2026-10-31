@@ -95,6 +95,7 @@ export function AssignmentsTabPanel() {
   const [originalDue, setOriginalDue] = useState('');
   const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
   const [draft, setDraft] = useState({ title: '', dueDate: '', memberId: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -313,7 +314,8 @@ export function AssignmentsTabPanel() {
   }, []);
 
   const confirmDelete = useCallback(async () => {
-    if (!headers || !pendingDelete) return;
+    if (!headers || !pendingDelete || deletingRef.current) return;
+    deletingRef.current = true;
     setDeleting(true);
     try {
       const res = await fetch(`${API_BASE}/api/assignments/${pendingDelete.id}`, {
@@ -336,6 +338,7 @@ export function AssignmentsTabPanel() {
       setSaveError(err instanceof Error ? err.message : 'Network error. Try again.');
       setPendingDelete(null);
     } finally {
+      deletingRef.current = false;
       setDeleting(false);
     }
   }, [headers, pendingDelete, onAddCancel, load]);
@@ -489,6 +492,22 @@ export function AssignmentsTabPanel() {
                   className="rounded border-2 border-black px-2 py-1 text-sm font-normal text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
               </label>
+              {draft.title.length > TITLE_MAX && (
+                <p
+                  data-testid="assignments-title-too-long"
+                  className="col-span-full text-xs font-bold text-red-600"
+                >
+                  This title is over {TITLE_MAX} characters. Shorten it to save.
+                </p>
+              )}
+              {draft.notes.length > NOTES_MAX && (
+                <p
+                  data-testid="assignments-notes-too-long"
+                  className="col-span-full text-xs font-bold text-red-600"
+                >
+                  These notes are over {NOTES_MAX} characters. Shorten them to save.
+                </p>
+              )}
               {saveError && (
                 <p
                   role="alert"
@@ -498,7 +517,7 @@ export function AssignmentsTabPanel() {
                   {saveError}
                 </p>
               )}
-              <div className="col-span-full flex gap-2">
+              <div className="col-span-full flex flex-wrap gap-2">
                 <Button
                   type="submit"
                   variant="primary"
@@ -521,7 +540,15 @@ export function AssignmentsTabPanel() {
                 {editingId && (
                   <button
                     type="button"
-                    onClick={() => setPendingDelete({ id: editingId, title: draft.title })}
+                    onClick={() =>
+                      setPendingDelete({
+                        id: editingId,
+                        // The saved title, not text typed but not yet saved.
+                        title:
+                          assignmentsRef.current.find((a) => a.id === editingId)?.title ??
+                          draft.title,
+                      })
+                    }
                     disabled={saving}
                     data-testid="assignments-delete"
                     className="ml-auto flex min-h-[44px] items-center gap-1 rounded px-2 text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 disabled:opacity-50"
