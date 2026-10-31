@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@familyhub/shared": "workspace:*",
+    "@familyhub/shared": "github:familyhubapp971/family-hub-api#shared-rules-v0.1.0&path:shared-rules",
     "@familyhub/ui": "workspace:*",
     "@sentry/react": "^8.55.2",
     "@supabase/supabase-js": "^2.105.1",
