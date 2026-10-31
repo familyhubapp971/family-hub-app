@@ -20,8 +20,8 @@ export default defineConfig({
         'vite.config.ts',
         'postcss.config.js',
         'tailwind.config.js',
-        'src/main.tsx',
-        'src/test/**', // setup files, not logic
+        'src/app/main.tsx',
+        'src/app/test/**', // setup files, not logic
       ],
       all: true,
     },

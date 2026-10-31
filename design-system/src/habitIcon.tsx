@@ -5,7 +5,7 @@ import { Award, CheckCircle, Heart, Sparkles, Star, Zap, type LucideIcon } from 
 // prints the literal word, which is what the money sheets were doing: a habit
 // row read "heart" in a grey box instead of showing an icon.
 //
-// This lived in src/pages/tenant/kid/myworld/icons.tsx, out of reach
+// This lived in src/areas/my-world/kid/icons.tsx, out of reach
 // of anything outside the kid pages, so the same bug was reintroduced in a new
 // place (FHS-374 first, then FHS-630). It lives here now so there is one copy
 // every screen can reach.

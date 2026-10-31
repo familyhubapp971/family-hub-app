@@ -43,9 +43,9 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    // setup.ts stays in src/test/ (NOT in tests/unit/) so it sits with
+    // setup.ts stays in src/app/test/ (NOT in tests/unit/) so it sits with
     // the web site's own code.
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ['./src/app/test/setup.ts'],
     // Centralized tests directory per CLAUDE.md.
     include: ['tests/unit/web/**/*.{test,spec}.{ts,tsx}'],
     passWithNoTests: true,

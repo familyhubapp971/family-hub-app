@@ -142,6 +142,9 @@ conventions and the skill-routing map.
 
 ```text
 src/            # React + Vite web site
+  areas/        # signed-in screens grouped by product area (today, calendar, money...)
+  public-pages/ # home page, legal pages, sign-in and sign-up
+  app/          # routing, shared layout and menus, app-wide helpers
 public/         # static files served as-is (fonts)
 index.html      # web entry page
 design-system/  # shared components, Storybook, Tailwind preset (@familyhub/ui)

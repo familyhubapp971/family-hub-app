@@ -141,7 +141,7 @@ override stands in (see the note above).
 
 ## Implementation notes
 
-- Component: `src/pages/tenant/dashboard/GetStarted.tsx`, mounted above
+- Component: `src/areas/today/GetStarted.tsx`, mounted above
   `TodayTabPanel` on the dashboard home tab (`DashboardPage.tsx`).
 - API: `GET /api/onboarding/get-started` returns `{ dismissed, steps, firstKidId }`;
   `POST /api/onboarding/get-started/dismiss` hides it. Both admin-only (403

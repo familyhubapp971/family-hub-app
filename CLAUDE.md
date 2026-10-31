@@ -21,7 +21,9 @@ overview.
 Postgres with RLS (data) · Vitest + Playwright + k6 (testing) · Railway
 (hosting) · Supabase (auth + email).
 
-**Repo layout:** this repo holds the web site (`src/`, plus `index.html`,
+**Repo layout:** this repo holds the web site (`src/`: screens by product area in
+`src/areas/`, public pages in `src/public-pages/`, routing and shared
+layout in `src/app/`; plus `index.html`,
 `public/` and the Vite config at the root) and the design system
 (`design-system/`), next to `documents/`, `scripts/` and `tests/`. **Being split into
 three repos** per [ADR 0021](documents/decisions/0021-three-repo-split.md)

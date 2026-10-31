@@ -50,7 +50,7 @@ as a broken page rather than a wait.
 
 - **Given** a full-screen wait anywhere in the app
 - **When** it renders
-- **Then** it uses `src/components/LoadingScreen.tsx`
+- **Then** it uses `src/app/components/LoadingScreen.tsx`
 - **And** small in-panel waits use the shared `Spinner` from `design-system` rather than their own `animate-spin`
 
 ### Story 3: Usable on any device, with or without motion

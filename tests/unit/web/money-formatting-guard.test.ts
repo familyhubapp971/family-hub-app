@@ -29,7 +29,7 @@ const ROOTS = [
  * formatted string. It uses `currencySymbol()` for the prefix, which is the
  * sanctioned escape hatch.
  */
-const ALLOWED = [path.join('packages', 'ui', 'src', 'AmountPicker.tsx')];
+const ALLOWED = [path.join('design-system', 'src', 'AmountPicker.tsx')];
 
 // A currency-ish expression: the bare identifier, or any `.currency` property
 // off an object (`stats.currency`, `week.currency`), which the first cut of
