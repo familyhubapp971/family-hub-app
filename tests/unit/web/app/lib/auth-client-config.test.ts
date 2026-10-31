@@ -13,7 +13,7 @@ describe('authClientConfig', () => {
         VITE_SUPABASE_URL: 'https://abc.supabase.co',
         VITE_SUPABASE_ANON_KEY: 'anon',
       }),
-    ).toEqual({ url: 'https://abc.supabase.co', key: 'anon', usesOwnServer: false });
+    ).toEqual({ url: 'https://abc.supabase.co', key: 'anon' });
   });
 
   it('uses our own server when VITE_AUTH_URL is set, even with Supabase settings present', () => {
@@ -23,12 +23,16 @@ describe('authClientConfig', () => {
         VITE_SUPABASE_URL: 'https://abc.supabase.co',
         VITE_SUPABASE_ANON_KEY: 'anon',
       }),
-    ).toEqual({ url: 'https://fh-api-staging.up.railway.app', key: 'anon', usesOwnServer: true });
+    ).toEqual({ url: 'https://fh-api-staging.up.railway.app', key: 'anon' });
   });
 
   it('needs no Supabase key once our own server is used', () => {
     const cfg = authClientConfig({ VITE_AUTH_URL: 'https://fh-api-staging.up.railway.app' });
-    expect(cfg.key).toBe('gotrue');
-    expect(cfg.usesOwnServer).toBe(true);
+    expect(cfg).toEqual({ url: 'https://fh-api-staging.up.railway.app', key: 'gotrue' });
+  });
+
+  it('treats a mistyped address as missing instead of crashing the site', () => {
+    expect(authClientConfig({ VITE_AUTH_URL: 'not a url' }).url).toBeUndefined();
+    expect(authClientConfig({ VITE_SUPABASE_URL: 'fh-api-staging' }).url).toBeUndefined();
   });
 });

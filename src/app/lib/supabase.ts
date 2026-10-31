@@ -18,15 +18,22 @@ export function authClientConfig(env: {
   VITE_AUTH_URL?: string | undefined;
   VITE_SUPABASE_URL?: string | undefined;
   VITE_SUPABASE_ANON_KEY?: string | undefined;
-}): { url: string | undefined; key: string | undefined; usesOwnServer: boolean } {
+}): { url: string | undefined; key: string | undefined } {
   if (env.VITE_AUTH_URL) {
-    return {
-      url: env.VITE_AUTH_URL.replace(/\/+$/, ''),
-      key: env.VITE_SUPABASE_ANON_KEY || 'gotrue',
-      usesOwnServer: true,
-    };
+    return { url: validUrl(env.VITE_AUTH_URL), key: env.VITE_SUPABASE_ANON_KEY || 'gotrue' };
   }
-  return { url: env.VITE_SUPABASE_URL, key: env.VITE_SUPABASE_ANON_KEY, usesOwnServer: false };
+  return { url: validUrl(env.VITE_SUPABASE_URL), key: env.VITE_SUPABASE_ANON_KEY };
+}
+
+// A mistyped address would make createClient throw at load and blank every
+// page, including the public ones. Treat it as missing instead.
+function validUrl(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  try {
+    return new URL(raw).origin === 'null' ? undefined : raw.replace(/\/+$/, '');
+  } catch {
+    return undefined;
+  }
 }
 
 // Named one by one: Vite bakes each import.meta.env.VITE_* in at build time.
