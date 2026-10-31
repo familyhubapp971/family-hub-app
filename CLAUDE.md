@@ -26,7 +26,7 @@ Postgres with RLS (data) · Vitest + Playwright + k6 (testing) · Railway
 three repos** per [ADR 0021](documents/decisions/0021-three-repo-split.md)
 ([FHS-686](https://qualicion2.atlassian.net/browse/FHS-686)):
 `family-hub-api`, `family-hub-web` (this repo, renamed) and
-`family-hub-mobile`, each grouped by product area. Until each move
+`family-hub-app`, each grouped by product area. Until each move
 lands, keep working in the current layout.
 
 **Branches:** `main` (production) · `staging` (pre-prod) · feature → PR into

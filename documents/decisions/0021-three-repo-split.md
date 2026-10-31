@@ -19,11 +19,11 @@ not disturb them.
 **Three GitHub repos under `familyhubapp971`, each with its own checks,
 deploys and `CLAUDE.md`:**
 
-| Repo                | Holds                                                                                     |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| `family-hub-api`    | The server, database changes, sign-in emails, endpoint docs, and the common rules package |
-| `family-hub-web`    | Today's repo, renamed: the web site, the design system, documents and doc scripts         |
-| `family-hub-mobile` | A new Expo (React Native) phone app                                                       |
+| Repo             | Holds                                                                                                                  |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `family-hub-api` | The server, database changes, sign-in emails, endpoint docs, and the common rules package                              |
+| `family-hub-web` | Today's repo (renamed from `family-hub-app` on 2026-10-31): the web site, the design system, documents and doc scripts |
+| `family-hub-app` | A new Expo (React Native) phone app                                                                                    |
 
 Inside each repo, code is grouped **by product area** (members,
 calendar, meals, learn, my-world and so on) rather than by technical
@@ -38,7 +38,7 @@ the app install a fixed version of it.
 Tailwind preset) is published from `family-hub-web/design-system/`. The
 app installs it and styles with NativeWind, so both use the same
 styling words. Components are rebuilt for phones under
-`family-hub-mobile/design-system/` with the same names and options.
+`family-hub-app/design-system/` with the same names and options.
 
 **Tests** split by owner: unit, integration and speed tests go with the
 server; unit and browser tests go with the web site, and its browser
@@ -46,8 +46,10 @@ tests start the server from `family-hub-api` in their checks.
 `packages/test-utils` splits the same way.
 
 **History** is kept: each new repo is cut from this one with its past
-changes. Renaming this repo to `family-hub-web` keeps every past pull
-request and Jira link working.
+changes. This repo was renamed `family-hub-web`, which keeps every past
+pull request and Jira link working. The phone app then takes the name
+`family-hub-app`, which ends GitHub's redirect from the old name, so every
+saved address must point at `family-hub-web` before the app repo exists.
 
 **Order, to protect users:** build and test each repo on staging first;
 production keeps building from today's repo until the new ones are
