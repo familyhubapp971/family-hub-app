@@ -142,7 +142,7 @@ Each: what it is in plain words, then the technical detail, then the fix + ticke
 
 The old performance tests only pinged `/health` and `/hello`: no login, no
 database, no family data, so they proved nothing about real scale. The new
-suite (FHS-460, see [tests/performance/README.md](../../tests/performance/README.md))
+suite (FHS-460, see [tests/performance/README.md](https://github.com/familyhubapp971/family-hub-api/blob/staging/tests/performance/README.md))
 drives **real logged-in parent + kid sessions** through the actual hot screens
 (dashboard, kid dashboard, My World, learn), so a load run measures what a real
 morning rush would feel like. Caveat baked into the docs: the API rate-limits

@@ -37,7 +37,7 @@ it next to this repo (`../family-hub-api`) and start it there first.
 # Install
 pnpm install
 
-# Web site on :5173 (creates .env.local from .env.example if missing)
+# Web site on :5273 (creates .env.local from .env.example if missing)
 ./scripts/dev
 
 # Tests

@@ -1371,14 +1371,14 @@ tests/
     support/pages/                    # page objects (no raw locators in steps)
 ```
 
-One `vitest.config.ts` at the repo root runs every unit test (web site and
+The `test` block in `vite.config.ts` runs every unit test (web site and
 design system). Integration and performance tests live in `family-hub-api`.
 
 ### Unit: Vitest
 
 - **Where:** `tests/unit/{web,ui}/...` mirroring source hierarchy.
 - **File naming:** `*.test.ts` / `*.test.tsx` (reserve `*.spec.ts` for integration).
-- **Run:** `pnpm test` (root `vitest.config.ts`, runs every unit test); `pnpm test:watch`; `pnpm test:coverage` for merged lcov.
+- **Run:** `pnpm test` (the `test` block in `vite.config.ts`, runs every unit test); `pnpm test:watch`; `pnpm test:coverage` for merged lcov.
 - **Environment:** `jsdom` + `@testing-library/react`.
 - **Coverage thresholds (starting):** lines 70%, branches 60%, functions 70%: raise to 80/70/80 after FHS-186 baseline. Hard-gating only after thresholds calibrate.
 - **Scope:** pure functions, single class/module, no I/O. Mock external collaborators, **never** mock the thing under test.

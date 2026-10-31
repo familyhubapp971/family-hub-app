@@ -63,5 +63,5 @@ _Initial seed, populate as docs are added:_
   family. Set `tenantSlug` too. For kid
   endpoints, set `kidMemberId` and `kidPin`, then send "Exchange a kid PIN";
   it saves `kidToken` for you. Every request checks its documented status code.
-- **After any API change:** run `pnpm -F api openapi:generate` and commit both.
+- **After any API change:** run `pnpm openapi:generate` in family-hub-api and commit both there.
   CI's `openapi:check` fails if either is stale or an endpoint lacks full docs.

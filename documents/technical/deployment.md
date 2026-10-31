@@ -275,7 +275,10 @@ healthcheck (api: /health; frontend: TCP)
 public domain serves traffic
 ```
 
-Deployment triggers (one per service, per env):
+Deployment triggers (one per service, per env), as they were before the
+split, when both services built from the single repo now called
+`family-hub-web`. For today's repos see
+[Repos after the split](#repos-after-the-split-2026-10-31).
 
 | Trigger ID                             | Service  | Branch    | Repo                             |
 | -------------------------------------- | -------- | --------- | -------------------------------- |
