@@ -55,7 +55,7 @@ _Seeded by FHS-172 / FHS-173 / FHS-174, populate as ADRs land:_
 - [`0002-subdomain-tenant-routing.md`](0002-subdomain-tenant-routing.md): accepted (FHS-173); amended by 0012
 - [`0003-auth-library.md`](0003-auth-library.md): accepted: Supabase Auth (FHS-173)
 - [`0004-stripe-billing.md`](0004-stripe-billing.md): accepted (FHS-173)
-- [`0005-monorepo-structure.md`](0005-monorepo-structure.md): accepted (FHS-174)
+- [`0005-monorepo-structure.md`](0005-monorepo-structure.md): superseded by 0021 (FHS-174)
 - [`0006-branching-strategy.md`](0006-branching-strategy.md): accepted (FHS-174)
 - [`0007-stack-reuse.md`](0007-stack-reuse.md): accepted (FHS-154)
 - [`0008-supabase-environments.md`](0008-supabase-environments.md): accepted (FHS-187): two projects on Free, branches when on Pro
@@ -71,3 +71,4 @@ _Seeded by FHS-172 / FHS-173 / FHS-174, populate as ADRs land:_
 - [`0018-ai-in-learn.md`](0018-ai-in-learn.md): accepted: AI Maths lessons via Anthropic Claude Haiku, double-gated (LEARN_AI_ENABLED + ANTHROPIC_API_KEY), server-validated JSON, no PII in prompts, flag-off = static bank only (FHS-389)
 - [`0019-role-privilege-matrix.md`](0019-role-privilege-matrix.md): accepted: formalises the 5-role privilege matrix (admin/adult/teen/child/guest); invite flow can now grant `admin` with an admin-only safeguard; fixes the "Parent" mislabel on the `adult` badge; flags the Calendar past-date enforcement gap as a follow-up (FHS-485, FHS-486)
 - [`0020-configurable-reward-economy.md`](0020-configurable-reward-economy.md): accepted: replaces the fixed 0.5 sticker rate with a configurable per-family/per-child rate (integer minor units) + habit boost + a skip-penalty ledger folded into savings (FHS-512)
+- [`0021-three-repo-split.md`](0021-three-repo-split.md): accepted: split into family-hub-api, family-hub-web and family-hub-app, grouped by product area (FHS-686)
