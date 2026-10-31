@@ -15,7 +15,7 @@ Feature: Assignments
     And I am on a phone-sized screen for the dashboard
     When I open the Assignments area
     And I edit the assignment "Finish reading"
-    Then no area scrolls sideways
+    Then the open edit form does not scroll sideways
     When I delete it and confirm
     Then the assignment "Finish reading" is no longer listed
 

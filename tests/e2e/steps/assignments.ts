@@ -1,6 +1,7 @@
 import { createBdd } from 'playwright-bdd';
 import { test, expect } from '../support/fixtures.js';
 import { AssignmentsPO } from '../support/pages/AssignmentsPage.js';
+import { FamilyDashboardPO } from '../support/pages/FamilyDashboardPage.js';
 
 // FHR-39/40/41. The sign-in, phone-size, open-area and no-sideways-scroll
 // steps are shared with dashboard-daily-use.ts.
@@ -13,6 +14,15 @@ When('I edit the assignment {string}', async ({ page }, title: string) => {
   const assignments = new AssignmentsPO(page);
   await expect(assignments.row(title)).toBeVisible({ timeout: 15000 });
   await assignments.edit(title);
+});
+
+// Checks only the screen as it is, so the edit form stays open. The shared
+// "no area scrolls sideways" step opens every area and would close it.
+Then('the open edit form does not scroll sideways', async ({ page }) => {
+  await expect(page.getByTestId('assignments-delete')).toBeVisible({ timeout: 15000 });
+  const overflow = await new FamilyDashboardPO(page).horizontalOverflowPx();
+  // 1px of slack: sub-pixel rounding, not a layout that runs off the screen.
+  expect(overflow, 'Assignments edit form overflows sideways').toBeLessThanOrEqual(1);
 });
 
 When('I delete it and confirm', async ({ page }) => {
