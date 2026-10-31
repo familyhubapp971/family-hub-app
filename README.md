@@ -111,7 +111,11 @@ set -a; source .env.local; set +a
 python3 scripts/jira/refresh-confluence-epics-page.py --reason "FHS-XXX close"
 ```
 
-## Working with Claude Code
+## Working with coding agents
+
+[`AGENTS.md`](AGENTS.md) holds the project rules for every coding agent
+(Claude Code, Codex and others). [`CLAUDE.md`](CLAUDE.md) imports it and
+adds only Claude Code setup.
 
 This repo ships [`.claude/`](.claude/README.md) with a curated set of
 specialist subagents and skills, plus a conservative permission
@@ -125,8 +129,8 @@ Useful slash commands (via `~/.claude/skills/commands/`):
 - `/status`: check progress on the current effort
 
 See [`.claude/README.md`](.claude/README.md) for the full list of
-shipped agents and skills, and [`CLAUDE.md`](CLAUDE.md) for project
-conventions and the skill-routing map.
+shipped agents and skills, and [`CLAUDE.md`](CLAUDE.md) for the
+skill-routing map.
 
 ## Repository Layout
 
