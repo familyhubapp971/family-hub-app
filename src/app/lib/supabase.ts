@@ -7,7 +7,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 // Database type generation lands with FHS-192 (the user-mirror sync); for
 // now we use the unparameterised generic so the file compiles before any
 // schema exists. When generated types are committed at
-// `packages/shared/src/db-types.ts` (or similar), tighten via:
+// `family-hub-api/shared-rules/src/db-types.ts` (or similar), tighten via:
 //   createClient<Database>(...)
 
 const url = import.meta.env.VITE_SUPABASE_URL;

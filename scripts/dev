@@ -22,5 +22,5 @@ fi
 # FHS-688: the server lives in family-hub-api. Start it there first
 # (its own scripts bring up Postgres and the api on :3001).
 echo "→ Start the server from family-hub-api first (pnpm dev there)."
-echo "→ Booting web (:5173): Ctrl-C to stop..."
+echo "→ Booting web (:5273): Ctrl-C to stop..."
 exec pnpm dev

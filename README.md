@@ -29,34 +29,24 @@ forces it; don't re-litigate the whole stack at once.
 
 ## Quick Start
 
-Requires Docker (Compose v2), Node 20+, pnpm 10+.
+Requires Node 20+ and pnpm 10+. The server and its database live in
+[`family-hub-api`](https://github.com/familyhubapp971/family-hub-api); clone
+it next to this repo (`../family-hub-api`) and start it there first.
 
 ```bash
 # Install
 pnpm install
 
-# One-command dev: Postgres + migrations + api (:3001) + web (:5173)
-# (creates .env.local from .env.example automatically if missing)
+# Web site on :5273 (creates .env.local from .env.example if missing)
 ./scripts/dev
 
-# In another shell: populate the dev DB with fake tenants + users
-./scripts/seed       # or: pnpm seed
-
 # Tests
-pnpm test            # unit
-pnpm test:integration # integration (separate :5433 Postgres, auto-managed)
-pnpm test:e2e        # Playwright E2E (see "Browser tests on a new machine" below)
-
-# DB lifecycle
-pnpm dev:up          # just start Postgres
-pnpm dev:down        # stop Postgres (data persists)
-pnpm dev:reset       # stop AND drop the volume (fresh DB)
+pnpm test                          # unit tests (web site and design system)
+pnpm -F @familyhub/e2e test:e2e    # browser tests (see "Browser tests on a new machine" below)
 ```
 
-> **Schema status:** `apps/api/src/db/schema.ts` is intentionally empty
-> until Sprint 1: `tenants` and `users` land with `tenant_id` + RLS
-> per [ADR 0001](documents/decisions/0001-multi-tenancy.md). Until then,
-> `./scripts/seed` runs as a no-op that warns the schema isn't ready.
+The browser tests start the server from `../family-hub-api` (or the folder
+in `FH_API_DIR`) and need its database running: `pnpm dev:up` in that repo.
 
 ## Browser tests on a new machine
 
@@ -95,15 +85,15 @@ alone: everything else is optional until the dependent feature is wired).
 
 Source of truth for real values:
 
-| Group                                                                    | Where the value comes from                                                                                            |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| Postgres                                                                 | Local: docker-compose (FHS-168) or your own Postgres. Hosted: Railway dashboard injects `DATABASE_URL` automatically. |
-| Runtime (`NODE_ENV`, `PORT`, `LOG_LEVEL`, `BASE_DOMAIN`, `VITE_API_URL`) | No external source: set per environment. Defaults in `.env.example` are dev-safe.                                     |
-| Supabase auth                                                            | Supabase dashboard → Project Settings → API                                                                           |
-| Stripe billing                                                           | Stripe dashboard → Developers → API keys (test mode for dev)                                                          |
-| Sentry                                                                   | Sentry dashboard → Project Settings → Client Keys (DSN), separate projects for api + web                              |
-| Jira tooling                                                             | [id.atlassian.com: API tokens](https://id.atlassian.com/manage-profile/security/api-tokens)                           |
-| Railway MCP                                                              | [railway.com/account/tokens](https://railway.com/account/tokens) (Account Tokens, not Project)                        |
+| Group                                                                    | Where the value comes from                                                                                          |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Postgres                                                                 | Local: `pnpm dev:up` in family-hub-api, or your own Postgres. Hosted: Railway injects `DATABASE_URL` automatically. |
+| Runtime (`NODE_ENV`, `PORT`, `LOG_LEVEL`, `BASE_DOMAIN`, `VITE_API_URL`) | No external source: set per environment. Defaults in `.env.example` are dev-safe.                                   |
+| Supabase auth                                                            | Supabase dashboard → Project Settings → API                                                                         |
+| Stripe billing                                                           | Stripe dashboard → Developers → API keys (test mode for dev)                                                        |
+| Sentry                                                                   | Sentry dashboard → Project Settings → Client Keys (DSN), separate projects for api + web                            |
+| Jira tooling                                                             | [id.atlassian.com: API tokens](https://id.atlassian.com/manage-profile/security/api-tokens)                         |
+| Railway MCP                                                              | [railway.com/account/tokens](https://railway.com/account/tokens) (Account Tokens, not Project)                      |
 
 `.env.example` itself **never** holds real secrets. Production /
 staging values live in the Railway dashboard; local dev values live
