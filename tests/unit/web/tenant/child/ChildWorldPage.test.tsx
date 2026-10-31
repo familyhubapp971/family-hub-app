@@ -15,13 +15,13 @@ const authState: {
   user: { email: 'parent@example.com', id: 'u-1', user_metadata: {} },
   session: { access_token: 'tok-abc' },
 };
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
   signOutAll: vi.fn(async () => ({ error: null })),
 }));
 
-import { ChildWorldPage } from '../../../../../apps/web/src/pages/tenant/child/ChildWorldPage';
-import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+import { ChildWorldPage } from '../../../../../src/pages/tenant/child/ChildWorldPage';
+import { TenantProvider } from '../../../../../src/lib/tenant-context';
 
 const MEMBER = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const SIBLING = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';

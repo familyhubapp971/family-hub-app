@@ -5,7 +5,7 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 // Magic Patterns kid mock - NOT the parent's MyWorldTab reused). Reads the
 // self-scoped /api/kid/* endpoints with the kid bearer token.
 
-import { KidMyWorld } from '../../../../../apps/web/src/pages/tenant/kid/KidMyWorld';
+import { KidMyWorld } from '../../../../../src/pages/tenant/kid/KidMyWorld';
 
 const KID_TOKEN = 'kid.jwt.token';
 

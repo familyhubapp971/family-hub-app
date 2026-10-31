@@ -10,10 +10,10 @@ const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
   session: { access_token: 'tok-abc' },
 };
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({ useAuth: () => authState }));
+vi.mock('../../../../../src/lib/auth-context', () => ({ useAuth: () => authState }));
 
-import { MyWorldTab } from '../../../../../apps/web/src/pages/tenant/child/MyWorldTab';
-import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+import { MyWorldTab } from '../../../../../src/pages/tenant/child/MyWorldTab';
+import { TenantProvider } from '../../../../../src/lib/tenant-context';
 
 const MEMBER = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const HABIT = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';

@@ -4,11 +4,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('../../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../../src/lib/supabase', () => ({
   supabase: { auth: { getSession: async () => ({ data: { session: null } }) } },
 }));
 
-import { FounderFeedbackPage } from '../../../../../apps/web/src/pages/founder/FounderFeedbackPage';
+import { FounderFeedbackPage } from '../../../../../src/pages/founder/FounderFeedbackPage';
 
 const fetchMock = vi.fn();
 

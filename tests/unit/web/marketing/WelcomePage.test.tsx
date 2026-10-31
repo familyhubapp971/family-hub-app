@@ -11,14 +11,14 @@ const authState: {
   loading: boolean;
 } = { session: null, loading: false };
 let kidTokenReturn: string | null = null;
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
   signOutAll: vi.fn(async () => ({ error: null })),
   // The page uses getKidToken (validates expiry), not raw localStorage.
   getKidToken: () => kidTokenReturn,
 }));
 
-import { WelcomePage } from '../../../../apps/web/src/pages/marketing/WelcomePage';
+import { WelcomePage } from '../../../../src/pages/marketing/WelcomePage';
 
 const fetchMock = vi.fn();
 

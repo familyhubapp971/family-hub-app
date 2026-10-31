@@ -13,7 +13,7 @@ const config: StorybookConfig = {
   // ship inside the web app's public folder. Serving that folder here is what
   // stops every heading in the catalogue falling back to a system face and
   // misrepresenting the design.
-  staticDirs: ['../../../apps/web/public'],
+  staticDirs: ['../../public'],
   // No anonymous usage pings from developer machines or CI.
   core: { disableTelemetry: true },
 };

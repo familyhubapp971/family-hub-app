@@ -7,7 +7,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 const fetchMock = vi.fn();
 const writeText = vi.fn(() => Promise.resolve());
 
-import { CalendarSyncCard } from '../../../../../apps/web/src/pages/tenant/dashboard/CalendarSyncCard';
+import { CalendarSyncCard } from '../../../../../src/pages/tenant/dashboard/CalendarSyncCard';
 
 const HEADERS = { Authorization: 'Bearer tok', 'x-tenant-slug': 'smith' };
 const FEED_URL = 'https://api.example.com/api/public/calendar/tid.sig.ics';

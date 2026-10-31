@@ -10,7 +10,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 // stand-in for "survives a reload": a brand new mount reading the same
 // mocked server state).
 
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../src/lib/auth-context', () => ({
   useAuth: () => ({
     session: { access_token: 'tok-admin' },
     user: { id: 'u-admin', email: 'sarah@example.com' },
@@ -19,8 +19,8 @@ vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
   signOutAll: vi.fn(),
 }));
 
-import { KidsMoneyPage } from '../../../../../apps/web/src/pages/tenant/KidsMoneyPage';
-import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+import { KidsMoneyPage } from '../../../../../src/pages/tenant/KidsMoneyPage';
+import { TenantProvider } from '../../../../../src/lib/tenant-context';
 
 const ONE_KID = [{ id: 'kid-1', displayName: 'Amina', role: 'child', avatarEmoji: '🦄' }];
 const CURRENT_WEEK_ID = 'week-current';

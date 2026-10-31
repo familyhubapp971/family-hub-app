@@ -15,9 +15,9 @@ import { join } from 'node:path';
 const ROOT = join(__dirname, '../../../../..');
 
 const SCROLLING_LISTS = [
-  'apps/web/src/pages/tenant/money/InvestFlow.tsx',
-  'apps/web/src/pages/tenant/money/WithdrawFlow.tsx',
-  'apps/web/src/pages/tenant/money/ClaimRewardFlow.tsx',
+  'src/pages/tenant/money/InvestFlow.tsx',
+  'src/pages/tenant/money/WithdrawFlow.tsx',
+  'src/pages/tenant/money/ClaimRewardFlow.tsx',
 ];
 
 describe('the money sheets never clip a row on hover (FHS-633)', () => {

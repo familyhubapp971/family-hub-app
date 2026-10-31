@@ -21,8 +21,9 @@ overview.
 Postgres with RLS (data) · Vitest + Playwright + k6 (testing) · Railway
 (hosting) · Supabase (auth + email).
 
-**Repo layout:** today one repo (`apps/api`, `apps/web`,
-`packages/{shared,ui,test-utils}`, `documents/`). **Being split into
+**Repo layout:** this repo holds the web site (`src/`, plus `index.html`,
+`public/` and the Vite config at the root) and the design system
+(`design-system/`), next to `documents/`, `scripts/` and `tests/`. **Being split into
 three repos** per [ADR 0021](documents/decisions/0021-three-repo-split.md)
 ([FHS-686](https://qualicion2.atlassian.net/browse/FHS-686)):
 `family-hub-api`, `family-hub-web` (this repo, renamed) and
@@ -973,19 +974,19 @@ Rules:
   that would break accessibility, privacy or a product decision is fixed
   in the implementation and written down with the reason, not copied.
 
-### Design system (packages/ui): single source of truth
+### Design system (design-system): single source of truth
 
 **Any design change updates the design system in the same PR.** When a
 ticket introduces or alters a visual component (badge styles, role
 colour maps, chips, stat tiles, progress bars, avatar discs, form
-shells), the reusable piece lives in `packages/ui`: never copy-pasted
+shells), the reusable piece lives in `design-system`: never copy-pasted
 across pages. Rules:
 
 - New component used (or clearly usable) by 2+ pages → extract to
-  `packages/ui/src/<Name>.tsx`, export from `index.ts`, unit-test it
+  `design-system/src/<Name>.tsx`, export from `index.ts`, unit-test it
   under `tests/unit/ui/`.
 - **Every component ships with a Storybook story** at
-  `packages/ui/src/<Name>.stories.tsx` covering the props that actually
+  `design-system/src/<Name>.stories.tsx` covering the props that actually
   branch (each variant, disabled, error, long text). `pnpm storybook`
   opens the catalogue. The guard test
   [`tests/unit/web/ui/stories-coverage.test.ts`](tests/unit/web/ui/stories-coverage.test.ts)
@@ -993,7 +994,7 @@ across pages. Rules:
   not a suggestion. See
   [design-system.md](documents/technical/design-system.md) (FHS-643).
 - Shared visual constants (role → colour/label maps, pastel palettes,
-  status chip styles) live in `packages/ui`, not per-page consts.
+  status chip styles) live in `design-system`, not per-page consts.
 - When matching a Magic Patterns design, port the mock's component into
   the design system first, then consume it from the page.
 - Drift check at PR self-review: if the diff adds a styled block that
@@ -1330,14 +1331,14 @@ layout, reorganised by package within each tier.
 A ticket isn't done (and the PR isn't mergeable) until the right
 tiers are green. Use this matrix to decide what's required:
 
-| Ticket scope                                           | Unit                              | Integration                       | E2E                                                             | Perf              |
-| ------------------------------------------------------ | --------------------------------- | --------------------------------- | --------------------------------------------------------------- | ----------------- |
-| Pure logic / utility / type-only                       | required                          | n/a                               | n/a                                                             | n/a               |
-| `packages/ui` primitive (Button, Card, PinInput, etc.) | required (per prop / interaction) | n/a                               | n/a                                                             | n/a               |
-| API endpoint or middleware                             | required (handler logic)          | required (real Postgres + RLS)    | required if user-visible                                        | smoke if hot path |
-| Page / route (apps/web)                                | required (component shape)        | n/a                               | required (Gherkin scenario from `documents/features/<slug>.md`) | n/a               |
-| Schema migration                                       | required (drizzle-kit dry-run)    | required (RLS + tenant-isolation) | required if it affects a user flow                              | n/a               |
-| Cross-cutting (auth, feature flag, billing)            | required                          | required                          | required (full happy + sad path)                                | smoke             |
+| Ticket scope                                             | Unit                              | Integration                       | E2E                                                             | Perf              |
+| -------------------------------------------------------- | --------------------------------- | --------------------------------- | --------------------------------------------------------------- | ----------------- |
+| Pure logic / utility / type-only                         | required                          | n/a                               | n/a                                                             | n/a               |
+| `design-system` primitive (Button, Card, PinInput, etc.) | required (per prop / interaction) | n/a                               | n/a                                                             | n/a               |
+| API endpoint or middleware                               | required (handler logic)          | required (real Postgres + RLS)    | required if user-visible                                        | smoke if hot path |
+| Page / route (src/)                                      | required (component shape)        | n/a                               | required (Gherkin scenario from `documents/features/<slug>.md`) | n/a               |
+| Schema migration                                         | required (drizzle-kit dry-run)    | required (RLS + tenant-isolation) | required if it affects a user flow                              | n/a               |
+| Cross-cutting (auth, feature flag, billing)              | required                          | required                          | required (full happy + sad path)                                | smoke             |
 
 Rules of thumb:
 
@@ -1363,7 +1364,7 @@ needed" silently: that's how regressions creep in.
 tests/
   unit/
     api/{routes,middleware,lib}/      # mirrors apps/api/src/
-    web/{components,hooks}/           # mirrors apps/web/src/
+    web/{components,hooks}/           # mirrors src/
     shared/{schemas}/                 # mirrors packages/shared/src/
   integration/
     vitest.config.ts                  # separate config from unit
@@ -1383,9 +1384,9 @@ tests/
     reports/                          # gitignored
 ```
 
-Per-package `vitest.config.ts` files (`apps/api`, `apps/web`,
-`packages/shared`) keep working: their `include` glob points at
-`../../tests/unit/<pkg>/`.
+The web site's `vitest.web.config.ts` (repo root) and
+`design-system/vitest.config.ts` keep working: their `include` glob points at
+`tests/unit/web/` and `../tests/unit/ui/`.
 
 > **Current state (2026-04-25):** test files added in FHS-150 / FHS-151
 > are temporarily colocated. Migration into `tests/unit/<pkg>/` is

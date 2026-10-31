@@ -22,11 +22,11 @@ const authState: { session: SessionLike } = {
     user: { email: 'sarah@example.com', user_metadata: {} },
   },
 };
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 
-import { LegacyDashboardRedirect } from '../../../../apps/web/src/pages/redirects/LegacyDashboardRedirect';
+import { LegacyDashboardRedirect } from '../../../../src/pages/redirects/LegacyDashboardRedirect';
 
 function renderRoute() {
   return render(

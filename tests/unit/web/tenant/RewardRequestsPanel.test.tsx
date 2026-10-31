@@ -7,14 +7,14 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 // "Only an admin can approve" note. Empty state shows "All caught up!".
 // FHS-392: optional memberId prop filters to one child's requests only.
 
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => ({ session: { access_token: 'parent.tok' } }),
 }));
-vi.mock('../../../../apps/web/src/lib/tenant-context', () => ({
+vi.mock('../../../../src/lib/tenant-context', () => ({
   useTenantSlug: () => 'khan',
 }));
 
-import { RewardRequestsPanel } from '../../../../apps/web/src/pages/tenant/RewardRequestsPanel';
+import { RewardRequestsPanel } from '../../../../src/pages/tenant/RewardRequestsPanel';
 
 const fetchMock = vi.fn();
 const ONE_REQUEST = {

@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { VerifyEmailPage } from '../../../../apps/web/src/pages/auth/VerifyEmailPage';
+import { VerifyEmailPage } from '../../../../src/pages/auth/VerifyEmailPage';
 
 // FHS-223: confirmation page after signup. Tests cover the four AC
 // dimensions: email source priority, Open Gmail link, resend cooldown,
 // back-link target.
 
 const signInWithOtp = vi.fn();
-vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../src/lib/supabase', () => ({
   supabase: {
     auth: {
       signInWithOtp: (...args: unknown[]) => signInWithOtp(...args),

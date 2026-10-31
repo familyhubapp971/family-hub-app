@@ -22,8 +22,8 @@ railway.toml            @familyhubapp971
 /.github/workflows/     @familyhubapp971
 
 # Application code
-/apps/                  @familyhubapp971
-/packages/              @familyhubapp971
+/src/                   @familyhubapp971
+/design-system/         @familyhubapp971
 
 # Docs
 /docs/                  @familyhubapp971

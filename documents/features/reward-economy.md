@@ -204,7 +204,7 @@ Every invested habit says so on its row, and the Active Investments card reads
 as a list rather than a stack of cards. Ported from the Magic Patterns design
 (FHS-583).
 
-- **The tag** is a shared design-system component (`packages/ui/InvestmentTag`):
+- **The tag** is a shared design-system component (`design-system/InvestmentTag`):
   two pills, the kind (red warning + "Deductible", or green shield + "No
   penalty") then a yellow chart + "Invested · Nx", where N is the investment's
   own coefficient (FHS-534). Colour is never the only signal: each pill carries

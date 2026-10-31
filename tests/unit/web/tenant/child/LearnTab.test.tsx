@@ -9,7 +9,7 @@ const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
   session: { access_token: 'tok-abc' },
 };
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 
@@ -24,8 +24,8 @@ vi.mock('react-leaflet', () => ({
 }));
 vi.mock('leaflet', () => ({ default: { icon: () => ({}) }, icon: () => ({}) }));
 
-import { LearnTab } from '../../../../../apps/web/src/pages/tenant/child/LearnTab';
-import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+import { LearnTab } from '../../../../../src/pages/tenant/child/LearnTab';
+import { TenantProvider } from '../../../../../src/lib/tenant-context';
 
 const CHILD = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const BOOK_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';

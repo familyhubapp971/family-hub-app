@@ -79,8 +79,8 @@ export default defineConfig({
       url: 'http://localhost:5273',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      // FHS-516: the web app reads VITE_API_URL (apps/web/src/lib/api.ts), and
-      // apps/web/.env.development.local points it at the STAGING api by default
+      // FHS-516: the web app reads VITE_API_URL (src/lib/api.ts), and
+      // .env.development.local points it at the STAGING api by default
       // (a local-dev convenience). For e2e the browser MUST hit the local api on
       // :3001, the only one that trusts the test-minted JWT via E2E_TEST_JWKS.
       // Vite gives a real env var priority over .env files.

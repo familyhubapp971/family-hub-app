@@ -4,14 +4,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 // FHS-366: kid Journal reuses JournalTab in kid mode: it talks to the
 // token-scoped /api/kid/journal endpoints (no memberId param) using the kid
 // token, not the parent Supabase session.
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../src/lib/auth-context', () => ({
   useAuth: () => ({ session: null }),
 }));
-vi.mock('../../../../../apps/web/src/lib/tenant-context', () => ({
+vi.mock('../../../../../src/lib/tenant-context', () => ({
   useTenantSlug: () => 'khan',
 }));
 
-import { KidJournalPanel } from '../../../../../apps/web/src/pages/tenant/kid/KidJournalPanel';
+import { KidJournalPanel } from '../../../../../src/pages/tenant/kid/KidJournalPanel';
 
 const fetchMock = vi.fn();
 

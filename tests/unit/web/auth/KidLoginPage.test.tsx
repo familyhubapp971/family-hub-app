@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { KidLoginPage } from '../../../../apps/web/src/pages/auth/KidLoginPage';
+import { KidLoginPage } from '../../../../src/pages/auth/KidLoginPage';
 
 // FHS-238: kid log-in page at /t/:slug/kid-login. Loads the family +
 // avatar grid from GET /api/public/kid-members/:slug, lets the kid

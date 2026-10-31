@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { MoneyActionsSheet } from '../../../../../apps/web/src/pages/tenant/money/MoneyActionsSheet';
+import { MoneyActionsSheet } from '../../../../../src/pages/tenant/money/MoneyActionsSheet';
 
 // FHS-637: the close-week chooser, the step FHS-623 left out. Until this
 // shipped, the My World board opened a completely different-looking dialog for

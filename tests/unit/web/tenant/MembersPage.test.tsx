@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { MembersPage } from '../../../../apps/web/src/pages/tenant/MembersPage';
-import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
+import { MembersPage } from '../../../../src/pages/tenant/MembersPage';
+import { TenantProvider } from '../../../../src/lib/tenant-context';
 
 // FHS-513: Manage Family rebuild to the finalised Magic Patterns design:
 // header CTAs ("Invite an adult" / "Add a child"), members split into
@@ -28,7 +28,7 @@ const authState: {
   user: { email: 'sarah@example.com', id: 'u-1', user_metadata: {} },
 };
 
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
   signOutAll: vi.fn().mockResolvedValue({ error: null }),
   getKidToken: vi.fn(() => null),

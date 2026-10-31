@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 // FHS-365: kid Calendar tab reads GET /api/kid/events (server-scoped to the
 // kid + family for the week). Renders the schedule; empty state when none.
 
-import { KidCalendarPanel } from '../../../../../apps/web/src/pages/tenant/kid/KidCalendarPanel';
+import { KidCalendarPanel } from '../../../../../src/pages/tenant/kid/KidCalendarPanel';
 
 const fetchMock = vi.fn();
 beforeEach(() => {

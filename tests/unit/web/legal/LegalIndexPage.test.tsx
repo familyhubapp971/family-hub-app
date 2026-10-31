@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { LegalIndexPage } from '../../../../apps/web/src/pages/legal/LegalIndexPage';
+import { LegalIndexPage } from '../../../../src/pages/legal/LegalIndexPage';
 
 // FHS-509: /legal index. Four cards link to the Privacy, Children &
 // Parents, Terms and Cookies pages; this locks the titles and hrefs so

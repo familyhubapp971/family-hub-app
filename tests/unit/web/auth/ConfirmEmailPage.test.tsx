@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { ConfirmEmailPage } from '../../../../apps/web/src/pages/auth/ConfirmEmailPage';
-import { ApiError } from '../../../../apps/web/src/lib/api';
+import { ConfirmEmailPage } from '../../../../src/pages/auth/ConfirmEmailPage';
+import { ApiError } from '../../../../src/lib/api';
 
 // FHS-510: the landing page for an admin-initiated sign-in email change.
 // Five states: ready (click-to-confirm gate) → checking (spinner) → done
@@ -16,10 +16,9 @@ import { ApiError } from '../../../../apps/web/src/lib/api';
 // auto-fire-on-mount effect.
 
 const apiFetch = vi.fn();
-vi.mock('../../../../apps/web/src/lib/api', async () => {
-  const actual = await vi.importActual<typeof import('../../../../apps/web/src/lib/api')>(
-    '../../../../apps/web/src/lib/api',
-  );
+vi.mock('../../../../src/lib/api', async () => {
+  const actual =
+    await vi.importActual<typeof import('../../../../src/lib/api')>('../../../../src/lib/api');
   return {
     ...actual,
     apiFetch: (...args: unknown[]) => apiFetch(...args),

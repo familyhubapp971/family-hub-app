@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { LessonView } from '../../../../../apps/web/src/pages/tenant/child/LessonView';
+import { LessonView } from '../../../../../src/pages/tenant/child/LessonView';
 
 // FHS-283: the interactive lesson UI: renders questions, grades a pick via the
 // API, shows feedback + a Next button, and reveals a certificate at 100%.

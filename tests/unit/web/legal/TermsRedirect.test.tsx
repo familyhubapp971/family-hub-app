@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { TermsOfServicePage } from '../../../../apps/web/src/pages/legal/TermsOfServicePage';
-import { LEGACY_REDIRECTS } from '../../../../apps/web/src/legacy-redirects';
+import { TermsOfServicePage } from '../../../../src/pages/legal/TermsOfServicePage';
+import { LEGACY_REDIRECTS } from '../../../../src/legacy-redirects';
 
 // FHR-22: the sign-up page linked to /terms, which never existed, so the
 // "Terms" link opened a blank page. App.tsx builds its redirects from

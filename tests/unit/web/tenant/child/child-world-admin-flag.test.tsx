@@ -16,7 +16,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 const fetchMock = vi.fn();
 
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../src/lib/auth-context', () => ({
   useAuth: () => ({
     user: { email: 'parent@example.com', id: 'u-1', user_metadata: {} },
     session: { access_token: 'tok-abc' },
@@ -24,14 +24,14 @@ vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
   signOutAll: vi.fn(async () => ({ error: null })),
 }));
 
-vi.mock('../../../../../apps/web/src/pages/tenant/child/MyWorldTab', () => ({
+vi.mock('../../../../../src/pages/tenant/child/MyWorldTab', () => ({
   MyWorldTab: (props: { isAdmin?: boolean }) => (
     <div data-testid="my-world-stub" data-is-admin={String(props.isAdmin ?? false)} />
   ),
 }));
 
-import { ChildWorldPage } from '../../../../../apps/web/src/pages/tenant/child/ChildWorldPage';
-import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+import { ChildWorldPage } from '../../../../../src/pages/tenant/child/ChildWorldPage';
+import { TenantProvider } from '../../../../../src/lib/tenant-context';
 
 const MEMBER = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 

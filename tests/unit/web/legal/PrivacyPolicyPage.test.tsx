@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { PrivacyPolicyPage } from '../../../../apps/web/src/pages/legal/PrivacyPolicyPage';
+import { PrivacyPolicyPage } from '../../../../src/pages/legal/PrivacyPolicyPage';
 
 // FHS-509: /legal/privacy. Every legal page shares the same
 // LegalLayout shell: a pill nav between the four legal pages, a sticky

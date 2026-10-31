@@ -3,18 +3,17 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 
-// Tests live at <repo>/tests/unit/web/, but their bare-specifier imports
-// (e.g. `react-router-dom`, `@testing-library/react`) need to resolve
-// against apps/web/node_modules: pnpm doesn't hoist app deps to the
-// repo root. Pinning resolve.modules makes Vite walk app-local
-// node_modules first regardless of where the test file lives.
+// Tests live at <repo>/tests/unit/web/, and their bare-specifier imports
+// (e.g. `react-router-dom`, `@testing-library/react`) resolve against the
+// root node_modules, where the web site's dependencies are installed.
+// Pinning these aliases keeps them on that copy wherever the test lives.
 const webRoot = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     // Vite resolves bare imports from the file's nearest node_modules
-    // upward; force it to start in apps/web for centralised tests.
+    // upward; force it to start at the repo root for centralised tests.
     alias: [
       { find: /^react-router-dom$/, replacement: `${webRoot}node_modules/react-router-dom` },
       {
@@ -29,7 +28,7 @@ export default defineConfig({
       // grows a new export.
       {
         find: /^@familyhub\/ui$/,
-        replacement: fileURLToPath(new URL('../../packages/ui/src/index.ts', import.meta.url)),
+        replacement: fileURLToPath(new URL('./design-system/src/index.ts', import.meta.url)),
       },
     ],
   },
@@ -44,11 +43,11 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    // setup.ts stays in apps/web/src/test/ (NOT in tests/unit/) so it
-    // can resolve @testing-library/jest-dom from apps/web/node_modules.
+    // setup.ts stays in src/test/ (NOT in tests/unit/) so it sits with
+    // the web site's own code.
     setupFiles: ['./src/test/setup.ts'],
     // Centralized tests directory per CLAUDE.md.
-    include: ['../../tests/unit/web/**/*.{test,spec}.{ts,tsx}'],
+    include: ['tests/unit/web/**/*.{test,spec}.{ts,tsx}'],
     passWithNoTests: true,
     globals: true,
     css: true,

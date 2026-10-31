@@ -10,12 +10,12 @@ const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
   session: { access_token: 'tok-abc' },
 };
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 
-import { TasksTabPanel } from '../../../../../apps/web/src/pages/tenant/dashboard/TasksTabPanel';
-import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+import { TasksTabPanel } from '../../../../../src/pages/tenant/dashboard/TasksTabPanel';
+import { TenantProvider } from '../../../../../src/lib/tenant-context';
 
 interface T {
   id: string;

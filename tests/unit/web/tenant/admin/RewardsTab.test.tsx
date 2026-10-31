@@ -6,7 +6,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 // member> (see the component doc comment); mutations hit the new
 // POST/PATCH/DELETE /api/rewards[/:id] endpoints.
 
-import { RewardsTab } from '../../../../../apps/web/src/pages/tenant/admin/RewardsTab';
+import { RewardsTab } from '../../../../../src/pages/tenant/admin/RewardsTab';
 
 const fetchMock = vi.fn();
 

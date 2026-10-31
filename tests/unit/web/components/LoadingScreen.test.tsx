@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { LoadingScreen } from '../../../../apps/web/src/components/LoadingScreen';
+import { LoadingScreen } from '../../../../src/components/LoadingScreen';
 
 // FHS-419 introduced the branded loader; FHS-550 made it the ONE wait in the
 // product and ported the Magic Patterns treatment. The bug it exists to kill

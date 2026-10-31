@@ -6,15 +6,15 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { MathsProveChallenge } from '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/MathsProveChallenge';
+import { MathsProveChallenge } from '../../../../../../../src/pages/tenant/child/learn/maths/MathsProveChallenge';
 
 // Deterministic problem: always returns answer=12 with choices [10, 12, 14, 16].
 vi.mock(
-  '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils',
+  '../../../../../../../src/pages/tenant/child/learn/maths/maths-utils',
   async (importOriginal) => {
     const actual =
       await importOriginal<
-        typeof import('../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils')
+        typeof import('../../../../../../../src/pages/tenant/child/learn/maths/maths-utils')
       >();
     return {
       ...actual,

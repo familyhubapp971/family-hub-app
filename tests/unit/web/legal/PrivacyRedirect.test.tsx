@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { PrivacyPolicyPage } from '../../../../apps/web/src/pages/legal/PrivacyPolicyPage';
+import { PrivacyPolicyPage } from '../../../../src/pages/legal/PrivacyPolicyPage';
 
 // FHS-509: the old FHS-435 draft-policy route (/privacy) now redirects
 // to /legal/privacy, so the 5 existing <Link to="/privacy"> sites

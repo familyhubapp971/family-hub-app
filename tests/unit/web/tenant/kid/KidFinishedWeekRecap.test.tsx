@@ -5,7 +5,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 // Covers: empty-state (0 stars / 0 habits), save-only, 100% completion,
 // and graceful degradation when the actions fetch fails.
 
-import { KidFinishedWeekRecap } from '../../../../../apps/web/src/pages/tenant/kid/myworld/KidFinishedWeekRecap';
+import { KidFinishedWeekRecap } from '../../../../../src/pages/tenant/kid/myworld/KidFinishedWeekRecap';
 
 const HEADERS = { Authorization: 'Bearer kid.test.token' };
 

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { OnboardingPage } from '../../../../apps/web/src/pages/tenant/OnboardingPage';
-import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
+import { OnboardingPage } from '../../../../src/pages/tenant/OnboardingPage';
+import { TenantProvider } from '../../../../src/lib/tenant-context';
 
 // FHS-36 / FHS-432: OnboardingWizard tests.
 //
@@ -22,7 +22,7 @@ const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
   session: { access_token: 'fake-jwt' },
 };
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 

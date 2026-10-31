@@ -12,12 +12,12 @@ const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
   session: { access_token: 'tok-abc' },
 };
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 
-import { TodayTabPanel } from '../../../../../apps/web/src/pages/tenant/dashboard/TodayTabPanel';
-import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+import { TodayTabPanel } from '../../../../../src/pages/tenant/dashboard/TodayTabPanel';
+import { TenantProvider } from '../../../../../src/lib/tenant-context';
 
 function renderAt(initial: string) {
   return render(

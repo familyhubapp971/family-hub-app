@@ -10,7 +10,7 @@ import {
   isStillUnlocked,
   readLastSeen,
   writeLastSeen,
-} from '../../../../apps/web/src/lib/environment-lock';
+} from '../../../../src/lib/environment-lock';
 
 describe('isPasscodeCorrect', () => {
   it('accepts the passcode', () => {

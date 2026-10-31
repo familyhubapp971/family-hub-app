@@ -3,7 +3,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { LogicCertificates } from '../../../../../../../apps/web/src/pages/tenant/child/learn/logic/LogicCertificates';
+import { LogicCertificates } from '../../../../../../../src/pages/tenant/child/learn/logic/LogicCertificates';
 
 const fetchMock = vi.fn();
 const KID_TOKEN = 'kid-logic-certs-tok';

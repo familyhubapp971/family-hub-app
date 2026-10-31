@@ -4,7 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 
-import { AnalyticsView } from '../../../../../apps/web/src/pages/tenant/child/AnalyticsView';
+import { AnalyticsView } from '../../../../../src/pages/tenant/child/AnalyticsView';
 
 const fetchMock = vi.fn();
 

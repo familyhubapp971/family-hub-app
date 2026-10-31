@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.stubGlobal('fetch', mocks.fetchMock);
 
-vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../src/lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: mocks.getSessionMock,
@@ -18,7 +18,7 @@ vi.mock('../../../../apps/web/src/lib/supabase', () => ({
 }));
 
 // Import AFTER vi.mock so the page picks up the mocked supabase.
-import { MePage } from '../../../../apps/web/src/pages/tenant/MePage';
+import { MePage } from '../../../../src/pages/tenant/MePage';
 
 const ME_FIXTURE = {
   id: '00000000-0000-4000-8000-000000000001',

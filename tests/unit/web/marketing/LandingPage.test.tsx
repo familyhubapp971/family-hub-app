@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { LandingPage } from '../../../../apps/web/src/pages/marketing/LandingPage';
+import { LandingPage } from '../../../../src/pages/marketing/LandingPage';
 
 // Stub supabase + AuthProvider: the landing page only needs
 // `session` to decide which CTA buttons to render. Mocking the module
 // avoids pulling the real Supabase client (and its localStorage
 // hydration race) into the unit test.
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => ({ session: null, user: null, loading: false }),
 }));
 

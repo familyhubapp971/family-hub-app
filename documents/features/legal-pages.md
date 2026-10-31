@@ -72,17 +72,17 @@ live.
 
 ## Pages shipped
 
-| Route             | Page                        | Component                                          |
-| ----------------- | --------------------------- | -------------------------------------------------- |
-| `/legal`          | Index: 4 cards              | `apps/web/src/pages/legal/LegalIndexPage.tsx`      |
-| `/legal/privacy`  | Privacy Policy              | `apps/web/src/pages/legal/PrivacyPolicyPage.tsx`   |
-| `/legal/children` | Children & Parents          | `apps/web/src/pages/legal/ChildrenPrivacyPage.tsx` |
-| `/legal/terms`    | Terms of Service            | `apps/web/src/pages/legal/TermsOfServicePage.tsx`  |
-| `/legal/cookies`  | Cookies & Storage           | `apps/web/src/pages/legal/CookiesPage.tsx`         |
-| `/privacy`        | Redirect → `/legal/privacy` | inline `<Navigate>` in `apps/web/src/App.tsx`      |
+| Route             | Page                        | Component                                 |
+| ----------------- | --------------------------- | ----------------------------------------- |
+| `/legal`          | Index: 4 cards              | `src/pages/legal/LegalIndexPage.tsx`      |
+| `/legal/privacy`  | Privacy Policy              | `src/pages/legal/PrivacyPolicyPage.tsx`   |
+| `/legal/children` | Children & Parents          | `src/pages/legal/ChildrenPrivacyPage.tsx` |
+| `/legal/terms`    | Terms of Service            | `src/pages/legal/TermsOfServicePage.tsx`  |
+| `/legal/cookies`  | Cookies & Storage           | `src/pages/legal/CookiesPage.tsx`         |
+| `/privacy`        | Redirect → `/legal/privacy` | inline `<Navigate>` in `src/App.tsx`      |
 
-Shared shell: `apps/web/src/pages/legal/LegalLayout.tsx` (title card, pill nav,
-table of contents, numbered sections) plus `apps/web/src/components/SiteChrome.tsx`
+Shared shell: `src/pages/legal/LegalLayout.tsx` (title card, pill nav,
+table of contents, numbered sections) plus `src/components/SiteChrome.tsx`
 (`SiteHeader`/`SiteFooter`, reused by the marketing header/footer look already on
 `WelcomePage`/`PricingPage`/`AboutPage`).
 

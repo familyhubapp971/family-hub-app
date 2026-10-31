@@ -4,7 +4,7 @@ import {
   getVisitId,
   screenFeedbackByKey,
   screenFeedbackFor,
-} from '../../../../apps/web/src/lib/screen-feedback';
+} from '../../../../src/lib/screen-feedback';
 
 describe('screenFeedbackFor', () => {
   it('reads the dashboard tab from the address', () => {

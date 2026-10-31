@@ -9,7 +9,7 @@ const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
   session: { access_token: 'tok-abc' },
 };
-vi.mock('../../../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 vi.mock('react-leaflet', () => ({
@@ -20,8 +20,8 @@ vi.mock('react-leaflet', () => ({
 }));
 vi.mock('leaflet', () => ({ default: { icon: () => ({}) }, icon: () => ({}) }));
 
-import { WorldFlags } from '../../../../../../../apps/web/src/pages/tenant/child/learn/world-flags/WorldFlags';
-import { TenantProvider } from '../../../../../../../apps/web/src/lib/tenant-context';
+import { WorldFlags } from '../../../../../../../src/pages/tenant/child/learn/world-flags/WorldFlags';
+import { TenantProvider } from '../../../../../../../src/lib/tenant-context';
 
 const CHILD = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const KID_TOKEN = 'kid.jwt.tok';
@@ -223,7 +223,7 @@ describe('WorldFlags Learn path', () => {
 describe('WorldFlags Certificates', () => {
   it('shows an earned certificate + quiz button when a continent is fully explored', async () => {
     // Mark every African flag explored so Africa's certificate is earned.
-    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    const { COUNTRIES } = await import('../../../../../../../src/data/countries');
     const africa = COUNTRIES.filter((c) => c.continent === 'Africa').map((c) => c.code);
     installFetch({ explored: africa });
     renderWorldFlags();
@@ -391,7 +391,7 @@ describe('WorldFlags Explore: progress bar gradient', () => {
 
 describe('WorldFlags Explore: continent certificate overlay', () => {
   it('shows the full-screen overlay once when a new cert is earned', async () => {
-    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    const { COUNTRIES } = await import('../../../../../../../src/data/countries');
     // All Africa flags already explored on load: exploring one more from a tiny
     // 1-country list triggers the cert. Instead, we simulate it by exploring the
     // last un-explored Africa flag via a card tap.
@@ -432,7 +432,7 @@ describe('WorldFlags Explore: continent certificate overlay', () => {
   });
 
   it('overlay does not re-fire for an already-earned cert', async () => {
-    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    const { COUNTRIES } = await import('../../../../../../../src/data/countries');
     const africa = COUNTRIES.filter((c) => c.continent === 'Africa');
     const allButFirst = africa.slice(1).map((c) => c.code);
     installFetch({ explored: allButFirst });
@@ -463,7 +463,7 @@ describe('WorldFlags Explore: continent certificate overlay', () => {
   });
 
   it('backdrop is a div (not a button): no interactive-inside-interactive nesting', async () => {
-    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    const { COUNTRIES } = await import('../../../../../../../src/data/countries');
     const africa = COUNTRIES.filter((c) => c.continent === 'Africa');
     const allButFirst = africa.slice(1).map((c) => c.code);
     installFetch({ explored: allButFirst });
@@ -488,7 +488,7 @@ describe('WorldFlags Explore: continent certificate overlay', () => {
   });
 
   it('pressing Escape while the overlay is open dismisses it', async () => {
-    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    const { COUNTRIES } = await import('../../../../../../../src/data/countries');
     const africa = COUNTRIES.filter((c) => c.continent === 'Africa');
     const allButFirst = africa.slice(1).map((c) => c.code);
     installFetch({ explored: allButFirst });
@@ -514,7 +514,7 @@ describe('WorldFlags Explore: continent certificate overlay', () => {
 
   it('overlay auto-dismisses after 6 seconds', async () => {
     // Render and open the overlay using real timers so waitFor polling works normally.
-    const { COUNTRIES } = await import('../../../../../../../apps/web/src/data/countries');
+    const { COUNTRIES } = await import('../../../../../../../src/data/countries');
     const africa = COUNTRIES.filter((c) => c.continent === 'Africa');
     const allButFirst = africa.slice(1).map((c) => c.code);
     installFetch({ explored: allButFirst });

@@ -3,8 +3,8 @@
 // a wrong code is refused, and half an hour of nothing shuts it again.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, fireEvent } from '@testing-library/react';
-import { EnvironmentLock } from '../../../../apps/web/src/components/EnvironmentLock';
-import { IDLE_LIMIT_MS, STORAGE_KEY } from '../../../../apps/web/src/lib/environment-lock';
+import { EnvironmentLock } from '../../../../src/components/EnvironmentLock';
+import { IDLE_LIMIT_MS, STORAGE_KEY } from '../../../../src/lib/environment-lock';
 
 const SECRET = 'Hub contents';
 

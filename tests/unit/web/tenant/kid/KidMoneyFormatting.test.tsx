@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { KidWeeklyAccount } from '../../../../../apps/web/src/pages/tenant/kid/myworld/KidWeeklyAccount';
-import { KidStats } from '../../../../../apps/web/src/pages/tenant/kid/myworld/KidStats';
-import { KidMoneySkills } from '../../../../../apps/web/src/pages/tenant/kid/myworld/KidMoneySkills';
+import { KidWeeklyAccount } from '../../../../../src/pages/tenant/kid/myworld/KidWeeklyAccount';
+import { KidStats } from '../../../../../src/pages/tenant/kid/myworld/KidStats';
+import { KidMoneySkills } from '../../../../../src/pages/tenant/kid/myworld/KidMoneySkills';
 import { formatMoney } from '@familyhub/shared';
 
 // FHS-614: the kid panels are the ones a child reads, so they are the ones

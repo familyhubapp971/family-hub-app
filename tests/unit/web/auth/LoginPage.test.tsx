@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation, useParams } from 'react-router-dom';
-import { LoginPage } from '../../../../apps/web/src/pages/auth/LoginPage';
+import { LoginPage } from '../../../../src/pages/auth/LoginPage';
 
 // FHS-224: passwordless login. Tests cover the rewritten UX:
 // magic-link via signInWithOtp, Google via signInWithOAuth, no
@@ -9,7 +9,7 @@ import { LoginPage } from '../../../../apps/web/src/pages/auth/LoginPage';
 
 const signInWithOtp = vi.fn();
 const signInWithOAuth = vi.fn();
-vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../src/lib/supabase', () => ({
   supabase: {
     auth: {
       signInWithOtp: (...args: unknown[]) => signInWithOtp(...args),

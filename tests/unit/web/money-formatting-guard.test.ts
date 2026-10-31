@@ -17,8 +17,8 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOTS = [
-  path.resolve(HERE, '../../../apps/web/src'),
-  path.resolve(HERE, '../../../packages/ui/src'),
+  path.resolve(HERE, '../../../src'),
+  path.resolve(HERE, '../../../design-system/src'),
 ];
 
 /**

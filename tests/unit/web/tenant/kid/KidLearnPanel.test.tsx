@@ -3,10 +3,10 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 
 // FHS-367 / FHS-373: kid Learn reuses LearnTab in kid mode: lesson subjects +
 // World Flags + reading log via the token-scoped kid endpoints (no memberId).
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../src/lib/auth-context', () => ({
   useAuth: () => ({ session: null }),
 }));
-vi.mock('../../../../../apps/web/src/lib/tenant-context', () => ({
+vi.mock('../../../../../src/lib/tenant-context', () => ({
   useTenantSlug: () => 'khan',
   TenantProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -18,7 +18,7 @@ vi.mock('react-leaflet', () => ({
 }));
 vi.mock('leaflet', () => ({ default: { icon: () => ({}) }, icon: () => ({}) }));
 
-import { KidLearnPanel } from '../../../../../apps/web/src/pages/tenant/kid/KidLearnPanel';
+import { KidLearnPanel } from '../../../../../src/pages/tenant/kid/KidLearnPanel';
 
 const fetchMock = vi.fn();
 

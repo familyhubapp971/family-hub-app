@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
-import { MoneyActionsSheet } from '../../../../../apps/web/src/pages/tenant/money/MoneyActionsSheet';
-import type { ChildMoneySnapshot } from '../../../../../apps/web/src/pages/tenant/KidsMoneyPage';
+import { MoneyActionsSheet } from '../../../../../src/pages/tenant/money/MoneyActionsSheet';
+import type { ChildMoneySnapshot } from '../../../../../src/pages/tenant/KidsMoneyPage';
 
 // FHS-623: each of the five money actions must send the request the ticket
 // specifies, with the right body, and only close (via its "done" screen)

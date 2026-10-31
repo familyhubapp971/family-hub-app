@@ -4,10 +4,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { LinkExpired, reasonFromError } from '../../../../apps/web/src/pages/auth/LinkExpired';
+import { LinkExpired, reasonFromError } from '../../../../src/pages/auth/LinkExpired';
 
 const signInWithOtp = vi.fn();
-vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../src/lib/supabase', () => ({
   supabase: { auth: { signInWithOtp: (...a: unknown[]) => signInWithOtp(...a) } },
 }));
 

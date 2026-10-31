@@ -4,16 +4,16 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { MathsTablePractice } from '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/MathsTablePractice';
+import { MathsTablePractice } from '../../../../../../../src/pages/tenant/child/learn/maths/MathsTablePractice';
 
 // Stable seeded problem so tests don't flake on random choices.
 // generateTableProblem is pure: we replace it with a deterministic version.
 vi.mock(
-  '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils',
+  '../../../../../../../src/pages/tenant/child/learn/maths/maths-utils',
   async (importOriginal) => {
     const actual =
       await importOriginal<
-        typeof import('../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils')
+        typeof import('../../../../../../../src/pages/tenant/child/learn/maths/maths-utils')
       >();
     return {
       ...actual,

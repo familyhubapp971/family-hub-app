@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { AboutPage } from '../../../../apps/web/src/pages/marketing/AboutPage';
+import { AboutPage } from '../../../../src/pages/marketing/AboutPage';
 
 // FHS-436: a beta reviewer said it wasn't clear WHAT Family Hub is, WHO
 // it's for, or its value. This page spells that out; these tests lock

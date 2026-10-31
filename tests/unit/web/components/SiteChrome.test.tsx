@@ -5,11 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import {
-  SiteHeader,
-  SiteFooter,
-  MAIN_CONTENT_ID,
-} from '../../../../apps/web/src/components/SiteChrome';
+import { SiteHeader, SiteFooter, MAIN_CONTENT_ID } from '../../../../src/components/SiteChrome';
 
 function renderHeader(props: Parameters<typeof SiteHeader>[0] = {}) {
   return render(

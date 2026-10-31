@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { FamilySettingsPage } from '../../../../apps/web/src/pages/tenant/FamilySettingsPage';
-import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
+import { FamilySettingsPage } from '../../../../src/pages/tenant/FamilySettingsPage';
+import { TenantProvider } from '../../../../src/lib/tenant-context';
 
 // FHS-621: the Admin Panel is split into pages named after the job they do.
 // Each page shows its own half and nothing else, so a parent never lands on a
@@ -11,7 +11,7 @@ import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
 // tests/unit/web/tenant/KidsMoneyPage.test.tsx, so this file only keeps the
 // half still true today, that Family settings shows nothing else.
 
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => ({
     session: { access_token: 'tok' },
     user: { id: 'u1', email: 'a@b.c' },

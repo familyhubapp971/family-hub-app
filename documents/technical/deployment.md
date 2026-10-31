@@ -111,7 +111,7 @@ imports resolve at runtime without exporting unnecessary `dist/` from
 
 ### frontend
 
-Vite SPA. Built into `apps/web/dist/` and served via `vite preview`
+Vite SPA. Built into `dist/` and served via `vite preview`
 bound to `$PORT`. Public domain
 **[`frontend-staging-409d.up.railway.app`](https://frontend-staging-409d.up.railway.app)**
 (domain ID `098cbd7e-9a09-40d2-9004-c37bf6a62518`, target port `8080`).
@@ -129,7 +129,7 @@ switch to a static-file server (Caddy/nginx) or Railway Edge.
 | `postgres` | n/a (image)                                                                         | n/a (image entrypoint)                                                       |
 
 `rootDirectory` is left at the default (`/`: repo root) on every
-instance because rootDirectory: `apps/api`/`apps/web` would break
+instance because a sub-folder rootDirectory would break
 pnpm workspace resolution (Railway can't see the workspace packages).
 
 Healthcheck: api uses `/health`

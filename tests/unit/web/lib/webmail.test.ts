@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { webmailFor } from '../../../../apps/web/src/lib/webmail';
+import { webmailFor } from '../../../../src/lib/webmail';
 
 describe('webmailFor', () => {
   it('maps gmail.com to the Gmail webmail', () => {

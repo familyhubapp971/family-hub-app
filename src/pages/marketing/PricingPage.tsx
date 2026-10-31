@@ -6,7 +6,7 @@ import { SiteHeader, SiteFooter, MAIN_CONTENT_ID } from '../../components/SiteCh
 // kudjspxd3xxroueg5jw11o pages/Pricing.tsx. Tier copy is the source of
 // truth for marketing until Stripe wiring lands in Sprint 5
 // (FHS-68/70/71). Layout sized to fit a 1080p viewport without scroll.
-// Card composition lives in the packages/ui PricingCard primitive
+// Card composition lives in the design-system PricingCard primitive
 // (FHS-245).
 
 interface Tier {

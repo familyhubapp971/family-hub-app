@@ -17,16 +17,16 @@ const authState: {
   user: { email: 'sarah@example.com', id: 'u-admin', user_metadata: {} },
 };
 
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
   signOutAll: vi.fn().mockResolvedValue({ error: null }),
   getKidToken: () => null,
   clearKidToken: vi.fn(),
 }));
 
-import { FamilySettingsPage } from '../../../../apps/web/src/pages/tenant/FamilySettingsPage';
-import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
-import { signOutAll } from '../../../../apps/web/src/lib/auth-context';
+import { FamilySettingsPage } from '../../../../src/pages/tenant/FamilySettingsPage';
+import { TenantProvider } from '../../../../src/lib/tenant-context';
+import { signOutAll } from '../../../../src/lib/auth-context';
 
 const SETTINGS = { currency: 'AED', familyName: 'The Khans' };
 

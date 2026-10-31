@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { MathsPlacementTest } from '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/MathsPlacementTest';
+import { MathsPlacementTest } from '../../../../../../../src/pages/tenant/child/learn/maths/MathsPlacementTest';
 
 const fetchMock = vi.fn();
 const KID_TOKEN = 'kid-bearer-test';

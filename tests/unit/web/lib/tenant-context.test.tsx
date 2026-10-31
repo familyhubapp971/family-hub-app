@@ -5,7 +5,7 @@ import {
   TenantProvider,
   useTenantSlug,
   useOptionalTenantSlug,
-} from '../../../../apps/web/src/lib/tenant-context';
+} from '../../../../src/lib/tenant-context';
 
 // FHS-249: TenantProvider reads :slug from the URL and exposes it via
 // useTenantSlug() to descendants. Throws when consumed outside the

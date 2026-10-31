@@ -4,16 +4,16 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { MathsCertificates } from '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/MathsCertificates';
+import { MathsCertificates } from '../../../../../../../src/pages/tenant/child/learn/maths/MathsCertificates';
 
 // ─── Deterministic speed-challenge problems ───────────────────────────────────
 
 vi.mock(
-  '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils',
+  '../../../../../../../src/pages/tenant/child/learn/maths/maths-utils',
   async (importOriginal) => {
     const actual =
       await importOriginal<
-        typeof import('../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils')
+        typeof import('../../../../../../../src/pages/tenant/child/learn/maths/maths-utils')
       >();
     return {
       ...actual,

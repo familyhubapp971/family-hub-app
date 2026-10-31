@@ -1,4 +1,4 @@
-// FHS-631: the name-to-icon map moved to packages/ui so the money sheets can
+// FHS-631: the name-to-icon map moved to design-system so the money sheets can
 // reach it too. Re-exported here so every existing kid-page import keeps
 // working, and so there is only ever one copy of the mapping.
 export { habitIcon, HABIT_ICON_NAMES } from '@familyhub/ui';

@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   fetchMock: vi.fn(),
 }));
 
-vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../src/lib/supabase', () => ({
   supabase: { auth: { signOut: mocks.signOut } },
 }));
 
@@ -25,7 +25,7 @@ const authState: {
   user: { email: 'sarah@example.com', id: 'u-1', user_metadata: {} },
   session: { access_token: 'tok-1' },
 };
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
   signOutAll: mocks.signOutAll,
   // FHS-257: DashboardPage now branches to the kid shell when a kid
@@ -36,8 +36,8 @@ vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
 
 vi.stubGlobal('fetch', mocks.fetchMock);
 
-import { DashboardPage } from '../../../../apps/web/src/pages/tenant/DashboardPage';
-import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
+import { DashboardPage } from '../../../../src/pages/tenant/DashboardPage';
+import { TenantProvider } from '../../../../src/lib/tenant-context';
 
 function LocationProbe() {
   const loc = useLocation();

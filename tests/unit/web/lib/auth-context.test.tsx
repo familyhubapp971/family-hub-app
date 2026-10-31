@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../src/lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: mocks.getSessionMock,
@@ -36,7 +36,7 @@ import {
   getKidToken,
   signOutAll,
   useAuth,
-} from '../../../../apps/web/src/lib/auth-context';
+} from '../../../../src/lib/auth-context';
 
 function Probe() {
   const { session, user, loading } = useAuth();

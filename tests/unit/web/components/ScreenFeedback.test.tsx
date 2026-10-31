@@ -13,15 +13,15 @@ vi.mock('react-router-dom', () => ({
   useLocation: () => mockLocation,
 }));
 
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => ({ session: mockSession }),
 }));
 
-vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../src/lib/supabase', () => ({
   supabase: { auth: { getSession: async () => ({ data: { session: null } }) } },
 }));
 
-import { ScreenFeedback } from '../../../../apps/web/src/components/ScreenFeedback';
+import { ScreenFeedback } from '../../../../src/components/ScreenFeedback';
 
 const fetchMock = vi.fn();
 

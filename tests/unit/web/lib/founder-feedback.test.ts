@@ -8,7 +8,7 @@ import {
   summariseByScreen,
   toCsv,
   type FeedbackRow,
-} from '../../../../apps/web/src/lib/founder-feedback';
+} from '../../../../src/lib/founder-feedback';
 
 function row(over: Partial<FeedbackRow>): FeedbackRow {
   return {

@@ -14,15 +14,15 @@ const authState: {
   user: { email: 'sarah@example.com', id: 'u-admin', user_metadata: {} },
 };
 
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
   signOutAll: vi.fn().mockResolvedValue({ error: null }),
   getKidToken: () => null,
   clearKidToken: vi.fn(),
 }));
 
-import { RewardSettingsPage } from '../../../../apps/web/src/pages/tenant/RewardSettingsPage';
-import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
+import { RewardSettingsPage } from '../../../../src/pages/tenant/RewardSettingsPage';
+import { TenantProvider } from '../../../../src/lib/tenant-context';
 
 const KID_ID = 'kid-uuid-1111';
 const HABIT_ID = 'habit-uuid-aaaa';

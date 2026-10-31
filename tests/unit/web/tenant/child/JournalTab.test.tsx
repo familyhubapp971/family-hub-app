@@ -13,12 +13,12 @@ const fetchMock = vi.fn();
 const authState: { session: { access_token?: string } | null } = {
   session: { access_token: 'tok-abc' },
 };
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 
-import { JournalTab } from '../../../../../apps/web/src/pages/tenant/child/JournalTab';
-import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
+import { JournalTab } from '../../../../../src/pages/tenant/child/JournalTab';
+import { TenantProvider } from '../../../../../src/lib/tenant-context';
 
 const MEMBER = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const ENTRY_ID = 'eeee1111-eeee-4eee-8eee-eeeeeeeeeeee';

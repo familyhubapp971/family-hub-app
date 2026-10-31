@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { SignupPage } from '../../../../apps/web/src/pages/auth/SignupPage';
+import { SignupPage } from '../../../../src/pages/auth/SignupPage';
 
 // /signup is now email-only (option A in the duplication thread).
 // Family name + slug are collected post-auth on the
@@ -11,7 +11,7 @@ import { SignupPage } from '../../../../apps/web/src/pages/auth/SignupPage';
 
 const signInWithOtp = vi.fn();
 const signInWithOAuth = vi.fn();
-vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../src/lib/supabase', () => ({
   supabase: {
     auth: {
       signInWithOtp: (...args: unknown[]) => signInWithOtp(...args),

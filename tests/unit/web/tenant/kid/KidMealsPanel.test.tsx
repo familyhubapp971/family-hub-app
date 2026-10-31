@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 // FHS-365: kid Meals tab reads GET /api/kid/meals (server-scoped to the kid +
 // family). Renders the day grid; shows an empty state when there are none.
 
-import { KidMealsPanel } from '../../../../../apps/web/src/pages/tenant/kid/KidMealsPanel';
+import { KidMealsPanel } from '../../../../../src/pages/tenant/kid/KidMealsPanel';
 
 const fetchMock = vi.fn();
 beforeEach(() => {

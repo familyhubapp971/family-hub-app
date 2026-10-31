@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 // FHS-550: the one inline spinner.
 //
 // The full-screen waits (magic-link callback, protected routes, the dashboard
-// redirect, the kid load) use apps/web's LoadingScreen. This is for the small
+// redirect, the kid load) use the web site's LoadingScreen. This is for the small
 // waits that live *inside* a panel, a dialog or a button, where taking over
 // the whole viewport would be wrong. Four screens each rolled their own
 // `animate-spin` with a different size and colour before this existed.

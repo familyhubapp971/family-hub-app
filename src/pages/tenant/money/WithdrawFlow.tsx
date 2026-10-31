@@ -28,7 +28,7 @@ import { friendlyFailureMessage, type MoneyFlowProps } from './types';
 // The action's colour, carried from its button into every step disc.
 const TONE = 'bg-orange-300';
 
-// FHS-631: the stored value is an icon NAME, not an icon. See packages/ui.
+// FHS-631: the stored value is an icon NAME, not an icon. See design-system.
 function habitIconNode(name: string | null): React.ReactNode {
   const Icon = habitIcon(name);
   return <Icon size={18} strokeWidth={3} />;

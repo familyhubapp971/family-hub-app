@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { MathsSubject } from '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/MathsSubject';
+import { MathsSubject } from '../../../../../../../src/pages/tenant/child/learn/maths/MathsSubject';
 
 const fetchMock = vi.fn();
 const KID_TOKEN = 'kid-subject-tok';
@@ -244,11 +244,11 @@ describe('MathsSubject: learn stage wiring', () => {
 
 // Stable mock for generateTableProblem so the practice questions are deterministic.
 vi.mock(
-  '../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils',
+  '../../../../../../../src/pages/tenant/child/learn/maths/maths-utils',
   async (importOriginal) => {
     const actual =
       await importOriginal<
-        typeof import('../../../../../../../apps/web/src/pages/tenant/child/learn/maths/maths-utils')
+        typeof import('../../../../../../../src/pages/tenant/child/learn/maths/maths-utils')
       >();
     return {
       ...actual,

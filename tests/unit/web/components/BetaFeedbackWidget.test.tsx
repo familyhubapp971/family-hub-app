@@ -33,18 +33,18 @@ vi.mock('react-router-dom', () => ({
 
 // auth-context: default to a logged-in parent session
 const mockSession = { access_token: 'parent.jwt.tok' };
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => ({ session: mockSession }),
 }));
 
 // supabase stub (imported transitively via lib/api)
-vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../src/lib/supabase', () => ({
   supabase: {
     auth: { getSession: async () => ({ data: { session: null } }) },
   },
 }));
 
-import { BetaFeedbackWidget } from '../../../../apps/web/src/components/BetaFeedbackWidget';
+import { BetaFeedbackWidget } from '../../../../src/components/BetaFeedbackWidget';
 
 // ── fetch mock ────────────────────────────────────────────────────────────────
 
@@ -348,7 +348,7 @@ describe('<BetaFeedbackWidget variant="public" />', () => {
   it('renders the floating button without a session or tenant slug', () => {
     // Default mock has session + slug: override both to null/empty to prove
     // the public variant ignores the guard.
-    vi.doMock('../../../../apps/web/src/lib/auth-context', () => ({
+    vi.doMock('../../../../src/lib/auth-context', () => ({
       useAuth: () => ({ session: null }),
     }));
     vi.doMock('react-router-dom', () => ({
@@ -499,11 +499,11 @@ describe('<BetaFeedbackWidget />: no session', () => {
   });
 
   it('renders nothing when session is null', async () => {
-    vi.doMock('../../../../apps/web/src/lib/auth-context', () => ({
+    vi.doMock('../../../../src/lib/auth-context', () => ({
       useAuth: () => ({ session: null }),
     }));
     const { BetaFeedbackWidget: Widget } = await import(
-      '../../../../apps/web/src/components/BetaFeedbackWidget'
+      '../../../../src/components/BetaFeedbackWidget'
     );
     render(<Widget />);
     expect(screen.queryByTestId('beta-feedback-button')).not.toBeInTheDocument();
@@ -520,14 +520,14 @@ describe('<BetaFeedbackWidget />: session present, no tenant slug', () => {
     vi.doMock('react-router-dom', () => ({
       useParams: () => ({}),
     }));
-    vi.doMock('../../../../apps/web/src/lib/auth-context', () => ({
+    vi.doMock('../../../../src/lib/auth-context', () => ({
       useAuth: () => ({ session: { access_token: 'tok' } }),
     }));
-    vi.doMock('../../../../apps/web/src/lib/supabase', () => ({
+    vi.doMock('../../../../src/lib/supabase', () => ({
       supabase: { auth: { getSession: async () => ({ data: { session: null } }) } },
     }));
     const { BetaFeedbackWidget: Widget } = await import(
-      '../../../../apps/web/src/components/BetaFeedbackWidget'
+      '../../../../src/components/BetaFeedbackWidget'
     );
     render(<Widget />);
     expect(screen.queryByTestId('beta-feedback-button')).not.toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { friendlyAuthErrorMessage } from '../../../../apps/web/src/lib/auth-errors';
+import { friendlyAuthErrorMessage } from '../../../../src/lib/auth-errors';
 
 describe('friendlyAuthErrorMessage', () => {
   it('rewrites the email rate-limit error to a helpful next-step message', () => {

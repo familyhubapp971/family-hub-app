@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { ProfilePill } from '../../../../apps/web/src/pages/tenant/AppHeader';
+import { ProfilePill } from '../../../../src/pages/tenant/AppHeader';
 
 // FHS-625: a door only appears if the person can use what is behind it.
 //

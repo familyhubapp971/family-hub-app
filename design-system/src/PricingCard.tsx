@@ -16,7 +16,7 @@ interface PricingCardProps {
   priceSuffix?: string;
   /** CTA button label. */
   ctaLabel: string;
-  /** CTA Button variant from packages/ui Button. */
+  /** CTA Button variant from design-system Button. */
   ctaVariant?: 'primary' | 'secondary';
   /** Fires when the CTA is clicked. */
   onCta: () => void;
@@ -40,7 +40,7 @@ interface PricingCardProps {
  * sitting on the top edge. The tier name + big price + CTA button +
  * feature list compose top-to-bottom.
  *
- * Reuses the packages/ui Button (with size="sm" + fullWidth) so the
+ * Reuses the design-system Button (with size="sm" + fullWidth) so the
  * CTA stays in lockstep with the rest of the design system.
  */
 export function PricingCard({

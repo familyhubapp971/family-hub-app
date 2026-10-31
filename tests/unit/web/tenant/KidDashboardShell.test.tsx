@@ -8,9 +8,9 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 // profile pill / admin links), and a Switch user button that drops the token
 // + returns to kid-login. My World carries the kid's habits + tasks.
 
-import { KidDashboardShell } from '../../../../apps/web/src/pages/tenant/KidDashboardShell';
-import { TenantProvider } from '../../../../apps/web/src/lib/tenant-context';
-import { AuthProvider, KID_TOKEN_STORAGE_KEY } from '../../../../apps/web/src/lib/auth-context';
+import { KidDashboardShell } from '../../../../src/pages/tenant/KidDashboardShell';
+import { TenantProvider } from '../../../../src/lib/tenant-context';
+import { AuthProvider, KID_TOKEN_STORAGE_KEY } from '../../../../src/lib/auth-context';
 
 const fetchMock = vi.fn();
 

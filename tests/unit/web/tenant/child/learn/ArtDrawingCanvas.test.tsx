@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-import { ArtDrawingCanvas } from '../../../../../../apps/web/src/pages/tenant/child/learn/art/ArtDrawingCanvas';
+import { ArtDrawingCanvas } from '../../../../../../src/pages/tenant/child/learn/art/ArtDrawingCanvas';
 
 describe('<ArtDrawingCanvas />', () => {
   it('renders the art-canvas container', () => {

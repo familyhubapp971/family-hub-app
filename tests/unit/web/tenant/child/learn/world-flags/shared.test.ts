@@ -11,11 +11,8 @@ import {
   readBestScore,
   writeBestScore,
   CHUNK_SIZE,
-} from '../../../../../../../apps/web/src/pages/tenant/child/learn/world-flags/shared';
-import {
-  COUNTRIES,
-  getCountriesByContinent,
-} from '../../../../../../../apps/web/src/data/countries';
+} from '../../../../../../../src/pages/tenant/child/learn/world-flags/shared';
+import { COUNTRIES, getCountriesByContinent } from '../../../../../../../src/data/countries';
 
 describe('flagUrl', () => {
   it('builds a flagcdn URL with the lowercased code and given size', () => {

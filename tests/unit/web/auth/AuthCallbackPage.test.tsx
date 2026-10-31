@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { AuthCallbackPage } from '../../../../apps/web/src/pages/auth/AuthCallbackPage';
+import { AuthCallbackPage } from '../../../../src/pages/auth/AuthCallbackPage';
 
 // Auth-first onboarding (option A in the duplication thread).
 // AuthCallbackPage now does two things and nothing else:
@@ -17,13 +17,13 @@ type SessionLike = {
   user?: { id?: string; email?: string; user_metadata?: Record<string, unknown> };
 } | null;
 const authState: { loading: boolean; session: SessionLike } = { loading: false, session: null };
-vi.mock('../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 
 const exchangeCodeForSession = vi.fn();
 const signOut = vi.fn();
-vi.mock('../../../../apps/web/src/lib/supabase', () => ({
+vi.mock('../../../../src/lib/supabase', () => ({
   supabase: {
     auth: {
       exchangeCodeForSession: (...args: unknown[]) => exchangeCodeForSession(...args),

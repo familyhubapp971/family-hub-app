@@ -13,15 +13,15 @@ const authState: { session: { access_token?: string } | null } = {
   session: { access_token: 'tok-parent' },
 };
 
-vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
+vi.mock('../../../../../src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
-vi.mock('../../../../../apps/web/src/lib/tenant-context', () => ({
+vi.mock('../../../../../src/lib/tenant-context', () => ({
   useTenantSlug: () => 'khans',
 }));
 vi.stubGlobal('fetch', fetchMock);
 
-import { ChildLearningInsights } from '../../../../../apps/web/src/pages/tenant/child/ChildLearningInsights';
+import { ChildLearningInsights } from '../../../../../src/pages/tenant/child/ChildLearningInsights';
 
 const MEMBER_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 

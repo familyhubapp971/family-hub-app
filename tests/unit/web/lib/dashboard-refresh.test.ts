@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react';
 import {
   notifyDashboardStale,
   useDashboardStaleSignal,
-} from '../../../../apps/web/src/lib/dashboard-refresh';
+} from '../../../../src/lib/dashboard-refresh';
 
 // FHS-309: the dashboard-stale signal that lets a task/notice mutation in
 // one tab refresh the dashboard snapshot + header counts.
