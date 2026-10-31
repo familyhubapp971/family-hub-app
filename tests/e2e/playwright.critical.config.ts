@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
+import { linkApiRepo } from './support/api-repo.js';
 import { e2eTestJwksJson } from './support/auth/test-key.js';
 import { tryResolveSupabaseUrl } from './support/auth/env.js';
 
@@ -8,6 +9,8 @@ import { tryResolveSupabaseUrl } from './support/auth/env.js';
 // hardcoded no-credential DATABASE_URL here meant the API booted but
 // couldn't connect to the postgres service in CI. Inherit the URL
 // from the CI workflow's env when set.
+// FHS-688: the server comes from the family-hub-api repo, not this one.
+const apiDir = linkApiRepo();
 const apiDatabaseUrl = process.env.DATABASE_URL ?? 'postgres://localhost:5432/familyhub_test';
 
 // FHS-516: see playwright.config.ts for the full rationale (non-throwing
@@ -64,7 +67,7 @@ export default defineConfig({
       // (server 429)". That is what made role-permissions and the money-row
       // recap fail at random, always fail on a developer machine (more workers
       // than CI runs), and pass the moment they were run on their own.
-      command: `NODE_ENV=test PORT=3001 LOG_LEVEL=error RATE_LIMIT_PER_MINUTE=0 DATABASE_URL=${apiDatabaseUrl} pnpm --filter @familyhub/api dev`,
+      command: `NODE_ENV=test PORT=3001 LOG_LEVEL=error RATE_LIMIT_PER_MINUTE=0 DATABASE_URL=${apiDatabaseUrl} pnpm --dir "${apiDir}" dev`,
       url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

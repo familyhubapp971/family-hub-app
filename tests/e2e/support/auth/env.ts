@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 // including this one: resolveSupabaseUrl() just reads it.
 //
 // Locally, only the api's OWN `dev` script loads it (via
-// `tsx watch --env-file=../../.env.local`, see apps/api/package.json).
+// `tsx watch --env-file=../../.env.local`, see family-hub-api package.json).
 // The Playwright test process itself never does. This module reads the
 // same repo-root .env.local file directly, but ONLY the SUPABASE_URL key:
 // unlike `process.loadEnvFile()`, it never mutates process.env, so it can't
