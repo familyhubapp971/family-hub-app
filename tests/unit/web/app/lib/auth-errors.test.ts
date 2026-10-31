@@ -14,6 +14,19 @@ describe('friendlyAuthErrorMessage', () => {
     );
   });
 
+  it("rewrites our own server's sign-in email cap the same way (FHS-696)", () => {
+    const out = friendlyAuthErrorMessage(
+      'Too many sign-in emails to this address. Please wait 60 minutes and try again.',
+    );
+    expect(out).toMatch(/too many sign-in links/i);
+    expect(out).toMatch(/google/i);
+  });
+
+  it("shows our own server's sign-in attempts lockout as written: it is already plain", () => {
+    const msg = 'Too many sign-in attempts. Please wait 15 minutes and try again.';
+    expect(friendlyAuthErrorMessage(msg)).toBe(msg);
+  });
+
   it('rewrites a generic rate-limit error without the word "email"', () => {
     expect(friendlyAuthErrorMessage('Too many requests')).toMatch(/wait a moment/i);
   });

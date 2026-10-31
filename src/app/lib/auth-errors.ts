@@ -15,7 +15,12 @@ export function friendlyAuthErrorMessage(raw: string | undefined): string {
   // On managed email (free tier) that cap is 2/hr; with custom SMTP
   // wired it's whatever rate_limit_email_sent is set to. Either way
   // the user-facing answer is the same: wait, or pick Google.
-  if (/rate\s*limit/i.test(message) && /email/i.test(message)) {
+  // FHS-695/696: our own server's per-address cap on sign-in emails says
+  // "Too many sign-in emails to this address..."; same advice as Supabase's.
+  if (
+    (/rate\s*limit/i.test(message) && /email/i.test(message)) ||
+    /too many sign-in emails/i.test(message)
+  ) {
     return "We've sent too many sign-in links recently. Try again in an hour, or use Continue with Google.";
   }
 
