@@ -14,7 +14,10 @@ vi.mock('../../../../../apps/web/src/lib/auth-context', () => ({
   useAuth: () => authState,
 }));
 
-import { AssignmentsTabPanel } from '../../../../../apps/web/src/pages/tenant/dashboard/AssignmentsTabPanel';
+import {
+  AssignmentsTabPanel,
+  localToday,
+} from '../../../../../apps/web/src/pages/tenant/dashboard/AssignmentsTabPanel';
 import { TenantProvider } from '../../../../../apps/web/src/lib/tenant-context';
 
 interface A {
@@ -40,6 +43,7 @@ function installApi(opts: {
   aOk?: boolean;
   aStatus?: number;
   callerRole?: string;
+  deleteStatus?: number;
 }) {
   const state = { assignments: [...(opts.assignments ?? [])] };
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
@@ -84,6 +88,12 @@ function installApi(opts: {
         status: 200,
         json: async () => state.assignments[idx],
       });
+    }
+    if (init?.method === 'DELETE') {
+      const id = u.split('/api/assignments/')[1]!;
+      const status = opts.deleteStatus ?? 204;
+      if (status < 300) state.assignments = state.assignments.filter((a) => a.id !== id);
+      return Promise.resolve({ ok: status < 300, status, json: async () => ({}) });
     }
     return Promise.resolve({
       ok: opts.aOk ?? true,
@@ -316,7 +326,7 @@ describe('<AssignmentsTabPanel />', () => {
         target: { value: 'Spelling' },
       });
       fireEvent.change(screen.getByTestId('assignments-add-due'), {
-        target: { value: '2026-05-05' },
+        target: { value: '2099-05-05' },
       });
       // In-app dropdown (FHS-359): open then pick Ali.
       fireEvent.click(within(screen.getByTestId('assignments-add-member')).getByRole('button'));
@@ -331,7 +341,7 @@ describe('<AssignmentsTabPanel />', () => {
     const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST');
     expect(postCall).toBeDefined();
     const body = JSON.parse((postCall![1] as RequestInit).body as string);
-    expect(body).toMatchObject({ title: 'Spelling', dueDate: '2026-05-05', memberId: ALI });
+    expect(body).toMatchObject({ title: 'Spelling', dueDate: '2099-05-05', memberId: ALI });
   });
 
   it('returns focus to the Add button after cancelling the form', async () => {
@@ -592,6 +602,225 @@ describe('<AssignmentsTabPanel />', () => {
     expect(screen.getByTestId('assignments-add-error').textContent).toMatch(/removed/i);
     await waitFor(() =>
       expect(screen.queryByTestId('assignment-row-a-edit')).not.toBeInTheDocument(),
+    );
+  });
+});
+
+const OVERDUE: A = {
+  id: 'a-old',
+  title: 'Old Spelling',
+  notes: null,
+  dueDate: '2020-01-01',
+  memberId: ALI,
+  done: false,
+  doneAt: null,
+};
+
+async function openEdit(id: string) {
+  await waitFor(() => expect(screen.getByTestId('assignments-ready')).toBeInTheDocument());
+  act(() => {
+    fireEvent.click(screen.getByTestId(`assignment-edit-${id}`));
+  });
+}
+
+describe('FHR-39: long assignment text', () => {
+  it('caps the title at 50 characters and notes at 300', async () => {
+    installApi({ assignments: [] });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignments-add')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-add'));
+    });
+    expect(screen.getByTestId('assignments-add-title')).toHaveAttribute('maxLength', '50');
+    expect(screen.getByTestId('assignments-add-notes')).toHaveAttribute('maxLength', '300');
+  });
+
+  it('a long unbroken title wraps inside the card instead of stretching it', async () => {
+    installApi({ assignments: [{ ...OVERDUE, title: 'x'.repeat(50) }] });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignment-title-a-old')).toBeInTheDocument());
+    expect(screen.getByTestId('assignment-title-a-old').className).toContain(
+      '[overflow-wrap:anywhere]',
+    );
+  });
+});
+
+describe('FHR-40: no past due dates', () => {
+  it("today is the device's own date", () => {
+    expect(localToday(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05');
+  });
+
+  it('the date picker on a new assignment starts at today', async () => {
+    installApi({ assignments: [] });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignments-add')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-add'));
+    });
+    expect(screen.getByTestId('assignments-add-due')).toHaveAttribute('min', localToday());
+  });
+
+  it('a new assignment with a past date is not saved', async () => {
+    installApi({ assignments: [] });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignments-add')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-add'));
+    });
+    act(() => {
+      fireEvent.change(screen.getByTestId('assignments-add-title'), {
+        target: { value: 'Maths' },
+      });
+      fireEvent.change(screen.getByTestId('assignments-add-due'), {
+        target: { value: '2020-01-01' },
+      });
+    });
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId('assignments-add-form'));
+    });
+    expect(screen.getByTestId('assignments-add-error')).toHaveTextContent(
+      'Pick today or a later date.',
+    );
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
+  it('editing an overdue assignment keeps its date and still saves', async () => {
+    installApi({ assignments: [OVERDUE] });
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    expect(screen.getByTestId('assignments-add-due')).toHaveAttribute('min', '2020-01-01');
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId('assignments-add-form'));
+    });
+    const putCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT');
+    expect(JSON.parse((putCall![1] as RequestInit).body as string).dueDate).toBe('2020-01-01');
+  });
+});
+
+describe('FHR-41: delete an assignment', () => {
+  it('Delete shows only while editing, never on a new assignment', async () => {
+    installApi({ assignments: [OVERDUE] });
+    renderAt('/t/khans/dashboard');
+    await waitFor(() => expect(screen.getByTestId('assignments-add')).toBeInTheDocument());
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-add'));
+    });
+    expect(screen.queryByTestId('assignments-delete')).not.toBeInTheDocument();
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-add-cancel'));
+    });
+    await openEdit('a-old');
+    expect(screen.getByTestId('assignments-delete')).toHaveTextContent('Delete');
+  });
+
+  it('cancelling the confirm keeps the assignment', async () => {
+    installApi({ assignments: [OVERDUE] });
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-delete'));
+    });
+    expect(screen.getByText('Delete "Old Spelling"?')).toBeInTheDocument();
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-delete-confirm-cancel'));
+    });
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+    expect(screen.getByTestId('assignment-row-a-old')).toBeInTheDocument();
+  });
+
+  it('confirming deletes it, closes the form and says so', async () => {
+    installApi({ assignments: [OVERDUE] });
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-delete'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('assignments-delete-confirm-confirm'));
+    });
+    await waitFor(() =>
+      expect(screen.queryByTestId('assignment-row-a-old')).not.toBeInTheDocument(),
+    );
+    const delCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'DELETE');
+    expect(String(delCall![0])).toBe('http://localhost:3001/api/assignments/a-old');
+    expect(screen.queryByTestId('assignments-add-form')).not.toBeInTheDocument();
+    expect(screen.getByTestId('assignments-status-announcement')).toHaveTextContent(
+      'Deleted "Old Spelling"',
+    );
+  });
+
+  it('a failed delete keeps the assignment and shows the error', async () => {
+    installApi({ assignments: [OVERDUE], deleteStatus: 500 });
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-delete'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('assignments-delete-confirm-confirm'));
+    });
+    expect(screen.getByTestId('assignments-add-error')).toHaveTextContent(
+      "Couldn't delete (server returned 500)",
+    );
+    expect(screen.getByTestId('assignment-row-a-old')).toBeInTheDocument();
+  });
+
+  it('the confirm shows the saved title, not unsaved typing', async () => {
+    installApi({ assignments: [OVERDUE] });
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    act(() => {
+      fireEvent.change(screen.getByTestId('assignments-add-title'), {
+        target: { value: 'Half typed' },
+      });
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-delete'));
+    });
+    expect(screen.getByText('Delete "Old Spelling"?')).toBeInTheDocument();
+  });
+
+  it('a double tap on Confirm sends only one delete', async () => {
+    installApi({ assignments: [OVERDUE] });
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-delete'));
+    });
+    await act(async () => {
+      const confirm = screen.getByTestId('assignments-delete-confirm-confirm');
+      fireEvent.click(confirm);
+      fireEvent.click(confirm);
+    });
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE')).toHaveLength(1);
+  });
+
+  it('a delete that loses the network keeps the assignment and says so', async () => {
+    installApi({ assignments: [OVERDUE] });
+    const routed = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      init?.method === 'DELETE' ? Promise.reject(new Error('Network down')) : routed(url, init),
+    );
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    act(() => {
+      fireEvent.click(screen.getByTestId('assignments-delete'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('assignments-delete-confirm-confirm'));
+    });
+    expect(screen.getByTestId('assignments-add-error')).toHaveTextContent('Network down');
+    expect(screen.getByTestId('assignment-row-a-old')).toBeInTheDocument();
+  });
+});
+
+describe('FHR-39: an old title over the new limit', () => {
+  it('editing one says plainly that it must be shortened', async () => {
+    installApi({ assignments: [{ ...OVERDUE, title: 'y'.repeat(120) }] });
+    renderAt('/t/khans/dashboard');
+    await openEdit('a-old');
+    expect(screen.getByTestId('assignments-title-too-long')).toHaveTextContent(
+      'This title is over 50 characters. Shorten it to save.',
     );
   });
 });
