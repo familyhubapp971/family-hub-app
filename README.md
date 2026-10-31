@@ -61,15 +61,15 @@ pnpm dev:reset       # stop AND drop the volume (fresh DB)
 ## Browser tests on a new machine
 
 The signed-in Playwright specs drive the real web app, which builds its
-Supabase client from `VITE_` variables. Vite reads those from `apps/web`, not
-from the repo root, so on a machine that has only ever had a root `.env.local`
+Supabase client from `VITE_` variables. Vite only reads names that start with
+`VITE_`, so on a machine whose root `.env.local` has only the plain names
 every authed spec fails at once with no obvious reason: the app cannot restore
 the injected session, so no `/t/:slug` page ever renders.
 
 One file fixes it (gitignored, values copied from your root `.env.local`):
 
 ```bash
-cat > apps/web/.env.development.local <<'ENV'
+cat > .env.development.local <<'ENV'
 VITE_API_URL=http://localhost:3001
 VITE_SUPABASE_URL=<same as SUPABASE_URL in .env.local>
 VITE_SUPABASE_ANON_KEY=<same as SUPABASE_ANON_KEY in .env.local>
@@ -141,12 +141,13 @@ conventions and the skill-routing map.
 ## Repository Layout
 
 ```text
-apps/
-  api/      # Hono API server
-  web/      # React + Vite frontend
-packages/
-  shared/   # Shared types, schemas, utilities
-  test-utils/
+src/            # React + Vite web site
+  areas/        # signed-in screens grouped by product area (today, calendar, money...)
+  public-pages/ # home page, legal pages, sign-in and sign-up
+  app/          # routing, shared layout and menus, app-wide helpers
+public/         # static files served as-is (fonts)
+index.html      # web entry page
+design-system/  # shared components, Storybook, Tailwind preset (@familyhub/ui)
 documents/
   features/
   technical/

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
-// Root-level coverage defaults. Per-package config overrides environment
-// (jsdom for web, node for api/shared) and keeps test paths scoped.
+// Root-level coverage defaults. vitest.web.config.ts (web site) and
+// design-system/vitest.config.ts set the environment and test paths.
 // Re-run with `pnpm test:coverage` to collect a merged lcov report.
 export default defineConfig({
   test: {
@@ -10,22 +10,18 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
-      include: [
-        'apps/*/src/**/*.{ts,tsx}',
-        'packages/*/src/**/*.{ts,tsx}',
-      ],
+      include: ['src/**/*.{ts,tsx}', 'design-system/src/**/*.{ts,tsx}'],
       exclude: [
         '**/node_modules/**',
         '**/dist/**',
         '**/*.test.{ts,tsx}',
         '**/*.spec.{ts,tsx}',
         '**/*.d.ts',
-        'apps/*/vite.config.ts',
-        'apps/*/drizzle.config.ts',
-        'apps/*/postcss.config.js',
-        'apps/*/tailwind.config.js',
-        'apps/*/src/main.tsx',
-        'apps/*/src/test/**', // setup files, not logic
+        'vite.config.ts',
+        'postcss.config.js',
+        'tailwind.config.js',
+        'src/app/main.tsx',
+        'src/app/test/**', // setup files, not logic
       ],
       all: true,
     },

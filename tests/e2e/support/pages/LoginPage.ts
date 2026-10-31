@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 // Page object for /login. Mirrors SignupPage: testid selectors match
-// the data-testid attributes wired in apps/web/src/pages/auth/LoginPage.tsx.
+// the data-testid attributes wired in src/public-pages/sign-in/LoginPage.tsx.
 // FHS-224 stripped the password field from the UI (passwordless parent
 // auth per ADR 0011); the e2e back-door for the synthetic FHS-196
 // account therefore POSTs to Supabase's password grant directly and

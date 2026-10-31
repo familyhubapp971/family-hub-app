@@ -107,7 +107,7 @@ export default defineConfig({
       // FHS-516: the full matrix deliberately does NOT override VITE_API_URL:
       // its one authed spec (auth.feature, FHS-196) does a REAL Supabase login
       // and needs the real staging api that trusts real Supabase tokens (which
-      // apps/web/.env.development.local already points VITE_API_URL at). The
+      // .env.development.local already points VITE_API_URL at). The
       // test-JWKS harness's @authed-local specs, which need the local api, are
       // excluded from this matrix (see the `tags` filter above) and run in
       // playwright.critical.config.ts, which pins VITE_API_URL at the local api.

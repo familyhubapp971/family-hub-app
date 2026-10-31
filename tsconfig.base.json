@@ -7,7 +7,7 @@
 
     "baseUrl": ".",
     "paths": {
-      "@familyhub/ui": ["packages/ui/src"]
+      "@familyhub/ui": ["design-system/src"]
     },
 
     "strict": true,

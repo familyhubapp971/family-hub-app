@@ -1,6 +1,6 @@
 // FHS-516: build the exact localStorage entry supabase-js writes on a real
 // sign-in, so `context.addInitScript` can pre-seed it and the web app's
-// `supabase.auth.getSession()` (apps/web/src/lib/auth-context.tsx) finds a
+// `supabase.auth.getSession()` (src/app/lib/auth-context.tsx) finds a
 // session already there on first render: no real login round trip needed.
 //
 // Verified against @supabase/supabase-js 2.105.1's actual behaviour (traced
