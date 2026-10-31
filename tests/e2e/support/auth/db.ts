@@ -3,11 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import * as schema from '../../../../apps/api/src/db/schema.js';
+import * as schema from '../../.api-repo/src/database/schema.js';
 
 // FHS-516: direct DB access for the authed e2e fixture's seed/cleanup.
 // Reuses the SAME Drizzle schema module the api and the integration tier
-// use (apps/api/src/db/schema.ts) so column names/types can never drift
+// use (family-hub-api src/database/schema.ts) so column names/types can never drift
 // out from under this fixture.
 //
 // Connection string: resolved EXACTLY like playwright.config.ts resolves
@@ -55,7 +55,7 @@ export function ensureReaderFunctions(): Promise<void> {
   if (_functionsApplied) return _functionsApplied;
   _functionsApplied = (async () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
-    const drizzleDir = path.resolve(here, '../../../../apps/api/drizzle');
+    const drizzleDir = path.resolve(here, '../../.api-repo/src/database/migrations');
     const pool = getPool();
     // FHS-607: memoising per process is not enough once two authed specs run
     // in parallel, because Playwright gives each worker its own process and

@@ -31,6 +31,8 @@ export default tseslint.config(
       '**/playwright-report*/**',
       '**/test-results*/**',
       '**/.features-gen*/**',
+      'tests/e2e/.api-repo/**',
+      '.ci-api/**',
       '**/tests/performance/reports/**',
       // Vendored Claude Code skill scripts: not our code, not our lint rules.
       '.claude/**',

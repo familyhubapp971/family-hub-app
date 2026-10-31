@@ -95,3 +95,7 @@ documents/postman/
 scripts/docs/doc-src/fh-qa-contractor-*.html
 documents/media/
 PRIVACY-TODO.md
+
+# FHS-688: local copy of family-hub-api used by the browser tests
+tests/e2e/.api-repo
+.ci-api/

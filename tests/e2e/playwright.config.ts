@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
+import { linkApiRepo } from './support/api-repo.js';
 
 // In CI the workflow exports DATABASE_URL with credentials matching the
 // `postgres:16-alpine` service (e.g. fh_test:fh_test@localhost). Inline
@@ -8,6 +9,8 @@ import { defineBddConfig } from 'playwright-bdd';
 // the API process tried to connect anonymously and every DB-touching
 // endpoint failed in CI. Inherit DATABASE_URL when set; fall back to
 // the local-dev convention only when it isn't.
+// FHS-688: the server comes from the family-hub-api repo, not this one.
+const apiDir = linkApiRepo();
 const apiDatabaseUrl = process.env.DATABASE_URL ?? 'postgres://localhost:5432/familyhub_test';
 
 // FHS-545: this full matrix does NOT set E2E_TEST_JWKS on the api. Its one
@@ -91,7 +94,7 @@ export default defineConfig({
       // (server 429)". That is what made role-permissions and the money-row
       // recap fail at random, always fail on a developer machine (more workers
       // than CI runs), and pass the moment they were run on their own.
-      command: `NODE_ENV=test PORT=3001 LOG_LEVEL=error RATE_LIMIT_PER_MINUTE=0 DATABASE_URL=${apiDatabaseUrl} pnpm --filter @familyhub/api dev`,
+      command: `NODE_ENV=test PORT=3001 LOG_LEVEL=error RATE_LIMIT_PER_MINUTE=0 DATABASE_URL=${apiDatabaseUrl} pnpm --dir "${apiDir}" dev`,
       url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

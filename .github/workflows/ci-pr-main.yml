@@ -48,6 +48,7 @@ jobs:
           --health-timeout 5s
           --health-retries 30
     env:
+      FH_API_DIR: ${{ github.workspace }}/.ci-api
       DATABASE_URL: postgres://fh_test:fh_test@localhost:5432/familyhub_test
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +57,13 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '${{ env.NODE_VERSION }}', cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
+      # FHS-688: the browser tests boot the server from family-hub-api.
+      - uses: actions/checkout@v4
+        with:
+          repository: familyhubapp971/family-hub-api
+          ref: main
+          path: .ci-api
+      - run: pnpm --dir .ci-api install --frozen-lockfile
       - name: Cache Playwright browsers
         id: pw-cache
         uses: actions/cache@v4
@@ -76,7 +84,7 @@ jobs:
       # FHS-685: same three steps as ci-staging.yml; without them this job
       # found 0 tests and ran against an empty database.
       - name: Apply DB migrations for the e2e api
-        run: pnpm --filter @familyhub/api exec drizzle-kit migrate
+        run: pnpm --dir .ci-api exec drizzle-kit migrate
       - name: Generate BDD specs from .feature files
         run: pnpm -F @familyhub/e2e exec bddgen test --config playwright.config.ts
       - name: Assert bddgen produced specs
