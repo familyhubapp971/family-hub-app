@@ -29,7 +29,7 @@ import {
 } from './moneyActionsApi';
 import { friendlyFailureMessage, type MoneyFlowProps } from './types';
 
-// Mirrors apps/api/src/lib/myworld.ts INVEST_MIN_STICKERS: the server
+// Mirrors family-hub-api/src/areas/my-world/myworld.ts INVEST_MIN_STICKERS: the server
 // rejects anything below this, so the picker never lets a family reach it.
 const INVEST_MIN_STICKERS = 10;
 const COEFFICIENTS: readonly InvestCoefficient[] = [1, 2, 3, 5];

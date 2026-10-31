@@ -14,7 +14,7 @@ type FetchState =
 async function fetchHello(signal: AbortSignal): Promise<HelloResponse> {
   // The hello / health endpoints are mounted at the root of the API
   // (`/hello`, `/health`), not under `/api/`. Feature endpoints live
-  // under `/api/*` (see apps/api/src/app.ts).
+  // under `/api/*` (see family-hub-api/src/app.ts).
   const response = await fetch(`${API_BASE}/hello`, {
     signal,
     headers: { Accept: 'application/json' },

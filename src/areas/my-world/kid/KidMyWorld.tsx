@@ -20,7 +20,7 @@ import { formatMoney } from '@familyhub/shared';
 type View = 'habits' | 'analytics';
 
 // FIX 2 (BLOCKER): a rate <= 0 must never be divided by (Infinity/NaN
-// stickers). Mirrors the api's cashAsStickers guard (apps/api/src/lib/myworld.ts).
+// stickers). Mirrors the api's cashAsStickers guard (family-hub-api/src/areas/my-world/myworld.ts).
 function stickersFromCash(cash: number, rate: number): number {
   return rate <= 0 ? 0 : cash / rate;
 }

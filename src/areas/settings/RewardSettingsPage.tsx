@@ -35,7 +35,7 @@ import { formatMoneyMinor as formatMinor, isFamilyAdminRole } from '@familyhub/s
 
 const BOOST_PRESETS = [2, 3, 5] as const;
 // FIX 3 (BLOCKER): matches the API's cap on rateMinor / skipPenaltyMinor
-// (apps/api/src/routes/reward-config.ts, apps/api/src/routes/habits.ts) so
+// (family-hub-api/src/areas/my-world/reward-config.ts, family-hub-api/src/areas/tasks/habits.ts) so
 // the UI can't even try to submit a value the server will 400 on.
 const RATE_MINOR_MAX = 100_000; // 1000.00 in the tenant's currency
 

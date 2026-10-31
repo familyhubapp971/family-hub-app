@@ -6,11 +6,12 @@ constraints. Update whenever topology changes (add a service, rotate a
 secret format, change a branch tracking rule, upgrade plan).
 
 > **Status as of 2026-10-31:** the live setup is now **production**
-> and builds from `main`. Real users are on it. A new staging setup is
-> still to be created, so merging to `staging` deploys nothing until
-> then. See [Production switch](#production-switch-2026-10-31). Sections
-> below this point describe the earlier staging setup and are partly out
-> of date.
+> and builds from `main`. Real users are on it. A new **staging** setup
+> builds from the `staging` branch. The code is split across two repos:
+> the server in `family-hub-api`, the web site in `family-hub-web`
+> (this repo, renamed from `family-hub-app`). See
+> [Production switch](#production-switch-2026-10-31). Sections below this
+> point describe the earlier staging setup and are partly out of date.
 
 ## Project
 
@@ -73,8 +74,8 @@ flowchart TB
 | Service    | ID                                     | Source                           | Image                |
 | ---------- | -------------------------------------- | -------------------------------- | -------------------- |
 | `postgres` | `e2a7c43f-46db-44e8-bc06-a934fe290699` | n/a                              | `postgres:16-alpine` |
-| `api`      | `7a93c040-1220-4afb-a564-f4cf98901948` | `familyhubapp971/family-hub-app` | n/a                  |
-| `frontend` | `f3048c9c-195b-4141-8cca-daf0f213d6a9` | `familyhubapp971/family-hub-app` | n/a                  |
+| `api`      | `7a93c040-1220-4afb-a564-f4cf98901948` | `familyhubapp971/family-hub-api` | n/a                  |
+| `frontend` | `f3048c9c-195b-4141-8cca-daf0f213d6a9` | `familyhubapp971/family-hub-web` | n/a                  |
 
 ### Postgres
 
@@ -104,10 +105,10 @@ Hono server (Node 20+, ESM). pnpm workspace, depends on
 `@familyhub/shared` via `workspace:*`. Build/start config lives at the
 service-instance level so per-env overrides are possible later.
 
-The build step bundles via [`apps/api/build.mjs`](../../apps/api/build.mjs)
-(esbuild) into a single `apps/api/dist/index.js` so workspace cross-
+The build step bundles via [`family-hub-api/build.mjs`](https://github.com/familyhubapp971/family-hub-api/blob/staging/build.mjs)
+(esbuild) into a single `family-hub-api/dist/index.js` so workspace cross-
 imports resolve at runtime without exporting unnecessary `dist/` from
-`packages/shared`. See [FHS-201](https://qualicion2.atlassian.net/browse/FHS-201).
+`shared-rules` (family-hub-api). See [FHS-201](https://qualicion2.atlassian.net/browse/FHS-201).
 
 ### frontend
 
@@ -133,14 +134,14 @@ instance because a sub-folder rootDirectory would break
 pnpm workspace resolution (Railway can't see the workspace packages).
 
 Healthcheck: api uses `/health`
-([`apps/api/src/routes/health.ts`](../../apps/api/src/routes/health.ts)).
+([`family-hub-api/src/areas/health/health.ts`](https://github.com/familyhubapp971/family-hub-api/blob/staging/src/areas/health/health.ts)).
 Frontend has no healthcheck, Railway falls back to TCP-level checks.
 
 ### Schema migration on api start
 
 The api `start` script runs `drizzle-kit push --force` _before_
 booting the server. Every deploy reconciles the live Postgres schema
-against `apps/api/src/db/schema.ts` automatically, no separate
+against `family-hub-api/src/database/schema.ts` automatically, no separate
 "apply migrations" step, no opportunity for code-vs-database drift to
 ship.
 
@@ -184,7 +185,7 @@ Trade-offs we accepted:
 | `NODE_ENV`                  | MCP                              | `production` (the api config schema only accepts `development`/`test`/`production`; staging is treated as production-like for strictness)                                                                  |
 | `LOG_LEVEL`                 | MCP                              | `info`                                                                                                                                                                                                     |
 | `DATABASE_URL`              | MCP (Railway-resolved at deploy) | `postgresql://${{postgres.POSTGRES_USER}}:${{postgres.POSTGRES_PASSWORD}}@${{postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{postgres.POSTGRES_DB}}` (see [cross-service references](#cross-service-references)) |
-| `PORT`                      | Railway-injected                 | (assigned by Railway, read by [`apps/api/src/config.ts`](../../apps/api/src/config.ts))                                                                                                                    |
+| `PORT`                      | Railway-injected                 | (assigned by Railway, read by [`family-hub-api/src/config.ts`](https://github.com/familyhubapp971/family-hub-api/blob/staging/src/config.ts))                                                              |
 | `SUPABASE_URL`              | MCP (FHS-189)                    | `https://maolytpqazmykjzdybtj.supabase.co` (staging Supabase project per [ADR 0008](../decisions/0008-supabase-environments.md))                                                                           |
 | `SUPABASE_ANON_KEY`         | MCP (FHS-189)                    | legacy HS256 anon JWT: client-safe role, used for the public-API client                                                                                                                                    |
 | `SUPABASE_SERVICE_ROLE_KEY` | MCP (FHS-189)                    | legacy HS256 admin JWT: server-side only, bypasses RLS; **never** mirror onto the frontend service                                                                                                         |
@@ -278,8 +279,8 @@ Deployment triggers (one per service, per env):
 
 | Trigger ID                             | Service  | Branch    | Repo                             |
 | -------------------------------------- | -------- | --------- | -------------------------------- |
-| `a97c3872-4e12-46ac-9883-aeb03e1bd15e` | api      | `staging` | `familyhubapp971/family-hub-app` |
-| `f3456b7a-d1a6-461c-a222-c3fa6e011550` | frontend | `staging` | `familyhubapp971/family-hub-app` |
+| `a97c3872-4e12-46ac-9883-aeb03e1bd15e` | api      | `staging` | `familyhubapp971/family-hub-web` |
+| `f3456b7a-d1a6-461c-a222-c3fa6e011550` | frontend | `staging` | `familyhubapp971/family-hub-web` |
 
 Manual deploys can be triggered via the Railway MCP
 (`mcp__railway__deployment_trigger` with a commit SHA) or by pushing
@@ -362,7 +363,7 @@ Schema migrations are forward-only. If a migration is broken:
    backup (Hobby+ plan, not yet available; documented for FHS-202).
 3. Until backups are configured, the recovery path is: re-bootstrap the
    staging Postgres volume from the Drizzle schema at
-   [`apps/api/src/db/schema.ts`](../../apps/api/src/db/schema.ts).
+   [`family-hub-api/src/database/schema.ts`](https://github.com/familyhubapp971/family-hub-api/blob/staging/src/database/schema.ts).
    Seed scripts to be added under [FHS-168](https://qualicion2.atlassian.net/browse/FHS-168);
    until then, recovery is schema-only and any test data is lost.
 
@@ -466,12 +467,12 @@ service setup is a 5-step workflow. Capturing it here so it's not
 re-derived each time.
 
 1. **Create the service** at the project level:
-   - Repo-based: `mcp__railway__service_create_from_repo({ projectId, repo: "familyhubapp971/family-hub-app", name: "<svc-name>" })`
+   - Repo-based: `mcp__railway__service_create_from_repo({ projectId, repo: "familyhubapp971/<family-hub-api or family-hub-web>", name: "<svc-name>" })`
    - Image-based: `mcp__railway__service_create_from_image({ projectId, image: "<image>:<tag>", name: "<svc-name>" })`
    - Capture the returned `serviceId`.
 2. **Configure the staging instance** via `mcp__railway__service_update`:
    - Always: `region` (no-op on trial, see [Region constraints](#region-constraints)), `buildCommand`, `startCommand`, `healthcheckPath` if applicable.
-   - **Don't** set `rootDirectory` to `apps/<svc>`: it breaks pnpm workspace resolution. Leave at the default `/`.
+   - **Don't** set `rootDirectory` to a sub-folder: it breaks pnpm workspace resolution. Leave at the default `/`.
 3. **Wire branch-based deploys** via direct GraphQL (the MCP doesn't expose `deploymentTriggerCreate`):
 
    ```graphql
@@ -482,7 +483,7 @@ re-derived each time.
          environmentId: "3fb76a04-e926-4bdf-ae03-659966366dfb"
          serviceId: "<svc-id>"
          provider: "github"
-         repository: "familyhubapp971/family-hub-app"
+         repository: "familyhubapp971/<family-hub-api or family-hub-web>"
          branch: "staging"
          checkSuites: false
        }
@@ -535,6 +536,17 @@ setup was renamed rather than rebuilt, so users saw no change.
 Production keeps Supabase project `maolytpqazmykjzdybtj` (labelled
 "Family Hub Staging" in Supabase). The unused Supabase project
 `bqghmbkoxjompuxixexn` was left alone.
+
+### Repos after the split (2026-10-31)
+
+| Service    | Production (`main`)                                                | Staging (`staging`)                             |
+| ---------- | ------------------------------------------------------------------ | ----------------------------------------------- |
+| `api`      | `family-hub-api`; build `pnpm build`, start `pnpm start` (FHS-690) | `family-hub-api`, fh-api-staging.up.railway.app |
+| `frontend` | `family-hub-web`                                                   | `family-hub-web`, fh-web-staging.up.railway.app |
+
+The production build command is prefixed with
+`corepack enable && pnpm install --frozen-lockfile &&`. Staging has its
+own empty database.
 
 ### Before any production change
 

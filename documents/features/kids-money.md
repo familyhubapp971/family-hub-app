@@ -161,20 +161,20 @@ week, because a closed week carries its own actions.
 ## Where the figures come from
 
 Every number on this page is a real API response; nothing is computed from
-invented data. `formatMoney` (`packages/shared/src/money.ts`) turns every
+invented data. `formatMoney` (`family-hub-api/shared-rules/src/money.ts`) turns every
 sticker count into money using the child's own currency and sticker rate;
 no screen builds a money string by hand.
 
-| Figure                    | Source                                                                                                                                                                                      |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Who counts as a child     | `GET /api/members`, filtered with `isKidRole`                                                                                                                                               |
-| Ready to spend            | `GET /api/mw/weeks/current` for the week id, then `GET /api/mw/weeks/:id/stats` → `unallocatedStickers`                                                                                     |
-| In savings                | `GET /api/mw/financial/savings` → `savedStickers`                                                                                                                                           |
-| Growing                   | `GET /api/mw/financial/investments` → sum of `currentValueStickers`                                                                                                                         |
-| Currency + sticker rate   | `GET /api/mw/financial/savings` → `currency`, `stickerRate` (the child's own, not a hardcoded 0.5)                                                                                          |
-| Week list                 | `GET /api/mw/weeks` (reversed client-side to read newest first)                                                                                                                             |
-| A week's "earned" figure  | `GET /api/mw/weeks/:id/stats` → `totalStickers`, fetched for the visible slice (6 weeks), and for older ones only once "show older weeks" is used                                           |
-| A closed week's breakdown | `GET /api/mw/weeks/:id/actions`, summarised by `summariseWeekActions` (`packages/shared/src/week-actions.ts`, the same helper the parent My World board's finished-week recap already uses) |
+| Figure                    | Source                                                                                                                                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Who counts as a child     | `GET /api/members`, filtered with `isKidRole`                                                                                                                                                           |
+| Ready to spend            | `GET /api/mw/weeks/current` for the week id, then `GET /api/mw/weeks/:id/stats` → `unallocatedStickers`                                                                                                 |
+| In savings                | `GET /api/mw/financial/savings` → `savedStickers`                                                                                                                                                       |
+| Growing                   | `GET /api/mw/financial/investments` → sum of `currentValueStickers`                                                                                                                                     |
+| Currency + sticker rate   | `GET /api/mw/financial/savings` → `currency`, `stickerRate` (the child's own, not a hardcoded 0.5)                                                                                                      |
+| Week list                 | `GET /api/mw/weeks` (reversed client-side to read newest first)                                                                                                                                         |
+| A week's "earned" figure  | `GET /api/mw/weeks/:id/stats` → `totalStickers`, fetched for the visible slice (6 weeks), and for older ones only once "show older weeks" is used                                                       |
+| A closed week's breakdown | `GET /api/mw/weeks/:id/actions`, summarised by `summariseWeekActions` (`family-hub-api/shared-rules/src/week-actions.ts`, the same helper the parent My World board's finished-week recap already uses) |
 
 ## Deviations from the Magic Patterns design
 
@@ -216,7 +216,7 @@ design (`components/MoneyActions.tsx`, editor `kudjspxd3xxroueg5jw11o`).
 
 | In the design                                                                             | What shipped, and why                                                                                                                                                                                                                                          |
 | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `utils/money.ts` hardcodes a 0.50 sticker rate and reads the currency from `localStorage` | Never copied. Every figure goes through `formatMoney` from `packages/shared` with the family's real currency and the real rate from `GET /api/mw/financial/savings`.                                                                                           |
+| `utils/money.ts` hardcodes a 0.50 sticker rate and reads the currency from `localStorage` | Never copied. Every figure goes through `formatMoney` from `shared-rules` (family-hub-api) with the family's real currency and the real rate from `GET /api/mw/financial/savings`.                                                                             |
 | Six hardcoded rewards                                                                     | Still the family's own shop, as FHS-623 shipped it.                                                                                                                                                                                                            |
 | Three multipliers: 2x, 3x, 5x                                                             | Four: 1x, 2x, 3x, 5x. The server accepts 1 (no boost) and a parent should be able to invest without one.                                                                                                                                                       |
 | Nothing on screen before the first choice                                                 | A short line says what to pick first ("Pick a habit to choose how much it pays and how many stickers go behind it"). The design left the sheet ending in nothing, which reads as broken. This is the one place the port deliberately adds rather than matches. |

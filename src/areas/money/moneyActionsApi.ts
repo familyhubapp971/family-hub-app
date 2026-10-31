@@ -2,7 +2,7 @@
  * moneyActionsApi: FHS-623
  *
  * Typed fetch calls for the five Kids money actions, against the exact
- * endpoints documented in FHS-627 (apps/api/openapi.json). Every call takes
+ * endpoints documented in FHS-627 (family-hub-api/api-docs/openapi.json). Every call takes
  * the same `headers` shape KidsMoneyPage already builds (Authorization +
  * x-tenant-slug) rather than the app-wide `apiFetch` helper, which doesn't
  * stamp x-tenant-slug.

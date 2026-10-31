@@ -28,7 +28,7 @@ const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   hard: 'Hard',
 };
 
-// Keep in sync with apps/api learn-questions.ts LOGIC_SUBTOPICS
+// Keep in sync with family-hub-api src/areas/learn/learn-questions.ts LOGIC_SUBTOPICS
 const LOGIC_SUBTOPICS = [
   { slug: 'patterns', label: 'Patterns' },
   { slug: 'odd-one-out', label: 'Odd One Out' },

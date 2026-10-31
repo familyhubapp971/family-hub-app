@@ -13,7 +13,6 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.stories.json",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
