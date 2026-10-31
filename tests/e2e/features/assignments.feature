@@ -15,7 +15,8 @@ Feature: Assignments
     And I am on a phone-sized screen for the dashboard
     When I open the Assignments area
     And I edit the assignment "Finish reading"
-    And I delete it and confirm
+    Then no area scrolls sideways
+    When I delete it and confirm
     Then the assignment "Finish reading" is no longer listed
 
   @critical @authed-local
