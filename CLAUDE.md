@@ -331,11 +331,13 @@ diff, "Decisions worth flagging" boilerplate, "Deferred follow-ups"
 when there are none, marketing-voice section headings. The diff and
 the ticket already say most of this.
 
-> **Bootstrap-phase policy (effective 2026-04-24):** all merges land on
-> `staging` only. **Do not open or merge `staging` → `main` promotion
-> PRs.** `main` is held at its current commit until the W1 vertical
-> slice (FHS-179 epic) is complete and validated, after which everything
-> promotes to `main` as one tested batch. Revisit when FHS-198 ships.
+> **Production is live (founder decision, 2026-10-31, FHS-200).** Real
+> users are on it. Feature work still lands on `staging`. Production on
+> Railway builds from `main`, so merging to `main` deploys to real users:
+> promote with a `staging` → `main` merge-commit PR only when the founder
+> asks. Back up the production database and check its row counts before
+> any production change (see
+> [deployment.md](documents/technical/deployment.md#production-switch-2026-10-31)).
 
 ### Ticket bodies: written so anyone gets it in ten seconds
 
@@ -489,12 +491,10 @@ Types follow Conventional Commits: `feat`, `fix`, `chore`, `docs`, `test`,
 **First action when starting a ticket:**
 
 ```bash
-git checkout staging && git pull   # branch from staging during bootstrap
+git checkout staging && git pull   # feature work always branches from staging
 git checkout -b <type>/FHS-XXX-short-slug
 git push -u origin <type>/FHS-XXX-short-slug   # publish so the Jira rule fires
 ```
-
-(Branch from `main` once the staging-only policy is lifted.)
 
 > **Trigger rule:** creating and **pushing** the feature branch is the
 > signal that work has started. The Jira Automation rule **"Branch
